@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
+import Toast from './Toast';
 
 const SORT_FIELDS = {
   name: 'Name',
@@ -37,6 +38,7 @@ export default function TorrentTable({ apiKey }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
   const [expandedTorrents, setExpandedTorrents] = useState(new Set());
+  const [toast, setToast] = useState(null);
 
   const fetchTorrents = async () => {
     if (!apiKey) return;
@@ -162,14 +164,13 @@ export default function TorrentTable({ apiKey }) {
     setDownloadLinks([]);
     setDownloadProgress({ current: 0, total });
     
-    const links = [];
     let current = 0;
     
     // Download selected torrents
     for (const id of selectedItems.torrents) {
       const result = await requestDownloadLink(id);
       if (result) {
-        links.push(result);
+        setDownloadLinks(prev => [...prev, result]);
       }
       current++;
       setDownloadProgress({ current, total });
@@ -180,20 +181,27 @@ export default function TorrentTable({ apiKey }) {
       for (const fileId of fileIds) {
         const result = await requestFileDownloadLink(torrentId, fileId, true);
         if (result) {
-          links.push(result);
+          setDownloadLinks(prev => [...prev, result]);
         }
         current++;
         setDownloadProgress({ current, total });
       }
     }
     
-    setDownloadLinks(links);
     setIsDownloading(false);
   };
 
   const copyLinksToClipboard = () => {
     const text = downloadLinks.map(link => link.url).join('\n');
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setToast('Links copied to clipboard!');
+        setTimeout(() => setToast(null), 3000); // Hide toast after 3 seconds
+      })
+      .catch(err => {
+        setToast('Failed to copy links');
+        setTimeout(() => setToast(null), 3000);
+      });
   };
 
   const toggleFiles = (torrentId) => {
@@ -323,30 +331,25 @@ export default function TorrentTable({ apiKey }) {
         </div>
       </div>
 
-      {isDownloading && (
-        <div className="mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${(downloadProgress.current / downloadProgress.total) * 100}%` }}
-            ></div>
-          </div>
-          <div className="text-center text-sm text-gray-600 mt-2">
-            Fetching download links: {downloadProgress.current} of {downloadProgress.total}
-          </div>
-        </div>
-      )}
-
-      {downloadLinks.length > 0 && (
+      {(downloadLinks.length > 0 || isDownloading) && (
         <div className="mt-4 p-4 border rounded-lg bg-gray-50">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-medium">Download Links</h3>
-            <button
-              onClick={copyLinksToClipboard}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              Copy All Links
-            </button>
+            <h3 className="text-lg font-medium">
+              Download Links
+              {isDownloading && (
+                <span className="text-sm text-gray-600 ml-2">
+                  (Fetching {downloadProgress.current} of {downloadProgress.total})
+                </span>
+              )}
+            </h3>
+            {downloadLinks.length > 0 && (
+              <button
+                onClick={copyLinksToClipboard}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Copy All Links
+              </button>
+            )}
           </div>
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {downloadLinks.map(link => (
@@ -362,7 +365,21 @@ export default function TorrentTable({ apiKey }) {
                 </a>
               </div>
             ))}
+            {isDownloading && downloadLinks.length < downloadProgress.total && (
+              <div className="text-sm text-gray-500 p-2 animate-pulse">
+                Generating more links...
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {isDownloading && (
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+            style={{ width: `${(downloadProgress.current / downloadProgress.total) * 100}%` }}
+          ></div>
         </div>
       )}
 
@@ -399,8 +416,8 @@ export default function TorrentTable({ apiKey }) {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAndSortedTorrents.map((torrent) => (
-              <>
-                <tr key={torrent.key || torrent.id} className="hover:bg-gray-50">
+              <Fragment key={torrent.id}>
+                <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
@@ -460,12 +477,12 @@ export default function TorrentTable({ apiKey }) {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {(torrent.ratio || 0).toFixed(2)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
                     <button
-                      onClick={() => deleteTorrent(torrent.id)}
-                      className="text-red-600 hover:text-red-900"
+                      onClick={() => toggleFiles(torrent.id)}
+                      className="text-gray-600 hover:text-gray-900"
                     >
-                      Delete
+                      {expandedTorrents.has(torrent.id) ? 'Hide Files' : 'See Files'}
                     </button>
                     <button
                       onClick={async () => {
@@ -479,16 +496,24 @@ export default function TorrentTable({ apiKey }) {
                       Download
                     </button>
                     <button
-                      onClick={() => toggleFiles(torrent.id)}
-                      className="text-gray-600 hover:text-gray-900"
+                      onClick={() => deleteTorrent(torrent.id)}
+                      className="text-red-600 hover:text-red-900"
                     >
-                      {expandedTorrents.has(torrent.id) ? 'Hide Files' : 'See Files'}
+                      Delete
                     </button>
                   </td>
                 </tr>
                 {expandedTorrents.has(torrent.id) && torrent.files && torrent.files.map((file) => (
                   <tr key={`${torrent.id}-${file.id}`} className="bg-gray-50">
-                    <td className="pl-16 py-2 max-w-md" colSpan={2}>
+                    <td className="px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.files.get(torrent.id)?.has(file.id) || false}
+                        onChange={(e) => handleFileSelect(torrent.id, file.id, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="pl-6 py-2 max-w-md" colSpan={2}>
                       <div className="flex items-center">
                         <span className="text-sm text-gray-600 truncate" title={file.name}>
                           {file.short_name || file.name}
@@ -498,24 +523,31 @@ export default function TorrentTable({ apiKey }) {
                     <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                       {formatSize(file.size || 0)}
                     </td>
-                    <td colSpan={4} className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <td colSpan={3} className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                       {file.mimetype}
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.files.get(torrent.id)?.has(file.id) || false}
-                        onChange={(e) => handleFileSelect(torrent.id, file.id, e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-4"
-                      />
+                      <button
+                        onClick={() => requestFileDownloadLink(torrent.id, file.id)}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Download
+                      </button>
                     </td>
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
+
+      {toast && (
+        <Toast 
+          message={toast} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 } 
