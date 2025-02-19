@@ -54,7 +54,7 @@ export async function DELETE(request) {
       },
       body: JSON.stringify({
         torrent_id,
-        operation: 'Delete'
+        operation: 'delete'
       })
     });
     const data = await response.json();
