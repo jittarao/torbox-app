@@ -14,7 +14,10 @@ export default function TorrentRow({
   expandedTorrents,
   toggleFiles,
   apiKey,
-  onDelete
+  onDelete,
+  rowIndex,
+  torrents,
+  lastClickedTorrentIndexRef
 }) {
   const requestDownloadLink = async (id) => {
     try {
@@ -28,6 +31,42 @@ export default function TorrentRow({
     } catch (error) {
       console.error('Error requesting download:', error);
     }
+  };
+
+  const handleTorrentCheckboxClick = (e) => {
+    if (e.shiftKey && typeof rowIndex === 'number' && lastClickedTorrentIndexRef.current !== null) {
+      const start = Math.min(lastClickedTorrentIndexRef.current, rowIndex);
+      const end = Math.max(lastClickedTorrentIndexRef.current, rowIndex);
+      setSelectedItems(prev => {
+        const newTorrents = new Set(prev.torrents);
+        for (let i = start; i <= end; i++) {
+          const t = torrents[i];
+          if (e.target.checked) {
+            newTorrents.add(t.id);
+          } else {
+            newTorrents.delete(t.id);
+          }
+        }
+        return {
+          torrents: newTorrents,
+          files: prev.files
+        };
+      });
+    } else {
+      setSelectedItems(prev => {
+        const newTorrents = new Set(prev.torrents);
+        if (e.target.checked) {
+          newTorrents.add(torrent.id);
+        } else {
+          newTorrents.delete(torrent.id);
+        }
+        return {
+          torrents: newTorrents,
+          files: prev.files
+        };
+      });
+    }
+    lastClickedTorrentIndexRef.current = rowIndex;
   };
 
   const renderCell = (columnId) => {
@@ -146,20 +185,8 @@ export default function TorrentRow({
           type="checkbox"
           checked={selectedItems.torrents.has(torrent.id)}
           disabled={hasSelectedFilesForTorrent(torrent.id, selectedItems.files)}
-          onChange={(e) => {
-            setSelectedItems(prev => {
-              const newTorrents = new Set(prev.torrents);
-              if (e.target.checked) {
-                newTorrents.add(torrent.id);
-              } else {
-                newTorrents.delete(torrent.id);
-              }
-              return {
-                torrents: newTorrents,
-                files: prev.files
-              };
-            });
-          }}
+          onChange={(e) => {}}
+          onClick={handleTorrentCheckboxClick}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
         />
       </td>

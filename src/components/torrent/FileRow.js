@@ -1,4 +1,5 @@
 'use client';
+import { useRef } from 'react';
 import { Icons } from './constants';
 import { formatSize } from './utils/formatters';
 
@@ -9,6 +10,23 @@ export default function FileRow({
   apiKey,
   activeColumns
 }) {
+  // Track last clicked file index for shift selection
+  const lastClickedFileIndexRef = useRef(null);
+
+  // New shift-click handler for file checkboxes
+  const handleFileCheckboxClick = (index, file, e) => {
+    if (e.shiftKey && lastClickedFileIndexRef.current !== null) {
+      const start = Math.min(lastClickedFileIndexRef.current, index);
+      const end = Math.max(lastClickedFileIndexRef.current, index);
+      torrent.files.slice(start, end + 1).forEach(f => {
+        onFileSelect(torrent.id, f.id, e.target.checked);
+      });
+    } else {
+      onFileSelect(torrent.id, file.id, e.target.checked);
+    }
+    lastClickedFileIndexRef.current = index;
+  };
+
   const requestFileDownloadLink = async (torrentId, fileId) => {
     try {
       const response = await fetch(`/api/torrents/download?torrent_id=${torrentId}&file_id=${fileId}`, {
@@ -25,7 +43,7 @@ export default function FileRow({
 
   return (
     <>
-      {torrent.files.map((file) => (
+      {torrent.files.map((file, index) => (
         <tr 
           key={`${torrent.id}-${file.id}`} 
           className="border-blue-100 dark:border-blue-900 bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
@@ -35,7 +53,8 @@ export default function FileRow({
               type="checkbox"
               checked={selectedItems.files.get(torrent.id)?.has(file.id) || false}
               disabled={selectedItems.torrents.has(torrent.id)}
-              onChange={(e) => onFileSelect(torrent.id, file.id, e.target.checked)}
+              onChange={(e) => {}} // Empty handler to satisfy React's warning
+              onClick={(e) => handleFileCheckboxClick(index, file, e)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
             />
           </td>

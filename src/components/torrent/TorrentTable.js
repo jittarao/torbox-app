@@ -96,7 +96,7 @@ export default function TorrentTable({ apiKey }) {
         onSearch={setSearch}
         onStatusChange={handleStatusChange}
         isDownloading={isDownloading}
-        onBulkDownload={() => handleBulkDownload(selectedItems)}
+        onBulkDownload={() => handleBulkDownload(selectedItems, sortedTorrents)}
         isDeleting={isDeleting}
         onBulkDelete={() => handleBulkDelete(selectedItems)}
       />

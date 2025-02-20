@@ -53,15 +53,23 @@ export default function DownloadPanel({
           </button>
         </div>
       </div>
-      <div className="space-y-2 max-h-40 overflow-y-auto">
+      <div className="space-y-2 max-h-96 overflow-y-auto relative">
         {downloadLinks.map(link => (
-          <div key={link.id} className="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded">
-            <span className="truncate mr-4 dark:text-gray-100">{link.url}</span>
+          <div key={link.id} className="flex items-center justify-between bg-white dark:bg-gray-800 text-sm p-2 rounded">
+            <div className="relative group">
+              <span className="truncate mr-4 dark:text-gray-100">
+                {link.url}
+              </span>
+              <div className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 p-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg whitespace-nowrap dark:text-gray-200 invisible group-hover:visible">
+                {link.name}
+              </div>
+            </div>
             <a
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 whitespace-nowrap select-none"
+              title={`Download ${link.name}`}
             >
               Download
             </a>

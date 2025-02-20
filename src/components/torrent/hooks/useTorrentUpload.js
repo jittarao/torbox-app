@@ -5,6 +5,7 @@ const MAX_RETRIES = 3;
 const MAX_FILES = 50;
 const STORAGE_KEY = 'torrent-upload-options';
 const SHOW_OPTIONS_KEY = 'torrent-upload-show-options';
+const CONCURRENT_UPLOADS = 3;
 
 // Move default options to a constant
 const DEFAULT_OPTIONS = {
@@ -159,33 +160,20 @@ export const useTorrentUpload = (apiKey) => {
     formData.append('allow_zip', item.allowZip);
     formData.append('as_queued', item.asQueued);
 
-    let retries = 0;
-    while (retries < MAX_RETRIES) {
-      try {
-        const response = await fetch('/api/torrents', {
-          method: 'POST',
-          headers: { 'x-api-key': apiKey },
-          body: formData
-        });
+    try {
+      const response = await fetch('/api/torrents', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey },
+        body: formData
+      });
 
-        const data = await response.json();
-        if (data.success) return { success: true };
-        if (isNonRetryableError(data)) {
-          return { success: false, error: data.detail };
-        }
-
-        retries++;
-        if (retries < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        }
-      } catch (error) {
-        retries++;
-        if (retries < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        }
-      }
+      const data = await response.json();
+      return data.success ? 
+        { success: true } : 
+        { success: false, error: data.detail };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
-    return { success: false, error: `Failed after ${MAX_RETRIES} attempts` };
   };
 
   const uploadTorrents = async () => {
@@ -194,25 +182,57 @@ export const useTorrentUpload = (apiKey) => {
     const pendingItems = items.filter(item => item.status === 'queued');
     setProgress({ current: 0, total: pendingItems.length });
 
-    for (let i = 0; i < pendingItems.length; i++) {
-      const itemIndex = items.findIndex(item => item === pendingItems[i]);
-      
-      // Set item to processing state
-      setItems(prev => prev.map((item, idx) => 
-        idx === itemIndex ? { ...item, status: 'processing' } : item
-      ));
-      
-      const result = await uploadItem(pendingItems[i]);
-      
-      setItems(prev => prev.map((item, idx) => 
-        idx === itemIndex ? { ...item, status: result.success ? 'success' : 'error' } : item
-      ));
-      
-      if (!result.success) {
-        setError(result.error);
-        break;
-      }
-      setProgress(prev => ({ ...prev, current: i + 1 }));
+    // Process items in chunks
+    for (let i = 0; i < pendingItems.length; i += CONCURRENT_UPLOADS) {
+      const chunk = pendingItems.slice(i, i + CONCURRENT_UPLOADS);
+      const chunkResults = await Promise.all(
+        chunk.map(async (item) => {
+          const itemIndex = items.findIndex(x => x === item);
+          
+          // Set item to processing state
+          setItems(prev => prev.map((x, idx) => 
+            idx === itemIndex ? { ...x, status: 'processing' } : x
+          ));
+          
+          // Try upload with retries
+          let retries = 0;
+          while (retries < MAX_RETRIES) {
+            const result = await uploadItem(item);
+            
+            if (result.success) {
+              setItems(prev => prev.map((x, idx) => 
+                idx === itemIndex ? { ...x, status: 'success' } : x
+              ));
+              setProgress(prev => ({ ...prev, current: prev.current + 1 }));
+              return true;
+            }
+            
+            // If non-retryable error, fail immediately
+            if (isNonRetryableError({ detail: result.error })) {
+              setItems(prev => prev.map((x, idx) => 
+                idx === itemIndex ? { ...x, status: 'error' } : x
+              ));
+              setError(result.error);
+              return false;
+            }
+            
+            retries++;
+            if (retries < MAX_RETRIES) {
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            }
+          }
+          
+          // Max retries reached
+          setItems(prev => prev.map((x, idx) => 
+            idx === itemIndex ? { ...x, status: 'error' } : x
+          ));
+          setError(`Failed after ${MAX_RETRIES} attempts`);
+          return false;
+        })
+      );
+
+      // Stop if any upload failed after retries
+      if (chunkResults.includes(false)) break;
     }
 
     setUploading(false);

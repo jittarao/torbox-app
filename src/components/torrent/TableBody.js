@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useRef } from 'react';
 import TorrentRow from './TorrentRow';
 import FileRow from './FileRow';
 
@@ -15,6 +15,8 @@ export default function TableBody({
 }) {
   const [expandedTorrents, setExpandedTorrents] = useState(new Set());
   const [hoveredTorrent, setHoveredTorrent] = useState(null);
+  // Shared ref for tracking last clicked torrent row index
+  const lastClickedTorrentIndexRef = useRef(null);
 
   const toggleFiles = (torrentId) => {
     const newExpanded = new Set(expandedTorrents);
@@ -28,7 +30,7 @@ export default function TableBody({
 
   return (
     <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-      {torrents.map((torrent) => (
+      {torrents.map((torrent, index) => (
         <Fragment key={torrent.id}>
           <TorrentRow
             torrent={torrent}
@@ -42,6 +44,10 @@ export default function TableBody({
             toggleFiles={toggleFiles}
             apiKey={apiKey}
             onDelete={onTorrentDelete}
+            // Pass new props for shift+click functionality
+            rowIndex={index}
+            torrents={torrents}
+            lastClickedTorrentIndexRef={lastClickedTorrentIndexRef}
           />
           {expandedTorrents.has(torrent.id) && torrent.files && (
             <FileRow
