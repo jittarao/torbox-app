@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import ColumnManager from './ColumnManager';
-import { COLUMNS } from './constants';
+import { COLUMNS, STATUS_OPTIONS } from './constants';
+import Dropdown from '../shared/Dropdown';
 
 export default function ActionBar({ 
   torrents, 
@@ -11,12 +12,14 @@ export default function ActionBar({
   activeColumns, 
   onColumnChange,
   onSearch,
+  onStatusChange,
   isDownloading,
   isDeleting,
   onBulkDownload,
   onBulkDelete
 }) {
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -62,6 +65,16 @@ export default function ActionBar({
       </div>
 
       <div className="flex gap-4 items-center flex-wrap">
+        <Dropdown
+          options={STATUS_OPTIONS}
+          value={statusFilter}
+          onChange={(value) => {
+            setStatusFilter(value);
+            onStatusChange(value);
+          }}
+          className="min-w-[140px]"
+        />
+        
         <input
           type="text"
           placeholder="Search torrents..."

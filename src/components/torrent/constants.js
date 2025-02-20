@@ -16,6 +16,61 @@ export const COLUMNS = {
   peers: { label: 'Peers', sortable: true },
 };
 
+export const STATUS_OPTIONS = [
+    { label: 'All', value: 'all' },
+    // Completed: Download finished, not active
+    { 
+        label: 'Completed', 
+        value: { 
+        download_finished: true, 
+        download_present: true,
+        active: false 
+        } 
+    },
+    // Downloading: Downloading, not finished, active
+    { 
+        label: 'Downloading', 
+        value: { 
+            download_finished: false, 
+            active: true 
+        } 
+    },
+    // Seeding: Download finished, seeding enabled, active
+    { 
+        label: 'Seeding', 
+        value: { 
+        download_state: ['seeding', 'seeding (no peers)'],
+        download_finished: true, 
+        seed_torrent: true, 
+        active: true 
+        } 
+    },
+    // Uploading: Download finished, uploading, active
+    { 
+        label: 'Uploading', 
+        value: { 
+        download_state: ['uploading', 'uploading (no peers)'],
+        download_finished: true, 
+        active: true 
+        } 
+    },
+    // Stalled: Download or upload is stalled
+    { 
+        label: 'Stalled', 
+        value: { 
+        download_state: ['stalled', 'stalled (no seeds)'] 
+        } 
+    },
+    // Missing: Download finished, Download not present
+    { 
+        label: 'Inactive', 
+        value: { 
+            download_finished: true, 
+            download_present: false
+        } 
+    }
+];
+
 export const Icons = {
   files: (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

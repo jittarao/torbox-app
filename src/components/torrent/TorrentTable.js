@@ -41,7 +41,35 @@ export default function TorrentTable({ apiKey }) {
     handleBulkDelete 
   } = useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetchTorrents);
 
-  const sortedTorrents = sortTorrents(filteredTorrents);
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const handleStatusChange = (value) => {
+    // Don't parse if it's 'all' or already an object
+    setStatusFilter(value === 'all' ? value : 
+      typeof value === 'string' ? JSON.parse(value) : value);
+  };
+
+  const filteredByStatus = filteredTorrents.filter(torrent => {
+    if (statusFilter === 'all') return true;
+    
+    const filter = statusFilter;
+
+    // Check all conditions in the filter
+    return Object.entries(filter).every(([key, value]) => {
+      // Special handling for download_state arrays
+      if (key === 'download_state') {
+        const states = Array.isArray(value) ? value : [value];
+        return states.some(state => 
+          typeof state === 'string' && torrent.download_state?.includes(state)
+        );
+      }
+      
+      // Direct comparison for other properties
+      return torrent[key] === value;
+    });
+  });
+
+  const sortedTorrents = sortTorrents(filteredByStatus);
 
   if (loading && torrents.length === 0) return <div>Loading...</div>;
 
@@ -66,6 +94,7 @@ export default function TorrentTable({ apiKey }) {
         onColumnChange={handleColumnChange}
         search={search}
         onSearch={setSearch}
+        onStatusChange={handleStatusChange}
         isDownloading={isDownloading}
         onBulkDownload={() => handleBulkDownload(selectedItems)}
         isDeleting={isDeleting}
