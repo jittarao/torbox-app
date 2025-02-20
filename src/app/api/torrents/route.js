@@ -6,9 +6,10 @@ const API_VERSION = "v1";
 export async function GET() {
   const headersList = headers();
   const apiKey = headersList.get('x-api-key');
+  const bypassCache = headersList.get('bypass-cache') === 'true';
 
   try {
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist`, {
+    const response = await fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist${bypassCache ? '?bypass_cache=true' : ''}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
