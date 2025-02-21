@@ -26,9 +26,10 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between w-full p-2 text-sm rounded 
-          bg-white dark:bg-gray-800 border dark:border-gray-700 
-          hover:border-gray-400 dark:hover:border-gray-600
-          text-gray-700 dark:text-gray-200 ${className}`}
+          bg-transparent border border-border dark:border-border-dark 
+          text-primary-text dark:text-primary-text-dark
+          hover:border-accent/50 dark:hover:border-accent-dark/50 
+          transition-colors ${className}`}
       >
         <span>{selectedOption?.label || 'Select...'}</span>
         <svg 
@@ -42,7 +43,8 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg">
+        <div className="absolute z-10 w-full mt-1 bg-surface dark:bg-surface-dark 
+          border border-border dark:border-border-dark rounded shadow-lg">
           {options.map((option) => (
             <button
               key={option.label}
@@ -50,9 +52,12 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
                 onChange(option.value === 'all' ? option.value : JSON.stringify(option.value));
                 setIsOpen(false);
               }}
-              className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700
+              className={`block w-full text-left px-4 py-2 text-sm
+                text-primary-text dark:text-primary-text-dark
+                hover:bg-surface-hover dark:hover:bg-surface-hover-dark
+                transition-colors
                 ${(option.value === value || JSON.stringify(option.value) === value) 
-                  ? 'bg-gray-100 dark:bg-gray-700' 
+                  ? 'bg-surface-hover dark:bg-surface-hover-dark' 
                   : ''}`}
             >
               {option.label}

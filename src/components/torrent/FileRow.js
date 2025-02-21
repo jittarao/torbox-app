@@ -49,10 +49,10 @@ export default function FileRow({
         return (
           <tr 
             key={`${torrent.id}-${file.id}`} 
-            className={`border-blue-100 dark:border-blue-900 ${
+            className={`border-accent/5 dark:border-accent-dark/5 ${
               isChecked 
-                ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30' 
-                : 'bg-gray-50/50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
+                ? 'bg-accent/5 hover:bg-accent/10 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10' 
+                : 'bg-surface-alt/30 hover:bg-surface-hover dark:bg-surface-alt-dark/30 dark:hover:bg-surface-hover-dark'
             } transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
@@ -73,19 +73,24 @@ export default function FileRow({
                 disabled={isDisabled}
                 onChange={(e) => handleFileSelection(index, file, e.target.checked, e.shiftKey)}
                 style={{ pointerEvents: 'none' }}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                className="rounded border-border dark:border-border-dark 
+                  text-accent dark:text-accent-dark focus:ring-accent/20 
+                  dark:focus:ring-accent-dark/20 disabled:opacity-50"
               />
             </td>
             <td className="pl-6 py-2" colSpan={activeColumns.length}>
               <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate" title={file.name}>
+                <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark truncate" 
+                  title={file.name}>
                   {file.short_name || file.name}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-alt dark:bg-surface-alt-dark 
+                  text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
                   {formatSize(file.size || 0)}
                 </span>
                 {file.mimetype && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 whitespace-nowrap">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 
+                    text-accent dark:text-accent-dark whitespace-nowrap">
                     {file.mimetype}
                   </span>
                 )}
@@ -97,7 +102,8 @@ export default function FileRow({
                   e.stopPropagation();
                   requestFileDownloadLink(torrent.id, file.id);
                 }}
-                className="p-1.5 rounded-full text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-colors"
+                className="p-1.5 rounded-full text-accent dark:text-accent-dark 
+                  hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                 title="Download File"
               >
                 {Icons.download}

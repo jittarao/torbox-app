@@ -23,12 +23,12 @@ export default function DownloadPanel({
   };
 
   return (
-    <div className="mt-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-900 dark:border-gray-600">
+    <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center mb-2">
-        <h3 className="text-lg font-medium dark:text-gray-100">
+        <h3 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
           Download Links
           {isDownloading && (
-            <span className="text-sm text-gray-600 dark:text-gray-300 ml-2">
+            <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 ml-2">
               (Fetching {downloadProgress.current} of {downloadProgress.total})
             </span>
           )}
@@ -37,14 +37,14 @@ export default function DownloadPanel({
           {downloadLinks.length > 0 && (
             <button
               onClick={handleCopyLinks}
-              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+              className="text-accent hover:text-accent/80 transition-colors"
             >
               Copy All Links
             </button>
           )}
           <button
             onClick={onDismiss}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-primary-text dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
             aria-label="Close panel"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -53,14 +53,20 @@ export default function DownloadPanel({
           </button>
         </div>
       </div>
-      <div className="space-y-2 max-h-96 overflow-y-auto relative">
+      <div className="space-y-2 max-h-96 overflow-x-hidden overflow-y-auto relative">
         {downloadLinks.map(link => (
-          <div key={link.id} className="flex items-center justify-between bg-white dark:bg-gray-800 text-sm p-2 rounded">
+          <div key={link.id} className="flex items-center justify-between 
+            bg-surface-alt dark:bg-surface-alt-dark text-sm p-2 rounded 
+            border border-border dark:border-border-dark">
             <div className="relative group">
-              <span className="truncate mr-4 dark:text-gray-100">
+              <span className="truncate mr-4 text-primary-text dark:text-primary-text-dark">
                 {link.url}
               </span>
-              <div className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 p-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg whitespace-nowrap dark:text-gray-200 invisible group-hover:visible">
+              <div className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 
+                p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark 
+                rounded shadow-lg whitespace-nowrap 
+                text-primary-text/70 dark:text-primary-text-dark/70 
+                invisible group-hover:visible">
                 {link.name}
               </div>
             </div>
@@ -68,7 +74,8 @@ export default function DownloadPanel({
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 whitespace-nowrap select-none"
+              className="text-accent dark:text-accent-dark hover:text-accent/80 
+                dark:hover:text-accent-dark/80 transition-colors whitespace-nowrap select-none"
               title={`Download ${link.name}`}
             >
               Download
@@ -76,16 +83,16 @@ export default function DownloadPanel({
           </div>
         ))}
         {isDownloading && downloadLinks.length < downloadProgress.total && (
-          <div className="text-sm text-gray-500 dark:text-gray-300 p-2 animate-pulse">
+          <div className="text-primary-text dark:text-primary-text-dark/50 text-sm p-2 animate-pulse">
             Generating more links...
           </div>
         )}
       </div>
 
       {isDownloading && (
-        <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+        <div className="mt-4 w-full bg-border rounded-full h-2.5">
           <div
-            className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300"
+            className="bg-accent h-2.5 rounded-full transition-all duration-300"
             style={{ width: `${(downloadProgress.current / downloadProgress.total) * 100}%` }}
           ></div>
         </div>

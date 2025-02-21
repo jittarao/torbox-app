@@ -48,7 +48,32 @@ export default function LandingPage({ onKeyChange }) {
               Enter your API key to begin
             </h2>
             <ApiKeyInput onKeyChange={onKeyChange} />
+            <p className="mt-4 text-sm text-gray-400">
+              Find your API key at{' '}
+              <a 
+                href="https://torbox.app/settings" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                torbox.app/settings
+              </a>
+            </p>
           </div>
+
+          <footer className="mt-12 text-sm text-gray-400">
+            <p>
+              We don't store any of your information. This app is fully open source on{' '}
+              <a 
+                href="https://github.com/jittarao/torbox-app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                GitHub
+              </a>
+            </p>
+          </footer>
         </div>
       </div>
     </div>

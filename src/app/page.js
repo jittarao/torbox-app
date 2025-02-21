@@ -4,6 +4,10 @@ import ApiKeyInput from '@/components/torrent/ApiKeyInput';
 import TorrentTable from '@/components/torrent/TorrentTable';
 import TorrentUploader from '@/components/torrent/TorrentUploader';
 import LandingPage from '@/components/LandingPage';
+import { Inter } from 'next/font/google'
+import Header from '@/components/Header';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export default function Home() {
   const [apiKey, setApiKey] = useState('');
@@ -25,18 +29,20 @@ export default function Home() {
   if (loading) return null;
 
   return (
-    <main className="min-h-screen bg-white dark:bg-gray-900">
+    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
       {!apiKey ? (
         <LandingPage onKeyChange={handleKeyChange} />
       ) : (
-        <div className="container mx-auto p-4">
-          <h1 className="text-2xl mb-4">TorBox Manager</h1>
-          <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} />
-          <>
-            <TorrentUploader apiKey={apiKey} />
-            <TorrentTable apiKey={apiKey} />
-          </>
-        </div>
+        <>
+          <Header />
+          <div className="container mx-auto p-4">
+            <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} />
+            <>
+              <TorrentUploader apiKey={apiKey} />
+              <TorrentTable apiKey={apiKey} />
+            </>
+          </div>
+        </>
       )}
     </main>
   );

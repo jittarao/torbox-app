@@ -29,7 +29,7 @@ export default function TableBody({
   };
 
   return (
-    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+    <tbody className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark">
       {torrents.map((torrent, index) => (
         <Fragment key={torrent.id}>
           <TorrentRow

@@ -35,11 +35,13 @@ export default function TorrentUploader({ apiKey }) {
   return (
     <div className="mt-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg dark:text-gray-100">Upload Torrents</h3>
+        <h3 className="text-lg text-primary-text dark:text-primary-text-dark">
+          Upload Torrents
+        </h3>
         <button
           onClick={() => setShowOptions(prev => !prev)}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 
-            dark:hover:text-gray-200 flex items-center gap-1"
+          className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark 
+            flex items-center gap-1 transition-colors"
         >
           <span>{showOptions ? 'Hide' : 'Show'} Options</span>
           <svg
@@ -64,15 +66,18 @@ export default function TorrentUploader({ apiKey }) {
             onChange={(e) => setMagnetInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={(e) => {
-              // Allow default paste behavior then process
               setTimeout(() => setMagnetInput(e.target.value), 0);
             }}
             disabled={uploading}
             placeholder="Paste magnet links here (one per line)"
-            className="w-full min-h-40 h-40 p-3 border border-gray-200 dark:border-gray-700 rounded-lg 
-              bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500
-              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-              disabled:bg-gray-50 dark:disabled:bg-gray-900 transition-colors duration-200"
+            className="w-full min-h-40 h-40 p-3 border border-border dark:border-border-dark rounded-lg 
+              bg-transparent text-primary-text dark:text-primary-text-dark 
+              placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
+              focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
+              focus:border-accent dark:focus:border-accent-dark
+              disabled:bg-surface-alt dark:disabled:bg-surface-alt-dark 
+              disabled:text-primary-text/50 dark:disabled:text-primary-text-dark/50
+              transition-colors duration-200"
           />
         </div>
 
@@ -84,18 +89,24 @@ export default function TorrentUploader({ apiKey }) {
       <div className={`mt-4 transition-all duration-300 ease-in-out overflow-hidden ${
         showOptions ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
-        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h4 className="text-sm font-medium mb-4 dark:text-gray-200">Global Upload Options</h4>
+        <div className="bg-surface-alt dark:bg-surface-alt-dark p-4 rounded-lg 
+          border border-border dark:border-border-dark">
+          <h4 className="text-sm font-medium mb-4 text-primary-text dark:text-primary-text-dark">
+            Global Upload Options
+          </h4>
           <div className="flex items-center gap-8">
             <div className="flex-1 max-w-[200px]">
-              <label className="block text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+              <label className="block text-xs text-primary-text/70 dark:text-primary-text-dark/70 
+                uppercase tracking-wide mb-1">
                 Seeding Preference
               </label>
               <select
                 value={globalOptions.seed}
                 onChange={(e) => updateGlobalOptions({ seed: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 text-sm border rounded-md bg-white dark:bg-gray-700 
-                  dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md 
+                  bg-transparent text-primary-text dark:text-primary-text-dark 
+                  focus:ring-1 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
+                  focus:border-accent dark:focus:border-accent-dark transition-colors"
               >
                 <option value={1}>Auto (Default)</option>
                 <option value={2}>Always Seed</option>
@@ -109,14 +120,16 @@ export default function TorrentUploader({ apiKey }) {
                   type="checkbox"
                   checked={globalOptions.allowZip}
                   onChange={(e) => updateGlobalOptions({ allowZip: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                    focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                  className="w-4 h-4 rounded border-border dark:border-border-dark 
+                    text-accent dark:text-accent-dark 
+                    focus:ring-accent/20 dark:focus:ring-accent-dark/20"
                 />
                 <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">
+                  <span className="text-sm text-primary-text dark:text-primary-text-dark 
+                    group-hover:text-primary dark:group-hover:text-primary-text-dark">
                     Allow Zip
                   </span>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
                     For torrents with 100+ files
                   </p>
                 </div>
@@ -127,14 +140,16 @@ export default function TorrentUploader({ apiKey }) {
                   type="checkbox"
                   checked={globalOptions.asQueued}
                   onChange={(e) => updateGlobalOptions({ asQueued: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                    focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                  className="w-4 h-4 rounded border-border dark:border-border-dark 
+                    text-accent dark:text-accent-dark 
+                    focus:ring-accent/20 dark:focus:ring-accent-dark/20"
                 />
                 <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">
+                  <span className="text-sm text-primary-text dark:text-primary-text-dark 
+                    group-hover:text-primary dark:group-hover:text-primary-text-dark">
                     Instant Queue
                   </span>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
                     Skip waiting queue
                   </p>
                 </div>
@@ -146,15 +161,20 @@ export default function TorrentUploader({ apiKey }) {
 
       <div className="mt-4 space-y-2">
         {items.map((item, index) => (
-          <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div key={index} className="flex justify-between items-center p-3 
+            bg-surface-alt dark:bg-surface-alt-dark 
+            border border-border dark:border-border-dark rounded-lg">
             <div className="flex-1">
-              <span className="text-sm font-medium dark:text-gray-200">{item.name}</span>
+              <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
+                {item.name}
+              </span>
               {item.status === 'queued' && (
                 <div className="flex gap-4 mt-2">
                   <select
                     value={item.seed}
                     onChange={(e) => updateItemOptions(index, { seed: Number(e.target.value) })}
-                    className="text-xs p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                    className="text-xs bg-transparent border border-border dark:border-border-dark 
+                      rounded text-primary-text dark:text-primary-text-dark"
                   >
                     <option value={1}>Auto Seed</option>
                     <option value={2}>Always Seed</option>
@@ -165,9 +185,12 @@ export default function TorrentUploader({ apiKey }) {
                       type="checkbox"
                       checked={item.allowZip}
                       onChange={(e) => updateItemOptions(index, { allowZip: e.target.checked })}
-                      className="mr-1"
+                      className="mr-1 rounded border-border dark:border-border-dark 
+                        text-accent dark:text-accent-dark"
                     />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Zip</span>
+                    <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                      Zip
+                    </span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -176,7 +199,7 @@ export default function TorrentUploader({ apiKey }) {
                       onChange={(e) => updateItemOptions(index, { asQueued: e.target.checked })}
                       className="mr-1"
                     />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Queue</span>
+                    <span className="text-xs text-primary-text/70">Queue</span>
                   </label>
                 </div>
               )}
@@ -211,13 +234,13 @@ export default function TorrentUploader({ apiKey }) {
 
       {uploading && (
         <div className="mt-4">
-          <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="w-full bg-surface-alt dark:bg-surface-alt-dark rounded-full overflow-hidden">
             <div
-              className="bg-blue-500 rounded-full h-1.5 transition-all duration-300"
+              className="bg-accent dark:bg-accent-dark rounded-full h-1.5 transition-all duration-300"
               style={{ width: `${(progress.current / progress.total) * 100}%` }}
             ></div>
           </div>
-          <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">
+          <div className="text-center text-sm text-primary-text/70 dark:text-primary-text-dark/70 mt-2">
             Uploading {progress.current} of {progress.total}
           </div>
         </div>
@@ -228,8 +251,8 @@ export default function TorrentUploader({ apiKey }) {
           <button
             onClick={uploadTorrents}
             disabled={uploading}
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white text-sm px-6 py-2 rounded-md
-            transition-colors duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="mt-4 bg-accent hover:bg-accent/90 text-white text-sm px-6 py-2 rounded-md
+            transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
         >
             Upload {items.filter(item => item.status === 'queued').length} items
           </button>
@@ -238,13 +261,13 @@ export default function TorrentUploader({ apiKey }) {
 
       {items.length > 0 && !items.some(item => item.status === 'queued' || item.status === 'processing') && (
         <div className="flex gap-4 items-center justify-end mt-4">
-          <h3 className="text-md dark:text-gray-100">
+          <h3 className="text-sm text-primary-text dark:text-primary-text-dark/70">
             {items.filter(item => item.status === 'success').length} of {items.length} torrents processed
           </h3>
 
           <button
             onClick={handleDismiss}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-primary-text/70 hover:text-primary-text dark:text-primary-text-dark dark:hover:text-primary-text-dark/70"
             aria-label="Close panel"
           >
             Clear torrents

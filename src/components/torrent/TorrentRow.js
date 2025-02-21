@@ -75,13 +75,13 @@ export default function TorrentRow({
         return (
           <td key={columnId} className="px-6 py-4 whitespace-nowrap max-w-md relative">
             <div 
-              className="text-sm text-gray-900 dark:text-gray-200 truncate cursor-pointer"
+              className="text-sm text-primary-text dark:text-primary-text-dark truncate cursor-pointer"
               onMouseEnter={() => setHoveredTorrent(torrent.id)}
               onMouseLeave={() => setHoveredTorrent(null)}
             >
               {torrent.name || 'Unnamed Torrent'}
               {hoveredTorrent === torrent.id && torrent.name && (
-                <div className="absolute z-10 left-0 top-full mt-2 p-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg max-w-xl break-words whitespace-normal dark:text-gray-200">
+                <div className="absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg max-w-xl break-words whitespace-normal">
                   {torrent.name}
                 </div>
               )}
@@ -90,19 +90,19 @@ export default function TorrentRow({
         );
       case 'size':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {formatSize(torrent.size || 0)}
           </td>
         );
       case 'created_at':
       case 'updated_at':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 relative group">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 relative group">
             <div className="cursor-default">
               {torrent[columnId] ? (
                 <>
                   <span>{timeAgo(torrent[columnId])}</span>
-                  <div className="invisible group-hover:visible absolute z-10 left-0 top-full mt-2 p-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg dark:text-gray-200">
+                  <div className="invisible group-hover:visible absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg">
                     {formatDate(torrent[columnId])}
                   </div>
                 </>
@@ -120,7 +120,7 @@ export default function TorrentRow({
         );
       case 'progress':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
               <div
                 className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full"
@@ -132,52 +132,52 @@ export default function TorrentRow({
         );
       case 'ratio':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {(torrent.ratio || 0).toFixed(2)}
           </td>
         );
       case 'download_speed':
       case 'upload_speed':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {formatSpeed(torrent[columnId])}
           </td>
         );
       case 'eta':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {formatEta(torrent.eta)}
           </td>
         );
       case 'id':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {torrent.id}
           </td>
         );
       case 'total_uploaded':
       case 'total_downloaded':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {formatSize(torrent[columnId] || 0)}
           </td>
         );
       case 'seeds':
       case 'peers':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {torrent[columnId] || 0}
           </td>
         );
       case 'file_count':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {torrent.files.length}
           </td>
         );
       default:
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {torrent[columnId]}
           </td>
         );
@@ -188,9 +188,9 @@ export default function TorrentRow({
     <tr 
       className={`${
         selectedItems.torrents.has(torrent.id) 
-          ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30' 
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-      } ${
+          ? 'bg-accent/5 hover:bg-accent/10 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10' 
+          : 'hover:bg-surface-hover dark:hover:bg-surface-hover-dark'
+      } transition-colors ${
         !hasSelectedFilesForTorrent(torrent.id, selectedItems.files) && 'cursor-pointer'
       }`}
       onMouseDown={(e) => {
@@ -220,21 +220,24 @@ export default function TorrentRow({
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
         <button
           onClick={() => toggleFiles(torrent.id)}
-          className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 inline-flex items-center"
+          className="text-primary-text/70 dark:text-primary-text-dark/70 
+            hover:text-accent dark:hover:text-accent-dark transition-colors"
           title={expandedTorrents.has(torrent.id) ? 'Hide Files' : 'See Files'}
         >
           {Icons.files}
         </button>
         <button
           onClick={() => requestDownloadLink(torrent.id)}
-          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200 inline-flex items-center"
+          className="text-accent dark:text-accent-dark 
+            hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
           title="Download"
         >
           {Icons.download}
         </button>
         <button
           onClick={() => onDelete(torrent.id)}
-          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 inline-flex items-center"
+          className="text-red-500 dark:text-red-400 
+            hover:text-red-600 dark:hover:text-red-500 transition-colors"
           title="Delete"
         >
           {Icons.delete}

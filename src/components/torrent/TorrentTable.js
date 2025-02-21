@@ -82,8 +82,9 @@ export default function TorrentTable({ apiKey }) {
         onDismiss={() => setDownloadLinks([])}
         setToast={setToast}
       />
-      
-      <div className="h-px w-full bg-gray-200 dark:bg-gray-700 my-4"></div>
+
+      {/* Divider */}
+      <div className="h-px w-full border-t border-border dark:border-border-dark my-4"></div>
 
       <ActionBar
         torrents={sortedTorrents}
@@ -99,10 +100,11 @@ export default function TorrentTable({ apiKey }) {
         onBulkDownload={() => handleBulkDownload(selectedItems, sortedTorrents)}
         isDeleting={isDeleting}
         onBulkDelete={() => handleBulkDelete(selectedItems)}
+        className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark"
       />
 
-      <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
+        <table className="min-w-full divide-y divide-border dark:divide-border-dark">
           <TableHeader
             activeColumns={activeColumns}
             selectedItems={selectedItems}

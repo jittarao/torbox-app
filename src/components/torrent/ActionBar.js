@@ -39,24 +39,16 @@ export default function ActionBar({
   return (
     <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-between">
       <div className="flex gap-4 items-center flex-wrap">
-        <div className="text-md text-gray-700 dark:text-gray-300">
+        <div className="text-md text-primary-text dark:text-primary-text-dark">
           {torrents.length} {torrents.length === 1 ? 'torrent' : 'torrents'}
         </div>
 
         {(selectedItems.torrents.size > 0 || hasSelectedFiles()) && (
           <button
-            onClick={() => setSelectedItems({ torrents: new Set(), files: new Map() })}
-            className="text-sm text-blue-500 hover:text-blue-600"
-          >
-            Clear selection
-          </button>
-        )}
-
-        {(selectedItems.torrents.size > 0 || hasSelectedFiles()) && (
-          <button
             onClick={onBulkDownload}
             disabled={isDownloading}
-            className="bg-blue-500 text-sm text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+            className="bg-accent text-white px-4 py-2 rounded hover:bg-accent/90 
+              disabled:opacity-50 transition-colors text-sm"
           >
             {isDownloading ? 'Fetching Links...' : (() => {
               const torrentText = selectedItems.torrents.size > 0 
@@ -80,22 +72,26 @@ export default function ActionBar({
           <>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
+              className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 
+                disabled:opacity-50 transition-colors"
             >
               Delete Selected ({selectedItems.torrents.size})
             </button>
 
             {showDeleteConfirm && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md">
-                  <h3 className="text-lg font-semibold mb-4 dark:text-gray-200">Confirm Delete</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">
+                <div className="bg-surface dark:bg-surface-dark p-6 rounded-lg shadow-lg max-w-md">
+                  <h3 className="text-lg font-semibold mb-4 text-primary-text dark:text-primary-text-dark">
+                    Confirm Delete
+                  </h3>
+                  <p className="text-primary-text/70 dark:text-primary-text-dark/70 mb-6">
                     Are you sure you want to delete {selectedItems.torrents.size} {selectedItems.torrents.size === 1 ? 'torrent' : 'torrents'}? This action cannot be undone.
                   </p>
                   <div className="flex justify-end gap-4">
                     <button
                       onClick={() => setShowDeleteConfirm(false)}
-                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
+                      className="px-4 py-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70 
+                        hover:text-primary-text dark:hover:text-primary-text-dark"
                     >
                       Cancel
                     </button>
@@ -105,7 +101,8 @@ export default function ActionBar({
                         onBulkDelete();
                       }}
                       disabled={isDeleting}
-                      className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
+                      className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 
+                        disabled:opacity-50 transition-colors"
                     >
                       {isDeleting ? 'Deleting...' : 'Delete'}
                     </button>
@@ -114,6 +111,15 @@ export default function ActionBar({
               </div>
             )}
           </>
+        )}
+
+        {(selectedItems.torrents.size > 0 || selectedItems.files.size > 0) && (
+          <button
+            onClick={() => setSelectedItems({ torrents: new Set(), files: new Map() })}
+            className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
+          >
+            Clear selection
+          </button>
         )}
       </div>
 
@@ -133,7 +139,11 @@ export default function ActionBar({
           placeholder="Search torrents..."
           value={search}
           onChange={handleSearchChange}
-          className="p-2 border text-sm rounded bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 outline-none"
+          className="p-2 border border-border dark:border-border-dark rounded text-sm 
+            bg-transparent text-primary-text dark:text-primary-text-dark 
+            placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
+            focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
+            focus:border-accent dark:focus:border-accent-dark transition-colors"
         />
         <ColumnManager 
           columns={COLUMNS}

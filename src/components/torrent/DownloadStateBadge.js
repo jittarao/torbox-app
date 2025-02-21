@@ -18,17 +18,17 @@ export default function DownloadStateBadge({ torrent }) {
     // Return appropriate style based on status
     switch (status?.label) {
       case 'Completed':
-        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
+        return 'bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark';
       case 'Seeding':
       case 'Uploading':
-        return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
+        return 'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark';
       case 'Downloading':
-        return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200';
+        return 'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark';
       case 'Stalled':
       case 'Inactive':
-        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
+        return 'bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark';
       default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+        return 'bg-label-default-bg dark:bg-label-default-bg-dark text-label-default-text dark:text-label-default-text-dark';
     }
   };
 
