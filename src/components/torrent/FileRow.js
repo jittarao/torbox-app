@@ -49,7 +49,11 @@ export default function FileRow({
         return (
           <tr 
             key={`${torrent.id}-${file.id}`} 
-            className={`border-blue-100 dark:border-blue-900 bg-gray-50/50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors ${!isDisabled && 'cursor-pointer'}`}
+            className={`border-blue-100 dark:border-blue-900 ${
+              isChecked 
+                ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30' 
+                : 'bg-gray-50/50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
+            } transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
               if (e.shiftKey) {
@@ -68,7 +72,7 @@ export default function FileRow({
                 checked={isChecked}
                 disabled={isDisabled}
                 onChange={(e) => handleFileSelection(index, file, e.target.checked, e.shiftKey)}
-                onClick={(e) => e.stopPropagation()} // Prevent row click from triggering twice
+                style={{ pointerEvents: 'none' }}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
               />
             </td>

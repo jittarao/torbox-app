@@ -169,6 +169,12 @@ export default function TorrentRow({
             {torrent[columnId] || 0}
           </td>
         );
+      case 'file_count':
+        return (
+          <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+            {torrent.files.length}
+          </td>
+        );
       default:
         return (
           <td key={columnId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -180,7 +186,13 @@ export default function TorrentRow({
 
   return (
     <tr 
-      className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!hasSelectedFilesForTorrent(torrent.id, selectedItems.files) && 'cursor-pointer'}`}
+      className={`${
+        selectedItems.torrents.has(torrent.id) 
+          ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30' 
+          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+      } ${
+        !hasSelectedFilesForTorrent(torrent.id, selectedItems.files) && 'cursor-pointer'
+      }`}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
         if (e.shiftKey) {
@@ -200,7 +212,7 @@ export default function TorrentRow({
           checked={selectedItems.torrents.has(torrent.id)}
           disabled={hasSelectedFilesForTorrent(torrent.id, selectedItems.files)}
           onChange={(e) => handleTorrentSelection(e.target.checked, e.shiftKey)}
-          onClick={(e) => e.stopPropagation()} // Prevent row click from triggering twice
+          style={{ pointerEvents: 'none' }}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
         />
       </td>

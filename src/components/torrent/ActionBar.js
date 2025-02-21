@@ -4,6 +4,14 @@ import ColumnManager from './ColumnManager';
 import { COLUMNS, STATUS_OPTIONS } from './constants';
 import Dropdown from '@/components/shared/Dropdown';
 
+const getTotalSelectedFiles = (selectedItems) => {
+  let total = 0;
+  selectedItems.files.forEach(files => {
+    total += files.size;
+  });
+  return total;
+};
+
 export default function ActionBar({ 
   torrents, 
   selectedItems, 
@@ -32,7 +40,7 @@ export default function ActionBar({
     <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-between">
       <div className="flex gap-4 items-center flex-wrap">
         <div className="text-md text-gray-700 dark:text-gray-300">
-          {torrents.length} torrents
+          {torrents.length} {torrents.length === 1 ? 'torrent' : 'torrents'}
         </div>
 
         {(selectedItems.torrents.size > 0 || hasSelectedFiles()) && (
@@ -50,7 +58,21 @@ export default function ActionBar({
             disabled={isDownloading}
             className="bg-blue-500 text-sm text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
           >
-            {isDownloading ? 'Fetching Links...' : 'Get Download Links'}
+            {isDownloading ? 'Fetching Links...' : (() => {
+              const torrentText = selectedItems.torrents.size > 0 
+                ? `${selectedItems.torrents.size} ${selectedItems.torrents.size === 1 ? 'torrent' : 'torrents'}`
+                : '';
+              
+              const fileCount = getTotalSelectedFiles(selectedItems);
+              const fileText = fileCount > 0 
+                ? `${fileCount} ${fileCount === 1 ? 'file' : 'files'}`
+                : '';
+
+              const parts = [torrentText, fileText].filter(Boolean);
+              return parts.length > 0 
+                ? `Get Download Links (${parts.join(', ')})`
+                : 'Get Download Links';
+            })()}
           </button>
         )}
         
@@ -68,7 +90,7 @@ export default function ActionBar({
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md">
                   <h3 className="text-lg font-semibold mb-4 dark:text-gray-200">Confirm Delete</h3>
                   <p className="text-gray-600 dark:text-gray-300 mb-6">
-                    Are you sure you want to delete {selectedItems.torrents.size} selected torrents? This action cannot be undone.
+                    Are you sure you want to delete {selectedItems.torrents.size} {selectedItems.torrents.size === 1 ? 'torrent' : 'torrents'}? This action cannot be undone.
                   </p>
                   <div className="flex justify-end gap-4">
                     <button
