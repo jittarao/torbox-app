@@ -33,15 +33,15 @@ export default function TorrentRow({
     }
   };
 
-  const handleTorrentCheckboxClick = (e) => {
-    if (e.shiftKey && typeof rowIndex === 'number' && lastClickedTorrentIndexRef.current !== null) {
+  const handleTorrentSelection = (checked, isShiftKey = false) => {
+    if (isShiftKey && typeof rowIndex === 'number' && lastClickedTorrentIndexRef.current !== null) {
       const start = Math.min(lastClickedTorrentIndexRef.current, rowIndex);
       const end = Math.max(lastClickedTorrentIndexRef.current, rowIndex);
       setSelectedItems(prev => {
         const newTorrents = new Set(prev.torrents);
         for (let i = start; i <= end; i++) {
           const t = torrents[i];
-          if (e.target.checked) {
+          if (checked) {
             newTorrents.add(t.id);
           } else {
             newTorrents.delete(t.id);
@@ -55,7 +55,7 @@ export default function TorrentRow({
     } else {
       setSelectedItems(prev => {
         const newTorrents = new Set(prev.torrents);
-        if (e.target.checked) {
+        if (checked) {
           newTorrents.add(torrent.id);
         } else {
           newTorrents.delete(torrent.id);
@@ -179,14 +179,28 @@ export default function TorrentRow({
   };
 
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800">
+    <tr 
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!hasSelectedFilesForTorrent(torrent.id, selectedItems.files) && 'cursor-pointer'}`}
+      onMouseDown={(e) => {
+        // Prevent text selection on shift+click
+        if (e.shiftKey) {
+          e.preventDefault();
+        }
+      }}
+      onClick={(e) => {
+        // Ignore clicks on buttons or if has selected files
+        if (e.target.closest('button') || hasSelectedFilesForTorrent(torrent.id, selectedItems.files)) return;
+        const isChecked = selectedItems.torrents.has(torrent.id);
+        handleTorrentSelection(!isChecked, e.shiftKey);
+      }}
+    >
       <td className="px-6 py-4 whitespace-nowrap">
         <input
           type="checkbox"
           checked={selectedItems.torrents.has(torrent.id)}
           disabled={hasSelectedFilesForTorrent(torrent.id, selectedItems.files)}
-          onChange={(e) => {}}
-          onClick={handleTorrentCheckboxClick}
+          onChange={(e) => handleTorrentSelection(e.target.checked, e.shiftKey)}
+          onClick={(e) => e.stopPropagation()} // Prevent row click from triggering twice
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
         />
       </td>

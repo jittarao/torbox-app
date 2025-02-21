@@ -36,7 +36,7 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
     // Process in chunks
     for (let i = 0; i < ids.length; i += CONCURRENT_DELETES) {
       const chunk = ids.slice(i, i + CONCURRENT_DELETES);
-      const chunkResults = await Promise.all(
+      await Promise.all(
         chunk.map(async (id) => {
           // Try delete with retries
           let retries = 0;
@@ -45,14 +45,14 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
             
             if (result.success) {
               successfulIds.push(id);
-              return true;
+              return;
             }
 
-            // If non-retryable error, fail immediately
+            // Log non-retryable errors but continue processing
             if (result.error?.includes('not found') || result.error?.includes('unauthorized')) {
-              console.error(`Delete failed: ${result.error}`);
-              setToast('Failed to delete torrent');
-              return false;
+              console.error(`Delete failed for torrent ${id}: ${result.error}`);
+              setToast('Some torrents failed to delete');
+              return;
             }
             
             retries++;
@@ -61,10 +61,9 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
             }
           }
           
-          // Max retries reached
-          console.error(`Delete failed after ${MAX_RETRIES} attempts`);
-          setToast('Failed to delete torrent');
-          return false;
+          // Max retries reached - log and continue
+          console.error(`Delete failed for torrent ${id} after ${MAX_RETRIES} attempts`);
+          setToast('Some torrents failed to delete');
         })
       );
 
@@ -76,9 +75,6 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
           files: new Map([...prev.files].filter(([torrentId]) => !successfulIds.includes(torrentId)))
         }));
       }
-
-      // Stop if any delete failed after retries
-      if (chunkResults.includes(false)) break;
     }
 
     // Fetch torrents once after all batches are done

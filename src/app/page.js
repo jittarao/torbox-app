@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import ApiKeyInput from '../components/torrent/ApiKeyInput';
-import TorrentTable from '../components/torrent/TorrentTable';
-import TorrentUploader from '../components/torrent/TorrentUploader';
-import LandingPage from '../components/LandingPage';
+import ApiKeyInput from '@/components/torrent/ApiKeyInput';
+import TorrentTable from '@/components/torrent/TorrentTable';
+import TorrentUploader from '@/components/torrent/TorrentUploader';
+import LandingPage from '@/components/LandingPage';
 
 export default function Home() {
   const [apiKey, setApiKey] = useState('');

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { retryFetch } from '../../../utils/retryFetch';
 
 const CONCURRENT_DOWNLOADS = 3;
 const MAX_RETRIES = 3;

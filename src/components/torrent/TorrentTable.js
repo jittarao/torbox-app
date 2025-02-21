@@ -11,7 +11,7 @@ import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import DownloadPanel from './DownloadPanel';
 import ActionBar from './ActionBar';
-import Toast from '../Toast';
+import Toast from '@/components/shared/Toast';
 
 export default function TorrentTable({ apiKey }) {
   const [toast, setToast] = useState(null);
