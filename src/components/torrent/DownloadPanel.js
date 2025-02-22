@@ -13,11 +13,17 @@ export default function DownloadPanel({
     const text = downloadLinks.map(link => link.url).join('\n');
     navigator.clipboard.writeText(text)
       .then(() => {
-        setToast('Links copied to clipboard!');
+        setToast({
+          message: 'Links copied to clipboard!',
+          type: 'success'
+        });
         setTimeout(() => setToast(null), 3000);
       })
       .catch(err => {
-        setToast('Failed to copy links');
+        setToast({
+          message: 'Failed to copy links',
+          type: 'error'
+        });
         setTimeout(() => setToast(null), 3000);
       });
   };

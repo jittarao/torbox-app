@@ -50,7 +50,10 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
             // Log non-retryable errors but continue processing
             if (result.error?.includes('not found') || result.error?.includes('unauthorized')) {
               console.error(`Delete failed for torrent ${id}: ${result.error}`);
-              setToast('Some torrents failed to delete');
+              setToast({
+                message: 'Some torrents failed to delete',
+                type: 'error'
+              });
               break;
             }
             
@@ -63,7 +66,10 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
           // Max retries reached - log and continue
           if (retries === MAX_RETRIES) {
             console.error(`Delete failed for torrent ${id} after ${MAX_RETRIES} attempts`);
-            setToast('Some torrents failed to delete');
+            setToast({
+              message: 'Some torrents failed to delete',
+              type: 'error'
+            });
           }
         })
       );
@@ -92,7 +98,10 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
       await batchDelete(Array.from(selectedItems.torrents));
     } catch (error) {
       console.error('Error in bulk delete:', error);
-      setToast('Failed to delete torrents');
+      setToast({
+        message: 'Failed to delete torrents',
+        type: 'error'
+      });
     }
     setIsDeleting(false);
     setTimeout(() => setToast(null), 3000);

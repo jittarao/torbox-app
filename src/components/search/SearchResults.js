@@ -56,7 +56,10 @@ export default function SearchResults({ apiKey }) {
 
   const copyMagnet = async (magnet) => {
     await navigator.clipboard.writeText(magnet);
-    setToast('Magnet link copied to clipboard');
+    setToast({
+      message: 'Magnet link copied to clipboard',
+      type: 'success'
+    });
   };
 
   const handleUpload = async (torrent) => {
@@ -84,7 +87,6 @@ export default function SearchResults({ apiKey }) {
   };
 
   const handleSortChange = (newSortKey) => {
-    console.log('Changing sort key to:', newSortKey);
     setSortKey(newSortKey);
   };
 
@@ -233,7 +235,7 @@ export default function SearchResults({ apiKey }) {
                       disabled={isUploading[torrent.hash]}
                       className={`shrink-0 px-3 py-1 text-sm text-white rounded-md transition-colors
                         ${isUploading[torrent.hash] 
-                          ? 'bg-label-success-bg dark:bg-label-success-bg-dark cursor-not-allowed'
+                          ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
                           : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
                         }`}
                     >
