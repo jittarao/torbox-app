@@ -5,14 +5,28 @@ export const useSearchStore = create((set, get) => ({
   results: [],
   loading: false,
   error: null,
+  searchType: 'torrents',
+  includeCustomEngines: false,
   
+  setSearchType: (type) => {
+    set({ searchType: type, results: [], error: null });
+    const { query } = get();
+    if (query) get().fetchResults();
+  },
+
   setQuery: (query) => {
     set({ query, results: [], error: null });
     if (query) get().fetchResults();
   },
 
-  fetchResults: async () => {
+  setIncludeCustomEngines: (value) => {
+    set({ includeCustomEngines: value });
     const { query } = get();
+    if (query) get().fetchResults();
+  },
+
+  fetchResults: async () => {
+    const { query, searchType, includeCustomEngines } = get();
     if (!query) return;
 
     const apiKey = localStorage.getItem('torboxApiKey');
@@ -23,7 +37,16 @@ export const useSearchStore = create((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`/api/torrents/search?query=${encodeURIComponent(query)}`, {
+      const searchParams = new URLSearchParams({
+        query: encodeURIComponent(query),
+        search_user_engines: includeCustomEngines.toString()
+      });
+
+      const endpoint = searchType === 'usenet' 
+        ? `/api/usenet/search?${searchParams}`
+        : `/api/torrents/search?${searchParams}`;
+
+      const res = await fetch(endpoint, {
         headers: {
           'x-api-key': apiKey
         }
@@ -39,9 +62,12 @@ export const useSearchStore = create((set, get) => ({
         return;
       }
 
-      const torrents = data.data?.torrents || [];
+      const results = searchType === 'usenet' 
+        ? data.data?.nzbs || []
+        : data.data?.torrents || [];
+
       set({
-        results: torrents,
+        results,
         loading: false
       });
     } catch (error) {

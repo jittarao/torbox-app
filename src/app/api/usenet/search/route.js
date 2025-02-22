@@ -20,7 +20,7 @@ export async function GET(req) {
     });
 
     const res = await fetch(
-      `https://search-api.torbox.app/torrents/search/${encodeURIComponent(query)}?${params}`, {
+      `https://search-api.torbox.app/usenet/search/${encodeURIComponent(query)}?${params}`, {
         headers: {
           'Authorization': `Bearer ${apiKey}`
         }
@@ -34,7 +34,7 @@ export async function GET(req) {
     const data = await res.json();
     return new Response(JSON.stringify(data), { status: 200 });
   } catch (error) {
-    console.error('Torrent search error:', error);
+    console.error('Usenet search error:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 } 

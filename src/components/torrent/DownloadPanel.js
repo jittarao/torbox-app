@@ -17,14 +17,14 @@ export default function DownloadPanel({
           message: 'Links copied to clipboard!',
           type: 'success'
         });
-        setTimeout(() => setToast(null), 3000);
+        setTimeout(() => setToast(null), 5000);
       })
       .catch(err => {
         setToast({
           message: 'Failed to copy links',
           type: 'error'
         });
-        setTimeout(() => setToast(null), 3000);
+        setTimeout(() => setToast(null), 5000);
       });
   };
 

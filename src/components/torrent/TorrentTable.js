@@ -131,7 +131,7 @@ export default function TorrentTable({ apiKey }) {
         </table>
       </div>
 
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 } 
