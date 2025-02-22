@@ -74,7 +74,7 @@ export default function TorrentTable({ apiKey }) {
   if (loading && torrents.length === 0) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-4">
+    <div>
       <DownloadPanel
         downloadLinks={downloadLinks}
         isDownloading={isDownloading}
@@ -84,24 +84,27 @@ export default function TorrentTable({ apiKey }) {
       />
 
       {/* Divider */}
-      <div className="h-px w-full border-t border-border dark:border-border-dark my-4"></div>
+      <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
-      <ActionBar
-        torrents={sortedTorrents}
-        selectedItems={selectedItems}
-        setSelectedItems={setSelectedItems}
-        hasSelectedFiles={hasSelectedFiles}
-        activeColumns={activeColumns}
-        onColumnChange={handleColumnChange}
-        search={search}
-        onSearch={setSearch}
-        onStatusChange={handleStatusChange}
-        isDownloading={isDownloading}
-        onBulkDownload={() => handleBulkDownload(selectedItems, sortedTorrents)}
-        isDeleting={isDeleting}
-        onBulkDelete={() => handleBulkDelete(selectedItems)}
-        className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark"
-      />
+      {/* Wrap ActionBar in a sticky container */}
+      <div className="sticky top-0 z-10">
+        <ActionBar
+          torrents={sortedTorrents}
+          selectedItems={selectedItems}
+          setSelectedItems={setSelectedItems}
+          hasSelectedFiles={hasSelectedFiles}
+          activeColumns={activeColumns}
+          onColumnChange={handleColumnChange}
+          search={search}
+          onSearch={setSearch}
+          onStatusChange={handleStatusChange}
+          isDownloading={isDownloading}
+          onBulkDownload={() => handleBulkDownload(selectedItems, sortedTorrents)}
+          isDeleting={isDeleting}
+          onBulkDelete={() => handleBulkDelete(selectedItems)}
+          className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark"
+        />
+      </div>
 
       <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
         <table className="min-w-full divide-y divide-border dark:divide-border-dark">
