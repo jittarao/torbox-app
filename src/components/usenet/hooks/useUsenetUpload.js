@@ -4,10 +4,10 @@ export const useUsenetUpload = (apiKey) => {
       const formData = new FormData();
       formData.append('link', nzbLink);
 
-      const response = await fetch('https://api.torbox.app/v1/api/usenet/createusenetdownload', {
+      const response = await fetch('/api/usenet', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`
+          'x-api-key': apiKey
         },
         body: formData
       });
