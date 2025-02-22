@@ -61,7 +61,7 @@ export default function ActionBar({
   return (
     <div 
       ref={stickyRef}
-      className={`flex flex-col sm:flex-row gap-4 p-4 justify-between bg-surface dark:bg-surface-dark
+      className={`flex flex-col sm:flex-row gap-4 py-4 justify-between bg-surface dark:bg-surface-dark
         ${isSticky ? 'border-b border-border dark:border-border-dark' : ''}`}
     >
       <div className="flex gap-4 items-center flex-wrap">

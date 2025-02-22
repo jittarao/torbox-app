@@ -121,9 +121,7 @@ export default function TorrentUploader({ apiKey }) {
                   type="checkbox"
                   checked={globalOptions.allowZip}
                   onChange={(e) => updateGlobalOptions({ allowZip: e.target.checked })}
-                  className="w-4 h-4 rounded border-border dark:border-border-dark 
-                    text-accent dark:text-accent-dark 
-                    focus:ring-accent/20 dark:focus:ring-accent-dark/20"
+                  className="w-4 h-4 accent-accent dark:accent-accent-dark"
                 />
                 <div>
                   <span className="text-sm text-primary-text dark:text-primary-text-dark 
@@ -141,9 +139,7 @@ export default function TorrentUploader({ apiKey }) {
                   type="checkbox"
                   checked={globalOptions.asQueued}
                   onChange={(e) => updateGlobalOptions({ asQueued: e.target.checked })}
-                  className="w-4 h-4 rounded border-border dark:border-border-dark 
-                    text-accent dark:text-accent-dark 
-                    focus:ring-accent/20 dark:focus:ring-accent-dark/20"
+                  className="w-4 h-4 accent-accent dark:accent-accent-dark"
                 />
                 <div>
                   <span className="text-sm text-primary-text dark:text-primary-text-dark 
@@ -186,8 +182,7 @@ export default function TorrentUploader({ apiKey }) {
                       type="checkbox"
                       checked={item.allowZip}
                       onChange={(e) => updateItemOptions(index, { allowZip: e.target.checked })}
-                      className="mr-1 rounded border-border dark:border-border-dark 
-                        text-accent dark:text-accent-dark"
+                      className="mr-1 accent-accent dark:accent-accent-dark"
                     />
                     <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
                       Zip
@@ -198,7 +193,7 @@ export default function TorrentUploader({ apiKey }) {
                       type="checkbox"
                       checked={item.asQueued}
                       onChange={(e) => updateItemOptions(index, { asQueued: e.target.checked })}
-                      className="mr-1"
+                      className="mr-1 accent-accent dark:accent-accent-dark"
                     />
                     <span className="text-xs text-primary-text/70">Queue</span>
                   </label>

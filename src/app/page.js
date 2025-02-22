@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Header from '@/components/Header';
 import ApiKeyInput from '@/components/torrent/ApiKeyInput';
 import TorrentTable from '@/components/torrent/TorrentTable';
 import TorrentUploader from '@/components/torrent/TorrentUploader';
 import LandingPage from '@/components/LandingPage';
 import { Inter } from 'next/font/google'
-import Header from '@/components/Header';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 

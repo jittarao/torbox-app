@@ -49,7 +49,8 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
             <button
               key={option.label}
               onClick={() => {
-                onChange(option.value === 'all' ? option.value : JSON.stringify(option.value));
+                const newValue = typeof option.value === 'object' ? JSON.stringify(option.value) : option.value;
+                onChange(newValue);
                 setIsOpen(false);
               }}
               className={`block w-full text-left px-4 py-2 text-sm

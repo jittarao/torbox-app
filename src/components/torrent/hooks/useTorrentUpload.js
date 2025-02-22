@@ -268,6 +268,7 @@ export const useTorrentUpload = (apiKey) => {
     error,
     setMagnetInput: handleMagnetInput,
     validateAndAddFiles,
+    uploadItem,
     uploadTorrents,
     removeItem: (index) => setItems(prev => prev.filter((_, i) => i !== index)),
     resetUploader,

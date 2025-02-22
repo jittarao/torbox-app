@@ -18,7 +18,7 @@ export default function TableHeader({
             type="checkbox"
             onChange={(e) => onSelectAll(torrents, e.target.checked)}
             checked={selectedItems.torrents.size === torrents.length && torrents.length > 0}
-            className="rounded border-border dark:border-border-dark text-accent dark:text-accent-dark focus:ring-accent/20"
+            className="accent-accent dark:accent-accent-dark"
           />
         </th>
         {activeColumns.map(columnId => {

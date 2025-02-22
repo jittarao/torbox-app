@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
+  const pathname = usePathname();
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -26,14 +29,24 @@ export default function Header() {
         <h1 className="text-2xl text-white dark:text-primary-text-dark font-medium">
           TorBox Manager
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           {/* Links */}
-          <a href="/"
-            className="text-white dark:text-primary-text-dark font-medium 
-              hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+          <Link href="/"
+            className={`text-white dark:text-primary-text-dark font-medium 
+              hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+              ${pathname === '/' ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
           >
             Magnets
-          </a>
+          </Link>
+
+          <Link
+            href="/search"
+            className={`text-white dark:text-primary-text-dark font-medium 
+              hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+              ${pathname === '/search' ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+          >
+            Search
+          </Link>
 
           {/* Divider */}
           <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>

@@ -126,9 +126,7 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
                     type="checkbox"
                     checked={activeColumns.includes(id)}
                     onChange={() => toggleColumn(id)}
-                    className="rounded border-border dark:border-border-dark 
-                      text-accent dark:text-accent-dark focus:ring-accent/20 
-                      dark:focus:ring-accent-dark/20"
+                    className="accent-accent dark:accent-accent-dark"
                   />
                   <span className="text-sm text-primary-text dark:text-primary-text-dark">
                     {label}

@@ -201,7 +201,7 @@ export default function TorrentRow({
           disabled={hasSelectedFilesForTorrent(torrent.id, selectedItems.files)}
           onChange={(e) => handleTorrentSelection(e.target.checked, e.shiftKey)}
           style={{ pointerEvents: 'none' }}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+          className="accent-accent dark:accent-accent-dark"
         />
       </td>
       {activeColumns.map(columnId => renderCell(columnId))}

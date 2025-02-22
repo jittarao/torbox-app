@@ -65,9 +65,7 @@ export default function FileRow({
                 disabled={isDisabled}
                 onChange={(e) => handleFileSelection(index, file, e.target.checked, e.shiftKey)}
                 style={{ pointerEvents: 'none' }}
-                className="rounded border-border dark:border-border-dark 
-                  text-accent dark:text-accent-dark focus:ring-accent/20 
-                  dark:focus:ring-accent-dark/20 disabled:opacity-50"
+                className="accent-accent dark:accent-accent-dark"
               />
             </td>
             <td className="pl-6 py-2" colSpan={activeColumns.length}>
