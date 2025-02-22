@@ -16,7 +16,17 @@ export async function POST(request) {
       },
       body: formData
     });
+    
     const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      return Response.json({
+        success: false,
+        error: data.error,
+        detail: data.detail || 'Failed to add NZB'
+      }, { status: response.status || 400 });
+    }
+    
     return Response.json(data);
   } catch (error) {
     return Response.json({ success: false, error: error.message }, { status: 500 });

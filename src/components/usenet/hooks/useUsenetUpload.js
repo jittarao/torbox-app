@@ -13,8 +13,11 @@ export const useUsenetUpload = (apiKey) => {
       });
 
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to add NZB');
+      if (!response.ok || !data.success) {
+        if (data.error === 'PLAN_RESTRICTED_FEATURE') {
+          throw new Error('Usenet downloads require a premium plan. Please upgrade to continue.');
+        }
+        throw new Error(data.detail || 'Failed to add NZB');
       }
 
       return { success: true };
