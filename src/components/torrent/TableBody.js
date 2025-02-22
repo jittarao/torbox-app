@@ -6,6 +6,7 @@ import FileRow from './FileRow';
 export default function TableBody({
   torrents,
   activeColumns,
+  setTorrents,
   selectedItems,
   onFileSelect,
   hasSelectedFilesForTorrent,
@@ -36,6 +37,7 @@ export default function TableBody({
             torrent={torrent}
             activeColumns={activeColumns}
             selectedItems={selectedItems}
+            setTorrents={setTorrents}
             setSelectedItems={setSelectedItems}
             hasSelectedFilesForTorrent={hasSelectedFilesForTorrent}
             hoveredTorrent={hoveredTorrent}

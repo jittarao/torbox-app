@@ -22,10 +22,9 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
         })
       });
       const data = await response.json();
-      return data.success ? 
-        { success: true, id } : 
-        { success: false, error: data.detail };
+      return data;
     } catch (error) {
+      console.error('Error deleting torrent:', error);
       return { success: false, error: error.message };
     }
   };
@@ -45,14 +44,14 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
             
             if (result.success) {
               successfulIds.push(id);
-              return;
+              break;
             }
 
             // Log non-retryable errors but continue processing
             if (result.error?.includes('not found') || result.error?.includes('unauthorized')) {
               console.error(`Delete failed for torrent ${id}: ${result.error}`);
               setToast('Some torrents failed to delete');
-              return;
+              break;
             }
             
             retries++;
@@ -62,8 +61,10 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
           }
           
           // Max retries reached - log and continue
-          console.error(`Delete failed for torrent ${id} after ${MAX_RETRIES} attempts`);
-          setToast('Some torrents failed to delete');
+          if (retries === MAX_RETRIES) {
+            console.error(`Delete failed for torrent ${id} after ${MAX_RETRIES} attempts`);
+            setToast('Some torrents failed to delete');
+          }
         })
       );
 
@@ -77,8 +78,9 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
       }
     }
 
-    // Fetch torrents once after all batches are done
-    await fetchTorrents();
+    // Fetch fresh data and update UI only after all deletes are complete
+    await fetchTorrents(true);
+
     return successfulIds;
   };
 

@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { Icons } from './constants';
 import { formatSize } from './utils/formatters';
+import { useDownloads } from './hooks/useDownloads';
 
 export default function FileRow({
   torrent,
@@ -12,6 +13,7 @@ export default function FileRow({
 }) {
   // Track last clicked file index for shift selection
   const lastClickedFileIndexRef = useRef(null);
+  const { downloadSingle } = useDownloads(apiKey);
 
   const handleFileSelection = (index, file, checked, isShiftKey = false) => {
     if (isShiftKey && lastClickedFileIndexRef.current !== null) {
@@ -26,18 +28,8 @@ export default function FileRow({
     lastClickedFileIndexRef.current = index;
   };
 
-  const requestFileDownloadLink = async (torrentId, fileId) => {
-    try {
-      const response = await fetch(`/api/torrents/download?torrent_id=${torrentId}&file_id=${fileId}`, {
-        headers: { 'x-api-key': apiKey }
-      });
-      const data = await response.json();
-      if (data.success && data.data) {
-        window.open(data.data, '_blank');
-      }
-    } catch (error) {
-      console.error('Error requesting file download:', error);
-    }
+  const handleFileDownload = async (torrentId, fileId) => {
+    await downloadSingle(torrentId, { fileId });
   };
 
   return (
@@ -51,8 +43,8 @@ export default function FileRow({
             key={`${torrent.id}-${file.id}`} 
             className={`border-accent/5 dark:border-accent-dark/5 ${
               isChecked 
-                ? 'bg-accent/5 hover:bg-accent/10 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10' 
-                : 'bg-surface-alt/30 hover:bg-surface-hover dark:bg-surface-alt-dark/30 dark:hover:bg-surface-hover-dark'
+                ? 'bg-surface-alt/60 hover:bg-surface-alt/90 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10' 
+                : 'hover:bg-surface-alt/30 dark:bg-surface-alt-dark/30 dark:hover:bg-surface-alt-dark/90'
             } transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
@@ -100,7 +92,7 @@ export default function FileRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  requestFileDownloadLink(torrent.id, file.id);
+                  handleFileDownload(torrent.id, file.id);
                 }}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                   hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"

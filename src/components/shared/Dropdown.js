@@ -54,7 +54,7 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
               }}
               className={`block w-full text-left px-4 py-2 text-sm
                 text-primary-text dark:text-primary-text-dark
-                hover:bg-surface-hover dark:hover:bg-surface-hover-dark
+                hover:bg-surface-alt/90 dark:hover:bg-accent-dark/10
                 transition-colors
                 ${(option.value === value || JSON.stringify(option.value) === value) 
                   ? 'bg-surface-hover dark:bg-surface-hover-dark' 

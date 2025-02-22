@@ -117,6 +117,7 @@ export default function TorrentTable({ apiKey }) {
           <TableBody
             torrents={sortedTorrents}
             activeColumns={activeColumns}
+            setTorrents={setTorrents}
             selectedItems={selectedItems}
             onFileSelect={handleFileSelect}
             hasSelectedFilesForTorrent={hasSelectedFilesForTorrent}

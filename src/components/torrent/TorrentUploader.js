@@ -1,6 +1,7 @@
 'use client';
 import { useTorrentUpload } from './hooks/useTorrentUpload';
 import { DropZone } from './DropZone';
+import Spinner from '../shared/Spinner';
 
 export default function TorrentUploader({ apiKey }) {
   const {
@@ -89,7 +90,7 @@ export default function TorrentUploader({ apiKey }) {
       <div className={`mt-4 transition-all duration-300 ease-in-out overflow-hidden ${
         showOptions ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
-        <div className="bg-surface-alt dark:bg-surface-alt-dark p-4 rounded-lg 
+        <div className="bg-surface-alt/50 dark:bg-surface-alt-dark p-4 rounded-lg 
           border border-border dark:border-border-dark">
           <h4 className="text-sm font-medium mb-4 text-primary-text dark:text-primary-text-dark">
             Global Upload Options
@@ -220,7 +221,7 @@ export default function TorrentUploader({ apiKey }) {
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               )}
               {item.status === 'processing' && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-yellow-500 animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <Spinner size="sm" className="text-yellow-500" />
               )}
               {item.status === 'queued' && uploading && (
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-300" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/></svg>

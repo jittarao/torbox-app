@@ -2,12 +2,14 @@
 import { Icons } from './constants';
 import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';
+import TorrentActions from './TorrentActions';
 
 export default function TorrentRow({
   torrent,
   activeColumns,
   selectedItems,
   setSelectedItems,
+  setTorrents,
   hasSelectedFilesForTorrent,
   hoveredTorrent,
   setHoveredTorrent,
@@ -19,20 +21,6 @@ export default function TorrentRow({
   torrents,
   lastClickedTorrentIndexRef
 }) {
-  const requestDownloadLink = async (id) => {
-    try {
-      const response = await fetch(`/api/torrents/download?torrent_id=${id}&zip_link=true`, {
-        headers: { 'x-api-key': apiKey }
-      });
-      const data = await response.json();
-      if (data.success && data.data) {
-        window.open(data.data, '_blank');
-      }
-    } catch (error) {
-      console.error('Error requesting download:', error);
-    }
-  };
-
   const handleTorrentSelection = (checked, isShiftKey = false) => {
     if (isShiftKey && typeof rowIndex === 'number' && lastClickedTorrentIndexRef.current !== null) {
       const start = Math.min(lastClickedTorrentIndexRef.current, rowIndex);
@@ -188,8 +176,8 @@ export default function TorrentRow({
     <tr 
       className={`${
         selectedItems.torrents.has(torrent.id) 
-          ? 'bg-accent/5 hover:bg-accent/10 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10' 
-          : 'hover:bg-surface-hover dark:hover:bg-surface-hover-dark'
+          ? 'bg-surface-alt/60 hover:bg-surface-alt/90 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10' 
+          : 'hover:bg-surface-alt/30 dark:bg-surface-alt-dark/30 dark:hover:bg-surface-alt-dark/90'
       } transition-colors ${
         !hasSelectedFilesForTorrent(torrent.id, selectedItems.files) && 'cursor-pointer'
       }`}
@@ -217,31 +205,16 @@ export default function TorrentRow({
         />
       </td>
       {activeColumns.map(columnId => renderCell(columnId))}
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-        <button
-          onClick={() => toggleFiles(torrent.id)}
-          className="text-primary-text/70 dark:text-primary-text-dark/70 
-            hover:text-accent dark:hover:text-accent-dark transition-colors"
-          title={expandedTorrents.has(torrent.id) ? 'Hide Files' : 'See Files'}
-        >
-          {Icons.files}
-        </button>
-        <button
-          onClick={() => requestDownloadLink(torrent.id)}
-          className="text-accent dark:text-accent-dark 
-            hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
-          title="Download"
-        >
-          {Icons.download}
-        </button>
-        <button
-          onClick={() => onDelete(torrent.id)}
-          className="text-red-500 dark:text-red-400 
-            hover:text-red-600 dark:hover:text-red-500 transition-colors"
-          title="Delete"
-        >
-          {Icons.delete}
-        </button>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <TorrentActions
+          torrent={torrent}
+          apiKey={apiKey}
+          onDelete={onDelete}
+          toggleFiles={toggleFiles}
+          expandedTorrents={expandedTorrents}
+          setTorrents={setTorrents}
+          setSelectedItems={setSelectedItems}
+        />
       </td>
     </tr>
   );

@@ -9,14 +9,20 @@ export function useDownloads(apiKey) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
 
-  const requestDownloadLink = async (id) => {
+  const requestDownloadLink = async (torrentId, options = {}) => {
     try {
-      const response = await fetch(`/api/torrents/download?torrent_id=${id}&zip_link=true`, {
+      const params = new URLSearchParams({
+        torrent_id: torrentId,
+        ...(options.fileId !== undefined && options.fileId !== null ? { file_id: options.fileId } : { zip_link: 'true' })
+      });
+
+      const response = await fetch(`/api/torrents/download?${params}`, {
         headers: { 'x-api-key': apiKey }
       });
       const data = await response.json();
       
       if (data.success) {
+        const id = options.fileId !== undefined && options.fileId !== null ? `${torrentId}-${options.fileId}` : torrentId;
         return { success: true, data: { id, url: data.data } };
       }
       return { success: false, error: data.detail };
@@ -25,20 +31,13 @@ export function useDownloads(apiKey) {
     }
   };
 
-  const requestFileDownloadLink = async (torrentId, fileId) => {
-    try {
-      const response = await fetch(`/api/torrents/download?torrent_id=${torrentId}&file_id=${fileId}`, {
-        headers: { 'x-api-key': apiKey }
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        return { success: true, data: { id: `${torrentId}-${fileId}`, url: data.data } };
-      }
-      return { success: false, error: data.detail };
-    } catch (error) {
-      return { success: false, error: error.message };
+  const downloadSingle = async (id, options = {}) => {
+    const result = await requestDownloadLink(id, options);
+    if (result.success) {
+      window.open(result.data.url, '_blank');
+      return true;
     }
+    return false;
   };
 
   const handleBulkDownload = async (selectedItems, torrents) => {
@@ -80,7 +79,7 @@ export function useDownloads(apiKey) {
           while (retries < MAX_RETRIES) {
             const result = task.type === 'torrent' 
               ? await requestDownloadLink(task.id)
-              : await requestFileDownloadLink(task.torrentId, task.fileId);
+              : await requestDownloadLink(task.torrentId, { fileId: task.fileId });
             
             if (result.success) {
               setDownloadLinks(prev => [...prev, { ...result.data, name: task.name }]);
@@ -118,6 +117,7 @@ export function useDownloads(apiKey) {
     isDownloading,
     downloadProgress,
     handleBulkDownload,
-    setDownloadLinks
+    setDownloadLinks,
+    downloadSingle,
   };
 } 
