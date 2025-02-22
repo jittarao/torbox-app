@@ -99,7 +99,7 @@ export default function SearchBar() {
           >
             <span 
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                ${includeCustomEngines ? 'translate-x-5' : 'translate-x-1'}`}
+                ${includeCustomEngines ? 'translate-x-4' : 'translate-x-1'}`}
             />
           </div>
         </label>

@@ -6,6 +6,7 @@ import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useTorrentUpload } from '@/components/torrent/hooks/useTorrentUpload';
+import { useUsenetUpload } from '@/components/usenet/hooks/useUsenetUpload';
 
 const SORT_OPTIONS = {
   torrents: [
@@ -21,7 +22,8 @@ const SORT_OPTIONS = {
 
 export default function SearchResults({ apiKey }) {
   const { results, loading, error, searchType } = useSearchStore();
-  const { uploadItem } = useTorrentUpload(apiKey);
+  const { uploadItem: uploadTorrent } = useTorrentUpload(apiKey);
+  const { uploadItem: uploadUsenet } = useUsenetUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
   const [toast, setToast] = useState(null);
@@ -78,27 +80,37 @@ export default function SearchResults({ apiKey }) {
     });
   };
 
-  const handleUpload = async (torrent) => {
-    setIsUploading(prev => ({ ...prev, [torrent.hash]: true }));
+  const handleUpload = async (item) => {
+    setIsUploading(prev => ({ ...prev, [item.hash]: true }));
     try {
-      await uploadItem({
-        type: 'magnet',
-        data: torrent.magnet,
-        seed: 1,
-        allowZip: true,
-        asQueued: true
-      });
+      let result;
+      if (searchType === 'usenet') {
+        result = await uploadUsenet(item.nzb);
+      } else {
+        result = await uploadTorrent({
+          type: 'magnet',
+          data: item.magnet,
+          seed: 1,
+          allowZip: true,
+          asQueued: true
+        });
+      }
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       setToast({
-        message: 'Torrent added to TorBox successfully',
+        message: `${searchType === 'usenet' ? 'NZB' : 'Torrent'} added to TorBox successfully`,
         type: 'success'
       });
     } catch (err) {
       setToast({
-        message: `Failed to add torrent: ${err.message}`,
+        message: `Failed to add ${searchType === 'usenet' ? 'NZB' : 'torrent'}: ${err.message}`,
         type: 'error' 
       });
     } finally {
-      setIsUploading(prev => ({ ...prev, [torrent.hash]: false }));
+      setIsUploading(prev => ({ ...prev, [item.hash]: false }));
     }
   };
 
@@ -147,7 +159,7 @@ export default function SearchResults({ apiKey }) {
                   >
                     <span 
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                        ${showCachedOnly ? 'translate-x-5' : 'translate-x-1'}`}
+                        ${showCachedOnly ? 'translate-x-4' : 'translate-x-1'}`}
                     />
                   </div>
                 </label>
@@ -250,26 +262,24 @@ export default function SearchResults({ apiKey }) {
                       Copy {searchType === 'usenet' ? 'Link' : 'Magnet'}
                     </button>
 
-                    {searchType === 'torrents' && (
-                      <button 
-                        onClick={() => handleUpload(item)}
-                        disabled={isUploading[item.hash]}
-                        className={`shrink-0 px-3 py-1 text-sm text-white rounded-md transition-colors
-                          ${isUploading[item.hash] 
-                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                            : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
-                          }`}
-                      >
-                        {isUploading[item.hash] ? (
-                          <span className="flex items-center gap-2">
-                            <Spinner size="sm" className="text-white" />
-                            Adding...
-                          </span>
-                        ) : (
-                          'Add to TorBox'
-                        )}
-                      </button>
-                    )}
+                    <button 
+                      onClick={() => handleUpload(item)}
+                      disabled={isUploading[item.hash]}
+                      className={`shrink-0 px-3 py-1 text-sm text-white rounded-md transition-colors
+                        ${isUploading[item.hash] 
+                          ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
+                          : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
+                        }`}
+                    >
+                      {isUploading[item.hash] ? (
+                        <span className="flex items-center gap-2">
+                          <Spinner size="sm" className="text-white" />
+                          Adding...
+                        </span>
+                      ) : (
+                        'Add to TorBox'
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
