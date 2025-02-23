@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { STATUS_OPTIONS } from '../constants';
 
 // Rate limit constants
 const MAX_CALLS = 5;
@@ -17,6 +18,47 @@ export function useTorrentData(apiKey) {
       .filter(timestamp => now - timestamp < WINDOW_SIZE)
       .slice(-MAX_CALLS);
     return callTimestampsRef.current.length >= MAX_CALLS;
+  };
+
+  const checkAndAutoStartTorrents = async (torrents) => {
+    try {
+      // Get global options from localStorage
+      const savedOptions = localStorage.getItem('torrent-upload-options');
+      const options = savedOptions ? JSON.parse(savedOptions) : null;
+   
+      if (!options?.autoStart) return;
+
+      // Get active torrents count using proper status checking
+      const activeCount = torrents.filter(torrent => torrent.active).length;
+
+      // Check if essential fields are missing, indicating a queued torrent
+      const queuedTorrents = torrents.filter(torrent => 
+        torrent.type === 'torrent' && 
+        !torrent.download_state && 
+        !torrent.download_finished && 
+        !torrent.active
+      );
+
+      // If we have room for more active torrents and there are queued ones
+      if (activeCount < options.autoStartLimit && queuedTorrents.length > 0) {
+        // Force start the first queued torrent
+        const torrentToStart = queuedTorrents[0];
+        await fetch('/api/torrents/controlqueued', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey
+          },
+          body: JSON.stringify({
+            queued_id: torrentToStart.id,
+            operation: 'force_start',
+            type: 'torrent'
+          })
+        });
+      }
+    } catch (error) {
+      console.error('Error in auto-start check:', error);
+    }
   };
 
   const fetchTorrents = async (bypassCache = false) => {
@@ -60,6 +102,9 @@ export function useTorrentData(apiKey) {
           return new Date(b.added || 0) - new Date(a.added || 0);
         });
         setTorrents(sortedTorrents);
+        
+        // Add auto-start check after setting torrents
+        await checkAndAutoStartTorrents(sortedTorrents);
       } else {
         console.error('Invalid torrent data format:', data);
       }

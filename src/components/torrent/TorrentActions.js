@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Icons } from './constants';
 import Spinner from '../shared/Spinner';
 import { useDownloads } from './hooks/useDownloads';
+import { useTorrentUpload } from './hooks/useTorrentUpload';
 
 export default function TorrentActions({ 
   torrent, 
@@ -15,7 +16,10 @@ export default function TorrentActions({
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const { downloadSingle } = useDownloads(apiKey);
+  const { controlTorrent, controlQueuedTorrent } = useTorrentUpload(apiKey);
+
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -29,24 +33,24 @@ export default function TorrentActions({
   const forceStart = async () => {
     setIsDownloading(true);
     try {
-      const response = await fetch('/api/torrents/control', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey
-        },
-        body: JSON.stringify({
-          queued_id: torrent.id,
-          operation: 'start',
-          type: 'torrent'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to force start torrent');
+      const result = await controlQueuedTorrent(torrent.id, 'start');
+      if (!result.success) {
+        throw new Error(result.error);
       }
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleStopSeeding = async () => {
+    setIsStopping(true);
+    try {
+      const result = await controlTorrent(torrent.id, 'stop_seeding');
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+    } finally {
+      setIsStopping(false);
     }
   };
 
@@ -69,13 +73,26 @@ export default function TorrentActions({
 
   return (
     <div className="space-x-4">
+      {torrent.download_finished && torrent.download_present && torrent.active && (
+        <button
+          onClick={() => handleStopSeeding(torrent.id)}
+          disabled={isStopping}
+          className="text-red-400 dark:text-red-400 
+          hover:text-red-600 dark:hover:text-red-500 transition-colors
+          disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Stop seeding"
+        >
+          {isStopping ? <Spinner size="sm" /> : Icons.stop}
+        </button>
+      )}
+
       {torrent.download_present && (
         <button
           onClick={() => toggleFiles(torrent.id)}
           className="text-primary-text/70 dark:text-primary-text-dark/70 
           hover:text-accent dark:hover:text-accent-dark transition-colors"
-        title={expandedTorrents.has(torrent.id) ? 'Hide Files' : 'See Files'}
-      >
+          title={expandedTorrents.has(torrent.id) ? 'Hide Files' : 'See Files'}
+        >
           {Icons.files}
         </button>
       )}

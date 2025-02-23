@@ -47,9 +47,8 @@ export const STATUS_OPTIONS = [
     { 
         label: 'Seeding', 
         value: { 
-          download_state: ['seeding', 'seeding (no peers)'],
           download_finished: true, 
-          seed_torrent: true, 
+          download_present: true,
           active: true 
         } 
     },
@@ -57,8 +56,8 @@ export const STATUS_OPTIONS = [
     { 
         label: 'Uploading', 
         value: { 
-          download_state: ['uploading', 'uploading (no peers)'],
           download_finished: true, 
+          download_present: false,
           active: true 
         } 
     },
@@ -100,6 +99,19 @@ export const Icons = {
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <circle cx="12" cy="12" r="10"/>
       <polygon points="10 8 16 12 10 16 10 8"/>
+    </svg>
+  ),
+  stop: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="10"/>
+      <rect x="9" y="9" width="6" height="6" rx="1"/>
+    </svg>
+  ),
+  question: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <path d="M12 17h.01"/>
     </svg>
   )
 }; 

@@ -12,7 +12,9 @@ const CONCURRENT_UPLOADS = 3;
 const DEFAULT_OPTIONS = {
   seed: 1,
   allowZip: true,
-  asQueued: false
+  asQueued: false,
+  autoStart: false,
+  autoStartLimit: 3
 };
 
 const createTorrentItem = (file) => {
@@ -254,11 +256,70 @@ export const useTorrentUpload = (apiKey) => {
   };
 
   const updateGlobalOptions = (options) => {
-    setGlobalOptions(prev => ({ ...prev, ...options }));
+    setGlobalOptions(prev => {
+      const newOptions = { ...prev, ...options };
+      
+      // Ensure autoStartLimit has a valid value
+      if (typeof newOptions.autoStartLimit !== 'number' || isNaN(newOptions.autoStartLimit)) {
+        newOptions.autoStartLimit = 3;
+      }
+      
+      return newOptions;
+    });
+    
     // Apply to all queued items
     setItems(prev => prev.map(item => 
       item.status === 'queued' ? { ...item, ...options } : item
     ));
+  };
+
+  const controlQueuedTorrent = async (queuedId, operation) => {
+    try {
+      const response = await fetch('/api/torrents/controlqueued', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify({
+          queued_id: queuedId,
+          operation,
+          type: 'torrent'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to control torrent');
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  const controlTorrent = async (torrent_id, operation) => {
+    try {
+      const response = await fetch('/api/torrents/control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify({
+          torrent_id,
+          operation
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to control torrent');
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   return {
@@ -278,6 +339,8 @@ export const useTorrentUpload = (apiKey) => {
     updateItemOptions,
     showOptions,
     setShowOptions,
+    controlTorrent,
+    controlQueuedTorrent,
   };
 };
 

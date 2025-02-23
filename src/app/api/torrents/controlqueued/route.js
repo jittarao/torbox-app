@@ -4,15 +4,15 @@ import { API_BASE, API_VERSION } from '@/components/constants';
 export async function POST(request) {
   try {
     const apiKey = request.headers.get('x-api-key');
-    const { torrent_id, operation } = await request.json();
+    const { queued_id, operation, type } = await request.json();
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/torrents/controltorrent`, {
+    const response = await fetch(`${API_BASE}/${API_VERSION}/api/queued/controlqueued`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify({ torrent_id, operation })
+      body: JSON.stringify({ queued_id, operation, type })
     });
 
     const data = await response.json();
