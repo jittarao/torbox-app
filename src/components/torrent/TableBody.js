@@ -12,7 +12,8 @@ export default function TableBody({
   hasSelectedFilesForTorrent,
   setSelectedItems,
   apiKey,
-  onTorrentDelete
+  onTorrentDelete,
+  setToast
 }) {
   const [expandedTorrents, setExpandedTorrents] = useState(new Set());
   const [hoveredTorrent, setHoveredTorrent] = useState(null);
@@ -50,6 +51,7 @@ export default function TableBody({
             rowIndex={index}
             torrents={torrents}
             lastClickedTorrentIndexRef={lastClickedTorrentIndexRef}
+            setToast={setToast}
           />
           {expandedTorrents.has(torrent.id) && torrent.files && (
             <FileRow

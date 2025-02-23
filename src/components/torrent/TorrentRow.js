@@ -19,7 +19,8 @@ export default function TorrentRow({
   onDelete,
   rowIndex,
   torrents,
-  lastClickedTorrentIndexRef
+  lastClickedTorrentIndexRef,
+  setToast
 }) {
   const handleTorrentSelection = (checked, isShiftKey = false) => {
     if (isShiftKey && typeof rowIndex === 'number' && lastClickedTorrentIndexRef.current !== null) {
@@ -214,6 +215,7 @@ export default function TorrentRow({
           expandedTorrents={expandedTorrents}
           setTorrents={setTorrents}
           setSelectedItems={setSelectedItems}
+          setToast={setToast}
         />
       </td>
     </tr>

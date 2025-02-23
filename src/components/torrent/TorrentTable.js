@@ -127,6 +127,7 @@ export default function TorrentTable({ apiKey }) {
             setSelectedItems={setSelectedItems}
             apiKey={apiKey}
             onTorrentDelete={deleteTorrent}
+            setToast={setToast}
           />
         </table>
       </div>

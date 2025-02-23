@@ -12,7 +12,8 @@ export default function TorrentActions({
   toggleFiles, 
   expandedTorrents,
   setTorrents,
-  setSelectedItems 
+  setSelectedItems,
+  setToast
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -34,8 +35,16 @@ export default function TorrentActions({
     setIsDownloading(true);
     try {
       const result = await controlQueuedTorrent(torrent.id, 'start');
+      setToast({
+        message: "Torrent force started successfully",
+        type: 'success'
+      });
       if (!result.success) {
         throw new Error(result.error);
+        setToast({
+          message: "Torrent force start failed",
+          type: 'error'
+        });
       }
     } finally {
       setIsDownloading(false);
@@ -46,8 +55,16 @@ export default function TorrentActions({
     setIsStopping(true);
     try {
       const result = await controlTorrent(torrent.id, 'stop_seeding');
+      setToast({
+        message: "Torrent stop seeding successfully",
+        type: 'success'
+      });
       if (!result.success) {
         throw new Error(result.error);
+        setToast({
+          message: "Torrent stop seeding failed",
+          type: 'error'
+        });
       }
     } finally {
       setIsStopping(false);
@@ -59,12 +76,21 @@ export default function TorrentActions({
     try {
       const result = await onDelete(torrent.id);
       if (result.success) {
+        setToast({
+          message: "Torrent deleted successfully",
+          type: 'success'
+        });
         // Update UI immediately after successful deletion
         setTorrents(prev => prev.filter(t => t.id !== torrent.id));
         setSelectedItems(prev => ({
           torrents: new Set([...prev.torrents].filter(id => id !== torrent.id)),
           files: new Map([...prev.files].filter(([torrentId]) => torrentId !== torrent.id))
         }));
+      } else {
+        setToast({
+          message: "Torrent deletion failed",
+          type: 'error'
+        });
       }
     } finally {
       setIsDeleting(false);

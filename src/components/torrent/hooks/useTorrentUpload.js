@@ -17,40 +17,6 @@ const DEFAULT_OPTIONS = {
   autoStartLimit: 3
 };
 
-const createTorrentItem = (file) => {
-  if (file instanceof URL || typeof file === 'string') {
-    const url = file.toString();
-    return {
-      type: 'torrent',
-      name: url.split('/').pop() || url,
-      data: url,
-      status: 'queued',
-      seed: 1,
-      allowZip: true,
-      asQueued: false
-    };
-  }
-  return {
-    type: 'torrent',
-    name: file.name,
-    data: file,
-    status: 'queued',
-    seed: 1,
-    allowZip: true,
-    asQueued: false
-  };
-};
-
-const createMagnetItem = (magnetUrl) => ({
-  type: 'magnet',
-  name: magnetUrl.substring(0, 60) + '...',
-  data: magnetUrl,
-  status: 'queued',
-  seed: 1,
-  allowZip: true,
-  asQueued: false
-});
-
 export const useTorrentUpload = (apiKey) => {
   const [items, setItems] = useState([]);
   const [magnetInput, setMagnetInput] = useState('');
@@ -74,6 +40,32 @@ export const useTorrentUpload = (apiKey) => {
     }
   });
 
+  const createBaseItem = (data, type) => ({
+    type,
+    data,
+    status: 'queued',
+    ...globalOptions // Apply current global options directly
+  });
+  
+  const createTorrentItem = (file) => {
+    if (file instanceof URL || typeof file === 'string') {
+      const url = file.toString();
+      return {
+        ...createBaseItem(url, 'torrent'),
+        name: url.split('/').pop() || url,
+      };
+    }
+    return {
+      ...createBaseItem(file, 'torrent'),
+      name: file.name,
+    };
+  };
+  
+  const createMagnetItem = (magnetUrl) => ({
+    ...createBaseItem(magnetUrl, 'magnet'),
+    name: magnetUrl.substring(0, 60) + '...',
+  });
+
   // Save options to localStorage whenever they change
   useEffect(() => {
     try {
@@ -92,30 +84,23 @@ export const useTorrentUpload = (apiKey) => {
     }
   }, [showOptions]);
 
-  // Update createTorrentItem and createMagnetItem to use global options
-  const createItemWithOptions = (item) => ({
-    ...item,
-    ...globalOptions // Apply current global options to new items
-  });
-
   const validateAndAddFiles = (newFiles) => {
-    const validFiles = newFiles
-      .filter(file => {
-        if (file instanceof URL || typeof file === 'string') {
-          return file.toString().endsWith('.torrent');
-        }
-        return file.name?.endsWith('.torrent');
-      })
-      .map(file => createItemWithOptions(createTorrentItem(file)));
+    const queuedCount = items.reduce((count, item) => 
+      item.status === 'queued' ? count + 1 : count, 0);
+      
+    const validFiles = newFiles.filter(file => {
+      const fileName = file instanceof URL || typeof file === 'string' 
+        ? file.toString() 
+        : file.name;
+      return fileName?.endsWith('.torrent');
+    });
 
-    const totalItems = items.filter(item => item.status === 'queued').length + validFiles.length;
-    
-    if (totalItems > MAX_FILES) {
+    if (queuedCount + validFiles.length > MAX_FILES) {
       setError(`Maximum ${MAX_FILES} files allowed`);
       return;
     }
     
-    setItems(prev => [...prev, ...validFiles]);
+    setItems(prev => [...prev, ...validFiles.map(createTorrentItem)]);
     setError('');
   };
 
@@ -127,7 +112,7 @@ export const useTorrentUpload = (apiKey) => {
       .split('\n')
       .filter(link => link.trim())
       .filter(link => validateMagnetLink(link.trim()))
-      .map(link => createItemWithOptions(createMagnetItem(link)));
+      .map(link => createMagnetItem(link));
 
     if (magnetLinks.length) {
       const totalItems = items.filter(item => item.status === 'queued').length + magnetLinks.length;
@@ -181,54 +166,62 @@ export const useTorrentUpload = (apiKey) => {
 
   const uploadTorrents = async () => {
     setUploading(true);
-    
     const pendingItems = items.filter(item => item.status === 'queued');
     setProgress({ current: 0, total: pendingItems.length });
 
-    // Process items in chunks
-    for (let i = 0; i < pendingItems.length; i += CONCURRENT_UPLOADS) {
-      const chunk = pendingItems.slice(i, i + CONCURRENT_UPLOADS);
+    // Process items in chunks more efficiently
+    const chunks = Array(Math.ceil(pendingItems.length / CONCURRENT_UPLOADS))
+      .fill()
+      .map((_, i) => pendingItems.slice(i * CONCURRENT_UPLOADS, (i + 1) * CONCURRENT_UPLOADS));
+
+    for (const chunk of chunks) {
       const chunkResults = await Promise.all(
         chunk.map(async (item) => {
           const itemIndex = items.findIndex(x => x === item);
           
-          // Set item to processing state
-          setItems(prev => prev.map((x, idx) => 
-            idx === itemIndex ? { ...x, status: 'processing' } : x
-          ));
-          
+          // Batch state updates
+          setItems(prev => {
+            const newItems = [...prev];
+            newItems[itemIndex] = { ...newItems[itemIndex], status: 'processing' };
+            return newItems;
+          });
+
           // Try upload with retries
-          let retries = 0;
-          while (retries < MAX_RETRIES) {
+          for (let retries = 0; retries < MAX_RETRIES; retries++) {
             const result = await uploadItem(item);
             
             if (result.success) {
-              setItems(prev => prev.map((x, idx) => 
-                idx === itemIndex ? { ...x, status: 'success' } : x
-              ));
+              setItems(prev => {
+                const newItems = [...prev];
+                newItems[itemIndex] = { ...newItems[itemIndex], status: 'success' };
+                return newItems;
+              });
               setProgress(prev => ({ ...prev, current: prev.current + 1 }));
               return true;
             }
             
             // If non-retryable error, fail immediately
             if (isNonRetryableError({ detail: result.error })) {
-              setItems(prev => prev.map((x, idx) => 
-                idx === itemIndex ? { ...x, status: 'error' } : x
-              ));
+              setItems(prev => {
+                const newItems = [...prev];
+                newItems[itemIndex] = { ...newItems[itemIndex], status: 'error' };
+                return newItems;
+              });
               setError(result.error);
               return false;
             }
             
-            retries++;
-            if (retries < MAX_RETRIES) {
+            if (retries < MAX_RETRIES - 1) {
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
             }
           }
           
           // Max retries reached
-          setItems(prev => prev.map((x, idx) => 
-            idx === itemIndex ? { ...x, status: 'error' } : x
-          ));
+          setItems(prev => {
+            const newItems = [...prev];
+            newItems[itemIndex] = { ...newItems[itemIndex], status: 'error' };
+            return newItems;
+          });
           setError(`Failed after ${MAX_RETRIES} attempts`);
           return false;
         })
