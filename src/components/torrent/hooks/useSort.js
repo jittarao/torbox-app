@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { STATUS_OPTIONS } from '../constants';
 
 export function useSort() {
   const [sortField, setSortField] = useState('created_at');
@@ -10,6 +11,32 @@ export function useSort() {
     } else {
       setSortField(field);
       setSortDirection('asc');
+    }
+  };
+
+  const getStatusPriority = (torrent) => {
+    // Match logic from DownloadStateBadge
+    const status = STATUS_OPTIONS.find(option => {
+      if (option.value === 'all') return false;
+      
+      return Object.entries(option.value).every(([key, value]) => {
+        if (key === 'download_state') {
+          const states = Array.isArray(value) ? value : [value];
+          return states.some(state => torrent.download_state?.includes(state));
+        }
+        return torrent[key] === value;
+      });
+    });
+
+    // Define priority order (higher number = higher priority)
+    switch (status?.label) {
+      case 'Completed': return 5;
+      case 'Downloading': return 4;
+      case 'Inactive': return 3;
+      case 'Seeding': return 2;
+      case 'Stalled': return 1;
+      case 'Uploading': return 0;
+      default: return -1;
     }
   };
 
@@ -45,6 +72,9 @@ export function useSort() {
           comparison = new Date(a[sortField] || 0) - new Date(b[sortField] || 0);
           break;
         // Other text fields
+        case 'download_state':
+          comparison = getStatusPriority(b) - getStatusPriority(a);
+          break;
         default:
           comparison = String(a[sortField] || '').localeCompare(String(b[sortField] || ''));
       }
