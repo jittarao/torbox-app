@@ -19,55 +19,63 @@ export const COLUMNS = {
 
 export const STATUS_OPTIONS = [
     { label: 'All', value: 'all' },
+    // Queued: Missing download state and other status fields
+    { 
+        label: 'Queued', 
+        value: { 
+          is_queued: true // Special flag we'll check for
+        } 
+    },
     // Completed: Download finished, not active
     { 
         label: 'Completed', 
         value: { 
-        download_finished: true, 
-        download_present: true,
-        active: false 
+          download_finished: true, 
+          download_present: true,
+          active: false 
         } 
     },
     // Downloading: Downloading, not finished, active
     { 
         label: 'Downloading', 
         value: { 
-            download_finished: false, 
-            active: true 
+          download_finished: false, 
+          active: true 
         } 
     },
     // Seeding: Download finished, seeding enabled, active
     { 
         label: 'Seeding', 
         value: { 
-        download_state: ['seeding', 'seeding (no peers)'],
-        download_finished: true, 
-        seed_torrent: true, 
-        active: true 
+          download_state: ['seeding', 'seeding (no peers)'],
+          download_finished: true, 
+          seed_torrent: true, 
+          active: true 
         } 
     },
     // Uploading: Download finished, uploading, active
     { 
         label: 'Uploading', 
         value: { 
-        download_state: ['uploading', 'uploading (no peers)'],
-        download_finished: true, 
-        active: true 
+          download_state: ['uploading', 'uploading (no peers)'],
+          download_finished: true, 
+          active: true 
         } 
     },
     // Stalled: Download or upload is stalled
     { 
         label: 'Stalled', 
         value: { 
-        download_state: ['stalled', 'stalled (no seeds)'] 
+          download_state: ['stalled', 'stalled (no seeds)'],
         } 
     },
     // Missing: Download finished, Download not present
     { 
         label: 'Inactive', 
         value: { 
-            download_finished: true, 
-            download_present: false
+          download_finished: true, 
+          download_present: false,
+          active: false
         } 
     }
 ];
@@ -88,4 +96,10 @@ export const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
   ),
+  play: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <circle cx="12" cy="12" r="10"/>
+      <polygon points="10 8 16 12 10 16 10 8"/>
+    </svg>
+  )
 }; 

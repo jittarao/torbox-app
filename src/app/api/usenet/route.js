@@ -1,10 +1,8 @@
 import { headers } from 'next/headers';
-
-const API_BASE = "https://api.torbox.app";
-const API_VERSION = "v1";
+import { API_BASE, API_VERSION } from '@/components/constants';
 
 export async function POST(request) {
-  const headersList = headers();
+  const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const formData = await request.formData();
 

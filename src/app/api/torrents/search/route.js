@@ -1,8 +1,12 @@
+import { headers } from 'next/headers';
+import { API_SEARCH_BASE } from '@/components/constants';
+
 export async function GET(req) {
+  const headersList = await headers();
+  const apiKey = headersList.get('x-api-key');
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('query');
   const searchUserEngines = searchParams.get('search_user_engines') === 'true';
-  const apiKey = req.headers.get('x-api-key'); // Get the API key from the request headers
 
   if (!query) {
     return new Response(JSON.stringify({ error: 'Query parameter is required' }), { status: 400 });
@@ -20,7 +24,7 @@ export async function GET(req) {
     });
 
     const res = await fetch(
-      `https://search-api.torbox.app/torrents/search/${encodeURIComponent(query)}?${params}`, {
+      `${API_SEARCH_BASE}/torrents/search/${encodeURIComponent(query)}?${params}`, {
         headers: {
           'Authorization': `Bearer ${apiKey}`
         }

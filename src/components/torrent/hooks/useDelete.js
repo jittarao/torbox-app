@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { NON_RETRYABLE_ERRORS } from '../../constants';
 
 const CONCURRENT_DELETES = 3;
 const MAX_RETRIES = 3;
@@ -47,8 +48,8 @@ export function useDelete(apiKey, setTorrents, setSelectedItems, setToast, fetch
               break;
             }
 
-            // Log non-retryable errors but continue processing
-            if (result.error?.includes('not found') || result.error?.includes('unauthorized')) {
+            // Check for non-retryable errors
+            if (Object.values(NON_RETRYABLE_ERRORS).includes(result.error)) {
               console.error(`Delete failed for torrent ${id}: ${result.error}`);
               setToast({
                 message: 'Some torrents failed to delete',

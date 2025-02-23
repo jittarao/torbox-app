@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { NON_RETRYABLE_ERRORS } from '../../constants';
 
 const RETRY_DELAY = 2000;
 const MAX_RETRIES = 3;
@@ -281,15 +282,8 @@ export const useTorrentUpload = (apiKey) => {
 };
 
 const isNonRetryableError = (data) => {
-  const nonRetryableErrors = [
-    'DOWNLOAD_TOO_LARGE',
-    'monthly download limit',
-    'active torrent download limit',
-    'cooldown until'
-  ];
-  
   return !data.success && (
-    data.error === nonRetryableErrors[0] ||
-    nonRetryableErrors.some(err => data.detail?.includes(err))
+    Object.values(NON_RETRYABLE_ERRORS).includes(data.error) ||
+    Object.values(NON_RETRYABLE_ERRORS).some(err => data.detail?.includes(err))
   );
 }; 

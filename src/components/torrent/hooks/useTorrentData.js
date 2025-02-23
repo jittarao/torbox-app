@@ -55,10 +55,20 @@ export function useTorrentData(apiKey) {
       if (currentFetchId !== latestFetchIdRef.current) return;
       
       if (data.success && data.data && Array.isArray(data.data)) {
-        setTorrents(data.data);
+        // Sort torrents by added date if available
+        const sortedTorrents = data.data.sort((a, b) => {
+          return new Date(b.added || 0) - new Date(a.added || 0);
+        });
+        setTorrents(sortedTorrents);
+      } else {
+        console.error('Invalid torrent data format:', data);
       }
     } catch (error) {
       console.error('Error fetching torrents:', error);
+      // Only set error state if this is the latest fetch
+      if (currentFetchId === latestFetchIdRef.current) {
+        setTorrents([]); // Clear torrents on error
+      }
     } finally {
       // Only update loading state if this is the latest fetch call
       if (currentFetchId === latestFetchIdRef.current) {

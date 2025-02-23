@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NON_RETRYABLE_ERRORS } from '../../constants';
 
 const CONCURRENT_DOWNLOADS = 3;
 const MAX_RETRIES = 3;
@@ -87,8 +88,8 @@ export function useDownloads(apiKey) {
               return true;
             }
 
-            // If non-retryable error, fail immediately
-            if (result.error?.includes('not found') || result.error?.includes('unauthorized')) {
+            // Check for non-retryable errors
+            if (Object.values(NON_RETRYABLE_ERRORS).includes(result.error)) {
               console.error(`Download failed: ${result.error}`);
               return false;
             }

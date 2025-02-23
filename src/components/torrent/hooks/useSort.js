@@ -1,86 +1,96 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { STATUS_OPTIONS } from '../constants';
+
+// Helper to check if torrent is queued
+const isQueued = (torrent) => (
+  !torrent.download_state && 
+  !torrent.download_finished && 
+  !torrent.active &&
+  torrent.type === 'torrent'
+);
 
 export function useSort() {
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
 
-  const handleSort = (field) => {
+  const handleSort = useCallback((field) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
-  };
+  }, [sortField]);
 
-  const getStatusPriority = (torrent) => {
-    // Match logic from DownloadStateBadge
+  // Status priority mapping (higher = higher priority)
+  const statusPriorityMap = useMemo(() => ({
+    'Completed': 6,
+    'Downloading': 5,
+    'Inactive': 4,
+    'Queued': 3,
+    'Seeding': 2,
+    'Stalled': 1,
+    'Uploading': 0
+  }), []);
+
+  const getStatusPriority = useCallback((torrent) => {
+    if (isQueued(torrent)) return statusPriorityMap['Queued'];
+
     const status = STATUS_OPTIONS.find(option => {
-      if (option.value === 'all') return false;
+      if (option.value === 'all' || option.value.is_queued) return false;
       
       return Object.entries(option.value).every(([key, value]) => {
         if (key === 'download_state') {
-          const states = Array.isArray(value) ? value : [value];
-          return states.some(state => torrent.download_state?.includes(state));
+          return (Array.isArray(value) ? value : [value])
+            .some(state => torrent.download_state?.includes(state));
         }
         return torrent[key] === value;
       });
     });
 
-    // Define priority order (higher number = higher priority)
-    switch (status?.label) {
-      case 'Completed': return 5;
-      case 'Downloading': return 4;
-      case 'Inactive': return 3;
-      case 'Seeding': return 2;
-      case 'Stalled': return 1;
-      case 'Uploading': return 0;
-      default: return -1;
-    }
-  };
+    return statusPriorityMap[status?.label] ?? -1;
+  }, [statusPriorityMap]);
 
-  const sortTorrents = (torrents) => {
+  // Sort comparator functions
+  const comparators = useMemo(() => ({
+    numeric: (a, b, field) => (Number(a[field]) || 0) - (Number(b[field]) || 0),
+    text: (a, b, field) => (a[field] || '').toLowerCase().localeCompare((b[field] || '').toLowerCase()),
+    date: (a, b, field) => new Date(a[field] || 0) - new Date(b[field] || 0),
+    status: (a, b) => getStatusPriority(b) - getStatusPriority(a)
+  }), [getStatusPriority]);
+
+  // Field type mapping for comparator selection
+  const fieldTypeMap = useMemo(() => ({
+    id: 'numeric',
+    size: 'numeric',
+    total_uploaded: 'numeric',
+    total_downloaded: 'numeric',
+    download_speed: 'numeric',
+    upload_speed: 'numeric',
+    seeds: 'numeric',
+    peers: 'numeric',
+    eta: 'numeric',
+    progress: 'numeric',
+    ratio: 'numeric',
+    name: 'text',
+    created_at: 'date',
+    updated_at: 'date',
+    download_state: 'status'
+  }), []);
+
+  const sortTorrents = useCallback((torrents) => {
+    if (!torrents?.length) return torrents;
+
+    const comparator = comparators[fieldTypeMap[sortField]] || comparators.text;
+    const compare = fieldTypeMap[sortField] === 'status' 
+      ? comparator
+      : (a, b) => comparator(a, b, sortField);
+
     return [...torrents].sort((a, b) => {
       if (!a || !b) return 0;
-      let comparison = 0;
-      switch (sortField) {
-        // Numeric fields
-        case 'id':
-        case 'size':
-        case 'total_uploaded':
-        case 'total_downloaded':
-        case 'download_speed':
-        case 'upload_speed':
-        case 'seeds':
-        case 'peers':
-        case 'eta':
-          comparison = (Number(a[sortField]) || 0) - (Number(b[sortField]) || 0);
-          break;
-        // Progress and ratio are already numbers between 0 and 1
-        case 'progress':
-        case 'ratio':
-          comparison = (a[sortField] || 0) - (b[sortField] || 0);
-          break;
-        // Text fields
-        case 'name':
-          comparison = (a[sortField] || '').toLowerCase().localeCompare((b[sortField] || '').toLowerCase());
-          break;
-        // Date fields
-        case 'created_at':
-        case 'updated_at':
-          comparison = new Date(a[sortField] || 0) - new Date(b[sortField] || 0);
-          break;
-        // Other text fields
-        case 'download_state':
-          comparison = getStatusPriority(b) - getStatusPriority(a);
-          break;
-        default:
-          comparison = String(a[sortField] || '').localeCompare(String(b[sortField] || ''));
-      }
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return sortDirection === 'desc' ? compare(b, a) : compare(a, b);
     });
-  };
+  }, [sortField, sortDirection, comparators, fieldTypeMap]);
 
   return {
     sortField,

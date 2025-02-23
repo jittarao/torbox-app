@@ -87,7 +87,7 @@ export default function TorrentUploader({ apiKey }) {
         </div>
       </div>
 
-      <div className={`mt-4 transition-all duration-300 ease-in-out overflow-hidden ${
+      <div className={`${showOptions ? 'mt-4' : 'mt-0'} transition-all duration-300 ease-in-out overflow-hidden ${
         showOptions ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
         <div className="bg-surface-alt/50 dark:bg-surface-alt-dark p-4 rounded-lg 
@@ -247,7 +247,7 @@ export default function TorrentUploader({ apiKey }) {
           <button
             onClick={uploadTorrents}
             disabled={uploading}
-            className="mt-4 bg-accent hover:bg-accent/90 text-white text-sm px-6 py-2 rounded-md
+            className="mt-4 bg-accent hover:bg-accent/90 text-white text-sm px-6 py-2 mb-4 rounded-md
             transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
         >
             Upload {items.filter(item => item.status === 'queued').length} items

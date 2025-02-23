@@ -1,10 +1,9 @@
 import { headers } from 'next/headers';
+import { API_BASE, API_VERSION } from '@/components/constants';
 
-const API_BASE = "https://api.torbox.app";
-const API_VERSION = "v1";
 
 export async function GET(request) {
-  const headersList = headers();
+  const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const { searchParams } = new URL(request.url);
   const torrentId = searchParams.get('torrent_id');

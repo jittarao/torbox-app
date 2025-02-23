@@ -1,28 +1,50 @@
 import { headers } from 'next/headers';
+import { API_BASE, API_VERSION } from '@/components/constants';
 
-const API_BASE = "https://api.torbox.app";
-const API_VERSION = "v1";
-
+// Get all torrents
 export async function GET() {
-  const headersList = headers();
+  const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const bypassCache = headersList.get('bypass-cache') === 'true';
 
   try {
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist${bypassCache ? '?bypass_cache=true' : ''}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-    const data = await response.json();
-    return Response.json(data);
+    // Fetch both regular and queued torrents in parallel
+    const [torrentsResponse, queuedResponse] = await Promise.all([
+      fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist${bypassCache ? '?bypass_cache=true' : ''}`, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      }),
+      fetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent${bypassCache ? '&bypass_cache=true' : ''}`, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      })
+    ]);
+
+    const [torrentsData, queuedData] = await Promise.all([
+      torrentsResponse.json(),
+      queuedResponse.json()
+    ]);
+
+    // Merge the data
+    const mergedData = {
+      success: torrentsData.success && queuedData.success,
+      data: [
+        ...(torrentsData.data || []),
+        ...(queuedData.data || [])
+      ]
+    };
+
+    return Response.json(mergedData);
   } catch (error) {
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
+// Create a new torrent
 export async function POST(request) {
-  const headersList = headers();
+  const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const formData = await request.formData();
 
@@ -41,8 +63,9 @@ export async function POST(request) {
   }
 }
 
+// Delete a torrent
 export async function DELETE(request) {
-  const headersList = headers();
+  const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const { torrent_id } = await request.json();
 
