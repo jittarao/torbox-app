@@ -40,11 +40,11 @@ export default function TorrentActions({
         type: 'success'
       });
       if (!result.success) {
-        throw new Error(result.error);
         setToast({
           message: "Torrent force start failed",
           type: 'error'
         });
+        throw new Error(result.error);
       }
     } finally {
       setIsDownloading(false);
@@ -60,11 +60,11 @@ export default function TorrentActions({
         type: 'success'
       });
       if (!result.success) {
-        throw new Error(result.error);
         setToast({
           message: "Torrent stop seeding failed",
           type: 'error'
         });
+        throw new Error(result.error);
       }
     } finally {
       setIsStopping(false);

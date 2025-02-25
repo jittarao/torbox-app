@@ -54,7 +54,7 @@ export function useTorrentData(apiKey) {
           },
           body: JSON.stringify({
             queued_id: queuedTorrents[0].id,
-            operation: 'force_start',
+            operation: 'start',
             type: 'torrent'
           })
         });

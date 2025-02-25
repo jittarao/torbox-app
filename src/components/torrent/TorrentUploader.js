@@ -329,7 +329,7 @@ export default function TorrentUploader({ apiKey }) {
       )}
 
       {items.length > 0 && !items.some(item => item.status === 'queued' || item.status === 'processing') && (
-        <div className="flex gap-4 items-center justify-end mt-4">
+        <div className="flex gap-4 items-center justify-end mt-4 mb-4">
           <h3 className="text-sm text-primary-text dark:text-primary-text-dark/70">
             {items.filter(item => item.status === 'success').length} of {items.length} torrents processed
           </h3>
