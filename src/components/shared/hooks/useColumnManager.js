@@ -2,10 +2,34 @@ import { useState, useEffect } from 'react';
 import { COLUMNS } from '@/components/constants';
 
 export function useColumnManager(activeType = 'torrents') {
+  const [mounted, setMounted] = useState(false);
   const [activeColumns, setActiveColumns] = useState(() => {
+    // Default columns for each type - used for initial server-side rendering
+    const defaultColumns = {
+      torrents: ['id', 'name', 'size', 'created_at', 'download_state'],
+      usenet: ['id', 'name', 'size', 'created_at', 'download_state'],
+      webdl: [
+        'id',
+        'name',
+        'size',
+        'created_at',
+        'download_state',
+        'original_url',
+      ],
+    };
+
+    // Return default columns for server-side rendering
+    return defaultColumns[activeType] || defaultColumns.torrents;
+  });
+
+  // Initialize columns from localStorage after component is mounted
+  useEffect(() => {
+    setMounted(true);
+
     // Get columns from localStorage based on asset type
     const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
-    const stored = localStorage.getItem(storageKey);
+    const stored =
+      typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
 
     // Default columns for each type
     const defaultColumns = {
@@ -22,7 +46,8 @@ export function useColumnManager(activeType = 'torrents') {
     };
 
     if (!stored) {
-      return defaultColumns[activeType] || defaultColumns.torrents;
+      setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
+      return;
     }
 
     try {
@@ -39,20 +64,23 @@ export function useColumnManager(activeType = 'torrents') {
 
       // If no valid columns, return defaults
       if (validColumns.length === 0) {
-        return defaultColumns[activeType] || defaultColumns.torrents;
+        setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
+        return;
       }
 
       // Update storage with only valid columns
       localStorage.setItem(storageKey, JSON.stringify(validColumns));
-      return validColumns;
+      setActiveColumns(validColumns);
     } catch (e) {
       // If there's an error parsing, return defaults
-      return defaultColumns[activeType] || defaultColumns.torrents;
+      setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
     }
-  });
+  }, [activeType]);
 
   // Update columns when asset type changes
   useEffect(() => {
+    if (!mounted) return;
+
     const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
     const stored = localStorage.getItem(storageKey);
 
@@ -95,9 +123,11 @@ export function useColumnManager(activeType = 'torrents') {
       // If there's an error parsing, use defaults
       setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
     }
-  }, [activeType]);
+  }, [activeType, mounted]);
 
   const handleColumnChange = (newColumns) => {
+    if (!mounted) return;
+
     // Filter for valid columns that are applicable to this asset type
     const validColumns = newColumns.filter((col) => {
       const column = COLUMNS[col];

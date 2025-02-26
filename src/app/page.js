@@ -11,8 +11,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export default function Home() {
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const storedKey = localStorage.getItem('torboxApiKey');
     if (storedKey) {
       setApiKey(storedKey);
@@ -24,6 +26,14 @@ export default function Home() {
     setApiKey(newKey);
     localStorage.setItem('torboxApiKey', newKey);
   };
+
+  // Don't render anything until client-side hydration is complete
+  if (!mounted)
+    return (
+      <div
+        className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+      ></div>
+    );
 
   if (loading) return null;
 

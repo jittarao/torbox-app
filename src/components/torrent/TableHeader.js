@@ -1,6 +1,7 @@
 'use client';
+
 import { COLUMNS } from '@/components/constants';
-import { useState, useEffect } from 'react';
+import useIsMobile from '@/hooks/useIsMobile';
 
 export default function TableHeader({
   activeColumns,
@@ -11,23 +12,7 @@ export default function TableHeader({
   sortDirection,
   onSort,
 }) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on a mobile device
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    // Initial check
-    checkIfMobile();
-
-    // Add event listener for window resize
-    window.addEventListener('resize', checkIfMobile);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   // For mobile, we'll only show the name column and actions
   const visibleColumns = isMobile ? ['name'] : activeColumns;

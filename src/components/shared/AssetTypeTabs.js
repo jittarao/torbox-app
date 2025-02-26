@@ -1,5 +1,4 @@
 'use client';
-import { useState, useEffect } from 'react';
 
 export default function AssetTypeTabs({ activeType, onTypeChange }) {
   const tabs = [

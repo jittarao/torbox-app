@@ -33,21 +33,20 @@ export default function ItemActions({
       return;
     }
 
+    const idField =
+      activeType === 'usenet'
+        ? 'usenet_id'
+        : activeType === 'webdl'
+          ? 'web_id'
+          : 'torrent_id';
+
     // If there's only one file, download it directly
     if (item.files.length === 1) {
-      const idField =
-        activeType === 'usenet'
-          ? 'usenet_id'
-          : activeType === 'webdl'
-            ? 'web_id'
-            : 'torrent_id';
       await downloadSingle(item.id, { fileId: item.files[0].id }, idField);
       return;
-    }
-
-    // Otherwise, expand the files view
-    if (!expandedItems.has(item.id)) {
-      toggleFiles(item.id);
+    } else {
+      // Otherwise, download the item as a zip
+      await downloadSingle(item.id, { fileId: null }, idField);
     }
   };
 

@@ -85,18 +85,26 @@ export default function SearchResults({ apiKey }) {
     try {
       let result;
       if (searchType === 'usenet') {
-        result = await uploadItem({
-          type: 'usenet',
-          data: item.nzb,
-        });
+        result = await uploadItem(
+          {
+            type: 'usenet',
+            data: item.nzb,
+            allowZip: true,
+            asQueued: false,
+          },
+          'usenet',
+        );
       } else {
-        result = await uploadItem({
-          type: 'magnet',
-          data: item.magnet,
-          seed: 3,
-          allowZip: true,
-          asQueued: false,
-        });
+        result = await uploadItem(
+          {
+            type: 'magnet',
+            data: item.magnet,
+            seed: 3,
+            allowZip: true,
+            asQueued: false,
+          },
+          'torrents',
+        );
       }
 
       if (!result.success) {

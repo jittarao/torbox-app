@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment, useState, useRef, useEffect } from 'react';
+import { Fragment, useState, useRef } from 'react';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
+import useIsMobile from '@/hooks/useIsMobile';
 
 export default function TableBody({
   items,
@@ -21,23 +22,7 @@ export default function TableBody({
   const [hoveredItem, setHoveredItem] = useState(null);
   // Shared ref for tracking last clicked item row index
   const lastClickedItemIndexRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on a mobile device
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    // Initial check
-    checkIfMobile();
-
-    // Add event listener for window resize
-    window.addEventListener('resize', checkIfMobile);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const toggleFiles = (itemId) => {
     const newExpanded = new Set(expandedItems);

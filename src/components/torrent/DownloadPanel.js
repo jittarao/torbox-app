@@ -29,21 +29,21 @@ export default function DownloadPanel({
   };
 
   return (
-    <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
-      <div className="flex justify-between items-center mb-2">
+    <div className="mt-4 p-2 lg:p-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+      <div className="flex justify-between items-center gap-2 mb-2">
         <h3 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
           Download Links
           {isDownloading && (
-            <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 ml-2">
+            <span className="block lg:inline text-sm text-primary-text/70 dark:text-primary-text-dark/70 lg:ml-2">
               (Fetching {downloadProgress.current} of {downloadProgress.total})
             </span>
           )}
         </h3>
-        <div className="flex gap-4 items-center">
+        <div className="flex items-center gap-4">
           {downloadLinks.length > 0 && (
             <button
               onClick={handleCopyLinks}
-              className="text-accent hover:text-accent/80 transition-colors"
+              className="text-sm lg:text-md text-accent hover:text-accent/80 transition-colors"
             >
               Copy All Links
             </button>
@@ -66,20 +66,20 @@ export default function DownloadPanel({
           </button>
         </div>
       </div>
-      <div className="space-y-2 max-h-96 overflow-x-hidden overflow-y-auto relative">
+      <div className="space-y-2 max-h-[50vh] lg:max-h-96 overflow-x-hidden overflow-y-auto relative">
         {downloadLinks.map((link) => (
           <div
             key={link.id}
-            className="flex items-center justify-between 
+            className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-0 lg:justify-between 
             bg-surface-alt dark:bg-surface-alt-dark text-sm p-2 rounded 
             border border-border dark:border-border-dark"
           >
-            <div className="relative group">
-              <span className="truncate mr-4 text-primary-text dark:text-primary-text-dark">
+            <div className="relative group max-w-full">
+              <span className="block w-full truncate mr-4 text-primary-text dark:text-primary-text-dark">
                 {link.url}
               </span>
               <div
-                className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 
+                className="absolute z-50 left-0 lg:left-full top-full lg:top-1/2 mt-1 lg:mt-0 lg:-translate-y-1/2 lg:ml-2
                 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark 
                 rounded shadow-lg whitespace-nowrap 
                 text-primary-text/70 dark:text-primary-text-dark/70 

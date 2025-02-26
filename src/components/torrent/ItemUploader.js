@@ -6,6 +6,7 @@ import { DropZone } from '../shared/DropZone';
 import TorrentOptions from './TorrentOptions';
 import UploadItemList from './UploadItemList';
 import UploadProgress from './UploadProgress';
+import useIsMobile from '@/hooks/useIsMobile';
 import { saEvent } from '@/utils/sa';
 
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
@@ -28,9 +29,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
   // State to track if the uploader is expanded or collapsed
   const [isExpanded, setIsExpanded] = useState(false);
-
+  const [mounted, setMounted] = useState(false);
+  const isMobile = useIsMobile();
   // Set initial expanded state based on screen size
   useEffect(() => {
+    setMounted(true);
+
     const handleResize = () => {
       // Desktop (>= 1024px) is expanded by default, mobile/tablet is collapsed
       setIsExpanded(window.innerWidth >= 1024);
@@ -104,17 +108,20 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     setLinkInput(linkInput);
   };
 
+  // Don't render anything until client-side hydration is complete
+  if (!mounted) return null;
+
   return (
-    <div className="mt-4 p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
-      <div className="flex justify-between items-center">
+    <div className="mt-4 p-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+      <div className="flex justify-between items-center gap-2">
         <h3 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
-          {assetTypeInfo.title}
+          {isMobile ? 'Upload' : assetTypeInfo.title}
         </h3>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 lg:gap-4">
           {activeType === 'torrents' && isExpanded && (
             <button
               onClick={() => setShowOptions(!showOptions)}
-              className="flex items-center gap-1 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
+              className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             >
               {showOptions ? 'Hide Options' : 'Show Options'}
               <svg
@@ -133,7 +140,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
+            className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
           >
             {isExpanded ? 'Hide section' : 'Show section'}
@@ -156,9 +163,13 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
       {isExpanded && (
         <>
           <div
-            className={`grid ${assetTypeInfo.showDropzone ? 'xl:grid-cols-2 gap-2 xl:gap-6' : 'grid-cols-1'} mt-4`}
+            className={`grid ${
+              assetTypeInfo.showDropzone
+                ? 'lg:grid-cols-2 gap-2 lg:gap-6'
+                : 'grid-cols-1'
+            } mt-4`}
           >
-            <div className={assetTypeInfo.showDropzone ? '' : 'w-full'}>
+            <div className={`${assetTypeInfo.showDropzone ? '' : 'w-full'}`}>
               <textarea
                 value={linkInput}
                 onChange={(e) => setLinkInput(e.target.value)}
@@ -170,8 +181,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 }}
                 disabled={isUploading}
                 placeholder={assetTypeInfo.inputPlaceholder}
-                className="w-full min-h-40 h-40 p-3 border border-border dark:border-border-dark rounded-lg 
-                  bg-transparent text-primary-text dark:text-primary-text-dark 
+                className="w-full min-h-[120px] lg:min-h-40 h-40 p-2 lg:p-3 border border-border dark:border-border-dark rounded-lg 
+                  bg-transparent text-sm lg:text-base text-primary-text dark:text-primary-text-dark 
                   placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
                   focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
                   focus:border-accent dark:focus:border-accent-dark
@@ -209,10 +220,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             activeType={activeType}
           />
 
-          {error && <div className="text-red-500 mt-3 text-sm">{error}</div>}
-
-          <UploadProgress progress={progress} uploading={isUploading} />
-
           {items.filter((item) => item.status === 'queued').length > 0 &&
             !isUploading && (
               <div className="flex justify-end">
@@ -222,8 +229,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                     saEvent('upload_items');
                   }}
                   disabled={isUploading}
-                  className="mt-4 bg-accent hover:bg-accent/90 text-white text-sm px-6 py-2 mb-4 rounded-md
-                transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
+                  className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-6 py-2 mb-4 rounded-md
+                    transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
                 >
                   {assetTypeInfo.buttonText} (
                   {items.filter((item) => item.status === 'queued').length})
@@ -231,20 +238,28 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               </div>
             )}
 
+          <UploadProgress progress={progress} uploading={isUploading} />
+
+          {error && (
+            <div className="text-red-500 mt-3 text-xs lg:text-sm break-words">
+              {error}
+            </div>
+          )}
+
           {items.length > 0 &&
             !items.some(
               (item) =>
                 item.status === 'queued' || item.status === 'processing',
             ) && (
-              <div className="flex gap-4 items-center justify-end mt-4">
-                <h3 className="text-sm text-primary-text dark:text-primary-text-dark/70">
+              <div className="flex flex-col lg:flex-row gap-4 items-center justify-end mt-4">
+                <h3 className="text-xs lg:text-sm text-primary-text dark:text-primary-text-dark/70">
                   {items.filter((item) => item.status === 'success').length} of{' '}
                   {items.length} items processed
                 </h3>
 
                 <button
                   onClick={handleDismiss}
-                  className="text-primary-text/70 hover:text-primary-text dark:text-primary-text-dark dark:hover:text-primary-text-dark/70"
+                  className="text-sm text-primary-text/70 hover:text-primary-text dark:text-primary-text-dark dark:hover:text-primary-text-dark/70"
                   aria-label="Close panel"
                 >
                   Clear items

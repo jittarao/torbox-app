@@ -1,8 +1,9 @@
 'use client';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Icons } from '@/components/constants';
 import { formatSize } from './utils/formatters';
 import { useDownloads } from '../shared/hooks/useDownloads';
+import Spinner from '../shared/Spinner';
 
 export default function FileRow({
   item,
@@ -15,6 +16,7 @@ export default function FileRow({
 }) {
   // Track last clicked file index for shift selection
   const lastClickedFileIndexRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState({});
   const { downloadSingle } = useDownloads(apiKey, activeType);
 
   const handleFileSelection = (index, file, checked, isShiftKey = false) => {
@@ -31,6 +33,7 @@ export default function FileRow({
   };
 
   const handleFileDownload = async (itemId, fileId) => {
+    setIsDownloading((prev) => ({ ...prev, [fileId]: true }));
     const options = { fileId };
 
     switch (activeType) {
@@ -43,6 +46,7 @@ export default function FileRow({
       default:
         await downloadSingle(itemId, options, 'torrent_id');
     }
+    setIsDownloading((prev) => ({ ...prev, [fileId]: false }));
   };
 
   return (
@@ -121,11 +125,16 @@ export default function FileRow({
                   e.stopPropagation();
                   handleFileDownload(item.id, file.id);
                 }}
+                disabled={isDownloading[file.id]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                   hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                 title="Download File"
               >
-                {Icons.download}
+                {isDownloading[file.id] ? (
+                  <Spinner size="sm" />
+                ) : (
+                  Icons.download
+                )}
               </button>
             </td>
           </tr>

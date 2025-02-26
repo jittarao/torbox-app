@@ -1,13 +1,18 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { retryFetch } from '@/utils/retryFetch';
 
-// Constants
-const RETRY_DELAY = 2000;
-const MAX_RETRIES = 3;
+// Parallel uploads
+const CONCURRENT_UPLOADS = 3;
+
+// Maximum number of files to upload
 const MAX_FILES = 50;
+
+// Local storage keys
 const STORAGE_KEY = 'torrent-upload-options';
 const SHOW_OPTIONS_KEY = 'torrent-upload-show-options';
-const CONCURRENT_UPLOADS = 3;
 
 // Default options to apply to all uploaded assets + auto start options
 const DEFAULT_OPTIONS = {
@@ -24,30 +29,42 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   const [isUploading, setIsUploading] = useState(false); // Uploading state
   const [progress, setProgress] = useState({ current: 0, total: 0 }); // Progress state
   const [error, setError] = useState(''); // Error state
+  const [mounted, setMounted] = useState(false); // Track if component is mounted
 
   // Global upload options to apply to all uploaded assets + auto start options
-  const [globalOptions, setGlobalOptions] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_OPTIONS;
-    } catch (err) {
-      console.warn(`Failed to load ${assetType} upload options:`, err);
-      return DEFAULT_OPTIONS;
-    }
-  });
+  const [globalOptions, setGlobalOptions] = useState(DEFAULT_OPTIONS);
 
   // Show/hide options state
-  const [showOptions, setShowOptions] = useState(() => {
+  const [showOptions, setShowOptions] = useState(false);
+
+  // Initialize from localStorage after component is mounted
+  useEffect(() => {
+    setMounted(true);
+
+    // Load global options from localStorage
     try {
-      return localStorage.getItem(SHOW_OPTIONS_KEY) === 'true'; // Default to false
-    } catch {
-      return false;
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setGlobalOptions(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.warn(`Failed to load ${assetType} upload options:`, err);
     }
-  });
+
+    // Load show/hide options from localStorage
+    try {
+      const showOptionsValue = localStorage.getItem(SHOW_OPTIONS_KEY);
+      if (showOptionsValue !== null) {
+        setShowOptions(showOptionsValue === 'true');
+      }
+    } catch (err) {
+      console.warn(`Failed to load ${assetType} options visibility:`, err);
+    }
+  }, [assetType]);
 
   // Get API endpoint based on asset type
-  const getApiEndpoint = () => {
-    switch (assetType) {
+  const getApiEndpoint = (activeType = assetType) => {
+    switch (activeType) {
       case 'usenet':
         return '/api/usenet';
       case 'webdl':
@@ -140,21 +157,25 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Save global upload options to localStorage whenever they change
   useEffect(() => {
+    if (!mounted) return;
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(globalOptions));
     } catch (err) {
       console.warn(`Failed to save ${assetType} upload options:`, err);
     }
-  }, [globalOptions, STORAGE_KEY, assetType]);
+  }, [globalOptions, assetType, mounted]);
 
   // Save show/hide options to localStorage whenever they change
   useEffect(() => {
+    if (!mounted) return;
+
     try {
       localStorage.setItem(SHOW_OPTIONS_KEY, showOptions);
     } catch (err) {
       console.warn(`Failed to save ${assetType} options visibility:`, err);
     }
-  }, [showOptions, SHOW_OPTIONS_KEY, assetType]);
+  }, [showOptions, assetType, mounted]);
 
   // Validate and add files to the upload list
   const validateAndAddFiles = (newFiles) => {
@@ -228,20 +249,19 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     formData.append('allow_zip', item.allowZip);
     formData.append('as_queued', item.asQueued);
 
-    try {
-      const response = await fetch(getApiEndpoint(), {
-        method: 'POST',
-        headers: { 'x-api-key': apiKey },
-        body: formData,
-      });
+    const result = await retryFetch(getApiEndpoint(item.type), {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey },
+      body: formData,
+      permanent: [
+        (data) =>
+          Object.values(NON_RETRYABLE_ERRORS).some(
+            (err) => data.error?.includes(err) || data.detail?.includes(err),
+          ),
+      ],
+    });
 
-      const data = await response.json();
-      return data.success
-        ? { success: true }
-        : { success: false, error: data.detail };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    return result;
   };
 
   // Upload a list of items
@@ -275,49 +295,31 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
             return newItems;
           });
 
-          // Try upload with retries
-          for (let retries = 0; retries < MAX_RETRIES; retries++) {
-            const result = await uploadItem(item);
+          const result = await uploadItem(item);
 
-            if (result.success) {
-              setItems((prev) => {
-                const newItems = [...prev];
-                newItems[itemIndex] = {
-                  ...newItems[itemIndex],
-                  status: 'success',
-                };
-                return newItems;
-              });
-              setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
-              return true;
-            }
-
-            // If non-retryable error, fail immediately
-            if (isNonRetryableError({ detail: result.error })) {
-              setItems((prev) => {
-                const newItems = [...prev];
-                newItems[itemIndex] = {
-                  ...newItems[itemIndex],
-                  status: 'error',
-                };
-                return newItems;
-              });
-              setError(result.error);
-              return false;
-            }
-
-            if (retries < MAX_RETRIES - 1) {
-              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-            }
+          if (result.success) {
+            setItems((prev) => {
+              const newItems = [...prev];
+              newItems[itemIndex] = {
+                ...newItems[itemIndex],
+                status: 'success',
+              };
+              return newItems;
+            });
+            setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+            return true;
           }
 
-          // Max retries reached
           setItems((prev) => {
             const newItems = [...prev];
-            newItems[itemIndex] = { ...newItems[itemIndex], status: 'error' };
+            newItems[itemIndex] = {
+              ...newItems[itemIndex],
+              status: 'error',
+              error: result.error,
+            };
             return newItems;
           });
-          setError(`Failed after ${MAX_RETRIES} attempts`);
+          setError(result.error);
           return false;
         }),
       );
@@ -364,54 +366,49 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Control queued items. Operation can be start
   const controlQueuedItem = async (queuedId, operation) => {
-    try {
-      const endpoint = `${getApiEndpoint()}/controlqueued`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          queued_id: queuedId,
-          operation,
-          type: assetType === 'torrents' ? 'torrent' : assetType,
-        }),
-      });
+    const result = await retryFetch(`${getApiEndpoint()}/controlqueued`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: {
+        queued_id: queuedId,
+        operation,
+        type: assetType === 'torrents' ? 'torrent' : assetType,
+      },
+      permanent: [
+        (data) =>
+          Object.values(NON_RETRYABLE_ERRORS).some(
+            (err) => data.error?.includes(err) || data.detail?.includes(err),
+          ),
+      ],
+    });
 
-      if (!response.ok) {
-        throw new Error(`Failed to control ${assetType} item`);
-      }
-
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    return result;
   };
 
   // Control active torrents. Operation can be stop_seeding
   const controlTorrent = async (torrent_id, operation) => {
-    try {
-      const response = await fetch('/api/torrents/control', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          torrent_id,
-          operation,
-        }),
-      });
+    const result = await retryFetch('/api/torrents/control', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: {
+        torrent_id,
+        operation,
+      },
+      permanent: [
+        (data) =>
+          Object.values(NON_RETRYABLE_ERRORS).some(
+            (err) => data.error?.includes(err) || data.detail?.includes(err),
+          ),
+      ],
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to control torrent');
-      }
-
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    return result;
   };
 
   return {

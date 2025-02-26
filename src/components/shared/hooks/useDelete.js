@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { retryFetch } from '@/utils/retryFetch';
 
+// Parallel deletes
 const CONCURRENT_DELETES = 3;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
 
 export function useDelete(
   apiKey,
@@ -35,32 +35,36 @@ export function useDelete(
       setIsDeleting(true);
       const endpoint = getDeleteEndpoint();
 
-      const response = await fetch(endpoint, {
+      const result = await retryFetch(endpoint, {
         method: 'DELETE',
         headers: {
           'x-api-key': apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id,
-        }),
+        body: { id },
+        permanent: [
+          (data) =>
+            Object.values(NON_RETRYABLE_ERRORS).some(
+              (err) => data.error?.includes(err) || data.detail?.includes(err),
+            ),
+        ],
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete: ${response.statusText}`);
+      if (result.success) {
+        // Refresh the list after deletion
+        if (!bulk) {
+          await fetchItems(true);
+        }
+
+        setToast({
+          message: 'Successfully deleted',
+          type: 'success',
+        });
+
+        return { success: true };
       }
 
-      // Refresh the list after deletion
-      if (!bulk) {
-        await fetchItems(true);
-      }
-
-      setToast({
-        message: 'Successfully deleted',
-        type: 'success',
-      });
-
-      return { success: true };
+      throw new Error(result.error);
     } catch (error) {
       console.error('Error deleting:', error);
       setToast({
@@ -83,32 +87,11 @@ export function useDelete(
         const chunk = ids.slice(i, i + CONCURRENT_DELETES);
         const results = await Promise.all(
           chunk.map(async (id) => {
-            // Try delete with retries
-            let retries = 0;
-            while (retries < MAX_RETRIES) {
-              const result = await deleteItem(id, true);
-
-              if (result.success) {
-                successfulIds.push(id);
-                return { id, success: true };
-              }
-
-              // Check for non-retryable errors
-              if (Object.values(NON_RETRYABLE_ERRORS).includes(result.error)) {
-                console.error(`Delete failed for item ${id}: ${result.error}`);
-                return { id, success: false, error: result.error };
-              }
-
-              retries++;
-              if (retries < MAX_RETRIES) {
-                await new Promise((resolve) =>
-                  setTimeout(resolve, RETRY_DELAY),
-                );
-              }
+            const result = await deleteItem(id, true);
+            if (result.success) {
+              successfulIds.push(id);
             }
-
-            // Max retries reached - log and continue
-            return { id, success: false, error: 'Max retries reached' };
+            return { id, ...result };
           }),
         );
 

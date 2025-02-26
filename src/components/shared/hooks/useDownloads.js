@@ -1,10 +1,11 @@
 'use client';
+
 import { useState } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { retryFetch } from '@/utils/retryFetch';
 
+// Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
 
 export function useDownloads(apiKey, assetType = 'torrents') {
   const [downloadLinks, setDownloadLinks] = useState([]);
@@ -57,33 +58,36 @@ export function useDownloads(apiKey, assetType = 'torrents') {
     const endpoint = getDownloadEndpoint();
     const fileId = options.fileId;
 
-    try {
-      const params = new URLSearchParams({
-        [idField]: id,
-        ...(fileId !== undefined && fileId !== null
-          ? { file_id: fileId }
-          : { zip_link: 'true' }),
-      });
+    const params = new URLSearchParams({
+      [idField]: id,
+      ...(fileId !== undefined && fileId !== null
+        ? { file_id: fileId }
+        : { zip_link: 'true' }),
+    });
 
-      const response = await fetch(`${endpoint}?${params}`, {
-        headers: { 'x-api-key': apiKey },
-      });
+    const result = await retryFetch(`${endpoint}?${params}`, {
+      headers: { 'x-api-key': apiKey },
+      permanent: [
+        (data) =>
+          Object.values(NON_RETRYABLE_ERRORS).some(
+            (err) => data.error?.includes(err) || data.detail?.includes(err),
+          ),
+      ],
+    });
 
-      const data = await response.json();
-      const downloadUrl = extractDownloadUrl(data);
-
+    if (result.success) {
+      const downloadUrl = extractDownloadUrl(result.data);
       if (downloadUrl) {
         const resultId =
           fileId !== undefined && fileId !== null ? `${id}-${fileId}` : id;
         return { success: true, data: { id: resultId, url: downloadUrl } };
       }
-      return {
-        success: false,
-        error: data.detail || data.error || 'Unknown error',
-      };
-    } catch (error) {
-      return { success: false, error: error.message };
     }
+
+    return {
+      success: false,
+      error: result.error || 'Unknown error',
+    };
   };
 
   const downloadSingle = async (id, options = {}, idField = null) => {
@@ -138,42 +142,25 @@ export function useDownloads(apiKey, assetType = 'torrents') {
       const chunk = downloadTasks.slice(i, i + CONCURRENT_DOWNLOADS);
       const chunkResults = await Promise.all(
         chunk.map(async (task) => {
-          // Try download with retries
-          let retries = 0;
-          while (retries < MAX_RETRIES) {
-            const result =
-              task.type === 'item'
-                ? await requestDownloadLink(task.id)
-                : await requestDownloadLink(task.itemId, {
-                    fileId: task.fileId,
-                  });
+          const result =
+            task.type === 'item'
+              ? await requestDownloadLink(task.id)
+              : await requestDownloadLink(task.itemId, {
+                  fileId: task.fileId,
+                });
 
-            if (result.success) {
-              setDownloadLinks((prev) => [
-                ...prev,
-                { ...result.data, name: task.name },
-              ]);
-              setDownloadProgress((prev) => ({
-                ...prev,
-                current: prev.current + 1,
-              }));
-              return true;
-            }
-
-            // Check for non-retryable errors
-            if (Object.values(NON_RETRYABLE_ERRORS).includes(result.error)) {
-              console.error(`Download failed: ${result.error}`);
-              return false;
-            }
-
-            retries++;
-            if (retries < MAX_RETRIES) {
-              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-            }
+          if (result.success) {
+            setDownloadLinks((prev) => [
+              ...prev,
+              { ...result.data, name: task.name },
+            ]);
+            setDownloadProgress((prev) => ({
+              ...prev,
+              current: prev.current + 1,
+            }));
+            return true;
           }
 
-          // Max retries reached
-          console.error(`Download failed after ${MAX_RETRIES} attempts`);
           return false;
         }),
       );

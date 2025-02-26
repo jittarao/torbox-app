@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useTorrentData } from './hooks/useTorrentData';
-import { useUsenetData } from '../usenet/hooks/useUsenetData';
-import { useWebdlData } from '../webdl/hooks/useWebdlData';
+import { useFetchData } from '../shared/hooks/useFetchData';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDelete } from '../shared/hooks/useDelete';
 import { useDownloads } from '../shared/hooks/useDownloads';
@@ -23,80 +21,14 @@ export default function ItemsTable({ apiKey }) {
   const [activeType, setActiveType] = useState('torrents');
   const [showMobileNotice, setShowMobileNotice] = useState(true);
 
-  // Data hooks for different asset types
-  const {
-    torrents,
-    loading: torrentLoading,
-    setTorrents,
-    fetchTorrents,
-  } = useTorrentData(apiKey);
-
-  const {
-    usenetItems,
-    loading: usenetLoading,
-    setUsenetItems,
-    fetchUsenetItems,
-  } = useUsenetData(apiKey);
-
-  const {
-    webdlItems,
-    loading: webdlLoading,
-    setWebdlItems,
-    fetchWebdlItems,
-  } = useWebdlData(apiKey);
-
-  // Determine which data to use based on active type
-  const getSetActiveData = () => {
-    switch (activeType) {
-      case 'usenet':
-        return setUsenetItems;
-      case 'webdl':
-        return setWebdlItems;
-      default:
-        return setTorrents;
-    }
-  };
-
-  const getFetchActiveData = () => {
-    switch (activeType) {
-      case 'usenet':
-        return fetchUsenetItems;
-      case 'webdl':
-        return fetchWebdlItems;
-      default:
-        return fetchTorrents;
-    }
-  };
-
-  const isLoading = () => {
-    switch (activeType) {
-      case 'usenet':
-        return usenetLoading;
-      case 'webdl':
-        return webdlLoading;
-      default:
-        return torrentLoading;
-    }
-  };
-
-  const activeData = useMemo(() => {
-    switch (activeType) {
-      case 'usenet':
-        return usenetItems || [];
-      case 'webdl':
-        return webdlItems || [];
-      default:
-        return torrents || [];
-    }
-  }, [activeType, torrents, usenetItems, webdlItems]);
-
-  const setActiveData = getSetActiveData();
-  const fetchActiveData = getFetchActiveData();
-  const loading = isLoading();
+  const { loading, items, setItems, fetchItems } = useFetchData(
+    apiKey,
+    activeType,
+  );
 
   // Shared hooks
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } =
-    useFilter(activeData);
+    useFilter(items);
   const { sortField, sortDirection, handleSort, sortTorrents } = useSort();
   const {
     selectedItems,
@@ -117,16 +49,16 @@ export default function ItemsTable({ apiKey }) {
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
-    setActiveData,
+    setItems,
     setSelectedItems,
     setToast,
-    fetchActiveData,
+    fetchItems,
     activeType,
   );
 
   const sortedItems = sortTorrents(filteredItems);
 
-  if (loading && activeData.length === 0)
+  if (loading && items.length === 0)
     return (
       <div className="text-center text-primary-text dark:text-primary-text-dark">
         Loading...
@@ -221,7 +153,7 @@ export default function ItemsTable({ apiKey }) {
           />
           <TableBody
             items={sortedItems}
-            setItems={setActiveData}
+            setItems={setItems}
             activeColumns={activeColumns}
             selectedItems={selectedItems}
             onRowSelect={handleRowSelect}

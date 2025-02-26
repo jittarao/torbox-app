@@ -8,8 +8,12 @@ import Image from 'next/image';
 export default function Header() {
   const pathname = usePathname();
   const [darkMode, setDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Set mounted to true once component is mounted
+    setMounted(true);
+
     // Check initial theme
     const isDark =
       localStorage.getItem('darkMode') === 'true' ||
@@ -18,6 +22,7 @@ export default function Header() {
     document.documentElement.classList.toggle('dark', isDark);
   }, []);
 
+  // Only render the toggle button client-side
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
@@ -47,7 +52,7 @@ export default function Header() {
               hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
               ${pathname === '/' ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
           >
-            Magnets
+            Downloads
           </Link>
 
           <Link
@@ -62,57 +67,59 @@ export default function Header() {
           {/* Divider */}
           <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
-          {/* Dark mode toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
-          >
-            <span
-              className={`${
-                darkMode ? 'translate-x-6' : 'translate-x-1'
-              } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
+          {/* Dark mode toggle - only render after mounting to prevent hydration mismatch */}
+          {mounted && (
+            <button
+              onClick={toggleDarkMode}
+              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
             >
-              {darkMode ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-primary-text-dark"
-                >
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-primary-text"
-                >
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2" />
-                  <path d="M12 20v2" />
-                  <path d="m4.93 4.93 1.41 1.41" />
-                  <path d="m17.66 17.66 1.41 1.41" />
-                  <path d="M2 12h2" />
-                  <path d="M20 12h2" />
-                  <path d="m6.34 17.66-1.41 1.41" />
-                  <path d="m19.07 4.93-1.41 1.41" />
-                </svg>
-              )}
-            </span>
-          </button>
+              <span
+                className={`${
+                  darkMode ? 'translate-x-6' : 'translate-x-1'
+                } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
+              >
+                {darkMode ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-primary-text-dark"
+                  >
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-primary-text"
+                  >
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2" />
+                    <path d="M12 20v2" />
+                    <path d="m4.93 4.93 1.41 1.41" />
+                    <path d="m17.66 17.66 1.41 1.41" />
+                    <path d="M2 12h2" />
+                    <path d="M20 12h2" />
+                    <path d="m6.34 17.66-1.41 1.41" />
+                    <path d="m19.07 4.93-1.41 1.41" />
+                  </svg>
+                )}
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </div>
