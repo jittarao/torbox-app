@@ -29,8 +29,18 @@ export function useWebdlData(apiKey) {
         }
 
         const data = await response.json();
-        setWebdlItems(data.data);
-        setError(null);
+
+        if (
+          data.success &&
+          data.data &&
+          Array.isArray(data.data) &&
+          data.data.length > 0
+        ) {
+          setWebdlItems(data.data);
+          setError(null);
+        } else {
+          console.error('Invalid web download data format:', data);
+        }
       } catch (err) {
         console.error('Error fetching web download data:', err);
         setError(err.message);

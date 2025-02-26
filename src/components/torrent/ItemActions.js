@@ -15,6 +15,7 @@ export default function ItemActions({
   expandedItems,
   setToast,
   activeType = 'torrents',
+  isMobile = false,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -112,7 +113,9 @@ export default function ItemActions({
   };
 
   return (
-    <div className="flex justify-end space-x-2">
+    <div
+      className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end space-x-2'}`}
+    >
       {activeType === 'torrents' &&
         item.download_finished &&
         item.download_present &&
@@ -123,12 +126,13 @@ export default function ItemActions({
               saEvent('stop_seeding_item');
             }}
             disabled={isStopping}
-            className="text-red-400 dark:text-red-400 
+            className={`text-red-400 dark:text-red-400 
           hover:text-red-600 dark:hover:text-red-500 transition-colors
-          disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
             title="Stop seeding"
           >
             {isStopping ? <Spinner size="sm" /> : Icons.stop}
+            {isMobile && <span className="ml-2 text-xs">Stop</span>}
           </button>
         )}
 
@@ -139,12 +143,13 @@ export default function ItemActions({
             saEvent('force_start_item');
           }}
           disabled={isDownloading}
-          className="stroke-2 text-accent dark:text-accent-dark 
+          className={`stroke-2 text-accent dark:text-accent-dark 
             hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors
-            disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
           title="Force Start"
         >
           {isDownloading ? <Spinner size="sm" /> : Icons.play}
+          {isMobile && <span className="ml-2 text-xs">Start</span>}
         </button>
       )}
 
@@ -154,11 +159,17 @@ export default function ItemActions({
             e.stopPropagation();
             toggleFiles(item.id);
           }}
-          className="p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
-            hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
+          className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
+            hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors
+            ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={expandedItems.has(item.id) ? 'Hide Files' : 'Show Files'}
         >
           {expandedItems.has(item.id) ? Icons.files : Icons.files}
+          {isMobile && (
+            <span className="ml-2 text-xs">
+              {expandedItems.has(item.id) ? 'Hide Files' : 'Files'}
+            </span>
+          )}
         </button>
       )}
 
@@ -168,11 +179,13 @@ export default function ItemActions({
           handleDownload();
           saEvent('download_item');
         }}
-        className="p-1.5 rounded-full text-accent dark:text-accent-dark 
-          hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+        className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
+          hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
+          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
         title="Download"
       >
         {isDownloading ? <Spinner size="sm" /> : Icons.download}
+        {isMobile && <span className="ml-2 text-xs">Download</span>}
       </button>
 
       <button
@@ -182,12 +195,13 @@ export default function ItemActions({
           saEvent('delete_item');
         }}
         disabled={isDeleting}
-        className="p-1.5 rounded-full text-red-500 dark:text-red-400 
+        className={`p-1.5 rounded-full text-red-500 dark:text-red-400 
           hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-colors
-          disabled:opacity-50"
+          disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
         title="Delete"
       >
         {isDeleting ? <Spinner size="sm" /> : Icons.delete}
+        {isMobile && <span className="ml-2 text-xs">Delete</span>}
       </button>
     </div>
   );

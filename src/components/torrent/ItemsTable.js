@@ -21,6 +21,7 @@ import Toast from '@/components/shared/Toast';
 export default function ItemsTable({ apiKey }) {
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('torrents');
+  const [showMobileNotice, setShowMobileNotice] = useState(true);
 
   // Data hooks for different asset types
   const {
@@ -125,7 +126,12 @@ export default function ItemsTable({ apiKey }) {
 
   const sortedItems = sortTorrents(filteredItems);
 
-  if (loading && activeData.length === 0) return <div>Loading...</div>;
+  if (loading && activeData.length === 0)
+    return (
+      <div className="text-center text-primary-text dark:text-primary-text-dark">
+        Loading...
+      </div>
+    );
 
   return (
     <div>
@@ -151,7 +157,7 @@ export default function ItemsTable({ apiKey }) {
       <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
       {/* Wrap ActionBar in a sticky container */}
-      <div className="sticky top-0 z-10">
+      <div className="sticky top-0 z-20">
         <ActionBar
           items={sortedItems}
           selectedItems={selectedItems}
@@ -160,7 +166,7 @@ export default function ItemsTable({ apiKey }) {
           activeColumns={activeColumns}
           onColumnChange={handleColumnChange}
           search={search}
-          onSearch={setSearch}
+          setSearch={setSearch}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
           isDownloading={isDownloading}
@@ -172,8 +178,38 @@ export default function ItemsTable({ apiKey }) {
         />
       </div>
 
+      {/* Mobile notice */}
+      {showMobileNotice && (
+        <div className="md:hidden p-3 my-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
+          <p>
+            Viewing simplified table on mobile. Rotate device or use larger
+            screen for full view.
+          </p>
+          <button
+            onClick={() => setShowMobileNotice(false)}
+            className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+            aria-label="Dismiss notice"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
-        <table className="min-w-full divide-y divide-border dark:divide-border-dark">
+        <table className="min-w-full divide-y divide-border dark:divide-border-dark relative">
           <TableHeader
             activeColumns={activeColumns}
             selectedItems={selectedItems}

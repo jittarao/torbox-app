@@ -77,9 +77,6 @@ export function useTorrentData(apiKey) {
       callTimestampsRef.current.push(Date.now());
       setLoading(true);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
       // increment the fetch id for each new call
       const currentFetchId = ++latestFetchIdRef.current;
 
@@ -89,9 +86,7 @@ export function useTorrentData(apiKey) {
             'x-api-key': apiKey,
             ...(bypassCache && { 'bypass-cache': 'true' }),
           },
-          signal: controller.signal,
         });
-        clearTimeout(timeoutId);
 
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -100,7 +95,12 @@ export function useTorrentData(apiKey) {
         // if this call isn't the latest, do not update state
         if (currentFetchId !== latestFetchIdRef.current) return;
 
-        if (data.success && data.data && Array.isArray(data.data)) {
+        if (
+          data.success &&
+          data.data &&
+          Array.isArray(data.data) &&
+          data.data.length > 0
+        ) {
           // Sort torrents by added date if available
           const sortedTorrents = sortTorrents(data.data);
           setTorrents(sortedTorrents);

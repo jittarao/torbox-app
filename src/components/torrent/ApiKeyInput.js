@@ -17,6 +17,7 @@ export default function ApiKeyInput({ value, onKeyChange }) {
           focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
           focus:border-accent dark:focus:border-accent-dark
           transition-colors"
+        autoComplete="off"
       />
       <button
         type="button"

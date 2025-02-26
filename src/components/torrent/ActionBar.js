@@ -180,7 +180,7 @@ export default function ActionBar({
         )}
       </div>
 
-      <div className="flex gap-4 items-center flex-wrap">
+      <div className="flex gap-3 items-center flex-wrap">
         <Dropdown
           options={STATUS_OPTIONS}
           value={statusFilter}
@@ -219,12 +219,15 @@ export default function ActionBar({
               transition-colors text-sm"
           />
         </div>
-        <ColumnManager
-          columns={COLUMNS}
-          activeColumns={activeColumns}
-          onColumnChange={onColumnChange}
-          activeType={activeType}
-        />
+
+        <div className="hidden md:block">
+          <ColumnManager
+            columns={COLUMNS}
+            activeColumns={activeColumns}
+            onColumnChange={onColumnChange}
+            activeType={activeType}
+          />
+        </div>
       </div>
     </div>
   );

@@ -23,13 +23,13 @@ export default function TorrentOptions({
         className="bg-surface-alt/50 dark:bg-surface-alt-dark p-4 rounded-lg 
           border border-border dark:border-border-dark"
       >
-        <div className="flex">
+        <div className="flex flex-col xl:flex-row">
           {/* Left Section - Global Upload Options */}
-          <div className="flex-1 pr-6">
+          <div className="flex-1 xl:pr-6 mb-6 xl:mb-0">
             <h4 className="text-sm font-medium mb-4 text-primary-text dark:text-primary-text-dark">
               Global Upload Options
             </h4>
-            <div className="flex items-center gap-8">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
               <div className="max-w-[200px]">
                 <label
                   className="block text-xs text-primary-text/70 dark:text-primary-text-dark/70 
@@ -53,57 +53,62 @@ export default function TorrentOptions({
                 </select>
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={globalOptions.allowZip}
-                  onChange={(e) =>
-                    updateGlobalOptions({ allowZip: e.target.checked })
-                  }
-                  className="w-4 h-4 accent-accent dark:accent-accent-dark"
-                />
-                <div>
-                  <span
-                    className="text-sm text-primary-text dark:text-primary-text-dark 
-                      group-hover:text-primary dark:group-hover:text-primary-text-dark"
-                  >
-                    Allow Zip
-                  </span>
-                  <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
-                    For torrents with 100+ files
-                  </p>
-                </div>
-              </label>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={globalOptions.allowZip}
+                    onChange={(e) =>
+                      updateGlobalOptions({ allowZip: e.target.checked })
+                    }
+                    className="w-4 h-4 accent-accent dark:accent-accent-dark"
+                  />
+                  <div>
+                    <span
+                      className="text-sm text-primary-text dark:text-primary-text-dark 
+                        group-hover:text-primary dark:group-hover:text-primary-text-dark"
+                    >
+                      Allow Zip
+                    </span>
+                    <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                      For torrents with 100+ files
+                    </p>
+                  </div>
+                </label>
 
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={globalOptions.asQueued}
-                  onChange={(e) =>
-                    updateGlobalOptions({ asQueued: e.target.checked })
-                  }
-                  className="w-4 h-4 accent-accent dark:accent-accent-dark"
-                />
-                <div>
-                  <span
-                    className="text-sm text-primary-text dark:text-primary-text-dark 
-                      group-hover:text-primary dark:group-hover:text-primary-text-dark"
-                  >
-                    Instant Queue
-                  </span>
-                  <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
-                    Skip waiting queue
-                  </p>
-                </div>
-              </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={globalOptions.asQueued}
+                    onChange={(e) =>
+                      updateGlobalOptions({ asQueued: e.target.checked })
+                    }
+                    className="w-4 h-4 accent-accent dark:accent-accent-dark"
+                  />
+                  <div>
+                    <span
+                      className="text-sm text-primary-text dark:text-primary-text-dark 
+                        group-hover:text-primary dark:group-hover:text-primary-text-dark"
+                    >
+                      Instant Queue
+                    </span>
+                    <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                      Skip waiting queue
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* Vertical Divider */}
-          <div className="w-px bg-border dark:bg-border-dark mx-6" />
+          {/* Vertical Divider - Only visible on md screens and up */}
+          <div className="hidden xl:block w-px bg-border dark:bg-border-dark mx-6" />
+
+          {/* Horizontal Divider - Only visible on mobile */}
+          <div className="block xl:hidden h-px w-full bg-border dark:bg-border-dark my-4" />
 
           {/* Right Section - Auto Start Options */}
-          <div className="flex-1 pl-6">
+          <div className="flex-1 xl:pl-6">
             <div className="flex flex-col mb-4">
               <h4 className="text-sm font-medium text-primary-text dark:text-primary-text-dark flex items-center gap-2">
                 Process Queued Torrents

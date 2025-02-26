@@ -137,59 +137,62 @@ export default function ColumnManager({
         >
           <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
         </svg>
-        Columns
       </button>
 
       {isOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 mt-2 w-64 bg-surface dark:bg-surface-dark 
+          className="absolute right-0 mt-2 w-[28rem] bg-surface dark:bg-surface-dark 
             border border-border dark:border-border-dark rounded-lg z-50"
         >
-          <div className="p-4">
-            <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
-              Manage Columns
-            </h3>
-            <div className="space-y-2 mb-4">
-              {availableColumns.map(([id, { label }]) => (
-                <label key={id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={activeColumns.includes(id)}
-                    onChange={() => toggleColumn(id)}
-                    className="accent-accent dark:accent-accent-dark"
-                  />
-                  <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                    {label}
-                  </span>
-                </label>
-              ))}
+          <div className="p-4 flex flex-row gap-4">
+            <div className="w-1/2">
+              <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
+                Reorder Columns
+              </h3>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis]}
+              >
+                <SortableContext
+                  items={activeColumns}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2 overflow-y-auto max-h-[32rem]">
+                    {activeColumns.map((columnId) => (
+                      <SortableItem
+                        key={columnId}
+                        id={columnId}
+                        label={columns[columnId].label}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
 
-            <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
-              Reorder Columns
-            </h3>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
-              <SortableContext
-                items={activeColumns}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-1">
-                  {activeColumns.map((columnId) => (
-                    <SortableItem
-                      key={columnId}
-                      id={columnId}
-                      label={columns[columnId].label}
+            <div className="w-1/2">
+              <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
+                Manage Columns
+              </h3>
+              <div className="space-y-2 mb-4">
+                {availableColumns.map(([id, { label }]) => (
+                  <label key={id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={activeColumns.includes(id)}
+                      onChange={() => toggleColumn(id)}
+                      className="accent-accent dark:accent-accent-dark"
                     />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+                    <span className="text-sm text-primary-text dark:text-primary-text-dark">
+                      {label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

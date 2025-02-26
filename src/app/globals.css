@@ -41,3 +41,7 @@ body {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+.container {
+  max-width: 1600px;
+}

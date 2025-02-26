@@ -28,6 +28,7 @@ export default function ItemRow({
   lastClickedItemIndexRef,
   setToast,
   activeType = 'torrents',
+  isMobile = false,
 }) {
   const handleItemSelection = (checked, isShiftKey = false) => {
     if (
@@ -75,7 +76,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap max-w-md relative"
+            className="px-3 md:px-6 py-4 whitespace-nowrap max-w-[150px] md:max-w-md relative"
           >
             <div
               className="text-sm text-primary-text dark:text-primary-text-dark truncate cursor-pointer"
@@ -84,18 +85,30 @@ export default function ItemRow({
             >
               {item.name || 'Unnamed Item'}
               {hoveredItem === item.id && item.name && (
-                <div className="absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg max-w-xl break-words whitespace-normal">
+                <div className="absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg max-w-[250px] md:max-w-xl break-words whitespace-normal">
                   {item.name}
                 </div>
               )}
             </div>
+            {/* Show additional info on mobile */}
+            {isMobile && (
+              <div className="flex flex-col mt-1 text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+                <div className="flex flex-col items-start gap-2">
+                  {item.download_state && (
+                    <DownloadStateBadge item={item} size="xs" />
+                  )}
+                  <span>{formatSize(item.size || 0)}</span>
+                  {item.created_at && <span>{timeAgo(item.created_at)}</span>}
+                </div>
+              </div>
+            )}
           </td>
         );
       case 'size':
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {formatSize(item.size || 0)}
           </td>
@@ -106,7 +119,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 relative group"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 relative group"
           >
             <div className="cursor-default">
               {item[columnId] ? (
@@ -132,7 +145,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
               <div
@@ -149,7 +162,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {(item.ratio || 0).toFixed(2)}
           </td>
@@ -159,7 +172,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {formatSpeed(item[columnId])}
           </td>
@@ -168,7 +181,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {formatEta(item.eta)}
           </td>
@@ -177,7 +190,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {item.id}
           </td>
@@ -187,7 +200,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {formatSize(item[columnId] || 0)}
           </td>
@@ -197,7 +210,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {item[columnId] || 0}
           </td>
@@ -206,7 +219,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {item.files?.length || 0}
           </td>
@@ -224,7 +237,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {item[columnId]}
           </td>
@@ -232,15 +245,16 @@ export default function ItemRow({
     }
   };
 
+  // For mobile, we'll only show the name column
+  const visibleColumns = isMobile ? ['name'] : activeColumns;
+
   return (
     <tr
       className={`${
         selectedItems.items?.has(item.id)
-          ? 'bg-surface-alt/60 hover:bg-surface-alt/90 dark:bg-accent-dark/5 dark:hover:bg-accent-dark/10'
-          : 'hover:bg-surface-alt/30 dark:bg-surface-alt-dark/30 dark:hover:bg-surface-alt-dark/90'
-      } transition-colors ${
-        !onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'
-      }`}
+          ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
+          : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
+      } ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
         if (e.shiftKey) {
@@ -258,7 +272,7 @@ export default function ItemRow({
         handleItemSelection(!isChecked, e.shiftKey);
       }}
     >
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-3 md:px-4 py-4 whitespace-nowrap">
         <input
           type="checkbox"
           checked={selectedItems.items?.has(item.id)}
@@ -268,8 +282,8 @@ export default function ItemRow({
           className="accent-accent dark:accent-accent-dark"
         />
       </td>
-      {activeColumns.map((columnId) => renderCell(columnId))}
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      {visibleColumns.map((columnId) => renderCell(columnId))}
+      <td className="px-3 md:px-4 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit shadow-[-8px_0_10px_-5px_rgba(0,0,0,0.1)]">
         <ItemActions
           item={item}
           apiKey={apiKey}
@@ -280,6 +294,7 @@ export default function ItemRow({
           setSelectedItems={setSelectedItems}
           setToast={setToast}
           activeType={activeType}
+          isMobile={isMobile}
         />
       </td>
     </tr>

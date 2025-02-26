@@ -27,8 +27,18 @@ export function useUsenetData(apiKey) {
         }
 
         const data = await response.json();
-        setUsenetItems(data.data);
-        setError(null);
+
+        if (
+          data.success &&
+          data.data &&
+          Array.isArray(data.data) &&
+          data.data.length > 0
+        ) {
+          setUsenetItems(data.data);
+          setError(null);
+        } else {
+          console.error('Invalid usenet data format:', data);
+        }
       } catch (err) {
         console.error('Error fetching usenet data:', err);
         setError(err.message);

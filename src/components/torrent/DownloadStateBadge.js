@@ -1,6 +1,6 @@
 import { STATUS_OPTIONS } from '@/components/constants';
 
-export default function DownloadStateBadge({ item }) {
+export default function DownloadStateBadge({ item, size = 'default' }) {
   // Check if essential fields are missing, indicating a queued torrent
   const isQueued =
     item.type === 'torrent' &&
@@ -56,9 +56,16 @@ export default function DownloadStateBadge({ item }) {
       .join(' ') ||
     'Unknown';
 
+  // Size variants
+  const sizeClasses = {
+    xs: 'px-1.5 py-0.5 text-[10px] leading-4 font-medium',
+    sm: 'px-1.5 py-0.5 text-xs leading-4 font-medium',
+    default: 'px-2 py-0.5 text-xs leading-5 font-semibold',
+  };
+
   return (
     <span
-      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeStyle}`}
+      className={`inline-flex rounded-full w-fit ${badgeStyle} ${sizeClasses[size] || sizeClasses.default}`}
     >
       {statusText}
     </span>
