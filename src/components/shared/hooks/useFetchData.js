@@ -51,13 +51,11 @@ export function useFetchData(apiKey, type = 'torrents') {
     const fetchAllTypes = async () => {
       if (!apiKey) return;
 
-      setLoading(true);
       await Promise.all([
         fetchLocalItems(true, 'torrents'),
         fetchLocalItems(true, 'usenet'),
         fetchLocalItems(true, 'webdl'),
       ]);
-      setLoading(false);
     };
 
     fetchAllTypes();
@@ -128,9 +126,11 @@ export function useFetchData(apiKey, type = 'torrents') {
   const fetchLocalItems = useCallback(
     async (bypassCache = false, customType = null) => {
       const activeType = customType || type;
+      setLoading(true);
 
       if (!apiKey) {
-        return;
+        setLoading(false);
+        return [];
       }
 
       // Ensure rate limit data exists for the active type
@@ -145,7 +145,7 @@ export function useFetchData(apiKey, type = 'torrents') {
 
       if (isRateLimited(activeType)) {
         console.warn(`Rate limit reached for ${activeType}, skipping fetch`);
-        return;
+        return [];
       }
 
       // Update rate limiting data
@@ -155,7 +155,9 @@ export function useFetchData(apiKey, type = 'torrents') {
       const currentFetchId = ++rateData.latestFetchId;
 
       // If this call isn't the latest, do not update state
-      if (currentFetchId !== rateData.latestFetchId) return;
+      if (currentFetchId !== rateData.latestFetchId) {
+        return [];
+      }
 
       // Determine endpoint based on activeType
       let endpoint;
@@ -213,10 +215,13 @@ export function useFetchData(apiKey, type = 'torrents') {
             setError(null);
           }
 
+          setLoading(false);
+
           // Return the fetched data
           return sortedItems;
         } else {
           console.error(`Invalid ${activeType} data format:`, data);
+          setLoading(false);
           return [];
         }
       } catch (err) {
@@ -225,6 +230,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         if (currentFetchId === rateData.latestFetchId && activeType === type) {
           setError(err.message);
         }
+        setLoading(false);
         return [];
       }
     },

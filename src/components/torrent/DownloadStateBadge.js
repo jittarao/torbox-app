@@ -3,10 +3,7 @@ import { STATUS_OPTIONS } from '@/components/constants';
 export default function DownloadStateBadge({ item, size = 'default' }) {
   // Check if essential fields are missing, indicating a queued torrent
   const isQueued =
-    item.type === 'torrent' &&
-    !item.download_state &&
-    !item.download_finished &&
-    !item.active;
+    !item.download_state && !item.download_finished && !item.active;
 
   // Find matching status from STATUS_OPTIONS
   const getMatchingStatus = () => {

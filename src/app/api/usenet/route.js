@@ -13,20 +13,42 @@ export async function GET() {
   }
 
   try {
-    const apiUrl = `${API_BASE}/${API_VERSION}/api/usenet/mylist${bypassCache ? '?bypass_cache=true' : ''}`;
+    // Fetch both regular and queued usenet downloads in parallel
+    const [downloadsResponse, queuedResponse] = await Promise.all([
+      fetch(
+        `${API_BASE}/${API_VERSION}/api/usenet/mylist${bypassCache ? '?bypass_cache=true' : ''}`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        },
+      ),
+      fetch(
+        `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet${bypassCache ? '&bypass_cache=true' : ''}`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        },
+      ),
+    ]);
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
+    if (!downloadsResponse.ok || !queuedResponse.ok) {
+      throw new Error(`API responded with status: ${downloadsResponse.status}`);
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const [downloadsData, queuedData] = await Promise.all([
+      downloadsResponse.json(),
+      queuedResponse.json(),
+    ]);
+
+    // Merge the data
+    const mergedData = {
+      success: downloadsData.success && queuedData.success,
+      data: [...(downloadsData.data || []), ...(queuedData.data || [])],
+    };
+
+    return NextResponse.json(mergedData);
   } catch (error) {
     console.error('Error fetching usenet data:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -20,13 +20,15 @@ const SORT_OPTIONS = {
 };
 
 export default function SearchResults({ apiKey }) {
-  const { results, loading, error, searchType } = useSearchStore();
+  const { results, loading, error, searchType, includeCustomEngines } =
+    useSearchStore();
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
   const [toast, setToast] = useState(null);
   const [isUploading, setIsUploading] = useState({});
   const [showCachedOnly, setShowCachedOnly] = useState(false);
+  const [addedItems, setAddedItems] = useState([]);
 
   // Update sort key when search type changes
   useEffect(() => {
@@ -110,6 +112,8 @@ export default function SearchResults({ apiKey }) {
       if (!result.success) {
         throw new Error(result.error);
       }
+
+      setAddedItems((prev) => [...prev, item]);
 
       setToast({
         message: `${searchType === 'usenet' ? 'NZB' : 'Torrent'} added to TorBox successfully`,
@@ -304,23 +308,34 @@ export default function SearchResults({ apiKey }) {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => copyLink(item)}
-                      className="shrink-0 px-3 py-1 text-sm bg-accent hover:bg-accent/90 
+                    {includeCustomEngines && (
+                      <button
+                        onClick={() => copyLink(item)}
+                        className="shrink-0 px-3 py-1 text-sm bg-accent hover:bg-accent/90 
                               dark:bg-accent-dark dark:hover:bg-accent-dark/90
                               text-white rounded-md transition-colors"
-                    >
-                      Copy {searchType === 'usenet' ? 'Link' : 'Magnet'}
-                    </button>
+                      >
+                        Copy {searchType === 'usenet' ? 'Link' : 'Magnet'}
+                      </button>
+                    )}
 
                     <button
                       onClick={() => handleUpload(item)}
-                      disabled={isUploading[item.hash]}
+                      disabled={
+                        isUploading[item.hash] ||
+                        addedItems.some(
+                          (addedItem) => addedItem.hash === item.hash,
+                        )
+                      }
                       className={`shrink-0 px-3 py-1 text-sm text-white rounded-md transition-colors
                         ${
                           isUploading[item.hash]
                             ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                            : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
+                            : addedItems.some(
+                                  (addedItem) => addedItem.hash === item.hash,
+                                )
+                              ? 'bg-label-default-text dark:bg-label-default-text-dark cursor-not-allowed'
+                              : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
                         }`}
                     >
                       {isUploading[item.hash] ? (
@@ -328,6 +343,10 @@ export default function SearchResults({ apiKey }) {
                           <Spinner size="sm" className="text-white" />
                           Adding...
                         </span>
+                      ) : addedItems.some(
+                          (addedItem) => addedItem.hash === item.hash,
+                        ) ? (
+                        'Added'
                       ) : (
                         'Add to TorBox'
                       )}

@@ -1,19 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import ColumnManager from './ColumnManager';
 import Dropdown from '@/components/shared/Dropdown';
 import { COLUMNS, STATUS_OPTIONS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
 import { saEvent } from '@/utils/sa';
-
-const getTotalSelectedFiles = (selectedItems) => {
-  let total = 0;
-  selectedItems.files.forEach((files) => {
-    total += files.size;
-  });
-  return total;
-};
 
 export default function ActionBar({
   items,
@@ -38,16 +30,22 @@ export default function ActionBar({
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    const element = stickyRef.current;
     const observer = new IntersectionObserver(
       ([e]) => setIsSticky(!e.isIntersecting),
       { threshold: [1], rootMargin: '-1px 0px 0px 0px' },
     );
 
-    if (stickyRef.current) {
-      observer.observe(stickyRef.current);
+    if (element) {
+      observer.observe(element);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      if (element) {
+        observer.unobserve(element);
+      }
+      observer.disconnect();
+    };
   }, []);
 
   const handleSearchChange = (e) => {
@@ -62,8 +60,15 @@ export default function ActionBar({
     onBulkDownload();
   };
 
+  const getTotalSelectedFiles = useCallback((selectedItems) => {
+    return Array.from(selectedItems.files.values()).reduce(
+      (total, files) => total + files.size,
+      0,
+    );
+  }, []);
+
   // Get the appropriate item name based on active type
-  const getItemTypeName = () => {
+  const getItemTypeName = useCallback(() => {
     switch (activeType) {
       case 'usenet':
         return 'usenet';
@@ -72,10 +77,97 @@ export default function ActionBar({
       default:
         return 'torrent';
     }
-  };
+  }, [activeType]);
 
   const itemTypeName = getItemTypeName();
   const itemTypePlural = `${itemTypeName}s`;
+
+  // Find the matching status from STATUS_OPTIONS
+  const getMatchingStatus = (item) => {
+    const isQueued =
+      !item.download_state && !item.download_finished && !item.active;
+    if (isQueued) return { label: 'Queued' };
+
+    return STATUS_OPTIONS.find((option) => {
+      if (option.value === 'all' || option.value.is_queued) return false;
+
+      return Object.entries(option.value).every(([key, value]) => {
+        if (key === 'download_state') {
+          const states = Array.isArray(value) ? value : [value];
+          return states.some((state) => item.download_state?.includes(state));
+        }
+        return item[key] === value;
+      });
+    });
+  };
+
+  // Get the styles for each status
+  const getStatusStyles = useCallback((status) => {
+    switch (status) {
+      case 'Queued':
+      case 'Downloading':
+        return 'text-label-warning-text dark:text-label-warning-text-dark';
+      case 'Seeding':
+        return 'text-label-active-text dark:text-label-active-text-dark';
+      case 'Completed':
+        return 'text-label-success-text dark:text-label-success-text-dark';
+      case 'Failed':
+      case 'Inactive':
+        return 'text-label-danger-text dark:text-label-danger-text-dark';
+      default:
+        return 'text-label-default-text dark:text-label-default-text-dark';
+    }
+  }, []);
+
+  // Get the status for each item
+  const itemStatuses = useMemo(() => {
+    return items.map((item) => {
+      const status = getMatchingStatus(item);
+      return {
+        [item.id]: status,
+      };
+    });
+  }, [items]);
+
+  // Get the count of each status
+  const statusCounts = useMemo(() => {
+    let localStatusCounts = itemStatuses.reduce((acc, curr) => {
+      const status = curr[Object.keys(curr)[0]];
+      if (status) {
+        acc[status.label] = (acc[status.label] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // localStatusCounts is an object with status labels as keys and counts as values
+    // STATUS_OPTIONS is an array of objects with label, value keys
+    // Reorder localStatusCounts to match the order in which label keys appear in STATUS_OPTIONS
+    const orderedStatusCounts = {};
+    STATUS_OPTIONS.forEach((option) => {
+      orderedStatusCounts[option.label] = localStatusCounts[option.label] || 0;
+    });
+
+    return orderedStatusCounts;
+  }, [itemStatuses]);
+
+  // Update the label key in STATUS_OPTIONS to the format {label (count)}
+  const StatusOptions = useMemo(() => {
+    return STATUS_OPTIONS.map((option) => {
+      let localOption = {};
+      if (option.label === 'All') {
+        localOption = {
+          ...option,
+          label: `All (${items.length})`,
+        };
+      } else {
+        localOption = {
+          ...option,
+          label: `${option.label} (${statusCounts[option.label] || 0})`,
+        };
+      }
+      return localOption;
+    });
+  }, [statusCounts]);
 
   return (
     <div
@@ -85,7 +177,21 @@ export default function ActionBar({
     >
       <div className="flex gap-4 items-center flex-wrap">
         <div className="text-md text-primary-text dark:text-primary-text-dark">
-          {items.length} {items.length === 1 ? itemTypeName : itemTypePlural}
+          <span className="font-semibold">
+            {items.length} {items.length === 1 ? itemTypeName : itemTypePlural}
+          </span>
+          <div className="flex flex-wrap gap-3 mt-1.5">
+            {Object.entries(statusCounts)
+              .filter(([status, count]) => count !== 0)
+              .map(([status, count]) => (
+                <span
+                  key={status}
+                  className={`text-sm font-medium ${getStatusStyles(status)}`}
+                >
+                  {count} {status.toLowerCase()}
+                </span>
+              ))}
+          </div>
         </div>
 
         <div className="flex gap-4 items-center">
@@ -188,12 +294,12 @@ export default function ActionBar({
 
       <div className="flex gap-3 items-center flex-wrap">
         <Dropdown
-          options={STATUS_OPTIONS}
+          options={StatusOptions}
           value={statusFilter}
           onChange={(value) => {
             onStatusChange(value);
           }}
-          className="min-w-[140px]"
+          className="min-w-[150px]"
         />
 
         <div className="relative flex-1">
