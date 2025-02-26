@@ -8,28 +8,33 @@ export async function GET(req) {
   const query = searchParams.get('query');
   const searchUserEngines = searchParams.get('search_user_engines') === 'true';
 
-
   if (!query) {
-    return new Response(JSON.stringify({ error: 'Query parameter is required' }), { status: 400 });
+    return new Response(
+      JSON.stringify({ error: 'Query parameter is required' }),
+      { status: 400 },
+    );
   }
 
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key is required' }), { status: 401 });
+    return new Response(JSON.stringify({ error: 'API key is required' }), {
+      status: 401,
+    });
   }
 
   try {
     const params = new URLSearchParams({
       metadata: true,
       check_cache: true,
-      search_user_engines: searchUserEngines
+      search_user_engines: searchUserEngines,
     });
 
     const res = await fetch(
-      `${API_SEARCH_BASE}/usenet/search/${encodeURIComponent(query)}?${params}`, {
+      `${API_SEARCH_BASE}/usenet/search/${encodeURIComponent(query)}?${params}`,
+      {
         headers: {
-          'Authorization': `Bearer ${apiKey}`
-        }
-      }
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
     );
 
     if (!res.ok) {
@@ -40,6 +45,8 @@ export async function GET(req) {
     return new Response(JSON.stringify(data), { status: 200 });
   } catch (error) {
     console.error('Usenet search error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
   }
-} 
+}

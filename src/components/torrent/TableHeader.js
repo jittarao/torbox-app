@@ -1,14 +1,14 @@
 'use client';
-import { COLUMNS } from './constants';
+import { COLUMNS } from '@/components/constants';
 
-export default function TableHeader({ 
-  activeColumns, 
-  selectedItems, 
-  onSelectAll, 
-  torrents,
+export default function TableHeader({
+  activeColumns,
+  selectedItems,
+  onSelectAll,
+  items,
   sortField,
   sortDirection,
-  onSort 
+  onSort,
 }) {
   return (
     <thead className="bg-surface-alt dark:bg-surface-alt-dark">
@@ -16,19 +16,23 @@ export default function TableHeader({
         <th className="px-6 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider">
           <input
             type="checkbox"
-            onChange={(e) => onSelectAll(torrents, e.target.checked)}
-            checked={selectedItems.torrents.size === torrents.length && torrents.length > 0}
+            onChange={(e) => onSelectAll(items, e.target.checked)}
+            checked={
+              selectedItems.items?.size === items.length && items.length > 0
+            }
             className="accent-accent dark:accent-accent-dark"
           />
         </th>
-        {activeColumns.map(columnId => {
+        {activeColumns.map((columnId) => {
           const column = COLUMNS[columnId];
           return (
             <th
               key={columnId}
               onClick={() => column.sortable && onSort(columnId)}
               className={`px-6 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider ${
-                column.sortable ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors' : ''
+                column.sortable
+                  ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors'
+                  : ''
               }`}
             >
               {column.label}
@@ -46,4 +50,4 @@ export default function TableHeader({
       </tr>
     </thead>
   );
-} 
+}

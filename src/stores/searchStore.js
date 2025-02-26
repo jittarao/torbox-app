@@ -7,7 +7,7 @@ export const useSearchStore = create((set, get) => ({
   error: null,
   searchType: 'torrents',
   includeCustomEngines: false,
-  
+
   setSearchType: (type) => {
     set({ searchType: type, results: [], error: null });
     const { query } = get();
@@ -39,42 +39,44 @@ export const useSearchStore = create((set, get) => ({
     try {
       const searchParams = new URLSearchParams({
         query: encodeURIComponent(query),
-        search_user_engines: includeCustomEngines.toString()
+        search_user_engines: includeCustomEngines.toString(),
       });
 
-      const endpoint = searchType === 'usenet' 
-        ? `/api/usenet/search?${searchParams}`
-        : `/api/torrents/search?${searchParams}`;
+      const endpoint =
+        searchType === 'usenet'
+          ? `/api/usenet/search?${searchParams}`
+          : `/api/torrents/search?${searchParams}`;
 
       const res = await fetch(endpoint, {
         headers: {
-          'x-api-key': apiKey
-        }
+          'x-api-key': apiKey,
+        },
       });
 
       const data = await res.json();
-      
+
       if (!res.ok || data.error) {
-        set({ 
-          loading: false, 
-          error: data.error || `Request failed: ${res.status}`
+        set({
+          loading: false,
+          error: data.error || `Request failed: ${res.status}`,
         });
         return;
       }
 
-      const results = searchType === 'usenet' 
-        ? data.data?.nzbs || []
-        : data.data?.torrents || [];
+      const results =
+        searchType === 'usenet'
+          ? data.data?.nzbs || []
+          : data.data?.torrents || [];
 
       set({
         results,
-        loading: false
+        loading: false,
       });
     } catch (error) {
-      set({ 
-        loading: false, 
-        error: 'Failed to fetch results'
+      set({
+        loading: false,
+        error: 'Failed to fetch results',
       });
     }
-  }
-})); 
+  },
+}));

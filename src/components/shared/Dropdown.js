@@ -17,8 +17,9 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedOption = options.find(option => 
-    option.value === value || JSON.stringify(option.value) === value
+  const selectedOption = options.find(
+    (option) =>
+      option.value === value || JSON.stringify(option.value) === value,
   );
 
   return (
@@ -32,24 +33,34 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
           transition-colors ${className}`}
       >
         <span>{selectedOption?.label || 'Select...'}</span>
-        <svg 
-          className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-surface dark:bg-surface-dark 
-          border border-border dark:border-border-dark rounded shadow-lg">
+        <div
+          className="absolute z-10 w-full mt-1 bg-surface dark:bg-surface-dark 
+          border border-border dark:border-border-dark rounded shadow-lg"
+        >
           {options.map((option) => (
             <button
               key={option.label}
               onClick={() => {
-                const newValue = typeof option.value === 'object' ? JSON.stringify(option.value) : option.value;
+                const newValue =
+                  typeof option.value === 'object'
+                    ? JSON.stringify(option.value)
+                    : option.value;
                 onChange(newValue);
                 setIsOpen(false);
               }}
@@ -57,9 +68,12 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
                 text-primary-text dark:text-primary-text-dark
                 hover:bg-surface-alt/90 dark:hover:bg-accent-dark/10
                 transition-colors
-                ${(option.value === value || JSON.stringify(option.value) === value) 
-                  ? 'bg-surface-hover dark:bg-surface-hover-dark' 
-                  : ''}`}
+                ${
+                  option.value === value ||
+                  JSON.stringify(option.value) === value
+                    ? 'bg-surface-hover dark:bg-surface-hover-dark'
+                    : ''
+                }`}
             >
               {option.label}
             </button>
@@ -68,4 +82,4 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
       )}
     </div>
   );
-} 
+}

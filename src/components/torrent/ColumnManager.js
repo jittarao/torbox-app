@@ -1,20 +1,29 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 function SortableItem({ id, label }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
 
   const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
     transition,
   };
 
@@ -30,31 +39,41 @@ function SortableItem({ id, label }) {
       <span className="text-sm text-primary-text dark:text-primary-text-dark">
         {label}
       </span>
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
         className="h-4 w-4 text-primary-text/30 dark:text-primary-text-dark/30
           group-hover:text-primary-text/70 dark:group-hover:text-primary-text-dark/70 
-          transition-colors" 
-        fill="none" 
-        viewBox="0 0 24 24" 
+          transition-colors"
+        fill="none"
+        viewBox="0 0 24 24"
         stroke="currentColor"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9h8M8 15h8" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8 9h8M8 15h8"
+        />
       </svg>
     </div>
   );
 }
 
-export default function ColumnManager({ columns, activeColumns, onColumnChange }) {
+export default function ColumnManager({
+  columns,
+  activeColumns,
+  onColumnChange,
+  activeType = 'torrents',
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        isOpen && 
-        menuRef.current && 
+        isOpen &&
+        menuRef.current &&
         !menuRef.current.contains(event.target) &&
         !buttonRef.current.contains(event.target)
       ) {
@@ -70,7 +89,7 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = (event) => {
@@ -87,11 +106,18 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
 
   const toggleColumn = (columnId) => {
     if (activeColumns.includes(columnId)) {
-      onColumnChange(activeColumns.filter(id => id !== columnId));
+      onColumnChange(activeColumns.filter((id) => id !== columnId));
     } else {
       onColumnChange([...activeColumns, columnId]);
     }
   };
+
+  // Filter columns based on asset type
+  const availableColumns = useMemo(() => {
+    return Object.entries(columns).filter(([id, column]) => {
+      return !column.assetTypes || column.assetTypes.includes(activeType);
+    });
+  }, [columns, activeType]);
 
   return (
     <div className="relative">
@@ -103,14 +129,19 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
           bg-transparent text-primary-text dark:text-primary-text-dark
           flex items-center gap-2 transition-colors"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
           <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
         </svg>
         Columns
       </button>
 
       {isOpen && (
-        <div 
+        <div
           ref={menuRef}
           className="absolute right-0 mt-2 w-64 bg-surface dark:bg-surface-dark 
             border border-border dark:border-border-dark rounded-lg z-50"
@@ -120,7 +151,7 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
               Manage Columns
             </h3>
             <div className="space-y-2 mb-4">
-              {Object.entries(columns).map(([id, { label }]) => (
+              {availableColumns.map(([id, { label }]) => (
                 <label key={id} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -134,7 +165,7 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
                 </label>
               ))}
             </div>
-            
+
             <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
               Reorder Columns
             </h3>
@@ -150,10 +181,10 @@ export default function ColumnManager({ columns, activeColumns, onColumnChange }
               >
                 <div className="space-y-1">
                   {activeColumns.map((columnId) => (
-                    <SortableItem 
-                      key={columnId} 
-                      id={columnId} 
-                      label={columns[columnId].label} 
+                    <SortableItem
+                      key={columnId}
+                      id={columnId}
+                      label={columns[columnId].label}
                     />
                   ))}
                 </div>

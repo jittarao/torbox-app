@@ -5,24 +5,24 @@ export default function DownloadPanel({
   isDownloading,
   downloadProgress,
   onDismiss,
-  setToast
+  setToast,
 }) {
   if (!downloadLinks.length && !isDownloading) return null;
-
   const handleCopyLinks = () => {
-    const text = downloadLinks.map(link => link.url).join('\n');
-    navigator.clipboard.writeText(text)
+    const text = downloadLinks.map((link) => link.url).join('\n');
+    navigator.clipboard
+      .writeText(text)
       .then(() => {
         setToast({
           message: 'Links copied to clipboard!',
-          type: 'success'
+          type: 'success',
         });
         setTimeout(() => setToast(null), 5000);
       })
-      .catch(err => {
+      .catch((err) => {
         setToast({
           message: 'Failed to copy links',
-          type: 'error'
+          type: 'error',
         });
         setTimeout(() => setToast(null), 5000);
       });
@@ -53,26 +53,38 @@ export default function DownloadPanel({
             className="text-primary-text dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
             aria-label="Close panel"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
       </div>
       <div className="space-y-2 max-h-96 overflow-x-hidden overflow-y-auto relative">
-        {downloadLinks.map(link => (
-          <div key={link.id} className="flex items-center justify-between 
+        {downloadLinks.map((link) => (
+          <div
+            key={link.id}
+            className="flex items-center justify-between 
             bg-surface-alt dark:bg-surface-alt-dark text-sm p-2 rounded 
-            border border-border dark:border-border-dark">
+            border border-border dark:border-border-dark"
+          >
             <div className="relative group">
               <span className="truncate mr-4 text-primary-text dark:text-primary-text-dark">
                 {link.url}
               </span>
-              <div className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 
+              <div
+                className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 
                 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark 
                 rounded shadow-lg whitespace-nowrap 
                 text-primary-text/70 dark:text-primary-text-dark/70 
-                invisible group-hover:visible">
+                invisible group-hover:visible"
+              >
                 {link.name}
               </div>
             </div>
@@ -99,10 +111,12 @@ export default function DownloadPanel({
         <div className="mt-4 w-full bg-border rounded-full h-2.5">
           <div
             className="bg-accent h-2.5 rounded-full transition-all duration-300"
-            style={{ width: `${(downloadProgress.current / downloadProgress.total) * 100}%` }}
+            style={{
+              width: `${(downloadProgress.current / downloadProgress.total) * 100}%`,
+            }}
           ></div>
         </div>
       )}
     </div>
   );
-} 
+}

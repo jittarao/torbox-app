@@ -2,12 +2,11 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/torrent/ApiKeyInput';
-import TorrentTable from '@/components/torrent/TorrentTable';
-import TorrentUploader from '@/components/torrent/TorrentUploader';
+import ItemsTable from '@/components/torrent/ItemsTable';
 import LandingPage from '@/components/LandingPage';
-import { Inter } from 'next/font/google'
+import { Inter } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function Home() {
   const [apiKey, setApiKey] = useState('');
@@ -29,7 +28,9 @@ export default function Home() {
   if (loading) return null;
 
   return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
+    <main
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
       {!apiKey ? (
         <LandingPage onKeyChange={handleKeyChange} />
       ) : (
@@ -37,10 +38,7 @@ export default function Home() {
           <Header />
           <div className="container mx-auto p-4">
             <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} />
-            <>
-              <TorrentUploader apiKey={apiKey} />
-              <TorrentTable apiKey={apiKey} />
-            </>
+            <ItemsTable apiKey={apiKey} />
           </div>
         </>
       )}

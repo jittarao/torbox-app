@@ -1,69 +1,73 @@
 'use client';
+
 import { Fragment, useState, useRef } from 'react';
-import TorrentRow from './TorrentRow';
+import ItemRow from './ItemRow';
 import FileRow from './FileRow';
 
 export default function TableBody({
-  torrents,
+  items,
+  setItems,
   activeColumns,
-  setTorrents,
   selectedItems,
+  onRowSelect,
   onFileSelect,
-  hasSelectedFilesForTorrent,
   setSelectedItems,
   apiKey,
-  onTorrentDelete,
-  setToast
+  onDelete,
+  setToast,
+  activeType = 'torrents',
 }) {
-  const [expandedTorrents, setExpandedTorrents] = useState(new Set());
-  const [hoveredTorrent, setHoveredTorrent] = useState(null);
-  // Shared ref for tracking last clicked torrent row index
-  const lastClickedTorrentIndexRef = useRef(null);
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [hoveredItem, setHoveredItem] = useState(null);
+  // Shared ref for tracking last clicked item row index
+  const lastClickedItemIndexRef = useRef(null);
 
-  const toggleFiles = (torrentId) => {
-    const newExpanded = new Set(expandedTorrents);
-    if (newExpanded.has(torrentId)) {
-      newExpanded.delete(torrentId);
+  const toggleFiles = (itemId) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId);
     } else {
-      newExpanded.add(torrentId);
+      newExpanded.add(itemId);
     }
-    setExpandedTorrents(newExpanded);
+    setExpandedItems(newExpanded);
   };
 
   return (
     <tbody className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark">
-      {torrents.map((torrent, index) => (
-        <Fragment key={torrent.id}>
-          <TorrentRow
-            torrent={torrent}
+      {items.map((item, index) => (
+        <Fragment key={item.id}>
+          <ItemRow
+            item={item}
             activeColumns={activeColumns}
             selectedItems={selectedItems}
-            setTorrents={setTorrents}
+            setItems={setItems}
             setSelectedItems={setSelectedItems}
-            hasSelectedFilesForTorrent={hasSelectedFilesForTorrent}
-            hoveredTorrent={hoveredTorrent}
-            setHoveredTorrent={setHoveredTorrent}
-            expandedTorrents={expandedTorrents}
+            onRowSelect={onRowSelect}
+            hoveredItem={hoveredItem}
+            setHoveredItem={setHoveredItem}
+            expandedItems={expandedItems}
             toggleFiles={toggleFiles}
             apiKey={apiKey}
-            onDelete={onTorrentDelete}
+            onDelete={onDelete}
             // Pass new props for shift+click functionality
             rowIndex={index}
-            torrents={torrents}
-            lastClickedTorrentIndexRef={lastClickedTorrentIndexRef}
+            items={items}
+            lastClickedItemIndexRef={lastClickedItemIndexRef}
             setToast={setToast}
+            activeType={activeType}
           />
-          {expandedTorrents.has(torrent.id) && torrent.files && (
+          {expandedItems.has(item.id) && item.files && (
             <FileRow
-              torrent={torrent}
+              item={item}
               selectedItems={selectedItems}
               onFileSelect={onFileSelect}
               apiKey={apiKey}
               activeColumns={activeColumns}
+              activeType={activeType}
             />
           )}
         </Fragment>
       ))}
     </tbody>
   );
-} 
+}

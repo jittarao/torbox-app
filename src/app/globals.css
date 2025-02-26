@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #F0EEE7;
-  --foreground: #1F321A;
+  --background: #f0eee7;
+  --foreground: #1f321a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0C1708;
-    --foreground: #F0EEE7;
+    --background: #0c1708;
+    --foreground: #f0eee7;
   }
 }
 
 @layer base {
   .dark {
-    --background: #0C1708;
-    --foreground: #F0EEE7;
+    --background: #0c1708;
+    --foreground: #f0eee7;
   }
 }
 
