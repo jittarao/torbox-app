@@ -64,7 +64,7 @@ export async function POST(request) {
       if (key === 'file' || key === 'url' || key === 'magnet') {
         apiFormData.append(key, value);
       } else if (key === 'seed') {
-        apiFormData.append('seed', value);
+        apiFormData.append('seed', parseInt(value));
       } else if (key === 'allowZip') {
         apiFormData.append('allow_zip', value);
       } else if (key === 'asQueued') {
@@ -85,6 +85,7 @@ export async function POST(request) {
         body: apiFormData,
       },
     );
+
     const data = await response.json();
     return Response.json(data);
   } catch (error) {

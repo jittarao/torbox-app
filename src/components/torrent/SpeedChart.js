@@ -360,13 +360,13 @@ export default function SpeedChart({ items, activeType }) {
               <div className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-label-success-text-dark dark:bg-label-success-text-dark mr-1"></span>
                 <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">
-                  {formatSpeed(currentDownloadSpeed)}
+                  ↓ {formatSpeed(currentDownloadSpeed)}
                 </span>
               </div>
               <div className="flex items-center">
                 <span className="inline-block w-2 h-2 rounded-full bg-label-danger-text-dark dark:bg-label-danger-text-dark mr-1"></span>
                 <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">
-                  {formatSpeed(currentUploadSpeed)}
+                  ↑ {formatSpeed(currentUploadSpeed)}
                 </span>
               </div>
             </div>
