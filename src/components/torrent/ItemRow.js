@@ -29,6 +29,7 @@ export default function ItemRow({
   setToast,
   activeType = 'torrents',
   isMobile = false,
+  isBlurred = false,
 }) {
   const handleItemSelection = (checked, isShiftKey = false) => {
     if (
@@ -79,12 +80,12 @@ export default function ItemRow({
             className="px-3 md:px-6 py-4 whitespace-nowrap max-w-[150px] md:max-w-md relative"
           >
             <div
-              className="text-sm text-primary-text dark:text-primary-text-dark truncate cursor-pointer"
+              className={`text-sm text-primary-text dark:text-primary-text-dark truncate cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
             >
               {item.name || 'Unnamed Item'}
-              {hoveredItem === item.id && item.name && (
+              {hoveredItem === item.id && item.name && !isBlurred && (
                 <div className="absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg max-w-[250px] md:max-w-xl break-words whitespace-normal">
                   {item.name}
                 </div>

@@ -25,6 +25,7 @@ export default function ItemsTable({ apiKey }) {
   const [activeType, setActiveType] = useState('torrents');
   const [showMobileNotice, setShowMobileNotice] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [isBlurred, setIsBlurred] = useState(false);
 
   // Load mobile notice dismissal preference from localStorage
   useEffect(() => {
@@ -134,6 +135,8 @@ export default function ItemsTable({ apiKey }) {
           onBulkDelete={() => deleteItems(selectedItems)}
           className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark"
           activeType={activeType}
+          isBlurred={isBlurred}
+          onBlurToggle={() => setIsBlurred(!isBlurred)}
         />
       </div>
 
@@ -190,6 +193,7 @@ export default function ItemsTable({ apiKey }) {
             onDelete={deleteItem}
             setToast={setToast}
             activeType={activeType}
+            isBlurred={isBlurred}
           />
         </table>
       </div>

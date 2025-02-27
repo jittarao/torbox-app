@@ -13,6 +13,7 @@ export default function FileRow({
   activeColumns,
   activeType = 'torrents',
   isMobile = false,
+  isBlurred = false,
 }) {
   // Track last clicked file index for shift selection
   const lastClickedFileIndexRef = useRef(null);
@@ -106,8 +107,8 @@ export default function FileRow({
                 className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4'}`}
               >
                 <span
-                  className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[150px] md:max-w-md"
-                  title={file.name}
+                  className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[150px] md:max-w-md ${isBlurred ? 'blur-sm select-none' : ''}`}
+                  title={isBlurred ? '' : file.name}
                 >
                   {file.short_name || file.name}
                 </span>

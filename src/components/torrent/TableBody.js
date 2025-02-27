@@ -17,6 +17,7 @@ export default function TableBody({
   onDelete,
   setToast,
   activeType = 'torrents',
+  isBlurred = false,
 }) {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -25,13 +26,15 @@ export default function TableBody({
   const isMobile = useIsMobile();
 
   const toggleFiles = (itemId) => {
-    const newExpanded = new Set(expandedItems);
-    if (newExpanded.has(itemId)) {
-      newExpanded.delete(itemId);
-    } else {
-      newExpanded.add(itemId);
-    }
-    setExpandedItems(newExpanded);
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -58,6 +61,7 @@ export default function TableBody({
             setToast={setToast}
             activeType={activeType}
             isMobile={isMobile}
+            isBlurred={isBlurred}
           />
           {expandedItems.has(item.id) && item.files && (
             <FileRow
@@ -68,6 +72,7 @@ export default function TableBody({
               activeColumns={activeColumns}
               activeType={activeType}
               isMobile={isMobile}
+              isBlurred={isBlurred}
             />
           )}
         </Fragment>
