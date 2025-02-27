@@ -7,6 +7,7 @@ import { saEvent } from '@/utils/sa';
 export default function ItemActionButtons({
   item,
   onDelete,
+  isDeleting,
   toggleFiles,
   expandedItems,
   activeType = 'torrents',
@@ -116,6 +117,7 @@ export default function ItemActionButtons({
       {/* Delete button */}
       <ConfirmButton
         onClick={onDelete}
+        isLoading={isDeleting}
         confirmIcon={Icons.check}
         defaultIcon={Icons.delete}
         className={`p-1.5 rounded-full text-red-500 dark:text-red-400 

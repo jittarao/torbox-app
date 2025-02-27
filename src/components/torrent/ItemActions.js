@@ -13,6 +13,7 @@ export default function ItemActions({
   onDelete,
   toggleFiles,
   expandedItems,
+  setItems,
   setToast,
   activeType = 'torrents',
   isMobile = false,
@@ -74,6 +75,12 @@ export default function ItemActions({
     });
     if (!result.success) {
       throw new Error(result.error);
+    } else {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === item.id ? { ...item, active: false } : item,
+        ),
+      );
     }
   };
 
@@ -103,6 +110,7 @@ export default function ItemActions({
       <ItemActionButtons
         item={item}
         onDelete={handleDelete}
+        isDeleting={isDeleting}
         toggleFiles={toggleFiles}
         expandedItems={expandedItems}
         activeType={activeType}

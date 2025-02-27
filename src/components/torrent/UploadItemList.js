@@ -43,8 +43,8 @@ export default function UploadItemList({
                     rounded text-primary-text dark:text-primary-text-dark"
                 >
                   <option value={1}>Auto (Default)</option>
-                  <option value={2}>Always Seed</option>
-                  <option value={3}>Never Seed</option>
+                  <option value={2}>Seed</option>
+                  <option value={3}>Don't Seed</option>
                 </select>
                 <label className="flex items-center">
                   <input
