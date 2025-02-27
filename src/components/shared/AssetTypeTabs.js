@@ -51,7 +51,7 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
     },
     {
       id: 'webdl',
-      label: 'Web Downloads',
+      label: 'Web',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -73,14 +73,14 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
   ];
 
   return (
-    <div className="border-b border-border dark:border-border-dark">
-      <nav className="-mb-px flex justify-center space-x-8">
+    <div className="border-b border-border dark:border-border-dark overflow-x-auto">
+      <nav className="-mb-px flex justify-start md:justify-center space-x-2 md:space-x-8 px-4 md:px-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTypeChange(tab.id)}
             className={`
-              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-1
+              whitespace-nowrap py-3 md:py-4 px-3 md:px-1 border-b-2 font-medium text-sm flex items-center gap-2 md:gap-1 flex-1 md:flex-initial justify-center
               ${
                 activeType === tab.id
                   ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
@@ -89,7 +89,7 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
             `}
           >
             {tab.icon}
-            {tab.label}
+            <span className="min-w-[60px] md:min-w-0">{tab.label}</span>
           </button>
         ))}
       </nav>

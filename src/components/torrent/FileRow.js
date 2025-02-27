@@ -17,6 +17,7 @@ export default function FileRow({
   // Track last clicked file index for shift selection
   const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
+  const [isCopying, setIsCopying] = useState({});
   const { downloadSingle } = useDownloads(apiKey, activeType);
 
   const handleFileSelection = (index, file, checked, isShiftKey = false) => {
@@ -32,21 +33,30 @@ export default function FileRow({
     lastClickedFileIndexRef.current = index;
   };
 
-  const handleFileDownload = async (itemId, fileId) => {
-    setIsDownloading((prev) => ({ ...prev, [fileId]: true }));
+  const handleFileDownload = async (itemId, fileId, copyLink = false) => {
+    if (copyLink) {
+      setIsCopying((prev) => ({ ...prev, [fileId]: true }));
+    } else {
+      setIsDownloading((prev) => ({ ...prev, [fileId]: true }));
+    }
     const options = { fileId };
 
     switch (activeType) {
       case 'usenet':
-        await downloadSingle(itemId, options, 'usenet_id');
+        await downloadSingle(itemId, options, 'usenet_id', copyLink);
         break;
       case 'webdl':
-        await downloadSingle(itemId, options, 'web_id');
+        await downloadSingle(itemId, options, 'web_id', copyLink);
         break;
       default:
-        await downloadSingle(itemId, options, 'torrent_id');
+        await downloadSingle(itemId, options, 'torrent_id', copyLink);
     }
-    setIsDownloading((prev) => ({ ...prev, [fileId]: false }));
+
+    if (copyLink) {
+      setIsCopying((prev) => ({ ...prev, [fileId]: false }));
+    } else {
+      setIsDownloading((prev) => ({ ...prev, [fileId]: false }));
+    }
   };
 
   return (
@@ -119,7 +129,21 @@ export default function FileRow({
                 </div>
               </div>
             </td>
-            <td className="px-3 md:px-6 py-2 whitespace-nowrap text-right sticky right-0 z-10 bg-inherit dark:bg-inherit shadow-[-8px_0_10px_-5px_rgba(0,0,0,0.1)]">
+            <td className="px-3 md:px-6 py-2 whitespace-nowrap text-right sticky right-0 z-10 bg-inherit dark:bg-inherit">
+              {/* Copy link button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFileDownload(item.id, file.id, true);
+                }}
+                disabled={isCopying[file.id]}
+                className="p-1.5 rounded-full text-accent dark:text-accent-dark 
+                  hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+              >
+                {isCopying[file.id] ? <Spinner size="sm" /> : Icons.copy}
+              </button>
+
+              {/* Download button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();

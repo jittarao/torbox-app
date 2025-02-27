@@ -139,16 +139,17 @@ export default function SearchResults({ apiKey }) {
     <div>
       {results.length > 0 && (
         <>
-          <div className="flex items-center justify-between py-4">
+          {/* Search results actions */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark">
+              <h2 className="text-lg md:text-xl font-semibold text-primary-text dark:text-primary-text-dark">
                 {filteredResults.length} results
               </h2>
             </div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               {searchType === 'torrents' && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+                <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
+                  <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -181,21 +182,26 @@ export default function SearchResults({ apiKey }) {
                   </div>
                 </label>
               )}
-              <Dropdown
-                options={SORT_OPTIONS[searchType]}
-                value={sortKey}
-                onChange={handleSortChange}
-                className="w-40"
-              />
-              <button
-                onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
-                className="p-2 hover:bg-surface-hover dark:hover:bg-surface-hover-dark rounded-lg transition-colors"
-              >
-                {sortDir === 'desc' ? '↓' : '↑'}
-              </button>
+              <div className="flex items-center gap-2 flex-1 md:flex-none order-1 md:order-2">
+                <Dropdown
+                  options={SORT_OPTIONS[searchType]}
+                  value={sortKey}
+                  onChange={handleSortChange}
+                  className="w-full md:w-40"
+                />
+                <button
+                  onClick={() =>
+                    setSortDir(sortDir === 'desc' ? 'asc' : 'desc')
+                  }
+                  className="p-2 hover:bg-surface-hover dark:hover:bg-surface-hover-dark rounded-lg transition-colors shrink-0"
+                >
+                  {sortDir === 'desc' ? '↓' : '↑'}
+                </button>
+              </div>
             </div>
           </div>
 
+          {/* Search results list */}
           <div className="space-y-4">
             {filteredResults.map((item) => (
               <div

@@ -13,8 +13,10 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@sentry/nextjs": "^9.2.0",
+    "chart.js": "^4.4.8",
     "next": "15.1.7",
     "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.5",
     "zustand": "^5.0.3"

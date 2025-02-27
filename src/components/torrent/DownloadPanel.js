@@ -29,9 +29,9 @@ export default function DownloadPanel({
   };
 
   return (
-    <div className="mt-4 p-2 lg:p-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+    <div className="mt-4 px-4 py-2 lg:p-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2 mb-2">
-        <h3 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
+        <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
           Download Links
           {isDownloading && (
             <span className="block lg:inline text-sm text-primary-text/70 dark:text-primary-text-dark/70 lg:ml-2">

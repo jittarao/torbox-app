@@ -12,7 +12,7 @@ const MAX_FILES = 50;
 
 // Local storage keys
 const STORAGE_KEY = 'torrent-upload-options';
-const SHOW_OPTIONS_KEY = 'torrent-upload-show-options';
+const SHOW_OPTIONS_KEY = 'uploader-options-expanded';
 
 // Default options to apply to all uploaded assets + auto start options
 const DEFAULT_OPTIONS = {

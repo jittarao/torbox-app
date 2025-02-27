@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useFetchData } from '../shared/hooks/useFetchData';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDelete } from '../shared/hooks/useDelete';
@@ -14,12 +14,37 @@ import DownloadPanel from './DownloadPanel';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import ActionBar from './ActionBar';
+import SpeedChart from './SpeedChart';
 import Toast from '@/components/shared/Toast';
+
+// Local storage key for mobile notice dismissal
+const MOBILE_NOTICE_DISMISSED_KEY = 'mobile-notice-dismissed';
 
 export default function ItemsTable({ apiKey }) {
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('torrents');
   const [showMobileNotice, setShowMobileNotice] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // Load mobile notice dismissal preference from localStorage
+  useEffect(() => {
+    setMounted(true);
+
+    if (typeof localStorage !== 'undefined') {
+      const noticeDismissed = localStorage.getItem(MOBILE_NOTICE_DISMISSED_KEY);
+      if (noticeDismissed === 'true') {
+        setShowMobileNotice(false);
+      }
+    }
+  }, []);
+
+  // Save mobile notice dismissal preference to localStorage
+  const handleDismissMobileNotice = () => {
+    setShowMobileNotice(false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(MOBILE_NOTICE_DISMISSED_KEY, 'true');
+    }
+  };
 
   const { loading, items, setItems, fetchItems } = useFetchData(
     apiKey,
@@ -77,6 +102,8 @@ export default function ItemsTable({ apiKey }) {
 
       <ItemUploader apiKey={apiKey} activeType={activeType} />
 
+      <SpeedChart items={items} activeType={activeType} />
+
       <DownloadPanel
         downloadLinks={downloadLinks}
         isDownloading={isDownloading}
@@ -110,15 +137,15 @@ export default function ItemsTable({ apiKey }) {
         />
       </div>
 
-      {/* Mobile notice */}
-      {showMobileNotice && (
+      {/* Mobile notice - only show if mounted (client-side) to prevent hydration mismatch */}
+      {mounted && showMobileNotice && (
         <div className="md:hidden p-3 my-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
           <p>
             Viewing simplified table on mobile. Rotate device or use larger
             screen for full view.
           </p>
           <button
-            onClick={() => setShowMobileNotice(false)}
+            onClick={handleDismissMobileNotice}
             className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
             aria-label="Dismiss notice"
           >

@@ -51,7 +51,7 @@ export default function TableHeader({
             </th>
           );
         })}
-        <th className="px-3 md:px-6 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider sticky right-0 bg-surface-alt dark:bg-surface-alt-dark z-10 shadow-[-8px_0_10px_-5px_rgba(0,0,0,0.1)]">
+        <th className="px-3 md:px-6 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider sticky right-0 bg-surface-alt dark:bg-surface-alt-dark z-10">
           Actions
         </th>
       </tr>

@@ -90,10 +90,19 @@ export function useDownloads(apiKey, assetType = 'torrents') {
     };
   };
 
-  const downloadSingle = async (id, options = {}, idField = null) => {
+  const downloadSingle = async (
+    id,
+    options = {},
+    idField = null,
+    copyLink = false,
+  ) => {
     const result = await requestDownloadLink(id, options, idField);
     if (result.success) {
-      window.open(result.data.url, '_blank');
+      if (copyLink) {
+        await navigator.clipboard.writeText(result.data.url);
+      } else {
+        window.open(result.data.url, '_blank');
+      }
       return true;
     }
     return false;

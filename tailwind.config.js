@@ -37,7 +37,7 @@ module.exports = {
               dark: '#090f18',
               hover: {
                 DEFAULT: '#efe8d7',
-                dark: '#142237',
+                dark: '#0c1726',
               },
             },
           },

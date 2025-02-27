@@ -283,7 +283,7 @@ export default function ItemRow({
         />
       </td>
       {visibleColumns.map((columnId) => renderCell(columnId))}
-      <td className="px-3 md:px-4 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit shadow-[-8px_0_10px_-5px_rgba(0,0,0,0.1)]">
+      <td className="px-3 md:px-4 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit">
         <ItemActions
           item={item}
           apiKey={apiKey}

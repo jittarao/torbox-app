@@ -6,10 +6,31 @@ export const formatSize = (bytes) => {
 };
 
 export const formatSpeed = (bytesPerSecond) => {
-  if (!bytesPerSecond) return '0 B/s';
-  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  const i = Math.floor(Math.log(bytesPerSecond) / Math.log(1024));
-  return `${(bytesPerSecond / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+  // Handle all edge cases: null, undefined, NaN, 0, negative values
+  if (
+    bytesPerSecond === null ||
+    bytesPerSecond === undefined ||
+    isNaN(bytesPerSecond) ||
+    bytesPerSecond <= 0
+  ) {
+    return '0 B/s';
+  }
+
+  try {
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+    const i = Math.floor(Math.log(bytesPerSecond) / Math.log(1024));
+
+    // Ensure i is within valid range for the units array
+    if (i < 0 || i >= units.length) {
+      return '0 B/s';
+    }
+
+    // Drop decimal places by using Math.round instead of toFixed
+    return `${Math.round(bytesPerSecond / Math.pow(1024, i))} ${units[i]}`;
+  } catch (error) {
+    // Fallback in case of any calculation errors
+    return '0 B/s';
+  }
 };
 
 export const formatDate = (dateString) => {

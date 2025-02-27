@@ -9,6 +9,10 @@ import UploadProgress from './UploadProgress';
 import useIsMobile from '@/hooks/useIsMobile';
 import { saEvent } from '@/utils/sa';
 
+// Local storage keys
+const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
+const UPLOADER_OPTIONS_KEY = 'uploader-options-expanded';
+
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const {
     items,
@@ -31,24 +35,68 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
-  // Set initial expanded state based on screen size
+
+  // Set initial expanded state based on localStorage or screen size
   useEffect(() => {
     setMounted(true);
 
     const handleResize = () => {
-      // Desktop (>= 1024px) is expanded by default, mobile/tablet is collapsed
-      setIsExpanded(window.innerWidth >= 1024);
+      // Only set default state if no localStorage value exists
+      if (
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem(UPLOADER_EXPANDED_KEY) === null
+      ) {
+        // Desktop (>= 1024px) is expanded by default, mobile/tablet is collapsed
+        setIsExpanded(window.innerWidth >= 1024);
+      }
     };
 
-    // Set initial state
-    handleResize();
+    // Try to get saved preference from localStorage
+    if (typeof localStorage !== 'undefined') {
+      const savedState = localStorage.getItem(UPLOADER_EXPANDED_KEY);
+      if (savedState !== null) {
+        setIsExpanded(savedState === 'true');
+      } else {
+        // If no saved preference, set based on screen size
+        handleResize();
+      }
 
-    // Add resize listener
+      // Also load options expanded state
+      if (activeType === 'torrents') {
+        const savedOptionsState = localStorage.getItem(UPLOADER_OPTIONS_KEY);
+        if (savedOptionsState !== null) {
+          setShowOptions(savedOptionsState === 'true');
+        }
+      }
+    } else {
+      // Fallback if localStorage is not available
+      handleResize();
+    }
+
+    // Add resize listener (only affects initial state when no localStorage value exists)
     window.addEventListener('resize', handleResize);
 
     // Cleanup
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [activeType, setShowOptions]);
+
+  // Save expanded state to localStorage when it changes
+  useEffect(() => {
+    if (mounted && typeof localStorage !== 'undefined') {
+      localStorage.setItem(UPLOADER_EXPANDED_KEY, isExpanded.toString());
+    }
+  }, [isExpanded, mounted]);
+
+  // Save options expanded state to localStorage when it changes
+  useEffect(() => {
+    if (
+      mounted &&
+      typeof localStorage !== 'undefined' &&
+      activeType === 'torrents'
+    ) {
+      localStorage.setItem(UPLOADER_OPTIONS_KEY, showOptions.toString());
+    }
+  }, [showOptions, mounted, activeType]);
 
   // Clear items when switching asset types
   useEffect(() => {
@@ -112,9 +160,9 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   if (!mounted) return null;
 
   return (
-    <div className="mt-4 p-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+    <div className="mt-4 px-4 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
-        <h3 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
+        <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
           {isMobile ? 'Upload' : assetTypeInfo.title}
         </h3>
         <div className="flex items-center gap-2 lg:gap-4">

@@ -11,7 +11,7 @@ export default function ApiKeyInput({ value, onKeyChange }) {
         value={value}
         onChange={(e) => onKeyChange(e.target.value)}
         placeholder="Enter TorBox API Key"
-        className="w-full p-3 border border-border dark:border-border-dark rounded-lg 
+        className="w-full px-3 py-2 pr-12 md:p-3.5 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
           bg-transparent text-primary-text dark:text-primary-text-dark 
           placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
           focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
@@ -22,22 +22,24 @@ export default function ApiKeyInput({ value, onKeyChange }) {
       <button
         type="button"
         onClick={() => setShowKey(!showKey)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-text/50 
+        className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 text-primary-text/50 
           dark:text-primary-text-dark/50 hover:text-primary-text 
-          dark:hover:text-primary-text-dark transition-colors"
+          dark:hover:text-primary-text-dark transition-colors
+          p-2 touch-manipulation"
+        aria-label={showKey ? 'Hide API key' : 'Show API key'}
       >
         {showKey ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-5 w-5"
+            className="h-5 w-5 md:h-[18px] md:w-[18px]"
           >
             <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
             <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
@@ -47,15 +49,15 @@ export default function ApiKeyInput({ value, onKeyChange }) {
         ) : (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-5 w-5"
+            className="h-5 w-5 md:h-[18px] md:w-[18px]"
           >
             <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
             <circle cx="12" cy="12" r="3" />
