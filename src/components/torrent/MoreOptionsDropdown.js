@@ -14,6 +14,7 @@ export default function MoreOptionsDropdown({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [isExporting, setIsExporting] = useState(false);
+  const [isReannouncing, setIsReannouncing] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -182,6 +183,45 @@ export default function MoreOptionsDropdown({
     setIsMenuOpen(false);
   };
 
+  // Handle reannounce
+  const handleReannounce = async () => {
+    if (isReannouncing) return;
+    setIsReannouncing(true);
+    try {
+      const response = await fetch('/api/torrents/control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          torrent_id: item.id,
+          operation: 'reannounce',
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setToast({
+          message: 'Torrent reannounced successfully',
+          type: 'success',
+        });
+        saEvent('reannounce_torrent');
+      } else {
+        throw new Error(data.error || 'Failed to reannounce torrent');
+      }
+    } catch (error) {
+      console.error('Error reannouncing torrent:', error);
+      setToast({
+        message: `Error: ${error.message}`,
+        type: 'error',
+      });
+    } finally {
+      setIsReannouncing(false);
+      setIsMenuOpen(false);
+    }
+  };
+
   const renderMenuItems = () => {
     const items = [];
 
@@ -231,6 +271,18 @@ export default function MoreOptionsDropdown({
           >
             {isExporting ? <Spinner size="xs" /> : Icons.copy}
             <span className="ml-2">Copy Full Magnet</span>
+          </button>,
+        );
+
+        items.push(
+          <button
+            key="reannounce"
+            onClick={handleReannounce}
+            disabled={isReannouncing}
+            className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+          >
+            {isReannouncing ? <Spinner size="xs" /> : Icons.refresh}
+            <span className="ml-2">Reannounce</span>
           </button>,
         );
       }
