@@ -120,7 +120,7 @@ export default function ItemsTable({ apiKey }) {
           {/* Wrap ActionBar in a sticky container */}
           <div className="sticky top-0 z-20">
             <ActionBar
-              items={sortedItems}
+              unfilteredItems={items}
               selectedItems={selectedItems}
               setSelectedItems={setSelectedItems}
               hasSelectedFiles={hasSelectedFiles}

@@ -54,7 +54,7 @@ export default function TableBody({
             toggleFiles={toggleFiles}
             apiKey={apiKey}
             onDelete={onDelete}
-            // Pass new props for shift+click functionality
+            // props for shift+click functionality
             rowIndex={index}
             items={items}
             lastClickedItemIndexRef={lastClickedItemIndexRef}

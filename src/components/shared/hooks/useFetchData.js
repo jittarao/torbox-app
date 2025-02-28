@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { isQueuedItem, getAutoStartOptions, sortItems } from '@/utils/utility';
 
 // Rate limit constants
 const MAX_CALLS = 5;
@@ -6,18 +7,6 @@ const WINDOW_SIZE = 10000; // 10 seconds in ms
 const MIN_INTERVAL_BETWEEN_CALLS = 2000; // Minimum 2 seconds between calls
 const POLLING_INTERVAL = 10000; // 10 seconds in ms
 const MIN_INTERVAL_MAPPING = { torrents: 2000, usenet: 2000, webdl: 2000 };
-
-// Helper functions moved outside hook
-const isQueuedItem = (item) =>
-  !item.download_state && !item.download_finished && !item.active;
-
-const getAutoStartOptions = () => {
-  const savedOptions = localStorage.getItem('torrent-upload-options');
-  return savedOptions ? JSON.parse(savedOptions) : null;
-};
-
-const sortItems = (items) =>
-  items.sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0));
 
 export function useFetchData(apiKey, type = 'torrents') {
   // Separate state for each data type

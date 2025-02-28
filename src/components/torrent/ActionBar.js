@@ -2,14 +2,14 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import ColumnManager from './ColumnManager';
-import Dropdown from '@/components/shared/Dropdown';
 import StatusFilterDropdown from '@/components/shared/StatusFilterDropdown';
 import { COLUMNS, STATUS_OPTIONS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
 import { saEvent } from '@/utils/sa';
+import isEqual from 'lodash/isEqual';
 
 export default function ActionBar({
-  items,
+  unfilteredItems,
   selectedItems,
   setSelectedItems,
   hasSelectedFiles,
@@ -125,13 +125,13 @@ export default function ActionBar({
 
   // Get the status for each item
   const itemStatuses = useMemo(() => {
-    return items.map((item) => {
+    return unfilteredItems.map((item) => {
       const status = getMatchingStatus(item);
       return {
         [item.id]: status,
       };
     });
-  }, [items]);
+  }, [unfilteredItems]);
 
   // Get the count of each status
   const statusCounts = useMemo(() => {
@@ -161,7 +161,7 @@ export default function ActionBar({
       if (option.label === 'All') {
         localOption = {
           ...option,
-          label: `All (${items.length})`,
+          label: `All (${unfilteredItems.length})`,
         };
       } else {
         localOption = {
@@ -181,8 +181,12 @@ export default function ActionBar({
     >
       <div className="flex gap-4 items-center flex-wrap">
         <div className="text-md text-primary-text dark:text-primary-text-dark">
-          <span className="font-semibold">
-            {items.length} {items.length === 1 ? itemTypeName : itemTypePlural}
+          {/* Total items */}
+          <span
+            className={`font-semibold ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'}  transition-colors`}
+            onClick={() => onStatusChange('all')}
+          >
+            {unfilteredItems.length} {itemTypePlural}
           </span>
 
           {/* Status counts list */}
@@ -190,14 +194,38 @@ export default function ActionBar({
             <div className="flex flex-wrap gap-3 mt-1.5">
               {Object.entries(statusCounts)
                 .filter(([status, count]) => count !== 0)
-                .map(([status, count]) => (
-                  <span
-                    key={status}
-                    className={`text-sm font-medium ${getStatusStyles(status)}`}
-                  >
-                    {count} {status.toLowerCase()}
-                  </span>
-                ))}
+                .map(([status, count]) => {
+                  const isSelected =
+                    statusFilter !== 'all' &&
+                    isEqual(
+                      STATUS_OPTIONS.find((opt) => opt.label === status)?.value,
+                      JSON.parse(statusFilter),
+                    );
+                  return (
+                    <span
+                      key={status}
+                      onClick={() => {
+                        const option = STATUS_OPTIONS.find(
+                          (opt) => opt.label === status,
+                        );
+                        if (option) {
+                          const newValue =
+                            typeof option.value === 'object'
+                              ? JSON.stringify(option.value)
+                              : option.value;
+                          onStatusChange(newValue);
+                        }
+                      }}
+                      className={`text-sm font-medium border-b border-dotted 
+                        ${getStatusStyles(status)}
+                        ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-60' : 'opacity-100'}
+                        ${isSelected ? 'border-current cursor-default' : 'cursor-pointer hover:opacity-80 border-current/30 hover:border-current'}
+                        transition-all`}
+                    >
+                      {count} {status.toLowerCase()}
+                    </span>
+                  );
+                })}
             </div>
           )}
         </div>
