@@ -55,26 +55,6 @@ export async function POST(request) {
   const formData = await request.formData();
 
   try {
-    // Make sure we're sending the right form data to the API
-    const apiFormData = new FormData();
-
-    // Copy all fields from the request formData
-    for (const [key, value] of formData.entries()) {
-      // Handle special cases for compatibility
-      if (key === 'file' || key === 'url' || key === 'magnet') {
-        apiFormData.append(key, value);
-      } else if (key === 'seed') {
-        apiFormData.append('seed', parseInt(value));
-      } else if (key === 'allowZip') {
-        apiFormData.append('allow_zip', value);
-      } else if (key === 'asQueued') {
-        apiFormData.append('as_queued', value);
-      } else {
-        // Pass through any other fields
-        apiFormData.append(key, value);
-      }
-    }
-
     const response = await fetch(
       `${API_BASE}/${API_VERSION}/api/torrents/createtorrent`,
       {
@@ -82,7 +62,7 @@ export async function POST(request) {
         headers: {
           Authorization: `Bearer ${apiKey}`,
         },
-        body: apiFormData,
+        body: formData,
       },
     );
 
