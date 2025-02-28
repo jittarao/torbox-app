@@ -100,7 +100,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
   // Clear items when switching asset types
   useEffect(() => {
-    setItems([]);
     setError(null);
   }, [activeType, setItems, setError]);
 

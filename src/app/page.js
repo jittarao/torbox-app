@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/torrent/ApiKeyInput';
@@ -72,7 +73,6 @@ export default function Home() {
     const urlParams = new URLSearchParams(window.location.search);
     const magnetLink = urlParams.get('magnet');
     if (magnetLink) {
-      console.log('Received magnet link:', magnetLink);
       setLinkInput(magnetLink);
     }
   }, []);
@@ -87,11 +87,9 @@ export default function Home() {
     // Here you can handle the file based on its type
     if (file.name.endsWith('.torrent')) {
       // Handle torrent file
-      console.log('Received torrent file:', file.name);
       validateAndAddFiles([file]);
     } else if (file.name.endsWith('.nzb')) {
       // Handle NZB file
-      console.log('Received NZB file:', file.name);
       validateAndAddFiles([file]);
     }
   });

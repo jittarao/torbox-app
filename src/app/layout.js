@@ -17,10 +17,13 @@ export const metadata = {
   title: 'TorBox Manager',
   description: 'TorBox Manager',
   manifest: '/manifest.json',
-  themeColor: '#000000',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'black-translucent',
+};
+
+export const viewport = {
+  themeColor: '#000000',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
 export default function RootLayout({ children }) {

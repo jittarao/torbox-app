@@ -76,14 +76,5 @@
       "url": "/?magnet=%s"
     }
   ],
-  "share_target": {
-    "action": "/",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "magnet",
-      "url": "magnet"
-    }
-  },
   "handle_links": "preferred"
 }
