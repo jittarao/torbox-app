@@ -16,6 +16,7 @@ import TableBody from './TableBody';
 import ActionBar from './ActionBar';
 import SpeedChart from './SpeedChart';
 import Toast from '@/components/shared/Toast';
+import Spinner from '../shared/Spinner';
 
 // Local storage key for mobile notice dismissal
 const MOBILE_NOTICE_DISMISSED_KEY = 'mobile-notice-dismissed';
@@ -84,13 +85,6 @@ export default function ItemsTable({ apiKey }) {
 
   const sortedItems = sortTorrents(filteredItems);
 
-  if (loading && items.length === 0)
-    return (
-      <div className="text-center text-primary-text dark:text-primary-text-dark">
-        Loading...
-      </div>
-    );
-
   return (
     <div>
       <AssetTypeTabs
@@ -103,100 +97,111 @@ export default function ItemsTable({ apiKey }) {
 
       <ItemUploader apiKey={apiKey} activeType={activeType} />
 
-      <SpeedChart items={items} activeType={activeType} />
-
-      <DownloadPanel
-        downloadLinks={downloadLinks}
-        isDownloading={isDownloading}
-        downloadProgress={downloadProgress}
-        onDismiss={() => setDownloadLinks([])}
-        setToast={setToast}
-      />
-
-      {/* Divider */}
-      <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
-
-      {/* Wrap ActionBar in a sticky container */}
-      <div className="sticky top-0 z-20">
-        <ActionBar
-          items={sortedItems}
-          selectedItems={selectedItems}
-          setSelectedItems={setSelectedItems}
-          hasSelectedFiles={hasSelectedFiles}
-          activeColumns={activeColumns}
-          onColumnChange={handleColumnChange}
-          search={search}
-          setSearch={setSearch}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-          isDownloading={isDownloading}
-          onBulkDownload={() => handleBulkDownload(selectedItems, sortedItems)}
-          isDeleting={isDeleting}
-          onBulkDelete={() => deleteItems(selectedItems)}
-          className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark"
-          activeType={activeType}
-          isBlurred={isBlurred}
-          onBlurToggle={() => setIsBlurred(!isBlurred)}
+      {loading && items.length === 0 ? (
+        <Spinner
+          size="sm"
+          className="flex justify-center items-center text-primary-text dark:text-primary-text-dark"
         />
-      </div>
+      ) : (
+        <>
+          <SpeedChart items={items} activeType={activeType} />
 
-      {/* Mobile notice - only show if mounted (client-side) to prevent hydration mismatch */}
-      {mounted && showMobileNotice && (
-        <div className="md:hidden p-3 my-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
-          <p>
-            Viewing simplified table on mobile. Rotate device or use larger
-            screen for full view.
-          </p>
-          <button
-            onClick={handleDismissMobileNotice}
-            className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
-            aria-label="Dismiss notice"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
-        <table className="min-w-full divide-y divide-border dark:divide-border-dark relative">
-          <TableHeader
-            activeColumns={activeColumns}
-            selectedItems={selectedItems}
-            onSelectAll={handleSelectAll}
-            items={sortedItems}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-          />
-          <TableBody
-            items={sortedItems}
-            setItems={setItems}
-            activeColumns={activeColumns}
-            selectedItems={selectedItems}
-            onRowSelect={handleRowSelect}
-            onFileSelect={handleFileSelect}
-            setSelectedItems={setSelectedItems}
-            apiKey={apiKey}
-            onDelete={deleteItem}
+          <DownloadPanel
+            downloadLinks={downloadLinks}
+            isDownloading={isDownloading}
+            downloadProgress={downloadProgress}
+            onDismiss={() => setDownloadLinks([])}
             setToast={setToast}
-            activeType={activeType}
-            isBlurred={isBlurred}
           />
-        </table>
-      </div>
+
+          {/* Divider */}
+          <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
+
+          {/* Wrap ActionBar in a sticky container */}
+          <div className="sticky top-0 z-20">
+            <ActionBar
+              items={sortedItems}
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+              hasSelectedFiles={hasSelectedFiles}
+              activeColumns={activeColumns}
+              onColumnChange={handleColumnChange}
+              search={search}
+              setSearch={setSearch}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              isDownloading={isDownloading}
+              onBulkDownload={() =>
+                handleBulkDownload(selectedItems, sortedItems)
+              }
+              isDeleting={isDeleting}
+              onBulkDelete={() => deleteItems(selectedItems)}
+              className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark"
+              activeType={activeType}
+              isBlurred={isBlurred}
+              onBlurToggle={() => setIsBlurred(!isBlurred)}
+            />
+          </div>
+
+          {/* Mobile notice - only show if mounted (client-side) to prevent hydration mismatch */}
+          {mounted && showMobileNotice && (
+            <div className="md:hidden p-3 my-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
+              <p>
+                Viewing simplified table on mobile. Rotate device or use larger
+                screen for full view.
+              </p>
+              <button
+                onClick={handleDismissMobileNotice}
+                className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+                aria-label="Dismiss notice"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
+            <table className="min-w-full divide-y divide-border dark:divide-border-dark relative">
+              <TableHeader
+                activeColumns={activeColumns}
+                selectedItems={selectedItems}
+                onSelectAll={handleSelectAll}
+                items={sortedItems}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              />
+              <TableBody
+                items={sortedItems}
+                setItems={setItems}
+                activeColumns={activeColumns}
+                selectedItems={selectedItems}
+                onRowSelect={handleRowSelect}
+                onFileSelect={handleFileSelect}
+                setSelectedItems={setSelectedItems}
+                apiKey={apiKey}
+                onDelete={deleteItem}
+                setToast={setToast}
+                activeType={activeType}
+                isBlurred={isBlurred}
+              />
+            </table>
+          </div>
+        </>
+      )}
 
       {toast && (
         <Toast
