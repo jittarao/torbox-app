@@ -77,8 +77,10 @@ export default function ItemActions({
       throw new Error(result.error);
     } else {
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === item.id ? { ...item, active: false } : item,
+        prev.map((localItem) =>
+          localItem.id === item.id
+            ? { ...localItem, active: false }
+            : localItem,
         ),
       );
     }

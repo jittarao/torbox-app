@@ -78,7 +78,9 @@ export default function UploadItemList({
                     }}
                     className="mr-1 accent-accent dark:accent-accent-dark"
                   />
-                  <span className="text-xs text-primary-text/70">Queue</span>
+                  <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                    Queue
+                  </span>
                 </label>
               </div>
             )}

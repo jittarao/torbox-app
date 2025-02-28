@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
+import { useUploaderStore } from '@/store/uploaderStore';
 
 // Parallel uploads
 const CONCURRENT_UPLOADS = 3;
-
-// Maximum number of files to upload
-const MAX_FILES = 50;
 
 // Local storage keys
 const STORAGE_KEY = 'torrent-upload-options';
@@ -24,11 +22,20 @@ const DEFAULT_OPTIONS = {
 };
 
 export const useUpload = (apiKey, assetType = 'torrents') => {
-  const [items, setItems] = useState([]); // List of items to upload
+  const {
+    items,
+    error,
+    isUploading,
+    progress,
+    addItems,
+    setItems,
+    setError,
+    setIsUploading,
+    setProgress,
+    updateItemStatus,
+  } = useUploaderStore();
+
   const [linkInput, setLinkInput] = useState(''); // Input for links (magnet, nzb, webdl)
-  const [isUploading, setIsUploading] = useState(false); // Uploading state
-  const [progress, setProgress] = useState({ current: 0, total: 0 }); // Progress state
-  const [error, setError] = useState(''); // Error state
   const [mounted, setMounted] = useState(false); // Track if component is mounted
 
   // Global upload options to apply to all uploaded assets + auto start options
@@ -179,17 +186,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Validate and add files to the upload list
   const validateAndAddFiles = (newFiles) => {
-    const queuedCount = items.reduce(
-      (count, item) => (item.status === 'queued' ? count + 1 : count),
-      0,
-    );
-
     const validFiles = validateFiles(newFiles);
-
-    if (queuedCount + validFiles.length > MAX_FILES) {
-      setError(`Maximum ${MAX_FILES} items allowed`);
-      return;
-    }
 
     // Create items with the file data properly assigned
     const newItems = validFiles.map((file) => {
@@ -199,8 +196,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       return item;
     });
 
-    setItems((prev) => [...prev, ...newItems]);
-    setError('');
+    addItems(newItems);
   };
 
   // Handle link input
@@ -215,15 +211,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       .map((link) => createLinkItem(link));
 
     if (links.length) {
-      const totalItems =
-        items.filter((item) => item.status === 'queued').length + links.length;
-
-      if (totalItems > MAX_FILES) {
-        setError(`Maximum ${MAX_FILES} items allowed`);
-        return;
-      }
-
-      setItems((prev) => [...prev, ...links]);
+      addItems(links);
       setLinkInput(''); // Clear input after successful addition
     }
   };
@@ -285,40 +273,17 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         chunk.map(async (item) => {
           const itemIndex = items.findIndex((x) => x === item);
 
-          // Batch state updates
-          setItems((prev) => {
-            const newItems = [...prev];
-            newItems[itemIndex] = {
-              ...newItems[itemIndex],
-              status: 'processing',
-            };
-            return newItems;
-          });
+          updateItemStatus(itemIndex, 'processing');
 
           const result = await uploadItem(item);
 
           if (result.success) {
-            setItems((prev) => {
-              const newItems = [...prev];
-              newItems[itemIndex] = {
-                ...newItems[itemIndex],
-                status: 'success',
-              };
-              return newItems;
-            });
+            updateItemStatus(itemIndex, 'success');
             setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
             return true;
           }
 
-          setItems((prev) => {
-            const newItems = [...prev];
-            newItems[itemIndex] = {
-              ...newItems[itemIndex],
-              status: 'error',
-              error: result.error,
-            };
-            return newItems;
-          });
+          updateItemStatus(itemIndex, 'error', result.error);
           setError(result.error);
           return false;
         }),
@@ -329,15 +294,6 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     }
 
     setIsUploading(false);
-  };
-
-  // Reset uploader state and clear items
-  const resetUploader = () => {
-    setItems([]);
-    setLinkInput('');
-    setError('');
-    setProgress({ current: 0, total: 0 });
-    // Don't reset global options since they should persist
   };
 
   // Update global upload options
@@ -357,8 +313,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     });
 
     // Apply to all queued items
-    setItems((prev) =>
-      prev.map((item) =>
+    setItems(
+      items.map((item) =>
         item.status === 'queued' ? { ...item, ...options } : item,
       ),
     );
@@ -423,9 +379,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     validateAndAddFiles,
     uploadItem,
     uploadItems,
-    removeItem: (index) =>
-      setItems((prev) => prev.filter((_, i) => i !== index)),
-    resetUploader, // Currently not used
+    removeItem: useUploaderStore((state) => state.removeItem),
+    resetUploader: useUploaderStore((state) => state.resetUploader), // Currently not used
     globalOptions,
     updateGlobalOptions,
     showOptions,
