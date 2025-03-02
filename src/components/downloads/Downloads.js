@@ -51,10 +51,12 @@ export default function Downloads({ apiKey }) {
       <ItemUploader apiKey={apiKey} activeType={activeType} />
 
       {loading && items.length === 0 ? (
-        <Spinner
-          size="sm"
-          className="flex justify-center items-center text-primary-text dark:text-primary-text-dark"
-        />
+        <div className="flex justify-center items-center">
+          <Spinner
+            size="sm"
+            className="text-primary-text dark:text-primary-text-dark"
+          />
+        </div>
       ) : (
         <>
           <SpeedChart items={items} activeType={activeType} />

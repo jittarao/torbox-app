@@ -4,7 +4,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 export default function ResizableColumn({
   columnId,
   children,
-  width,
+  width = 100,
   onWidthChange,
   className = '',
   sortable = false,
@@ -24,7 +24,7 @@ export default function ResizableColumn({
 
       resizeRef.current = {
         startX: e.clientX,
-        startWidth: width,
+        startWidth: parseInt(width || 100, 10),
       };
       setIsResizing(true);
     },
@@ -38,8 +38,9 @@ export default function ResizableColumn({
       e.preventDefault();
       e.stopPropagation();
 
-      const diff = e.clientX - resizeRef.current.startX;
-      const newWidth = Math.max(resizeRef.current.startWidth + diff, 50);
+      const { startX, startWidth } = resizeRef.current;
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(startWidth + diff, 50);
       onWidthChange(newWidth);
     },
     [isResizing, onWidthChange],
@@ -76,7 +77,7 @@ export default function ResizableColumn({
           : ''
       }`}
       style={
-        columnId === 'name' && isMobile
+        isMobile && columnId === 'name'
           ? {}
           : {
               width: `${width}px`,
