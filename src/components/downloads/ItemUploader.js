@@ -155,11 +155,16 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     setLinkInput(linkInput);
   };
 
+  const uploaderShowOptionsText = isMobile ? 'Show options' : 'Show options';
+  const uploaderHideOptionsText = isMobile ? 'Hide options' : 'Hide options';
+  const uploaderShowSectionText = isMobile ? 'Show' : 'Show section';
+  const uploaderHideSectionText = isMobile ? 'Hide' : 'Hide section';
+
   // Don't render anything until client-side hydration is complete
   if (!isClient) return null;
 
   return (
-    <div className="mt-4 px-4 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+    <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
         <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
           {isMobile ? 'Upload' : assetTypeInfo.title}
@@ -170,7 +175,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               onClick={() => setShowOptions(!showOptions)}
               className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             >
-              {showOptions ? 'Hide Options' : 'Show Options'}
+              {showOptions ? uploaderHideOptionsText : uploaderShowOptionsText}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className={`w-4 h-4 transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`}
@@ -190,7 +195,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
           >
-            {isExpanded ? 'Hide section' : 'Show section'}
+            {isExpanded ? uploaderHideSectionText : uploaderShowSectionText}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}

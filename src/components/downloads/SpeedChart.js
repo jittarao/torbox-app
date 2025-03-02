@@ -348,12 +348,16 @@ export default function SpeedChart({ items, activeType }) {
     },
   };
 
+  const chartTitleText = isMobile ? 'Network' : 'Network Activity';
+  const chartShowOptionsText = isMobile ? 'Show' : 'Show chart';
+  const chartHideOptionsText = isMobile ? 'Hide' : 'Hide chart';
+
   return (
-    <div className="mt-4 px-4 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+    <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
         <div className="flex items-center gap-4">
           <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
-            {isMobile ? 'Network' : 'Network Activity'}
+            {chartTitleText}
           </h3>
           {hasActivity && (
             <div className="flex items-center space-x-4">
@@ -377,7 +381,7 @@ export default function SpeedChart({ items, activeType }) {
           className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
           aria-expanded={isExpanded}
         >
-          {isExpanded ? 'Hide chart' : 'Show chart'}
+          {isExpanded ? chartHideOptionsText : chartShowOptionsText}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
