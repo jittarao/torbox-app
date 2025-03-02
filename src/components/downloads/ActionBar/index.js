@@ -10,6 +10,7 @@ import ActionButtons from './components/ActionButtons';
 import ViewControls from './components/ViewControls';
 import StatusFilterDropdown from '@/components/shared/StatusFilterDropdown';
 import { useStatusCounts } from './hooks/useStatusCounts';
+import Dropdown from '@/components/shared/Dropdown';
 
 export default function ActionBar({
   unfilteredItems,
@@ -31,6 +32,10 @@ export default function ActionBar({
   onBlurToggle,
   isFullscreen = false,
   onFullscreenToggle,
+  viewMode = 'table',
+  onViewModeChange,
+  sortField,
+  handleSort,
 }) {
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
@@ -59,6 +64,11 @@ export default function ActionBar({
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;
+
+  const sortOptions = activeColumns.map((column) => ({
+    label: COLUMNS[column].label,
+    value: column,
+  }));
 
   return (
     <div
@@ -96,25 +106,43 @@ export default function ActionBar({
       </div>
 
       <div className="flex gap-3 items-center flex-wrap">
-        <StatusFilterDropdown
-          options={statusOptions}
-          value={statusFilter}
-          onChange={(value) => onStatusChange(value)}
-          className="min-w-[150px]"
-        />
+        {/* Search bar */}
         <SearchBar
           search={search}
           onSearchChange={setSearch}
           itemTypePlural={itemTypePlural}
         />
 
+        {/* Filter by status */}
+        {/* <StatusFilterDropdown
+          options={statusOptions}
+          value={statusFilter}
+          onChange={(value) => onStatusChange(value)}
+          className="min-w-[150px]"
+        /> */}
+
+        {/* Sort downloads list */}
+        {viewMode === 'card' && (
+          <Dropdown
+            options={sortOptions}
+            value={sortField}
+            onChange={(value) => handleSort(value)}
+            className="min-w-[150px]"
+          />
+        )}
+
+        {/* View controls such as blur, fullscreen, and view mode */}
         <ViewControls
           isBlurred={isBlurred}
           onBlurToggle={onBlurToggle}
           isFullscreen={isFullscreen}
           onFullscreenToggle={onFullscreenToggle}
+          viewMode={viewMode}
+          onViewModeChange={onViewModeChange}
+          setSelectedItems={setSelectedItems}
         />
 
+        {/* Column manager */}
         <div className="hidden lg:block">
           <ColumnManager
             columns={COLUMNS}

@@ -13,7 +13,6 @@ import ItemActions from './ItemActions';
 export default function ItemRow({
   item,
   activeColumns,
-  columnWidths,
   selectedItems,
   setSelectedItems,
   setItems,
@@ -31,6 +30,7 @@ export default function ItemRow({
   activeType = 'torrents',
   isMobile = false,
   isBlurred = false,
+  viewMode = 'table',
 }) {
   const handleItemSelection = (checked, isShiftKey = false) => {
     if (
@@ -316,6 +316,7 @@ export default function ItemRow({
           setToast={setToast}
           activeType={activeType}
           isMobile={isMobile}
+          viewMode={viewMode}
         />
       </td>
     </tr>

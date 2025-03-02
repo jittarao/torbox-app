@@ -17,6 +17,7 @@ export default function ItemActions({
   setToast,
   activeType = 'torrents',
   isMobile = false,
+  viewMode,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { downloadSingle } = useDownloads(apiKey, activeType);
@@ -120,6 +121,7 @@ export default function ItemActions({
         onStopSeeding={handleStopSeeding}
         onForceStart={handleForceStart}
         onDownload={handleDownload}
+        viewMode={viewMode}
       />
 
       <MoreOptionsDropdown

@@ -15,6 +15,7 @@ export default function ItemActionButtons({
   onStopSeeding,
   onForceStart,
   onDownload,
+  viewMode,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -81,7 +82,7 @@ export default function ItemActionButtons({
       )}
 
       {/* Toggle files button */}
-      {item.download_present && (
+      {item.download_present && viewMode === 'table' && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -102,17 +103,19 @@ export default function ItemActionButtons({
       )}
 
       {/* Download button */}
-      <button
-        onClick={handleDownload}
-        disabled={isDownloading}
-        className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
+      {item.download_present && (
+        <button
+          onClick={handleDownload}
+          disabled={isDownloading}
+          className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
           hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
           ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
-        title="Download"
-      >
-        {isDownloading ? <Spinner size="sm" /> : Icons.download}
-        {isMobile && <span className="ml-2 text-xs">Download</span>}
-      </button>
+          title="Download"
+        >
+          {isDownloading ? <Spinner size="sm" /> : Icons.download}
+          {isMobile && <span className="ml-2 text-xs">Download</span>}
+        </button>
+      )}
 
       {/* Delete button */}
       <ConfirmButton

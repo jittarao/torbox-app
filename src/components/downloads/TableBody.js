@@ -19,6 +19,7 @@ export default function TableBody({
   setToast,
   activeType = 'torrents',
   isBlurred = false,
+  viewMode = 'table',
 }) {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -64,6 +65,7 @@ export default function TableBody({
             activeType={activeType}
             isMobile={isMobile}
             isBlurred={isBlurred}
+            viewMode={viewMode}
           />
           {expandedItems.has(item.id) && item.files && (
             <FileRow
