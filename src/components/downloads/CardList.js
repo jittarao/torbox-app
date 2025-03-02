@@ -142,7 +142,7 @@ export default function CardList({
               </div>
             </div>
 
-            <div className="flex flex-col items-start justify-between gap-2 flex-shrink-0">
+            <div className="flex flex-col items-end justify-between gap-2 flex-shrink-0">
               <ItemActions
                 item={item}
                 apiKey={apiKey}

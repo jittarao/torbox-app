@@ -12,6 +12,7 @@ export default function ViewControls({
   const handleViewModeChange = (mode) => {
     setSelectedItems({ items: new Set(), files: new Map() });
     onViewModeChange(mode);
+    localStorage.setItem('downloads-view-mode', mode);
   };
 
   return (

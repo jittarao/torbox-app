@@ -96,16 +96,37 @@ export function useDownloads(apiKey, assetType = 'torrents') {
     idField = null,
     copyLink = false,
   ) => {
-    const result = await requestDownloadLink(id, options, idField);
-    if (result.success) {
-      if (copyLink) {
-        await navigator.clipboard.writeText(result.data.url);
-      } else {
-        window.open(result.data.url, '_blank');
+    try {
+      const result = await requestDownloadLink(id, options, idField);
+      if (result.success) {
+        if (copyLink) {
+          try {
+            await navigator.clipboard.writeText(result.data.url);
+          } catch (error) {
+            if (error.name === 'NotAllowedError') {
+              // Store URL and set up focus listener
+              const handleFocus = async () => {
+                try {
+                  await navigator.clipboard.writeText(result.data.url);
+                  window.removeEventListener('focus', handleFocus);
+                } catch (err) {
+                  console.error('Error copying to clipboard on focus:', err);
+                }
+              };
+              window.addEventListener('focus', handleFocus);
+            } else {
+              console.error('Clipboard error:', error);
+            }
+          }
+        } else {
+          window.open(result.data.url, '_blank');
+        }
+        return true;
       }
-      return true;
+      return false;
+    } catch (error) {
+      console.error('Download error:', error);
     }
-    return false;
   };
 
   const handleBulkDownload = async (selectedItems, items) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDelete } from '../shared/hooks/useDelete';
@@ -66,6 +66,13 @@ export default function Downloads({ apiKey }) {
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
   };
+
+  useEffect(() => {
+    const storedViewMode = localStorage.getItem('downloads-view-mode');
+    if (storedViewMode) {
+      setViewMode(storedViewMode);
+    }
+  }, []);
 
   return (
     <div>

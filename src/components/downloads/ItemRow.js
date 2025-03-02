@@ -80,11 +80,13 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-3 md:px-4 py-4 whitespace-nowrap max-w-[150px] md:max-w-md relative"
+            className="px-3 md:px-4 py-4 max-w-[150px] md:max-w-md relative"
             style={baseStyle}
           >
             <div
-              className={`text-sm text-primary-text dark:text-primary-text-dark truncate cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
+              className={`text-sm text-primary-text dark:text-primary-text-dark ${
+                isMobile ? 'break-all' : 'whitespace-nowrap'
+              } flex-1 cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
             >
