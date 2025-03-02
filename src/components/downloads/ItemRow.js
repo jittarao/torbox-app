@@ -85,7 +85,7 @@ export default function ItemRow({
           >
             <div
               className={`text-sm text-primary-text dark:text-primary-text-dark ${
-                isMobile ? 'break-all' : 'whitespace-nowrap'
+                isMobile ? 'break-all' : 'whitespace-nowrap truncate'
               } flex-1 cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
