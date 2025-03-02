@@ -235,7 +235,9 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     // Add common options
     formData.append('seed', item.seed);
     formData.append('allow_zip', item.allowZip);
-    formData.append('as_queued', item.asQueued);
+    if (globalOptions.asQueued) {
+      formData.append('as_queued', item.asQueued);
+    }
 
     const result = await retryFetch(getApiEndpoint(item.type), {
       method: 'POST',

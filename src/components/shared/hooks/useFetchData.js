@@ -5,8 +5,9 @@ import { isQueuedItem, getAutoStartOptions, sortItems } from '@/utils/utility';
 const MAX_CALLS = 5;
 const WINDOW_SIZE = 10000; // 10 seconds in ms
 const MIN_INTERVAL_BETWEEN_CALLS = 2000; // Minimum 2 seconds between calls
-const POLLING_INTERVAL = 10000; // 10 seconds in ms
 const MIN_INTERVAL_MAPPING = { torrents: 2000, usenet: 2000, webdl: 2000 };
+const ACTIVE_POLLING_INTERVAL = 10000; // 10 seconds in ms
+const INACTIVE_POLLING_INTERVAL = 60000; // 1 minute in ms
 
 export function useFetchData(apiKey, type = 'torrents') {
   // Separate state for each data type
@@ -279,6 +280,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     let interval;
     let lastInactiveTime = null;
     let isVisible = document.visibilityState === 'visible';
+    let currentPollingInterval = ACTIVE_POLLING_INTERVAL;
 
     // Setup cleanup interval for the active type
     let cleanupInterval;
@@ -289,6 +291,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         latestFetchId: 0,
       };
     }
+
     cleanupInterval = setInterval(() => {
       const now = Date.now();
       const rateData = rateLimitDataRef.current[type];
@@ -299,26 +302,32 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
     }, WINDOW_SIZE);
 
-    const shouldKeepPolling = () => {
-      // Only torrents need to keep polling for auto-start
-      if (type !== 'torrents') return false;
-
-      const options = getAutoStartOptions();
-      if (!options?.autoStart) return false;
-
-      // Use the torrents ref instead of a generic items ref
-      return torrentsRef.current.some(isQueuedItem);
+    const shouldKeepFastPolling = () => {
+      // Keep fast polling for torrents with auto-start enabled and queued items
+      if (type === 'torrents') {
+        const options = getAutoStartOptions();
+        if (options?.autoStart && torrentsRef.current.some(isQueuedItem)) {
+          return true;
+        }
+      }
+      return false;
     };
 
     const startPolling = () => {
       stopPolling(); // Clear any existing interval first
+
+      // Determine polling interval based on visibility and auto-start conditions
+      currentPollingInterval =
+        isVisible || shouldKeepFastPolling()
+          ? ACTIVE_POLLING_INTERVAL
+          : INACTIVE_POLLING_INTERVAL;
 
       interval = setInterval(() => {
         // Check rate limiting for current type
         if (!isRateLimited()) {
           fetchLocalItems(true);
         }
-      }, POLLING_INTERVAL);
+      }, currentPollingInterval);
     };
 
     const stopPolling = () => {
@@ -340,15 +349,16 @@ export function useFetchData(apiKey, type = 'torrents') {
           fetchLocalItems(true);
         }
         lastInactiveTime = null;
-        startPolling();
-      } else if (!shouldKeepPolling()) {
-        // Only stop polling if we don't need to keep checking for auto-start
+      } else {
         lastInactiveTime = Date.now();
-        stopPolling();
       }
+
+      // Always restart polling with appropriate interval
+      startPolling();
     };
 
-    if (isVisible || shouldKeepPolling()) startPolling();
+    // Initial polling start
+    startPolling();
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 

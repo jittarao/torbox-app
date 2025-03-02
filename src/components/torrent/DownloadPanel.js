@@ -1,5 +1,7 @@
 'use client';
 
+import { Icons } from '@/components/constants';
+
 export default function DownloadPanel({
   downloadLinks,
   isDownloading,
@@ -53,16 +55,7 @@ export default function DownloadPanel({
             className="text-primary-text dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
             aria-label="Close panel"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            {Icons.times}
           </button>
         </div>
       </div>

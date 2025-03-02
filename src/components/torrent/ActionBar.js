@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import ColumnManager from './ColumnManager';
 import StatusFilterDropdown from '@/components/shared/StatusFilterDropdown';
-import { COLUMNS, STATUS_OPTIONS } from '@/components/constants';
+import { COLUMNS, STATUS_OPTIONS, Icons } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
 import { saEvent } from '@/utils/sa';
 import isEqual from 'lodash/isEqual';
@@ -26,6 +26,8 @@ export default function ActionBar({
   activeType = 'torrents',
   isBlurred = false,
   onBlurToggle,
+  isFullscreen = false,
+  onFullscreenToggle,
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
@@ -51,8 +53,7 @@ export default function ActionBar({
     };
   }, []);
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
+  const handleSearchChange = (value) => {
     setSearch(value);
   };
 
@@ -177,7 +178,7 @@ export default function ActionBar({
     <div
       ref={stickyRef}
       className={`flex flex-col lg:flex-row gap-4 py-4 justify-between bg-surface dark:bg-surface-dark
-        ${isSticky ? 'border-b border-border dark:border-border-dark' : ''}`}
+        ${isSticky ? 'border-b border-border dark:border-border-dark' : ''} ${isFullscreen ? 'px-4' : ''}`}
     >
       <div className="flex gap-4 items-center flex-wrap">
         <div className="text-md text-primary-text dark:text-primary-text-dark">
@@ -190,7 +191,7 @@ export default function ActionBar({
           </span>
 
           {/* Status counts list */}
-          {selectedItems.items?.size === 0 && (
+          {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
             <div className="flex flex-wrap gap-3 mt-1.5">
               {Object.entries(statusCounts)
                 .filter(([status, count]) => count !== 0)
@@ -216,7 +217,7 @@ export default function ActionBar({
                           onStatusChange(newValue);
                         }
                       }}
-                      className={`text-sm font-medium border-b border-dotted 
+                      className={`text-sm font-medium border-b border-dashed 
                         ${getStatusStyles(status)}
                         ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-60' : 'opacity-100'}
                         ${isSelected ? 'border-current cursor-default' : 'cursor-pointer hover:opacity-80 border-current/30 hover:border-current'}
@@ -231,39 +232,37 @@ export default function ActionBar({
         </div>
 
         {/* Download button */}
-        {selectedItems.items?.size > 0 && (
+        {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
           <div className="flex gap-4 items-center">
-            {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
-              <button
-                onClick={() => {
-                  handleDownloadClick();
-                  saEvent('download_items');
-                }}
-                disabled={isDownloading}
-                className="bg-accent text-white text-xs lg:text-sm px-4 py-2 rounded hover:bg-accent/90 
+            <button
+              onClick={() => {
+                handleDownloadClick();
+                saEvent('download_items');
+              }}
+              disabled={isDownloading}
+              className="bg-accent text-white text-xs lg:text-sm px-4 py-2 rounded hover:bg-accent/90 
               disabled:opacity-50 transition-colors"
-              >
-                {isDownloading
-                  ? 'Fetching Links...'
-                  : (() => {
-                      const torrentText =
-                        selectedItems.items?.size > 0
-                          ? `${selectedItems.items?.size} ${selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural}`
-                          : '';
+            >
+              {isDownloading
+                ? 'Fetching Links...'
+                : (() => {
+                    const torrentText =
+                      selectedItems.items?.size > 0
+                        ? `${selectedItems.items?.size} ${selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural}`
+                        : '';
 
-                      const fileCount = getTotalSelectedFiles(selectedItems);
-                      const fileText =
-                        fileCount > 0
-                          ? `${fileCount} ${fileCount === 1 ? 'file' : 'files'}`
-                          : '';
+                    const fileCount = getTotalSelectedFiles(selectedItems);
+                    const fileText =
+                      fileCount > 0
+                        ? `${fileCount} ${fileCount === 1 ? 'file' : 'files'}`
+                        : '';
 
-                      const parts = [torrentText, fileText].filter(Boolean);
-                      return parts.length > 0
-                        ? `${isMobile ? 'Get Links' : 'Get Download Links'} (${parts.join(', ')})`
-                        : `${isMobile ? 'Get Links' : 'Get Download Links'}`;
-                    })()}
-              </button>
-            )}
+                    const parts = [torrentText, fileText].filter(Boolean);
+                    return parts.length > 0
+                      ? `${isMobile ? 'Get Links' : 'Get Download Links'} (${parts.join(', ')})`
+                      : `${isMobile ? 'Get Links' : 'Get Download Links'}`;
+                  })()}
+            </button>
 
             {/* Delete button */}
             {selectedItems.items?.size > 0 && !hasSelectedFiles() && (
@@ -319,17 +318,14 @@ export default function ActionBar({
             )}
 
             {/* Clear selection button */}
-            {(selectedItems.items?.size > 0 ||
-              selectedItems.files.size > 0) && (
-              <button
-                onClick={() =>
-                  setSelectedItems({ items: new Set(), files: new Map() })
-                }
-                className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
-              >
-                {isMobile ? 'Clear' : 'Clear selection'}
-              </button>
-            )}
+            <button
+              onClick={() =>
+                setSelectedItems({ items: new Set(), files: new Map() })
+              }
+              className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
+            >
+              {isMobile ? 'Clear' : 'Clear selection'}
+            </button>
           </div>
         )}
       </div>
@@ -366,14 +362,25 @@ export default function ActionBar({
             type="text"
             placeholder={`Search ${itemTypePlural}...`}
             value={search}
-            onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2 min-w-64 rounded-lg border border-border dark:border-border-dark 
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full pl-10 pr-10 py-2 min-w-64 rounded-lg border border-border dark:border-border-dark 
               bg-transparent text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
               focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
               focus:border-accent dark:focus:border-accent-dark 
               transition-colors text-sm"
           />
+          {search && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 
+                text-primary-text/40 dark:text-primary-text-dark/40 
+                hover:text-primary-text dark:hover:text-primary-text-dark
+                transition-colors"
+            >
+              {Icons.times}
+            </button>
+          )}
         </div>
 
         {/* Blur toggle button */}
@@ -407,6 +414,20 @@ export default function ActionBar({
               }
             />
           </svg>
+        </button>
+
+        {/* Fullscreen toggle button */}
+        <button
+          onClick={onFullscreenToggle}
+          className={`px-3 py-1.5 text-sm border rounded-md transition-colors flex items-center gap-2
+            ${
+              isFullscreen
+                ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
+                : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
+            }`}
+          title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        >
+          {isFullscreen ? Icons.minimize : Icons.maximize}
         </button>
 
         {/* Column manager */}

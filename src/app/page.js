@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/torrent/ApiKeyInput';
-import ItemsTable from '@/components/torrent/ItemsTable';
+import Downloads from '@/components/torrent/Downloads';
 import LandingPage from '@/components/LandingPage';
 import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
@@ -121,7 +121,7 @@ export default function Home() {
           <Header />
           <div className="container mx-auto p-4">
             <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} />
-            <ItemsTable apiKey={apiKey} />
+            <Downloads apiKey={apiKey} />
           </div>
         </>
       )}
