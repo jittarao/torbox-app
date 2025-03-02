@@ -87,7 +87,7 @@ export default function FileRow({
               handleFileSelection(index, file, !isChecked, e.shiftKey);
             }}
           >
-            <td className="px-3 md:px-6 py-2 whitespace-nowrap">
+            <td className="px-3 md:px-6 py-2 text-center whitespace-nowrap">
               <input
                 type="checkbox"
                 checked={isChecked}

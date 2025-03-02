@@ -71,11 +71,11 @@ export default function SpeedChart({ items, activeType }) {
 
   // State to track if the chart is expanded or collapsed
   const [isExpanded, setIsExpanded] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   // Set initial expanded state based on localStorage or screen size
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
 
     const handleResize = () => {
       // Only set default state if no localStorage value exists
@@ -111,10 +111,10 @@ export default function SpeedChart({ items, activeType }) {
 
   // Save expanded state to localStorage when it changes
   useEffect(() => {
-    if (mounted && typeof localStorage !== 'undefined') {
+    if (isClient && typeof localStorage !== 'undefined') {
       localStorage.setItem(CHART_EXPANDED_KEY, isExpanded.toString());
     }
-  }, [isExpanded, mounted]);
+  }, [isExpanded, isClient]);
 
   // Track dark mode
   const isDarkMode = useMemo(() => {
@@ -223,7 +223,7 @@ export default function SpeedChart({ items, activeType }) {
   }
 
   // Don't render anything until client-side hydration is complete
-  if (!mounted) return null;
+  if (!isClient) return null;
 
   // Ensure we have valid data for the chart
   const validLabels = speedData.labels.length > 0 ? speedData.labels : ['0'];

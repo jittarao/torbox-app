@@ -7,6 +7,8 @@ import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 
+const TORBOX_NATIVE_TRACKERS = ['Newznab'];
+
 const SORT_OPTIONS = {
   torrents: [
     { value: 'seeders', label: 'Most Seeders' },
@@ -314,7 +316,10 @@ export default function SearchResults({ apiKey }) {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    {includeCustomEngines && (
+                    {/* Show copy button if search type is torrents or usenet and not a native tracker */}
+                    {(searchType === 'torrents' ||
+                      (searchType === 'usenet' &&
+                        !TORBOX_NATIVE_TRACKERS.includes(item.tracker))) && (
                       <button
                         onClick={() => copyLink(item)}
                         className="shrink-0 px-3 py-1 text-sm bg-accent hover:bg-accent/90 

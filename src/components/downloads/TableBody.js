@@ -9,6 +9,7 @@ export default function TableBody({
   items,
   setItems,
   activeColumns,
+  columnWidths,
   selectedItems,
   onRowSelect,
   onFileSelect,
@@ -44,6 +45,7 @@ export default function TableBody({
           <ItemRow
             item={item}
             activeColumns={activeColumns}
+            columnWidths={columnWidths}
             selectedItems={selectedItems}
             setItems={setItems}
             setSelectedItems={setSelectedItems}

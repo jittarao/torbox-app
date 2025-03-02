@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
-import ActionBar from './ActionBar';
+import ActionBar from './ActionBar/index';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
+import { useColumnWidths } from '@/hooks/useColumnWidths';
 import { useDelete } from '../shared/hooks/useDelete';
 import { useFilter } from '../shared/hooks/useFilter';
 import { useSort } from '../shared/hooks/useSort';
@@ -31,12 +32,12 @@ export default function ItemsTable({
   onFullscreenToggle,
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
 
   // Load mobile notice dismissal preference from localStorage
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
 
     if (typeof localStorage !== 'undefined') {
       const noticeDismissed = localStorage.getItem(MOBILE_NOTICE_DISMISSED_KEY);
@@ -54,6 +55,7 @@ export default function ItemsTable({
     }
   };
 
+  const { columnWidths, updateColumnWidth } = useColumnWidths(activeType);
   const { activeColumns, handleColumnChange } = useColumnManager(activeType);
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } =
     useFilter(items);
@@ -99,8 +101,8 @@ export default function ItemsTable({
         />
       </div>
 
-      {/* Mobile notice - only show if mounted (client-side) to prevent hydration mismatch */}
-      {mounted && showMobileNotice && (
+      {/* Mobile notice - only show if isClient (client-side) to prevent hydration mismatch */}
+      {isClient && showMobileNotice && (
         <div className="md:hidden p-3 my-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
           <p>
             Viewing simplified table on mobile. Rotate device or use larger
@@ -130,9 +132,11 @@ export default function ItemsTable({
       )}
 
       <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
-        <table className="min-w-full divide-y divide-border dark:divide-border-dark relative">
+        <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative">
           <TableHeader
             activeColumns={activeColumns}
+            columnWidths={isClient ? columnWidths : {}} // Only pass widths on client
+            updateColumnWidth={updateColumnWidth}
             selectedItems={selectedItems}
             onSelectAll={handleSelectAll}
             items={sortedItems}
@@ -144,6 +148,7 @@ export default function ItemsTable({
             items={sortedItems}
             setItems={setItems}
             activeColumns={activeColumns}
+            columnWidths={columnWidths}
             selectedItems={selectedItems}
             onRowSelect={handleRowSelect}
             onFileSelect={handleFileSelect}

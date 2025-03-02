@@ -13,6 +13,7 @@ import ItemActions from './ItemActions';
 export default function ItemRow({
   item,
   activeColumns,
+  columnWidths,
   selectedItems,
   setSelectedItems,
   setItems,
@@ -72,12 +73,15 @@ export default function ItemRow({
   };
 
   const renderCell = (columnId) => {
+    const baseStyle = {};
+
     switch (columnId) {
       case 'name':
         return (
           <td
             key={columnId}
-            className="px-3 md:px-6 py-4 whitespace-nowrap max-w-[150px] md:max-w-md relative"
+            className="px-3 md:px-4 py-4 whitespace-nowrap max-w-[150px] md:max-w-md relative"
+            style={baseStyle}
           >
             <div
               className={`text-sm text-primary-text dark:text-primary-text-dark truncate cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
@@ -110,6 +114,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {formatSize(item.size || 0)}
           </td>
@@ -121,6 +126,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 relative group"
+            style={baseStyle}
           >
             <div className="cursor-default">
               {item[columnId] ? (
@@ -138,7 +144,11 @@ export default function ItemRow({
         );
       case 'download_state':
         return (
-          <td key={columnId} className="px-6 py-4 whitespace-nowrap">
+          <td
+            key={columnId}
+            className="px-4 py-4 whitespace-nowrap"
+            style={baseStyle}
+          >
             <DownloadStateBadge item={item} />
           </td>
         );
@@ -147,6 +157,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
               <div
@@ -164,6 +175,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {(item.ratio || 0).toFixed(2)}
           </td>
@@ -174,6 +186,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {formatSpeed(item[columnId])}
           </td>
@@ -183,6 +196,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {formatEta(item.eta)}
           </td>
@@ -192,6 +206,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {item.id}
           </td>
@@ -202,6 +217,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {formatSize(item[columnId] || 0)}
           </td>
@@ -212,6 +228,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {item[columnId] || 0}
           </td>
@@ -221,6 +238,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {item.files?.length || 0}
           </td>
@@ -229,7 +247,8 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-6 py-4 whitespace-nowrap text-sm text-red-500"
+            className="px-4 py-4 whitespace-nowrap text-sm text-red-500"
+            style={baseStyle}
           >
             {item.error || ''}
           </td>
@@ -239,6 +258,7 @@ export default function ItemRow({
           <td
             key={columnId}
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
           >
             {item[columnId]}
           </td>
@@ -273,7 +293,7 @@ export default function ItemRow({
         handleItemSelection(!isChecked, e.shiftKey);
       }}
     >
-      <td className="px-3 md:px-4 py-4 whitespace-nowrap">
+      <td className="px-3 md:px-4 py-4 text-center whitespace-nowrap">
         <input
           type="checkbox"
           checked={selectedItems.items?.has(item.id)}

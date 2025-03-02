@@ -8,12 +8,12 @@ import Image from 'next/image';
 export default function Header() {
   const pathname = usePathname();
   const [darkMode, setDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Set mounted to true once component is mounted
-    setMounted(true);
+    // Set isClient to true once component is mounted
+    setIsClient(true);
 
     // Check initial theme
     const isDark =
@@ -105,7 +105,7 @@ export default function Header() {
             <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
             {/* Dark mode toggle - only render after mounting to prevent hydration mismatch */}
-            {mounted && (
+            {isClient && (
               <button
                 onClick={toggleDarkMode}
                 className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
@@ -184,7 +184,7 @@ export default function Header() {
             </Link>
 
             <div className="py-2">
-              {mounted && (
+              {isClient && (
                 <div className="flex items-center gap-2">
                   <span className="text-white dark:text-primary-text-dark">
                     Dark Mode

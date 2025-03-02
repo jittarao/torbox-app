@@ -7,7 +7,7 @@ import TorrentOptions from './TorrentOptions';
 import UploadItemList from './UploadItemList';
 import UploadProgress from './UploadProgress';
 import useIsMobile from '@/hooks/useIsMobile';
-import { saEvent } from '@/utils/sa';
+import { phEvent } from '@/utils/sa';
 
 // Local storage keys
 const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
@@ -33,12 +33,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
   // State to track if the uploader is expanded or collapsed
   const [isExpanded, setIsExpanded] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
 
   // Set initial expanded state based on localStorage or screen size
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
 
     const handleResize = () => {
       // Only set default state if no localStorage value exists
@@ -82,21 +82,21 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
   // Save expanded state to localStorage when it changes
   useEffect(() => {
-    if (mounted && typeof localStorage !== 'undefined') {
+    if (isClient && typeof localStorage !== 'undefined') {
       localStorage.setItem(UPLOADER_EXPANDED_KEY, isExpanded.toString());
     }
-  }, [isExpanded, mounted]);
+  }, [isExpanded, isClient]);
 
   // Save options expanded state to localStorage when it changes
   useEffect(() => {
     if (
-      mounted &&
+      isClient &&
       typeof localStorage !== 'undefined' &&
       activeType === 'torrents'
     ) {
       localStorage.setItem(UPLOADER_OPTIONS_KEY, showOptions.toString());
     }
-  }, [showOptions, mounted, activeType]);
+  }, [showOptions, isClient, activeType]);
 
   // Clear items when switching asset types
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   };
 
   // Don't render anything until client-side hydration is complete
-  if (!mounted) return null;
+  if (!isClient) return null;
 
   return (
     <div className="mt-4 px-4 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
@@ -273,7 +273,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 <button
                   onClick={() => {
                     uploadItems();
-                    saEvent('upload_items');
+                    phEvent('upload_items');
                   }}
                   disabled={isUploading}
                   className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-6 py-2 mb-4 rounded-md

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Icons } from '@/components/constants';
 import Spinner from '../shared/Spinner';
 import ConfirmButton from '../shared/ConfirmButton';
-import { saEvent } from '@/utils/sa';
+import { phEvent } from '@/utils/sa';
 
 export default function ItemActionButtons({
   item,
@@ -23,7 +23,7 @@ export default function ItemActionButtons({
     setIsStopping(true);
     try {
       await onStopSeeding();
-      saEvent('stop_seeding_item');
+      phEvent('stop_seeding_item');
     } finally {
       setIsStopping(false);
     }
@@ -33,7 +33,7 @@ export default function ItemActionButtons({
     setIsDownloading(true);
     try {
       await onForceStart();
-      saEvent('force_start_item');
+      phEvent('force_start_item');
     } finally {
       setIsDownloading(false);
     }
@@ -42,7 +42,7 @@ export default function ItemActionButtons({
   const handleDownload = async (e) => {
     e.stopPropagation();
     await onDownload();
-    saEvent('download_item');
+    phEvent('download_item');
   };
 
   return (

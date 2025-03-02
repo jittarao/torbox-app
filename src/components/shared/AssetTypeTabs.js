@@ -73,7 +73,7 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
   ];
 
   return (
-    <div className="border-b border-border dark:border-border-dark overflow-x-auto">
+    <div className="border-b border-border dark:border-border-dark overflow-x-auto overflow-y-hidden">
       <nav className="-mb-px flex justify-start md:justify-center space-x-2 md:space-x-8 px-4 md:px-0">
         {tabs.map((tab) => (
           <button

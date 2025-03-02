@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import ApiKeyInput from '@/components/torrent/ApiKeyInput';
+import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
 

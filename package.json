@@ -17,6 +17,7 @@
     "lodash": "^4.17.21",
     "next": "15.1.7",
     "next-pwa": "^5.6.0",
+    "posthog-js": "^1.225.0",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",

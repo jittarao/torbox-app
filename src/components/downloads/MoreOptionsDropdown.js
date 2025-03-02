@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from '@/components/constants';
 import Spinner from '../shared/Spinner';
-import { saEvent } from '@/utils/sa';
+import { phEvent } from '@/utils/sa';
 
 export default function MoreOptionsDropdown({
   item,
@@ -77,7 +77,7 @@ export default function MoreOptionsDropdown({
   // Copy ID to clipboard
   const handleCopyId = () => {
     copyToClipboard(item.id, 'ID copied to clipboard');
-    saEvent('copy_item_id');
+    phEvent('copy_item_id');
     setIsMenuOpen(false);
   };
 
@@ -91,7 +91,7 @@ export default function MoreOptionsDropdown({
       return;
     }
     copyToClipboard(item.hash, 'Hash copied to clipboard');
-    saEvent('copy_item_hash');
+    phEvent('copy_item_hash');
     setIsMenuOpen(false);
   };
 
@@ -107,7 +107,7 @@ export default function MoreOptionsDropdown({
     const encodedName = encodeURIComponent(item.name || 'Unknown');
     const magnetLink = `magnet:?xt=urn:btih:${item.hash}&dn=${encodedName}`;
     copyToClipboard(magnetLink, 'Short magnet link copied to clipboard');
-    saEvent('copy_short_magnet');
+    phEvent('copy_short_magnet');
     setIsMenuOpen(false);
   };
 
@@ -131,7 +131,7 @@ export default function MoreOptionsDropdown({
           data.data,
           'Full magnet link copied to clipboard',
         );
-        saEvent('copy_full_magnet');
+        phEvent('copy_full_magnet');
       } else {
         throw new Error(data.error || 'Failed to get magnet link');
       }
@@ -156,7 +156,7 @@ export default function MoreOptionsDropdown({
         `/api/torrents/export?torrent_id=${item.id}&type=torrent&api_key=${apiKey}`,
         '_blank',
       );
-      saEvent('export_torrent_file');
+      phEvent('export_torrent_file');
     } catch (error) {
       console.error('Error exporting torrent:', error);
       setToast({
@@ -179,7 +179,7 @@ export default function MoreOptionsDropdown({
       return;
     }
     copyToClipboard(item.original_url, 'Source URL copied to clipboard');
-    saEvent('copy_original_url');
+    phEvent('copy_original_url');
     setIsMenuOpen(false);
   };
 
@@ -206,7 +206,7 @@ export default function MoreOptionsDropdown({
           message: 'Torrent reannounced successfully',
           type: 'success',
         });
-        saEvent('reannounce_torrent');
+        phEvent('reannounce_torrent');
       } else {
         throw new Error(data.error || 'Failed to reannounce torrent');
       }

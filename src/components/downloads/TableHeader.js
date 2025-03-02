@@ -2,9 +2,12 @@
 
 import { COLUMNS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
+import ResizableColumn from './ResizableColumn';
 
 export default function TableHeader({
   activeColumns,
+  columnWidths,
+  updateColumnWidth,
   selectedItems,
   onSelectAll,
   items,
@@ -19,8 +22,8 @@ export default function TableHeader({
 
   return (
     <thead className="bg-surface-alt dark:bg-surface-alt-dark">
-      <tr>
-        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider">
+      <tr className="table-row">
+        <th className="px-3 md:px-4 py-3 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[60px] min-w-[60px] max-w-[60px]">
           <input
             type="checkbox"
             onChange={(e) => onSelectAll(items, e.target.checked)}
@@ -33,10 +36,14 @@ export default function TableHeader({
         {visibleColumns.map((columnId) => {
           const column = COLUMNS[columnId];
           return (
-            <th
+            <ResizableColumn
               key={columnId}
+              columnId={columnId}
+              width={columnWidths[columnId]}
+              onWidthChange={(width) => updateColumnWidth(columnId, width)}
+              sortable={column.sortable}
               onClick={() => column.sortable && onSort(columnId)}
-              className={`px-3 md:px-6 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider ${
+              className={`px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase ${
                 column.sortable
                   ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors'
                   : ''
@@ -48,10 +55,10 @@ export default function TableHeader({
                   {sortDirection === 'asc' ? '↑' : '↓'}
                 </span>
               )}
-            </th>
+            </ResizableColumn>
           );
         })}
-        <th className="px-3 md:px-6 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wider sticky right-0 bg-surface-alt dark:bg-surface-alt-dark">
+        <th className="px-3 md:px-4 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[100px]">
           Actions
         </th>
       </tr>

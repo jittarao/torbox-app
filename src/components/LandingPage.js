@@ -1,4 +1,4 @@
-import ApiKeyInput from './torrent/ApiKeyInput';
+import ApiKeyInput from './downloads/ApiKeyInput';
 
 export default function LandingPage({ onKeyChange }) {
   return (

@@ -66,12 +66,12 @@ export default function ColumnManager({
   activeType = 'torrents',
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
   }, []);
 
   useEffect(() => {
@@ -144,7 +144,7 @@ export default function ColumnManager({
         </svg>
       </button>
 
-      {mounted && isOpen && (
+      {isClient && isOpen && (
         <div
           ref={menuRef}
           className="absolute right-0 mt-2 w-[28rem] bg-surface dark:bg-surface-dark 

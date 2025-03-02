@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { COLUMNS } from '@/components/constants';
 
 export function useColumnManager(activeType = 'torrents') {
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [activeColumns, setActiveColumns] = useState(() => {
     // Default columns for each type - used for initial server-side rendering
     const defaultColumns = {
@@ -24,7 +24,7 @@ export function useColumnManager(activeType = 'torrents') {
 
   // Initialize columns from localStorage after component is mounted
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
 
     // Get columns from localStorage based on asset type
     const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
@@ -79,7 +79,7 @@ export function useColumnManager(activeType = 'torrents') {
 
   // Update columns when asset type changes
   useEffect(() => {
-    if (!mounted) return;
+    if (!isClient) return;
 
     const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
     const stored = localStorage.getItem(storageKey);
@@ -123,10 +123,10 @@ export function useColumnManager(activeType = 'torrents') {
       // If there's an error parsing, use defaults
       setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
     }
-  }, [activeType, mounted]);
+  }, [activeType, isClient]);
 
   const handleColumnChange = (newColumns) => {
-    if (!mounted) return;
+    if (!isClient) return;
 
     // Filter for valid columns that are applicable to this asset type
     const validColumns = newColumns.filter((col) => {

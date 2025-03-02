@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useUpload } from '../shared/hooks/useUpload';
-import { saEvent } from '@/utils/sa';
+import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
 
@@ -93,7 +93,7 @@ export default function ItemActions({
 
     try {
       await onDelete(item.id);
-      saEvent('delete_item');
+      phEvent('delete_item');
     } catch (error) {
       console.error('Error deleting:', error);
       setToast({

@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from 'next/font/google';
-import Script from 'next/script';
-import { FileHandler } from '@/components/FileHandler';
+import { FileHandler } from '@/components/shared/FileHandler';
+import { PostHogProvider } from './providers';
 import './globals.css';
 
 const geistSans = Geist({
@@ -42,15 +42,11 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
       >
-        <FileHandler />
-        {children}
+        <PostHogProvider>
+          <FileHandler />
+          {children}
+        </PostHogProvider>
       </body>
-      {process.env.NODE_ENV === 'production' && (
-        <Script
-          src="https://scripts.simpleanalyticscdn.com/latest.js"
-          strategy="afterInteractive"
-        />
-      )}
     </html>
   );
 }

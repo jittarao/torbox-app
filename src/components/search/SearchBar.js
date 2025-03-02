@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useSearchStore } from '@/stores/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
+import { Icons } from '@/components/constants';
 
 const SEARCH_OPTIONS = [
   { value: 'torrents', label: 'Torrents' },
@@ -34,6 +35,11 @@ export default function SearchBar() {
     }
   };
 
+  const handleCustomEnginesClick = () => {
+    setIncludeCustomEngines(!includeCustomEngines);
+    handleSearch();
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="relative flex gap-2">
@@ -51,35 +57,40 @@ export default function SearchBar() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="Search torrents..."
-            className="w-full px-4 py-2 pl-12 rounded-lg border border-border dark:border-border-dark
-              bg-transparent text-primary-text dark:text-primary-text-dark 
+            className="w-full px-4 py-2 pl-10 pr-10 rounded-lg border border-border dark:border-border-dark
+              bg-transparent text-sm text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
               focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
               focus:border-accent dark:focus:border-accent-dark
               transition-colors"
           />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 absolute left-3 top-1/2 transform -translate-y-1/2 
+          {localQuery && (
+            <button
+              onClick={() => {
+                setLocalQuery('');
+                setQuery('');
+              }}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 
+                text-primary-text/40 dark:text-primary-text-dark/40 
+                hover:text-primary-text dark:hover:text-primary-text-dark
+                transition-colors"
+            >
+              {Icons.times}
+            </button>
+          )}
+          <div
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 
                        text-primary-text/40 dark:text-primary-text-dark/40"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+            {Icons.magnifying_glass}
+          </div>
         </div>
       </div>
-      <div className="flex justify-end">
-        <label className="flex items-center gap-2 cursor-pointer">
+      <div className="flex justify-end mt-2">
+        <label className="flex items-center gap-2">
           <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             <svg
-              className="w-4 h-4"
+              className="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -95,13 +106,13 @@ export default function SearchBar() {
           </span>
 
           <div
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
               ${
                 includeCustomEngines
                   ? 'bg-accent dark:bg-accent-dark'
                   : 'bg-border dark:bg-border-dark'
               }`}
-            onClick={() => setIncludeCustomEngines(!includeCustomEngines)}
+            onClick={() => handleCustomEnginesClick()}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
