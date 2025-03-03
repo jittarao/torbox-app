@@ -65,7 +65,8 @@ const ensureValidData = (data) => {
 const CHART_EXPANDED_KEY = 'speedchart-expanded';
 
 export default function SpeedChart({ items, activeType }) {
-  const speedData = useSpeedData(items);
+  const [timeRange, setTimeRange] = useState('10m');
+  const speedData = useSpeedData(items, timeRange);
   const chartRef = useRef(null);
   const isMobile = useIsMobile();
 
@@ -359,6 +360,8 @@ export default function SpeedChart({ items, activeType }) {
           <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
             {chartTitleText}
           </h3>
+
+          {/* Current speeds */}
           {hasActivity && (
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
@@ -376,25 +379,44 @@ export default function SpeedChart({ items, activeType }) {
             </div>
           )}
         </div>
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
-          aria-expanded={isExpanded}
-        >
-          {isExpanded ? chartHideOptionsText : chartShowOptionsText}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex items-center gap-2">
+          {/* Time range selector */}
+          {isExpanded && !isMobile && (
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="text-xs lg:text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark focus:outline-none"
+            >
+              <option value="1m">Last 1m</option>
+              <option value="10m">Last 10m</option>
+              <option value="1h">Last 1h</option>
+              <option value="3h">Last 3h</option>
+              <option value="6h">Last 6h</option>
+              <option value="all">All</option>
+            </select>
+          )}
+
+          {/* Show/hide chart button */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
+            aria-expanded={isExpanded}
           >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </button>
+            {isExpanded ? chartHideOptionsText : chartShowOptionsText}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {isExpanded && (
