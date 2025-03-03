@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useMemo } from 'react';
 
 export function useFilter(
@@ -28,31 +29,34 @@ export function useFilter(
       let matchesStatus = true;
       if (statusFilter !== 'all') {
         try {
-          // Parse the filter if it's a string
-          const filter =
-            typeof statusFilter === 'string' && statusFilter !== 'all'
-              ? JSON.parse(statusFilter)
-              : statusFilter;
+          // Handle array of filters
+          const filters = Array.isArray(statusFilter)
+            ? statusFilter.map((f) =>
+                typeof f === 'string' ? JSON.parse(f) : f,
+              )
+            : [
+                typeof statusFilter === 'string'
+                  ? JSON.parse(statusFilter)
+                  : statusFilter,
+              ];
 
-          // Special handling for queued items
-          if (filter.is_queued) {
-            return matchesSearch && !item.download_state;
-          }
-
-          // Check all conditions in the filter
-          matchesStatus = Object.entries(filter).every(([key, value]) => {
-            // Special handling for download_state arrays
-            if (key === 'download_state') {
-              const states = Array.isArray(value) ? value : [value];
-              return states.some(
-                (state) =>
-                  typeof state === 'string' &&
-                  item.download_state?.includes(state),
-              );
+          // Item matches if it matches ANY of the selected filters
+          matchesStatus = filters.some((filter) => {
+            if (filter.is_queued) {
+              return !item.download_state;
             }
 
-            // Direct comparison for other properties
-            return item[key] === value;
+            return Object.entries(filter).every(([key, value]) => {
+              if (key === 'download_state') {
+                const states = Array.isArray(value) ? value : [value];
+                return states.some(
+                  (state) =>
+                    typeof state === 'string' &&
+                    item.download_state?.includes(state),
+                );
+              }
+              return item[key] === value;
+            });
           });
         } catch (e) {
           console.error('Error parsing status filter:', e);

@@ -6,6 +6,7 @@ import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
+import { Icons } from '@/components/constants';
 
 const TORBOX_NATIVE_TRACKERS = ['Newznab'];
 
@@ -244,72 +245,30 @@ export default function SearchResults({ apiKey }) {
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1.5">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                      </svg>
+                      {Icons.layers}
                       {formatSize(item.size)}
                     </div>
                     {searchType === 'torrents' && (
                       <div className="flex items-center gap-1.5">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 10l7-7m0 0l7 7m-7-7v18"
-                          />
-                        </svg>
+                        {Icons.up_arrow}
                         {item.last_known_seeders}
                         {item.last_known_peers > 0 &&
                           ` / ${item.last_known_peers}`}
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                      {Icons.clock}
                       {String(item.age).replace('d', ' days')}
                     </div>
+                    {item.tracker && item.tracker !== 'Unknown' && (
+                      <div className="flex items-center gap-1.5">
+                        {Icons.tracker}
+                        {item.tracker}
+                      </div>
+                    )}
                     {item.cached && (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
+                        {Icons.bolt}
                         Cached
                       </span>
                     )}

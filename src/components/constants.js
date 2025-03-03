@@ -127,6 +127,18 @@ export const STATUS_OPTIONS = [
 ];
 
 export const Icons = {
+  link: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  ),
   magnifying_glass: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -157,6 +169,18 @@ export const Icons = {
         strokeWidth={2}
         d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
+    </svg>
+  ),
+  file: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
     </svg>
   ),
   download: (
@@ -379,6 +403,160 @@ export const Icons = {
     >
       <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
       <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  clock: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  layers: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+      <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+      <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+    </svg>
+  ),
+  percent: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <line x1="19" x2="5" y1="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  ),
+  tracker: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M15 7h2a5 5 0 0 1 0 10h-2m-6 0H7A5 5 0 0 1 7 7h2" />
+    </svg>
+  ),
+  hash: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <line x1="4" x2="20" y1="9" y2="9" />
+      <line x1="4" x2="20" y1="15" y2="15" />
+      <line x1="10" x2="8" y1="3" y2="21" />
+      <line x1="16" x2="14" y1="3" y2="21" />
+    </svg>
+  ),
+  arrow_left_right: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="m16 3 4 4-4 4" />
+      <path d="M20 7H4" />
+      <path d="m8 21-4-4 4-4" />
+      <path d="M4 17h16" />
+    </svg>
+  ),
+  clock_arrow_down: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M12.338 21.994A10 10 0 1 1 21.925 13.227" />
+      <path d="M12 6v6l2 1" />
+      <path d="m14 18 4 4 4-4" />
+      <path d="M18 14v8" />
+    </svg>
+  ),
+  cloud_download: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M12 13v8l-4-4" />
+      <path d="m12 21 4-4" />
+      <path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284" />
+    </svg>
+  ),
+  cloud_upload: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M12 13v8" />
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+      <path d="m8 17 4-4 4 4" />
+    </svg>
+  ),
+  bolt: (
+    <svg
+      className="w-4 h-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 10V3L4 14h7v7l9-11h-7z"
+      />
+    </svg>
+  ),
+  up_arrow: (
+    <svg
+      className="w-4 h-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="m5 12 7-7 7 7" />
+      <path d="M12 19V5" />
+    </svg>
+  ),
+  down_arrow: (
+    <svg
+      className="w-4 h-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="M12 5v14" />
+      <path d="m19 12-7 7-7-7" />
     </svg>
   ),
 };

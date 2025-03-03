@@ -1,8 +1,12 @@
 import { formatSize, formatSpeed, timeAgo } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
+import { Icons } from '@/components/constants';
+import Tooltip from '@/components/shared/Tooltip';
+import { useDownloads } from '../shared/hooks/useDownloads';
+import Spinner from '../shared/Spinner';
 
 export default function CardList({
   items,
@@ -10,6 +14,8 @@ export default function CardList({
   setSelectedItems,
   setItems,
   apiKey,
+  activeColumns,
+  onFileSelect,
   onDelete,
   expandedItems,
   toggleFiles,
@@ -21,6 +27,10 @@ export default function CardList({
 }) {
   const isMobile = useIsMobile();
   const lastClickedItemIndexRef = useRef(null);
+  const lastClickedFileIndexRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState({});
+  const [isCopying, setIsCopying] = useState({});
+  const { downloadSingle } = useDownloads(apiKey, activeType);
 
   const handleItemSelection = (
     itemId,
@@ -68,11 +78,167 @@ export default function CardList({
     lastClickedItemIndexRef.current = rowIndex;
   };
 
+  const handleFileSelection = (
+    itemId,
+    fileIndex,
+    file,
+    checked,
+    isShiftKey = false,
+  ) => {
+    if (isShiftKey && lastClickedFileIndexRef.current !== null) {
+      const start = Math.min(lastClickedFileIndexRef.current, fileIndex);
+      const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
+      const item = items.find((i) => i.id === itemId);
+      if (item) {
+        item.files.slice(start, end + 1).forEach((f) => {
+          onFileSelect(itemId, f.id, checked);
+        });
+      }
+    } else {
+      onFileSelect(itemId, file.id, checked);
+    }
+    lastClickedFileIndexRef.current = fileIndex;
+  };
+
+  const handleFileDownload = async (itemId, fileId, copyLink = false) => {
+    if (copyLink) {
+      setIsCopying((prev) => ({ ...prev, [fileId]: true }));
+    } else {
+      setIsDownloading((prev) => ({ ...prev, [fileId]: true }));
+    }
+    const options = { fileId };
+
+    switch (activeType) {
+      case 'usenet':
+        await downloadSingle(itemId, options, 'usenet_id', copyLink);
+        break;
+      case 'webdl':
+        await downloadSingle(itemId, options, 'web_id', copyLink);
+        break;
+      default:
+        await downloadSingle(itemId, options, 'torrent_id', copyLink);
+    }
+
+    if (copyLink) {
+      setIsCopying((prev) => ({ ...prev, [fileId]: false }));
+    } else {
+      setIsDownloading((prev) => ({ ...prev, [fileId]: false }));
+    }
+  };
+
+  const filteredColumns = activeColumns.filter(
+    (column) =>
+      ![
+        'name',
+        'progress',
+        'download_state',
+        'download_speed',
+        'upload_speed',
+      ].includes(column),
+  );
+
   const isDisabled = (itemId) => {
     return (
       selectedItems.files?.has(itemId) &&
       selectedItems.files.get(itemId).size > 0
     );
+  };
+
+  const getTooltipContent = (column) => {
+    switch (column) {
+      case 'id':
+        return 'ID';
+      case 'hash':
+        return 'Hash';
+      case 'seeds':
+        return 'Seeds';
+      case 'peers':
+        return 'Peers';
+      case 'ratio':
+        return 'Ratio';
+      case 'size':
+        return 'Size';
+      case 'file_count':
+        return 'Files';
+      case 'created_at':
+        return 'Added';
+      case 'updated_at':
+        return 'Updated';
+      case 'expires_at':
+        return 'Expires';
+      case 'eta':
+        return 'ETA';
+      case 'total_downloaded':
+        return 'Downloaded';
+      case 'total_uploaded':
+        return 'Uploaded';
+      case 'original_url':
+        return 'Source';
+    }
+  };
+
+  const getColumnIcon = (column) => {
+    switch (column) {
+      case 'id':
+        return Icons.arrow_left_right;
+      case 'hash':
+        return Icons.hash;
+      case 'seeds':
+        return Icons.up_arrow;
+      case 'peers':
+        return Icons.down_arrow;
+      case 'ratio':
+        return Icons.percent;
+      case 'size':
+        return Icons.layers;
+      case 'file_count':
+        return Icons.file;
+      case 'created_at':
+      case 'updated_at':
+      case 'expires_at':
+        return Icons.clock;
+      case 'eta':
+        return Icons.clock_arrow_down;
+      case 'total_downloaded':
+        return Icons.cloud_download;
+      case 'total_uploaded':
+        return Icons.cloud_upload;
+      case 'original_url':
+        return Icons.link;
+    }
+  };
+
+  const getColumnValue = (column, item) => {
+    switch (column) {
+      case 'id':
+        return item.id;
+      case 'hash':
+        return item.hash;
+      case 'seeds':
+        return item.seeds;
+      case 'peers':
+        return item.peers;
+      case 'ratio':
+        return item.ratio?.toFixed(1);
+      case 'size':
+        return formatSize(item.size || 0);
+      case 'file_count':
+        return item.files?.length || 0;
+      case 'created_at':
+        return timeAgo(item.created_at);
+      case 'updated_at':
+        return timeAgo(item.updated_at);
+      case 'expires_at':
+        return timeAgo(item.expires_at);
+      case 'eta':
+        return timeAgo(item.eta);
+      case 'total_downloaded':
+        return formatSize(item.total_downloaded);
+      case 'total_uploaded':
+        return formatSize(item.total_uploaded);
+      case 'original_url':
+        return item.original_url;
+    }
   };
 
   return (
@@ -115,7 +281,9 @@ export default function CardList({
                     isBlurred ? 'blur-sm select-none' : ''
                   }`}
                 >
-                  {item.name || 'Unnamed Item'}
+                  <Tooltip content={item.name || 'Unnamed Item'}>
+                    {item.name || 'Unnamed Item'}
+                  </Tooltip>
                 </h3>
               </div>
 
@@ -124,14 +292,25 @@ export default function CardList({
                   isMobile ? 'gap-2' : 'gap-4'
                 } text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
               >
-                <DownloadStateBadge item={item} />
+                <DownloadStateBadge
+                  item={item}
+                  size={isMobile ? 'xs' : 'default'}
+                />
                 {!isMobile ? (
                   <>
-                    <span>Seeds: {item.seeds}</span>
-                    <span>Peers: {item.peers}</span>
-                    <span>Ratio: {item.ratio}</span>
-                    <span>Size: {formatSize(item.size || 0)}</span>
-                    <span>Added: {timeAgo(item.created_at)}</span>
+                    {filteredColumns.map((column) => (
+                      <div
+                        className="flex items-center gap-1 font-semibold"
+                        key={column}
+                      >
+                        <Tooltip content={getTooltipContent(column)}>
+                          <div className="flex items-center gap-1">
+                            {getColumnIcon(column)}{' '}
+                            {getColumnValue(column, item)}
+                          </div>
+                        </Tooltip>
+                      </div>
+                    ))}
                   </>
                 ) : (
                   <>
@@ -176,8 +355,123 @@ export default function CardList({
             </div>
           </div>
 
+          {/* Files Section */}
+          {expandedItems.has(item.id) &&
+            item.files &&
+            item.files.length > 0 && (
+              <div className="mt-4 border-t border-border dark:border-border-dark pt-4">
+                <div className="space-y-2">
+                  {item.files.map((file, fileIndex) => {
+                    const isChecked =
+                      selectedItems.files.get(item.id)?.has(file.id) || false;
+                    const isDisabled = selectedItems.items?.has(item.id);
+
+                    return (
+                      <div
+                        key={`${item.id}-${file.id}`}
+                        className={`${
+                          isChecked
+                            ? 'bg-accent/15 hover:bg-accent/20 dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
+                            : isDisabled
+                              ? 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
+                              : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
+                        } rounded-md p-2 ${!isDisabled && 'cursor-pointer'}`}
+                        onMouseDown={(e) => {
+                          if (e.shiftKey) e.preventDefault();
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (e.target.closest('button') || isDisabled) return;
+                          handleFileSelection(
+                            item.id,
+                            fileIndex,
+                            file,
+                            !isChecked,
+                            e.shiftKey,
+                          );
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              disabled={isDisabled}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleFileSelection(
+                                  item.id,
+                                  fileIndex,
+                                  file,
+                                  e.target.checked,
+                                  e.shiftKey,
+                                );
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="accent-accent dark:accent-accent-dark"
+                            />
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
+                              <span
+                                className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate ${
+                                  isBlurred ? 'blur-sm select-none' : ''
+                                }`}
+                                title={isBlurred ? '' : file.name}
+                              >
+                                {file.short_name || file.name}
+                              </span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-alt dark:bg-surface-alt-dark text-primary-text/70 dark:text-primary-text-dark/70">
+                                  {formatSize(file.size || 0)}
+                                </span>
+                                {file.mimetype && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 text-accent dark:text-accent-dark">
+                                    {file.mimetype}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFileDownload(item.id, file.id, true);
+                              }}
+                              disabled={isCopying[file.id]}
+                              className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                            >
+                              {isCopying[file.id] ? (
+                                <Spinner size="sm" />
+                              ) : (
+                                Icons.copy
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFileDownload(item.id, file.id);
+                              }}
+                              disabled={isDownloading[file.id]}
+                              className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                              title="Download File"
+                            >
+                              {isDownloading[file.id] ? (
+                                <Spinner size="sm" />
+                              ) : (
+                                Icons.download
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           {/* Progress bar */}
-          {item.progress < 1 && item.active && (
+          {item.progress < 1 && item.active && !item.download_present && (
             <div className="absolute bottom-0 left-0 w-full">
               {item.progress !== undefined && (
                 <div

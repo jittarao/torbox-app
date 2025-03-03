@@ -25,6 +25,8 @@ export default function ItemsTable({
   isBlurred,
   deleteItem,
   setToast,
+  expandedItems,
+  toggleFiles,
   viewMode = 'table',
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
@@ -112,6 +114,8 @@ export default function ItemsTable({
             activeType={activeType}
             isBlurred={isBlurred}
             viewMode={viewMode}
+            expandedItems={expandedItems}
+            toggleFiles={toggleFiles}
           />
         </table>
       </div>

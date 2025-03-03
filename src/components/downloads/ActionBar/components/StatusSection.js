@@ -11,11 +11,44 @@ export default function StatusSection({
   onStatusChange,
   itemTypePlural,
 }) {
+  const handleStatusClick = (status) => {
+    if (status === 'all') {
+      onStatusChange('all');
+      return;
+    }
+
+    const option = STATUS_OPTIONS.find((opt) => opt.label === status);
+    if (!option) return;
+
+    const newValue = JSON.stringify(option.value);
+
+    // If already all, clear it first
+    const currentFilters =
+      statusFilter === 'all'
+        ? []
+        : Array.isArray(statusFilter)
+          ? statusFilter
+          : [statusFilter];
+
+    const filterIndex = currentFilters.indexOf(newValue);
+
+    if (filterIndex === -1) {
+      // Add the filter
+      onStatusChange([...currentFilters, newValue]);
+    } else {
+      // Remove the filter
+      const newFilters = [...currentFilters];
+      newFilters.splice(filterIndex, 1);
+      // Switch to 'all' if removing the last filter
+      onStatusChange(currentFilters.length === 1 ? 'all' : newFilters);
+    }
+  };
+
   return (
     <div className="text-md text-primary-text dark:text-primary-text-dark">
       <span
         className={`font-semibold ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'}  transition-colors`}
-        onClick={() => onStatusChange('all')}
+        onClick={() => handleStatusClick('all')}
       >
         {unfilteredItems.length} {itemTypePlural}
       </span>
@@ -25,26 +58,20 @@ export default function StatusSection({
           {Object.entries(statusCounts)
             .filter(([status, count]) => count !== 0)
             .map(([status, count]) => {
-              const isSelected = isStatusSelected(status, statusFilter);
+              const isSelected = Array.isArray(statusFilter)
+                ? statusFilter.some((filter) =>
+                    isStatusSelected(status, filter),
+                  )
+                : isStatusSelected(status, statusFilter);
+
               return (
                 <span
                   key={status}
-                  onClick={() => {
-                    const option = STATUS_OPTIONS.find(
-                      (opt) => opt.label === status,
-                    );
-                    if (option) {
-                      const newValue =
-                        typeof option.value === 'object'
-                          ? JSON.stringify(option.value)
-                          : option.value;
-                      onStatusChange(newValue);
-                    }
-                  }}
-                  className={`text-sm font-medium border-b border-dashed 
+                  onClick={() => handleStatusClick(status)}
+                  className={`text-sm font-medium border-b border-dashed cursor-pointer
                     ${getStatusStyles(status)}
-                    ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-60' : 'opacity-100'}
-                    ${isSelected ? 'border-current cursor-default' : 'cursor-pointer hover:opacity-80 border-current/30 hover:border-current'}
+                    ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-70' : 'opacity-100'}
+                    ${isSelected ? 'border-current' : 'hover:opacity-80 border-current/20 hover:border-current'}
                     transition-all`}
                 >
                   {count} {status.toLowerCase()}

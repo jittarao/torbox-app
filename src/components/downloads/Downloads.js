@@ -24,6 +24,7 @@ export default function Downloads({ apiKey }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
+  const [expandedItems, setExpandedItems] = useState(new Set());
 
   const { loading, items, setItems, fetchItems } = useFetchData(
     apiKey,
@@ -65,6 +66,18 @@ export default function Downloads({ apiKey }) {
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
+  };
+
+  const toggleFiles = (itemId) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   };
 
   useEffect(() => {
@@ -138,6 +151,7 @@ export default function Downloads({ apiKey }) {
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 sortField={sortField}
+                sortDir={sortDirection}
                 handleSort={handleSort}
               />
             </div>
@@ -160,6 +174,8 @@ export default function Downloads({ apiKey }) {
                 sortDirection={sortDirection}
                 handleSort={handleSort}
                 setToast={setToast}
+                expandedItems={expandedItems}
+                toggleFiles={toggleFiles}
               />
             ) : (
               <CardList
@@ -168,9 +184,11 @@ export default function Downloads({ apiKey }) {
                 setSelectedItems={setSelectedItems}
                 setItems={setItems}
                 apiKey={apiKey}
+                activeColumns={activeColumns}
+                onFileSelect={handleFileSelect}
                 onDelete={deleteItem}
-                expandedItems={new Set()}
-                toggleFiles={() => {}}
+                expandedItems={expandedItems}
+                toggleFiles={toggleFiles}
                 setToast={setToast}
                 activeType={activeType}
                 isBlurred={isBlurred}

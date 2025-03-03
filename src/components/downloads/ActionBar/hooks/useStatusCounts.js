@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { getMatchingStatus } from '../utils/statusHelpers';
-import isEqual from 'lodash/isEqual';
 
 export const useStatusCounts = (unfilteredItems) => {
   // Get the status for each item
@@ -49,13 +48,17 @@ export const useStatusCounts = (unfilteredItems) => {
   }, [statusCounts, unfilteredItems.length]);
 
   const isStatusSelected = (status, statusFilter) => {
-    return (
-      statusFilter !== 'all' &&
-      isEqual(
-        STATUS_OPTIONS.find((opt) => opt.label === status)?.value,
-        JSON.parse(statusFilter),
-      )
-    );
+    if (statusFilter === 'all') return false;
+
+    const targetValue = STATUS_OPTIONS.find(
+      (opt) => opt.label === status,
+    )?.value;
+    if (!targetValue) return false;
+
+    const stringifiedTarget = JSON.stringify(targetValue);
+    return Array.isArray(statusFilter)
+      ? statusFilter.includes(stringifiedTarget)
+      : statusFilter === stringifiedTarget;
   };
 
   return {

@@ -4,13 +4,14 @@ import useIsMobile from '@/hooks/useIsMobile';
 export default function ResizableColumn({
   columnId,
   children,
-  width = 100,
+  width = 60,
   onWidthChange,
   className = '',
   sortable = false,
   onClick,
 }) {
   const [isResizing, setIsResizing] = useState(false);
+  const [wasResizing, setWasResizing] = useState(false);
   const isMobile = useIsMobile();
   const resizeRef = useRef({
     startX: 0,
@@ -24,7 +25,7 @@ export default function ResizableColumn({
 
       resizeRef.current = {
         startX: e.clientX,
-        startWidth: parseInt(width || 100, 10),
+        startWidth: parseInt(width || 60, 10),
       };
       setIsResizing(true);
     },
@@ -46,11 +47,15 @@ export default function ResizableColumn({
     [isResizing, onWidthChange],
   );
 
-  const handleMouseUp = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizing(false);
-  }, []);
+  const handleMouseUp = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setWasResizing(isResizing);
+      setIsResizing(false);
+    },
+    [isResizing],
+  );
 
   useEffect(() => {
     const onMouseMove = (e) => handleMouseMove(e);
@@ -69,6 +74,13 @@ export default function ResizableColumn({
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
+  useEffect(() => {
+    if (wasResizing) {
+      const timer = setTimeout(() => setWasResizing(false), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [wasResizing]);
+
   return (
     <th
       className={`relative group select-none ${className} ${
@@ -85,14 +97,23 @@ export default function ResizableColumn({
               maxWidth: `${width}px`,
             }
       }
-      onClick={onClick}
+      onClick={(e) => {
+        if (wasResizing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        onClick?.(e);
+      }}
     >
       <div className="flex items-center">{children}</div>
       <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-accent/20 dark:hover:bg-accent-dark/20"
+        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize group-hover:bg-accent/20 dark:group-hover:bg-accent-dark/20 flex items-center justify-center"
         onMouseDown={handleMouseDown}
         onClick={(e) => e.stopPropagation()}
-      />
+      >
+        <div className="w-[2px] h-4 opacity-0 group-hover:opacity-100 bg-accent/50 dark:bg-accent-dark/50 transition-opacity" />
+      </div>
     </th>
   );
 }

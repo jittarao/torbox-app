@@ -71,6 +71,7 @@ export function useSort() {
           .localeCompare((b[field] || '').toLowerCase()),
       date: (a, b, field) => new Date(a[field] || 0) - new Date(b[field] || 0),
       status: (a, b) => getStatusPriority(b) - getStatusPriority(a),
+      file_count: (a, b) => (a.files?.length || 0) - (b.files?.length || 0),
     }),
     [getStatusPriority],
   );
@@ -93,6 +94,7 @@ export function useSort() {
       created_at: 'date',
       updated_at: 'date',
       download_state: 'status',
+      file_count: 'file_count',
     }),
     [],
   );

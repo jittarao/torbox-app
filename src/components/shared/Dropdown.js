@@ -1,7 +1,15 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
 
-export default function Dropdown({ options, value, onChange, className = '' }) {
+import { useState, useRef, useEffect } from 'react';
+import { Icons } from '@/components/constants';
+
+export default function Dropdown({
+  options,
+  value,
+  onChange,
+  className = '',
+  sortDir,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -65,17 +73,20 @@ export default function Dropdown({ options, value, onChange, className = '' }) {
                 setIsOpen(false);
               }}
               className={`block w-full text-left px-4 py-2 text-sm
-                text-primary-text dark:text-primary-text-dark
-                hover:bg-surface-alt/90 dark:hover:bg-accent-dark/10
-                transition-colors
+                hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark
+                transition-colors flex justify-between items-center
                 ${
                   option.value === value ||
                   JSON.stringify(option.value) === value
-                    ? 'bg-surface-hover dark:bg-surface-hover-dark'
-                    : ''
+                    ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
+                    : 'text-primary-text dark:text-primary-text-dark'
                 }`}
             >
-              {option.label}
+              <span>{option.label}</span>
+              {sortDir &&
+                (option.value === value ||
+                  JSON.stringify(option.value) === value) &&
+                (sortDir === 'asc' ? Icons.up_arrow : Icons.down_arrow)}
             </button>
           ))}
         </div>

@@ -75,14 +75,16 @@ export default function MoreOptionsDropdown({
   };
 
   // Copy ID to clipboard
-  const handleCopyId = () => {
+  const handleCopyId = (e) => {
+    e.stopPropagation();
     copyToClipboard(item.id, 'ID copied to clipboard');
     phEvent('copy_item_id');
     setIsMenuOpen(false);
   };
 
   // Copy Hash to clipboard
-  const handleCopyHash = () => {
+  const handleCopyHash = (e) => {
+    e.stopPropagation();
     if (!item.hash) {
       setToast({
         message: 'Hash not available',
@@ -96,7 +98,8 @@ export default function MoreOptionsDropdown({
   };
 
   // Copy Short Magnet to clipboard
-  const handleCopyShortMagnet = () => {
+  const handleCopyShortMagnet = (e) => {
+    e.stopPropagation();
     if (!item.hash) {
       setToast({
         message: 'Hash not available',
@@ -113,6 +116,7 @@ export default function MoreOptionsDropdown({
 
   // Copy Full Magnet to clipboard
   const handleCopyFullMagnet = async () => {
+    e.stopPropagation();
     if (isExporting) return;
     setIsExporting(true);
     try {
@@ -148,7 +152,8 @@ export default function MoreOptionsDropdown({
   };
 
   // Export .torrent file
-  const handleExportTorrent = async () => {
+  const handleExportTorrent = async (e) => {
+    e.stopPropagation();
     if (isExporting) return;
     setIsExporting(true);
     try {
@@ -170,7 +175,8 @@ export default function MoreOptionsDropdown({
   };
 
   // Copy Source URL to clipboard
-  const handleCopySourceUrl = () => {
+  const handleCopySourceUrl = (e) => {
+    e.stopPropagation();
     if (!item.original_url) {
       setToast({
         message: 'Source URL not available',
@@ -184,7 +190,8 @@ export default function MoreOptionsDropdown({
   };
 
   // Handle reannounce
-  const handleReannounce = async () => {
+  const handleReannounce = async (e) => {
+    e.stopPropagation();
     if (isReannouncing) return;
     setIsReannouncing(true);
     try {

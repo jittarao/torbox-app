@@ -1,4 +1,5 @@
 'use client';
+
 import { useRef, useState } from 'react';
 import { Icons } from '@/components/constants';
 import { formatSize } from './utils/formatters';

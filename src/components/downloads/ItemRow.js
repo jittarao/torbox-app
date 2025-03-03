@@ -9,6 +9,7 @@ import {
 } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
+import Tooltip from '@/components/shared/Tooltip';
 
 export default function ItemRow({
   item,
@@ -17,8 +18,6 @@ export default function ItemRow({
   setSelectedItems,
   setItems,
   onRowSelect,
-  hoveredItem,
-  setHoveredItem,
   expandedItems,
   toggleFiles,
   apiKey,
@@ -80,21 +79,18 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-3 md:px-4 py-4 max-w-[150px] md:max-w-md relative"
+            className="px-3 md:px-4 py-4 max-w-[150px] relative"
             style={baseStyle}
           >
             <div
               className={`text-sm text-primary-text dark:text-primary-text-dark ${
                 isMobile ? 'break-all' : 'whitespace-nowrap truncate'
               } flex-1 cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
             >
-              {item.name || 'Unnamed Item'}
-              {hoveredItem === item.id && item.name && !isBlurred && (
-                <div className="absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg max-w-[250px] md:max-w-xl break-words whitespace-normal">
-                  {item.name}
-                </div>
+              {item.name && !isBlurred && (
+                <Tooltip content={item.name}>
+                  <span>{item.name || 'Unnamed Item'}</span>
+                </Tooltip>
               )}
             </div>
             {/* Show additional info on mobile */}
@@ -133,10 +129,9 @@ export default function ItemRow({
             <div className="cursor-default">
               {item[columnId] ? (
                 <>
-                  <span>{timeAgo(item[columnId])}</span>
-                  <div className="invisible group-hover:visible absolute z-10 left-0 top-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded shadow-lg">
-                    {formatDate(item[columnId])}
-                  </div>
+                  <Tooltip content={formatDate(item[columnId])}>
+                    <span>{timeAgo(item[columnId])}</span>
+                  </Tooltip>
                 </>
               ) : (
                 'Unknown'

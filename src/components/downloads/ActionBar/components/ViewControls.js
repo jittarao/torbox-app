@@ -7,10 +7,8 @@ export default function ViewControls({
   onFullscreenToggle,
   viewMode,
   onViewModeChange,
-  setSelectedItems,
 }) {
   const handleViewModeChange = (mode) => {
-    setSelectedItems({ items: new Set(), files: new Map() });
     onViewModeChange(mode);
     localStorage.setItem('downloads-view-mode', mode);
   };

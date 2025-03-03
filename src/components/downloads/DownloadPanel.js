@@ -1,7 +1,7 @@
 'use client';
 
 import { Icons } from '@/components/constants';
-
+import Tooltip from '@/components/shared/Tooltip';
 export default function DownloadPanel({
   downloadLinks,
   isDownloading,
@@ -71,15 +71,7 @@ export default function DownloadPanel({
               <span className="block w-full truncate mr-4 text-primary-text dark:text-primary-text-dark">
                 {link.url}
               </span>
-              <div
-                className="absolute z-50 left-0 lg:left-full top-full lg:top-1/2 mt-1 lg:mt-0 lg:-translate-y-1/2 lg:ml-2
-                p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark 
-                rounded shadow-lg whitespace-nowrap 
-                text-primary-text/70 dark:text-primary-text-dark/70 
-                invisible group-hover:visible"
-              >
-                {link.name}
-              </div>
+              <Tooltip content={link.name}>{link.name}</Tooltip>
             </div>
             <a
               href={link.url}

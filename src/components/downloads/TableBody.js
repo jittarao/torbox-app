@@ -14,6 +14,8 @@ export default function TableBody({
   onRowSelect,
   onFileSelect,
   setSelectedItems,
+  expandedItems,
+  toggleFiles,
   apiKey,
   onDelete,
   setToast,
@@ -21,23 +23,9 @@ export default function TableBody({
   isBlurred = false,
   viewMode = 'table',
 }) {
-  const [expandedItems, setExpandedItems] = useState(new Set());
-  const [hoveredItem, setHoveredItem] = useState(null);
   // Shared ref for tracking last clicked item row index
   const lastClickedItemIndexRef = useRef(null);
   const isMobile = useIsMobile();
-
-  const toggleFiles = (itemId) => {
-    setExpandedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  };
 
   return (
     <tbody className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark">
@@ -51,8 +39,6 @@ export default function TableBody({
             setItems={setItems}
             setSelectedItems={setSelectedItems}
             onRowSelect={onRowSelect}
-            hoveredItem={hoveredItem}
-            setHoveredItem={setHoveredItem}
             expandedItems={expandedItems}
             toggleFiles={toggleFiles}
             apiKey={apiKey}

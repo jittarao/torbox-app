@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const DEFAULT_MIN_WIDTH = 100;
+const DEFAULT_MIN_WIDTH = 60;
 
 export function useColumnWidths(activeType) {
   const storageKey = `${activeType}-column-widths`;

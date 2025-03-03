@@ -8,7 +8,6 @@ import StatusSection from './components/StatusSection';
 import SearchBar from './components/SearchBar';
 import ActionButtons from './components/ActionButtons';
 import ViewControls from './components/ViewControls';
-import StatusFilterDropdown from '@/components/shared/StatusFilterDropdown';
 import { useStatusCounts } from './hooks/useStatusCounts';
 import Dropdown from '@/components/shared/Dropdown';
 
@@ -35,6 +34,7 @@ export default function ActionBar({
   viewMode = 'table',
   onViewModeChange,
   sortField,
+  sortDir,
   handleSort,
 }) {
   const [isSticky, setIsSticky] = useState(false);
@@ -128,6 +128,7 @@ export default function ActionBar({
             value={sortField}
             onChange={(value) => handleSort(value)}
             className="min-w-[150px]"
+            sortDir={sortDir}
           />
         )}
 
@@ -139,7 +140,6 @@ export default function ActionBar({
           onFullscreenToggle={onFullscreenToggle}
           viewMode={viewMode}
           onViewModeChange={onViewModeChange}
-          setSelectedItems={setSelectedItems}
         />
 
         {/* Column manager */}

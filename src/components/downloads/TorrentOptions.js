@@ -1,18 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { Icons } from '@/components/constants';
+import Tooltip from '@/components/shared/Tooltip';
 
 export default function TorrentOptions({
   showOptions,
   globalOptions,
   updateGlobalOptions,
 }) {
-  const [tooltipVisible, setTooltipVisible] = useState(false);
-  const handleQuestionHover = (visible) => {
-    setTooltipVisible(visible);
-  };
-
   return (
     <div
       className={`${showOptions ? 'mt-4' : 'mt-0'} transition-all duration-300 ease-in-out overflow-hidden ${
@@ -112,24 +107,9 @@ export default function TorrentOptions({
             <div className="flex flex-col mb-4">
               <h4 className="text-sm font-medium text-primary-text dark:text-primary-text-dark flex items-center gap-2">
                 Process Queued Torrents
-                <div className="relative">
-                  <div
-                    onMouseEnter={() => handleQuestionHover(true)}
-                    onMouseLeave={() => handleQuestionHover(false)}
-                  >
-                    {Icons.question}
-                  </div>
-                  {tooltipVisible && (
-                    <div
-                      className="absolute z-10 left-1/2 -translate-x-1/2 top-full mt-2 p-2 
-                        bg-surface dark:bg-surface-dark border border-border dark:border-border-dark 
-                        rounded shadow-lg w-48 text-xs text-primary-text/70 dark:text-primary-text-dark/70"
-                    >
-                      Automatically start downloading torrents up to the
-                      specified limit
-                    </div>
-                  )}
-                </div>
+                <Tooltip content="Automatically start downloading torrents up to the specified limit">
+                  {Icons.question}
+                </Tooltip>
               </h4>
             </div>
 

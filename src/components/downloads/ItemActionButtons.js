@@ -20,7 +20,8 @@ export default function ItemActionButtons({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
 
-  const handleStopSeeding = async () => {
+  const handleStopSeeding = async (e) => {
+    e.stopPropagation();
     setIsStopping(true);
     try {
       await onStopSeeding();
@@ -30,7 +31,8 @@ export default function ItemActionButtons({
     }
   };
 
-  const handleForceStart = async () => {
+  const handleForceStart = async (e) => {
+    e.stopPropagation();
     setIsDownloading(true);
     try {
       await onForceStart();
@@ -44,6 +46,11 @@ export default function ItemActionButtons({
     e.stopPropagation();
     await onDownload();
     phEvent('download_item');
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    await onDelete();
   };
 
   return (
@@ -82,7 +89,7 @@ export default function ItemActionButtons({
       )}
 
       {/* Toggle files button */}
-      {item.download_present && viewMode === 'table' && (
+      {item.download_present && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -119,7 +126,7 @@ export default function ItemActionButtons({
 
       {/* Delete button */}
       <ConfirmButton
-        onClick={onDelete}
+        onClick={handleDelete}
         isLoading={isDeleting}
         confirmIcon={Icons.check}
         defaultIcon={Icons.delete}
