@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 
@@ -16,6 +17,7 @@ export function useDelete(
   assetType = 'torrents',
 ) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const t = useTranslations('ItemActions.toast');
 
   const getDeleteEndpoint = () => {
     switch (assetType) {
@@ -57,7 +59,7 @@ export function useDelete(
         }
 
         setToast({
-          message: 'Successfully deleted',
+          message: t('deleteSuccess'),
           type: 'success',
         });
 
@@ -68,7 +70,7 @@ export function useDelete(
     } catch (error) {
       console.error('Error deleting:', error);
       setToast({
-        message: `Error deleting: ${error.message}`,
+        message: t('deleteError', { error: error.message }),
         type: 'error',
       });
       return { success: false, error: error.message };
@@ -120,17 +122,20 @@ export function useDelete(
       // Show appropriate toast based on results
       if (successfulIds.length === ids.length) {
         setToast({
-          message: 'All items successfully deleted',
+          message: t('deleteAllSuccess'),
           type: 'success',
         });
       } else if (successfulIds.length > 0) {
         setToast({
-          message: `Deleted ${successfulIds.length} of ${ids.length} items`,
+          message: t('deletePartialSuccess', {
+            count: successfulIds.length,
+            total: ids.length,
+          }),
           type: 'warning',
         });
       } else {
         setToast({
-          message: 'Failed to delete items',
+          message: t('deleteAllFailed'),
           type: 'error',
         });
       }
@@ -142,7 +147,7 @@ export function useDelete(
     } catch (error) {
       console.error('Error in batch delete:', error);
       setToast({
-        message: `Error deleting: ${error.message}`,
+        message: t('deleteError', { error: error.message }),
         type: 'error',
       });
       return [];
@@ -159,7 +164,7 @@ export function useDelete(
     } catch (error) {
       console.error('Error bulk deleting:', error);
       setToast({
-        message: `Error deleting: ${error.message}`,
+        message: t('deleteError', { error: error.message }),
         type: 'error',
       });
       return [];

@@ -16,6 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { formatSpeed } from './utils/formatters';
 import { useSpeedData } from '../shared/hooks/useSpeedData';
 import useIsMobile from '@/hooks/useIsMobile';
+import { useTranslations } from 'next-intl';
 
 // Register Chart.js components
 ChartJS.register(
@@ -65,6 +66,7 @@ const ensureValidData = (data) => {
 const CHART_EXPANDED_KEY = 'speedchart-expanded';
 
 export default function SpeedChart({ items, activeType }) {
+  const t = useTranslations('SpeedChart');
   const [timeRange, setTimeRange] = useState('10m');
   const speedData = useSpeedData(items, timeRange);
   const chartRef = useRef(null);
@@ -236,7 +238,7 @@ export default function SpeedChart({ items, activeType }) {
     labels: validLabels,
     datasets: [
       {
-        label: 'Download',
+        label: t('labels.download'),
         data: validDownloadData,
         borderColor: THEME_COLORS.download.border,
         backgroundColor: THEME_COLORS.download.background,
@@ -245,7 +247,7 @@ export default function SpeedChart({ items, activeType }) {
         borderWidth: 2,
       },
       {
-        label: 'Upload',
+        label: t('labels.upload'),
         data: validUploadData,
         borderColor: THEME_COLORS.upload.border,
         backgroundColor: THEME_COLORS.upload.background,
@@ -358,7 +360,7 @@ export default function SpeedChart({ items, activeType }) {
       <div className="flex justify-between items-center gap-2">
         <div className="flex items-center gap-4">
           <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
-            {chartTitleText}
+            {isMobile ? t('title.default') : t('title.full')}
           </h3>
 
           {/* Current speeds */}
@@ -387,12 +389,12 @@ export default function SpeedChart({ items, activeType }) {
               onChange={(e) => setTimeRange(e.target.value)}
               className="text-xs lg:text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark focus:outline-none"
             >
-              <option value="1m">Last 1m</option>
-              <option value="10m">Last 10m</option>
-              <option value="1h">Last 1h</option>
-              <option value="3h">Last 3h</option>
-              <option value="6h">Last 6h</option>
-              <option value="all">All</option>
+              <option value="1m">{t('timeRanges.1m')}</option>
+              <option value="10m">{t('timeRanges.10m')}</option>
+              <option value="1h">{t('timeRanges.1h')}</option>
+              <option value="3h">{t('timeRanges.3h')}</option>
+              <option value="6h">{t('timeRanges.6h')}</option>
+              <option value="all">{t('timeRanges.all')}</option>
             </select>
           )}
 
@@ -402,7 +404,7 @@ export default function SpeedChart({ items, activeType }) {
             className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
           >
-            {isExpanded ? chartHideOptionsText : chartShowOptionsText}
+            {isExpanded ? t('chart.hide') : t('chart.show')}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}

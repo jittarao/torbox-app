@@ -7,7 +7,7 @@ import Downloads from '@/components/downloads/Downloads';
 import LandingPage from '@/components/LandingPage';
 import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
-import { useUpload } from '../components/shared/hooks/useUpload';
+import { useUpload } from '@/components/shared/hooks/useUpload';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 

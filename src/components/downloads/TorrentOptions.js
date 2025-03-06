@@ -1,13 +1,16 @@
 'use client';
 
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
+import { useTranslations } from 'next-intl';
 
 export default function TorrentOptions({
   showOptions,
   globalOptions,
   updateGlobalOptions,
 }) {
+  const t = useTranslations('TorrentOptions');
+
   return (
     <div
       className={`${showOptions ? 'mt-4' : 'mt-0'} transition-all duration-300 ease-in-out overflow-hidden ${
@@ -22,7 +25,7 @@ export default function TorrentOptions({
           {/* Left Section - Global Upload Options */}
           <div className="flex-1 xl:pr-6 mb-6 xl:mb-0">
             <h4 className="text-sm font-medium mb-4 text-primary-text dark:text-primary-text-dark">
-              Global Upload Options
+              {t('title')}
             </h4>
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
               <div className="max-w-[200px]">
@@ -30,7 +33,7 @@ export default function TorrentOptions({
                   className="block text-xs text-primary-text/70 dark:text-primary-text-dark/70 
                     uppercase tracking-wide mb-1"
                 >
-                  Seeding Preference
+                  {t('seedingPreference.label')}
                 </label>
                 <select
                   value={globalOptions.seed}
@@ -42,9 +45,9 @@ export default function TorrentOptions({
                       focus:ring-1 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
                       focus:border-accent dark:focus:border-accent-dark transition-colors"
                 >
-                  <option value={1}>Auto (Default)</option>
-                  <option value={2}>Always Seed</option>
-                  <option value={3}>Never Seed</option>
+                  <option value={1}>{t('seedingPreference.auto')}</option>
+                  <option value={2}>{t('seedingPreference.always')}</option>
+                  <option value={3}>{t('seedingPreference.never')}</option>
                 </select>
               </div>
 
@@ -63,10 +66,10 @@ export default function TorrentOptions({
                       className="text-sm text-primary-text dark:text-primary-text-dark 
                         group-hover:text-primary dark:group-hover:text-primary-text-dark"
                     >
-                      Allow Zip
+                      {t('allowZip.label')}
                     </span>
                     <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
-                      For torrents with 100+ files
+                      {t('allowZip.description')}
                     </p>
                   </div>
                 </label>
@@ -85,10 +88,10 @@ export default function TorrentOptions({
                       className="text-sm text-primary-text dark:text-primary-text-dark 
                         group-hover:text-primary dark:group-hover:text-primary-text-dark"
                     >
-                      Instant Queue
+                      {t('instantQueue.label')}
                     </span>
                     <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
-                      Skip waiting queue
+                      {t('instantQueue.description')}
                     </p>
                   </div>
                 </label>
@@ -106,8 +109,8 @@ export default function TorrentOptions({
           <div className="flex-1 xl:pl-6">
             <div className="flex flex-col mb-4">
               <h4 className="text-sm font-medium text-primary-text dark:text-primary-text-dark flex items-center gap-2">
-                Process Queued Torrents
-                <Tooltip content="Automatically start downloading torrents up to the specified limit">
+                {t('autoStart.title')}
+                <Tooltip content={t('autoStart.tooltip')}>
                   {Icons.question}
                 </Tooltip>
               </h4>
@@ -127,13 +130,13 @@ export default function TorrentOptions({
                   className="text-sm text-primary-text dark:text-primary-text-dark 
                     group-hover:text-primary dark:group-hover:text-primary-text-dark"
                 >
-                  Enable Auto Start
+                  {t('autoStart.label')}
                 </span>
               </label>
 
               <div className="flex items-center gap-2 ml-6">
                 <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-                  Active torrents limit:
+                  {t('autoStart.limit')}
                 </span>
                 <input
                   type="number"

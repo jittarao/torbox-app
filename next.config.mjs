@@ -1,5 +1,8 @@
 import { withSentryConfig } from '@sentry/nextjs';
 import withPWA from 'next-pwa';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {};
@@ -11,7 +14,7 @@ const withPWAConfig = withPWA({
   disable: process.env.NODE_ENV === 'development',
 })(nextConfig);
 
-export default withSentryConfig(withPWAConfig, {
+export default withSentryConfig(withNextIntl(withPWAConfig), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 

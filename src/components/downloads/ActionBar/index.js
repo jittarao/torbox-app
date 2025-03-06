@@ -10,6 +10,7 @@ import ActionButtons from './components/ActionButtons';
 import ViewControls from './components/ViewControls';
 import { useStatusCounts } from './hooks/useStatusCounts';
 import Dropdown from '@/components/shared/Dropdown';
+import { useTranslations } from 'next-intl';
 
 export default function ActionBar({
   unfilteredItems,
@@ -46,6 +47,8 @@ export default function ActionBar({
   const { statusCounts, statusOptions, isStatusSelected } =
     useStatusCounts(unfilteredItems);
 
+  const t = useTranslations('Columns');
+
   useEffect(() => {
     const element = stickyRef.current;
     const observer = new IntersectionObserver(
@@ -69,7 +72,7 @@ export default function ActionBar({
   const itemTypePlural = `${itemTypeName}s`;
 
   const sortOptions = activeColumns.map((column) => ({
-    label: COLUMNS[column].label,
+    label: t(`${COLUMNS[column].key}`),
     value: column,
   }));
 

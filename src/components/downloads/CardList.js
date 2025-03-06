@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import ItemCard from './ItemCard';
+import { useTranslations } from 'next-intl';
 
 export default function CardList({
   items,
@@ -19,6 +20,7 @@ export default function CardList({
   isFullscreen,
   viewMode = 'card',
 }) {
+  const t = useTranslations('CardList');
   const lastClickedItemIndexRef = useRef(null);
   const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
@@ -115,13 +117,13 @@ export default function CardList({
     await downloadSingle(itemId, options, idField, copyLink)
       .then(() => {
         setToast({
-          message: 'Link copied to clipboard!',
+          message: t('toast.copyLink'),
           type: 'success',
         });
       })
       .catch((err) => {
         setToast({
-          message: 'Failed to copy link',
+          message: t('toast.copyLinkFailed'),
           type: 'error',
         });
       })

@@ -8,12 +8,14 @@ import UploadItemList from './UploadItemList';
 import UploadProgress from './UploadProgress';
 import useIsMobile from '@/hooks/useIsMobile';
 import { phEvent } from '@/utils/sa';
+import { useTranslations } from 'next-intl';
 
 // Local storage keys
 const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
 const UPLOADER_OPTIONS_KEY = 'uploader-options-expanded';
 
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
+  const t = useTranslations('ItemUploader');
   const {
     items,
     setItems,
@@ -108,28 +110,28 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     switch (activeType) {
       case 'usenet':
         return {
-          title: 'Upload NZB Files',
-          inputPlaceholder: 'Paste NZB links here (one per line)',
-          dropzoneText: 'Drop NZB files here',
-          buttonText: 'Upload NZB',
+          title: t('title.usenet'),
+          inputPlaceholder: t('placeholder.usenet'),
+          dropzoneText: t('dropzone.usenet'),
+          buttonText: t('button.usenet'),
           fileExtension: '.nzb',
           showDropzone: true,
         };
       case 'webdl':
         return {
-          title: 'Add Web Downloads',
-          inputPlaceholder: 'Paste web download links here (one per line)',
+          title: t('title.webdl'),
+          inputPlaceholder: t('placeholder.webdl'),
           dropzoneText: '',
-          buttonText: 'Add Links',
+          buttonText: t('button.webdl'),
           fileExtension: '',
           showDropzone: false,
         };
       default:
         return {
-          title: 'Upload Torrents',
-          inputPlaceholder: 'Paste magnet links here (one per line)',
-          dropzoneText: 'Drop torrent files here',
-          buttonText: 'Upload Torrents',
+          title: t('title.torrents'),
+          inputPlaceholder: t('placeholder.torrents'),
+          dropzoneText: t('dropzone.torrents'),
+          buttonText: t('button.torrents'),
           fileExtension: '.torrent',
           showDropzone: true,
         };
@@ -167,7 +169,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
         <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
-          {isMobile ? 'Upload' : assetTypeInfo.title}
+          {isMobile ? t('title.default') : assetTypeInfo.title}
         </h3>
         <div className="flex items-center gap-2 lg:gap-4">
           {activeType === 'torrents' && isExpanded && (
@@ -175,7 +177,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               onClick={() => setShowOptions(!showOptions)}
               className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             >
-              {showOptions ? uploaderHideOptionsText : uploaderShowOptionsText}
+              {showOptions ? t('options.hide') : t('options.show')}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className={`w-4 h-4 transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`}
@@ -195,7 +197,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
           >
-            {isExpanded ? uploaderHideSectionText : uploaderShowSectionText}
+            {isExpanded ? t('section.hide') : t('section.show')}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
@@ -305,16 +307,19 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             ) && (
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-end mt-4">
                 <h3 className="text-xs lg:text-sm text-primary-text dark:text-primary-text-dark/70">
-                  {items.filter((item) => item.status === 'success').length} of{' '}
-                  {items.length} items processed
+                  {t('status.processing', {
+                    count: items.filter((item) => item.status === 'success')
+                      .length,
+                    total: items.length,
+                  })}
                 </h3>
 
                 <button
                   onClick={handleDismiss}
                   className="text-sm text-primary-text/70 hover:text-primary-text dark:text-primary-text-dark dark:hover:text-primary-text-dark/70"
-                  aria-label="Close panel"
+                  aria-label={t('status.clearItems')}
                 >
-                  Clear items
+                  {t('status.clearItems')}
                 </button>
               </div>
             )}

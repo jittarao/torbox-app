@@ -1,10 +1,10 @@
 'use client';
 
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 import { formatSize } from './utils/formatters';
 import Spinner from '../shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
-
+import { useTranslations } from 'next-intl';
 export default function FileRow({
   item,
   selectedItems,
@@ -16,6 +16,7 @@ export default function FileRow({
   isMobile = false,
   isBlurred = false,
 }) {
+  const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) =>
     fileId ? `${itemId}-${fileId}` : itemId;
 
@@ -108,6 +109,7 @@ export default function FileRow({
                 disabled={isCopying[assetKey(item.id, file.id)]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                   hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                title={t('copyLink')}
               >
                 {isCopying[assetKey(item.id, file.id)] ? (
                   <Spinner size="sm" />
@@ -125,7 +127,7 @@ export default function FileRow({
                 disabled={isDownloading[assetKey(item.id, file.id)]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                   hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
-                title="Download File"
+                title={t('download')}
               >
                 {isDownloading[assetKey(item.id, file.id)] ? (
                   <Spinner size="sm" />

@@ -7,9 +7,10 @@ import {
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
+import { useTranslations } from 'next-intl';
 
 export default function ItemCard({
   item,
@@ -32,6 +33,7 @@ export default function ItemCard({
   isCopying,
   isDownloading,
 }) {
+  const columnT = useTranslations('Columns');
   const isMobile = useIsMobile();
 
   const filteredColumns = activeColumns.filter(
@@ -48,33 +50,33 @@ export default function ItemCard({
   const getTooltipContent = (column) => {
     switch (column) {
       case 'id':
-        return 'ID';
+        return columnT('id');
       case 'hash':
-        return 'Hash';
+        return columnT('hash');
       case 'seeds':
-        return 'Seeds';
+        return columnT('seeds');
       case 'peers':
-        return 'Peers';
+        return columnT('peers');
       case 'ratio':
-        return 'Ratio';
+        return columnT('ratio');
       case 'size':
-        return 'Size';
+        return columnT('size');
       case 'file_count':
-        return 'Files';
+        return columnT('file_count');
       case 'created_at':
-        return 'Added';
+        return columnT('created_at');
       case 'updated_at':
-        return 'Updated';
+        return columnT('updated_at');
       case 'expires_at':
-        return 'Expires';
+        return columnT('expires_at');
       case 'eta':
-        return 'ETA';
+        return columnT('eta');
       case 'total_downloaded':
-        return 'Downloaded';
+        return columnT('total_downloaded');
       case 'total_uploaded':
-        return 'Uploaded';
+        return columnT('total_uploaded');
       case 'original_url':
-        return 'Source';
+        return columnT('original_url');
     }
   };
 

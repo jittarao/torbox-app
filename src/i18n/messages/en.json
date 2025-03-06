@@ -1,0 +1,355 @@
+{
+  "Index": {
+    "title": "TorBox Manager",
+    "description": "Torrent and Debrid Manager",
+    "search": "Search",
+    "searchPlaceholder": "Search torrents..."
+  },
+  "Navigation": {
+    "home": "Home",
+    "search": "Search",
+    "settings": "Settings"
+  },
+  "Header": {
+    "title": "TorBox Manager",
+    "logo": "TorBox Manager Logo",
+    "theme": {
+      "toggleDark": "Toggle dark mode",
+      "toggleLight": "Toggle light mode"
+    },
+    "menu": {
+      "downloads": "Downloads",
+      "search": "Search",
+      "toggle": "Toggle menu"
+    }
+  },
+  "LandingPage": {
+    "title": "TorBox Manager",
+    "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",
+    "features": {
+      "batchUpload": {
+        "title": "Batch Upload",
+        "description": "Upload multiple torrents with a single click"
+      },
+      "search": {
+        "title": "Smart Search",
+        "description": "Search across multiple torrent sites"
+      },
+      "debrid": {
+        "title": "Debrid Integration",
+        "description": "Seamless integration with debrid services"
+      }
+    },
+    "apiKeyInput": {
+      "title": "Enter TorBox API Key",
+      "description": "Find your API key at",
+      "link": "torbox.app/settings"
+    },
+    "footer": {
+      "description": "We don't store any of your information. This app is fully open source on",
+      "github": "GitHub"
+    }
+  },
+  "ApiKeyInput": {
+    "placeholder": "Enter TorBox API Key",
+    "show": "Show API key",
+    "hide": "Hide API key"
+  },
+  "ActionButtons": {
+    "downloadLinks": "Get Download Links",
+    "downloadLinksMobile": "Get Links",
+    "fetchingLinks": "Fetching Links...",
+    "delete": "Delete",
+    "deleteConfirm": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "clear": "Clear"
+  },
+  "SearchBar": {
+    "placeholder": "Search {itemType}...",
+    "clearSearch": "Clear search",
+    "customEngines": "Custom Engines"
+  },
+  "StatusSection": {
+    "selectedItems": "{itemCount} {type} selected ({size})",
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
+    "selectedFiles": "{fileCount} files selected ({size})",
+    "total": "{count} {type}"
+  },
+  "ViewControls": {
+    "tableView": "Table View",
+    "cardView": "Card View",
+    "hideSensitive": "Hide sensitive content",
+    "showSensitive": "Show sensitive content",
+    "enterFullscreen": "Enter fullscreen",
+    "exitFullscreen": "Exit fullscreen"
+  },
+  "ColumnManager": {
+    "reorderColumns": "Reorder columns",
+    "manageColumns": "Manage columns"
+  },
+  "Common": {
+    "itemTypes": {
+      "torrent": "torrent",
+      "Torrent": "Torrent",
+      "torrents": "torrents",
+      "Torrents": "Torrents",
+      "file": "file",
+      "File": "File",
+      "files": "files",
+      "Files": "Files",
+      "usenet": "usenet",
+      "Usenet": "Usenet",
+      "usenets": "usenets",
+      "Usenets": "Usenets",
+      "web": "web",
+      "Web": "Web",
+      "webdl": "webdl",
+      "Webdl": "Webdl"
+    }
+  },
+  "ItemUploader": {
+    "title": {
+      "default": "Upload",
+      "torrents": "Upload Torrents",
+      "usenet": "Upload NZB Files",
+      "webdl": "Add Web Downloads"
+    },
+    "placeholder": {
+      "torrents": "Paste magnet links here (one per line)",
+      "usenet": "Paste NZB links here (one per line)",
+      "webdl": "Paste web download links here (one per line)"
+    },
+    "dropzone": {
+      "torrents": "Drop torrent files here",
+      "usenet": "Drop NZB files here"
+    },
+    "button": {
+      "torrents": "Upload Torrents",
+      "usenet": "Upload NZB",
+      "webdl": "Add Links"
+    },
+    "options": {
+      "show": "Show options",
+      "hide": "Hide options"
+    },
+    "section": {
+      "show": "Show section",
+      "hide": "Hide section"
+    },
+    "status": {
+      "processing": "{count} of {total} items processed",
+      "clearItems": "Clear items"
+    }
+  },
+  "SpeedChart": {
+    "title": {
+      "default": "Network",
+      "full": "Network Activity"
+    },
+    "chart": {
+      "show": "Show chart",
+      "hide": "Hide chart"
+    },
+    "timeRanges": {
+      "1m": "Last 1m",
+      "10m": "Last 10m",
+      "1h": "Last 1h",
+      "3h": "Last 3h",
+      "6h": "Last 6h",
+      "all": "All"
+    },
+    "labels": {
+      "download": "Download",
+      "upload": "Upload"
+    }
+  },
+  "DownloadPanel": {
+    "title": {
+      "single": "Download Link",
+      "multiple": "Download Links"
+    },
+    "status": {
+      "fetching": "Fetching {current} of {total}",
+      "generating": "Generating links...",
+      "generatingMore": "Generating more links..."
+    },
+    "actions": {
+      "copyAll": "Copy All Links",
+      "copyLink": "Copy Link",
+      "downloadFile": "Download File",
+      "clearAll": "Clear All"
+    },
+    "toast": {
+      "linksCopied": "Links copied to clipboard!",
+      "linkCopied": "Link copied to clipboard!",
+      "copyFailed": "Failed to copy link",
+      "copyAllFailed": "Failed to copy links"
+    }
+  },
+  "TorrentOptions": {
+    "title": "Global Upload Options",
+    "seedingPreference": {
+      "label": "Seeding Preference",
+      "auto": "Auto (Default)",
+      "always": "Always Seed",
+      "never": "Never Seed"
+    },
+    "allowZip": {
+      "label": "Allow Zip",
+      "description": "For torrents with 100+ files"
+    },
+    "instantQueue": {
+      "label": "Instant Queue",
+      "description": "Skip waiting queue"
+    },
+    "autoStart": {
+      "title": "Process Queued Torrents",
+      "tooltip": "Automatically start downloading torrents up to the specified limit",
+      "label": "Enable Auto Start",
+      "limit": "Active torrents limit:"
+    }
+  },
+  "Columns": {
+    "id": "ID",
+    "hash": "Hash",
+    "name": "Name",
+    "size": "Size",
+    "created_at": "Added Date",
+    "updated_at": "Last Updated",
+    "download_state": "Status",
+    "progress": "Progress",
+    "ratio": "Ratio",
+    "file_count": "File Count",
+    "download_speed": "Download Speed",
+    "upload_speed": "Upload Speed",
+    "eta": "ETA",
+    "total_uploaded": "Total Uploaded",
+    "total_downloaded": "Total Downloaded",
+    "seeds": "Seeds",
+    "peers": "Peers",
+    "original_url": "Source URL",
+    "expires_at": "Expires At"
+  },
+  "Statuses": {
+    "completed": "Completed",
+    "downloading": "Downloading",
+    "failed": "Failed",
+    "inactive": "Inactive",
+    "queued": "Queued",
+    "seeding": "Seeding",
+    "stalled": "Stalled",
+    "uploading": "Uploading",
+    "unknown": "Unknown"
+  },
+  "ItemActions": {
+    "toast": {
+      "noFiles": "No files available to download",
+      "downloadStarted": "Download started successfully",
+      "downloadFailed": "Download start failed",
+      "seedingStopped": "Torrent stopped seeding successfully",
+      "seedingStopFailed": "Torrent stop seeding failed",
+      "deleteError": "Error deleting: {error}",
+      "deleteSuccess": "Successfully deleted",
+      "deleteAllSuccess": "All items successfully deleted",
+      "deletePartialSuccess": "Deleted {count} of {total} items",
+      "deleteAllFailed": "Failed to delete items"
+    }
+  },
+  "ItemActionButtons": {
+    "stop": {
+      "title": "Stop seeding",
+      "label": "Stop"
+    },
+    "start": {
+      "title": "Force Start",
+      "label": "Start"
+    },
+    "files": {
+      "show": "Show Files",
+      "hide": "Hide Files",
+      "label": "Files"
+    },
+    "download": {
+      "title": "Download",
+      "label": "Download"
+    },
+    "delete": {
+      "title": "Delete",
+      "label": "Delete"
+    }
+  },
+  "MoreOptionsDropdown": {
+    "title": "More Options",
+    "label": "More",
+    "copyId": "Copy ID",
+    "copyHash": "Copy Hash",
+    "copyShortMagnet": "Copy Short Magnet",
+    "copyFullMagnet": "Copy Full Magnet",
+    "reannounce": "Reannounce",
+    "exportTorrent": "Export .torrent",
+    "copySourceUrl": "Copy Source URL",
+    "toast": {
+      "idCopied": "ID copied to clipboard",
+      "hashNotAvailable": "Hash not available",
+      "hashCopied": "Hash copied to clipboard",
+      "shortMagnetCopied": "Short magnet link copied to clipboard",
+      "fullMagnetCopied": "Full magnet link copied to clipboard",
+      "magnetError": "Failed to get magnet link",
+      "reannounceSuccess": "Torrent reannounced successfully",
+      "reannounceFailed": "Failed to reannounce torrent",
+      "sourceUrlNotAvailable": "Source URL not available",
+      "sourceUrlCopied": "Source URL copied to clipboard",
+      "clipboardError": "Failed to copy to clipboard"
+    }
+  },
+  "CardList": {
+    "toast": {
+      "copyLink": "Link copied to clipboard",
+      "copyLinkFailed": "Failed to copy link"
+    }
+  },
+  "TableBody": {
+    "toast": {
+      "copyLink": "Link copied to clipboard",
+      "copyLinkFailed": "Failed to copy link"
+    }
+  },
+  "SearchResults": {
+    "results": "{count} results",
+    "noResults": "No results found",
+    "cachedOnly": "Cached Only",
+    "sort": {
+      "seeders": "Most Seeders",
+      "size": "Largest Size",
+      "age": "Most Recent"
+    },
+    "actions": {
+      "copyMagnet": "Copy Magnet",
+      "copyLink": "Copy Link",
+      "addToTorbox": "Add to TorBox",
+      "adding": "Adding...",
+      "added": "Added"
+    },
+    "toast": {
+      "magnetCopied": "Magnet link copied to clipboard",
+      "nzbCopied": "NZB link copied to clipboard",
+      "torrentAdded": "Torrent added to TorBox successfully",
+      "nzbAdded": "NZB added to TorBox successfully",
+      "torrentAddFailed": "Failed to add torrent: {error}",
+      "nzbAddFailed": "Failed to add NZB: {error}"
+    },
+    "metadata": {
+      "days": "days",
+      "cached": "Cached"
+    }
+  },
+  "FileActions": {
+    "copyLink": "Copy Link",
+    "download": "Download File"
+  }
+}

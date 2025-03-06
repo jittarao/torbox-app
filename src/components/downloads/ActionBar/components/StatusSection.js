@@ -1,5 +1,6 @@
 import { getStatusStyles, getTotalSelectedFiles } from '../utils/statusHelpers';
 import { STATUS_OPTIONS } from '@/components/constants';
+import { useTranslations } from 'next-intl';
 
 export default function StatusSection({
   statusCounts,
@@ -13,6 +14,10 @@ export default function StatusSection({
   itemTypePlural,
   getTotalDownloadSize,
 }) {
+  const t = useTranslations('StatusSection');
+  const commonT = useTranslations('Common');
+  const statusT = useTranslations('Statuses');
+
   const handleStatusClick = (status) => {
     if (status === 'all') {
       onStatusChange('all');
@@ -45,17 +50,42 @@ export default function StatusSection({
       onStatusChange(currentFilters.length === 1 ? 'all' : newFilters);
     }
   };
-  const torrentText =
-    selectedItems.items?.size > 0
-      ? `${selectedItems.items?.size} ${selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural}`
-      : '';
 
-  const fileCount = getTotalSelectedFiles(selectedItems);
-  const fileText =
-    fileCount > 0 ? `${fileCount} ${fileCount === 1 ? 'file' : 'files'}` : '';
+  const getSelectionText = () => {
+    const itemCount = selectedItems.items?.size;
+    const fileCount = getTotalSelectedFiles(selectedItems);
+    const downloadSize = getTotalDownloadSize();
 
-  const parts = [torrentText, fileText].filter(Boolean);
-  const downloadSize = getTotalDownloadSize();
+    if (itemCount > 0 && fileCount > 0) {
+      return t('selectedItemsFiles', {
+        itemCount,
+        type: itemCount === 1 ? itemTypeName : itemTypePlural,
+        fileCount,
+        fileType:
+          fileCount === 1
+            ? commonT('itemTypes.file')
+            : commonT('itemTypes.files'),
+        size: downloadSize,
+      });
+    } else if (itemCount > 0) {
+      return t('selectedItems', {
+        itemCount,
+        type: itemCount === 1 ? itemTypeName : itemTypePlural,
+        size: downloadSize,
+      });
+    } else if (fileCount > 0) {
+      return t('selectedFiles', {
+        fileCount,
+        type: commonT('itemTypes.file'),
+        size: downloadSize,
+      });
+    } else {
+      return t('total', {
+        count: unfilteredItems.length,
+        type: itemTypePlural,
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-1 text-md text-primary-text dark:text-primary-text-dark">
@@ -63,9 +93,7 @@ export default function StatusSection({
         className={`font-semibold ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'}  transition-colors`}
         onClick={() => handleStatusClick('all')}
       >
-        {selectedItems.items?.size > 0 || hasSelectedFiles()
-          ? `${parts.join(' & ')} selected (${downloadSize})`
-          : `${unfilteredItems.length} ${itemTypePlural}`}
+        {getSelectionText()}
       </span>
 
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
@@ -89,7 +117,7 @@ export default function StatusSection({
                     ${isSelected ? 'border-current' : 'hover:opacity-80 border-current/20 hover:border-current'}
                     transition-all`}
                 >
-                  {count} {status.toLowerCase()}
+                  {count} {statusT(`${status.toLowerCase()}`)}
                 </span>
               );
             })}

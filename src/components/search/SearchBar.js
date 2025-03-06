@@ -2,14 +2,12 @@
 import { useState } from 'react';
 import { useSearchStore } from '@/stores/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
-import { Icons } from '@/components/constants';
-
-const SEARCH_OPTIONS = [
-  { value: 'torrents', label: 'Torrents' },
-  { value: 'usenet', label: 'Usenet' },
-];
+import { Icons } from '@/components/icons';
+import { useTranslations } from 'next-intl';
 
 export default function SearchBar() {
+  const t = useTranslations('SearchBar');
+  const commonT = useTranslations('Common');
   const [localQuery, setLocalQuery] = useState('');
   const setQuery = useSearchStore((state) => state.setQuery);
   const searchType = useSearchStore((state) => state.searchType);
@@ -20,6 +18,11 @@ export default function SearchBar() {
   const setIncludeCustomEngines = useSearchStore(
     (state) => state.setIncludeCustomEngines,
   );
+
+  const SEARCH_OPTIONS = [
+    { value: 'torrents', label: commonT('itemTypes.Torrents') },
+    { value: 'usenet', label: commonT('itemTypes.Usenet') },
+  ];
 
   const handleChange = (e) => {
     setLocalQuery(e.target.value);
@@ -56,7 +59,12 @@ export default function SearchBar() {
             value={localQuery}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Search torrents..."
+            placeholder={t('placeholder', {
+              itemType:
+                searchType === 'torrents'
+                  ? commonT('itemTypes.torrents')
+                  : commonT('itemTypes.usenet'),
+            })}
             className="w-full px-4 py-2 pl-10 pr-10 rounded-lg border border-border dark:border-border-dark
               bg-transparent text-sm text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
@@ -74,6 +82,7 @@ export default function SearchBar() {
                 text-primary-text/40 dark:text-primary-text-dark/40 
                 hover:text-primary-text dark:hover:text-primary-text-dark
                 transition-colors"
+              aria-label={t('clearSearch')}
             >
               {Icons.times}
             </button>
@@ -102,7 +111,7 @@ export default function SearchBar() {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            Custom Engines
+            {t('customEngines')}
           </span>
 
           <div

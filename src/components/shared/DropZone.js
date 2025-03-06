@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 
 export function DropZone({
   onDrop,

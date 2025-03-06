@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSearchStore } from '@/stores/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
+import { formatSize } from '@/components/downloads/utils/formatters';
 
 const TORBOX_NATIVE_TRACKERS = ['Newznab'];
 
@@ -32,6 +34,7 @@ export default function SearchResults({ apiKey }) {
   const [isUploading, setIsUploading] = useState({});
   const [showCachedOnly, setShowCachedOnly] = useState(false);
   const [addedItems, setAddedItems] = useState([]);
+  const t = useTranslations('SearchResults');
 
   // Update sort key when search type changes
   useEffect(() => {
@@ -80,7 +83,9 @@ export default function SearchResults({ apiKey }) {
     const link = searchType === 'usenet' ? item.nzb : item.magnet;
     await navigator.clipboard.writeText(link);
     setToast({
-      message: `${searchType === 'usenet' ? 'NZB' : 'Magnet'} link copied to clipboard`,
+      message: t(
+        `toast.${searchType === 'usenet' ? 'nzbCopied' : 'magnetCopied'}`,
+      ),
       type: 'success',
     });
   };
@@ -119,12 +124,17 @@ export default function SearchResults({ apiKey }) {
       setAddedItems((prev) => [...prev, item]);
 
       setToast({
-        message: `${searchType === 'usenet' ? 'NZB' : 'Torrent'} added to TorBox successfully`,
+        message: t(
+          `toast.${searchType === 'usenet' ? 'nzbAdded' : 'torrentAdded'}`,
+        ),
         type: 'success',
       });
     } catch (err) {
       setToast({
-        message: `Failed to add ${searchType === 'usenet' ? 'NZB' : 'torrent'}: ${err.message}`,
+        message: t(
+          `toast.${searchType === 'usenet' ? 'nzbAddFailed' : 'torrentAddFailed'}`,
+          { error: err.message },
+        ),
         type: 'error',
       });
     } finally {
@@ -146,7 +156,7 @@ export default function SearchResults({ apiKey }) {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
             <div className="flex items-center gap-4">
               <h2 className="text-lg md:text-xl font-semibold text-primary-text dark:text-primary-text-dark">
-                {filteredResults.length} results
+                {t('results', { count: filteredResults.length })}
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -165,7 +175,7 @@ export default function SearchResults({ apiKey }) {
                       d="M13 10V3L4 14h7v7l9-11h-7z"
                     />
                   </svg>
-                  Cached Only
+                  {t('cachedOnly')}
                 </span>
 
                 <div
@@ -256,7 +266,7 @@ export default function SearchResults({ apiKey }) {
                     )}
                     <div className="flex items-center gap-1.5">
                       {Icons.clock}
-                      {String(item.age).replace('d', ' days')}
+                      {String(item.age).replace('d', ` ${t('metadata.days')}`)}
                     </div>
                     {item.tracker && item.tracker !== 'Unknown' && (
                       <div className="flex items-center gap-1.5">
@@ -267,7 +277,7 @@ export default function SearchResults({ apiKey }) {
                     {item.cached && (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5">
                         {Icons.bolt}
-                        Cached
+                        {t('metadata.cached')}
                       </span>
                     )}
                   </div>
@@ -283,7 +293,9 @@ export default function SearchResults({ apiKey }) {
                               dark:bg-accent-dark dark:hover:bg-accent-dark/90
                               text-white rounded-md transition-colors"
                       >
-                        Copy {searchType === 'usenet' ? 'Link' : 'Magnet'}
+                        {t(
+                          `actions.${searchType === 'usenet' ? 'copyLink' : 'copyMagnet'}`,
+                        )}
                       </button>
                     )}
 
@@ -309,14 +321,14 @@ export default function SearchResults({ apiKey }) {
                       {isUploading[item.hash] ? (
                         <span className="flex items-center gap-2">
                           <Spinner size="sm" className="text-white" />
-                          Adding...
+                          {t('actions.adding')}
                         </span>
                       ) : addedItems.some(
                           (addedItem) => addedItem.hash === item.hash,
                         ) ? (
-                        'Added'
+                        t('actions.added')
                       ) : (
-                        'Add to TorBox'
+                        t('actions.addToTorbox')
                       )}
                     </button>
                   </div>
@@ -335,7 +347,7 @@ export default function SearchResults({ apiKey }) {
 
       {!results.length && !loading && !error && (
         <div className="text-center py-4">
-          <h2 className="text-xl font-semibold">No results found</h2>
+          <h2 className="text-xl font-semibold">{t('noResults')}</h2>
         </div>
       )}
 
@@ -354,11 +366,4 @@ export default function SearchResults({ apiKey }) {
       )}
     </div>
   );
-}
-
-function formatSize(bytes) {
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  if (bytes === 0) return '0 B';
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
 }

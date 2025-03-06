@@ -1,7 +1,8 @@
 'use client';
 
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
+import { useTranslations } from 'next-intl';
 
 export default function DownloadPanel({
   downloadLinks,
@@ -12,6 +13,8 @@ export default function DownloadPanel({
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
 }) {
+  const t = useTranslations('DownloadPanel');
+
   if (!downloadLinks.length && !isDownloading) return null;
 
   const handleCopyLinks = () => {
@@ -20,13 +23,13 @@ export default function DownloadPanel({
       .writeText(text)
       .then(() => {
         setToast({
-          message: 'Links copied to clipboard!',
+          message: t('toast.linksCopied'),
           type: 'success',
         });
       })
       .catch((err) => {
         setToast({
-          message: 'Failed to copy links',
+          message: t('toast.copyAllFailed'),
           type: 'error',
         });
       });
@@ -37,13 +40,13 @@ export default function DownloadPanel({
       .writeText(link.url)
       .then(() => {
         setToast({
-          message: 'Link copied to clipboard!',
+          message: t('toast.linkCopied'),
           type: 'success',
         });
       })
       .catch((err) => {
         setToast({
-          message: 'Failed to copy link',
+          message: t('toast.copyFailed'),
           type: 'error',
         });
       });
@@ -52,10 +55,15 @@ export default function DownloadPanel({
   const PanelTitle = () => {
     return (
       <>
-        <span>Download Link{downloadLinks.length > 1 ? 's' : ''}</span>
+        <span>
+          {downloadLinks.length > 1 ? t('title.multiple') : t('title.single')}
+        </span>
         {isDownloading && (
           <span className="block lg:inline text-sm text-primary-text/70 dark:text-primary-text-dark/70 lg:ml-2">
-            Fetching {downloadProgress.current} of {downloadProgress.total}
+            {t('status.fetching', {
+              current: downloadProgress.current,
+              total: downloadProgress.total,
+            })}
           </span>
         )}
       </>
@@ -130,7 +138,7 @@ export default function DownloadPanel({
                           onClick={() => handleCopyLink(link)}
                           className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                             hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
-                          title="Copy Link"
+                          title={t('actions.copyLink')}
                         >
                           {Icons.copy}
                         </button>
@@ -140,7 +148,7 @@ export default function DownloadPanel({
                           rel="noopener noreferrer"
                           className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                             hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
-                          title="Download File"
+                          title={t('actions.downloadFile')}
                         >
                           {Icons.download}
                         </a>
@@ -150,8 +158,9 @@ export default function DownloadPanel({
                   {isDownloading &&
                     downloadLinks.length < downloadProgress.total && (
                       <div className="text-primary-text dark:text-primary-text-dark/50 text-sm py-2 animate-pulse">
-                        Generating{' '}
-                        {downloadLinks.length > 0 ? 'more links' : 'links'}...
+                        {downloadLinks.length > 0
+                          ? t('status.generatingMore')
+                          : t('status.generating')}
                       </div>
                     )}
                 </div>
@@ -173,14 +182,14 @@ export default function DownloadPanel({
                     onClick={onDismiss}
                     className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
                   >
-                    Clear All
+                    {t('actions.clearAll')}
                   </button>
                   <button
                     onClick={handleCopyLinks}
                     className="flex items-center gap-1.5 text-sm text-accent hover:text-accent/80 transition-colors"
                   >
                     {Icons.copy}
-                    Copy All Links
+                    {t('actions.copyAll')}
                   </button>
                 </div>
               </div>

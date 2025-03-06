@@ -1,16 +1,20 @@
+'use client';
+
 import ApiKeyInput from './downloads/ApiKeyInput';
+import { useTranslations } from 'next-intl';
 
 export default function LandingPage({ onKeyChange }) {
+  const t = useTranslations('LandingPage');
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400">
-            TorBox Manager
+            {t('title')}
           </h1>
           <p className="text-2xl mb-12 text-gray-300 font-light">
-            The power user's alternative to TorBox UI. Built for speed and
-            efficiency.
+            {t('subtitle')}
           </p>
 
           <div className="grid md:grid-cols-3 gap-8 mb-16">
@@ -30,10 +34,10 @@ export default function LandingPage({ onKeyChange }) {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-blue-400">
-                Batch Upload
+                {t('features.batchUpload.title')}
               </h3>
               <p className="text-gray-300">
-                Upload multiple torrents with a single click
+                {t('features.batchUpload.description')}
               </p>
             </div>
             <div className="p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-xl">
@@ -51,10 +55,10 @@ export default function LandingPage({ onKeyChange }) {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-violet-400">
-                Smart Downloads
+                {t('features.search.title')}
               </h3>
               <p className="text-gray-300">
-                Cherry-pick specific files across multiple torrents
+                {t('features.search.description')}
               </p>
             </div>
             <div className="p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-xl">
@@ -72,43 +76,42 @@ export default function LandingPage({ onKeyChange }) {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-indigo-400">
-                Your Workflow
+                {t('features.debrid.title')}
               </h3>
               <p className="text-gray-300">
-                Customize the interface to match your needs
+                {t('features.debrid.description')}
               </p>
             </div>
           </div>
 
           <div className="max-w-md mx-auto p-8 bg-gray-800/30 backdrop-blur border border-gray-700/50 rounded-xl">
             <h2 className="text-2xl font-bold mb-6 text-white">
-              Enter your API key to begin
+              {t('apiKeyInput.title')}
             </h2>
             <ApiKeyInput onKeyChange={onKeyChange} />
             <p className="mt-4 text-sm text-gray-400">
-              Find your API key at{' '}
+              {t('apiKeyInput.description')}{' '}
               <a
                 href="https://torbox.app/settings"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 underline"
               >
-                torbox.app/settings
+                {t('apiKeyInput.link')}
               </a>
             </p>
           </div>
 
           <footer className="mt-12 text-sm text-gray-400">
             <p>
-              We don't store any of your information. This app is fully open
-              source on{' '}
+              {t('footer.description')}{' '}
               <a
                 href="https://github.com/jittarao/torbox-app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 underline"
               >
-                GitHub
+                {t('footer.github')}
               </a>
             </p>
           </footer>

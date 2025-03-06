@@ -5,6 +5,7 @@ import ItemRow from './ItemRow';
 import FileRow from './FileRow';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import useIsMobile from '@/hooks/useIsMobile';
+import { useTranslations } from 'next-intl';
 
 export default function TableBody({
   items,
@@ -24,6 +25,8 @@ export default function TableBody({
   isBlurred = false,
   viewMode = 'table',
 }) {
+  const t = useTranslations('TableBody');
+
   // Shared ref for tracking last clicked item row index
   const lastClickedItemIndexRef = useRef(null);
   const lastClickedFileIndexRef = useRef(null);
@@ -122,13 +125,13 @@ export default function TableBody({
     await downloadSingle(itemId, options, idField, copyLink)
       .then(() => {
         setToast({
-          message: 'Link copied to clipboard!',
+          message: t('toast.copyLink'),
           type: 'success',
         });
       })
       .catch((err) => {
         setToast({
-          message: 'Failed to copy link',
+          message: t('toast.copyLinkFailed'),
           type: 'error',
         });
       })

@@ -15,6 +15,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { useTranslations } from 'next-intl';
 
 function SortableItem({ id, label }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -65,6 +66,7 @@ export default function ColumnManager({
   onColumnChange,
   activeType = 'torrents',
 }) {
+  const t = useTranslations('ColumnManager');
   const [isOpen, setIsOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const menuRef = useRef(null);
@@ -154,7 +156,7 @@ export default function ColumnManager({
           <div className="p-4 flex flex-row gap-4 max-h-[calc(100vh-80px)]">
             <div className="w-1/2 flex flex-col min-h-0">
               <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark shrink-0">
-                Reorder Columns
+                {t('reorderColumns')}
               </h3>
               <div className="min-h-0 flex-1 overflow-y-auto pr-2">
                 <DndContext
@@ -183,7 +185,7 @@ export default function ColumnManager({
 
             <div className="w-1/2 flex flex-col min-h-0">
               <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark shrink-0">
-                Manage Columns
+                {t('manageColumns')}
               </h3>
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="flex flex-col gap-2 pb-2">

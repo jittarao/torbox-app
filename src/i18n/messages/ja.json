@@ -1,0 +1,355 @@
+{
+  "Index": {
+    "title": "TorBox Manager",
+    "description": "Torrent and Debrid Manager",
+    "search": "検索",
+    "searchPlaceholder": "Torrentsを検索..."
+  },
+  "Navigation": {
+    "home": "ホーム",
+    "search": "検索",
+    "settings": "設定"
+  },
+  "Header": {
+    "title": "TorBox Manager",
+    "logo": "TorBox Manager Logo",
+    "theme": {
+      "toggleDark": "ダークモードの切り替え",
+      "toggleLight": "ライトモードの切り替え"
+    },
+    "menu": {
+      "downloads": "ダウンロード",
+      "search": "検索",
+      "toggle": "メニューの切り替え"
+    }
+  },
+  "LandingPage": {
+    "title": "TorBox Manager",
+    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
+    "features": {
+      "batchUpload": {
+        "title": "バッチアップロード",
+        "description": "ワンクリックで複数のトレントをアップロード"
+      },
+      "search": {
+        "title": "スマート検索",
+        "description": "複数のトレントサイトを検索"
+      },
+      "debrid": {
+        "title": "Debrid-統合",
+        "description": "Debridサービスとのスムーズな統合"
+      }
+    },
+    "apiKeyInput": {
+      "title": "TorBox APIキーを入力",
+      "description": "APIキーは次の場所で確認できます",
+      "link": "torbox.app/settings"
+    },
+    "footer": {
+      "description": "弊社ではお客様の情報を一切保存しません。このアプリは完全にオープンソースです",
+      "github": "GitHub"
+    }
+  },
+  "ApiKeyInput": {
+    "placeholder": "TorBox APIキーを入力してください",
+    "show": "APIキーを表示",
+    "hide": "APIキーを隠す"
+  },
+  "ActionButtons": {
+    "downloadLinks": "ダウンロードリンクを取得",
+    "downloadLinksMobile": "リンクを取得",
+    "fetchingLinks": "リンク取得中...",
+    "delete": "削除",
+    "deleteConfirm": {
+      "title": "削除の確認",
+      "message": "{count} {type} を削除してもよろしいですか？この操作は取り消しできません。",
+      "cancel": "キャンセル",
+      "confirm": "削除",
+      "deleting": "削除中..."
+    },
+    "clear": "クリア"
+  },
+  "SearchBar": {
+    "placeholder": "{itemType}を検索...",
+    "clearSearch": "検索をクリア",
+    "customEngines": "カスタムエンジン"
+  },
+  "StatusSection": {
+    "selectedItems": "{itemCount} {type}が選択されています ({size})",
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
+    "selectedFiles": "{fileCount} files selected ({size})",
+    "total": "{count} {type}"
+  },
+  "ViewControls": {
+    "tableView": "テーブルビュー",
+    "cardView": "カードビュー",
+    "hideSensitive": "機密コンテンツを隠す",
+    "showSensitive": "機密コンテンツを表示する",
+    "enterFullscreen": "フルスクリーンに入る",
+    "exitFullscreen": "フルスクリーンを終了する"
+  },
+  "ColumnManager": {
+    "reorderColumns": "列の並べ替え",
+    "manageColumns": "列の管理"
+  },
+  "Common": {
+    "itemTypes": {
+      "torrent": "torrent",
+      "Torrent": "Torrent",
+      "torrents": "torrents",
+      "Torrents": "Torrents",
+      "file": "file",
+      "File": "File",
+      "files": "files",
+      "Files": "Files",
+      "usenet": "usenet",
+      "Usenet": "Usenet",
+      "usenets": "usenets",
+      "Usenets": "Usenets",
+      "web": "web",
+      "Web": "Web",
+      "webdl": "webdl",
+      "Webdl": "Webdl"
+    }
+  },
+  "ItemUploader": {
+    "title": {
+      "default": "アップロード",
+      "torrents": "トレントのアップロード",
+      "usenet": "NZBファイルのアップロード",
+      "webdl": "ウェブダウンロードの追加"
+    },
+    "placeholder": {
+      "torrents": "マグネットリンクをここに貼り付けます（1行につき1つ）",
+      "usenet": "NZBリンクをここに貼り付けます（1行につき1つ）",
+      "webdl": "ウェブダウンロードリンクをここに貼り付けます（1行につき1つ）"
+    },
+    "dropzone": {
+      "torrents": "トレントファイルをここにドロップします",
+      "usenet": "NZBファイルをここにドロップします"
+    },
+    "button": {
+      "torrents": "トレントをアップロード",
+      "usenet": "NZBファイルをアップロード",
+      "webdl": "リンクを追加"
+    },
+    "options": {
+      "show": "オプションを表示",
+      "hide": "オプションを隠す"
+    },
+    "section": {
+      "show": "セクションを表示",
+      "hide": "セクションを隠す"
+    },
+    "status": {
+      "processing": "{count} of {total} items processed",
+      "clearItems": "アイテムをクリア"
+    }
+  },
+  "SpeedChart": {
+    "title": {
+      "default": "ネットワーク",
+      "full": "ネットワークアクティビティ"
+    },
+    "chart": {
+      "show": "グラフを表示",
+      "hide": "グラフを非表示"
+    },
+    "timeRanges": {
+      "1m": "過去1分",
+      "10m": "過去10分",
+      "1h": "過去1時間",
+      "3h": "過去3時間",
+      "6h": "過去6時間",
+      "all": "すべて"
+    },
+    "labels": {
+      "download": "ダウンロード",
+      "upload": "アップロード"
+    }
+  },
+  "DownloadPanel": {
+    "title": {
+      "single": "ダウンロードリンク",
+      "multiple": "ダウンロードリンク"
+    },
+    "status": {
+      "fetching": "{total}件中{current}件の取得中",
+      "generating": "リンクを生成中...",
+      "generatingMore": "さらにリンクを生成中..."
+    },
+    "actions": {
+      "copyAll": "すべてのリンクをコピー",
+      "copyLink": "リンクをコピー",
+      "downloadFile": "ファイルをダウンロード",
+      "clearAll": "すべてクリア"
+    },
+    "toast": {
+      "linksCopied": "リンクがクリップボードにコピーされました！",
+      "linkCopied": "リンクがクリップボードにコピーされました！",
+      "copyFailed": "リンクのコピーに失敗しました",
+      "copyAllFailed": "リンクのコピーにすべて失敗しました"
+    }
+  },
+  "TorrentOptions": {
+    "title": "グローバルアップロードオプション",
+    "seedingPreference": {
+      "label": "シーディングの優先順位",
+      "auto": "自動（デフォルト）",
+      "always": "常にシード",
+      "never": "シードしない"
+    },
+    "allowZip": {
+      "label": "ZIPを許可",
+      "description": "100以上のファイルを含むトレント用"
+    },
+    "instantQueue": {
+      "label": "インスタントキュー",
+      "description": "待ち行列をスキップ"
+    },
+    "autoStart": {
+      "title": "キューに入れられたトレントの処理",
+      "tooltip": "指定した上限まで自動的にトレントのダウンロードを開始",
+      "label": "自動スタートを有効にする",
+      "limit": "アクティブなトレントの上限:"
+    }
+  },
+  "Columns": {
+    "id": "ID",
+    "hash": "ハッシュ",
+    "name": "名前",
+    "size": "サイズ",
+    "created_at": "追加日時",
+    "updated_at": "最終更新日",
+    "download_state": "状態",
+    "progress": "進行状況",
+    "ratio": "比率",
+    "file_count": "ファイル数",
+    "download_speed": "ダウンロード速度",
+    "upload_speed": "アップロード速度",
+    "eta": "ETA",
+    "total_uploaded": "合計アップロード",
+    "total_downloaded": "合計ダウンロード",
+    "seeds": "シード",
+    "peers": "ピア",
+    "original_url": "ソースURL",
+    "expires_at": "有効期限"
+  },
+  "Statuses": {
+    "completed": "完了",
+    "downloading": "ダウンロード中",
+    "failed": "失敗",
+    "inactive": "非アクティブ",
+    "queued": "キューに入れられた",
+    "seeding": "シーディング",
+    "stalled": "ブロックされた",
+    "uploading": "アップロード中",
+    "unknown": "不明"
+  },
+  "ItemActions": {
+    "toast": {
+      "noFiles": "ダウンロード可能なファイルはありません",
+      "downloadStarted": "ダウンロードが正常に開始しました",
+      "downloadFailed": "ダウンロード開始に失敗しました",
+      "seedingStopped": "トレントのシードが正常に停止しました",
+      "seedingStopFailed": "トレントのシードに失敗しました",
+      "deleteError": "削除に失敗しました: {error}",
+      "deleteSuccess": "削除に成功しました",
+      "deleteAllSuccess": "すべてのアイテムが正常に削除されました",
+      "deletePartialSuccess": "{total} アイテムのうち {count} を削除",
+      "deleteAllFailed": "アイテムの削除に失敗しました"
+    }
+  },
+  "ItemActionButtons": {
+    "stop": {
+      "title": "シードの停止",
+      "label": "停止"
+    },
+    "start": {
+      "title": "強制開始",
+      "label": "開始"
+    },
+    "files": {
+      "show": "ファイルを表示",
+      "hide": "ファイルを隠す",
+      "label": "ファイル"
+    },
+    "download": {
+      "title": "ダウンロード",
+      "label": "ダウンロード"
+    },
+    "delete": {
+      "title": "削除",
+      "label": "削除"
+    }
+  },
+  "MoreOptionsDropdown": {
+    "title": "オプション",
+    "label": "オプション",
+    "copyId": "IDをコピー",
+    "copyHash": "ハッシュをコピー",
+    "copyShortMagnet": "ショートマグネットリンクをコピー",
+    "copyFullMagnet": "完全なマグネットリンクをコピー",
+    "reannounce": "再アナウンス",
+    "exportTorrent": ".torrent ファイルをエクスポート",
+    "copySourceUrl": "ソース URL をコピー",
+    "toast": {
+      "idCopied": "クリップボードにコピーされた ID",
+      "hashNotAvailable": "ハッシュが利用できません",
+      "hashCopied": "ハッシュがクリップボードにコピーされました",
+      "shortMagnetCopied": "ショートマグネットリンクがクリップボードにコピーされました",
+      "fullMagnetCopied": "完全なマグネットリンクがクリップボードにコピーされました",
+      "magnetError": "マグネットリンクの取得に失敗しました",
+      "reannounceSuccess": "トレントの再アナウンスに成功しました",
+      "reannounceFailed": "トレントの再アナウンスに失敗しました",
+      "sourceUrlNotAvailable": "ソースURLが利用できません",
+      "sourceUrlCopied": "ソース URL がクリップボードにコピーされました",
+      "clipboardError": "クリップボードへのコピーに失敗しました"
+    }
+  },
+  "CardList": {
+    "toast": {
+      "copyLink": "リンクがクリップボードにコピーされました",
+      "copyLinkFailed": "リンクのコピーに失敗しました"
+    }
+  },
+  "TableBody": {
+    "toast": {
+      "copyLink": "リンクがクリップボードにコピーされました",
+      "copyLinkFailed": "リンクのコピーに失敗しました"
+    }
+  },
+  "SearchResults": {
+    "results": "{count} 件ヒット",
+    "noResults": "該当なし",
+    "cachedOnly": "キャッシュのみ",
+    "sort": {
+      "seeders": "最多シーダー",
+      "size": "最大サイズ",
+      "age": "最新"
+    },
+    "actions": {
+      "copyMagnet": "マグネットリンクをコピー",
+      "copyLink": "リンクをコピー",
+      "addToTorbox": "TorBoxに追加",
+      "adding": "追加中...",
+      "added": "追加済み"
+    },
+    "toast": {
+      "magnetCopied": "マグネットリンクがクリップボードにコピーされました",
+      "nzbCopied": "NZBリンクがクリップボードにコピーされました",
+      "torrentAdded": "TorrentがTorBoxに正常に追加されました",
+      "nzbAdded": "NZBがTorBoxに正常に追加されました",
+      "torrentAddFailed": "Torrentの追加に失敗しました: {error}",
+      "nzbAddFailed": "NZBの追加に失敗しました: {error}"
+    },
+    "metadata": {
+      "days": "日",
+      "cached": "キャッシュ"
+    }
+  },
+  "FileActions": {
+    "copyLink": "リンクをコピー",
+    "download": "ファイルをダウンロード"
+  }
+}

@@ -1,4 +1,5 @@
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
+import { useTranslations } from 'next-intl';
 
 export default function ViewControls({
   isBlurred,
@@ -8,6 +9,8 @@ export default function ViewControls({
   viewMode,
   onViewModeChange,
 }) {
+  const t = useTranslations('ViewControls');
+
   const handleViewModeChange = (mode) => {
     onViewModeChange(mode);
     localStorage.setItem('downloads-view-mode', mode);
@@ -25,7 +28,7 @@ export default function ViewControls({
               ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
               : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
           }`}
-          title="Table View"
+          title={t('tableView')}
         >
           {Icons.table}
         </button>
@@ -37,7 +40,7 @@ export default function ViewControls({
               ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
               : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
           }`}
-          title="Card View"
+          title={t('cardView')}
         >
           {Icons.list}
         </button>
@@ -52,7 +55,7 @@ export default function ViewControls({
               ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
               : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
           }`}
-        title={isBlurred ? 'Show sensitive content' : 'Hide sensitive content'}
+        title={isBlurred ? t('showSensitive') : t('hideSensitive')}
       >
         {isBlurred ? Icons.eye : Icons.eyeOff}
       </button>
@@ -66,7 +69,7 @@ export default function ViewControls({
               ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
               : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
           }`}
-        title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        title={isFullscreen ? t('exitFullscreen') : t('enterFullscreen')}
       >
         {isFullscreen ? Icons.minimize : Icons.maximize}
       </button>

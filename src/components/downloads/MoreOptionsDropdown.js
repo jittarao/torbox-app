@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
+import { useTranslations } from 'next-intl';
 
 export default function MoreOptionsDropdown({
   item,
@@ -18,6 +19,7 @@ export default function MoreOptionsDropdown({
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
+  const t = useTranslations('MoreOptionsDropdown');
 
   useEffect(() => {
     setIsMounted(true);
@@ -68,7 +70,7 @@ export default function MoreOptionsDropdown({
     } catch (error) {
       console.error('Error copying to clipboard:', error);
       setToast({
-        message: 'Failed to copy to clipboard',
+        message: t('toast.clipboardError'),
         type: 'error',
       });
     }
@@ -77,7 +79,7 @@ export default function MoreOptionsDropdown({
   // Copy ID to clipboard
   const handleCopyId = (e) => {
     e.stopPropagation();
-    copyToClipboard(item.id, 'ID copied to clipboard');
+    copyToClipboard(item.id, t('toast.idCopied'));
     phEvent('copy_item_id');
     setIsMenuOpen(false);
   };
@@ -87,12 +89,12 @@ export default function MoreOptionsDropdown({
     e.stopPropagation();
     if (!item.hash) {
       setToast({
-        message: 'Hash not available',
+        message: t('toast.hashNotAvailable'),
         type: 'error',
       });
       return;
     }
-    copyToClipboard(item.hash, 'Hash copied to clipboard');
+    copyToClipboard(item.hash, t('toast.hashCopied'));
     phEvent('copy_item_hash');
     setIsMenuOpen(false);
   };
@@ -102,14 +104,14 @@ export default function MoreOptionsDropdown({
     e.stopPropagation();
     if (!item.hash) {
       setToast({
-        message: 'Hash not available',
+        message: t('toast.hashNotAvailable'),
         type: 'error',
       });
       return;
     }
     const encodedName = encodeURIComponent(item.name || 'Unknown');
     const magnetLink = `magnet:?xt=urn:btih:${item.hash}&dn=${encodedName}`;
-    copyToClipboard(magnetLink, 'Short magnet link copied to clipboard');
+    copyToClipboard(magnetLink, t('toast.shortMagnetCopied'));
     phEvent('copy_short_magnet');
     setIsMenuOpen(false);
   };
@@ -131,13 +133,10 @@ export default function MoreOptionsDropdown({
       const data = await response.json();
 
       if (data.success && data.data) {
-        await copyToClipboard(
-          data.data,
-          'Full magnet link copied to clipboard',
-        );
+        await copyToClipboard(data.data, t('toast.fullMagnetCopied'));
         phEvent('copy_full_magnet');
       } else {
-        throw new Error(data.error || 'Failed to get magnet link');
+        throw new Error(data.error || t('toast.magnetError'));
       }
     } catch (error) {
       console.error('Error getting magnet link:', error);
@@ -179,12 +178,12 @@ export default function MoreOptionsDropdown({
     e.stopPropagation();
     if (!item.original_url) {
       setToast({
-        message: 'Source URL not available',
+        message: t('toast.sourceUrlNotAvailable'),
         type: 'error',
       });
       return;
     }
-    copyToClipboard(item.original_url, 'Source URL copied to clipboard');
+    copyToClipboard(item.original_url, t('toast.sourceUrlCopied'));
     phEvent('copy_original_url');
     setIsMenuOpen(false);
   };
@@ -210,12 +209,12 @@ export default function MoreOptionsDropdown({
       const data = await response.json();
       if (data.success) {
         setToast({
-          message: 'Torrent reannounced successfully',
+          message: t('toast.reannounceSuccess'),
           type: 'success',
         });
         phEvent('reannounce_torrent');
       } else {
-        throw new Error(data.error || 'Failed to reannounce torrent');
+        throw new Error(data.error || t('toast.reannounceFailed'));
       }
     } catch (error) {
       console.error('Error reannouncing torrent:', error);
@@ -237,10 +236,10 @@ export default function MoreOptionsDropdown({
       <button
         key="copy-id"
         onClick={handleCopyId}
-        className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
       >
         {Icons.copy}
-        <span className="ml-2">Copy ID</span>
+        <span className="ml-2">{t('copyId')}</span>
       </button>,
     );
 
@@ -248,10 +247,10 @@ export default function MoreOptionsDropdown({
       <button
         key="copy-hash"
         onClick={handleCopyHash}
-        className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
       >
         {Icons.copy}
-        <span className="ml-2">Copy Hash</span>
+        <span className="ml-2">{t('copyHash')}</span>
       </button>,
     );
 
@@ -261,10 +260,10 @@ export default function MoreOptionsDropdown({
         <button
           key="copy-short-magnet"
           onClick={handleCopyShortMagnet}
-          className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+          className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
         >
           {Icons.copy}
-          <span className="ml-2">Copy Short Magnet</span>
+          <span className="ml-2">{t('copyShortMagnet')}</span>
         </button>,
       );
 
@@ -274,10 +273,10 @@ export default function MoreOptionsDropdown({
             key="copy-full-magnet"
             onClick={handleCopyFullMagnet}
             disabled={isExporting}
-            className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+            className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
           >
             {isExporting ? <Spinner size="xs" /> : Icons.copy}
-            <span className="ml-2">Copy Full Magnet</span>
+            <span className="ml-2">{t('copyFullMagnet')}</span>
           </button>,
         );
 
@@ -286,10 +285,10 @@ export default function MoreOptionsDropdown({
             key="reannounce"
             onClick={handleReannounce}
             disabled={isReannouncing}
-            className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+            className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
           >
             {isReannouncing ? <Spinner size="xs" /> : Icons.refresh}
-            <span className="ml-2">Reannounce</span>
+            <span className="ml-2">{t('reannounce')}</span>
           </button>,
         );
       }
@@ -299,10 +298,10 @@ export default function MoreOptionsDropdown({
           key="export-torrent"
           onClick={handleExportTorrent}
           disabled={isExporting}
-          className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+          className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
         >
           {isExporting ? <Spinner size="xs" /> : Icons.download}
-          <span className="ml-2">Export .torrent</span>
+          <span className="ml-2">{t('exportTorrent')}</span>
         </button>,
       );
     }
@@ -313,10 +312,10 @@ export default function MoreOptionsDropdown({
         <button
           key="copy-source-url"
           onClick={handleCopySourceUrl}
-          className="flex items-center w-full px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+          className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
         >
           {Icons.copy}
-          <span className="ml-2">Copy Source URL</span>
+          <span className="ml-2">{t('copySourceUrl')}</span>
         </button>,
       );
     }
@@ -332,10 +331,10 @@ export default function MoreOptionsDropdown({
         className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
           hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors
           ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
-        title="More Options"
+        title={t('title')}
       >
         {Icons.vertical_ellipsis}
-        {isMobile && <span className="ml-2 text-xs">More</span>}
+        {isMobile && <span className="ml-2 text-xs">{t('label')}</span>}
       </button>
 
       {isMenuOpen &&

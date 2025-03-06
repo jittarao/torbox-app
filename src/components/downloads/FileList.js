@@ -1,6 +1,7 @@
 import { formatSize } from './utils/formatters';
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 import Spinner from '../shared/Spinner';
+import { useTranslations } from 'next-intl';
 
 export default function FileList({
   files,
@@ -13,6 +14,7 @@ export default function FileList({
   isDownloading,
   isMobile,
 }) {
+  const t = useTranslations('FileActions');
   return (
     <div className="mt-4 border-t border-border/50 dark:border-border-dark/50 pt-4">
       <div className="space-y-2">
@@ -97,6 +99,7 @@ export default function FileList({
                     }}
                     disabled={isCopying[assetKey]}
                     className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                    title={t('copyLink')}
                   >
                     {isCopying[assetKey] ? <Spinner size="sm" /> : Icons.copy}
                   </button>
@@ -107,7 +110,7 @@ export default function FileList({
                     }}
                     disabled={isDownloading[assetKey]}
                     className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
-                    title="Download File"
+                    title={t('download')}
                   >
                     {isDownloading[assetKey] ? (
                       <Spinner size="sm" />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Icons } from '@/components/constants';
+import { Icons } from '@/components/icons';
 
 export default function Dropdown({
   options,

@@ -1,13 +1,16 @@
 import { STATUS_OPTIONS } from '@/components/constants';
+import { useTranslations } from 'next-intl';
 
 export default function DownloadStateBadge({ item, size = 'default' }) {
+  const t = useTranslations('Statuses');
+
   // Check if essential fields are missing, indicating a queued torrent
   const isQueued =
     !item.download_state && !item.download_finished && !item.active;
 
   // Find matching status from STATUS_OPTIONS
   const getMatchingStatus = () => {
-    if (isQueued) return { label: 'Queued' };
+    if (isQueued) return { label: 'queued' };
 
     return STATUS_OPTIONS.find((option) => {
       if (option.value === 'all' || option.value.is_queued) return false;
@@ -46,12 +49,12 @@ export default function DownloadStateBadge({ item, size = 'default' }) {
     styleMap[status?.label] ||
     'bg-label-default-bg dark:bg-label-default-bg-dark text-label-default-text dark:text-label-default-text-dark';
   const statusText =
-    status?.label ||
+    t(`${status?.label.toLowerCase()}`) ||
     item.download_state
       ?.split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ') ||
-    'Unknown';
+    t('unknown');
 
   // Size variants
   const sizeClasses = {

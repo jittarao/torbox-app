@@ -6,6 +6,7 @@ import { useUpload } from '../shared/hooks/useUpload';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
+import { useTranslations } from 'next-intl';
 
 export default function ItemActions({
   item,
@@ -22,12 +23,13 @@ export default function ItemActions({
   const [isDeleting, setIsDeleting] = useState(false);
   const { downloadSingle } = useDownloads(apiKey, activeType);
   const { controlTorrent, controlQueuedItem } = useUpload(apiKey);
+  const t = useTranslations('ItemActions');
 
   // Downloads a torrent or a webdl/usenet item
   const handleDownload = async () => {
     if (!item.files || item.files.length === 0) {
       setToast({
-        message: 'No files available to download',
+        message: t('toast.noFiles'),
         type: 'error',
       });
       return;
@@ -55,8 +57,8 @@ export default function ItemActions({
     const result = await controlQueuedItem(item.id, 'start');
     setToast({
       message: result.success
-        ? 'Download started successfully'
-        : 'Download start failed',
+        ? t('toast.downloadStarted')
+        : t('toast.downloadFailed'),
       type: result.success ? 'success' : 'error',
     });
     if (!result.success) {
@@ -70,8 +72,8 @@ export default function ItemActions({
     const result = await controlTorrent(item.id, 'stop_seeding');
     setToast({
       message: result.success
-        ? 'Torrent stopped seeding successfully'
-        : 'Torrent stop seeding failed',
+        ? t('toast.seedingStopped')
+        : t('toast.seedingStopFailed'),
       type: result.success ? 'success' : 'error',
     });
     if (!result.success) {
@@ -98,7 +100,7 @@ export default function ItemActions({
     } catch (error) {
       console.error('Error deleting:', error);
       setToast({
-        message: `Error deleting: ${error.message}`,
+        message: t('toast.deleteError', { error: error.message }),
         type: 'error',
       });
     } finally {
