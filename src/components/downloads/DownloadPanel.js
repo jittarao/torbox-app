@@ -23,14 +23,12 @@ export default function DownloadPanel({
           message: 'Links copied to clipboard!',
           type: 'success',
         });
-        setTimeout(() => setToast(null), 5000);
       })
       .catch((err) => {
         setToast({
           message: 'Failed to copy links',
           type: 'error',
         });
-        setTimeout(() => setToast(null), 5000);
       });
   };
 
@@ -42,14 +40,12 @@ export default function DownloadPanel({
           message: 'Link copied to clipboard!',
           type: 'success',
         });
-        setTimeout(() => setToast(null), 5000);
       })
       .catch((err) => {
         setToast({
           message: 'Failed to copy link',
           type: 'error',
         });
-        setTimeout(() => setToast(null), 5000);
       });
   };
 

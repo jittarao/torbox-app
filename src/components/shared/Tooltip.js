@@ -12,6 +12,8 @@ export default function Tooltip({ children, content, position = 'top' }) {
     const rect = triggerRef.current.getBoundingClientRect();
     const computedStyle = window.getComputedStyle(triggerRef.current);
     const visibleWidth = parseFloat(computedStyle.width);
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
     let top, left;
 
@@ -37,6 +39,24 @@ export default function Tooltip({ children, content, position = 'top' }) {
         left = rect.left + visibleWidth / 2;
     }
 
+    // Ensure tooltip stays within viewport bounds
+    const tooltipWidth = 500; // Approximate max width
+    const tooltipHeight = 40; // Approximate height
+
+    // Adjust horizontal position if tooltip would go off screen
+    if (left + tooltipWidth / 2 > viewportWidth) {
+      left = viewportWidth - tooltipWidth / 2;
+    } else if (left - tooltipWidth / 2 < 0) {
+      left = tooltipWidth / 2;
+    }
+
+    // Adjust vertical position if tooltip would go off screen
+    if (top - tooltipHeight < 0) {
+      top = rect.bottom + 4; // Switch to bottom position
+    } else if (top + tooltipHeight > viewportHeight) {
+      top = rect.top - tooltipHeight - 4; // Switch to top position
+    }
+
     setTooltipPosition({ top, left });
   };
 
@@ -58,7 +78,10 @@ export default function Tooltip({ children, content, position = 'top' }) {
     left: tooltipPosition.left,
     transform: 'translate(-50%, -100%)',
     zIndex: 9999,
-    marginTop: -8, // Add some spacing
+    marginTop: -8,
+    maxWidth: '500px',
+    wordWrap: 'break-word',
+    whiteSpace: 'normal',
   };
 
   const arrowPosition = {

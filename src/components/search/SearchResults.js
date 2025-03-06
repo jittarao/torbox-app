@@ -150,41 +150,39 @@ export default function SearchResults({ apiKey }) {
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              {searchType === 'torrents' && (
-                <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
-                  <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    Cached Only
-                  </span>
+              <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
+                <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  Cached Only
+                </span>
 
-                  <div
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
+                <div
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
                       ${
                         showCachedOnly
                           ? 'bg-accent dark:bg-accent-dark'
                           : 'bg-border dark:bg-border-dark'
                       }`}
-                    onClick={() => setShowCachedOnly(!showCachedOnly)}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  onClick={() => setShowCachedOnly(!showCachedOnly)}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
                         ${showCachedOnly ? 'translate-x-4' : 'translate-x-1'}`}
-                    />
-                  </div>
-                </label>
-              )}
+                  />
+                </div>
+              </label>
               <div className="flex items-center gap-2 flex-1 md:flex-none order-1 md:order-2">
                 <Dropdown
                   options={SORT_OPTIONS[searchType]}
@@ -196,7 +194,7 @@ export default function SearchResults({ apiKey }) {
                   onClick={() =>
                     setSortDir(sortDir === 'desc' ? 'asc' : 'desc')
                   }
-                  className="p-2 hover:bg-surface-hover dark:hover:bg-surface-hover-dark rounded-lg transition-colors shrink-0"
+                  className="p-2 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
                 >
                   {sortDir === 'desc' ? '↓' : '↑'}
                 </button>

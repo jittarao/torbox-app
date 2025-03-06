@@ -129,13 +129,21 @@ export default function ActionBar({
 
         {/* Sort downloads list */}
         {viewMode === 'card' && (
-          <Dropdown
-            options={sortOptions}
-            value={sortField}
-            onChange={(value) => handleSort(value)}
-            className="min-w-[150px]"
-            sortDir={sortDir}
-          />
+          <div className="flex items-center gap-0">
+            <Dropdown
+              options={sortOptions}
+              value={sortField}
+              onChange={(value) => handleSort(value)}
+              className="min-w-[150px]"
+              sortDir={sortDir}
+            />
+            <button
+              onClick={() => handleSort(sortField)}
+              className="p-2 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
+            >
+              {sortDir === 'desc' ? '↓' : '↑'}
+            </button>
+          </div>
         )}
 
         {/* View controls such as blur, fullscreen, and view mode */}

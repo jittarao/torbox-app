@@ -281,7 +281,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                     phEvent('upload_items');
                   }}
                   disabled={isUploading}
-                  className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-6 py-2 mb-4 rounded-md
+                  className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-4 py-2 mb-4 rounded-md
                     transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
                 >
                   {assetTypeInfo.buttonText} (

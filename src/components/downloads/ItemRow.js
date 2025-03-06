@@ -16,6 +16,7 @@ export default function ItemRow({
   activeColumns,
   selectedItems,
   setSelectedItems,
+  handleItemSelection,
   setItems,
   onRowSelect,
   expandedItems,
@@ -23,54 +24,12 @@ export default function ItemRow({
   apiKey,
   onDelete,
   rowIndex,
-  items,
-  lastClickedItemIndexRef,
   setToast,
   activeType = 'torrents',
   isMobile = false,
   isBlurred = false,
   viewMode = 'table',
 }) {
-  const handleItemSelection = (checked, isShiftKey = false) => {
-    if (
-      isShiftKey &&
-      typeof rowIndex === 'number' &&
-      lastClickedItemIndexRef.current !== null
-    ) {
-      const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
-      const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
-      setSelectedItems((prev) => {
-        const newItems = new Set(prev.items);
-        for (let i = start; i <= end; i++) {
-          const t = items[i];
-          if (checked) {
-            newItems.add(t.id);
-          } else {
-            newItems.delete(t.id);
-          }
-        }
-        return {
-          items: newItems,
-          files: prev.files,
-        };
-      });
-    } else {
-      setSelectedItems((prev) => {
-        const newItems = new Set(prev.items);
-        if (checked) {
-          newItems.add(item.id);
-        } else {
-          newItems.delete(item.id);
-        }
-        return {
-          items: newItems,
-          files: prev.files,
-        };
-      });
-    }
-    lastClickedItemIndexRef.current = rowIndex;
-  };
-
   const renderCell = (columnId) => {
     const baseStyle = {};
 
@@ -287,7 +246,7 @@ export default function ItemRow({
         )
           return;
         const isChecked = selectedItems.items?.has(item.id);
-        handleItemSelection(!isChecked, e.shiftKey);
+        handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
       }}
     >
       <td className="px-3 md:px-4 py-4 text-center whitespace-nowrap">
@@ -295,7 +254,9 @@ export default function ItemRow({
           type="checkbox"
           checked={selectedItems.items?.has(item.id)}
           disabled={onRowSelect(item.id, selectedItems.files)}
-          onChange={(e) => handleItemSelection(e.target.checked, e.shiftKey)}
+          onChange={(e) =>
+            handleItemSelection(item.id, e.target.checked, rowIndex, e.shiftKey)
+          }
           style={{ pointerEvents: 'none' }}
           className="accent-accent dark:accent-accent-dark"
         />

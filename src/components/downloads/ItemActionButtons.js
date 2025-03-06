@@ -100,7 +100,7 @@ export default function ItemActionButtons({
             ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={expandedItems.has(item.id) ? 'Hide Files' : 'Show Files'}
         >
-          {expandedItems.has(item.id) ? Icons.files : Icons.files}
+          {expandedItems.has(item.id) ? Icons.chevron_up : Icons.chevron_down}
           {isMobile && (
             <span className="ml-2 text-xs">
               {expandedItems.has(item.id) ? 'Hide Files' : 'Files'}
