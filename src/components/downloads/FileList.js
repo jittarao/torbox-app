@@ -6,7 +6,6 @@ export default function FileList({
   files,
   itemId,
   selectedItems,
-  isDisabled,
   isBlurred,
   onFileSelect,
   onFileDownload,
@@ -20,6 +19,7 @@ export default function FileList({
         {files.map((file, fileIndex) => {
           const isChecked =
             selectedItems.files.get(itemId)?.has(file.id) || false;
+          const isDisabled = selectedItems.items?.has(itemId);
           const assetKey = `${itemId}-${file.id}`;
 
           return (

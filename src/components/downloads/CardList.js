@@ -150,6 +150,7 @@ export default function CardList({
           index={index}
           selectedItems={selectedItems}
           isBlurred={isBlurred}
+          isDisabled={isDisabled}
           activeColumns={activeColumns}
           onItemSelect={handleItemSelection}
           onFileSelect={handleFileSelection}

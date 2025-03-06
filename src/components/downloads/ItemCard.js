@@ -16,6 +16,7 @@ export default function ItemCard({
   index,
   selectedItems,
   isBlurred,
+  isDisabled,
   activeColumns,
   onItemSelect,
   onFileSelect,
@@ -32,13 +33,6 @@ export default function ItemCard({
   isDownloading,
 }) {
   const isMobile = useIsMobile();
-
-  const isDisabled = (itemId) => {
-    return (
-      selectedItems.files?.has(itemId) &&
-      selectedItems.files.get(itemId).size > 0
-    );
-  };
 
   const filteredColumns = activeColumns.filter(
     (column) =>
