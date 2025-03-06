@@ -12,13 +12,17 @@ export default function ActionButtons({
   onBulkDelete,
   itemTypeName,
   itemTypePlural,
+  isDownloadPanelOpen,
+  setIsDownloadPanelOpen,
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isMobile = useIsMobile();
 
   const handleDownloadClick = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     onBulkDownload();
+    if (!isDownloadPanelOpen) {
+      setIsDownloadPanelOpen(true);
+    }
     phEvent('download_items');
   };
 

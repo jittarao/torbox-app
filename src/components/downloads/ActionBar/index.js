@@ -37,6 +37,8 @@ export default function ActionBar({
   sortDir,
   handleSort,
   getTotalDownloadSize,
+  isDownloadPanelOpen,
+  setIsDownloadPanelOpen,
 }) {
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
@@ -77,7 +79,7 @@ export default function ActionBar({
       className={`flex flex-col lg:flex-row gap-4 py-4 justify-between bg-surface dark:bg-surface-dark
         ${isSticky ? 'border-b border-border dark:border-border-dark' : ''} ${isFullscreen ? 'px-4' : ''}`}
     >
-      <div className="flex gap-4 items-center flex-wrap min-h-[53px]">
+      <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
         <StatusSection
           statusCounts={statusCounts}
           statusOptions={statusOptions}
@@ -103,6 +105,8 @@ export default function ActionBar({
             onBulkDelete={onBulkDelete}
             itemTypeName={itemTypeName}
             itemTypePlural={itemTypePlural}
+            isDownloadPanelOpen={isDownloadPanelOpen}
+            setIsDownloadPanelOpen={setIsDownloadPanelOpen}
           />
         )}
       </div>

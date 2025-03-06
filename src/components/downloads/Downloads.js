@@ -23,6 +23,7 @@ export default function Downloads({ apiKey }) {
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('torrents');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
@@ -144,6 +145,8 @@ export default function Downloads({ apiKey }) {
             isDownloading={isDownloading}
             downloadProgress={downloadProgress}
             onDismiss={() => setDownloadLinks([])}
+            isDownloadPanelOpen={isDownloadPanelOpen}
+            setIsDownloadPanelOpen={setIsDownloadPanelOpen}
             setToast={setToast}
           />
 
@@ -151,7 +154,9 @@ export default function Downloads({ apiKey }) {
           <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
           <div
-            className={`${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : ''}`}
+            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : ''} ${
+              downloadLinks.length > 0 ? 'mb-12' : ''
+            }`}
           >
             {/* Wrap ActionBar in a sticky container */}
             <div className="sticky top-0 z-20">
@@ -183,6 +188,8 @@ export default function Downloads({ apiKey }) {
                 sortDir={sortDirection}
                 handleSort={handleSort}
                 getTotalDownloadSize={getTotalDownloadSize}
+                isDownloadPanelOpen={isDownloadPanelOpen}
+                setIsDownloadPanelOpen={setIsDownloadPanelOpen}
               />
             </div>
 

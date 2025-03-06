@@ -58,7 +58,7 @@ export default function StatusSection({
   const downloadSize = getTotalDownloadSize();
 
   return (
-    <div className="text-md text-primary-text dark:text-primary-text-dark">
+    <div className="flex flex-col gap-1 text-md text-primary-text dark:text-primary-text-dark">
       <span
         className={`font-semibold ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'}  transition-colors`}
         onClick={() => handleStatusClick('all')}
@@ -69,7 +69,7 @@ export default function StatusSection({
       </span>
 
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
-        <div className="flex flex-wrap gap-3 mt-1.5">
+        <div className="flex flex-wrap gap-3">
           {Object.entries(statusCounts)
             .filter(([status, count]) => count !== 0)
             .map(([status, count]) => {

@@ -560,4 +560,24 @@ export const Icons = {
       <path d="m19 12-7 7-7-7" />
     </svg>
   ),
+  chevron_up: (
+    <svg
+      className="w-4 h-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  ),
+  chevron_down: (
+    <svg
+      className="w-4 h-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
 };
