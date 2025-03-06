@@ -2,29 +2,15 @@
 
 import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 
 const languages = {
-  en: {
-    name: 'English',
-    flag: '🇺🇸',
-  },
-  es: {
-    name: 'Español',
-    flag: '🇪🇸',
-  },
-  de: {
-    name: 'Deutsch',
-    flag: '🇩🇪',
-  },
-  fr: {
-    name: 'Français',
-    flag: '🇫🇷',
-  },
-  ja: {
-    name: '日本語',
-    flag: '🇯🇵',
-  },
+  en: { name: 'English', flag: '/images/flags/flag-en.png' },
+  es: { name: 'Español', flag: '/images/flags/flag-es.png' },
+  de: { name: 'Deutsch', flag: '/images/flags/flag-de.png' },
+  fr: { name: 'Français', flag: '/images/flags/flag-fr.png' },
+  ja: { name: '日本語', flag: '/images/flags/flag-ja.png' },
 };
 
 export default function LanguageSwitcher() {
@@ -57,7 +43,12 @@ export default function LanguageSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
       >
-        <span>{languages[locale].flag}</span>
+        <Image
+          src={languages[locale].flag}
+          alt={languages[locale].name}
+          width={24}
+          height={16}
+        />
         <span className="text-sm">{languages[locale].name}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -86,7 +77,7 @@ export default function LanguageSwitcher() {
                   : 'text-primary-text dark:text-primary-text-dark'
               }`}
             >
-              <span className="text-base">{flag}</span>
+              <Image src={flag} alt={name} width={24} height={16} />
               <span>{name}</span>
             </button>
           ))}
