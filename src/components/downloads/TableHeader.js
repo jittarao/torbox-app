@@ -3,6 +3,7 @@
 import { COLUMNS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
 import ResizableColumn from './ResizableColumn';
+import { useTranslations } from 'next-intl';
 
 export default function TableHeader({
   activeColumns,
@@ -15,6 +16,7 @@ export default function TableHeader({
   sortDirection,
   onSort,
 }) {
+  const columnT = useTranslations('Columns');
   const isMobile = useIsMobile();
 
   // For mobile, we'll only show the name column and actions
@@ -49,7 +51,7 @@ export default function TableHeader({
                   : ''
               }`}
             >
-              {column.label}
+              {columnT(column.key)}
               {sortField === columnId && (
                 <span className="ml-1 text-accent dark:text-accent-dark">
                   {sortDirection === 'asc' ? '↑' : '↓'}

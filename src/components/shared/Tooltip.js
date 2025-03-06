@@ -94,6 +94,8 @@ export default function Tooltip({ children, content, position = 'top' }) {
     backgroundColor: 'inherit',
   };
 
+  if (!content) return children;
+
   return (
     <div
       ref={triggerRef}

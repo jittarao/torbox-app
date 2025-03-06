@@ -46,8 +46,8 @@ export default function ItemRow({
                 isMobile ? 'break-all' : 'whitespace-nowrap truncate'
               } flex-1 cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
             >
-              {item.name && !isBlurred && (
-                <Tooltip content={item.name}>
+              {item.name && (
+                <Tooltip content={!isBlurred ? item.name : ''}>
                   <span>{item.name || 'Unnamed Item'}</span>
                 </Tooltip>
               )}

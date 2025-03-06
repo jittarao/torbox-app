@@ -67,6 +67,7 @@ export default function ColumnManager({
   activeType = 'torrents',
 }) {
   const t = useTranslations('ColumnManager');
+  const columnT = useTranslations('Columns');
   const [isOpen, setIsOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const menuRef = useRef(null);
@@ -174,7 +175,7 @@ export default function ColumnManager({
                         <SortableItem
                           key={columnId}
                           id={columnId}
-                          label={columns[columnId].label}
+                          label={columnT(columns[columnId].key)}
                         />
                       ))}
                     </div>
@@ -198,7 +199,7 @@ export default function ColumnManager({
                         className="accent-accent dark:accent-accent-dark"
                       />
                       <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                        {label}
+                        {columnT(id)}
                       </span>
                     </label>
                   ))}
