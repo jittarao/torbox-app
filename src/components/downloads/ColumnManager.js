@@ -148,54 +148,59 @@ export default function ColumnManager({
         <div
           ref={menuRef}
           className="absolute right-0 mt-2 w-[28rem] bg-surface dark:bg-surface-dark 
-            border border-border dark:border-border-dark rounded-lg z-50"
+            border border-border dark:border-border-dark rounded-lg z-50 
+            max-h-[calc(100vh-80px)] flex flex-col overflow-hidden"
         >
-          <div className="p-4 flex flex-row gap-4">
-            <div className="w-1/2">
-              <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
+          <div className="p-4 flex flex-row gap-4 max-h-[calc(100vh-80px)]">
+            <div className="w-1/2 flex flex-col min-h-0">
+              <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark shrink-0">
                 Reorder Columns
               </h3>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis]}
-              >
-                <SortableContext
-                  items={activeColumns}
-                  strategy={verticalListSortingStrategy}
+              <div className="min-h-0 flex-1 overflow-y-auto pr-2">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                  modifiers={[restrictToVerticalAxis]}
                 >
-                  <div className="space-y-2 overflow-y-auto max-h-[32rem]">
-                    {activeColumns.map((columnId) => (
-                      <SortableItem
-                        key={columnId}
-                        id={columnId}
-                        label={columns[columnId].label}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  <SortableContext
+                    items={activeColumns}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="flex flex-col gap-2 pb-2">
+                      {activeColumns.map((columnId) => (
+                        <SortableItem
+                          key={columnId}
+                          id={columnId}
+                          label={columns[columnId].label}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
 
-            <div className="w-1/2">
-              <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark">
+            <div className="w-1/2 flex flex-col min-h-0">
+              <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark shrink-0">
                 Manage Columns
               </h3>
-              <div className="space-y-2 mb-4">
-                {availableColumns.map(([id, { label }]) => (
-                  <label key={id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={activeColumns.includes(id)}
-                      onChange={() => toggleColumn(id)}
-                      className="accent-accent dark:accent-accent-dark"
-                    />
-                    <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                      {label}
-                    </span>
-                  </label>
-                ))}
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="flex flex-col gap-2 pb-2">
+                  {availableColumns.map(([id, { label }]) => (
+                    <label key={id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={activeColumns.includes(id)}
+                        onChange={() => toggleColumn(id)}
+                        className="accent-accent dark:accent-accent-dark"
+                      />
+                      <span className="text-sm text-primary-text dark:text-primary-text-dark">
+                        {label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
