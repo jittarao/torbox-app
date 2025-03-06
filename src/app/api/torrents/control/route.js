@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { API_BASE, API_VERSION } from '@/components/constants';
+import {
+  API_BASE,
+  API_VERSION,
+  TORBOX_MANAGER_VERSION,
+} from '@/components/constants';
 
 export async function POST(request) {
   try {
@@ -13,6 +17,7 @@ export async function POST(request) {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
         body: JSON.stringify({ torrent_id, operation }),
       },

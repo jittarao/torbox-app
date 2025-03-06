@@ -1,5 +1,8 @@
 import { headers } from 'next/headers';
-import { API_SEARCH_BASE } from '@/components/constants';
+import {
+  API_SEARCH_BASE,
+  TORBOX_MANAGER_VERSION,
+} from '@/components/constants';
 
 export async function GET(req) {
   const headersList = await headers();
@@ -33,6 +36,7 @@ export async function GET(req) {
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       },
     );

@@ -9,6 +9,11 @@ const MIN_INTERVAL_MAPPING = { torrents: 2000, usenet: 2000, webdl: 2000 };
 const ACTIVE_POLLING_INTERVAL = 10000; // 10 seconds in ms
 const INACTIVE_POLLING_INTERVAL = 60000; // 1 minute in ms
 
+// Polling Logic
+// 1. ✅ 10s polling when browser is focused
+// 2. ✅ 1m polling when browser is not focused AND auto-start is enabled AND there are queued torrents
+// 3. ✅ No polling when browser is not focused AND (auto-start is disabled OR no queued torrents)
+
 export function useFetchData(apiKey, type = 'torrents') {
   // Separate state for each data type
   const [torrents, setTorrents] = useState([]);
@@ -317,17 +322,21 @@ export function useFetchData(apiKey, type = 'torrents') {
       stopPolling(); // Clear any existing interval first
 
       // Determine polling interval based on visibility and auto-start conditions
-      currentPollingInterval =
-        isVisible || shouldKeepFastPolling()
-          ? ACTIVE_POLLING_INTERVAL
-          : INACTIVE_POLLING_INTERVAL;
+      if (isVisible) {
+        currentPollingInterval = ACTIVE_POLLING_INTERVAL;
+      } else if (shouldKeepFastPolling()) {
+        currentPollingInterval = INACTIVE_POLLING_INTERVAL;
+      }
 
-      interval = setInterval(() => {
-        // Check rate limiting for current type
-        if (!isRateLimited()) {
-          fetchLocalItems(true);
-        }
-      }, currentPollingInterval);
+      // Only start polling if visible or should keep fast polling
+      if (isVisible || shouldKeepFastPolling()) {
+        interval = setInterval(() => {
+          // Check rate limiting for current type
+          if (!isRateLimited()) {
+            fetchLocalItems(true);
+          }
+        }, currentPollingInterval);
+      }
     };
 
     const stopPolling = () => {
@@ -353,8 +362,12 @@ export function useFetchData(apiKey, type = 'torrents') {
         lastInactiveTime = Date.now();
       }
 
-      // Always restart polling with appropriate interval
-      startPolling();
+      // Start or stop polling based on visibility
+      if (isVisible || shouldKeepFastPolling()) {
+        startPolling();
+      } else {
+        stopPolling();
+      }
     };
 
     // Initial polling start

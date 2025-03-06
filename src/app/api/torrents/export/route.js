@@ -1,5 +1,9 @@
 import { headers } from 'next/headers';
-import { API_BASE, API_VERSION } from '@/components/constants';
+import {
+  API_BASE,
+  API_VERSION,
+  TORBOX_MANAGER_VERSION,
+} from '@/components/constants';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -36,6 +40,7 @@ export async function GET(request) {
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       },
     );

@@ -1,6 +1,10 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { API_BASE, API_VERSION } from '@/components/constants';
+import {
+  API_BASE,
+  API_VERSION,
+  TORBOX_MANAGER_VERSION,
+} from '@/components/constants';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -35,6 +39,7 @@ export async function GET(request) {
     const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
     });
 

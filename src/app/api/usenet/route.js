@@ -1,5 +1,9 @@
 import { headers } from 'next/headers';
-import { API_BASE, API_VERSION } from '@/components/constants';
+import {
+  API_BASE,
+  API_VERSION,
+  TORBOX_MANAGER_VERSION,
+} from '@/components/constants';
 import { NextResponse } from 'next/server';
 
 // Get all usenet downloads
@@ -20,6 +24,7 @@ export async function GET() {
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,
+            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
           },
         },
       ),
@@ -28,6 +33,7 @@ export async function GET() {
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,
+            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
           },
         },
       ),
@@ -68,6 +74,7 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
         body: formData,
       },
@@ -109,6 +116,7 @@ export async function DELETE(request) {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
         body: JSON.stringify({
           usenet_id: id,
