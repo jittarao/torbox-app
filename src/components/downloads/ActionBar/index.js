@@ -36,6 +36,7 @@ export default function ActionBar({
   sortField,
   sortDir,
   handleSort,
+  getTotalDownloadSize,
 }) {
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
@@ -88,6 +89,7 @@ export default function ActionBar({
           onStatusChange={onStatusChange}
           itemTypeName={itemTypeName}
           itemTypePlural={itemTypePlural}
+          getTotalDownloadSize={getTotalDownloadSize}
         />
 
         {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (

@@ -100,11 +100,15 @@ export default function CardList({
     lastClickedFileIndexRef.current = fileIndex;
   };
 
+  const assetKey = (itemId, fileId) =>
+    fileId ? `${itemId}-${fileId}` : itemId;
+
   const handleFileDownload = async (itemId, fileId, copyLink = false) => {
+    const key = assetKey(itemId, fileId);
     if (copyLink) {
-      setIsCopying((prev) => ({ ...prev, [fileId]: true }));
+      setIsCopying((prev) => ({ ...prev, [key]: true }));
     } else {
-      setIsDownloading((prev) => ({ ...prev, [fileId]: true }));
+      setIsDownloading((prev) => ({ ...prev, [key]: true }));
     }
     const options = { fileId };
 
@@ -120,9 +124,9 @@ export default function CardList({
     }
 
     if (copyLink) {
-      setIsCopying((prev) => ({ ...prev, [fileId]: false }));
+      setIsCopying((prev) => ({ ...prev, [key]: false }));
     } else {
-      setIsDownloading((prev) => ({ ...prev, [fileId]: false }));
+      setIsDownloading((prev) => ({ ...prev, [key]: false }));
     }
   };
 
@@ -437,10 +441,10 @@ export default function CardList({
                                 e.stopPropagation();
                                 handleFileDownload(item.id, file.id, true);
                               }}
-                              disabled={isCopying[file.id]}
+                              disabled={isCopying[assetKey(item.id, file.id)]}
                               className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                             >
-                              {isCopying[file.id] ? (
+                              {isCopying[assetKey(item.id, file.id)] ? (
                                 <Spinner size="sm" />
                               ) : (
                                 Icons.copy
@@ -451,11 +455,13 @@ export default function CardList({
                                 e.stopPropagation();
                                 handleFileDownload(item.id, file.id);
                               }}
-                              disabled={isDownloading[file.id]}
+                              disabled={
+                                isDownloading[assetKey(item.id, file.id)]
+                              }
                               className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                               title="Download File"
                             >
-                              {isDownloading[file.id] ? (
+                              {isDownloading[assetKey(item.id, file.id)] ? (
                                 <Spinner size="sm" />
                               ) : (
                                 Icons.download

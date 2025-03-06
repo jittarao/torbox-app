@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { phEvent } from '@/utils/sa';
-import { getTotalSelectedFiles } from '../utils/statusHelpers';
 import useIsMobile from '@/hooks/useIsMobile';
 
 export default function ActionButtons({
@@ -26,19 +25,7 @@ export default function ActionButtons({
   const getDownloadButtonText = () => {
     if (isDownloading) return 'Fetching Links...';
 
-    const torrentText =
-      selectedItems.items?.size > 0
-        ? `${selectedItems.items?.size} ${selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural}`
-        : '';
-
-    const fileCount = getTotalSelectedFiles(selectedItems);
-    const fileText =
-      fileCount > 0 ? `${fileCount} ${fileCount === 1 ? 'file' : 'files'}` : '';
-
-    const parts = [torrentText, fileText].filter(Boolean);
-    return parts.length > 0
-      ? `${isMobile ? 'Get Links' : 'Get Download Links'} (${parts.join(', ')})`
-      : `${isMobile ? 'Get Links' : 'Get Download Links'}`;
+    return `${isMobile ? 'Get Links' : 'Get Download Links'}`;
   };
 
   return (
@@ -46,7 +33,7 @@ export default function ActionButtons({
       <button
         onClick={handleDownloadClick}
         disabled={isDownloading}
-        className="bg-accent text-white text-xs lg:text-sm px-4 py-2 rounded hover:bg-accent/90 
+        className="bg-accent text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-accent/90 
         disabled:opacity-50 transition-colors"
       >
         {getDownloadButtonText()}
@@ -56,11 +43,10 @@ export default function ActionButtons({
         <>
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="bg-red-500 text-white text-xs lg:text-sm px-4 py-2 rounded hover:bg-red-600 
+            className="bg-red-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-red-600 
             disabled:opacity-50 transition-colors"
           >
-            {isMobile ? 'Delete' : 'Delete Selected'} (
-            {selectedItems.items?.size})
+            {isMobile ? 'Delete' : 'Delete'}
           </button>
 
           {showDeleteConfirm && (
@@ -107,7 +93,7 @@ export default function ActionButtons({
         onClick={() => setSelectedItems({ items: new Set(), files: new Map() })}
         className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
       >
-        {isMobile ? 'Clear' : 'Clear selection'}
+        {isMobile ? 'Clear' : 'Clear'}
       </button>
     </div>
   );

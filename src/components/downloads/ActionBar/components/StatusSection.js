@@ -1,4 +1,4 @@
-import { getStatusStyles } from '../utils/statusHelpers';
+import { getStatusStyles, getTotalSelectedFiles } from '../utils/statusHelpers';
 import { STATUS_OPTIONS } from '@/components/constants';
 
 export default function StatusSection({
@@ -9,7 +9,9 @@ export default function StatusSection({
   hasSelectedFiles,
   statusFilter,
   onStatusChange,
+  itemTypeName,
   itemTypePlural,
+  getTotalDownloadSize,
 }) {
   const handleStatusClick = (status) => {
     if (status === 'all') {
@@ -43,6 +45,17 @@ export default function StatusSection({
       onStatusChange(currentFilters.length === 1 ? 'all' : newFilters);
     }
   };
+  const torrentText =
+    selectedItems.items?.size > 0
+      ? `${selectedItems.items?.size} ${selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural}`
+      : '';
+
+  const fileCount = getTotalSelectedFiles(selectedItems);
+  const fileText =
+    fileCount > 0 ? `${fileCount} ${fileCount === 1 ? 'file' : 'files'}` : '';
+
+  const parts = [torrentText, fileText].filter(Boolean);
+  const downloadSize = getTotalDownloadSize();
 
   return (
     <div className="text-md text-primary-text dark:text-primary-text-dark">
@@ -50,7 +63,9 @@ export default function StatusSection({
         className={`font-semibold ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'}  transition-colors`}
         onClick={() => handleStatusClick('all')}
       >
-        {unfilteredItems.length} {itemTypePlural}
+        {selectedItems.items?.size > 0 || hasSelectedFiles()
+          ? `${parts.join(' & ')} selected (${downloadSize})`
+          : `${unfilteredItems.length} ${itemTypePlural}`}
       </span>
 
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (

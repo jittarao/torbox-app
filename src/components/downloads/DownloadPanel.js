@@ -30,11 +30,30 @@ export default function DownloadPanel({
       });
   };
 
+  const handleCopyLink = (link) => {
+    navigator.clipboard
+      .writeText(link.url)
+      .then(() => {
+        setToast({
+          message: 'Link copied to clipboard!',
+          type: 'success',
+        });
+        setTimeout(() => setToast(null), 5000);
+      })
+      .catch((err) => {
+        setToast({
+          message: 'Failed to copy link',
+          type: 'error',
+        });
+        setTimeout(() => setToast(null), 5000);
+      });
+  };
+
   return (
     <div className="mt-4 px-4 py-2 lg:p-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2 mb-2">
         <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
-          Download Links
+          Download Link{downloadLinks.length > 1 ? 's' : ''}
           {isDownloading && (
             <span className="block lg:inline text-sm text-primary-text/70 dark:text-primary-text-dark/70 lg:ml-2">
               (Fetching {downloadProgress.current} of {downloadProgress.total})
@@ -45,9 +64,10 @@ export default function DownloadPanel({
           {downloadLinks.length > 0 && (
             <button
               onClick={handleCopyLinks}
-              className="text-sm lg:text-md text-accent hover:text-accent/80 transition-colors"
+              className="flex items-center gap-1.5 text-sm lg:text-md text-accent hover:text-accent/80 transition-colors"
             >
-              Copy All Links
+              {Icons.copy}
+              Copy Link{downloadLinks.length > 1 ? 's' : ''}
             </button>
           )}
           <button
@@ -68,21 +88,31 @@ export default function DownloadPanel({
             border border-border dark:border-border-dark"
           >
             <div className="relative group max-w-full">
-              <span className="block w-full truncate mr-4 text-primary-text dark:text-primary-text-dark">
-                {link.url}
-              </span>
-              <Tooltip content={link.name}>{link.name}</Tooltip>
+              <Tooltip content={link.name}>
+                <span className="block w-full truncate mr-4 text-primary-text dark:text-primary-text-dark">
+                  {link.url}
+                </span>
+              </Tooltip>
             </div>
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent dark:text-accent-dark hover:text-accent/80 
-                dark:hover:text-accent-dark/80 transition-colors whitespace-nowrap select-none"
-              title={`Download ${link.name}`}
-            >
-              Download
-            </a>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleCopyLink(link)}
+                className="p-1.5 rounded-full text-accent dark:text-accent-dark 
+                  hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
+              >
+                {Icons.copy}
+              </button>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-full text-accent dark:text-accent-dark 
+                  hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
+                title="Download File"
+              >
+                {Icons.download}
+              </a>
+            </div>
           </div>
         ))}
         {isDownloading && downloadLinks.length < downloadProgress.total && (

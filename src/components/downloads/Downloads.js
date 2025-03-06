@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDelete } from '../shared/hooks/useDelete';
@@ -17,6 +17,7 @@ import Spinner from '../shared/Spinner';
 import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
+import { formatSize } from './utils/formatters';
 
 export default function Downloads({ apiKey }) {
   const [toast, setToast] = useState(null);
@@ -87,6 +88,34 @@ export default function Downloads({ apiKey }) {
     }
   }, []);
 
+  // Get the total size of all selected items and files
+  const getTotalDownloadSize = useCallback(() => {
+    // Calculate size of selected files
+    const filesSize = Array.from(selectedItems.files.entries()).reduce(
+      (acc, [itemId, fileIds]) => {
+        const item = items.find((i) => i.id === itemId);
+        if (!item) return acc;
+
+        return (
+          acc +
+          Array.from(fileIds).reduce((sum, fileId) => {
+            const file = item.files.find((f) => f.id === fileId);
+            return sum + (file?.size || 0);
+          }, 0)
+        );
+      },
+      0,
+    );
+
+    // Calculate size of selected items
+    const itemsSize = Array.from(selectedItems.items).reduce((acc, itemId) => {
+      const item = items.find((i) => i.id === itemId);
+      return acc + (item?.size || 0);
+    }, 0);
+
+    return formatSize(filesSize + itemsSize);
+  }, [items, selectedItems]);
+
   return (
     <div>
       <AssetTypeTabs
@@ -153,6 +182,7 @@ export default function Downloads({ apiKey }) {
                 sortField={sortField}
                 sortDir={sortDirection}
                 handleSort={handleSort}
+                getTotalDownloadSize={getTotalDownloadSize}
               />
             </div>
 
