@@ -10,6 +10,6 @@ export const config = {
     // - /_next (Next.js internals)
     // - /icons (public icons)
     // - /favicon.ico, /sitemap.xml (public files)
-    '/((?!api|_next|icons|favicon.ico|sitemap.xml|manifest.json).*)',
+    '/((?!api|_next|icons|favicon.ico|sitemap.xml|manifest.json|images).*)',
   ],
 };
