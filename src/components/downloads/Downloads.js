@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDelete } from '../shared/hooks/useDelete';
@@ -27,6 +27,7 @@ export default function Downloads({ apiKey }) {
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
+  const hasExpandedRef = useRef(false);
 
   const { loading, items, setItems, fetchItems } = useFetchData(
     apiKey,
@@ -40,7 +41,7 @@ export default function Downloads({ apiKey }) {
     hasSelectedFiles,
     handleRowSelect,
     setSelectedItems,
-  } = useSelection();
+  } = useSelection(items);
   const {
     downloadLinks,
     isDownloading,
@@ -88,6 +89,19 @@ export default function Downloads({ apiKey }) {
       setViewMode(storedViewMode);
     }
   }, []);
+
+  // Expand rows with selected files on initial load
+  useEffect(() => {
+    if (!items?.length || !selectedItems?.files?.size) return;
+    if (hasExpandedRef.current) return;
+
+    // Expand all items that have selected files
+    selectedItems.files.forEach((_, itemId) => {
+      setExpandedItems((prev) => new Set([...prev, itemId]));
+    });
+
+    hasExpandedRef.current = true;
+  }, [items, selectedItems.files]);
 
   // Get the total size of all selected items and files
   const getTotalDownloadSize = useCallback(() => {
