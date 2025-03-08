@@ -132,7 +132,7 @@ export default function ActionBar({
 
         {/* Sort downloads list */}
         {viewMode === 'card' && (
-          <div className="flex items-center gap-0">
+          <div className="flex items-center gap-1">
             <Dropdown
               options={sortOptions}
               value={sortField}
@@ -142,7 +142,7 @@ export default function ActionBar({
             />
             <button
               onClick={() => handleSort(sortField)}
-              className="p-2 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
+              className="px-1 py-2 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
             >
               {sortDir === 'desc' ? '↓' : '↑'}
             </button>

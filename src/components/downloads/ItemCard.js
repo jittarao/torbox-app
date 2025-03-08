@@ -34,6 +34,7 @@ export default function ItemCard({
   isDownloading,
 }) {
   const columnT = useTranslations('Columns');
+  const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
 
   const filteredColumns = activeColumns.filter(
@@ -128,13 +129,13 @@ export default function ItemCard({
       case 'file_count':
         return item.files?.length || 0;
       case 'created_at':
-        return timeAgo(item.created_at);
+        return timeAgo(item.created_at, commonT);
       case 'updated_at':
-        return timeAgo(item.updated_at);
+        return timeAgo(item.updated_at, commonT);
       case 'expires_at':
-        return timeAgo(item.expires_at);
+        return timeAgo(item.expires_at, commonT);
       case 'eta':
-        return timeAgo(item.eta);
+        return timeAgo(item.eta, commonT);
       case 'total_downloaded':
         return formatSize(item.total_downloaded);
       case 'total_uploaded':
@@ -220,7 +221,7 @@ export default function ItemCard({
             ) : (
               <>
                 <span>{formatSize(item.size || 0)}</span> •{' '}
-                <span>{timeAgo(item.created_at)}</span>
+                <span>{timeAgo(item.created_at, commonT)}</span>
               </>
             )}
           </div>

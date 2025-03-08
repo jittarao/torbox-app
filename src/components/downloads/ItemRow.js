@@ -10,6 +10,7 @@ import {
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
+import { useTranslations } from 'next-intl';
 
 export default function ItemRow({
   item,
@@ -30,6 +31,7 @@ export default function ItemRow({
   isBlurred = false,
   viewMode = 'table',
 }) {
+  const commonT = useTranslations('Common');
   const renderCell = (columnId) => {
     const baseStyle = {};
 
@@ -60,7 +62,9 @@ export default function ItemRow({
                     <DownloadStateBadge item={item} size="xs" />
                   )}
                   <span>{formatSize(item.size || 0)}</span>
-                  {item.created_at && <span>{timeAgo(item.created_at)}</span>}
+                  {item.created_at && (
+                    <span>{timeAgo(item.created_at, commonT)}</span>
+                  )}
                 </div>
               </div>
             )}
@@ -89,7 +93,7 @@ export default function ItemRow({
               {item[columnId] ? (
                 <>
                   <Tooltip content={formatDate(item[columnId])}>
-                    <span>{timeAgo(item[columnId])}</span>
+                    <span>{timeAgo(item[columnId], commonT)}</span>
                   </Tooltip>
                 </>
               ) : (
@@ -154,7 +158,7 @@ export default function ItemRow({
             className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
             style={baseStyle}
           >
-            {formatEta(item.eta)}
+            {formatEta(item.eta, commonT)}
           </td>
         );
       case 'id':

@@ -110,6 +110,18 @@
       "Web": "Web",
       "webdl": "webdl",
       "Webdl": "Webdl"
+    },
+    "time": {
+      "in": "あと",
+      "ago": "前",
+      "y": "年",
+      "mo": "ヶ月",
+      "d": "日",
+      "h": "時間",
+      "m": "分",
+      "s": "秒",
+      "unknown": "不明",
+      "complete": "完了"
     }
   },
   "ItemUploader": {
@@ -233,7 +245,8 @@
     "seeds": "シード",
     "peers": "ピア",
     "original_url": "ソースURL",
-    "expires_at": "有効期限"
+    "expires_at": "有効期限",
+    "actions": "アクション"
   },
   "Statuses": {
     "completed": "完了",

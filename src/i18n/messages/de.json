@@ -110,6 +110,18 @@
       "Web": "Web",
       "webdl": "webdl ",
       "Webdl": "Webdl"
+    },
+    "time": {
+      "in": "vor",
+      "ago": " her",
+      "y": "J",
+      "mo": "M",
+      "d": "T",
+      "h": "Std",
+      "m": "Min",
+      "s": "Sek",
+      "unknown": "Unbekannt",
+      "complete": "Abgeschlossen"
     }
   },
   "ItemUploader": {
@@ -125,12 +137,12 @@
       "webdl": "Fügen Sie hier Web-Download-Links ein (einer pro Zeile)"
     },
     "dropzone": {
-      "torrents": "Drop torrent files here ",
-      "usenet": "Drop NZB files here"
+      "torrents": "Legen Sie Torrent-Dateien hier ab ",
+      "usenet": "Legen Sie NZB-Dateien hier ab"
     },
     "button": {
-      "torrents": "Upload Torrents ",
-      "usenet": "NZB hochladen ",
+      "torrents": "Torrents hochladen ",
+      "usenet": "NZB-Dateien hochladen ",
       "webdl": "Links hinzufügen"
     },
     "options": {
@@ -196,8 +208,8 @@
     "seedingPreference": {
       "label": "Seeding-Einstellung",
       "auto": "Automatisch (Standard) ",
-      "always": "Immer Seed",
-      "never": "Nie Seed"
+      "always": "Immer Seeden",
+      "never": "Nie Seeden"
     },
     "allowZip": {
       "label": "Zip zulassen",
@@ -233,7 +245,8 @@
     "seeds": "Seeds ",
     "peers": "Peers",
     "original_url": "Quell-URL ",
-    "expires_at": "Ablaufdatum"
+    "expires_at": "Ablaufdatum",
+    "actions": "Aktionen"
   },
   "Statuses": {
     "completed": "Abgeschlossen ",
@@ -320,7 +333,7 @@
     }
   },
   "SearchResults": {
-    "results": "{Anzahl} Ergebnisse",
+    "results": "{count} Ergebnisse",
     "noResults": "Keine Ergebnisse gefunden ",
     "cachedOnly": "Nur zwischengespeichert",
     "sort": {

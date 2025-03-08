@@ -61,7 +61,7 @@ export default function TableHeader({
           );
         })}
         <th className="px-3 md:px-4 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[100px]">
-          Actions
+          {columnT('actions')}
         </th>
       </tr>
     </thead>

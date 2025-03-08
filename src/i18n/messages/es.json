@@ -110,6 +110,18 @@
       "Web": "Web",
       "webdl": "webdl",
       "Webdl": "Webdl"
+    },
+    "time": {
+      "in": "en ",
+      "ago": " atrás",
+      "y": "a",
+      "mo": "m",
+      "d": "d",
+      "h": "h",
+      "m": "m",
+      "s": "s",
+      "unknown": "Desconocido",
+      "complete": "Completado"
     }
   },
   "ItemUploader": {
@@ -233,7 +245,8 @@
     "seeds": "Semillas",
     "peers": "Pares",
     "original_url": "URL de origen",
-    "expires_at": "Caduca a"
+    "expires_at": "Caduca a",
+    "actions": "Acciones"
   },
   "Statuses": {
     "completed": "Completado",

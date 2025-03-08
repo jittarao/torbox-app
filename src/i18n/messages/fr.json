@@ -110,6 +110,18 @@
       "Web": "Web",
       "webdl": "webdl",
       "Webdl": "Webdl"
+    },
+    "time": {
+      "in": "dans ",
+      "ago": " il y a",
+      "y": "a",
+      "mo": "m",
+      "d": "j",
+      "h": "h",
+      "m": "min",
+      "s": "s",
+      "unknown": "Inconnu",
+      "complete": "Terminé"
     }
   },
   "ItemUploader": {
@@ -233,7 +245,8 @@
     "seeds": "Graines",
     "peers": "Pairs",
     "original_url": "URL source",
-    "expires_at": "Expire à"
+    "expires_at": "Expire à",
+    "actions": "Actions"
   },
   "Statuses": {
     "terminé": "Terminé",

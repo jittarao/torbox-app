@@ -1,11 +1,20 @@
-export const formatSize = (bytes) => {
+import { createTranslator } from 'next-intl';
+
+export const formatSize = (bytes, locale = 'en') => {
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 B';
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+  return (
+    new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 1,
+    }).format(bytes / Math.pow(1024, i)) +
+    ' ' +
+    sizes[i]
+  );
 };
 
-export const formatSpeed = (bytesPerSecond) => {
+export const formatSpeed = (bytesPerSecond, locale = 'en') => {
   // Handle all edge cases: null, undefined, NaN, 0, negative values
   if (
     bytesPerSecond === null ||
@@ -25,19 +34,24 @@ export const formatSpeed = (bytesPerSecond) => {
       return '0 B/s';
     }
 
-    // Drop decimal places by using Math.round instead of toFixed
-    return `${Math.round(bytesPerSecond / Math.pow(1024, i))} ${units[i]}`;
+    return (
+      new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 0,
+      }).format(Math.round(bytesPerSecond / Math.pow(1024, i))) +
+      ' ' +
+      units[i]
+    );
   } catch (error) {
     // Fallback in case of any calculation errors
     return '0 B/s';
   }
 };
 
-export const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString();
+export const formatDate = (dateString, locale = 'en') => {
+  return new Date(dateString).toLocaleString(locale);
 };
 
-export const timeAgo = (dateString) => {
+export const timeAgo = (dateString, t) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now - date;
@@ -51,26 +65,27 @@ export const timeAgo = (dateString) => {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
-  const prefix = isFuture ? 'in ' : '';
-  const suffix = isFuture ? '' : 'ago';
+  const prefix = isFuture ? t('time.in') : '';
+  const suffix = isFuture ? '' : t('time.ago');
 
-  if (years > 0) return `${prefix}${years}y ${suffix}`;
-  if (months > 0) return `${prefix}${months}mo ${suffix}`;
-  if (days > 0) return `${prefix}${days}d ${suffix}`;
-  if (hours > 0) return `${prefix}${hours}h ${suffix}`;
-  if (minutes > 0) return `${prefix}${minutes}m ${suffix}`;
-  return `${prefix}${seconds}s ${suffix}`;
+  if (years > 0) return `${prefix}${years}${t('time.y')} ${suffix}`;
+  if (months > 0) return `${prefix}${months}${t('time.mo')} ${suffix}`;
+  if (days > 0) return `${prefix}${days}${t('time.d')} ${suffix}`;
+  if (hours > 0) return `${prefix}${hours}${t('time.h')} ${suffix}`;
+  if (minutes > 0) return `${prefix}${minutes}${t('time.m')} ${suffix}`;
+  return `${prefix}${seconds}${t('time.s')} ${suffix}`;
 };
 
-export const formatEta = (seconds) => {
-  if (!seconds || seconds < 0) return 'Unknown';
-  if (seconds === 0) return 'Complete';
+export const formatEta = (seconds, t) => {
+  if (!seconds || seconds < 0) return t('time.unknown');
+  if (seconds === 0) return t('time.complete');
 
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = seconds % 60;
 
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m ${remainingSeconds}s`;
-  return `${remainingSeconds}s`;
+  if (hours > 0) return `${hours}${t('time.h')} ${minutes}${t('time.m')}`;
+  if (minutes > 0)
+    return `${minutes}${t('time.m')} ${remainingSeconds}${t('time.s')}`;
+  return `${remainingSeconds}${t('time.s')}`;
 };
