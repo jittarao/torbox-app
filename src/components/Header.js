@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Icons from '@/components/icons';
+import { locales } from '@/i18n/settings';
 
 export default function Header() {
   const t = useTranslations('Header');
@@ -89,19 +91,21 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-6">
             <Link
               href="/"
-              className={`text-white dark:text-primary-text-dark font-medium 
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
-                ${pathname === '/' ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+                ${pathname === '/' || locales.some((locale) => pathname === `/${locale}`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
             >
+              <Icons.Download />
               {t('menu.downloads')}
             </Link>
 
             <Link
               href="/search"
-              className={`text-white dark:text-primary-text-dark font-medium 
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
-                ${pathname === '/search' ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+                ${pathname === '/search' || locales.some((locale) => pathname === `/${locale}/search`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
             >
+              <Icons.MagnifyingGlass />
               {t('menu.search')}
             </Link>
 
@@ -177,7 +181,7 @@ export default function Header() {
               href="/"
               className={`block text-white dark:text-primary-text-dark font-medium 
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                ${pathname === '/' ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                ${pathname === '/' || locales.some((locale) => pathname === `/${locale}`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
               onClick={() => setIsMenuOpen(false)}
             >
               {t('menu.downloads')}
@@ -187,7 +191,7 @@ export default function Header() {
               href="/search"
               className={`block text-white dark:text-primary-text-dark font-medium 
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                ${pathname === '/search' ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                ${pathname === '/search' || locales.some((locale) => pathname === `/${locale}/search`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
               onClick={() => setIsMenuOpen(false)}
             >
               {t('menu.search')}

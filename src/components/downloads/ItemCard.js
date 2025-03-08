@@ -7,7 +7,7 @@ import {
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
@@ -84,31 +84,31 @@ export default function ItemCard({
   const getColumnIcon = (column) => {
     switch (column) {
       case 'id':
-        return Icons.arrow_left_right;
+        return <Icons.ArrowLeftRight />;
       case 'hash':
-        return Icons.hash;
+        return <Icons.Hash />;
       case 'seeds':
-        return Icons.up_arrow;
+        return <Icons.UpArrow />;
       case 'peers':
-        return Icons.down_arrow;
+        return <Icons.DownArrow />;
       case 'ratio':
-        return Icons.percent;
+        return <Icons.Percent />;
       case 'size':
-        return Icons.layers;
+        return <Icons.Layers />;
       case 'file_count':
-        return Icons.file;
+        return <Icons.Files />;
       case 'created_at':
       case 'updated_at':
       case 'expires_at':
-        return Icons.clock;
+        return <Icons.Clock />;
       case 'eta':
-        return Icons.clock_arrow_down;
+        return <Icons.ClockArrowDown />;
       case 'total_downloaded':
-        return Icons.cloud_download;
+        return <Icons.CloudDownload />;
       case 'total_uploaded':
-        return Icons.cloud_upload;
+        return <Icons.CloudUpload />;
       case 'original_url':
-        return Icons.link;
+        return <Icons.Link />;
     }
   };
 

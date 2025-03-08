@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import ConfirmButton from '../shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
@@ -70,7 +70,7 @@ export default function ItemActionButtons({
               disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
             title={t('stop.title')}
           >
-            {isStopping ? <Spinner size="sm" /> : Icons.stop}
+            {isStopping ? <Spinner size="sm" /> : <Icons.Stop />}
             {isMobile && (
               <span className="ml-2 text-xs">{t('stop.label')}</span>
             )}
@@ -87,7 +87,7 @@ export default function ItemActionButtons({
             disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
           title={t('start.title')}
         >
-          {isDownloading ? <Spinner size="sm" /> : Icons.play}
+          {isDownloading ? <Spinner size="sm" /> : <Icons.Play />}
           {isMobile && <span className="ml-2 text-xs">{t('start.label')}</span>}
         </button>
       )}
@@ -104,7 +104,11 @@ export default function ItemActionButtons({
             ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
         >
-          {expandedItems.has(item.id) ? Icons.chevron_up : Icons.chevron_down}
+          {expandedItems.has(item.id) ? (
+            <Icons.ChevronUp />
+          ) : (
+            <Icons.ChevronDown />
+          )}
           {isMobile && (
             <span className="ml-2 text-xs">
               {expandedItems.has(item.id) ? t('files.hide') : t('files.label')}
@@ -123,7 +127,7 @@ export default function ItemActionButtons({
           ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={t('download.title')}
         >
-          {isDownloading ? <Spinner size="sm" /> : Icons.download}
+          {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
           {isMobile && (
             <span className="ml-2 text-xs">{t('download.label')}</span>
           )}
@@ -134,8 +138,8 @@ export default function ItemActionButtons({
       <ConfirmButton
         onClick={handleDelete}
         isLoading={isDeleting}
-        confirmIcon={Icons.check}
-        defaultIcon={Icons.delete}
+        confirmIcon={<Icons.Check />}
+        defaultIcon={<Icons.Delete />}
         className={`p-1.5 rounded-full text-red-500 dark:text-red-400 
           hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
           disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}

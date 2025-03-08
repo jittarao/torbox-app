@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 export default function ApiKeyInput({ value, onKeyChange }) {
@@ -31,7 +31,7 @@ export default function ApiKeyInput({ value, onKeyChange }) {
           p-2 touch-manipulation"
         aria-label={showKey ? t('hide') : t('show')}
       >
-        {showKey ? Icons.eye : Icons.eyeOff}
+        {showKey ? <Icons.Eye /> : <Icons.EyeOff />}
       </button>
     </div>
   );

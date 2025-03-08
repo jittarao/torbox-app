@@ -1,6 +1,6 @@
 'use client';
 
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
@@ -82,14 +82,14 @@ export default function DownloadPanel({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-full text-accent/60 dark:text-accent-dark/60 bg-accent/10 dark:bg-accent-dark/10">
-                  {Icons.download}
+                  <Icons.Download className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
                   <PanelTitle />
                 </h3>
               </div>
               <button className="text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors">
-                {Icons.chevron_up}
+                <Icons.ChevronUp className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function DownloadPanel({
                   </h3>
                 </div>
                 <button className="text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors">
-                  {Icons.chevron_down}
+                  <Icons.ChevronDown className="w-5 h-5" />
                 </button>
               </div>
 
@@ -140,7 +140,7 @@ export default function DownloadPanel({
                             hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
                           title={t('actions.copyLink')}
                         >
-                          {Icons.copy}
+                          <Icons.Copy className="w-5 h-5" />
                         </button>
                         <a
                           href={link.url}
@@ -150,7 +150,7 @@ export default function DownloadPanel({
                             hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
                           title={t('actions.downloadFile')}
                         >
-                          {Icons.download}
+                          <Icons.Download className="w-5 h-5" />
                         </a>
                       </div>
                     </div>
@@ -188,7 +188,7 @@ export default function DownloadPanel({
                     onClick={handleCopyLinks}
                     className="flex items-center gap-1.5 text-sm text-accent hover:text-accent/80 transition-colors"
                   >
-                    {Icons.copy}
+                    <Icons.Copy className="w-5 h-5" />
                     {t('actions.copyAll')}
                   </button>
                 </div>

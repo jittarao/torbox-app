@@ -1,4 +1,4 @@
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 export default function ViewControls({
@@ -30,7 +30,7 @@ export default function ViewControls({
           }`}
           title={t('tableView')}
         >
-          {Icons.table}
+          <Icons.Table />
         </button>
         <button
           onClick={() => handleViewModeChange('card')}
@@ -42,7 +42,7 @@ export default function ViewControls({
           }`}
           title={t('cardView')}
         >
-          {Icons.list}
+          <Icons.List />
         </button>
       </div>
 
@@ -57,7 +57,7 @@ export default function ViewControls({
           }`}
         title={isBlurred ? t('showSensitive') : t('hideSensitive')}
       >
-        {isBlurred ? Icons.eye : Icons.eyeOff}
+        {isBlurred ? <Icons.Eye /> : <Icons.EyeOff />}
       </button>
 
       {/* Fullscreen button */}
@@ -71,7 +71,7 @@ export default function ViewControls({
           }`}
         title={isFullscreen ? t('exitFullscreen') : t('enterFullscreen')}
       >
-        {isFullscreen ? Icons.minimize : Icons.maximize}
+        {isFullscreen ? <Icons.Minimize /> : <Icons.Maximize />}
       </button>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 export default function SearchBar({ search, onSearchChange }) {
@@ -9,7 +9,7 @@ export default function SearchBar({ search, onSearchChange }) {
         className="absolute left-3 top-1/2 transform -translate-y-1/2 
                    text-primary-text/40 dark:text-primary-text-dark/40"
       >
-        {Icons.magnifying_glass}
+        <Icons.MagnifyingGlass />
       </div>
       <input
         type="text"
@@ -33,7 +33,7 @@ export default function SearchBar({ search, onSearchChange }) {
             hover:text-primary-text dark:hover:text-primary-text-dark
             transition-colors"
         >
-          {Icons.times}
+          <Icons.Times />
         </button>
       )}
     </div>

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useSearchStore } from '@/stores/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 export default function SearchBar() {
@@ -84,14 +84,14 @@ export default function SearchBar() {
                 transition-colors"
               aria-label={t('clearSearch')}
             >
-              {Icons.times}
+              <Icons.Times />
             </button>
           )}
           <div
             className="absolute left-3 top-1/2 transform -translate-y-1/2 
                        text-primary-text/40 dark:text-primary-text-dark/40"
           >
-            {Icons.magnifying_glass}
+            <Icons.MagnifyingGlass />
           </div>
         </div>
       </div>

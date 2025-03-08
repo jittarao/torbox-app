@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
@@ -238,7 +238,7 @@ export default function MoreOptionsDropdown({
         onClick={handleCopyId}
         className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
       >
-        {Icons.copy}
+        <Icons.Copy />
         <span className="ml-2">{t('copyId')}</span>
       </button>,
     );
@@ -249,7 +249,7 @@ export default function MoreOptionsDropdown({
         onClick={handleCopyHash}
         className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
       >
-        {Icons.copy}
+        <Icons.Copy />
         <span className="ml-2">{t('copyHash')}</span>
       </button>,
     );
@@ -262,7 +262,7 @@ export default function MoreOptionsDropdown({
           onClick={handleCopyShortMagnet}
           className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
         >
-          {Icons.copy}
+          <Icons.Copy />
           <span className="ml-2">{t('copyShortMagnet')}</span>
         </button>,
       );
@@ -275,7 +275,7 @@ export default function MoreOptionsDropdown({
             disabled={isExporting}
             className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
           >
-            {isExporting ? <Spinner size="xs" /> : Icons.copy}
+            {isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
             <span className="ml-2">{t('copyFullMagnet')}</span>
           </button>,
         );
@@ -287,7 +287,7 @@ export default function MoreOptionsDropdown({
             disabled={isReannouncing}
             className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
           >
-            {isReannouncing ? <Spinner size="xs" /> : Icons.refresh}
+            {isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
             <span className="ml-2">{t('reannounce')}</span>
           </button>,
         );
@@ -300,7 +300,7 @@ export default function MoreOptionsDropdown({
           disabled={isExporting}
           className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
         >
-          {isExporting ? <Spinner size="xs" /> : Icons.download}
+          {isExporting ? <Spinner size="xs" /> : <Icons.Download />}
           <span className="ml-2">{t('exportTorrent')}</span>
         </button>,
       );
@@ -314,7 +314,7 @@ export default function MoreOptionsDropdown({
           onClick={handleCopySourceUrl}
           className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
         >
-          {Icons.copy}
+          <Icons.Copy />
           <span className="ml-2">{t('copySourceUrl')}</span>
         </button>,
       );
@@ -333,7 +333,7 @@ export default function MoreOptionsDropdown({
           ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
         title={t('title')}
       >
-        {Icons.vertical_ellipsis}
+        <Icons.VerticalEllipsis />
         {isMobile && <span className="ml-2 text-xs">{t('label')}</span>}
       </button>
 

@@ -1,6 +1,6 @@
 import { formatSize } from './utils/formatters';
-import { Icons } from '@/components/icons';
-import Spinner from '../shared/Spinner';
+import Icons from '@/components/icons';
+import Spinner from '@/components/shared/Spinner';
 import { useTranslations } from 'next-intl';
 
 export default function FileList({
@@ -101,7 +101,11 @@ export default function FileList({
                     className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                     title={t('copyLink')}
                   >
-                    {isCopying[assetKey] ? <Spinner size="sm" /> : Icons.copy}
+                    {isCopying[assetKey] ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Icons.Copy />
+                    )}
                   </button>
                   <button
                     onClick={(e) => {
@@ -115,7 +119,7 @@ export default function FileList({
                     {isDownloading[assetKey] ? (
                       <Spinner size="sm" />
                     ) : (
-                      Icons.download
+                      <Icons.Download />
                     )}
                   </button>
                 </div>

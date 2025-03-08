@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 
 export function DropZone({
   onDrop,
@@ -70,7 +70,7 @@ export function DropZone({
         disabled={disabled}
       />
       <div className="text-accent dark:text-accent-dark mb-4">
-        {Icons.upload}
+        <Icons.Upload />
       </div>
       <p className="text-center text-primary-text/70 dark:text-primary-text-dark/70 text-sm">
         {dropzoneText}

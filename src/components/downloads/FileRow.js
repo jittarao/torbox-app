@@ -1,8 +1,8 @@
 'use client';
 
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import { formatSize } from './utils/formatters';
-import Spinner from '../shared/Spinner';
+import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 export default function FileRow({
@@ -114,7 +114,7 @@ export default function FileRow({
                 {isCopying[assetKey(item.id, file.id)] ? (
                   <Spinner size="sm" />
                 ) : (
-                  Icons.copy
+                  <Icons.Copy />
                 )}
               </button>
 
@@ -132,7 +132,7 @@ export default function FileRow({
                 {isDownloading[assetKey(item.id, file.id)] ? (
                   <Spinner size="sm" />
                 ) : (
-                  Icons.download
+                  <Icons.Download />
                 )}
               </button>
             </td>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 
 export default function AssetTypeTabs({ activeType, onTypeChange }) {
   const t = useTranslations('Common');
@@ -10,17 +10,17 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
     {
       id: 'torrents',
       label: t('itemTypes.Torrents'),
-      icon: Icons.torrent,
+      icon: <Icons.Torrent className="rotate-[135deg]" />,
     },
     {
       id: 'usenet',
       label: t('itemTypes.Usenet'),
-      icon: Icons.usenet,
+      icon: <Icons.Usenet />,
     },
     {
       id: 'webdl',
       label: t('itemTypes.Web'),
-      icon: Icons.web,
+      icon: <Icons.Webdl />,
     },
   ];
 

@@ -7,7 +7,7 @@ import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 import { formatSize } from '@/components/downloads/utils/formatters';
 
 const TORBOX_NATIVE_TRACKERS = ['Newznab'];
@@ -253,30 +253,30 @@ export default function SearchResults({ apiKey }) {
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1.5">
-                      {Icons.layers}
+                      <Icons.Layers />
                       {formatSize(item.size)}
                     </div>
                     {searchType === 'torrents' && (
                       <div className="flex items-center gap-1.5">
-                        {Icons.up_arrow}
+                        <Icons.UpArrow />
                         {item.last_known_seeders}
                         {item.last_known_peers > 0 &&
                           ` / ${item.last_known_peers}`}
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
-                      {Icons.clock}
+                      <Icons.Clock />
                       {String(item.age).replace('d', ` ${t('metadata.days')}`)}
                     </div>
                     {item.tracker && item.tracker !== 'Unknown' && (
                       <div className="flex items-center gap-1.5">
-                        {Icons.tracker}
+                        <Icons.Tracker />
                         {item.tracker}
                       </div>
                     )}
                     {item.cached && (
                       <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5">
-                        {Icons.bolt}
+                        <Icons.Bolt />
                         {t('metadata.cached')}
                       </span>
                     )}

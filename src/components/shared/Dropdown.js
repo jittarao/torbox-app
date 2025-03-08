@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Icons } from '@/components/icons';
+import Icons from '@/components/icons';
 
 export default function Dropdown({
   options,
@@ -86,7 +86,7 @@ export default function Dropdown({
               {sortDir &&
                 (option.value === value ||
                   JSON.stringify(option.value) === value) &&
-                (sortDir === 'asc' ? Icons.up_arrow : Icons.down_arrow)}
+                (sortDir === 'asc' ? <Icons.UpArrow /> : <Icons.DownArrow />)}
             </button>
           ))}
         </div>
