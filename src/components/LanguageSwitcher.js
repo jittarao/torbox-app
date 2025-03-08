@@ -36,7 +36,6 @@ export default function LanguageSwitcher() {
     router.push(pathname.replace(locale, newLocale));
   };
 
-  console.log(pathname);
   return (
     <div className="relative" ref={dropdownRef}>
       <button

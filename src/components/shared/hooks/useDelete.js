@@ -81,7 +81,6 @@ export function useDelete(
 
   const batchDelete = async (ids) => {
     const successfulIds = [];
-    setIsDeleting(true);
 
     try {
       // Process in chunks
@@ -151,8 +150,6 @@ export function useDelete(
         type: 'error',
       });
       return [];
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -160,6 +157,7 @@ export function useDelete(
     if (!apiKey || selectedItems.items.size === 0) return;
 
     try {
+      setIsDeleting(true);
       return await batchDelete(Array.from(selectedItems.items));
     } catch (error) {
       console.error('Error bulk deleting:', error);
@@ -168,6 +166,8 @@ export function useDelete(
         type: 'error',
       });
       return [];
+    } finally {
+      setIsDeleting(false);
     }
   };
 

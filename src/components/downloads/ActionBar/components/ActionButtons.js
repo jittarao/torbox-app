@@ -48,10 +48,13 @@ export default function ActionButtons({
         <>
           <button
             onClick={() => setShowDeleteConfirm(true)}
+            disabled={isDeleting}
             className="bg-red-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-red-600 
             disabled:opacity-50 transition-colors"
           >
-            {t('delete')}
+            {isDeleting
+              ? t('deleteConfirm.deleting')
+              : t('deleteConfirm.confirm')}
           </button>
 
           {showDeleteConfirm && (
@@ -87,9 +90,7 @@ export default function ActionButtons({
                     className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 
                     disabled:opacity-50 transition-colors"
                   >
-                    {isDeleting
-                      ? t('deleteConfirm.deleting')
-                      : t('deleteConfirm.confirm')}
+                    {t('delete')}
                   </button>
                 </div>
               </div>
