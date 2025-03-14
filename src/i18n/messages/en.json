@@ -54,7 +54,22 @@
   "ApiKeyInput": {
     "placeholder": "Enter TorBox API Key",
     "show": "Show API key",
-    "hide": "Hide API key"
+    "hide": "Hide API key",
+    "manageKeys": "Manage Keys"
+  },
+  "ApiKeyManager": {
+    "savedKeys": "Saved API Keys",
+    "addKey": "Add Key",
+    "addNewKey": "Add New API Key",
+    "keyLabel": "Key Label",
+    "keyLabelPlaceholder": "e.g. Personal, Family",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Enter your API key",
+    "cancel": "Cancel",
+    "add": "Add",
+    "deleteKey": "Delete Key",
+    "noKeys": "No saved keys",
+    "close": "Close"
   },
   "ActionButtons": {
     "downloadLinks": "Get Download Links",

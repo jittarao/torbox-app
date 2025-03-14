@@ -54,7 +54,22 @@
   "ApiKeyInput": {
     "placeholder": "TorBox APIキーを入力してください",
     "show": "APIキーを表示",
-    "hide": "APIキーを隠す"
+    "hide": "APIキーを隠す",
+    "manageKeys": "APIキーを管理"
+  },
+  "ApiKeyManager": {
+    "savedKeys": "保存されたAPIキー",
+    "addKey": "キーを追加",
+    "addNewKey": "新しいAPIキーを追加",
+    "keyLabel": "キーラベル",
+    "keyLabelPlaceholder": "e.g. Personal, Family",
+    "apiKey": "APIキー",
+    "apiKeyPlaceholder": "Enter your API key",
+    "cancel": "キャンセル",
+    "add": "追加",
+    "deleteKey": "キーを削除",
+    "noKeys": "保存されたキーがありません",
+    "close": "閉じる"
   },
   "ActionButtons": {
     "downloadLinks": "ダウンロードリンクを取得",

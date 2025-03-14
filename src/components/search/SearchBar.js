@@ -44,7 +44,7 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 mt-4">
       <div className="relative flex gap-2">
         <div className="w-32">
           <Dropdown

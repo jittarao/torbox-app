@@ -35,7 +35,11 @@ export default function SearchPage() {
     >
       <Header />
       <div className="max-w-7xl mx-auto p-4">
-        <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} />
+        <ApiKeyInput
+          value={apiKey}
+          onKeyChange={handleKeyChange}
+          allowKeyManager={true}
+        />
         <SearchBar />
         <SearchResults apiKey={apiKey} />
       </div>

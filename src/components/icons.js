@@ -600,6 +600,34 @@ const SunIcon = ({ className = 'h-3 w-3' }) => (
   </svg>
 );
 
+const PlusIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M5 12h14" />
+    <path d="M12 5v14" />
+  </svg>
+);
+
+const PreferencesIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M20 7h-9" />
+    <path d="M14 17H5" />
+    <circle cx="17" cy="17" r="3" />
+    <circle cx="7" cy="7" r="3" />
+  </svg>
+);
+
 export const Icons = {
   Link: LinkIcon,
   MagnifyingGlass: MagnifyingGlassIcon,
@@ -642,6 +670,8 @@ export const Icons = {
   History: HistoryIcon,
   Moon: MoonIcon,
   Sun: SunIcon,
+  Plus: PlusIcon,
+  Preferences: PreferencesIcon,
 };
 
 export default Icons;

@@ -19,9 +19,20 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
+
+    // Load API key from storage
     const storedKey = localStorage.getItem('torboxApiKey');
+    const storedKeys = localStorage.getItem('torboxApiKeys');
+
     if (storedKey) {
       setApiKey(storedKey);
+    } else if (storedKeys) {
+      // If no active key but we have stored keys, use the first one
+      const keys = JSON.parse(storedKeys);
+      if (keys.length > 0) {
+        setApiKey(keys[0].key);
+        localStorage.setItem('torboxApiKey', keys[0].key);
+      }
     }
     setLoading(false);
 
@@ -120,7 +131,11 @@ export default function Home() {
         <>
           <Header />
           <div className="container mx-auto p-4">
-            <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} />
+            <ApiKeyInput
+              value={apiKey}
+              onKeyChange={handleKeyChange}
+              allowKeyManager={true}
+            />
             <Downloads apiKey={apiKey} />
           </div>
         </>

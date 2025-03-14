@@ -54,7 +54,22 @@
   "ApiKeyInput": {
     "placeholder": "Entrer la clé API TorBox",
     "show": "Afficher la clé API",
-    "hide": "Masquer la clé API"
+    "hide": "Masquer la clé API",
+    "manageKeys": "Gérer les clés API"
+  },
+  "ApiKeyManager": {
+    "savedKeys": "Clés API enregistrées",
+    "addKey": "Ajouter une clé",
+    "addNewKey": "Ajouter une nouvelle clé API",
+    "keyLabel": "Label de clé",
+    "keyLabelPlaceholder": "e.g. Personal, Family",
+    "apiKey": "Clé API",
+    "apiKeyPlaceholder": "Entrer votre clé API",
+    "cancel": "Annuler",
+    "add": "Ajouter",
+    "deleteKey": "Supprimer la clé",
+    "noKeys": "Aucune clé enregistrée",
+    "close": "Fermer"
   },
   "ActionButtons": {
     "downloadLinks": "Obtenir les liens de téléchargement",

@@ -54,7 +54,22 @@
   "ApiKeyInput": {
     "placeholder": "Geben Sie den TorBox-API-Schlüssel ein ",
     "show": "API-Schlüssel anzeigen",
-    "hide": "API-Schlüssel ausblenden"
+    "hide": "API-Schlüssel ausblenden",
+    "manageKeys": "API-Schlüssel verwalten"
+  },
+  "ApiKeyManager": {
+    "savedKeys": "Gespeicherte API-Schlüssel",
+    "addKey": "Schlüssel hinzufügen",
+    "addNewKey": "Neuer API-Schlüssel",
+    "keyLabel": "Schlüssel-Label",
+    "keyLabelPlaceholder": "e.g. Personal, Family",
+    "apiKey": "API-Schlüssel",
+    "apiKeyPlaceholder": "Geben Sie Ihren API-Schlüssel ein",
+    "cancel": "Abbrechen",
+    "add": "Hinzufügen",
+    "deleteKey": "Schlüssel löschen",
+    "noKeys": "Keine gespeicherten Schlüssel",
+    "close": "Schließen"
   },
   "ActionButtons": {
     "downloadLinks": "Download-Links abrufen",
