@@ -65,13 +65,14 @@ export const COLUMNS = {
 };
 
 export const STATUS_OPTIONS = [
-  { label: 'All', value: 'all' },
+  { label: 'All', value: 'all', hidden: true },
   // Queued: Missing download state and other status fields
   {
     label: 'Queued',
     value: {
       is_queued: true, // Special flag we'll check for
     },
+    hidden: false,
   },
   // Completed: Download finished, not active
   {
@@ -81,6 +82,7 @@ export const STATUS_OPTIONS = [
       download_present: true,
       active: false,
     },
+    hidden: false,
   },
   // Downloading: Downloading, not finished, active
   {
@@ -89,6 +91,7 @@ export const STATUS_OPTIONS = [
       download_finished: false,
       active: true,
     },
+    hidden: false,
   },
   // Seeding: Download finished, seeding enabled, active
   {
@@ -98,6 +101,7 @@ export const STATUS_OPTIONS = [
       download_present: true,
       active: true,
     },
+    hidden: false,
   },
   // Uploading: Download finished, uploading, active
   {
@@ -107,6 +111,7 @@ export const STATUS_OPTIONS = [
       download_present: false,
       active: true,
     },
+    hidden: false,
   },
   // Stalled: Download or upload is stalled
   {
@@ -114,6 +119,7 @@ export const STATUS_OPTIONS = [
     value: {
       download_state: ['stalled', 'stalled (no seeds)'],
     },
+    hidden: false,
   },
   // Missing: Download finished, Download not present
   {
@@ -123,6 +129,16 @@ export const STATUS_OPTIONS = [
       download_present: false,
       active: false,
     },
+    hidden: false,
   },
-  { label: 'Failed', value: { download_state: ['failed'] } },
+  // Failed: Download failed
+  { label: 'Failed', value: { download_state: ['failed'] }, hidden: false },
+  // MetaDL: Downloading metadata
+  { label: 'Meta_DL', value: { download_state: ['metaDL'] }, hidden: true },
+  // Checking Resume Data: Checking resumable data
+  {
+    label: 'Checking_Resume_Data',
+    value: { download_state: ['checkingResumeData'] },
+    hidden: true,
+  },
 ];

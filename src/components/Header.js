@@ -44,7 +44,7 @@ export default function Header() {
     <div className="bg-primary dark:bg-surface-alt-dark border-b border-primary-border dark:border-border-dark">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <Image
               src="/images/TBM-logo.png"
               alt={t('logo')}
@@ -54,7 +54,7 @@ export default function Header() {
             <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
               {t('title')}
             </h1>
-          </div>
+          </Link>
 
           {/* Mobile menu button */}
           <button
@@ -109,6 +109,16 @@ export default function Header() {
               {t('menu.search')}
             </Link>
 
+            <Link
+              href="/link-history"
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+                ${pathname === '/link-history' || locales.some((locale) => pathname === `/${locale}/link-history`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+            >
+              <Icons.History />
+              {t('menu.linkHistory')}
+            </Link>
+
             {/* Divider */}
             <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
@@ -127,45 +137,7 @@ export default function Header() {
                       darkMode ? 'translate-x-6' : 'translate-x-1'
                     } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
                   >
-                    {darkMode ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-primary-text-dark"
-                      >
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-primary-text"
-                      >
-                        <circle cx="12" cy="12" r="4" />
-                        <path d="M12 2v2" />
-                        <path d="M12 20v2" />
-                        <path d="m4.93 4.93 1.41 1.41" />
-                        <path d="m17.66 17.66 1.41 1.41" />
-                        <path d="M2 12h2" />
-                        <path d="M20 12h2" />
-                        <path d="m6.34 17.66-1.41 1.41" />
-                        <path d="m19.07 4.93-1.41 1.41" />
-                      </svg>
-                    )}
+                    {darkMode ? <Icons.Moon /> : <Icons.Sun />}
                   </span>
                 </button>
               )}
@@ -197,6 +169,15 @@ export default function Header() {
               {t('menu.search')}
             </Link>
 
+            <Link
+              href="/link-history"
+              className={`block text-white dark:text-primary-text-dark font-medium 
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                ${pathname === '/link-history' || locales.some((locale) => pathname === `/${locale}/link-history`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t('menu.linkHistory')}
+            </Link>
             <div className="py-2 space-y-4">
               {isClient && (
                 <div className="flex items-center justify-between">
@@ -218,45 +199,7 @@ export default function Header() {
                           darkMode ? 'translate-x-6' : 'translate-x-1'
                         } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
                       >
-                        {darkMode ? (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-primary-text-dark"
-                          >
-                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                          </svg>
-                        ) : (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-primary-text"
-                          >
-                            <circle cx="12" cy="12" r="4" />
-                            <path d="M12 2v2" />
-                            <path d="M12 20v2" />
-                            <path d="m4.93 4.93 1.41 1.41" />
-                            <path d="m17.66 17.66 1.41 1.41" />
-                            <path d="M2 12h2" />
-                            <path d="M20 12h2" />
-                            <path d="m6.34 17.66-1.41 1.41" />
-                            <path d="m19.07 4.93-1.41 1.41" />
-                          </svg>
-                        )}
+                        {darkMode ? <Icons.Moon /> : <Icons.Sun />}
                       </span>
                     </button>
                   </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icons from '@/components/icons';
-import Spinner from '../shared/Spinner';
-import ConfirmButton from '../shared/ConfirmButton';
+import Spinner from '@/components/shared/Spinner';
+import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 
@@ -57,6 +57,31 @@ export default function ItemActionButtons({
 
   return (
     <>
+      {/* Toggle files button */}
+      {item.download_present && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFiles(item.id);
+          }}
+          className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
+            hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors
+            ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+          title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
+        >
+          {expandedItems.has(item.id) ? (
+            <Icons.ChevronUp />
+          ) : (
+            <Icons.ChevronDown />
+          )}
+          {isMobile && (
+            <span className="ml-2 text-xs">
+              {expandedItems.has(item.id) ? t('files.hide') : t('files.label')}
+            </span>
+          )}
+        </button>
+      )}
+
       {/* Stop seeding button */}
       {activeType === 'torrents' &&
         item.download_finished &&
@@ -89,31 +114,6 @@ export default function ItemActionButtons({
         >
           {isDownloading ? <Spinner size="sm" /> : <Icons.Play />}
           {isMobile && <span className="ml-2 text-xs">{t('start.label')}</span>}
-        </button>
-      )}
-
-      {/* Toggle files button */}
-      {item.download_present && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFiles(item.id);
-          }}
-          className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
-            hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors
-            ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
-          title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
-        >
-          {expandedItems.has(item.id) ? (
-            <Icons.ChevronUp />
-          ) : (
-            <Icons.ChevronDown />
-          )}
-          {isMobile && (
-            <span className="ml-2 text-xs">
-              {expandedItems.has(item.id) ? t('files.hide') : t('files.label')}
-            </span>
-          )}
         </button>
       )}
 

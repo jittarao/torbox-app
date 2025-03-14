@@ -37,7 +37,7 @@ module.exports = {
               dark: '#090f18',
               hover: {
                 DEFAULT: '#efe8d7',
-                dark: '#0c1726',
+                dark: '#0c1420',
               },
             },
           },
@@ -55,7 +55,7 @@ module.exports = {
           success: {
             text: '#5f7458',
             'text-dark': '#34D399', // Dark mode success - emerald
-            bg: '#e0f1db',
+            bg: '#dbecd6',
             'bg-dark': '#064E3B', // Dark mode success bg
           },
           // RED
@@ -75,16 +75,24 @@ module.exports = {
           // BLUE
           active: {
             text: '#4f5f7f',
-            'text-dark': '#3B82F6', // Dark mode blue
+            'text-dark': '#5a94f3', // Dark mode blue
             bg: '#dbe0f1',
             'bg-dark': '#1E3A8A', // Dark mode active bg - deep blue
           },
           // GRAY
           default: {
             text: '#5f5f5f',
-            'text-dark': '#6B7280', // Dark mode gray
+            'text-dark': '#95979d', // Dark mode gray
             bg: '#dfdfdf',
             'bg-dark': '#374151', // Dark mode default bg - slightly lighter
+          },
+        },
+        downloaded: {
+          DEFAULT: '#dfe6da',
+          dark: '#0e222b',
+          hover: {
+            DEFAULT: '#d8e5cf',
+            dark: '#101f26',
           },
         },
       },

@@ -11,6 +11,8 @@ export default function CardList({
   apiKey,
   activeColumns,
   onFileSelect,
+  downloadHistory,
+  setDownloadHistory,
   onDelete,
   expandedItems,
   toggleFiles,
@@ -25,7 +27,12 @@ export default function CardList({
   const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
-  const { downloadSingle } = useDownloads(apiKey, activeType);
+  const { downloadSingle } = useDownloads(
+    apiKey,
+    activeType,
+    downloadHistory,
+    setDownloadHistory,
+  );
 
   const handleItemSelection = (
     itemId,
@@ -114,7 +121,12 @@ export default function CardList({
           ? 'web_id'
           : 'torrent_id';
 
-    await downloadSingle(itemId, options, idField, copyLink)
+    const metadata = {
+      assetType: activeType,
+      item: items.find((item) => item.id === itemId),
+    };
+
+    await downloadSingle(itemId, options, idField, copyLink, metadata)
       .then(() => {
         setToast({
           message: t('toast.copyLink'),
@@ -143,6 +155,18 @@ export default function CardList({
     );
   };
 
+  const isItemDownloaded = (itemId) => {
+    return downloadHistory.some(
+      (download) => download.itemId === itemId && !download.fileId,
+    );
+  };
+
+  const isFileDownloaded = (itemId, fileId) => {
+    return downloadHistory.some(
+      (download) => download.itemId === itemId && download.fileId === fileId,
+    );
+  };
+
   return (
     <div className={`flex flex-col gap-2 ${isFullscreen ? 'p-4' : 'p-0'}`}>
       {items.map((item, index) => (
@@ -151,6 +175,10 @@ export default function CardList({
           item={item}
           index={index}
           selectedItems={selectedItems}
+          downloadHistory={downloadHistory}
+          setDownloadHistory={setDownloadHistory}
+          isItemDownloaded={isItemDownloaded}
+          isFileDownloaded={isFileDownloaded}
           isBlurred={isBlurred}
           isDisabled={isDisabled}
           activeColumns={activeColumns}

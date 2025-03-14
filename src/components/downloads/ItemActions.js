@@ -19,9 +19,16 @@ export default function ItemActions({
   activeType = 'torrents',
   isMobile = false,
   viewMode,
+  downloadHistory,
+  setDownloadHistory,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const { downloadSingle } = useDownloads(apiKey, activeType);
+  const { downloadSingle } = useDownloads(
+    apiKey,
+    activeType,
+    downloadHistory,
+    setDownloadHistory,
+  );
   const { controlTorrent, controlQueuedItem } = useUpload(apiKey);
   const t = useTranslations('ItemActions');
 
@@ -42,13 +49,23 @@ export default function ItemActions({
           ? 'web_id'
           : 'torrent_id';
 
+    const metadata = {
+      assetType: activeType,
+      item: item,
+    };
     // If there's only one file, download it directly
     if (item.files.length === 1) {
-      await downloadSingle(item.id, { fileId: item.files[0].id }, idField);
+      await downloadSingle(
+        item.id,
+        { fileId: item.files[0].id },
+        idField,
+        false,
+        metadata,
+      );
       return;
     } else {
       // Otherwise, download the item as a zip
-      await downloadSingle(item.id, { fileId: null }, idField);
+      await downloadSingle(item.id, { fileId: null }, idField, false, metadata);
     }
   };
 

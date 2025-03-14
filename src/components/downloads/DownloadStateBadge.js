@@ -12,16 +12,33 @@ export default function DownloadStateBadge({ item, size = 'default' }) {
   const getMatchingStatus = () => {
     if (isQueued) return { label: 'queued' };
 
-    return STATUS_OPTIONS.find((option) => {
-      if (option.value === 'all' || option.value.is_queued) return false;
+    // First check for specific download states
+    const stateSpecificStatus = STATUS_OPTIONS.find((option) => {
+      if (!option.value.download_state) return false;
 
-      return Object.entries(option.value).every(([key, value]) => {
-        if (key === 'download_state') {
-          const states = Array.isArray(value) ? value : [value];
-          return states.some((state) => item.download_state?.includes(state));
-        }
-        return item[key] === value;
-      });
+      const states = Array.isArray(option.value.download_state)
+        ? option.value.download_state
+        : [option.value.download_state];
+
+      return states.some((state) =>
+        item.download_state?.toLowerCase().includes(state.toLowerCase()),
+      );
+    });
+
+    if (stateSpecificStatus) return stateSpecificStatus;
+
+    // Then check for other status conditions
+    return STATUS_OPTIONS.find((option) => {
+      if (
+        option.value === 'all' ||
+        option.value.is_queued ||
+        option.value.download_state
+      )
+        return false;
+
+      return Object.entries(option.value).every(
+        ([key, value]) => item[key] === value,
+      );
     });
   };
 
@@ -36,6 +53,10 @@ export default function DownloadStateBadge({ item, size = 'default' }) {
     Uploading:
       'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark',
     Downloading:
+      'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
+    Checking_Resume_Data:
+      'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
+    Meta_DL:
       'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
     Queued:
       'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',

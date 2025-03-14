@@ -16,6 +16,10 @@ export default function ItemCard({
   item,
   index,
   selectedItems,
+  downloadHistory,
+  setDownloadHistory,
+  isItemDownloaded,
+  isFileDownloaded,
   isBlurred,
   isDisabled,
   activeColumns,
@@ -160,7 +164,9 @@ export default function ItemCard({
       className={`${
         selectedItems.items?.has(item.id)
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-          : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
+          : isItemDownloaded(item.id)
+            ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+            : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } px-2 py-4 md:p-4 relative rounded-lg border border-border dark:border-border-dark overflow-hidden cursor-pointer`}
     >
       <div className="flex justify-between gap-2">
@@ -179,9 +185,22 @@ export default function ItemCard({
                 isBlurred ? 'blur-sm select-none' : ''
               }`}
             >
-              <Tooltip content={item.name || 'Unnamed Item'}>
-                {item.name || 'Unnamed Item'}
-              </Tooltip>
+              <div className="flex items-center gap-2">
+                <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
+                  <span
+                    className={`inline-block w-2 h-2 rounded-full ${
+                      item.cached
+                        ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
+                        : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
+                    }`}
+                  ></span>
+                </Tooltip>
+                {item.name && (
+                  <Tooltip content={!isBlurred ? item.name : ''}>
+                    <span>{item.name || 'Unnamed Item'}</span>
+                  </Tooltip>
+                )}
+              </div>
             </h3>
           </div>
 
@@ -190,10 +209,7 @@ export default function ItemCard({
               isMobile ? 'gap-2' : 'gap-4'
             } text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
           >
-            <DownloadStateBadge
-              item={item}
-              size={isMobile ? 'xs' : 'default'}
-            />
+            <DownloadStateBadge item={item} size={isMobile ? 'xs' : 'sm'} />
             {!isMobile ? (
               <>
                 {filteredColumns.map((column) => (
@@ -238,6 +254,8 @@ export default function ItemCard({
             setToast={setToast}
             activeType={activeType}
             viewMode={viewMode}
+            downloadHistory={downloadHistory}
+            setDownloadHistory={setDownloadHistory}
           />
 
           {item.active && (
@@ -264,6 +282,7 @@ export default function ItemCard({
           files={item.files}
           itemId={item.id}
           selectedItems={selectedItems}
+          isFileDownloaded={isFileDownloaded}
           isDisabled={isDisabled(item.id)}
           isBlurred={isBlurred}
           onFileSelect={onFileSelect}

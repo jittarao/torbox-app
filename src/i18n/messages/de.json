@@ -20,7 +20,8 @@
     "menu": {
       "downloads": "Downloads",
       "search": "Suchen ",
-      "toggle": "Menü umschalten"
+      "toggle": "Menü umschalten",
+      "linkHistory": "Link-Verlauf"
     }
   },
   "LandingPage": {
@@ -257,6 +258,8 @@
     "Seeding": "Seeding ",
     "stalled": "Blockiert",
     "uploading": "Hochladen ",
+    "checking_resume_data": "Daten wiederherstellen überprüfen",
+    "meta_dl": "Meta-DL",
     "unknown": "Unbekannt"
   },
   "ItemActions": {
@@ -364,5 +367,21 @@
   "FileActions": {
     "copyLink": "Link kopieren",
     "download": "Datei herunterladen"
+  },
+  "LinkHistory": {
+    "title": "Link-Verlauf",
+    "columns": {
+      "itemId": "Artikel-ID",
+      "itemName": "Artikelname",
+      "fileName": "Dateiname",
+      "expiresAt": "Ablaufdatum",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "copy": "Kopieren",
+      "download": "Herunterladen",
+      "remove": "Entfernen"
+    },
+    "expired": "Abgelaufen"
   }
 }

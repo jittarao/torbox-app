@@ -22,6 +22,8 @@ export default function ItemsTable({
   handleSelectAll,
   handleFileSelect,
   handleRowSelect,
+  downloadHistory,
+  setDownloadHistory,
   isBlurred,
   deleteItem,
   setToast,
@@ -108,6 +110,8 @@ export default function ItemsTable({
             onRowSelect={handleRowSelect}
             onFileSelect={handleFileSelect}
             setSelectedItems={setSelectedItems}
+            downloadHistory={downloadHistory}
+            setDownloadHistory={setDownloadHistory}
             apiKey={apiKey}
             onDelete={deleteItem}
             setToast={setToast}

@@ -20,7 +20,8 @@
     "menu": {
       "downloads": "Téléchargements",
       "search": "Rechercher",
-      "toggle": "Basculer le menu"
+      "toggle": "Basculer le menu",
+      "linkHistory": "Historique des liens"
     }
   },
   "LandingPage": {
@@ -254,9 +255,11 @@
     "échoué": "Échoué",
     "inactif": "Inactif",
     "en attente": "En attente",
-    "seeding": "Seeding",
-    "stalled": "Stalled",
+    "seeding": "Sembrando",
+    "stalled": "En pausa",
     "uploading": "Téléverser",
+    "checking_resume_data": "Comprobando datos de resumen",
+    "meta_dl": "Descargando metadatos",
     "unknown": "Inconnu"
   },
   "ItemActions": {
@@ -364,5 +367,21 @@
   "FileActions": {
     "copyLink": "Copier le lien",
     "download": "Télécharger le fichier"
+  },
+  "LinkHistory": {
+    "title": "Historique des liens",
+    "columns": {
+      "itemId": "ID de l'élément",
+      "itemName": "Nom de l'élément",
+      "fileName": "Nom du fichier",
+      "expiresAt": "Date d'expiration",
+      "actions": "Actions"
+    },
+    "actions": {
+      "copy": "Copier",
+      "download": "Télécharger",
+      "remove": "Supprimer"
+    },
+    "expired": "Expiré"
   }
 }

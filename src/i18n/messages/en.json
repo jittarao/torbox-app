@@ -20,7 +20,8 @@
     "menu": {
       "downloads": "Downloads",
       "search": "Search",
-      "toggle": "Toggle menu"
+      "toggle": "Toggle menu",
+      "linkHistory": "Link History"
     }
   },
   "LandingPage": {
@@ -257,6 +258,8 @@
     "seeding": "Seeding",
     "stalled": "Stalled",
     "uploading": "Uploading",
+    "checking_resume_data": "Checking Resume Data",
+    "meta_dl": "Meta DL",
     "unknown": "Unknown"
   },
   "ItemActions": {
@@ -364,5 +367,21 @@
   "FileActions": {
     "copyLink": "Copy Link",
     "download": "Download File"
+  },
+  "LinkHistory": {
+    "title": "Link History",
+    "columns": {
+      "itemId": "Item ID",
+      "itemName": "Item Name",
+      "fileName": "File Name",
+      "expiresAt": "Expires At",
+      "actions": "Actions"
+    },
+    "actions": {
+      "copy": "Copy",
+      "download": "Download",
+      "remove": "Remove"
+    },
+    "expired": "Expired"
   }
 }

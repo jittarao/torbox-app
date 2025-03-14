@@ -16,6 +16,8 @@ export default function TableBody({
   onRowSelect,
   onFileSelect,
   setSelectedItems,
+  downloadHistory,
+  setDownloadHistory,
   expandedItems,
   toggleFiles,
   apiKey,
@@ -32,7 +34,12 @@ export default function TableBody({
   const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
-  const { downloadSingle } = useDownloads(apiKey, activeType);
+  const { downloadSingle } = useDownloads(
+    apiKey,
+    activeType,
+    downloadHistory,
+    setDownloadHistory,
+  );
   const isMobile = useIsMobile();
 
   const handleItemSelection = (
@@ -122,7 +129,12 @@ export default function TableBody({
           ? 'web_id'
           : 'torrent_id';
 
-    await downloadSingle(itemId, options, idField, copyLink)
+    const metadata = {
+      assetType: activeType,
+      item: items.find((item) => item.id === itemId),
+    };
+
+    await downloadSingle(itemId, options, idField, copyLink, metadata)
       .then(() => {
         setToast({
           message: t('toast.copyLink'),
@@ -162,6 +174,8 @@ export default function TableBody({
             selectedItems={selectedItems}
             setItems={setItems}
             setSelectedItems={setSelectedItems}
+            downloadHistory={downloadHistory}
+            setDownloadHistory={setDownloadHistory}
             onRowSelect={onRowSelect}
             expandedItems={expandedItems}
             toggleFiles={toggleFiles}
@@ -182,6 +196,7 @@ export default function TableBody({
               selectedItems={selectedItems}
               handleFileSelection={handleFileSelection}
               handleFileDownload={handleFileDownload}
+              downloadHistory={downloadHistory}
               activeColumns={activeColumns}
               isMobile={isMobile}
               isBlurred={isBlurred}

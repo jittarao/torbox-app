@@ -33,7 +33,7 @@ export const useStatusCounts = (unfilteredItems) => {
 
   // Update the label key in STATUS_OPTIONS to include counts
   const statusOptions = useMemo(() => {
-    return STATUS_OPTIONS.map((option) => {
+    return STATUS_OPTIONS.filter((option) => !option.hidden).map((option) => {
       if (option.label === 'All') {
         return {
           ...option,

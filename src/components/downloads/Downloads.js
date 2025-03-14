@@ -24,6 +24,7 @@ export default function Downloads({ apiKey }) {
   const [activeType, setActiveType] = useState('torrents');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
+  const [downloadHistory, setDownloadHistory] = useState([]);
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
@@ -48,7 +49,7 @@ export default function Downloads({ apiKey }) {
     downloadProgress,
     handleBulkDownload,
     setDownloadLinks,
-  } = useDownloads(apiKey, activeType);
+  } = useDownloads(apiKey, activeType, downloadHistory, setDownloadHistory);
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
@@ -87,6 +88,13 @@ export default function Downloads({ apiKey }) {
     const storedViewMode = localStorage.getItem('downloads-view-mode');
     if (storedViewMode) {
       setViewMode(storedViewMode);
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedDownloadHistory = localStorage.getItem('torboxDownloadHistory');
+    if (storedDownloadHistory) {
+      setDownloadHistory(JSON.parse(storedDownloadHistory));
     }
   }, []);
 
@@ -218,6 +226,8 @@ export default function Downloads({ apiKey }) {
                 handleFileSelect={handleFileSelect}
                 handleRowSelect={handleRowSelect}
                 setSelectedItems={setSelectedItems}
+                downloadHistory={downloadHistory}
+                setDownloadHistory={setDownloadHistory}
                 isBlurred={isBlurred}
                 deleteItem={deleteItem}
                 sortedItems={sortedItems}
@@ -237,6 +247,8 @@ export default function Downloads({ apiKey }) {
                 apiKey={apiKey}
                 activeColumns={activeColumns}
                 onFileSelect={handleFileSelect}
+                downloadHistory={downloadHistory}
+                setDownloadHistory={setDownloadHistory}
                 onDelete={deleteItem}
                 expandedItems={expandedItems}
                 toggleFiles={toggleFiles}

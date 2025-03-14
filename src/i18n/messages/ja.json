@@ -20,7 +20,8 @@
     "menu": {
       "downloads": "ダウンロード",
       "search": "検索",
-      "toggle": "メニューの切り替え"
+      "toggle": "メニューの切り替え",
+      "linkHistory": "リンク履歴"
     }
   },
   "LandingPage": {
@@ -257,6 +258,8 @@
     "seeding": "シーディング",
     "stalled": "ブロックされた",
     "uploading": "アップロード中",
+    "checking_resume_data": "リザムーデータのチェック中",
+    "meta_dl": "メタデータのダウンロード中",
     "unknown": "不明"
   },
   "ItemActions": {
@@ -364,5 +367,21 @@
   "FileActions": {
     "copyLink": "リンクをコピー",
     "download": "ファイルをダウンロード"
+  },
+  "LinkHistory": {
+    "title": "リンク履歴",
+    "columns": {
+      "itemId": "アイテムID",
+      "itemName": "アイテム名",
+      "fileName": "ファイル名",
+      "expiresAt": "有効期限",
+      "actions": "アクション"
+    },
+    "actions": {
+      "copy": "コピー",
+      "download": "ダウンロード",
+      "remove": "削除"
+    },
+    "expired": "期限切れ"
   }
 }

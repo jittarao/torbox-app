@@ -20,7 +20,8 @@
     "menu": {
       "downloads": "Descargas",
       "search": "Buscar",
-      "toggle": "Activar menú"
+      "toggle": "Activar menú",
+      "linkHistory": "Historial de enlaces"
     }
   },
   "LandingPage": {
@@ -98,10 +99,10 @@
       "Torrent": "Torrent",
       "torrents": "torrents",
       "Torrents": "Torrents",
-      "file": "file",
-      "File": "File",
-      "files": "files",
-      "Files": "Files",
+      "file": "archivo",
+      "File": "Archivo",
+      "files": "archivos",
+      "Files": "Archivos",
       "usenet": "usenet",
       "Usenet": "Usenet",
       "usenets": "usenets",
@@ -254,15 +255,17 @@
     "failed": "Fallido",
     "inactive": "Inactivo",
     "queued": "En cola",
-    "seeding": "Seeding",
-    "stalled": "Stalled",
-    "uploading": "Uploading",
-    "unknown": "Unknown"
+    "seeding": "Sembrando",
+    "stalled": "En pausa",
+    "uploading": "Subiendo",
+    "checking_resume_data": "Comprobando datos de resumen",
+    "meta_dl": "Descargando metadatos",
+    "unknown": "Desconocido"
   },
   "ItemActions": {
     "toast": {
-      "noFiles": "No files available to download",
-      "downloadStarted": "Download started successfully",
+      "noFiles": "No hay archivos disponibles para descargar",
+      "downloadStarted": "Descarga iniciada correctamente",
       "downloadFailed": "Error al iniciar la descarga",
       "seedingStopped": "Torrent no pudo iniciar la propagación correctamente",
       "seedingStopFailed": "Torrent no pudo detener la propagación correctamente",
@@ -364,5 +367,21 @@
   "FileActions": {
     "copyLink": "Copiar enlace",
     "download": "Descargar archivo"
+  },
+  "LinkHistory": {
+    "title": "Historial de enlaces",
+    "columns": {
+      "itemId": "ID del elemento",
+      "itemName": "Nombre del elemento",
+      "fileName": "Nombre del archivo",
+      "expiresAt": "Caduca a",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "copy": "Copiar",
+      "download": "Descargar",
+      "remove": "Eliminar"
+    },
+    "expired": "Expirado"
   }
 }

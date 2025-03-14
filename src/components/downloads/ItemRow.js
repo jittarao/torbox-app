@@ -19,6 +19,8 @@ export default function ItemRow({
   setSelectedItems,
   handleItemSelection,
   setItems,
+  downloadHistory,
+  setDownloadHistory,
   onRowSelect,
   expandedItems,
   toggleFiles,
@@ -48,11 +50,22 @@ export default function ItemRow({
                 isMobile ? 'break-all' : 'whitespace-nowrap truncate'
               } flex-1 cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
             >
-              {item.name && (
-                <Tooltip content={!isBlurred ? item.name : ''}>
-                  <span>{item.name || 'Unnamed Item'}</span>
+              <div className="flex items-center gap-2">
+                <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
+                  <span
+                    className={`inline-block w-2 h-2 rounded-full ${
+                      item.cached
+                        ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
+                        : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
+                    }`}
+                  ></span>
                 </Tooltip>
-              )}
+                {item.name && (
+                  <Tooltip content={!isBlurred ? item.name : ''}>
+                    <span>{item.name || 'Unnamed Item'}</span>
+                  </Tooltip>
+                )}
+              </div>
             </div>
             {/* Show additional info on mobile */}
             {isMobile && (
@@ -229,12 +242,18 @@ export default function ItemRow({
   // For mobile, we'll only show the name column
   const visibleColumns = isMobile ? ['name'] : activeColumns;
 
+  const isDownloaded = downloadHistory.some(
+    (download) => download.itemId === item.id && !download.fileId,
+  );
+
   return (
     <tr
       className={`${
         selectedItems.items?.has(item.id)
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-          : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
+          : isDownloaded
+            ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+            : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
@@ -279,6 +298,8 @@ export default function ItemRow({
           activeType={activeType}
           isMobile={isMobile}
           viewMode={viewMode}
+          downloadHistory={downloadHistory}
+          setDownloadHistory={setDownloadHistory}
         />
       </td>
     </tr>

@@ -11,6 +11,7 @@ export default function FileRow({
   handleFileSelection,
   handleFileDownload,
   activeColumns,
+  downloadHistory,
   isCopying,
   isDownloading,
   isMobile = false,
@@ -26,6 +27,10 @@ export default function FileRow({
         const isChecked =
           selectedItems.files.get(item.id)?.has(file.id) || false;
         const isDisabled = selectedItems.items?.has(item.id);
+        const isDownloaded = downloadHistory.some(
+          (download) =>
+            download.itemId === item.id && download.fileId === file.id,
+        );
 
         return (
           <tr
@@ -33,7 +38,9 @@ export default function FileRow({
             className={`border-accent/5 dark:border-accent-dark/5 ${
               isChecked
                 ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-                : 'bg-surface dark:bg-surface-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark'
+                : isDownloaded
+                  ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+                  : 'bg-surface dark:bg-surface-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark'
             } transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
