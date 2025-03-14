@@ -66,7 +66,9 @@
       "message": "Möchten Sie {count} {type} wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden. ",
       "cancel": "Abbrechen",
       "confirm": "Löschen ",
-      "deleting": "Löschen..."
+      "deleting": "Löschen...",
+      "includeParentDownloads": "Übergeordnete Downloads löschen",
+      "includeParentDownloadsTooltip": "Wenn Dateien innerhalb von Downloads ausgewählt sind, wird diese Option die gesamten Downloads löschen."
     },
     "clear": "Löschen"
   },

@@ -66,7 +66,9 @@
       "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
       "cancel": "Cancel",
       "confirm": "Delete",
-      "deleting": "Deleting..."
+      "deleting": "Deleting...",
+      "includeParentDownloads": "Delete parent downloads",
+      "includeParentDownloadsTooltip": "When files within downloads are selected, checking this option will delete the entire download."
     },
     "clear": "Clear"
   },

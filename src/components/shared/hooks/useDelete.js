@@ -153,12 +153,27 @@ export function useDelete(
     }
   };
 
-  const deleteItems = async (selectedItems) => {
-    if (!apiKey || selectedItems.items.size === 0) return;
+  const deleteItems = async (selectedItems, deleteParentDownloads = false) => {
+    if (
+      !apiKey ||
+      (selectedItems.items.size === 0 && selectedItems.files.size === 0)
+    )
+      return;
 
     try {
       setIsDeleting(true);
-      return await batchDelete(Array.from(selectedItems.items));
+
+      // Start with explicitly selected items
+      const itemsToDelete = new Set(selectedItems.items);
+
+      // If deleteParentDownloads is true, add parent download IDs to the deletion set
+      if (deleteParentDownloads && selectedItems.files.size > 0) {
+        selectedItems.files.forEach((_, parentId) => {
+          itemsToDelete.add(parentId);
+        });
+      }
+
+      return await batchDelete(Array.from(itemsToDelete));
     } catch (error) {
       console.error('Error bulk deleting:', error);
       setToast({

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { phEvent } from '@/utils/sa';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
+import Icons from '@/components/icons';
+import Tooltip from '@/components/shared/Tooltip';
 
 export default function ActionButtons({
   selectedItems,
@@ -18,6 +20,7 @@ export default function ActionButtons({
 }) {
   const t = useTranslations('ActionButtons');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const isMobile = useIsMobile();
 
   const handleDownloadClick = () => {
@@ -44,7 +47,7 @@ export default function ActionButtons({
         {getDownloadButtonText()}
       </button>
 
-      {selectedItems.items?.size > 0 && !hasSelectedFiles() && (
+      {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
         <>
           <button
             onClick={() => setShowDeleteConfirm(true)}
@@ -65,13 +68,35 @@ export default function ActionButtons({
                 </h3>
                 <p className="text-primary-text/70 dark:text-primary-text-dark/70 mb-6">
                   {t('deleteConfirm.message', {
-                    count: selectedItems.items?.size,
+                    count:
+                      selectedItems.items?.size +
+                      (deleteParentDownloads ? selectedItems.files?.size : 0),
                     type:
                       selectedItems.items?.size === 1
                         ? itemTypeName
                         : itemTypePlural,
                   })}
                 </p>
+
+                {hasSelectedFiles() && (
+                  <label className="flex gap-3 mb-6 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+                    <input
+                      type="checkbox"
+                      checked={deleteParentDownloads}
+                      onChange={(e) =>
+                        setDeleteParentDownloads(e.target.checked)
+                      }
+                      className="rounded border-gray-300 text-accent focus:ring-accent"
+                    />
+                    {t('deleteConfirm.includeParentDownloads')}
+                    <Tooltip
+                      content={t('deleteConfirm.includeParentDownloadsTooltip')}
+                    >
+                      <Icons.Question />
+                    </Tooltip>
+                  </label>
+                )}
+
                 <div className="flex justify-end gap-4">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
@@ -83,8 +108,10 @@ export default function ActionButtons({
                   <button
                     onClick={() => {
                       setShowDeleteConfirm(false);
-                      onBulkDelete();
-                      phEvent('delete_items');
+                      onBulkDelete(deleteParentDownloads);
+                      phEvent('delete_items', {
+                        includeParents: deleteParentDownloads,
+                      });
                     }}
                     disabled={isDeleting}
                     className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 

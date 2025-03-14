@@ -198,7 +198,9 @@ export default function Downloads({ apiKey }) {
                   handleBulkDownload(selectedItems, sortedItems)
                 }
                 isDeleting={isDeleting}
-                onBulkDelete={() => deleteItems(selectedItems)}
+                onBulkDelete={(includeParentDownloads) =>
+                  deleteItems(selectedItems, includeParentDownloads)
+                }
                 activeType={activeType}
                 isBlurred={isBlurred}
                 onBlurToggle={() => setIsBlurred(!isBlurred)}

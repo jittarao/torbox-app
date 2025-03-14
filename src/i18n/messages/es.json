@@ -66,7 +66,9 @@
       "message": "¿Está seguro de que desea eliminar {count} {type}? Esta acción no se puede deshacer.",
       "cancel": "Cancelar",
       "confirm": "Eliminar",
-      "deleting": "Eliminando..."
+      "deleting": "Eliminando...",
+      "includeParentDownloads": "Eliminar descargas",
+      "includeParentDownloadsTooltip": "Cuando se seleccionan archivos dentro de descargas, esta opción eliminará la descarga completa."
     },
     "clear": "Borrar"
   },
