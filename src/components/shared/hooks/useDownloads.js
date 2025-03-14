@@ -17,7 +17,9 @@ const getDownloadHistory = () => {
 const addToDownloadHistory = (link) => {
   const history = getDownloadHistory();
   history.unshift(link);
-  localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(history));
+  // Keep only last 200 entries
+  const trimmedHistory = history.slice(0, 200);
+  localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(trimmedHistory));
 };
 
 export function useDownloads(
@@ -137,6 +139,22 @@ export function useDownloads(
         const resultId =
           fileId !== undefined && fileId !== null ? `${id}-${fileId}` : id;
 
+        // Optimize metadata for storage
+        const optimizedMetadata = {
+          ...metadata,
+          item: fileId
+            ? {
+                ...metadata.item,
+                files: metadata.item?.files?.filter(
+                  (file) => file.id === fileId,
+                ),
+              }
+            : {
+                ...metadata.item,
+                files: undefined,
+              },
+        };
+
         // Store in localStorage
         const newDownloadHistory = {
           id: resultId,
@@ -145,7 +163,7 @@ export function useDownloads(
           url: downloadUrl,
           assetType,
           generatedAt: new Date().toISOString(),
-          metadata,
+          metadata: optimizedMetadata,
         };
         addToDownloadHistory(newDownloadHistory);
         setDownloadHistory((prev) => [newDownloadHistory, ...prev]);
