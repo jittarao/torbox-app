@@ -152,7 +152,8 @@
     "placeholder": {
       "torrents": "Magnet-Links hier einfügen (einer pro Zeile) ",
       "usenet": "Fügen Sie hier NZB-Links ein (einer pro Zeile) ",
-      "webdl": "Fügen Sie hier Web-Download-Links ein (einer pro Zeile)"
+      "webdl": "Fügen Sie hier Web-Download-Links ein (einer pro Zeile)",
+      "webdlPassword": "Passwort eingeben (optional)"
     },
     "dropzone": {
       "torrents": "Legen Sie Torrent-Dateien hier ab ",

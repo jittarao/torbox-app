@@ -37,6 +37,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   const [linkInput, setLinkInput] = useState(''); // Input for links (magnet, nzb, webdl)
   const [isClient, setIsClient] = useState(false); // Track if component is mounted
+  const [webdlPassword, setWebdlPassword] = useState(''); // Add password state
 
   // Global upload options to apply to all uploaded assets + auto start options
   const [globalOptions, setGlobalOptions] = useState(DEFAULT_OPTIONS);
@@ -232,9 +233,22 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       }
     }
 
+    if (item.type === 'torrent' || item.type === 'magnet') {
+      formData.append('seed', item.seed);
+      formData.append('allow_zip', item.allowZip);
+    }
+
+    // Add password if activeType is webdl
+    if (assetType === 'webdl' && webdlPassword) {
+      formData.append('password', webdlPassword);
+    }
+
+    // Add name if it exists
+    if (item.name) {
+      formData.append('name', item.name);
+    }
+
     // Add common options
-    formData.append('seed', item.seed);
-    formData.append('allow_zip', item.allowZip);
     if (globalOptions.asQueued) {
       formData.append('as_queued', item.asQueued);
     }
@@ -390,6 +404,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     controlTorrent,
     controlQueuedItem,
     assetType,
+    webdlPassword,
+    setWebdlPassword,
   };
 };
 

@@ -152,7 +152,8 @@
     "placeholder": {
       "torrents": "Paste magnet links here (one per line)",
       "usenet": "Coller les liens NZB ici (un par ligne)",
-      "webdl": "Coller les liens de téléchargement Web ici (un par ligne)"
+      "webdl": "Coller les liens de téléchargement Web ici (un par ligne)",
+      "webdlPassword": "Entrer le mot de passe (optionnel)"
     },
     "dropzone": {
       "torrents": "Déposer les fichiers torrent ici",

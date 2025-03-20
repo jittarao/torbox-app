@@ -31,6 +31,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     uploadItems,
     isUploading,
     progress,
+    webdlPassword,
+    setWebdlPassword,
   } = useUpload(apiKey, activeType);
 
   // State to track if the uploader is expanded or collapsed
@@ -157,11 +159,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     setLinkInput(linkInput);
   };
 
-  const uploaderShowOptionsText = isMobile ? 'Show options' : 'Show options';
-  const uploaderHideOptionsText = isMobile ? 'Hide options' : 'Hide options';
-  const uploaderShowSectionText = isMobile ? 'Show' : 'Show section';
-  const uploaderHideSectionText = isMobile ? 'Hide' : 'Hide section';
-
   // Don't render anything until client-side hydration is complete
   if (!isClient) return null;
 
@@ -257,6 +254,18 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               </div>
             )}
           </div>
+
+          {activeType === 'webdl' && (
+            <div className="mt-2">
+              <input
+                type="password"
+                value={webdlPassword}
+                onChange={(e) => setWebdlPassword(e.target.value)}
+                placeholder={t('placeholder.webdlPassword')}
+                className="w-full p-2 border border-border dark:border-border-dark rounded-lg bg-transparent text-sm lg:text-base text-primary-text dark:text-primary-text-dark placeholder-primary-text/50 dark:placeholder-primary-text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors duration-200"
+              />
+            </div>
+          )}
 
           {/* Options section */}
           {activeType === 'torrents' && (
