@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 
 const ACTIONS_COLUMN_WIDTH = 210;
 const CHECKBOX_COLUMN_WIDTH = 60;
+const EXTRA_COLUMN_PADDING = 10;
 
 export default function FileRow({
   item,
@@ -88,7 +89,10 @@ export default function FileRow({
                 className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4'}`}
                 style={{
                   maxWidth:
-                    tableWidth - ACTIONS_COLUMN_WIDTH - CHECKBOX_COLUMN_WIDTH,
+                    tableWidth -
+                    ACTIONS_COLUMN_WIDTH -
+                    CHECKBOX_COLUMN_WIDTH -
+                    EXTRA_COLUMN_PADDING,
                 }}
               >
                 <div
