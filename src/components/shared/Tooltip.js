@@ -10,8 +10,6 @@ export default function Tooltip({ children, content, position = 'top' }) {
     if (!triggerRef.current || !isVisible) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
-    const computedStyle = window.getComputedStyle(triggerRef.current);
-    const visibleWidth = parseFloat(computedStyle.width);
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -20,11 +18,11 @@ export default function Tooltip({ children, content, position = 'top' }) {
     switch (position) {
       case 'top':
         top = rect.top - 4;
-        left = rect.left + visibleWidth / 2;
+        left = rect.left + rect.width / 2;
         break;
       case 'bottom':
         top = rect.top + rect.height + 4;
-        left = rect.left + visibleWidth / 2;
+        left = rect.left + rect.width / 2;
         break;
       case 'left':
         top = rect.top + rect.height / 2;
@@ -32,22 +30,31 @@ export default function Tooltip({ children, content, position = 'top' }) {
         break;
       case 'right':
         top = rect.top + rect.height / 2;
-        left = rect.left + visibleWidth + 4;
+        left = rect.left + rect.width + 4;
         break;
       default:
         top = rect.top - 4;
-        left = rect.left + visibleWidth / 2;
+        left = rect.left + rect.width / 2;
     }
 
     // Ensure tooltip stays within viewport bounds
     const tooltipWidth = 500; // Approximate max width
     const tooltipHeight = 40; // Approximate height
+    const tooltipHalfWidth = tooltipWidth / 2;
 
-    // Adjust horizontal position if tooltip would go off screen
-    if (left + tooltipWidth / 2 > viewportWidth) {
-      left = viewportWidth - tooltipWidth / 2;
-    } else if (left - tooltipWidth / 2 < 0) {
-      left = tooltipWidth / 2;
+    let translateXOffset = 0;
+    let arrowOffset = '50%';
+
+    if (left - tooltipHalfWidth < 0) {
+      // If tooltip would go off left edge, pin it to left edge and adjust transform
+      translateXOffset = -(tooltipHalfWidth - left);
+      arrowOffset = `${(left / tooltipWidth) * 100}%`;
+      left = tooltipHalfWidth;
+    } else if (left + tooltipHalfWidth > viewportWidth) {
+      // If tooltip would go off right edge, pin it to right edge and adjust transform
+      translateXOffset = -(left + tooltipHalfWidth - viewportWidth);
+      arrowOffset = `${((viewportWidth - left) / tooltipWidth) * 100}%`;
+      left = viewportWidth - tooltipHalfWidth;
     }
 
     // Adjust vertical position if tooltip would go off screen
@@ -57,7 +64,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
       top = rect.top - tooltipHeight - 4; // Switch to top position
     }
 
-    setTooltipPosition({ top, left });
+    setTooltipPosition({ top, left, translateXOffset, arrowOffset });
   };
 
   useEffect(() => {
@@ -76,7 +83,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
     position: 'fixed',
     top: tooltipPosition.top,
     left: tooltipPosition.left,
-    transform: 'translate(-50%, -100%)',
+    transform: `translate(calc(-50% + ${tooltipPosition.translateXOffset || 0}px), -100%)`,
     zIndex: 9999,
     marginTop: -8,
     maxWidth: '500px',
@@ -87,7 +94,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
   const arrowPosition = {
     position: 'absolute',
     top: '100%',
-    left: '50%',
+    left: tooltipPosition.arrowOffset || '50%',
     transform: 'translate(-50%, -50%) rotate(45deg)',
     width: '8px',
     height: '8px',

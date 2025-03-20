@@ -94,6 +94,7 @@ export default function ItemRow({
           </td>
         );
       case 'created_at':
+      case 'cached_at':
       case 'updated_at':
       case 'expires_at':
         return (
@@ -285,7 +286,7 @@ export default function ItemRow({
         />
       </td>
       {visibleColumns.map((columnId) => renderCell(columnId))}
-      <td className="px-3 md:px-4 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit">
+      <td className="px-3 md:px-4 py-4 pb-[16.5] whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
         <ItemActions
           item={item}
           apiKey={apiKey}

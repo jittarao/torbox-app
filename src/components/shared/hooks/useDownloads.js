@@ -234,13 +234,35 @@ export function useDownloads(
 
     // Create array of all download tasks
     const downloadTasks = [
-      ...Array.from(selectedItems.items).map((id) => ({
-        type: 'item',
-        id,
-        name:
-          items.find((t) => t.id === id)?.name ||
-          `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${id}`,
-      })),
+      ...Array.from(selectedItems.items).flatMap((id) => {
+        const item = items.find((t) => t.id === id);
+        if (item?.files?.length === 1) {
+          // If there's exactly one file, create a file task
+          return {
+            type: 'file',
+            itemId: id,
+            fileId: item.files[0].id,
+            name: item.files[0].name || `File ${item.files[0].id}`,
+            metadata: {
+              assetType,
+              item,
+            },
+          };
+        } else {
+          // Otherwise, create an item task
+          return {
+            type: 'item',
+            id,
+            name:
+              item?.name ||
+              `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${id}`,
+            metadata: {
+              assetType,
+              item,
+            },
+          };
+        }
+      }),
       ...Array.from(selectedItems.files.entries()).flatMap(
         ([itemId, fileIds]) => {
           const item = items.find((t) => t.id === itemId);
@@ -251,6 +273,13 @@ export function useDownloads(
             name:
               item?.files?.find((f) => f.id === fileId)?.name ||
               `File ${fileId}`,
+            metadata: {
+              assetType,
+              item: {
+                ...item,
+                files: item.files.filter((f) => f.id === fileId), // Filter to include only the specific file
+              },
+            },
           }));
         },
       ),
@@ -261,20 +290,16 @@ export function useDownloads(
       const chunk = downloadTasks.slice(i, i + CONCURRENT_DOWNLOADS);
       const chunkResults = await Promise.all(
         chunk.map(async (task) => {
-          const metadata = {
-            assetType,
-            item: items.find((item) => item.id === task.id),
-          };
           const result =
             task.type === 'item'
-              ? await requestDownloadLink(task.id, {}, null, metadata)
+              ? await requestDownloadLink(task.id, {}, null, task.metadata)
               : await requestDownloadLink(
                   task.itemId,
                   {
                     fileId: task.fileId,
                   },
                   null,
-                  metadata,
+                  task.metadata,
                 );
 
           if (result.success) {

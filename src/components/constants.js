@@ -32,6 +32,7 @@ export const COLUMNS = {
   name: { key: 'name', sortable: true },
   size: { key: 'size', sortable: true },
   created_at: { key: 'created_at', sortable: true },
+  cached_at: { key: 'cached_at', sortable: true },
   updated_at: { key: 'updated_at', sortable: true },
   download_state: { key: 'download_state', sortable: true },
   progress: { key: 'progress', sortable: true },

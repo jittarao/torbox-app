@@ -250,6 +250,7 @@
     "name": "Nom",
     "size": "Taille",
     "created_at": "Date d'ajout",
+    "cached_at": "Date de cache",
     "updated_at": "Dernière mise à jour",
     "download_state": "État",
     "progress": "Progression",

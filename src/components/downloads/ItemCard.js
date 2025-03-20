@@ -70,6 +70,8 @@ export default function ItemCard({
         return columnT('file_count');
       case 'created_at':
         return columnT('created_at');
+      case 'cached_at':
+        return columnT('cached_at');
       case 'updated_at':
         return columnT('updated_at');
       case 'expires_at':
@@ -102,6 +104,7 @@ export default function ItemCard({
       case 'file_count':
         return <Icons.Files />;
       case 'created_at':
+      case 'cached_at':
       case 'updated_at':
       case 'expires_at':
         return <Icons.Clock />;
@@ -134,6 +137,8 @@ export default function ItemCard({
         return item.files?.length || 0;
       case 'created_at':
         return timeAgo(item.created_at, commonT);
+      case 'cached_at':
+        return timeAgo(item.cached_at, commonT);
       case 'updated_at':
         return timeAgo(item.updated_at, commonT);
       case 'expires_at':
@@ -221,9 +226,12 @@ export default function ItemCard({
                       <Tooltip content={getTooltipContent(column)}>
                         {getColumnIcon(column)}{' '}
                       </Tooltip>
-                      {['created_at', 'updated_at', 'expires_at'].includes(
-                        column,
-                      ) ? (
+                      {[
+                        'created_at',
+                        'cached_at',
+                        'updated_at',
+                        'expires_at',
+                      ].includes(column) ? (
                         <Tooltip content={formatDate(item[column])}>
                           <span>{getColumnValue(column, item)}</span>
                         </Tooltip>

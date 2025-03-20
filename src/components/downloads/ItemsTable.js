@@ -33,6 +33,7 @@ export default function ItemsTable({
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [tableWidth, setTableWidth] = useState(0);
 
   // Load mobile notice dismissal preference from localStorage
   useEffect(() => {
@@ -45,6 +46,22 @@ export default function ItemsTable({
       }
     }
   }, []);
+
+  useEffect(() => {
+    updateTableWidth();
+    window.addEventListener('resize', updateTableWidth);
+    return () => {
+      window.removeEventListener('resize', updateTableWidth);
+    };
+  }, []);
+
+  const updateTableWidth = () => {
+    const table = document.getElementById('items-table');
+    if (table) {
+      const width = table.clientWidth;
+      setTableWidth(width);
+    }
+  };
 
   // Save mobile notice dismissal preference to localStorage
   const handleDismissMobileNotice = () => {
@@ -88,7 +105,10 @@ export default function ItemsTable({
         </div>
       )}
 
-      <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
+      <div
+        id="items-table"
+        className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark"
+      >
         <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative">
           <TableHeader
             activeColumns={activeColumns}
@@ -120,6 +140,7 @@ export default function ItemsTable({
             viewMode={viewMode}
             expandedItems={expandedItems}
             toggleFiles={toggleFiles}
+            tableWidth={tableWidth}
           />
         </table>
       </div>

@@ -250,6 +250,7 @@
     "name": "名前",
     "size": "サイズ",
     "created_at": "追加日時",
+    "cached_at": "キャッシュ日時",
     "updated_at": "最終更新日",
     "download_state": "状態",
     "progress": "進行状況",

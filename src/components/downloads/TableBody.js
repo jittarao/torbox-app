@@ -26,6 +26,7 @@ export default function TableBody({
   activeType = 'torrents',
   isBlurred = false,
   viewMode = 'table',
+  tableWidth,
 }) {
   const t = useTranslations('TableBody');
 
@@ -189,6 +190,7 @@ export default function TableBody({
             isMobile={isMobile}
             isBlurred={isBlurred}
             viewMode={viewMode}
+            tableWidth={tableWidth}
           />
           {expandedItems.has(item.id) && item.files && (
             <FileRow
@@ -203,6 +205,7 @@ export default function TableBody({
               isCopying={isCopying}
               isDownloading={isDownloading}
               isTable={true}
+              tableWidth={tableWidth}
             />
           )}
         </Fragment>

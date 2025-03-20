@@ -5,6 +5,10 @@ import { formatSize } from './utils/formatters';
 import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
+
+const ACTIONS_COLUMN_WIDTH = 210;
+const CHECKBOX_COLUMN_WIDTH = 60;
+
 export default function FileRow({
   item,
   selectedItems,
@@ -16,6 +20,7 @@ export default function FileRow({
   isDownloading,
   isMobile = false,
   isBlurred = false,
+  tableWidth,
 }) {
   const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) =>
@@ -29,7 +34,9 @@ export default function FileRow({
         const isDisabled = selectedItems.items?.has(item.id);
         const isDownloaded = downloadHistory.some(
           (download) =>
-            download.itemId === item.id && download.fileId === file.id,
+            (download.itemId === item.id && !download.fileId) || // Complete item downloaded
+            (download.itemId === item.id && download.fileId === file.id) || // Current file downloaded
+            (download.itemId === item.id && item.files.length === 1), // Complete item with single file downloaded
         );
 
         return (
@@ -72,22 +79,27 @@ export default function FileRow({
                 className="accent-accent dark:accent-accent-dark"
               />
             </td>
+
             <td
               className="pl-3 md:pl-6 py-2"
               colSpan={isMobile ? 1 : activeColumns.length}
             >
               <div
                 className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4'}`}
+                style={{
+                  maxWidth:
+                    tableWidth - ACTIONS_COLUMN_WIDTH - CHECKBOX_COLUMN_WIDTH,
+                }}
               >
-                <span
-                  className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-md ${isBlurred ? 'blur-sm select-none' : ''}`}
+                <div
+                  className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-sm select-none' : ''}`}
                 >
                   <Tooltip
                     content={isBlurred ? '' : file.short_name || file.name}
                   >
                     {file.short_name || file.name}
                   </Tooltip>
-                </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <span
                     className="text-xs px-2 py-0.5 rounded-full bg-surface-alt dark:bg-surface-alt-dark 
@@ -106,7 +118,8 @@ export default function FileRow({
                 </div>
               </div>
             </td>
-            <td className="px-3 md:px-4 py-2 whitespace-nowrap text-right sticky right-0 z-10 bg-inherit dark:bg-inherit">
+
+            <td className="px-3 md:px-4 pt-2 pb-[8.5] whitespace-nowrap text-right sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
               {/* Copy link button */}
               <button
                 onClick={(e) => {

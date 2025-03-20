@@ -34,7 +34,7 @@ export default function DownloadStateBadge({ item, size = 'default' }) {
         option.value.is_queued ||
         option.value.download_state
       )
-        return false;
+        return { label: 'unknown' };
 
       return Object.entries(option.value).every(
         ([key, value]) => item[key] === value,

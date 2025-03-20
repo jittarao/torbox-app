@@ -10,17 +10,17 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
     {
       id: 'torrents',
       label: t('itemTypes.Torrents'),
-      icon: <Icons.Torrent className="rotate-[135deg]" />,
+      icon: <Icons.Torrent className="w-4 h-4 md:w-5 md:h-5 rotate-[135deg]" />,
     },
     {
       id: 'usenet',
       label: t('itemTypes.Usenet'),
-      icon: <Icons.Usenet />,
+      icon: <Icons.Usenet className="w-4 h-4 md:w-5 md:h-5" />,
     },
     {
       id: 'webdl',
       label: t('itemTypes.Web'),
-      icon: <Icons.Webdl />,
+      icon: <Icons.Webdl className="w-4 h-4 md:w-5 md:h-5" />,
     },
   ];
 
@@ -41,7 +41,7 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
             `}
           >
             {tab.icon}
-            <span className="min-w-[60px] md:min-w-0">{tab.label}</span>
+            <span className="w-max">{tab.label}</span>
           </button>
         ))}
       </nav>
