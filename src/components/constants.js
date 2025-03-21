@@ -89,8 +89,9 @@ export const STATUS_OPTIONS = [
   {
     label: 'Downloading',
     value: {
-      download_finished: false,
       active: true,
+      download_finished: false,
+      download_present: false,
     },
     hidden: false,
   },
@@ -118,7 +119,10 @@ export const STATUS_OPTIONS = [
   {
     label: 'Stalled',
     value: {
-      download_state: ['stalled', 'stalled (no seeds)'],
+      download_state: ['stalled', 'stalledDL', 'stalled (no seeds)'],
+      active: true,
+      download_finished: false,
+      download_present: false,
     },
     hidden: false,
   },
@@ -126,14 +130,22 @@ export const STATUS_OPTIONS = [
   {
     label: 'Inactive',
     value: {
-      download_finished: true,
-      download_present: false,
       active: false,
+      download_present: false,
     },
     hidden: false,
   },
   // Failed: Download failed
-  { label: 'Failed', value: { download_state: ['failed'] }, hidden: false },
+  {
+    label: 'Failed',
+    value: {
+      download_state: ['failed'],
+      active: false,
+      download_finished: false,
+      download_present: false,
+    },
+    hidden: false,
+  },
   // MetaDL: Downloading metadata
   { label: 'Meta_DL', value: { download_state: ['metaDL'] }, hidden: true },
   // Checking Resume Data: Checking resumable data

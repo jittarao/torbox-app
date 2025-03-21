@@ -1,74 +1,37 @@
-import { STATUS_OPTIONS } from '@/components/constants';
 import { useTranslations } from 'next-intl';
+import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 
 export default function DownloadStateBadge({ item, size = 'default' }) {
   const t = useTranslations('Statuses');
 
-  // Check if essential fields are missing, indicating a queued torrent
-  const isQueued =
-    !item.download_state && !item.download_finished && !item.active;
+  const status = getMatchingStatus(item);
 
-  // Find matching status from STATUS_OPTIONS
-  const getMatchingStatus = () => {
-    if (isQueued) return { label: 'queued' };
-
-    // First check for specific download states
-    const stateSpecificStatus = STATUS_OPTIONS.find((option) => {
-      if (!option.value.download_state) return false;
-
-      const states = Array.isArray(option.value.download_state)
-        ? option.value.download_state
-        : [option.value.download_state];
-
-      return states.some((state) =>
-        item.download_state?.toLowerCase().includes(state.toLowerCase()),
-      );
-    });
-
-    if (stateSpecificStatus) return stateSpecificStatus;
-
-    // Then check for other status conditions
-    return STATUS_OPTIONS.find((option) => {
-      if (
-        option.value === 'all' ||
-        option.value.is_queued ||
-        option.value.download_state
-      )
-        return false;
-
-      return Object.entries(option.value).every(
-        ([key, value]) => item[key] === value,
-      );
-    });
-  };
-
-  const status = getMatchingStatus();
+  const greenStyle =
+    'bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark';
+  const yellowStyle =
+    'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark';
+  const blueStyle =
+    'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark';
+  const redStyle =
+    'bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark';
+  const grayStyle =
+    'bg-label-default-bg dark:bg-label-default-bg-dark text-label-default-text dark:text-label-default-text-dark';
 
   // Map status labels to their corresponding styles
   const styleMap = {
-    Completed:
-      'bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark',
-    Seeding:
-      'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark',
-    Uploading:
-      'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark',
-    Downloading:
-      'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
-    Checking_Resume_Data:
-      'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
-    Meta_DL:
-      'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
-    Queued:
-      'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
-    Stalled:
-      'bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark',
-    Inactive:
-      'bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark',
+    Completed: greenStyle,
+    Seeding: blueStyle,
+    Queued: blueStyle,
+    Uploading: yellowStyle,
+    Downloading: yellowStyle,
+    Checking_Resume_Data: yellowStyle,
+    Meta_DL: yellowStyle,
+    Stalled: redStyle,
+    Inactive: redStyle,
+    Failed: redStyle,
   };
 
-  const badgeStyle =
-    styleMap[status?.label] ||
-    'bg-label-default-bg dark:bg-label-default-bg-dark text-label-default-text dark:text-label-default-text-dark';
+  const badgeStyle = styleMap[status?.label] || grayStyle;
   const statusText =
     t(`${status?.label.toLowerCase()}`) ||
     item.download_state

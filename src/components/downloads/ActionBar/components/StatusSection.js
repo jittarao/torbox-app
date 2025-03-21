@@ -99,7 +99,23 @@ export default function StatusSection({
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
         <div className="flex flex-wrap gap-3">
           {Object.entries(statusCounts)
-            .filter(([status, count]) => count !== 0)
+            .reduce((acc, [status, count]) => {
+              const option = STATUS_OPTIONS.find((opt) => opt.label === status);
+              if (!option || count === 0) return acc;
+
+              // Combine Meta_DL and Checking_Resume_Data into Downloading
+              if (status === 'Meta_DL' || status === 'Checking_Resume_Data') {
+                const existing = acc.find(([s]) => s === 'Downloading');
+                if (existing) {
+                  existing[1] += count;
+                } else {
+                  acc.push(['Downloading', count]);
+                }
+              } else if (!option.hidden) {
+                acc.push([status, count]);
+              }
+              return acc;
+            }, [])
             .map(([status, count]) => {
               const isSelected = Array.isArray(statusFilter)
                 ? statusFilter.some((filter) =>

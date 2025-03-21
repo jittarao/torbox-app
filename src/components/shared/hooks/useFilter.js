@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 
 export function useFilter(
   items,
@@ -40,23 +41,27 @@ export function useFilter(
                   : statusFilter,
               ];
 
-          // Item matches if it matches ANY of the selected filters
-          matchesStatus = filters.some((filter) => {
-            if (filter.is_queued) {
-              return !item.download_state;
-            }
+          const itemStatus = getMatchingStatus(item);
 
-            return Object.entries(filter).every(([key, value]) => {
-              if (key === 'download_state') {
-                const states = Array.isArray(value) ? value : [value];
-                return states.some(
-                  (state) =>
-                    typeof state === 'string' &&
-                    item.download_state?.includes(state),
-                );
-              }
-              return item[key] === value;
-            });
+          // If filtering for Downloading status, also include Meta_DL and Checking_Resume_Data
+          if (
+            itemStatus.label === 'Meta_DL' ||
+            itemStatus.label === 'Checking_Resume_Data'
+          ) {
+            const downloadingFilter = filters.find(
+              (f) =>
+                JSON.stringify(f) ===
+                JSON.stringify({
+                  active: true,
+                  download_finished: false,
+                  download_present: false,
+                }),
+            );
+            if (downloadingFilter) return true;
+          }
+
+          matchesStatus = filters.some((filter) => {
+            return JSON.stringify(filter) === JSON.stringify(itemStatus.value);
           });
         } catch (e) {
           console.error('Error parsing status filter:', e);

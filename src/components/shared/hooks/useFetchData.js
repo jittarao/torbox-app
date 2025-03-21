@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { isQueuedItem, getAutoStartOptions, sortItems } from '@/utils/utility';
+import { retryFetch } from '@/utils/retryFetch';
 
 // Rate limit constants
 const MAX_CALLS = 5;
@@ -8,6 +9,7 @@ const MIN_INTERVAL_BETWEEN_CALLS = 2000; // Minimum 2 seconds between calls
 const MIN_INTERVAL_MAPPING = { torrents: 2000, usenet: 2000, webdl: 2000 };
 const ACTIVE_POLLING_INTERVAL = 10000; // 10 seconds in ms
 const INACTIVE_POLLING_INTERVAL = 60000; // 1 minute in ms
+const AUTO_START_CHECK_INTERVAL = 30000; // 30 seconds in ms
 
 // Polling Logic
 // 1. ✅ 10s polling when browser is focused
@@ -24,6 +26,8 @@ export function useFetchData(apiKey, type = 'torrents') {
   const torrentsRef = useRef([]);
   const usenetRef = useRef([]);
   const webdlRef = useRef([]);
+  const lastAutoStartCheckRef = useRef(0);
+  const processedQueueIdsRef = useRef(new Set());
 
   // A per-type rate limit tracker
   const rateLimitDataRef = useRef({});
@@ -97,15 +101,23 @@ export function useFetchData(apiKey, type = 'torrents') {
 
         // If we have room for more active items and there are queued ones
         if (activeCount < options.autoStartLimit && queuedItems.length > 0) {
+          const queuedId = queuedItems[0].id;
+
+          // Skip if we've already tried to start this item
+          if (processedQueueIdsRef.current.has(queuedId)) return;
+
+          // Add to processed set before making API call
+          processedQueueIdsRef.current.add(queuedId);
+
           // Force start the first queued item
-          await fetch('/api/torrents/controlqueued', {
+          await retryFetch('/api/torrents/controlqueued', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': apiKey,
             },
             body: JSON.stringify({
-              queued_id: queuedItems[0].id,
+              queued_id: queuedId,
               operation: 'start',
               type: 'torrent',
             }),
@@ -202,8 +214,14 @@ export function useFetchData(apiKey, type = 'torrents') {
               break;
             default:
               setTorrents(sortedItems);
-              // Only check auto-start for torrents
-              await checkAndAutoStartTorrents(sortedItems);
+              // Only check auto-start for torrents if 30 seconds have elapsed
+              if (
+                now - lastAutoStartCheckRef.current >=
+                AUTO_START_CHECK_INTERVAL
+              ) {
+                await checkAndAutoStartTorrents(sortedItems);
+                lastAutoStartCheckRef.current = now;
+              }
           }
 
           if (activeType === type) {
