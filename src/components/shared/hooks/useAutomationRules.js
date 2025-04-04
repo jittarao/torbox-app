@@ -20,7 +20,7 @@ const compareValues = (value1, operator, value2) => {
   }
 };
 
-export function useAutomationRules(items, apiKey) {
+export function useAutomationRules(items, apiKey, activeType) {
   const rulesRef = useRef([]);
   const intervalsRef = useRef({});
   const itemsRef = useRef(items); // Keep track of items
@@ -63,6 +63,11 @@ export function useAutomationRules(items, apiKey) {
   };
 
   const executeRule = async (rule, unfilteredItems) => {
+    // Skip execution if not for torrents
+    if (activeType !== 'torrents') {
+      return;
+    }
+
     const items = unfilteredItems.filter((item) =>
       item.hasOwnProperty('active'),
     );
@@ -210,6 +215,11 @@ export function useAutomationRules(items, apiKey) {
 
   // Main initialization
   useEffect(() => {
+    // Skip initialization if not for torrents
+    if (activeType !== 'torrents') {
+      return;
+    }
+
     if (initializationRef.current) return;
     initializationRef.current = true;
 
@@ -304,5 +314,5 @@ export function useAutomationRules(items, apiKey) {
         clearInterval(interval),
       );
     };
-  }, []);
+  });
 }

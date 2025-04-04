@@ -71,7 +71,7 @@ export default function Downloads({ apiKey }) {
   const sortedItems = sortTorrents(filteredItems);
 
   // Initialize automation rules
-  useAutomationRules(items, apiKey);
+  useAutomationRules(items, apiKey, activeType);
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
@@ -156,7 +156,7 @@ export default function Downloads({ apiKey }) {
 
       <ItemUploader apiKey={apiKey} activeType={activeType} />
 
-      <AutomationRules />
+      {activeType === 'torrents' && <AutomationRules />}
 
       {loading && items.length === 0 ? (
         <div className="flex justify-center items-center">
