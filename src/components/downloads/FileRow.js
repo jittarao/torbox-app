@@ -96,7 +96,7 @@ export default function FileRow({
                 }}
               >
                 <div
-                  className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-sm select-none' : ''}`}
+                  className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
                 >
                   <Tooltip
                     content={isBlurred ? '' : file.short_name || file.name}

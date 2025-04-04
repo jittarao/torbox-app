@@ -76,7 +76,7 @@ export default function FileList({
                   >
                     <span
                       className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate ${
-                        isBlurred ? 'blur-sm select-none' : ''
+                        isBlurred ? 'blur-[6px] select-none' : ''
                       }`}
                       title={isBlurred ? '' : file.name}
                     >

@@ -25,8 +25,7 @@ const SORT_OPTIONS = {
 };
 
 export default function SearchResults({ apiKey }) {
-  const { results, loading, error, searchType, includeCustomEngines } =
-    useSearchStore();
+  const { results, loading, error, searchType } = useSearchStore();
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
@@ -34,6 +33,7 @@ export default function SearchResults({ apiKey }) {
   const [isUploading, setIsUploading] = useState({});
   const [showCachedOnly, setShowCachedOnly] = useState(false);
   const [addedItems, setAddedItems] = useState([]);
+  const [hideTorBoxIndexers, setHideTorBoxIndexers] = useState(false);
   const t = useTranslations('SearchResults');
 
   // Update sort key when search type changes
@@ -74,10 +74,14 @@ export default function SearchResults({ apiKey }) {
   }, [results, sortKey, sortDir, searchType]);
 
   const filteredResults = useMemo(() => {
-    return showCachedOnly
-      ? sortedResults.filter((t) => t.cached)
-      : sortedResults;
-  }, [sortedResults, showCachedOnly]);
+    let tempResults = sortedResults;
+    if (hideTorBoxIndexers) {
+      tempResults = tempResults.filter(
+        (t) => !TORBOX_NATIVE_TRACKERS.includes(t.tracker),
+      );
+    }
+    return showCachedOnly ? tempResults.filter((t) => t.cached) : tempResults;
+  }, [sortedResults, showCachedOnly, hideTorBoxIndexers]);
 
   const copyLink = async (item) => {
     const link = searchType === 'usenet' ? item.nzb : item.magnet;
@@ -188,6 +192,32 @@ export default function SearchResults({ apiKey }) {
                   />
                 </div>
               </label>
+
+              {/* Hide TorBox Trackers */}
+              {searchType === 'usenet' && (
+                <label className="flex items-center gap-2">
+                  <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+                    <Icons.EyeOff />
+                    {t('hideTorBoxIndexers')}
+                  </span>
+
+                  <div
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
+              ${
+                hideTorBoxIndexers
+                  ? 'bg-accent dark:bg-accent-dark'
+                  : 'bg-border dark:bg-border-dark'
+              }`}
+                    onClick={() => setHideTorBoxIndexers(!hideTorBoxIndexers)}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                ${hideTorBoxIndexers ? 'translate-x-4' : 'translate-x-1'}`}
+                    />
+                  </div>
+                </label>
+              )}
+
               <div className="flex items-center gap-2 flex-1 md:flex-none order-1 md:order-2">
                 <Dropdown
                   options={SORT_OPTIONS[searchType]}

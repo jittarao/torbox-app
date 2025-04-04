@@ -117,7 +117,7 @@ export default function MoreOptionsDropdown({
   };
 
   // Copy Full Magnet to clipboard
-  const handleCopyFullMagnet = async () => {
+  const handleCopyFullMagnet = async (e) => {
     e.stopPropagation();
     if (isExporting) return;
     setIsExporting(true);

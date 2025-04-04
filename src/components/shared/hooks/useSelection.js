@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'torBoxSelectedItems';
+const STORAGE_KEY = 'torboxSelectedItems';
 
 export function useSelection(items) {
   const loadStoredSelections = (currentItems) => {

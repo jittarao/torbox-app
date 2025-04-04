@@ -10,6 +10,7 @@ const MIN_INTERVAL_MAPPING = { torrents: 2000, usenet: 2000, webdl: 2000 };
 const ACTIVE_POLLING_INTERVAL = 10000; // 10 seconds in ms
 const INACTIVE_POLLING_INTERVAL = 60000; // 1 minute in ms
 const AUTO_START_CHECK_INTERVAL = 30000; // 30 seconds in ms
+const AUTOMATION_POLLING_INTERVAL = 300000; // 5 minutes in ms
 
 // Polling Logic
 // 1. ✅ 10s polling when browser is focused
@@ -28,6 +29,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const webdlRef = useRef([]);
   const lastAutoStartCheckRef = useRef(0);
   const processedQueueIdsRef = useRef(new Set());
+  const [hasActiveRules, setHasActiveRules] = useState(false);
 
   // A per-type rate limit tracker
   const rateLimitDataRef = useRef({});
@@ -298,6 +300,32 @@ export function useFetchData(apiKey, type = 'torrents') {
     };
   }, [type, fetchLocalItems]);
 
+  // Check for active automation rules
+  const checkActiveRules = useCallback(() => {
+    const rules = localStorage.getItem('torboxAutomationRules');
+    if (rules) {
+      const parsedRules = JSON.parse(rules);
+      const activeRules = parsedRules.filter((rule) => rule.enabled);
+      setHasActiveRules(activeRules.length > 0);
+    } else {
+      setHasActiveRules(false);
+    }
+  }, []);
+
+  // Listen for changes in automation rules
+  useEffect(() => {
+    checkActiveRules();
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'torboxAutomationRules') {
+        checkActiveRules();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [checkActiveRules]);
+
   // Polling for new items
   useEffect(() => {
     let interval;
@@ -333,6 +361,10 @@ export function useFetchData(apiKey, type = 'torrents') {
           return true;
         }
       }
+      // Keep polling if there are active automation rules
+      if (hasActiveRules) {
+        return true;
+      }
       return false;
     };
 
@@ -343,7 +375,9 @@ export function useFetchData(apiKey, type = 'torrents') {
       if (isVisible) {
         currentPollingInterval = ACTIVE_POLLING_INTERVAL;
       } else if (shouldKeepFastPolling()) {
-        currentPollingInterval = INACTIVE_POLLING_INTERVAL;
+        currentPollingInterval = hasActiveRules
+          ? AUTOMATION_POLLING_INTERVAL
+          : INACTIVE_POLLING_INTERVAL;
       }
 
       // Only start polling if visible or should keep fast polling
@@ -398,7 +432,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       if (cleanupInterval) clearInterval(cleanupInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchLocalItems, isRateLimited, type]);
+  }, [fetchLocalItems, isRateLimited, type, hasActiveRules]);
 
   // Return all data types and their setters
   return {

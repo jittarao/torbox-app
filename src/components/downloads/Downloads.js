@@ -8,6 +8,7 @@ import { useFetchData } from '../shared/hooks/useFetchData';
 import { useFilter } from '../shared/hooks/useFilter';
 import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
+import { useAutomationRules } from '../shared/hooks/useAutomationRules';
 import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
 import DownloadPanel from './DownloadPanel';
 import ItemUploader from './ItemUploader';
@@ -17,6 +18,7 @@ import Spinner from '../shared/Spinner';
 import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
+import AutomationRules from './AutomationRules';
 import { formatSize } from './utils/formatters';
 
 export default function Downloads({ apiKey }) {
@@ -67,6 +69,9 @@ export default function Downloads({ apiKey }) {
     useFilter(items);
 
   const sortedItems = sortTorrents(filteredItems);
+
+  // Initialize automation rules
+  useAutomationRules(items, apiKey);
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
@@ -150,6 +155,8 @@ export default function Downloads({ apiKey }) {
       />
 
       <ItemUploader apiKey={apiKey} activeType={activeType} />
+
+      <AutomationRules />
 
       {loading && items.length === 0 ? (
         <div className="flex justify-center items-center">

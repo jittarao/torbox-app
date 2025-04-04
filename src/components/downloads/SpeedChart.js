@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+  LogarithmicScale,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { formatSpeed } from './utils/formatters';
@@ -28,6 +29,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
+  LogarithmicScale,
 );
 
 // Theme colors from tailwind config
@@ -53,11 +55,11 @@ const THEME_COLORS = {
 // Helper to ensure valid data
 const ensureValidData = (data) => {
   if (!Array.isArray(data) || data.length === 0) {
-    return [0];
+    return [1024]; // Return 1 KB/s minimum instead of 0
   }
   return data.map((value) =>
-    value === null || value === undefined || isNaN(value) || value < 0
-      ? 0
+    value === null || value === undefined || isNaN(value) || value < 1024
+      ? 1024 // Use 1 KB/s as minimum value for logarithmic scale
       : value,
   );
 };
@@ -68,6 +70,7 @@ const CHART_EXPANDED_KEY = 'speedchart-expanded';
 export default function SpeedChart({ items, activeType }) {
   const t = useTranslations('SpeedChart');
   const [timeRange, setTimeRange] = useState('10m');
+  const [useLogScale, setUseLogScale] = useState(false);
   const speedData = useSpeedData(items, timeRange);
   const chartRef = useRef(null);
   const isMobile = useIsMobile();
@@ -263,7 +266,9 @@ export default function SpeedChart({ items, activeType }) {
     maintainAspectRatio: false,
     scales: {
       y: {
-        beginAtZero: true,
+        type: useLogScale ? 'logarithmic' : 'linear',
+        beginAtZero: !useLogScale,
+        min: useLogScale ? 1024 : 0, // 1 KB/s minimum for log scale
         grid: {
           color: isDarkMode ? THEME_COLORS.grid.dark : THEME_COLORS.grid.light,
         },
@@ -273,6 +278,12 @@ export default function SpeedChart({ items, activeType }) {
             return formatSpeed(value);
           },
           precision: 0,
+          // Customize logarithmic scale ticks
+          ...(useLogScale && {
+            font: {
+              size: 10,
+            },
+          }),
         },
       },
       x: {
@@ -351,10 +362,6 @@ export default function SpeedChart({ items, activeType }) {
     },
   };
 
-  const chartTitleText = isMobile ? 'Network' : 'Network Activity';
-  const chartShowOptionsText = isMobile ? 'Show' : 'Show chart';
-  const chartHideOptionsText = isMobile ? 'Hide' : 'Hide chart';
-
   return (
     <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
@@ -382,6 +389,16 @@ export default function SpeedChart({ items, activeType }) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Scale type toggle */}
+          {isExpanded && !isMobile && (
+            <button
+              onClick={() => setUseLogScale(!useLogScale)}
+              className="text-xs lg:text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
+            >
+              {useLogScale ? t('scale.logarithmic') : t('scale.linear')}
+            </button>
+          )}
+
           {/* Time range selector */}
           {isExpanded && !isMobile && (
             <select

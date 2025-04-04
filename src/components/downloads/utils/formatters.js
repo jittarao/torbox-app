@@ -34,10 +34,16 @@ export const formatSpeed = (bytesPerSecond, locale = 'en') => {
       return '0 B/s';
     }
 
+    // Calculate the value in the appropriate unit
+    const value = bytesPerSecond / Math.pow(1024, i);
+
+    // Round to nearest integer for cleaner display
+    const roundedValue = Math.round(value);
+
     return (
       new Intl.NumberFormat(locale, {
         maximumFractionDigits: 0,
-      }).format(Math.round(bytesPerSecond / Math.pow(1024, i))) +
+      }).format(roundedValue) +
       ' ' +
       units[i]
     );

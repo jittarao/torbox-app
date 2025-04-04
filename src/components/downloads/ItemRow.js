@@ -48,7 +48,7 @@ export default function ItemRow({
             <div
               className={`text-sm text-primary-text dark:text-primary-text-dark ${
                 isMobile ? 'break-all' : 'whitespace-nowrap truncate'
-              } flex-1 cursor-pointer ${isBlurred ? 'blur-sm select-none' : ''}`}
+              } flex-1 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
             >
               <div className="flex items-center gap-2">
                 <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { NON_RETRYABLE_ERRORS } from '@/components/constants';
-import { retryFetch } from '@/utils/retryFetch';
+import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
 
 // Parallel deletes
 const CONCURRENT_DELETES = 3;
@@ -19,38 +18,12 @@ export function useDelete(
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
 
-  const getDeleteEndpoint = () => {
-    switch (assetType) {
-      case 'usenet':
-        return '/api/usenet';
-      case 'webdl':
-        return '/api/webdl';
-      default:
-        return '/api/torrents';
-    }
-  };
-
   const deleteItem = async (id, bulk = false) => {
     if (!apiKey) return;
 
     try {
       setIsDeleting(true);
-      const endpoint = getDeleteEndpoint();
-
-      const result = await retryFetch(endpoint, {
-        method: 'DELETE',
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: { id },
-        permanent: [
-          (data) =>
-            Object.values(NON_RETRYABLE_ERRORS).some(
-              (err) => data.error?.includes(err) || data.detail?.includes(err),
-            ),
-        ],
-      });
+      const result = await deleteItemHelper(id, apiKey, assetType);
 
       if (result.success) {
         // Refresh the list after deletion
@@ -80,42 +53,22 @@ export function useDelete(
   };
 
   const batchDelete = async (ids) => {
-    const successfulIds = [];
-
     try {
-      // Process in chunks
-      for (let i = 0; i < ids.length; i += CONCURRENT_DELETES) {
-        const chunk = ids.slice(i, i + CONCURRENT_DELETES);
-        const results = await Promise.all(
-          chunk.map(async (id) => {
-            const result = await deleteItem(id, true);
-            if (result.success) {
-              successfulIds.push(id);
-            }
-            return { id, ...result };
-          }),
-        );
+      const successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
 
-        // Update UI for successful deletes in this chunk
-        const chunkSuccessIds = results
-          .filter((result) => result.success)
-          .map((result) => result.id);
-
-        if (chunkSuccessIds.length > 0) {
-          setItems((prev) =>
-            prev.filter((t) => !chunkSuccessIds.includes(t.id)),
-          );
-          setSelectedItems((prev) => ({
-            items: new Set(
-              [...prev.items].filter((id) => !chunkSuccessIds.includes(id)),
+      // Update UI for successful deletes
+      if (successfulIds.length > 0) {
+        setItems((prev) => prev.filter((t) => !successfulIds.includes(t.id)));
+        setSelectedItems((prev) => ({
+          items: new Set(
+            [...prev.items].filter((id) => !successfulIds.includes(id)),
+          ),
+          files: new Map(
+            [...prev.files].filter(
+              ([itemId]) => !successfulIds.includes(itemId),
             ),
-            files: new Map(
-              [...prev.files].filter(
-                ([itemId]) => !chunkSuccessIds.includes(itemId),
-              ),
-            ),
-          }));
-        }
+          ),
+        }));
       }
 
       // Show appropriate toast based on results

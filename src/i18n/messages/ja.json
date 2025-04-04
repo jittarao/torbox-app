@@ -21,7 +21,8 @@
       "downloads": "ダウンロード",
       "search": "検索",
       "toggle": "メニューの切り替え",
-      "linkHistory": "リンク履歴"
+      "linkHistory": "リンク履歴",
+      "archived": "アーカイブ"
     }
   },
   "LandingPage": {
@@ -140,7 +141,9 @@
       "s": "秒",
       "unknown": "不明",
       "complete": "完了"
-    }
+    },
+    "minutes": "分",
+    "hours": "時間"
   },
   "ItemUploader": {
     "title": {
@@ -180,11 +183,11 @@
   "SpeedChart": {
     "title": {
       "default": "ネットワーク",
-      "full": "ネットワークアクティビティ"
+      "full": "ネットワーク活動"
     },
     "chart": {
       "show": "グラフを表示",
-      "hide": "グラフを非表示"
+      "hide": "グラフを隠す"
     },
     "timeRanges": {
       "1m": "過去1分",
@@ -193,6 +196,10 @@
       "3h": "過去3時間",
       "6h": "過去6時間",
       "all": "すべて"
+    },
+    "scale": {
+      "linear": "線形",
+      "logarithmic": "対数"
     },
     "labels": {
       "download": "ダウンロード",
@@ -244,6 +251,48 @@
       "label": "自動スタートを有効にする",
       "limit": "アクティブなトレントの上限:"
     }
+  },
+  "AutomationRules": {
+    "title": "自動化ルール",
+    "addRule": "ルールを追加",
+    "ruleName": "ルール名",
+    "ruleNamePlaceholder": "ルール名を入力",
+    "checkEvery": "毎回チェック",
+    "condition": "条件",
+    "conditions": {
+      "seedingTime": "シーディング時間",
+      "stalledTime": "ブロック時間",
+      "seedingRatio": "シーディング比率"
+    },
+    "operators": {
+      "gt": "より大きい",
+      "lt": "より小さい",
+      "gte": "以上",
+      "lte": "以下",
+      "eq": "等しい"
+    },
+    "action": "アクション",
+    "actions": {
+      "stopSeeding": "シーディングを停止",
+      "archive": "アーカイブ",
+      "delete": "削除",
+      "forceStart": "強制開始"
+    },
+    "section": {
+      "show": "ルールを表示",
+      "hide": "ルールを非表示"
+    },
+    "cancel": "キャンセル",
+    "add": "ルールを追加",
+    "update": "ルールを更新",
+    "delete": "ルールを削除",
+    "noRules": "自動化ルールがありません",
+    "executions": "実行",
+    "neverTriggered": "一度もトリガーされなかった",
+    "neverExecuted": "一度も実行されなかった",
+    "lastTriggered": "最後にトリガーされた",
+    "triggers": "トリガー",
+    "enabledAt": "有効化日時"
   },
   "Columns": {
     "id": "ID",
@@ -358,6 +407,7 @@
     "results": "{count} 件ヒット",
     "noResults": "該当なし",
     "cachedOnly": "キャッシュのみ",
+    "hideTorBoxIndexers": "TorBoxのインデックスを非表示にする",
     "sort": {
       "seeders": "最多シーダー",
       "size": "最大サイズ",
@@ -402,5 +452,23 @@
       "remove": "削除"
     },
     "expired": "期限切れ"
+  },
+  "ArchivedDownloads": {
+    "title": "アーカイブされたダウンロード",
+    "columns": {
+      "itemId": "アイテムID",
+      "itemName": "アイテム名",
+      "itemType": "アイテムタイプ",
+      "archivedAt": "アーカイブ日時",
+      "actions": "アクション"
+    },
+    "actions": {
+      "remove": "削除",
+      "add_to_torbox": "TorBoxに追加",
+      "copyMagnet": "マグネットリンクをコピー"
+    },
+    "toast": {
+      "magnetCopied": "マグネットリンクがクリップボードにコピーされました"
+    }
   }
 }

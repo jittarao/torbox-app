@@ -21,7 +21,8 @@
       "downloads": "Descargas",
       "search": "Buscar",
       "toggle": "Activar menú",
-      "linkHistory": "Historial de enlaces"
+      "linkHistory": "Historial de enlaces",
+      "archived": "Archivados"
     }
   },
   "LandingPage": {
@@ -140,7 +141,9 @@
       "s": "s",
       "unknown": "Desconocido",
       "complete": "Completado"
-    }
+    },
+    "minutes": "minutos",
+    "hours": "horas"
   },
   "ItemUploader": {
     "title": {
@@ -180,23 +183,27 @@
   "SpeedChart": {
     "title": {
       "default": "Red",
-      "full": "Actividad de red"
+      "full": "Actividad de Red"
     },
     "chart": {
-      "show": "Mostrar gráfica",
-      "hide": "Ocultar gráfica"
+      "show": "Mostrar gráfico",
+      "hide": "Ocultar gráfico"
     },
     "timeRanges": {
       "1m": "Último 1m",
       "10m": "Último 10m",
-      "1h": "Última 1h",
-      "3h": "Última 3h",
-      "6h": "Última 6h",
-      "all": "Todos"
+      "1h": "Último 1h",
+      "3h": "Último 3h",
+      "6h": "Último 6h",
+      "all": "Todo"
+    },
+    "scale": {
+      "linear": "Lineal",
+      "logarithmic": "Log"
     },
     "labels": {
-      "descargar": "Descargar",
-      "subir": "Subir"
+      "download": "Descarga",
+      "upload": "Subida"
     }
   },
   "PanelDescarga": {
@@ -244,6 +251,48 @@
       "label": "Habilitar inicio automático",
       "limit": "Límite de torrents activos:"
     }
+  },
+  "AutomationRules": {
+    "title": "Reglas de automatización",
+    "addRule": "Añadir regla",
+    "ruleName": "Nombre de la regla",
+    "ruleNamePlaceholder": "Introducir nombre de la regla",
+    "checkEvery": "Comprobar cada",
+    "condition": "Condición",
+    "conditions": {
+      "seedingTime": "Tiempo de siembra",
+      "stalledTime": "Tiempo de pausa",
+      "seedingRatio": "Proporción de siembra"
+    },
+    "operators": {
+      "gt": "es mayor que",
+      "lt": "es menor que",
+      "gte": "es mayor o igual a",
+      "lte": "es menor o igual a",
+      "eq": "es igual a"
+    },
+    "action": "Acción",
+    "actions": {
+      "stopSeeding": "Detener siembra",
+      "archive": "Archivar descarga",
+      "delete": "Eliminar descarga",
+      "forceStart": "Forzar inicio de descarga"
+    },
+    "section": {
+      "show": "Mostrar reglas",
+      "hide": "Ocultar reglas"
+    },
+    "cancel": "Cancelar",
+    "add": "Añadir regla",
+    "update": "Actualizar regla",
+    "delete": "Eliminar",
+    "noRules": "No hay reglas de automatización",
+    "executions": "ejecuciones",
+    "neverTriggered": "nunca activado",
+    "neverExecuted": "nunca ejecutado",
+    "lastTriggered": "último activado",
+    "triggers": "activadores",
+    "enabledAt": "habilitado a"
   },
   "Columns": {
     "id": "ID",
@@ -358,6 +407,7 @@
     "results": "{count} resultados",
     "noResults": "No se han encontrado resultados",
     "cachedOnly": "Solo en caché",
+    "hideTorBoxIndexers": "Ocultar indexadores de TorBox",
     "sort": {
       "seeders": "La mayoría de los seeders",
       "size": "El tamaño más grande",
@@ -402,5 +452,23 @@
       "remove": "Eliminar"
     },
     "expired": "Expirado"
+  },
+  "ArchivedDownloads": {
+    "title": "Descargas archivadas",
+    "columns": {
+      "itemId": "ID del elemento",
+      "itemName": "Nombre del elemento",
+      "itemType": "Tipo de elemento",
+      "archivedAt": "Archivado el",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "remove": "Eliminar",
+      "add_to_torbox": "Añadir a TorBox",
+      "copyMagnet": "Copiar imán"
+    },
+    "toast": {
+      "magnetCopied": "Enlace magnético copiado al portapapeles"
+    }
   }
 }

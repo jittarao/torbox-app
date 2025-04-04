@@ -110,6 +110,16 @@ export default function Header() {
             </Link>
 
             <Link
+              href="/archived"
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+                ${pathname === '/archived' || locales.some((locale) => pathname === `/${locale}/archived`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+            >
+              <Icons.Archive />
+              {t('menu.archived')}
+            </Link>
+
+            <Link
               href="/link-history"
               className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2

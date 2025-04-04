@@ -21,7 +21,8 @@
       "downloads": "Downloads",
       "search": "Search",
       "toggle": "Toggle menu",
-      "linkHistory": "Link History"
+      "linkHistory": "Link History",
+      "archived": "Archived"
     }
   },
   "LandingPage": {
@@ -140,7 +141,9 @@
       "s": "s",
       "unknown": "Unknown",
       "complete": "Complete"
-    }
+    },
+    "minutes": "minutes",
+    "hours": "hours"
   },
   "ItemUploader": {
     "title": {
@@ -194,6 +197,10 @@
       "6h": "Last 6h",
       "all": "All"
     },
+    "scale": {
+      "linear": "Linear",
+      "logarithmic": "Log"
+    },
     "labels": {
       "download": "Download",
       "upload": "Upload"
@@ -244,6 +251,48 @@
       "label": "Enable Auto Start",
       "limit": "Active torrents limit:"
     }
+  },
+  "AutomationRules": {
+    "title": "Automation Rules",
+    "addRule": "Add Rule",
+    "ruleName": "Rule Name",
+    "ruleNamePlaceholder": "Enter rule name",
+    "checkEvery": "Check Every",
+    "condition": "Condition",
+    "conditions": {
+      "seedingTime": "Seeding Time",
+      "stalledTime": "Stalled Time",
+      "seedingRatio": "Seeding Ratio"
+    },
+    "operators": {
+      "gt": "is greater than",
+      "lt": "is less than",
+      "gte": "is greater than or equal to",
+      "lte": "is less than or equal to",
+      "eq": "is equal to"
+    },
+    "action": "Action",
+    "actions": {
+      "stopSeeding": "Stop Seeding",
+      "archive": "Archive Download",
+      "delete": "Delete Download",
+      "forceStart": "Force Start Download"
+    },
+    "section": {
+      "show": "Show rules",
+      "hide": "Hide rules"
+    },
+    "cancel": "Cancel",
+    "add": "Add Rule",
+    "update": "Update Rule",
+    "delete": "Delete",
+    "noRules": "No automation rules",
+    "executions": "executions",
+    "neverTriggered": "never triggered",
+    "neverExecuted": "never executed",
+    "lastTriggered": "last triggered",
+    "triggers": "triggers",
+    "enabledAt": "enabled"
   },
   "Columns": {
     "id": "ID",
@@ -358,6 +407,7 @@
     "results": "{count} results",
     "noResults": "No results found",
     "cachedOnly": "Cached Only",
+    "hideTorBoxIndexers": "Hide TorBox Indexers",
     "sort": {
       "seeders": "Most Seeders",
       "size": "Largest Size",
@@ -402,5 +452,23 @@
       "remove": "Remove"
     },
     "expired": "Expired"
+  },
+  "ArchivedDownloads": {
+    "title": "Archived Downloads",
+    "columns": {
+      "itemId": "Item ID",
+      "itemName": "Item Name",
+      "itemType": "Item Type",
+      "archivedAt": "Archived At",
+      "actions": "Actions"
+    },
+    "actions": {
+      "remove": "Remove",
+      "add_to_torbox": "Add to TorBox",
+      "copyMagnet": "Copy Magnet"
+    },
+    "toast": {
+      "magnetCopied": "Magnet link copied to clipboard"
+    }
   }
 }

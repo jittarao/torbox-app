@@ -187,7 +187,7 @@ export default function ItemCard({
             />
             <h3
               className={`text-sm sm:text-md md:text-[18px] font-medium break-all text-primary-text dark:text-primary-text-dark flex-1 ${
-                isBlurred ? 'blur-sm select-none' : ''
+                isBlurred ? 'blur-[6px] select-none' : ''
               }`}
             >
               <div className="flex items-center gap-2">

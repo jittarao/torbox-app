@@ -295,7 +295,11 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
           if (result.success) {
             updateItemStatus(itemIndex, 'success');
-            setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+            const currentProgress = useUploaderStore.getState().progress;
+            setProgress({
+              current: currentProgress.current + 1,
+              total: currentProgress.total,
+            });
             return true;
           }
 
