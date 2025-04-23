@@ -30,7 +30,7 @@ RUN npm ci --only=production
 # Copy the built application from the builder stage
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
+#COPY --from=builder /app/node_modules ./node_modules
 
 # Expose the port Next.js runs on
 EXPOSE 3000
