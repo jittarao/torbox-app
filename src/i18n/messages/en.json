@@ -89,7 +89,7 @@
     "clear": "Clear"
   },
   "SearchBar": {
-    "placeholder": "Search {itemType}...",
+    "placeholder": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
     "clearSearch": "Clear search",
     "customEngines": "Custom Engines"
   },

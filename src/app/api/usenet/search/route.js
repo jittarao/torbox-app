@@ -8,7 +8,7 @@ export async function GET(req) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get('query');
+  const query = decodeURIComponent(searchParams.get('query'));
   const searchUserEngines = searchParams.get('search_user_engines') === 'true';
 
   if (!query) {
@@ -31,15 +31,20 @@ export async function GET(req) {
       search_user_engines: searchUserEngines,
     });
 
-    const res = await fetch(
-      `${API_SEARCH_BASE}/usenet/search/${encodeURIComponent(query)}?${params}`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
+    let endpoint;
+    if (query.startsWith('imdb:')) {
+      const imdbId = query.substring(5);
+      endpoint = `${API_SEARCH_BASE}/usenet/imdb:${imdbId}?${params}`;
+    } else {
+      endpoint = `${API_SEARCH_BASE}/usenet/search/${encodeURIComponent(query)}?${params}`;
+    }
+
+    const res = await fetch(endpoint, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-    );
+    });
 
     if (!res.ok) {
       throw new Error(`Error: ${res.status} ${res.statusText}`);

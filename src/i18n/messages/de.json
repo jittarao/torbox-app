@@ -89,7 +89,7 @@
     "clear": "Löschen"
   },
   "SearchBar": {
-    "placeholder": "Suche {itemType}...",
+    "placeholder": "Suche nach Titel oder IMDB ID (z.B. imdb:tt0133093)...",
     "clearSearch": "Suche löschen ",
     "customEngines": "Benutzerdefinierte Suchmaschinen"
   },

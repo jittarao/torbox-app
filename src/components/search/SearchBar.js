@@ -59,12 +59,7 @@ export default function SearchBar() {
             value={localQuery}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder={t('placeholder', {
-              itemType:
-                searchType === 'torrents'
-                  ? commonT('itemTypes.torrents')
-                  : commonT('itemTypes.usenet'),
-            })}
+            placeholder={t('placeholder')}
             className="w-full px-4 py-2 pl-10 pr-10 rounded-lg border border-border dark:border-border-dark
               bg-transparent text-sm text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50

@@ -89,7 +89,7 @@
     "clear": "クリア"
   },
   "SearchBar": {
-    "placeholder": "{itemType}を検索...",
+    "placeholder": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
     "clearSearch": "検索をクリア",
     "customEngines": "カスタムエンジン"
   },
