@@ -7,6 +7,8 @@ export const useSearchStore = create((set, get) => ({
   error: null,
   searchType: 'torrents',
   includeCustomEngines: false,
+  season: undefined,
+  episode: undefined,
 
   setSearchType: (type) => {
     set({ searchType: type, results: [], error: null });
@@ -25,8 +27,20 @@ export const useSearchStore = create((set, get) => ({
     if (query) get().fetchResults();
   },
 
+  setSeason: (season) => {
+    set({ season });
+    const { query } = get();
+    if (query) get().fetchResults();
+  },
+
+  setEpisode: (episode) => {
+    set({ episode });
+    const { query } = get();
+    if (query) get().fetchResults();
+  },
+
   fetchResults: async () => {
-    const { query, searchType, includeCustomEngines } = get();
+    const { query, searchType, includeCustomEngines, season, episode } = get();
     if (!query) return;
 
     const apiKey = localStorage.getItem('torboxApiKey');
@@ -40,6 +54,8 @@ export const useSearchStore = create((set, get) => ({
       const searchParams = new URLSearchParams({
         query: encodeURIComponent(query),
         search_user_engines: includeCustomEngines.toString(),
+        ...(season && { season: season }),
+        ...(episode && { episode: episode }),
       });
 
       const endpoint =

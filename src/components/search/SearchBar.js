@@ -18,6 +18,10 @@ export default function SearchBar() {
   const setIncludeCustomEngines = useSearchStore(
     (state) => state.setIncludeCustomEngines,
   );
+  const season = useSearchStore((state) => state.season);
+  const setSeason = useSearchStore((state) => state.setSeason);
+  const episode = useSearchStore((state) => state.episode);
+  const setEpisode = useSearchStore((state) => state.setEpisode);
 
   const SEARCH_OPTIONS = [
     { value: 'torrents', label: commonT('itemTypes.Torrents') },
@@ -42,6 +46,16 @@ export default function SearchBar() {
     setIncludeCustomEngines(!includeCustomEngines);
     handleSearch();
   };
+
+  const handleSeasonChange = (value) => {
+    setSeason(value);
+    handleSearch();
+  }
+
+  const handleEpisodeChange = (value) => {
+    setEpisode(value);
+    handleSearch();
+  }
 
   return (
     <div className="flex flex-col gap-2 mt-4">
@@ -91,6 +105,32 @@ export default function SearchBar() {
         </div>
       </div>
       <div className="flex justify-end mt-2">
+        <label className="flex items-center gap-2">
+          <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+            {t('season') || 'Season'}
+          </span>
+          <input
+            type="number"
+            min="0"
+            value={season}
+            onChange={(e) => handleSeasonChange(e.target.value)}
+            className="w-12 px-2 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
+            placeholder=""
+          />
+        </label>
+        <label className="flex items-center gap-2">
+          <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+            {t('episode') || 'Episode'}
+          </span>
+          <input
+            type="number"
+            min="0"
+            value={episode}
+            onChange={(e) => handleEpisodeChange(e.target.value)}
+            className="w-12 px-2 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
+            placeholder=""
+          />
+        </label>
         <label className="flex items-center gap-2">
           <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             <svg

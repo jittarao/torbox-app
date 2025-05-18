@@ -91,7 +91,9 @@
   "SearchBar": {
     "placeholder": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
     "clearSearch": "Clear search",
-    "customEngines": "Custom Engines"
+    "customEngines": "Custom Engines",
+    "season": "Season",
+    "episode": "Episode"
   },
   "StatusSection": {
     "selectedItems": "{itemCount} {type} selected ({size})",
