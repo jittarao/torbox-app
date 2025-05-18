@@ -91,7 +91,9 @@
   "SearchBar": {
     "placeholder": "Suche nach Titel oder IMDB ID (z.B. imdb:tt0133093)...",
     "clearSearch": "Suche löschen ",
-    "customEngines": "Benutzerdefinierte Suchmaschinen"
+    "customEngines": "Benutzerdefinierte Suchmaschinen",
+    "season": "Staffel",
+    "episode": "Episode"
   },
   "StatusSection": {
     "selectedItems": "{itemCount} {type} ausgewählt ({size}) ",
