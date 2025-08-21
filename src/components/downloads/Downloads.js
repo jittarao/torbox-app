@@ -30,6 +30,7 @@ export default function Downloads({ apiKey }) {
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
+  const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
 
   const { loading, items, setItems, fetchItems } = useFetchData(
@@ -75,6 +76,69 @@ export default function Downloads({ apiKey }) {
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
+  };
+
+  // Bulk export torrent files
+  const handleBulkExport = async () => {
+    if (isExporting || activeType !== 'torrents') return;
+    setIsExporting(true);
+
+    try {
+      const selectedItemIds = Array.from(selectedItems.items);
+      if (selectedItemIds.length === 0) {
+        setToast({
+          message: 'No items selected for export',
+          type: 'error',
+        });
+        return;
+      }
+
+      // Export each selected torrent
+      for (const itemId of selectedItemIds) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) continue;
+
+        try {
+          const response = await fetch(
+            `/api/torrents/export?torrent_id=${itemId}&type=torrent`,
+            {
+              headers: {
+                'x-api-key': apiKey,
+              },
+            },
+          );
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${item.name || item.id}.torrent`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          } else {
+            console.error(`Failed to export torrent ${itemId}`);
+          }
+        } catch (error) {
+          console.error(`Error exporting torrent ${itemId}:`, error);
+        }
+      }
+
+      setToast({
+        message: `Exported ${selectedItemIds.length} torrent files`,
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error during bulk export:', error);
+      setToast({
+        message: 'Failed to export torrent files',
+        type: 'error',
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const toggleFiles = (itemId) => {
@@ -208,6 +272,8 @@ export default function Downloads({ apiKey }) {
                 onBulkDelete={(includeParentDownloads) =>
                   deleteItems(selectedItems, includeParentDownloads)
                 }
+                isExporting={isExporting}
+                onBulkExport={handleBulkExport}
                 activeType={activeType}
                 isBlurred={isBlurred}
                 onBlurToggle={() => setIsBlurred(!isBlurred)}

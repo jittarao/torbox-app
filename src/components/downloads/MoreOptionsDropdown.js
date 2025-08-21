@@ -134,14 +134,18 @@ export default function MoreOptionsDropdown({
 
       if (data.success && data.data) {
         await copyToClipboard(data.data, t('toast.fullMagnetCopied'));
+        setToast({
+          message: t('toast.exportMagnetSuccess'),
+          type: 'success',
+        });
         phEvent('copy_full_magnet');
       } else {
-        throw new Error(data.error || t('toast.magnetError'));
+        throw new Error(data.error || data.detail || t('toast.exportMagnetFailed'));
       }
     } catch (error) {
       console.error('Error getting magnet link:', error);
       setToast({
-        message: `Error: ${error.message}`,
+        message: t('toast.exportMagnetFailed'),
         type: 'error',
       });
     } finally {
@@ -156,15 +160,40 @@ export default function MoreOptionsDropdown({
     if (isExporting) return;
     setIsExporting(true);
     try {
-      window.open(
-        `/api/torrents/export?torrent_id=${item.id}&type=torrent&api_key=${apiKey}`,
-        '_blank',
+      const response = await fetch(
+        `/api/torrents/export?torrent_id=${item.id}&type=torrent`,
+        {
+          headers: {
+            'x-api-key': apiKey,
+          },
+        },
       );
-      phEvent('export_torrent_file');
+
+      if (response.ok) {
+        // Create a blob from the response and download it
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${item.name || item.id}.torrent`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        setToast({
+          message: t('toast.exportTorrentSuccess'),
+          type: 'success',
+        });
+        phEvent('export_torrent_file');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.detail || t('toast.exportTorrentFailed'));
+      }
     } catch (error) {
       console.error('Error exporting torrent:', error);
       setToast({
-        message: `Error: ${error.message}`,
+        message: t('toast.exportTorrentFailed'),
         type: 'error',
       });
     } finally {

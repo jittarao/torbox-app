@@ -86,6 +86,8 @@
     "downloadLinks": "Get Download Links",
     "downloadLinksMobile": "Get Links",
     "fetchingLinks": "Fetching Links...",
+    "exportSelected": "Export Selected",
+    "exporting": "Exporting...",
     "delete": "Delete",
     "deleteConfirm": {
       "title": "Confirm Delete",
@@ -353,7 +355,9 @@
       "deleteSuccess": "Successfully deleted",
       "deleteAllSuccess": "All items successfully deleted",
       "deletePartialSuccess": "Deleted {count} of {total} items",
-      "deleteAllFailed": "Failed to delete items"
+      "deleteAllFailed": "Failed to delete items",
+      "exportTorrentSuccess": "Torrent file exported successfully",
+      "exportTorrentFailed": "Failed to export torrent file"
     }
   },
   "ItemActionButtons": {
@@ -377,6 +381,10 @@
     "delete": {
       "title": "Delete",
       "label": "Delete"
+    },
+    "export": {
+      "title": "Export Torrent",
+      "label": "Export"
     }
   },
   "MoreOptionsDropdown": {
@@ -400,7 +408,11 @@
       "reannounceFailed": "Failed to reannounce torrent",
       "sourceUrlNotAvailable": "Source URL not available",
       "sourceUrlCopied": "Source URL copied to clipboard",
-      "clipboardError": "Failed to copy to clipboard"
+      "clipboardError": "Failed to copy to clipboard",
+      "exportTorrentSuccess": "Torrent file exported successfully",
+      "exportTorrentFailed": "Failed to export torrent file",
+      "exportMagnetSuccess": "Magnet link exported successfully",
+      "exportMagnetFailed": "Failed to export magnet link"
     }
   },
   "CardList": {

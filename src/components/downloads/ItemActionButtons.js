@@ -16,6 +16,8 @@ export default function ItemActionButtons({
   onStopSeeding,
   onForceStart,
   onDownload,
+  onExport,
+  isExporting,
   viewMode,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -53,6 +55,13 @@ export default function ItemActionButtons({
   const handleDelete = async (e) => {
     e.stopPropagation();
     await onDelete();
+  };
+
+  const handleExport = async (e) => {
+    e.stopPropagation();
+    if (onExport) {
+      await onExport();
+    }
   };
 
   return (
@@ -130,6 +139,23 @@ export default function ItemActionButtons({
           {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
           {isMobile && (
             <span className="ml-2 text-xs">{t('download.label')}</span>
+          )}
+        </button>
+      )}
+
+      {/* Export button - only for torrents */}
+      {activeType === 'torrents' && onExport && (
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className={`p-1.5 rounded-full text-blue-500 dark:text-blue-400 
+          hover:bg-blue-500/5 dark:hover:bg-blue-400/5 transition-colors
+          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+          title={t('export.title')}
+        >
+          {isExporting ? <Spinner size="sm" /> : <Icons.Link />}
+          {isMobile && (
+            <span className="ml-2 text-xs">{t('export.label')}</span>
           )}
         </button>
       )}
