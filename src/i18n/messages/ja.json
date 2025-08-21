@@ -262,7 +262,9 @@
     "conditions": {
       "seedingTime": "シーディング時間",
       "stalledTime": "ブロック時間",
-      "seedingRatio": "シーディング比率"
+      "seedingRatio": "シーディング比率",
+      "seeds": "シード",
+      "peers": "ピア"
     },
     "operators": {
       "gt": "より大きい",

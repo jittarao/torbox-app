@@ -262,7 +262,9 @@
     "conditions": {
       "seedingTime": "Seeding Time",
       "stalledTime": "Stalled Time",
-      "seedingRatio": "Seeding Ratio"
+      "seedingRatio": "Seeding Ratio",
+      "seeds": "Seeds",
+      "peers": "Peers"
     },
     "operators": {
       "gt": "is greater than",
