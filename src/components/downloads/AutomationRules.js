@@ -13,6 +13,8 @@ const CONDITION_TYPES = {
   SEEDING_TIME: 'seeding_time',
   SEEDING_RATIO: 'seeding_ratio',
   STALLED_TIME: 'stalled_time',
+  SEEDS: 'seeds',
+  PEERS: 'peers',
 };
 
 const COMPARISON_OPERATORS = {
@@ -21,6 +23,11 @@ const COMPARISON_OPERATORS = {
   GTE: 'gte',
   LTE: 'lte',
   EQ: 'eq',
+};
+
+const LOGIC_OPERATORS = {
+  AND: 'and',
+  OR: 'or',
 };
 
 const ACTION_TYPES = {
@@ -44,11 +51,14 @@ export default function AutomationRules() {
       type: TRIGGER_TYPES.INTERVAL,
       value: 30,
     },
-    condition: {
-      type: CONDITION_TYPES.SEEDING_RATIO,
-      operator: COMPARISON_OPERATORS.GT,
-      value: 1,
-    },
+    conditions: [
+      {
+        type: CONDITION_TYPES.SEEDING_RATIO,
+        operator: COMPARISON_OPERATORS.GT,
+        value: 1,
+      },
+    ],
+    logicOperator: LOGIC_OPERATORS.AND,
     action: {
       type: ACTION_TYPES.STOP_SEEDING,
     },
@@ -115,11 +125,14 @@ export default function AutomationRules() {
         type: TRIGGER_TYPES.INTERVAL,
         value: 5,
       },
-      condition: {
-        type: CONDITION_TYPES.SEEDING_TIME,
-        operator: COMPARISON_OPERATORS.GT,
-        value: 30,
-      },
+      conditions: [
+        {
+          type: CONDITION_TYPES.SEEDING_TIME,
+          operator: COMPARISON_OPERATORS.GT,
+          value: 30,
+        },
+      ],
+      logicOperator: LOGIC_OPERATORS.AND,
       action: {
         type: ACTION_TYPES.STOP_SEEDING,
       },
@@ -156,7 +169,7 @@ export default function AutomationRules() {
     saveRules(updatedRules);
   };
 
-  const getConditionText = (condition) => {
+  const getConditionText = (conditions, logicOperator) => {
     const operatorText = {
       [COMPARISON_OPERATORS.GT]: '>',
       [COMPARISON_OPERATORS.LT]: '<',
@@ -165,18 +178,61 @@ export default function AutomationRules() {
       [COMPARISON_OPERATORS.EQ]: '=',
     };
 
-    const operator = operatorText[condition.operator];
+    const conditionTexts = conditions.map((condition) => {
+      const operator = operatorText[condition.operator];
 
-    if (condition.type === CONDITION_TYPES.SEEDING_TIME) {
-      return `seeding time ${operator} ${condition.value} ${commonT('hours')}`;
-    } else if (condition.type === CONDITION_TYPES.STALLED_TIME) {
-      return `stalled time ${operator} ${condition.value} ${commonT('hours')}`;
-    } else if (condition.type === CONDITION_TYPES.SEEDING_RATIO) {
-      return `seeding ratio ${operator} ${condition.value}`;
-    }
+      if (condition.type === CONDITION_TYPES.SEEDING_TIME) {
+        return `seeding time ${operator} ${condition.value} ${commonT('hours')}`;
+      } else if (condition.type === CONDITION_TYPES.STALLED_TIME) {
+        return `stalled time ${operator} ${condition.value} ${commonT('hours')}`;
+      } else if (condition.type === CONDITION_TYPES.SEEDING_RATIO) {
+        return `seeding ratio ${operator} ${condition.value}`;
+      } else if (condition.type === CONDITION_TYPES.SEEDS) {
+        return `seeds ${operator} ${condition.value}`;
+      } else if (condition.type === CONDITION_TYPES.PEERS) {
+        return `peers ${operator} ${condition.value}`;
+      }
+      return '';
+    });
+
+    const logicText = logicOperator === LOGIC_OPERATORS.AND ? ' AND ' : ' OR ';
+    return conditionTexts.join(logicText);
   };
 
   const activeRules = rules.filter((rule) => rule.enabled);
+
+  // Helper functions for managing multiple conditions
+  const addCondition = () => {
+    setNewRule({
+      ...newRule,
+      conditions: [
+        ...newRule.conditions,
+        {
+          type: CONDITION_TYPES.SEEDING_TIME,
+          operator: COMPARISON_OPERATORS.GT,
+          value: 30,
+        },
+      ],
+    });
+  };
+
+  const removeCondition = (index) => {
+    if (newRule.conditions.length > 1) {
+      setNewRule({
+        ...newRule,
+        conditions: newRule.conditions.filter((_, i) => i !== index),
+      });
+    }
+  };
+
+  const updateCondition = (index, field, value) => {
+    setNewRule({
+      ...newRule,
+      conditions: newRule.conditions.map((condition, i) =>
+        i === index ? { ...condition, [field]: value } : condition,
+      ),
+    });
+  };
 
   return (
     <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
@@ -258,7 +314,7 @@ export default function AutomationRules() {
                 </div>
                 <div className="mt-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
                   Every {rule.trigger.value} {commonT('minutes')}, if{' '}
-                  {getConditionText(rule.condition)}, then{' '}
+                  {getConditionText(rule.conditions || [rule.condition], rule.logicOperator || LOGIC_OPERATORS.AND)}, then{' '}
                   {rule.action.type.replace('_', ' ')}
                   {/* {rule.metadata && (
                     <span className="ml-2">
@@ -353,92 +409,124 @@ export default function AutomationRules() {
                   </div>
                 </div>
 
-                {/* Condition */}
+                {/* Conditions */}
                 <div>
-                  <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-                    {t('condition')}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={newRule.condition.type}
-                      onChange={(e) =>
-                        setNewRule({
-                          ...newRule,
-                          condition: {
-                            ...newRule.condition,
-                            type: e.target.value,
-                          },
-                        })
-                      }
-                      className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark">
+                      {t('conditions')}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addCondition}
+                      className="text-xs text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80"
                     >
-                      <option value={CONDITION_TYPES.SEEDING_TIME}>
-                        {t('conditions.seedingTime')}
-                      </option>
-                      <option value={CONDITION_TYPES.SEEDING_RATIO}>
-                        {t('conditions.seedingRatio')}
-                      </option>
-                      <option value={CONDITION_TYPES.STALLED_TIME}>
-                        {t('conditions.stalledTime')}
-                      </option>
-                    </select>
-
-                    <select
-                      value={newRule.condition.operator}
-                      onChange={(e) =>
-                        setNewRule({
-                          ...newRule,
-                          condition: {
-                            ...newRule.condition,
-                            operator: e.target.value,
-                          },
-                        })
-                      }
-                      className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
-                    >
-                      <option value={COMPARISON_OPERATORS.GT}>
-                        {t('operators.gt')}
-                      </option>
-                      <option value={COMPARISON_OPERATORS.LT}>
-                        {t('operators.lt')}
-                      </option>
-                      <option value={COMPARISON_OPERATORS.GTE}>
-                        {t('operators.gte')}
-                      </option>
-                      <option value={COMPARISON_OPERATORS.LTE}>
-                        {t('operators.lte')}
-                      </option>
-                      <option value={COMPARISON_OPERATORS.EQ}>
-                        {t('operators.eq')}
-                      </option>
-                    </select>
-
-                    <input
-                      type="number"
-                      value={newRule.condition.value}
-                      onChange={(e) =>
-                        setNewRule({
-                          ...newRule,
-                          condition: {
-                            ...newRule.condition,
-                            value: parseFloat(e.target.value) || 0,
-                          },
-                        })
-                      }
-                      className="w-24 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
-                      min="0"
-                      step={
-                        newRule.condition.type === CONDITION_TYPES.SEEDING_RATIO
-                          ? '0.1'
-                          : '1'
-                      }
-                    />
-                    <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                      {newRule.condition.type.includes('time')
-                        ? commonT('hours')
-                        : ''}
-                    </span>
+                      + Add Condition
+                    </button>
                   </div>
+
+                  {/* Logic Operator (only show if multiple conditions) */}
+                  {newRule.conditions.length > 1 && (
+                    <div className="mb-3">
+                      <select
+                        value={newRule.logicOperator}
+                        onChange={(e) =>
+                          setNewRule({
+                            ...newRule,
+                            logicOperator: e.target.value,
+                          })
+                        }
+                        className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                      >
+                        <option value={LOGIC_OPERATORS.AND}>ALL conditions (AND)</option>
+                        <option value={LOGIC_OPERATORS.OR}>ANY condition (OR)</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Multiple Conditions */}
+                  {newRule.conditions.map((condition, index) => (
+                    <div key={index} className="mb-3 p-3 border border-border dark:border-border-dark rounded-md">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                          Condition {index + 1}
+                        </span>
+                        {newRule.conditions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeCondition(index)}
+                            className="text-xs text-red-500 hover:text-red-400"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={condition.type}
+                          onChange={(e) => updateCondition(index, 'type', e.target.value)}
+                          className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                        >
+                          <option value={CONDITION_TYPES.SEEDING_TIME}>
+                            {t('conditions.seedingTime')}
+                          </option>
+                          <option value={CONDITION_TYPES.SEEDING_RATIO}>
+                            {t('conditions.seedingRatio')}
+                          </option>
+                          <option value={CONDITION_TYPES.STALLED_TIME}>
+                            {t('conditions.stalledTime')}
+                          </option>
+                          <option value={CONDITION_TYPES.SEEDS}>
+                            {t('conditions.seeds')}
+                          </option>
+                          <option value={CONDITION_TYPES.PEERS}>
+                            {t('conditions.peers')}
+                          </option>
+                        </select>
+
+                        <select
+                          value={condition.operator}
+                          onChange={(e) => updateCondition(index, 'operator', e.target.value)}
+                          className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                        >
+                          <option value={COMPARISON_OPERATORS.GT}>
+                            {t('operators.gt')}
+                          </option>
+                          <option value={COMPARISON_OPERATORS.LT}>
+                            {t('operators.lt')}
+                          </option>
+                          <option value={COMPARISON_OPERATORS.GTE}>
+                            {t('operators.gte')}
+                          </option>
+                          <option value={COMPARISON_OPERATORS.LTE}>
+                            {t('operators.lte')}
+                          </option>
+                          <option value={COMPARISON_OPERATORS.EQ}>
+                            {t('operators.eq')}
+                          </option>
+                        </select>
+
+                        <input
+                          type="number"
+                          value={condition.value}
+                          onChange={(e) => updateCondition(index, 'value', parseFloat(e.target.value) || 0)}
+                          className="w-24 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                          min="0"
+                          step={
+                            condition.type === CONDITION_TYPES.SEEDING_RATIO
+                              ? '0.1'
+                              : '1'
+                          }
+                        />
+                        <span className="text-sm text-primary-text dark:text-primary-text-dark">
+                          {condition.type.includes('time')
+                            ? commonT('hours')
+                            : condition.type === CONDITION_TYPES.SEEDS || condition.type === CONDITION_TYPES.PEERS
+                            ? 'count'
+                            : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Action */}

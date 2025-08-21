@@ -83,50 +83,68 @@ export function useAutomationRules(items, apiKey, activeType) {
 
     const now = Date.now();
 
-    // Find items that meet the condition
+    // Find items that meet the conditions
     const matchingItems = items.filter((item) => {
-      let conditionValue = 0;
-      switch (rule.condition.type) {
-        case 'seeding_time':
-          if (!item.active) return false;
-          conditionValue =
-            (now - new Date(item.cached_at).getTime()) / (1000 * 60 * 60);
-          break;
-        case 'stalled_time':
-          if (
-            ['stalled', 'stalledDL', 'stalled (no seeds)'].includes(
-              item.download_state,
-            ) &&
-            item.active
-          ) {
+      const conditions = rule.conditions || [rule.condition]; // Support both new and old format
+      const logicOperator = rule.logicOperator || 'and'; // Default to AND
+      
+      const conditionResults = conditions.map((condition) => {
+        let conditionValue = 0;
+        switch (condition.type) {
+          case 'seeding_time':
+            if (!item.active) return false;
             conditionValue =
-              (now - new Date(item.updated_at).getTime()) / (1000 * 60 * 60);
-          } else {
-            return false;
-          }
-          break;
-        case 'seeding_ratio':
-          if (!item.active) return false;
-          conditionValue = item.ratio;
-          break;
+              (now - new Date(item.cached_at).getTime()) / (1000 * 60 * 60);
+            break;
+          case 'stalled_time':
+            if (
+              ['stalled', 'stalledDL', 'stalled (no seeds)'].includes(
+                item.download_state,
+              ) &&
+              item.active
+            ) {
+              conditionValue =
+                (now - new Date(item.updated_at).getTime()) / (1000 * 60 * 60);
+            } else {
+              return false;
+            }
+            break;
+          case 'seeding_ratio':
+            if (!item.active) return false;
+            conditionValue = item.ratio;
+            break;
+          case 'seeds':
+            conditionValue = item.seeds || 0;
+            break;
+          case 'peers':
+            conditionValue = item.peers || 0;
+            break;
+        }
+
+        const conditionMet = compareValues(
+          conditionValue,
+          condition.operator,
+          condition.value,
+        );
+
+        // console.log('🎯 Condition check:', {
+        //   ruleName: rule.name,
+        //   itemName: item.name,
+        //   type: condition.type,
+        //   value: conditionValue,
+        //   threshold: condition.value,
+        //   met: conditionMet,
+        // });
+
+        return conditionMet;
+      });
+
+      // Apply logic operator
+      if (logicOperator === 'or') {
+        return conditionResults.some(result => result);
+      } else {
+        return conditionResults.every(result => result);
       }
-
-      const conditionMet = compareValues(
-        conditionValue,
-        rule.condition.operator,
-        rule.condition.value,
-      );
-
-      // console.log('🎯 Condition check:', {
-      //   ruleName: rule.name,
-      //   itemName: item.name,
-      //   type: rule.condition.type,
-      //   value: conditionValue,
-      //   threshold: rule.condition.value,
-      //   met: conditionMet,
-      // });
-
-      return conditionMet;
     });
 
     if (matchingItems.length === 0) {

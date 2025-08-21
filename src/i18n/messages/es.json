@@ -262,7 +262,9 @@
     "conditions": {
       "seedingTime": "Tiempo de siembra",
       "stalledTime": "Tiempo de pausa",
-      "seedingRatio": "Proporción de siembra"
+      "seedingRatio": "Proporción de siembra",
+      "seeds": "Semillas",
+      "peers": "Pares"
     },
     "operators": {
       "gt": "es mayor que",

@@ -106,10 +106,54 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   };
 
   // Create link item from link
-  const createLinkItem = (link) => ({
-    ...createBaseItem(link, assetType === 'torrents' ? 'magnet' : assetType),
-    name: link.substring(0, 60) + '...',
-  });
+  const createLinkItem = async (link) => {
+    let name = link.substring(0, 60) + '...';
+    
+    // For usenet links, try to extract a better filename
+    if (assetType === 'usenet') {
+      try {
+        // Check if it's an NZB API link that might have content disposition
+        if (link.includes('api') && (link.includes('nzb') || link.includes('usenet'))) {
+          // Try to extract filename from URL parameters first
+          const url = new URL(link);
+          const filenameParam = url.searchParams.get('filename') || 
+                               url.searchParams.get('name') || 
+                               url.searchParams.get('title');
+          
+          if (filenameParam) {
+            name = decodeURIComponent(filenameParam);
+          } else {
+            // For API links without explicit filename, use a more descriptive name
+            const domain = url.hostname.replace('www.', '');
+            const pathParts = url.pathname.split('/').filter(Boolean);
+            const lastPathPart = pathParts[pathParts.length - 1];
+            
+            if (lastPathPart && lastPathPart !== 'api') {
+              name = `${domain} - ${lastPathPart}`;
+            } else {
+              name = `${domain} - NZB Download`;
+            }
+          }
+        } else if (link.includes('.nzb')) {
+          // For direct .nzb file links, extract filename from URL
+          const url = new URL(link);
+          const pathParts = url.pathname.split('/');
+          const filename = pathParts[pathParts.length - 1];
+          if (filename && filename.endsWith('.nzb')) {
+            name = filename.replace('.nzb', '');
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to parse usenet link for filename:', error);
+        // Fall back to default name generation
+      }
+    }
+    
+    return {
+      ...createBaseItem(link, assetType === 'torrents' ? 'magnet' : assetType),
+      name,
+    };
+  };
 
   // Validate files based on asset type
   const validateFiles = (files) => {
@@ -201,17 +245,17 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   };
 
   // Handle link input
-  const handleLinkInput = (input) => {
+  const handleLinkInput = async (input) => {
     setLinkInput(input);
 
     // Process input and extract links when Enter is pressed or on paste
-    const links = input
+    const validLinks = input
       .split('\n')
       .filter((link) => link.trim())
-      .filter((link) => validateLink(link.trim()))
-      .map((link) => createLinkItem(link));
+      .filter((link) => validateLink(link.trim()));
 
-    if (links.length) {
+    if (validLinks.length) {
+      const links = await Promise.all(validLinks.map((link) => createLinkItem(link)));
       addItems(links);
       setLinkInput(''); // Clear input after successful addition
     }
