@@ -22,7 +22,8 @@
       "search": "Search",
       "toggle": "Toggle menu",
       "linkHistory": "Link History",
-      "archived": "Archived"
+      "archived": "Archived",
+      "rss": "RSS Feeds"
     }
   },
   "Notifications": {
@@ -514,6 +515,71 @@
       "unhealthyDescription": "Local application is experiencing issues",
       "unknown": "Status Unknown",
       "unknownDescription": "Unable to determine system status"
+    }
+  },
+  "RssFeeds": {
+    "title": "RSS Feeds",
+    "addFeed": "Add RSS Feed",
+    "editFeed": "Edit RSS Feed",
+    "feedName": "Feed Name",
+    "feedUrl": "Feed URL",
+    "feedNamePlaceholder": "Enter feed name",
+    "feedUrlPlaceholder": "Enter RSS feed URL",
+    "downloadType": "Download Type",
+    "downloadTypePlaceholder": "Select download type",
+    "torrentSeeding": "Torrent Seeding",
+    "torrentSeedingPlaceholder": "Select seeding preference",
+    "doRegex": "Download Regex (Optional)",
+    "doRegexPlaceholder": "Download items matching this regex",
+    "dontRegex": "Ignore Regex (Optional)",
+    "dontRegexPlaceholder": "Ignore items matching this regex",
+    "scanInterval": "Scan Interval (minutes)",
+    "scanIntervalPlaceholder": "How often to scan this feed",
+    "dontOlderThan": "Ignore Older Than (days)",
+    "dontOlderThanPlaceholder": "Ignore items older than X days",
+    "passCheck": "Pass Check",
+    "passCheckDescription": "Skip cache checking for this feed",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "enable": "Enable",
+    "disable": "Disable",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "lastCheck": "Last Check",
+    "itemCount": "Items",
+    "actions": "Actions",
+    "noFeeds": "No RSS feeds configured",
+    "loading": "Loading RSS feeds...",
+    "error": "Error loading RSS feeds",
+    "addSuccess": "RSS feed added successfully",
+    "addError": "Failed to add RSS feed",
+    "editSuccess": "RSS feed updated successfully",
+    "editError": "Failed to update RSS feed",
+    "deleteSuccess": "RSS feed deleted successfully",
+    "deleteError": "Failed to delete RSS feed",
+    "enableSuccess": "RSS feed enabled successfully",
+    "enableError": "Failed to enable RSS feed",
+    "disableSuccess": "RSS feed disabled successfully",
+    "disableError": "Failed to disable RSS feed",
+    "confirmDelete": {
+      "title": "Delete RSS Feed",
+      "message": "Are you sure you want to delete this RSS feed? This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "nameRequired": "Feed name is required",
+      "urlRequired": "Feed URL is required",
+      "urlInvalid": "Please enter a valid RSS feed URL"
+    },
+    "options": {
+      "auto": "Auto",
+      "seed": "Seed",
+      "dontSeed": "Don't Seed",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
+      "webdl": "Web Download"
     }
   }
 }
