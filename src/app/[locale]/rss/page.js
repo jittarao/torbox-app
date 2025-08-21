@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Header from '@/components/Header';
 import RssFeedManager from '@/components/rss/RssFeedManager';
 import RssItemsManager from '@/components/rss/RssItemsManager';
-import RssAutomationRules from '@/components/rss/RssAutomationRules';
+
 import Toast from '@/components/shared/Toast';
 import Icons from '@/components/icons';
 import { Inter } from 'next/font/google';
@@ -58,12 +58,7 @@ export default function RssPage() {
       icon: Icons.List,
       component: RssItemsManager,
     },
-    {
-      id: 'automation',
-      label: t('tabs.automation'),
-      icon: Icons.Automation,
-      component: RssAutomationRules,
-    },
+
   ];
 
   // Don't render anything until client-side hydration is complete
