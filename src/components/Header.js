@@ -10,33 +10,13 @@ import Icons from '@/components/icons';
 import { locales } from '@/i18n/settings';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Header({ apiKey }) {
   const t = useTranslations('Header');
   const pathname = usePathname();
-  const [darkMode, setDarkMode] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const { darkMode, toggleDarkMode, isClient } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    // Set isClient to true once component is mounted
-    setIsClient(true);
-
-    // Check initial theme
-    const isDark =
-      localStorage.getItem('darkMode') === 'true' ||
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(isDark);
-    document.documentElement.classList.toggle('dark', isDark);
-  }, []);
-
-  // Only render the toggle button client-side
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode);
-    document.documentElement.classList.toggle('dark', newDarkMode);
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
