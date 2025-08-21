@@ -10,6 +10,7 @@ import Icons from '@/components/icons';
 import { locales } from '@/i18n/settings';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
+import ReferralDropdown from '@/components/ReferralDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Header({ apiKey }) {
@@ -128,6 +129,7 @@ export default function Header({ apiKey }) {
             <div className="flex items-center gap-4">
               <SystemStatusIndicator apiKey={apiKey} />
               {apiKey && <NotificationBell apiKey={apiKey} />}
+              <ReferralDropdown />
               {isClient && (
                 <button
                   onClick={toggleDarkMode}
@@ -198,6 +200,12 @@ export default function Header({ apiKey }) {
                   System Status
                 </span>
                 <SystemStatusIndicator apiKey={apiKey} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark">
+                  Referral
+                </span>
+                <ReferralDropdown />
               </div>
               {isClient && (
                 <div className="flex items-center justify-between">

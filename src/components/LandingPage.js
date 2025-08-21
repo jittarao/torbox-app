@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import ApiKeyInput from './downloads/ApiKeyInput';
 import { useTranslations } from 'next-intl';
 
 export default function LandingPage({ onKeyChange }) {
   const t = useTranslations('LandingPage');
+  const referralT = useTranslations('Referral');
+  const [showCopied, setShowCopied] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
@@ -99,6 +102,32 @@ export default function LandingPage({ onKeyChange }) {
               >
                 {t('apiKeyInput.link')}
               </a>
+            </p>
+          </div>
+
+          {/* Referral Section */}
+          <div className="max-w-md mx-auto mt-8 text-center">
+            <p className="text-sm text-gray-400 mb-2">
+              {referralT('landingDescription')}{' '}
+              <a
+                href="https://torbox.app/subscription?referral=09c3f0f3-4e61-4634-a6dc-40af39f8165c"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                {referralT('signUp')}
+              </a>
+              {' '}or{' '}
+              <button
+                onClick={async () => {
+                  await navigator.clipboard.writeText('09c3f0f3-4e61-4634-a6dc-40af39f8165c');
+                  setShowCopied(true);
+                  setTimeout(() => setShowCopied(false), 2000);
+                }}
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                {showCopied ? referralT('copied') : referralT('copyCode')}
+              </button>
             </p>
           </div>
 
