@@ -9,6 +9,7 @@ import { useFilter } from '../shared/hooks/useFilter';
 import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
 import { useAutomationRules } from '../shared/hooks/useAutomationRules';
+import { useRssAutomation } from '../shared/hooks/useRssAutomation';
 import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
 import DownloadPanel from './DownloadPanel';
 import ItemUploader from './ItemUploader';
@@ -73,6 +74,9 @@ export default function Downloads({ apiKey }) {
 
   // Initialize automation rules
   useAutomationRules(items, apiKey, activeType);
+
+  // Initialize RSS automation
+  useRssAutomation(apiKey);
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
