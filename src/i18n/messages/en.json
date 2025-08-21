@@ -83,6 +83,20 @@
     "noKeys": "No saved keys",
     "close": "Close"
   },
+  "Referral": {
+    "referral": "Referral",
+    "title": "Referral Program",
+    "description": "Share TorBox with friends and earn rewards!",
+    "landingDescription": "Need a TorBox account? Use our referral link to sign up and get started!",
+    "signUp": "Sign Up for TorBox",
+    "referralCode": "Referral Code",
+    "referralLink": "Referral Link",
+    "copyCode": "Copy code",
+    "copyLink": "Copy link",
+    "copyAll": "Copy All",
+    "copied": "Copied!",
+    "visitLink": "Visit Link"
+  },
   "ActionButtons": {
     "downloadLinks": "Get Download Links",
     "downloadLinksMobile": "Get Links",
