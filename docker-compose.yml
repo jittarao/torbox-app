@@ -17,6 +17,7 @@ services:
     volumes:
       - ./logs:/app/logs:rw
       - ./data:/app/data:rw
+      - next-cache:/app/.next/cache:rw
     security_opt:
       - no-new-privileges:true
       - seccomp:unconfined
@@ -62,3 +63,5 @@ volumes:
       type: none
       o: bind
       device: ./data
+  next-cache:
+    driver: local
