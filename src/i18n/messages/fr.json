@@ -91,7 +91,24 @@
   "SearchBar": {
     "placeholder": "Rechercher par titre ou IMDB ID (e.g. imdb:tt0133093)...",
     "clearSearch": "Effacer la recherche",
-    "customEngines": "Moteurs personnalisés"
+    "customEngines": "Moteurs personnalisés",
+    "season": "Saison",
+    "episode": "Épisode",
+    "year": "Année",
+    "quality": "Qualité",
+    "search": "Rechercher",
+    "recentSearches": "Recherches récentes",
+    "clearHistory": "Effacer",
+    "searchExamples": "Exemples de recherche",
+    "showAdvanced": "Afficher avancé",
+    "hideAdvanced": "Masquer avancé",
+    "seasonPlaceholder": "S01",
+    "episodePlaceholder": "E01",
+    "yearPlaceholder": "2024",
+    "quality.all": "Toutes les qualités",
+    "minSize": "Taille min. (GB)",
+    "minSeeders": "Seeders min.",
+    "clearFilters": "Effacer les filtres"
   },
   "StatusSection": {
     "selectedItems": "{itemCount} {type} sélectionnés ({size})",

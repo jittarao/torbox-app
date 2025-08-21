@@ -23,11 +23,16 @@ export function ThemeProvider({ children }) {
     document.documentElement.classList.toggle('dark', initialTheme);
   }, []);
 
+  // Ensure theme is applied whenever darkMode changes
+  useEffect(() => {
+    if (isClient) {
+      document.documentElement.classList.toggle('dark', darkMode);
+      localStorage.setItem('darkMode', darkMode);
+    }
+  }, [darkMode, isClient]);
+
   const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode);
-    document.documentElement.classList.toggle('dark', newDarkMode);
+    setDarkMode(prev => !prev);
   };
 
   const value = {
