@@ -23,6 +23,7 @@ export default function ItemActions({
   setDownloadHistory,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { downloadSingle } = useDownloads(
     apiKey,
     activeType,
@@ -125,6 +126,53 @@ export default function ItemActions({
     }
   };
 
+  // Exports a torrent file
+  const handleExport = async () => {
+    if (isExporting || activeType !== 'torrents') return;
+    setIsExporting(true);
+
+    try {
+      const response = await fetch(
+        `/api/torrents/export?torrent_id=${item.id}&type=torrent`,
+        {
+          headers: {
+            'x-api-key': apiKey,
+          },
+        },
+      );
+
+      if (response.ok) {
+        // Create a blob from the response and download it
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${item.name || item.id}.torrent`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        setToast({
+          message: t('toast.exportTorrentSuccess'),
+          type: 'success',
+        });
+        phEvent('export_torrent_file');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.detail || t('toast.exportTorrentFailed'));
+      }
+    } catch (error) {
+      console.error('Error exporting torrent:', error);
+      setToast({
+        message: t('toast.exportTorrentFailed'),
+        type: 'error',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div
       className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end space-x-2'}`}
@@ -140,6 +188,8 @@ export default function ItemActions({
         onStopSeeding={handleStopSeeding}
         onForceStart={handleForceStart}
         onDownload={handleDownload}
+        onExport={handleExport}
+        isExporting={isExporting}
         viewMode={viewMode}
       />
 

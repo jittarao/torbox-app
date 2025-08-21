@@ -25,8 +25,10 @@ export default function ActionBar({
   onStatusChange,
   isDownloading,
   isDeleting,
+  isExporting,
   onBulkDownload,
   onBulkDelete,
+  onBulkExport,
   activeType = 'torrents',
   isBlurred = false,
   onBlurToggle,
@@ -104,12 +106,15 @@ export default function ActionBar({
             hasSelectedFiles={hasSelectedFiles}
             isDownloading={isDownloading}
             isDeleting={isDeleting}
+            isExporting={isExporting}
             onBulkDownload={onBulkDownload}
             onBulkDelete={onBulkDelete}
+            onBulkExport={onBulkExport}
             itemTypeName={itemTypeName}
             itemTypePlural={itemTypePlural}
             isDownloadPanelOpen={isDownloadPanelOpen}
             setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+            activeType={activeType}
           />
         )}
       </div>

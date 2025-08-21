@@ -11,12 +11,15 @@ export default function ActionButtons({
   hasSelectedFiles,
   isDownloading,
   isDeleting,
+  isExporting,
   onBulkDownload,
   onBulkDelete,
+  onBulkExport,
   itemTypeName,
   itemTypePlural,
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
+  activeType = 'torrents',
 }) {
   const t = useTranslations('ActionButtons');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -36,6 +39,13 @@ export default function ActionButtons({
     return isMobile ? t('downloadLinksMobile') : t('downloadLinks');
   };
 
+  const handleBulkExport = () => {
+    if (onBulkExport) {
+      onBulkExport();
+    }
+    phEvent('bulk_export_torrents');
+  };
+
   return (
     <div className="flex gap-4 items-center">
       <button
@@ -46,6 +56,18 @@ export default function ActionButtons({
       >
         {getDownloadButtonText()}
       </button>
+
+      {/* Bulk Export button - only for torrents */}
+      {activeType === 'torrents' && selectedItems.items?.size > 0 && onBulkExport && (
+        <button
+          onClick={handleBulkExport}
+          disabled={isExporting}
+          className="bg-blue-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-blue-600 
+          disabled:opacity-50 transition-colors"
+        >
+          {isExporting ? t('exporting') : t('exportSelected')}
+        </button>
+      )}
 
       {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
         <>
