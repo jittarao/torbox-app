@@ -19,6 +19,17 @@ export default function LanguageSwitcher() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [currentLocale, setCurrentLocale] = useState(locale);
+
+  // Load saved language preference on mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('preferredLanguage');
+    if (savedLanguage && savedLanguage !== locale) {
+      // Redirect to the saved language if it's different from current
+      const newPath = pathname.replace(locale, savedLanguage);
+      router.push(newPath);
+    }
+  }, [locale, pathname, router]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -33,6 +44,9 @@ export default function LanguageSwitcher() {
 
   const handleLanguageChange = (newLocale) => {
     setIsOpen(false);
+    // Store the language preference in localStorage
+    localStorage.setItem('preferredLanguage', newLocale);
+    setCurrentLocale(newLocale);
     router.push(pathname.replace(locale, newLocale));
   };
 

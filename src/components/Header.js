@@ -197,13 +197,13 @@ export default function Header({ apiKey }) {
             <div className="py-2 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-white dark:text-primary-text-dark">
-                  System Status
+                  {t('menu.systemStatus')}
                 </span>
                 <SystemStatusIndicator apiKey={apiKey} />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white dark:text-primary-text-dark">
-                  Referral
+                  {t('menu.referrals')}
                 </span>
                 <ReferralDropdown />
               </div>

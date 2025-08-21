@@ -23,7 +23,10 @@
       "toggle": "Toggle menu",
       "linkHistory": "Link History",
       "archived": "Archived",
-      "rss": "RSS Feeds"
+      "rss": "RSS Feeds",
+      "systemStatus": "System Status",
+      "referrals": "Referrals",
+      "notifications": "Notifications"
     }
   },
   "Notifications": {
@@ -550,7 +553,7 @@
   },
   "RssFeeds": {
     "pageTitle": "RSS Management",
-    "pageDescription": "Manage RSS feeds, browse items, and set up automation rules",
+    "pageDescription": "Manage RSS feeds and browse items",
     "tabs": {
       "feeds": "Feed Management",
       "items": "Items Management"

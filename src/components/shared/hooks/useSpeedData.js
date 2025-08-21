@@ -73,6 +73,11 @@ export function useSpeedData(items, timeRange = '10m') {
       hasActivityRef.current = currentHasActivity;
       lastUpdateRef.current = now;
 
+      // If there's no activity, don't add data points to the chart
+      if (!currentHasActivity) {
+        return;
+      }
+
       // Get current time for the label
       const timeLabel = new Date().toLocaleTimeString([], {
         hour: '2-digit',

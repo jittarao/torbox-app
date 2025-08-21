@@ -22,8 +22,22 @@
       "search": "Rechercher",
       "toggle": "Basculer le menu",
       "linkHistory": "Historique des liens",
-      "archived": "Archivés"
+      "archived": "Archivés",
+      "rss": "Flux RSS",
+      "systemStatus": "État du système",
+      "referrals": "Parrainage",
+      "notifications": "Notifications"
     }
+  },
+  "Notifications": {
+    "notifications": "Notifications",
+    "loading": "Chargement des notifications...",
+    "noNotifications": "Aucune notification",
+    "testNotification": "Notification de test",
+    "markAsRead": "Marquer comme lu",
+    "markAllAsRead": "Tout marquer comme lu",
+    "clear": "Effacer",
+    "clearAll": "Tout effacer"
   },
   "LandingPage": {
     "title": "TorBox Manager",
@@ -87,6 +101,20 @@
       "includeParentDownloadsTooltip": "Lorsque des fichiers sont sélectionnés dans les téléchargements, cette option supprimera le téléchargement complet."
     },
     "clear": "Effacer"
+  },
+  "Referral": {
+    "referral": "Parrainage",
+    "title": "Programme de parrainage",
+    "description": "Partagez TorBox avec vos amis et gagnez des récompenses !",
+    "landingDescription": "Besoin d'un compte TorBox ? Utilisez notre lien de parrainage pour vous inscrire et commencer !",
+    "signUp": "S'inscrire à TorBox",
+    "referralCode": "Code de parrainage",
+    "referralLink": "Lien de parrainage",
+    "copyCode": "Copier le code",
+    "copyLink": "Copier le lien",
+    "copyAll": "Tout copier",
+    "copied": "Copié !",
+    "visitLink": "Visiter le lien"
   },
   "SearchBar": {
     "placeholder": "Rechercher par titre ou IMDB ID (e.g. imdb:tt0133093)...",
@@ -492,7 +520,7 @@
   },
   "RssFeeds": {
     "pageTitle": "Gestion RSS",
-    "pageDescription": "Gérer les flux RSS, parcourir les éléments et configurer les règles d'automatisation",
+    "pageDescription": "Gérer les flux RSS et parcourir les éléments",
     "tabs": {
       "feeds": "Gestion des Flux",
       "items": "Gestion des Éléments"

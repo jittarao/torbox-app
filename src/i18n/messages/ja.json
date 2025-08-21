@@ -22,8 +22,22 @@
       "search": "検索",
       "toggle": "メニューの切り替え",
       "linkHistory": "リンク履歴",
-      "archived": "アーカイブ"
+      "archived": "アーカイブ",
+      "rss": "RSSフィード",
+      "systemStatus": "システムステータス",
+      "referrals": "紹介",
+      "notifications": "通知"
     }
+  },
+  "Notifications": {
+    "notifications": "通知",
+    "loading": "通知を読み込み中...",
+    "noNotifications": "通知がありません",
+    "testNotification": "テスト通知",
+    "markAsRead": "既読にする",
+    "markAllAsRead": "すべて既読にする",
+    "clear": "クリア",
+    "clearAll": "すべてクリア"
   },
   "LandingPage": {
     "title": "TorBox Manager",
@@ -87,6 +101,20 @@
       "includeParentDownloadsTooltip": "ダウンロード内のファイルを選択した場合、このオプションはダウンロード全体を削除します。"
     },
     "clear": "クリア"
+  },
+  "Referral": {
+    "referral": "紹介",
+    "title": "紹介プログラム",
+    "description": "友達とTorBoxを共有して報酬を獲得しましょう！",
+    "landingDescription": "TorBoxアカウントが必要ですか？紹介リンクを使用してサインアップし、始めましょう！",
+    "signUp": "TorBoxにサインアップ",
+    "referralCode": "紹介コード",
+    "referralLink": "紹介リンク",
+    "copyCode": "コードをコピー",
+    "copyLink": "リンクをコピー",
+    "copyAll": "すべてコピー",
+    "copied": "コピーしました！",
+    "visitLink": "リンクを訪問"
   },
   "SearchBar": {
     "placeholder": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
@@ -492,7 +520,7 @@
   },
   "RssFeeds": {
     "pageTitle": "RSS管理",
-    "pageDescription": "RSSフィードの管理、アイテムの閲覧、自動化ルールの設定",
+    "pageDescription": "RSSフィードの管理とアイテムの閲覧",
     "tabs": {
       "feeds": "フィード管理",
       "items": "アイテム管理"

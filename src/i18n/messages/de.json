@@ -22,8 +22,22 @@
       "search": "Suchen ",
       "toggle": "Menü umschalten",
       "linkHistory": "Link-Verlauf",
-      "archived": "Archiviert"
+      "archived": "Archiviert",
+      "rss": "RSS-Feeds",
+      "systemStatus": "Systemstatus",
+      "referrals": "Empfehlungen",
+      "notifications": "Benachrichtigungen"
     }
+  },
+  "Notifications": {
+    "notifications": "Benachrichtigungen",
+    "loading": "Benachrichtigungen werden geladen...",
+    "noNotifications": "Keine Benachrichtigungen",
+    "testNotification": "Test-Benachrichtigung",
+    "markAsRead": "Als gelesen markieren",
+    "markAllAsRead": "Alle als gelesen markieren",
+    "clear": "Löschen",
+    "clearAll": "Alle löschen"
   },
   "LandingPage": {
     "title": "TorBox Manager",
@@ -87,6 +101,20 @@
       "includeParentDownloadsTooltip": "Wenn Dateien innerhalb von Downloads ausgewählt sind, wird diese Option die gesamten Downloads löschen."
     },
     "clear": "Löschen"
+  },
+  "Referral": {
+    "referral": "Empfehlungen",
+    "title": "Empfehlungsprogramm",
+    "description": "Teilen Sie TorBox mit Freunden und verdienen Sie Belohnungen!",
+    "landingDescription": "Benötigen Sie ein TorBox-Konto? Verwenden Sie unseren Empfehlungslink, um sich zu registrieren und zu beginnen!",
+    "signUp": "Bei TorBox registrieren",
+    "referralCode": "Empfehlungscode",
+    "referralLink": "Empfehlungslink",
+    "copyCode": "Code kopieren",
+    "copyLink": "Link kopieren",
+    "copyAll": "Alles kopieren",
+    "copied": "Kopiert!",
+    "visitLink": "Link besuchen"
   },
   "SearchBar": {
     "placeholder": "Suche nach Titel oder IMDB ID (z.B. imdb:tt0133093)...",
@@ -492,7 +520,7 @@
   },
   "RssFeeds": {
     "pageTitle": "RSS-Verwaltung",
-    "pageDescription": "RSS-Feeds verwalten, Elemente durchsuchen und Automatisierungsregeln einrichten",
+    "pageDescription": "RSS-Feeds verwalten und Elemente durchsuchen",
     "tabs": {
       "feeds": "Feed-Verwaltung",
       "items": "Elemente-Verwaltung"

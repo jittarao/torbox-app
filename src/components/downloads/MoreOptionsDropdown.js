@@ -13,7 +13,7 @@ export default function MoreOptionsDropdown({
   activeType = 'torrents',
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isExporting, setIsExporting] = useState(false);
   const [isReannouncing, setIsReannouncing] = useState(false);
   const menuRef = useRef(null);
@@ -50,10 +50,25 @@ export default function MoreOptionsDropdown({
 
     if (!isMenuOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom,
-        right: window.innerWidth - rect.right,
-      });
+      const menuWidth = 192; // w-48 = 12rem = 192px
+      
+      // Check if there's enough space on the right side
+      const spaceOnRight = window.innerWidth - rect.right;
+      const spaceOnLeft = rect.left;
+      
+      // Position the menu to the right of the button if there's enough space
+      // Otherwise, position it to the left of the button
+      if (spaceOnRight >= menuWidth || spaceOnRight > spaceOnLeft) {
+        setMenuPosition({
+          top: rect.bottom,
+          left: rect.right,
+        });
+      } else {
+        setMenuPosition({
+          top: rect.bottom,
+          left: rect.left - menuWidth,
+        });
+      }
     }
 
     setIsMenuOpen(!isMenuOpen);
@@ -374,7 +389,7 @@ export default function MoreOptionsDropdown({
             className="fixed z-50 w-48 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
             style={{
               top: `${menuPosition.top}px`,
-              right: `${menuPosition.right}px`,
+              left: `${menuPosition.left}px`,
             }}
           >
             <div className="py-1">{renderMenuItems()}</div>
