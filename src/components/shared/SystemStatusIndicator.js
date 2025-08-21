@@ -8,34 +8,10 @@ import Icons from '@/components/icons';
 export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const t = useTranslations('SystemStatus');
   const [showTooltip, setShowTooltip] = useState(false);
-  const [automationRules, setAutomationRules] = useState([]);
+
   const { overallStatus, lastCheck, error, refreshHealth, isLoading } = useApiHealth(apiKey);
 
-  // Fetch RSS automation rules
-  useEffect(() => {
-    if (!apiKey) return;
 
-    const fetchAutomationRules = async () => {
-      try {
-        const response = await fetch('/api/rss/automation', {
-          headers: {
-            'x-api-key': apiKey,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setAutomationRules(data.data || []);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching RSS automation rules:', error);
-      }
-    };
-
-    fetchAutomationRules();
-  }, [apiKey]);
 
   // Status configuration
   const statusConfig = {
@@ -140,22 +116,7 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
                 {t('lastCheck')}: {formatLastCheck(lastCheck)}
               </p>
               
-              {/* RSS Automation Status */}
-              {automationRules.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2">
-                    <Icons.Automation className="w-3 h-3 text-blue-500" />
-                    <span className="text-xs text-gray-600 dark:text-gray-300">
-                      RSS Automation: {automationRules.filter(rule => rule.enabled).length} active rules
-                    </span>
-                  </div>
-                  {automationRules.filter(rule => rule.enabled).length > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Last processed: {formatLastCheck(new Date(Math.max(...automationRules.filter(r => r.enabled && r.last_run).map(r => new Date(r.last_run)))) || new Date(0))}
-                    </p>
-                  )}
-                </div>
-              )}
+
             </div>
           </div>
           {/* Tooltip arrow */}

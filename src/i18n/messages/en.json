@@ -522,8 +522,7 @@
     "pageDescription": "Manage RSS feeds, browse items, and set up automation rules",
     "tabs": {
       "feeds": "Feed Management",
-      "items": "Items Management",
-      "automation": "Automation Rules"
+      "items": "Items Management"
     },
     "title": "RSS Feeds",
     "addFeed": "Add RSS Feed",
@@ -621,66 +620,6 @@
       "noLink": "No download link available",
       "downloadStarted": "Download started successfully",
       "downloadFailed": "Failed to start download"
-    }
-  },
-  "RssAutomation": {
-    "title": "Automation Rules",
-    "addRule": "Add Rule",
-    "editRule": "Edit Rule",
-    "ruleName": "Rule Name",
-    "ruleNamePlaceholder": "Enter rule name",
-    "feed": "Feed",
-    "selectFeed": "Select Feed",
-    "titlePattern": "Title Pattern",
-    "titlePatternPlaceholder": "Regex pattern to match titles",
-    "titlePatternHelp": "Use regex to match titles (e.g., .*movie.*)",
-    "categoryPattern": "Category Pattern",
-    "categoryPatternPlaceholder": "Regex pattern to match categories",
-    "minSize": "Minimum Size",
-    "maxSize": "Maximum Size",
-    "maxAge": "Maximum Age",
-    "downloadType": "Download Type",
-    "auto": "Auto",
-    "queued": "Queued",
-    "manual": "Manual",
-    "seedTime": "Seed Time",
-    "priority": "Priority",
-    "low": "Low",
-    "normal": "Normal",
-    "high": "High",
-    "enabled": "Enabled",
-    "sendNotification": "Send Notification",
-    "save": "Save",
-    "cancel": "Cancel",
-    "loading": "Loading rules...",
-    "error": "Error loading rules",
-    "noRules": "No automation rules configured",
-    "addSuccess": "Automation rule added successfully",
-    "editSuccess": "Automation rule updated successfully",
-    "deleteSuccess": "Automation rule deleted successfully",
-    "enableSuccess": "Automation rule enabled successfully",
-    "disableSuccess": "Automation rule disabled successfully",
-    "saveError": "Failed to save automation rule",
-    "deleteError": "Failed to delete automation rule",
-    "toggleError": "Failed to toggle automation rule",
-    "validation": {
-      "nameAndFeedRequired": "Rule name and feed are required"
-    },
-    "status": {
-      "new": "New",
-      "recent": "Recent",
-      "active": "Active",
-      "stale": "Stale",
-      "disabled": "Disabled"
-    },
-    "lastRun": "Last Run",
-    "downloads": "Downloads",
-    "unknownFeed": "Unknown Feed",
-    "confirmDelete": {
-      "title": "Delete Automation Rule",
-      "message": "Are you sure you want to delete this automation rule? This action cannot be undone.",
-      "confirm": "Delete",
-      "cancel": "Cancel"
     }
   }
 }
