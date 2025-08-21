@@ -23,7 +23,7 @@ cd torbox-app
 docker compose up -d --build
 ```
 
-3. Open [http://localhost:3010](http://localhost:3010) and enter your TorBox API key to begin.
+3. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
 
 ### Option 2: Local Development
 
@@ -93,7 +93,7 @@ docker compose pull && docker compose up -d --build
 ```
 
 ### Configuration
-- **Port**: 3010 (accessible at http://localhost:3010)
+- **Port**: 3000 (accessible at http://localhost:3000)
 - **Health Check**: Available at `/api/health`
 - **Logs**: Mounted to `./logs` directory
 - **Data**: Mounted to `./data` directory (for persistence)
