@@ -10,9 +10,26 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 
 ## Getting Started
 
+### Option 1: Docker (Recommended)
+
 1. Clone the repository:
 ```bash
-git clone https://github.com/jittarao/torbox-app.git
+git clone https://github.com/crazycacti/torbox-app.git
+cd torbox-app
+```
+
+2. Build and start the application:
+```bash
+docker compose up -d --build
+```
+
+3. Open [http://localhost:3010](http://localhost:3010) and enter your TorBox API key to begin.
+
+### Option 2: Local Development
+
+1. Clone the repository:
+```bash
+git clone https://github.com/crazycacti/torbox-app.git
 cd torbox-app
 ```
 
@@ -34,6 +51,12 @@ yarn dev
 
 ## Requirements
 
+### For Docker:
+- Docker and Docker Compose
+- A running TorBox instance with API access
+- Valid TorBox API key
+
+### For Local Development:
 - Node.js 18.0 or later
 - A running TorBox instance with API access
 - Valid TorBox API key
@@ -44,6 +67,36 @@ yarn dev
 - Tailwind CSS
 - React Hooks
 - Server Components
+
+## Docker
+
+The application includes Docker support for easy deployment:
+
+### Quick Start
+```bash
+docker compose up -d --build
+```
+
+### Useful Commands
+```bash
+# View logs
+docker compose logs -f torbox-app
+
+# Stop the application
+docker compose down
+
+# Restart the application
+docker compose restart
+
+# Update and rebuild
+docker compose pull && docker compose up -d --build
+```
+
+### Configuration
+- **Port**: 3010 (accessible at http://localhost:3010)
+- **Health Check**: Available at `/api/health`
+- **Logs**: Mounted to `./logs` directory
+- **Data**: Mounted to `./data` directory (for persistence)
 
 ## Development
 
