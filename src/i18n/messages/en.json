@@ -25,6 +25,16 @@
       "archived": "Archived"
     }
   },
+  "Notifications": {
+    "notifications": "Notifications",
+    "loading": "Loading notifications...",
+    "noNotifications": "No notifications",
+    "testNotification": "Test notification",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "clear": "Clear",
+    "clearAll": "Clear all"
+  },
   "LandingPage": {
     "title": "TorBox Manager",
     "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",

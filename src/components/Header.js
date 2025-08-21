@@ -8,8 +8,9 @@ import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Icons from '@/components/icons';
 import { locales } from '@/i18n/settings';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
-export default function Header() {
+export default function Header({ apiKey }) {
   const t = useTranslations('Header');
   const pathname = usePathname();
   const [darkMode, setDarkMode] = useState(false);
@@ -132,8 +133,9 @@ export default function Header() {
             {/* Divider */}
             <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
-            {/* Dark mode toggle and Language Switcher */}
+            {/* Dark mode toggle, Notifications, and Language Switcher */}
             <div className="flex items-center gap-4">
+              {apiKey && <NotificationBell apiKey={apiKey} />}
               {isClient && (
                 <button
                   onClick={toggleDarkMode}

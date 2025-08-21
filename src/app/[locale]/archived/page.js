@@ -25,7 +25,7 @@ export default function ArchivedDownloadsPage() {
     <main
       className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
     >
-      <Header />
+      <Header apiKey={apiKey} />
       <div className="container mx-auto p-4">
         <ArchivedDownloads apiKey={apiKey} />
       </div>

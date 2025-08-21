@@ -7,9 +7,6 @@ const withNextIntl = createNextIntlPlugin();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    outputFileTracingRoot: undefined,
-  },
 };
 
 const withPWAConfig = withPWA({

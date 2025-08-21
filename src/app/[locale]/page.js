@@ -129,7 +129,7 @@ export default function Home() {
         <LandingPage onKeyChange={handleKeyChange} />
       ) : (
         <>
-          <Header />
+          <Header apiKey={apiKey} />
           <div className="container mx-auto p-4">
             <ApiKeyInput
               value={apiKey}
