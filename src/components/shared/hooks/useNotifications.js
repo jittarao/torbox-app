@@ -26,8 +26,22 @@ export function useNotifications(apiKey) {
       const response = await apiClient.getNotifications();
       
       if (response.success && response.data) {
-        setNotifications(response.data);
-        const unread = response.data.filter(notification => !notification.read).length;
+        // Get read notifications from localStorage
+        let readNotifications = [];
+        try {
+          readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+        } catch (error) {
+          console.error('Error reading read status from localStorage:', error);
+        }
+        
+        // Apply read status from localStorage
+        const notificationsWithReadStatus = response.data.map(notification => ({
+          ...notification,
+          read: notification.read || readNotifications.includes(notification.id)
+        }));
+        
+        setNotifications(notificationsWithReadStatus);
+        const unread = notificationsWithReadStatus.filter(notification => !notification.read).length;
         setUnreadCount(unread);
       } else {
         setError(response.error || 'Failed to fetch notifications');
@@ -53,6 +67,12 @@ export function useNotifications(apiKey) {
       if (response.success) {
         setNotifications([]);
         setUnreadCount(0);
+        // Clear read status from localStorage
+        try {
+          localStorage.removeItem('readNotifications');
+        } catch (error) {
+          console.error('Error clearing read status from localStorage:', error);
+        }
         return { success: true };
       } else {
         throw new Error(response.error || 'Failed to clear notifications');
@@ -73,6 +93,16 @@ export function useNotifications(apiKey) {
       if (response.success) {
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
         setUnreadCount(prev => Math.max(0, prev - 1));
+        
+        // Remove from read status in localStorage
+        try {
+          const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+          const updatedReadNotifications = readNotifications.filter(id => id !== notificationId);
+          localStorage.setItem('readNotifications', JSON.stringify(updatedReadNotifications));
+        } catch (error) {
+          console.error('Error updating read status in localStorage:', error);
+        }
+        
         return { success: true };
       } else {
         throw new Error(response.error || 'Failed to clear notification');
@@ -111,6 +141,17 @@ export function useNotifications(apiKey) {
       )
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
+    
+    // Store read status in localStorage
+    try {
+      const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+      if (!readNotifications.includes(notificationId)) {
+        readNotifications.push(notificationId);
+        localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+      }
+    } catch (error) {
+      console.error('Error saving read status to localStorage:', error);
+    }
   }, []);
 
   // Mark all notifications as read
@@ -119,7 +160,15 @@ export function useNotifications(apiKey) {
       prev.map(notification => ({ ...notification, read: true }))
     );
     setUnreadCount(0);
-  }, []);
+    
+    // Store all notification IDs as read in localStorage
+    try {
+      const allNotificationIds = notifications.map(n => n.id);
+      localStorage.setItem('readNotifications', JSON.stringify(allNotificationIds));
+    } catch (error) {
+      console.error('Error saving read status to localStorage:', error);
+    }
+  }, [notifications]);
 
   // Add new notification (for real-time updates)
   const addNotification = useCallback((notification) => {

@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import { FileHandler } from '@/components/shared/FileHandler';
 import { PostHogProvider } from './providers';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -56,12 +57,14 @@ export default async function LocaleLayout({ children, params }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
       >
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <PostHogProvider>
-            <FileHandler />
-            {children}
-          </PostHogProvider>
-        </NextIntlClientProvider>
+        <ThemeProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <PostHogProvider>
+              <FileHandler />
+              {children}
+            </PostHogProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
