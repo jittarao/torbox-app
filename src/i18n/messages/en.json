@@ -482,5 +482,26 @@
     "toast": {
       "magnetCopied": "Magnet link copied to clipboard"
     }
+  },
+  "SystemStatus": {
+    "refreshStatus": "Refresh system status",
+    "error": "Error",
+    "lastCheck": "Last check",
+    "never": "Never",
+    "justNow": "Just now",
+    "minutesAgo": "{minutes} minutes ago",
+    "hoursAgo": "{hours} hours ago",
+    "status": {
+      "healthy": "System Healthy",
+      "healthyDescription": "All systems are operating normally",
+      "apiUnhealthy": "API Connection Issue",
+      "apiUnhealthyDescription": "TorBox API is not responding properly",
+      "noApiKey": "No API Key",
+      "noApiKeyDescription": "API key is required to check TorBox connectivity",
+      "unhealthy": "System Unhealthy",
+      "unhealthyDescription": "Local application is experiencing issues",
+      "unknown": "Status Unknown",
+      "unknownDescription": "Unable to determine system status"
+    }
   }
 }

@@ -9,6 +9,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Icons from '@/components/icons';
 import { locales } from '@/i18n/settings';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
 
 export default function Header({ apiKey }) {
   const t = useTranslations('Header');
@@ -135,6 +136,7 @@ export default function Header({ apiKey }) {
 
             {/* Dark mode toggle, Notifications, and Language Switcher */}
             <div className="flex items-center gap-4">
+              <SystemStatusIndicator apiKey={apiKey} />
               {apiKey && <NotificationBell apiKey={apiKey} />}
               {isClient && (
                 <button
@@ -191,6 +193,12 @@ export default function Header({ apiKey }) {
               {t('menu.linkHistory')}
             </Link>
             <div className="py-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark">
+                  System Status
+                </span>
+                <SystemStatusIndicator apiKey={apiKey} />
+              </div>
               {isClient && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
