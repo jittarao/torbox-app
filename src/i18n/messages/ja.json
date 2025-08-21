@@ -91,7 +91,24 @@
   "SearchBar": {
     "placeholder": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
     "clearSearch": "検索をクリア",
-    "customEngines": "カスタムエンジン"
+    "customEngines": "カスタムエンジン",
+    "season": "シーズン",
+    "episode": "エピソード",
+    "year": "年",
+    "quality": "品質",
+    "search": "検索",
+    "recentSearches": "最近の検索",
+    "clearHistory": "クリア",
+    "searchExamples": "検索例",
+    "showAdvanced": "詳細を表示",
+    "hideAdvanced": "詳細を隠す",
+    "seasonPlaceholder": "S01",
+    "episodePlaceholder": "E01",
+    "yearPlaceholder": "2024",
+    "quality.all": "すべての品質",
+    "minSize": "最小サイズ (GB)",
+    "minSeeders": "最小シーダー",
+    "clearFilters": "フィルターをクリア"
   },
   "StatusSection": {
     "selectedItems": "{itemCount} {type}が選択されています ({size})",
