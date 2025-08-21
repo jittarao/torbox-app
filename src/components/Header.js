@@ -131,6 +131,16 @@ export default function Header({ apiKey }) {
               {t('menu.linkHistory')}
             </Link>
 
+            <Link
+              href="/rss"
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+                ${pathname === '/rss' || locales.some((locale) => pathname === `/${locale}/rss`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+            >
+              <Icons.Rss />
+              {t('menu.rss')}
+            </Link>
+
             {/* Divider */}
             <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
@@ -191,6 +201,16 @@ export default function Header({ apiKey }) {
               onClick={() => setIsMenuOpen(false)}
             >
               {t('menu.linkHistory')}
+            </Link>
+
+            <Link
+              href="/rss"
+              className={`block text-white dark:text-primary-text-dark font-medium 
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                ${pathname === '/rss' || locales.some((locale) => pathname === `/${locale}/rss`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t('menu.rss')}
             </Link>
             <div className="py-2 space-y-4">
               <div className="flex items-center justify-between">
