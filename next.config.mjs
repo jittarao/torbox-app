@@ -5,7 +5,12 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  output: 'standalone',
+  experimental: {
+    outputFileTracingRoot: undefined,
+  },
+};
 
 const withPWAConfig = withPWA({
   dest: 'public',
