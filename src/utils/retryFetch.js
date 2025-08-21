@@ -45,6 +45,21 @@ export async function retryFetch(url, options = {}) {
         };
       }
 
+      // Special handling for DATABASE_ERROR - allow retries since it might be temporary
+      if (!data.success && data.error === 'DATABASE_ERROR') {
+        retries++;
+        if (retries < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
+        } else {
+          return {
+            success: false,
+            error: data.error,
+            detail: data.detail,
+          };
+        }
+      }
+
       if (data.success) {
         return { success: true, data };
       }
