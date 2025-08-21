@@ -109,21 +109,62 @@ export async function DELETE(request) {
   const { id } = await request.json();
 
   try {
-    const response = await fetch(
-      `${API_BASE}/${API_VERSION}/api/usenet/controlusenetdownload`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+    // First, fetch the usenet data to determine if it's queued
+    const [downloadsResponse, queuedResponse] = await Promise.all([
+      fetch(
+        `${API_BASE}/${API_VERSION}/api/usenet/mylist?id=${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+          },
         },
-        body: JSON.stringify({
+      ),
+      fetch(
+        `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+          },
+        },
+      ),
+    ]);
+
+    const [downloadsData, queuedData] = await Promise.all([
+      downloadsResponse.json(),
+      queuedResponse.json(),
+    ]);
+
+    // Check if the usenet item is in the queued list
+    const isQueued = queuedData.data?.some(item => item.id === id);
+    
+    // Use appropriate endpoint based on whether usenet item is queued
+    const endpoint = isQueued 
+      ? `${API_BASE}/${API_VERSION}/api/queued/controlqueued`
+      : `${API_BASE}/${API_VERSION}/api/usenet/controlusenetdownload`;
+    
+    const body = isQueued
+      ? JSON.stringify({
+          queued_id: id,
+          operation: 'delete',
+          type: 'usenet',
+        })
+      : JSON.stringify({
           usenet_id: id,
           operation: 'delete',
-        }),
+        });
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-    );
+      body,
+    });
+    
     const data = await response.json();
     return Response.json(data);
   } catch (error) {
