@@ -33,7 +33,7 @@ export default function SearchPage() {
       className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans
                   text-primary-text dark:text-primary-text-dark`}
     >
-      <Header />
+      <Header apiKey={apiKey} />
       <div className="max-w-7xl mx-auto p-4">
         <ApiKeyInput
           value={apiKey}
