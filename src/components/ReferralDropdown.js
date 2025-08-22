@@ -89,6 +89,9 @@ export default function ReferralDropdown() {
             <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 mt-1">
               {t('description')}
             </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
+              {t('developerNote')}
+            </p>
           </div>
 
           <div className="p-4 space-y-3">

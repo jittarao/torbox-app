@@ -115,7 +115,8 @@
     "copyLink": "Copier le lien",
     "copyAll": "Tout copier",
     "copied": "Copié !",
-    "visitLink": "Visiter le lien"
+    "visitLink": "Visiter le lien",
+    "developerNote": "Ce sont les codes de parrainage du développeur"
   },
   "SearchBar": {
     "placeholder": "Rechercher par titre ou IMDB ID (e.g. imdb:tt0133093)...",
