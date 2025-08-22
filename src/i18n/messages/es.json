@@ -63,8 +63,9 @@
       "link": "torbox.app/settings"
     },
     "footer": {
-      "description": "No almacenamos ninguna de tu información. Esta aplicación es totalmente de código abierto en",
-      "github": "GitHub"
+      "description": "No almacenamos ninguna de sus información. Esta aplicación es completamente de código abierto en",
+      "github": "GitHub",
+      "forkNote": "Este es un fork del TorBox Manager de jittarao"
     }
   },
   "ApiKeyInput": {

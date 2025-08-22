@@ -63,8 +63,9 @@
       "link": "torbox.app/settings"
     },
     "footer": {
-      "description": "弊社ではお客様の情報を一切保存しません。このアプリは完全にオープンソースです",
-      "github": "GitHub"
+      "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
+      "github": "GitHub",
+      "forkNote": "これはjittaraoのTorBox Managerのフォークです"
     }
   },
   "ApiKeyInput": {
