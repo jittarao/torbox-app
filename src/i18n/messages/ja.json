@@ -686,6 +686,9 @@
       "reloadPage": "ページを再読み込み"
     },
     "retry": "再試行",
-    "noData": "データがありません"
+    "noData": "データがありません",
+    "referralLink": "紹介リンク",
+    "copyLink": "リンクをコピー",
+    "copyLinkFailed": "リンクのコピーに失敗しました"
   }
 }

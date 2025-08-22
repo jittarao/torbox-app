@@ -686,6 +686,9 @@
       "reloadPage": "Recargar Página"
     },
     "retry": "Reintentar",
-    "noData": "No hay datos disponibles"
+    "noData": "No hay datos disponibles",
+    "referralLink": "Enlace de referencia",
+    "copyLink": "Copiar enlace",
+    "copyLinkFailed": "Error al copiar el enlace"
   }
 }
