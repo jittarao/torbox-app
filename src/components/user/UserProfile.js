@@ -10,6 +10,7 @@ export default function UserProfile({ apiKey, setToast }) {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     if (!apiKey) {
@@ -61,6 +62,33 @@ export default function UserProfile({ apiKey, setToast }) {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyReferralLink = async () => {
+    if (!userData?.user_referral) return;
+    
+    const referralLink = `https://torbox.app/subscription?referral=${userData.user_referral}`;
+    
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+      
+      if (setToast) {
+        setToast({
+          message: t('copyLink'),
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to copy referral link:', err);
+      if (setToast) {
+        setToast({
+          message: t('copyLinkFailed'),
+          type: 'error',
+        });
+      }
     }
   };
 
@@ -173,6 +201,29 @@ export default function UserProfile({ apiKey, setToast }) {
                 <span className="text-muted dark:text-muted-dark">{t('profile.referralCode')}:</span>
                 <span className="text-text dark:text-text-dark font-medium font-mono text-sm">{userData.user_referral || 'N/A'}</span>
               </div>
+              
+              {/* Referral Link */}
+              {userData.user_referral && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted dark:text-muted-dark">{t('referralLink')}:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-text dark:text-text-dark font-medium font-mono text-sm max-w-xs truncate">
+                      https://torbox.app/subscription?referral={userData.user_referral}
+                    </span>
+                    <button
+                      onClick={copyReferralLink}
+                      className="p-1 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded transition-colors"
+                      title={t('copyLink')}
+                    >
+                      {copiedLink ? (
+                        <Icons.Check className="w-4 h-4" />
+                      ) : (
+                        <Icons.Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
               
               <div className="flex justify-between">
                 <span className="text-muted dark:text-muted-dark">{t('profile.createdAt')}:</span>

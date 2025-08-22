@@ -698,6 +698,9 @@
       "reloadPage": "Reload Page"
     },
     "retry": "Retry",
-    "noData": "No data available"
+    "noData": "No data available",
+    "referralLink": "Referral Link",
+    "copyLink": "Copy Link",
+    "copyLinkFailed": "Failed to copy link"
   }
 }
