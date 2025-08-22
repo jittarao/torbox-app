@@ -200,8 +200,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         if (
           data.success &&
           data.data &&
-          Array.isArray(data.data) &&
-          data.data.length > 0
+          Array.isArray(data.data)
         ) {
           // Sort items by added date if available
           const sortedItems = sortItems(data.data);
@@ -235,9 +234,15 @@ export function useFetchData(apiKey, type = 'torrents') {
           // Return the fetched data
           return sortedItems;
         } else {
-          console.error(`Invalid ${activeType} data format:`, data);
-          setLoading(false);
-          return [];
+          if (data.success && data.data && Array.isArray(data.data) && data.data.length === 0) {
+            // Empty data is valid, just return empty array
+            setLoading(false);
+            return [];
+          } else {
+            console.error(`Invalid ${activeType} data format:`, data);
+            setLoading(false);
+            return [];
+          }
         }
       } catch (err) {
         console.error(`Error fetching ${activeType} data:`, err);

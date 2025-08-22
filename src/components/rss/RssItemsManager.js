@@ -23,6 +23,12 @@ export default function RssItemsManager({ apiKey, setToast }) {
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [downloadingItems, setDownloadingItems] = useState(new Set());
+  const [componentError, setComponentError] = useState(null);
+
+  // Reset component error when apiKey changes
+  useEffect(() => {
+    setComponentError(null);
+  }, [apiKey]);
 
   // Fetch items for selected feed
   const fetchItems = useCallback(async (feedId) => {
@@ -39,6 +45,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
         setError(result.error);
       }
     } catch (err) {
+      console.error('Error fetching RSS items:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -47,8 +54,13 @@ export default function RssItemsManager({ apiKey, setToast }) {
 
   // Handle feed selection
   const handleFeedSelect = (feedId) => {
-    setSelectedFeed(feedId);
-    fetchItems(feedId);
+    try {
+      setSelectedFeed(feedId);
+      fetchItems(feedId);
+    } catch (error) {
+      console.error('Error in handleFeedSelect:', error);
+      setComponentError(error.message);
+    }
   };
 
   // Download an RSS item
@@ -65,16 +77,20 @@ export default function RssItemsManager({ apiKey, setToast }) {
 
     try {
       const feed = feeds.find(f => f.id === selectedFeed);
-      const downloadType = feed?.rss_type?.[0] || 'torrent';
+      const downloadType = feed?.type || 'torrent';
       
       let uploadData = {
         type: downloadType,
         data: item.link,
-        name: item.title,
         seed: feed?.torrent_seeding || 1,
         allowZip: true,
         asQueued: false,
       };
+
+      // Add name for non-NZB downloads or NZB downloads that aren't API links
+      if (downloadType !== 'usenet' || !item.link.includes('api')) {
+        uploadData.name = item.title;
+      }
 
       // Add password for webdl if available
       if (downloadType === 'webdl' && item.password) {
@@ -95,6 +111,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
         });
       }
     } catch (err) {
+      console.error('Error in handleDownload:', err);
       setToast({
         message: err.message || t('toast.downloadFailed'),
         type: 'error',
@@ -109,10 +126,12 @@ export default function RssItemsManager({ apiKey, setToast }) {
   };
 
   // Filter and sort items
-  const filteredAndSortedItems = items
+  const filteredAndSortedItems = (items || [])
     .filter(item => {
+      if (!item || typeof item !== 'object') return false;
+      
       // Search filter
-      if (searchTerm && !item.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (searchTerm && !item.title?.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
       
@@ -128,6 +147,8 @@ export default function RssItemsManager({ apiKey, setToast }) {
       return true;
     })
     .sort((a, b) => {
+      if (!a || !b) return 0;
+      
       let aValue, bValue;
       
       switch (sortBy) {
@@ -158,7 +179,11 @@ export default function RssItemsManager({ apiKey, setToast }) {
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return t('unknown');
-    return new Date(dateString).toLocaleString();
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return t('unknown');
+    }
   };
 
   // Get item type
@@ -167,6 +192,23 @@ export default function RssItemsManager({ apiKey, setToast }) {
     if (link?.includes('.nzb')) return 'usenet';
     return 'webdl';
   };
+
+  // Handle component errors
+  if (componentError) {
+    return (
+      <div className="text-center p-8 text-red-500">
+        <Icons.ExclamationTriangle className="w-8 h-8 mx-auto mb-2" />
+        <p>{t('error')}</p>
+        <p className="text-sm text-gray-500">{componentError}</p>
+        <button
+          onClick={() => setComponentError(null)}
+          className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

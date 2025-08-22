@@ -592,6 +592,7 @@
     "itemCount": "Items",
     "actions": "Actions",
     "noFeeds": "No RSS feeds configured",
+    "never": "Never",
     "loading": "Loading RSS feeds...",
     "error": "Error loading RSS feeds",
     "addSuccess": "RSS feed added successfully",

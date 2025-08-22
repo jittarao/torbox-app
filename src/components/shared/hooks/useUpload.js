@@ -123,16 +123,10 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
           if (filenameParam) {
             name = decodeURIComponent(filenameParam);
           } else {
-            // For API links without explicit filename, use a more descriptive name
+            // For API links without explicit filename, let the server extract from content disposition
+            // Use a generic name that won't interfere with server-side filename extraction
             const domain = url.hostname.replace('www.', '');
-            const pathParts = url.pathname.split('/').filter(Boolean);
-            const lastPathPart = pathParts[pathParts.length - 1];
-            
-            if (lastPathPart && lastPathPart !== 'api') {
-              name = `${domain} - ${lastPathPart}`;
-            } else {
-              name = `${domain} - NZB Download`;
-            }
+            name = `${domain} - NZB Download`;
           }
         } else if (link.includes('.nzb')) {
           // For direct .nzb file links, extract filename from URL
@@ -287,8 +281,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       formData.append('password', webdlPassword);
     }
 
-    // Add name if it exists
-    if (item.name) {
+    // Add name if it exists, but not for NZB API links that use content disposition
+    if (item.name && !(item.type === 'usenet' && item.data.includes('api') && (item.data.includes('nzb') || item.data.includes('usenet')))) {
       formData.append('name', item.name);
     }
 

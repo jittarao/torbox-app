@@ -22,15 +22,24 @@ export async function GET() {
       `${API_BASE}/${API_VERSION}/api/notifications/mynotifications`,
       {
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       },
     );
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return Response.json(
+        { success: false, error: errorData.detail || `HTTP ${response.status}` },
+        { status: response.status },
+      );
+    }
+
     const data = await response.json();
     return Response.json(data);
   } catch (error) {
+    console.error('Error fetching notifications:', error);
     return Response.json(
       { success: false, error: error.message },
       { status: 500 },
@@ -69,18 +78,34 @@ export async function POST(request) {
         );
     }
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}${endpoint}`, {
+    const requestOptions = {
       method,
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-    });
+    };
+
+    // Only add Content-Type and body for clear_all action
+    if (action === 'clear_all') {
+      requestOptions.headers['Content-Type'] = 'application/json';
+      requestOptions.body = JSON.stringify({});
+    }
+
+    const response = await fetch(`${API_BASE}/${API_VERSION}${endpoint}`, requestOptions);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return Response.json(
+        { success: false, error: errorData.detail || `HTTP ${response.status}` },
+        { status: response.status },
+      );
+    }
 
     const data = await response.json();
     return Response.json(data);
   } catch (error) {
+    console.error('Error with notification action:', error);
     return Response.json(
       { success: false, error: error.message },
       { status: 500 },

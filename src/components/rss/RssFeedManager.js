@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
 import Icons from '@/components/icons';
@@ -17,28 +17,34 @@ export default function RssFeedManager({ apiKey, setToast }) {
   const [formData, setFormData] = useState({
     name: '',
     url: '',
-    rss_type: ['torrent'],
+    rss_type: 'torrent',
     torrent_seeding: 1,
     do_regex: '',
     dont_regex: '',
-    scan_interval: [60],
+    scan_interval: 60,
     dont_older_than: 0,
     pass_check: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [componentError, setComponentError] = useState(null);
+
+  // Reset component error when apiKey changes
+  useEffect(() => {
+    setComponentError(null);
+  }, [apiKey]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.url.trim()) {
-      setToast({
-        message: t('validation.nameRequired'),
-        type: 'error',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
+      if (!formData.name.trim() || !formData.url.trim()) {
+        setToast({
+          message: t('validation.nameRequired'),
+          type: 'error',
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
       const result = editingFeed 
         ? await modifyFeed({ id: editingFeed.id, ...formData })
         : await addFeed(formData);
@@ -50,7 +56,17 @@ export default function RssFeedManager({ apiKey, setToast }) {
         });
         setShowAddForm(false);
         setEditingFeed(null);
-        setFormData({ name: '', url: '' });
+        setFormData({ 
+          name: '', 
+          url: '', 
+          rss_type: 'torrent',
+          torrent_seeding: 1,
+          do_regex: '',
+          dont_regex: '',
+          scan_interval: 60,
+          dont_older_than: 0,
+          pass_check: false
+        });
       } else {
         setToast({
           message: result.error,
@@ -58,6 +74,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
         });
       }
     } catch (error) {
+      console.error('Error in handleSubmit:', error);
       setToast({
         message: error.message,
         type: 'error',
@@ -68,35 +85,45 @@ export default function RssFeedManager({ apiKey, setToast }) {
   };
 
   const handleEdit = (feed) => {
-    setEditingFeed(feed);
-    setFormData({
-      name: feed.name || '',
-      url: feed.url || '',
-      rss_type: feed.rss_type || ['torrent'],
-      torrent_seeding: feed.torrent_seeding || 1,
-      do_regex: feed.do_regex || '',
-      dont_regex: feed.dont_regex || '',
-      scan_interval: feed.scan_interval || [60],
-      dont_older_than: feed.dont_older_than || 0,
-      pass_check: feed.pass_check || false
-    });
-    setShowAddForm(true);
+    try {
+      setEditingFeed(feed);
+      setFormData({
+        name: feed.name || '',
+        url: feed.url || '',
+        rss_type: feed.rss_type || 'torrent',
+        torrent_seeding: feed.torrent_seeding || 1,
+        do_regex: feed.do_regex || '',
+        dont_regex: feed.dont_regex || '',
+        scan_interval: feed.scan_interval || 60,
+        dont_older_than: feed.dont_older_than || 0,
+        pass_check: feed.pass_check || false
+      });
+      setShowAddForm(true);
+    } catch (error) {
+      console.error('Error in handleEdit:', error);
+      setComponentError(error.message);
+    }
   };
 
   const handleCancel = () => {
-    setShowAddForm(false);
-    setEditingFeed(null);
-    setFormData({
-      name: '',
-      url: '',
-      rss_type: ['torrent'],
-      torrent_seeding: 1,
-      do_regex: '',
-      dont_regex: '',
-      scan_interval: [60],
-      dont_older_than: 0,
-      pass_check: false
-    });
+    try {
+      setShowAddForm(false);
+      setEditingFeed(null);
+      setFormData({
+        name: '',
+        url: '',
+        rss_type: 'torrent',
+        torrent_seeding: 1,
+        do_regex: '',
+        dont_regex: '',
+        scan_interval: 60,
+        dont_older_than: 0,
+        pass_check: false
+      });
+    } catch (error) {
+      console.error('Error in handleCancel:', error);
+      setComponentError(error.message);
+    }
   };
 
   const handleControl = async (feedId, operation) => {
@@ -114,6 +141,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
         });
       }
     } catch (error) {
+      console.error('Error in handleControl:', error);
       setToast({
         message: error.message,
         type: 'error',
@@ -136,6 +164,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
         });
       }
     } catch (error) {
+      console.error('Error in handleDelete:', error);
       setToast({
         message: error.message,
         type: 'error',
@@ -145,8 +174,29 @@ export default function RssFeedManager({ apiKey, setToast }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return t('never');
-    return new Date(dateString).toLocaleString();
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return t('unknown');
+    }
   };
+
+  // Handle component errors
+  if (componentError) {
+    return (
+      <div className="text-center p-8 text-red-500">
+        <Icons.ExclamationTriangle className="w-8 h-8 mx-auto mb-2" />
+        <p>{t('error')}</p>
+        <p className="text-sm text-gray-500">{componentError}</p>
+        <button
+          onClick={() => setComponentError(null)}
+          className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -189,161 +239,161 @@ export default function RssFeedManager({ apiKey, setToast }) {
           <h3 className="text-lg font-medium mb-4 text-primary-text dark:text-primary-text-dark">
             {editingFeed ? t('editFeed') : t('addFeed')}
           </h3>
-                     <form onSubmit={handleSubmit} className="space-y-4">
-             {/* Basic Information */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('feedName')}
-                 </label>
-                 <input
-                   type="text"
-                   value={formData.name}
-                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                   placeholder={t('feedNamePlaceholder')}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                   required
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('feedUrl')}
-                 </label>
-                 <input
-                   type="url"
-                   value={formData.url}
-                   onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                   placeholder={t('feedUrlPlaceholder')}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                   required
-                 />
-               </div>
-             </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('feedName')}
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder={t('feedNamePlaceholder')}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('feedUrl')}
+                </label>
+                <input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  placeholder={t('feedUrlPlaceholder')}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                  required
+                />
+              </div>
+            </div>
 
-             {/* Download Settings */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('downloadType')}
-                 </label>
-                 <select
-                   value={formData.rss_type[0]}
-                   onChange={(e) => setFormData({ ...formData, rss_type: [e.target.value] })}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                 >
-                   <option value="torrent">{t('options.torrent')}</option>
-                   <option value="usenet">{t('options.usenet')}</option>
-                   <option value="webdl">{t('options.webdl')}</option>
-                 </select>
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('torrentSeeding')}
-                 </label>
-                 <select
-                   value={formData.torrent_seeding}
-                   onChange={(e) => setFormData({ ...formData, torrent_seeding: parseInt(e.target.value) })}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                 >
-                   <option value={1}>{t('options.auto')}</option>
-                   <option value={2}>{t('options.seed')}</option>
-                   <option value={3}>{t('options.dontSeed')}</option>
-                 </select>
-               </div>
-             </div>
+            {/* Download Settings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('downloadType')}
+                </label>
+                <select
+                  value={formData.rss_type}
+                  onChange={(e) => setFormData({ ...formData, rss_type: e.target.value })}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  <option value="torrent">{t('options.torrent')}</option>
+                  <option value="usenet">{t('options.usenet')}</option>
+                  <option value="webdl">{t('options.webdl')}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('torrentSeeding')}
+                </label>
+                <select
+                  value={formData.torrent_seeding}
+                  onChange={(e) => setFormData({ ...formData, torrent_seeding: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  <option value={1}>{t('options.auto')}</option>
+                  <option value={2}>{t('options.seed')}</option>
+                  <option value={3}>{t('options.dontSeed')}</option>
+                </select>
+              </div>
+            </div>
 
-             {/* Regex Filters */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('doRegex')}
-                 </label>
-                 <input
-                   type="text"
-                   value={formData.do_regex}
-                   onChange={(e) => setFormData({ ...formData, do_regex: e.target.value })}
-                   placeholder={t('doRegexPlaceholder')}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('dontRegex')}
-                 </label>
-                 <input
-                   type="text"
-                   value={formData.dont_regex}
-                   onChange={(e) => setFormData({ ...formData, dont_regex: e.target.value })}
-                   placeholder={t('dontRegexPlaceholder')}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                 />
-               </div>
-             </div>
+            {/* Regex Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('doRegex')}
+                </label>
+                <input
+                  type="text"
+                  value={formData.do_regex}
+                  onChange={(e) => setFormData({ ...formData, do_regex: e.target.value })}
+                  placeholder={t('doRegexPlaceholder')}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('dontRegex')}
+                </label>
+                <input
+                  type="text"
+                  value={formData.dont_regex}
+                  onChange={(e) => setFormData({ ...formData, dont_regex: e.target.value })}
+                  placeholder={t('dontRegexPlaceholder')}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+            </div>
 
-             {/* Timing Settings */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('scanInterval')}
-                 </label>
-                 <input
-                   type="number"
-                   min="1"
-                   value={formData.scan_interval[0]}
-                   onChange={(e) => setFormData({ ...formData, scan_interval: [parseInt(e.target.value) || 60] })}
-                   placeholder={t('scanIntervalPlaceholder')}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                   {t('dontOlderThan')}
-                 </label>
-                 <input
-                   type="number"
-                   min="0"
-                   value={formData.dont_older_than}
-                   onChange={(e) => setFormData({ ...formData, dont_older_than: parseInt(e.target.value) || 0 })}
-                   placeholder={t('dontOlderThanPlaceholder')}
-                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
-                 />
-               </div>
-             </div>
+            {/* Timing Settings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('scanInterval')}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.scan_interval}
+                  onChange={(e) => setFormData({ ...formData, scan_interval: parseInt(e.target.value) || 60 })}
+                  placeholder={t('scanIntervalPlaceholder')}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                  {t('dontOlderThan')}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.dont_older_than}
+                  onChange={(e) => setFormData({ ...formData, dont_older_than: parseInt(e.target.value) || 0 })}
+                  placeholder={t('dontOlderThanPlaceholder')}
+                  className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+            </div>
 
-             {/* Advanced Settings */}
-             <div>
-               <label className="flex items-center gap-2 text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                 <input
-                   type="checkbox"
-                   checked={formData.pass_check}
-                   onChange={(e) => setFormData({ ...formData, pass_check: e.target.checked })}
-                   className="rounded border-border dark:border-border-dark text-accent focus:ring-accent"
-                 />
-                 {t('passCheck')}
-               </label>
-               <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
-                 {t('passCheckDescription')}
-               </p>
-             </div>
+            {/* Advanced Settings */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+                <input
+                  type="checkbox"
+                  checked={formData.pass_check}
+                  onChange={(e) => setFormData({ ...formData, pass_check: e.target.checked })}
+                  className="rounded border-border dark:border-border-dark text-accent focus:ring-accent"
+                />
+                {t('passCheck')}
+              </label>
+              <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                {t('passCheckDescription')}
+              </p>
+            </div>
 
-             <div className="flex gap-3">
-               <button
-                 type="submit"
-                 disabled={isSubmitting}
-                 className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-               >
-                 {isSubmitting ? <Spinner size="sm" /> : <Icons.Check className="w-4 h-4" />}
-                 {t('save')}
-               </button>
-               <button
-                 type="button"
-                 onClick={handleCancel}
-                 className="px-4 py-2 border border-border dark:border-border-dark rounded-lg text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
-               >
-                 {t('cancel')}
-               </button>
-             </div>
-           </form>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmitting ? <Spinner size="sm" /> : <Icons.Check className="w-4 h-4" />}
+                {t('save')}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-4 py-2 border border-border dark:border-border-dark rounded-lg text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

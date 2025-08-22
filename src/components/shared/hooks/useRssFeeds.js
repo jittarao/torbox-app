@@ -65,7 +65,16 @@ export function useRssFeeds(apiKey) {
         await fetchFeeds();
         return { success: true, data: data.data };
       } else {
-        return { success: false, error: data.error || 'Failed to add RSS feed' };
+        // Handle both string and array error formats
+        let errorMessage = 'Failed to add RSS feed';
+        if (data.error) {
+          if (Array.isArray(data.error)) {
+            errorMessage = data.error.join(', ');
+          } else {
+            errorMessage = data.error;
+          }
+        }
+        return { success: false, error: errorMessage };
       }
     } catch (err) {
       console.error('Error adding RSS feed:', err);
@@ -97,7 +106,16 @@ export function useRssFeeds(apiKey) {
         await fetchFeeds();
         return { success: true, data: data.data };
       } else {
-        return { success: false, error: data.error || 'Failed to modify RSS feed' };
+        // Handle both string and array error formats
+        let errorMessage = 'Failed to modify RSS feed';
+        if (data.error) {
+          if (Array.isArray(data.error)) {
+            errorMessage = data.error.join(', ');
+          } else {
+            errorMessage = data.error;
+          }
+        }
+        return { success: false, error: errorMessage };
       }
     } catch (err) {
       console.error('Error modifying RSS feed:', err);
@@ -117,7 +135,7 @@ export function useRssFeeds(apiKey) {
           'x-api-key': apiKey,
         },
         body: JSON.stringify({
-          feed_id: feedId,
+          rss_feed_id: feedId,
           operation,
         }),
       });
@@ -126,10 +144,23 @@ export function useRssFeeds(apiKey) {
 
       if (data.success) {
         // Refresh feeds after control operation
-        await fetchFeeds();
+        try {
+          await fetchFeeds();
+        } catch (error) {
+          console.error('Failed to refresh feeds:', error);
+        }
         return { success: true, data: data.data };
       } else {
-        return { success: false, error: data.error || 'Failed to control RSS feed' };
+        // Handle both string and array error formats
+        let errorMessage = 'Failed to control RSS feed';
+        if (data.error) {
+          if (Array.isArray(data.error)) {
+            errorMessage = data.error.join(', ');
+          } else {
+            errorMessage = data.error;
+          }
+        }
+        return { success: false, error: errorMessage };
       }
     } catch (err) {
       console.error('Error controlling RSS feed:', err);
