@@ -68,20 +68,9 @@ yarn dev
 - React Hooks
 - Server Components
 
-## Docker
-
-The application includes Docker support for easy deployment with multiple environments:
-
-### Quick Start (Production)
-```bash
-# Deploy using pre-built image from GitHub Container Registry
-docker compose up -d
-```
-
 ### Configuration
 - **Port**: 3000 (accessible at http://localhost:3000)
 - **Health Check**: Available at `/api/health`
-- **Image**: `ghcr.io/crazycacti/torbox-app:latest`
 
 ## Development
 
