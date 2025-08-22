@@ -1,11 +1,12 @@
-
-
 services:
   torbox-app:
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
+      # Build arguments for optimization
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: torbox-app
     restart: unless-stopped
     ports:
@@ -14,10 +15,12 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - NEXT_TELEMETRY_DISABLED=1
     volumes:
       - ./logs:/app/logs:rw
       - ./data:/app/data:rw
       - next-cache:/app/.next/cache:rw
+    # Enhanced security settings
     security_opt:
       - no-new-privileges:true
       - seccomp:unconfined
@@ -43,9 +46,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-
-
-
 
 networks:
   torbox-network:

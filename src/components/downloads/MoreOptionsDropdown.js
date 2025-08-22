@@ -26,7 +26,7 @@ export default function MoreOptionsDropdown({
     return () => setIsMounted(false);
   }, []);
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside and handle window resize
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -40,8 +40,27 @@ export default function MoreOptionsDropdown({
       }
     };
 
+    const handleResize = () => {
+      if (isMenuOpen) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const handleScroll = () => {
+      if (isMenuOpen) {
+        setIsMenuOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
   }, [isMenuOpen]);
 
   // Calculate menu position when it opens
@@ -51,24 +70,41 @@ export default function MoreOptionsDropdown({
     if (!isMenuOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const menuWidth = 192; // w-48 = 12rem = 192px
+      const menuHeight = 200; // Approximate height of the menu
       
-      // Check if there's enough space on the right side
+      // Calculate available space in all directions
       const spaceOnRight = window.innerWidth - rect.right;
       const spaceOnLeft = rect.left;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
       
-      // Position the menu to the right of the button if there's enough space
-      // Otherwise, position it to the left of the button
-      if (spaceOnRight >= menuWidth || spaceOnRight > spaceOnLeft) {
-        setMenuPosition({
-          top: rect.bottom,
-          left: rect.right,
-        });
+      // Determine horizontal position
+      let left;
+      if (spaceOnRight >= menuWidth) {
+        // Enough space on the right
+        left = rect.right;
+      } else if (spaceOnLeft >= menuWidth) {
+        // Enough space on the left
+        left = rect.left - menuWidth;
       } else {
-        setMenuPosition({
-          top: rect.bottom,
-          left: rect.left - menuWidth,
-        });
+        // Not enough space on either side, position to avoid overflow
+        left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, rect.left));
       }
+      
+      // Determine vertical position
+      let top;
+      if (spaceBelow >= menuHeight) {
+        // Enough space below
+        top = rect.bottom;
+      } else if (spaceAbove >= menuHeight) {
+        // Enough space above
+        top = rect.top - menuHeight;
+      } else {
+        // Not enough space above or below, position to avoid overflow
+        top = Math.max(8, Math.min(window.innerHeight - menuHeight - 8, rect.bottom));
+      }
+      
+      setMenuPosition({ top, left });
     }
 
     setIsMenuOpen(!isMenuOpen);
@@ -386,7 +422,7 @@ export default function MoreOptionsDropdown({
         createPortal(
           <div
             ref={menuRef}
-            className="fixed z-50 w-48 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
+            className="fixed z-50 w-48 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg animate-in fade-in-0 zoom-in-95 duration-100"
             style={{
               top: `${menuPosition.top}px`,
               left: `${menuPosition.left}px`,

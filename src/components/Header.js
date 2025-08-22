@@ -122,6 +122,16 @@ export default function Header({ apiKey }) {
               {t('menu.rss')}
             </Link>
 
+            <Link
+              href="/user"
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+                ${pathname === '/user' || locales.some((locale) => pathname === `/${locale}/user`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+            >
+              <Icons.User />
+              {t('menu.user')}
+            </Link>
+
             {/* Divider */}
             <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
@@ -183,6 +193,16 @@ export default function Header({ apiKey }) {
               onClick={() => setIsMenuOpen(false)}
             >
               {t('menu.linkHistory')}
+            </Link>
+
+            <Link
+              href="/user"
+              className={`block text-white dark:text-primary-text-dark font-medium 
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                ${pathname === '/user' || locales.some((locale) => pathname === `/${locale}/user`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t('menu.user')}
             </Link>
 
             <Link

@@ -24,6 +24,7 @@
       "linkHistory": "Link-Verlauf",
       "archived": "Archiviert",
       "rss": "RSS-Feeds",
+      "user": "Benutzer",
       "systemStatus": "Systemstatus",
       "referrals": "Empfehlungen",
       "notifications": "Benachrichtigungen"
@@ -518,6 +519,27 @@
       "magnetCopied": "Magnet-Link in die Zwischenablage kopiert"
     }
   },
+  "SystemStatus": {
+    "refreshStatus": "Systemstatus aktualisieren",
+    "error": "Fehler",
+    "lastCheck": "Letzte Prüfung",
+    "never": "Nie",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {minutes} Minuten",
+    "hoursAgo": "vor {hours} Stunden",
+    "status": {
+      "healthy": "System Gesund",
+      "healthyDescription": "Alle Systeme funktionieren normal",
+      "apiUnhealthy": "API-Verbindungsproblem",
+      "apiUnhealthyDescription": "TorBox API antwortet nicht ordnungsgemäß",
+      "noApiKey": "Kein API-Schlüssel",
+      "noApiKeyDescription": "API-Schlüssel ist erforderlich, um TorBox-Konnektivität zu prüfen",
+      "unhealthy": "System Ungesund",
+      "unhealthyDescription": "Lokale Anwendung hat Probleme",
+      "unknown": "Status Unbekannt",
+      "unknownDescription": "Systemstatus kann nicht bestimmt werden"
+    }
+  },
   "RssFeeds": {
     "pageTitle": "RSS-Verwaltung",
     "pageDescription": "RSS-Feeds verwalten und Elemente durchsuchen",
@@ -622,5 +644,48 @@
       "downloadStarted": "Download erfolgreich gestartet",
       "downloadFailed": "Download konnte nicht gestartet werden"
     }
+  },
+  "User": {
+    "title": "Benutzerprofil",
+    "description": "Verwalten Sie Ihr Konto und sehen Sie Ihre Statistiken",
+    "profile": {
+      "title": "Benutzerprofil",
+      "basicInfo": "Grundinformationen",
+      "accountStatus": "Kontostatus",
+      "usage": "Nutzungsstatistiken",
+      "downloadBreakdown": "Download-Aufschlüsselung",
+      "email": "E-Mail",
+      "userId": "Benutzer-ID",
+      "referralCode": "Empfehlungscode",
+      "createdAt": "Erstellt am",
+      "lastLogin": "Letzte Aktualisierung",
+      "status": "Status",
+      "plan": "Plan",
+      "planExpiry": "Plan-Ablauf",
+      "totalDownloads": "Gesamte Downloads",
+      "totalSize": "Gesamt heruntergeladen",
+      "totalUploaded": "Gesamt hochgeladen",
+      "torrentDownloads": "Torrent-Downloads",
+      "webDownloads": "Web-Downloads",
+      "usenetDownloads": "Usenet-Downloads"
+    },
+    "status": {
+      "free": "Kostenlos",
+      "active": "Aktiv",
+      "expired": "Abgelaufen"
+    },
+    "plans": {
+      "free": "Kostenlos",
+      "essential": "Essential",
+      "pro": "Pro",
+      "standard": "Standard",
+      "unknown": "Unbekannt"
+    },
+    "errors": {
+      "renderError": "Beim Rendern des Profils ist ein Fehler aufgetreten",
+      "reloadPage": "Seite neu laden"
+    },
+    "retry": "Wiederholen",
+    "noData": "Keine Daten verfügbar"
   }
 }
