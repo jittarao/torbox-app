@@ -20,9 +20,28 @@ export default function ReferralDropdown() {
       }
     };
 
+    const handleResize = () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleScroll = () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isOpen]);
 
   const copyToClipboard = async (text, item) => {
     try {
@@ -62,7 +81,7 @@ export default function ReferralDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 py-2 w-80 bg-white dark:bg-surface-alt-dark rounded-md shadow-lg border border-primary-border dark:border-border-dark">
+        <div className="absolute right-0 z-50 mt-2 py-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-surface-alt-dark rounded-md shadow-lg border border-primary-border dark:border-border-dark">
           <div className="px-4 py-3 border-b border-border dark:border-border-dark">
             <h3 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
               {t('title')}

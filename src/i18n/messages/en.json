@@ -24,6 +24,7 @@
       "linkHistory": "Link History",
       "archived": "Archived",
       "rss": "RSS Feeds",
+      "user": "User",
       "systemStatus": "System Status",
       "referrals": "Referrals",
       "notifications": "Notifications"
@@ -655,5 +656,48 @@
       "downloadStarted": "Download started successfully",
       "downloadFailed": "Failed to start download"
     }
+  },
+  "User": {
+    "title": "User Profile",
+    "description": "Manage your account and view your statistics",
+    "profile": {
+      "title": "User Profile",
+      "basicInfo": "Basic Information",
+      "accountStatus": "Account Status",
+      "usage": "Usage Statistics",
+      "downloadBreakdown": "Download Breakdown",
+      "email": "Email",
+      "userId": "User ID",
+      "referralCode": "Referral Code",
+      "createdAt": "Created At",
+      "lastLogin": "Last Updated",
+      "status": "Status",
+      "plan": "Plan",
+      "planExpiry": "Plan Expiry",
+      "totalDownloads": "Total Downloads",
+      "totalSize": "Total Downloaded",
+      "totalUploaded": "Total Uploaded",
+      "torrentDownloads": "Torrent Downloads",
+      "webDownloads": "Web Downloads",
+      "usenetDownloads": "Usenet Downloads"
+    },
+    "status": {
+      "free": "Free",
+      "active": "Active",
+      "expired": "Expired"
+    },
+    "plans": {
+      "free": "Free",
+      "essential": "Essential",
+      "pro": "Pro",
+      "standard": "Standard",
+      "unknown": "Unknown"
+    },
+    "errors": {
+      "renderError": "An error occurred while rendering the profile",
+      "reloadPage": "Reload Page"
+    },
+    "retry": "Retry",
+    "noData": "No data available"
   }
 }

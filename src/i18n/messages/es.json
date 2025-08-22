@@ -24,6 +24,7 @@
       "linkHistory": "Historial de enlaces",
       "archived": "Archivados",
       "rss": "Feeds RSS",
+      "user": "Usuario",
       "systemStatus": "Estado del sistema",
       "referrals": "Referencias",
       "notifications": "Notificaciones"
@@ -518,6 +519,27 @@
       "magnetCopied": "Enlace magnético copiado al portapapeles"
     }
   },
+  "SystemStatus": {
+    "refreshStatus": "Actualizar estado del sistema",
+    "error": "Error",
+    "lastCheck": "Última verificación",
+    "never": "Nunca",
+    "justNow": "Ahora mismo",
+    "minutesAgo": "hace {minutes} minutos",
+    "hoursAgo": "hace {hours} horas",
+    "status": {
+      "healthy": "Sistema Saludable",
+      "healthyDescription": "Todos los sistemas funcionan normalmente",
+      "apiUnhealthy": "Problema de Conexión API",
+      "apiUnhealthyDescription": "La API de TorBox no responde correctamente",
+      "noApiKey": "Sin Clave API",
+      "noApiKeyDescription": "Se requiere clave API para verificar la conectividad de TorBox",
+      "unhealthy": "Sistema No Saludable",
+      "unhealthyDescription": "La aplicación local está experimentando problemas",
+      "unknown": "Estado Desconocido",
+      "unknownDescription": "No se puede determinar el estado del sistema"
+    }
+  },
   "RssFeeds": {
     "pageTitle": "Gestión de RSS",
     "pageDescription": "Gestionar feeds RSS y explorar elementos",
@@ -622,5 +644,48 @@
       "downloadStarted": "Descarga iniciada exitosamente",
       "downloadFailed": "No se pudo iniciar la descarga"
     }
+  },
+  "User": {
+    "title": "Perfil de Usuario",
+    "description": "Gestiona tu cuenta y ve tus estadísticas",
+    "profile": {
+      "title": "Perfil de Usuario",
+      "basicInfo": "Información Básica",
+      "accountStatus": "Estado de la Cuenta",
+      "usage": "Estadísticas de Uso",
+      "downloadBreakdown": "Desglose de Descargas",
+      "email": "Correo Electrónico",
+      "userId": "ID de Usuario",
+      "referralCode": "Código de Referencia",
+      "createdAt": "Creado El",
+      "lastLogin": "Última Actualización",
+      "status": "Estado",
+      "plan": "Plan",
+      "planExpiry": "Vencimiento del Plan",
+      "totalDownloads": "Total de Descargas",
+      "totalSize": "Total Descargado",
+      "totalUploaded": "Total Subido",
+      "torrentDownloads": "Descargas de Torrent",
+      "webDownloads": "Descargas Web",
+      "usenetDownloads": "Descargas Usenet"
+    },
+    "status": {
+      "free": "Gratis",
+      "active": "Activo",
+      "expired": "Expirado"
+    },
+    "plans": {
+      "free": "Gratis",
+      "essential": "Esencial",
+      "pro": "Pro",
+      "standard": "Estándar",
+      "unknown": "Desconocido"
+    },
+    "errors": {
+      "renderError": "Ocurrió un error al renderizar el perfil",
+      "reloadPage": "Recargar Página"
+    },
+    "retry": "Reintentar",
+    "noData": "No hay datos disponibles"
   }
 }

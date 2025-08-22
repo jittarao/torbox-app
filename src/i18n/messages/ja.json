@@ -24,6 +24,7 @@
       "linkHistory": "リンク履歴",
       "archived": "アーカイブ",
       "rss": "RSSフィード",
+      "user": "ユーザー",
       "systemStatus": "システムステータス",
       "referrals": "紹介",
       "notifications": "通知"
@@ -518,6 +519,27 @@
       "magnetCopied": "マグネットリンクがクリップボードにコピーされました"
     }
   },
+  "SystemStatus": {
+    "refreshStatus": "システムステータスを更新",
+    "error": "エラー",
+    "lastCheck": "最終チェック",
+    "never": "なし",
+    "justNow": "今",
+    "minutesAgo": "{minutes}分前",
+    "hoursAgo": "{hours}時間前",
+    "status": {
+      "healthy": "システム正常",
+      "healthyDescription": "すべてのシステムが正常に動作しています",
+      "apiUnhealthy": "API接続の問題",
+      "apiUnhealthyDescription": "TorBox APIが正常に応答していません",
+      "noApiKey": "APIキーなし",
+      "noApiKeyDescription": "TorBox接続を確認するにはAPIキーが必要です",
+      "unhealthy": "システム異常",
+      "unhealthyDescription": "ローカルアプリケーションに問題が発生しています",
+      "unknown": "ステータス不明",
+      "unknownDescription": "システムステータスを確認できません"
+    }
+  },
   "RssFeeds": {
     "pageTitle": "RSS管理",
     "pageDescription": "RSSフィードの管理とアイテムの閲覧",
@@ -622,5 +644,48 @@
       "downloadStarted": "ダウンロードが正常に開始されました",
       "downloadFailed": "ダウンロードの開始に失敗しました"
     }
+  },
+  "User": {
+    "title": "ユーザープロフィール",
+    "description": "アカウントを管理し、統計を確認",
+    "profile": {
+      "title": "ユーザープロフィール",
+      "basicInfo": "基本情報",
+      "accountStatus": "アカウントステータス",
+      "usage": "使用統計",
+      "downloadBreakdown": "ダウンロード内訳",
+      "email": "メールアドレス",
+      "userId": "ユーザーID",
+      "referralCode": "紹介コード",
+      "createdAt": "作成日",
+      "lastLogin": "最終更新",
+      "status": "ステータス",
+      "plan": "プラン",
+      "planExpiry": "プラン期限",
+      "totalDownloads": "総ダウンロード数",
+      "totalSize": "総ダウンロード容量",
+      "totalUploaded": "総アップロード容量",
+      "torrentDownloads": "トレントダウンロード",
+      "webDownloads": "Webダウンロード",
+      "usenetDownloads": "ユーズネットダウンロード"
+    },
+    "status": {
+      "free": "無料",
+      "active": "アクティブ",
+      "expired": "期限切れ"
+    },
+    "plans": {
+      "free": "無料",
+      "essential": "エッセンシャル",
+      "pro": "プロ",
+      "standard": "スタンダード",
+      "unknown": "不明"
+    },
+    "errors": {
+      "renderError": "プロフィールの表示中にエラーが発生しました",
+      "reloadPage": "ページを再読み込み"
+    },
+    "retry": "再試行",
+    "noData": "データがありません"
   }
 }
