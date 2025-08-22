@@ -115,7 +115,8 @@
     "copyLink": "Link kopieren",
     "copyAll": "Alles kopieren",
     "copied": "Kopiert!",
-    "visitLink": "Link besuchen"
+    "visitLink": "Link besuchen",
+    "developerNote": "Dies sind die Empfehlungscodes des Entwicklers"
   },
   "SearchBar": {
     "placeholder": "Suche nach Titel oder IMDB ID (z.B. imdb:tt0133093)...",
