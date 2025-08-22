@@ -1,67 +1,14 @@
+
 services:
   torbox-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
-      # Build arguments for optimization
-      args:
-        BUILDKIT_INLINE_CACHE: 1
+    image: ghcr.io/crazycacti/torbox-app:latest
     container_name: torbox-app
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
-      - NEXT_TELEMETRY_DISABLED=1
-    volumes:
-      - ./logs:/app/logs:rw
-      - ./data:/app/data:rw
-      - next-cache:/app/.next/cache:rw
-    # Enhanced security settings
-    security_opt:
-      - no-new-privileges:true
-      - seccomp:unconfined
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
-      - /var/tmp:noexec,nosuid,size=100m
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
-    user: "1001:1001"  # nextjs user from Alpine image
-    networks:
-      - torbox-network
-
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '2'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-
-networks:
-  torbox-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
-    driver_opts:
-      com.docker.network.bridge.name: torbox-br0
-
-volumes:
-  torbox-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data
-  next-cache:
-    driver: local
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.tbm.rule=Host(`${TORBOX_MANAGER_HOSTNAME?}`)"
+    #   - "traefik.http.routers.tbm.entrypoints=websecure"
+    #   - "traefik.http.routers.tbm.tls.certresolver=myresolver"
+    #   - "traefik.http.routers.tbm.middlewares=authelia@docker"
