@@ -580,6 +580,7 @@
     "itemCount": "アイテム",
     "actions": "アクション",
     "noFeeds": "RSSフィードが設定されていません",
+    "never": "なし",
     "loading": "RSSフィードを読み込み中...",
     "error": "RSSフィードの読み込みエラー",
     "addSuccess": "RSSフィードが正常に追加されました",

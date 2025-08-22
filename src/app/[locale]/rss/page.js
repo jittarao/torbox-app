@@ -13,28 +13,36 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function RssPage() {
-  const t = useTranslations('RssFeeds');
   const [toast, setToast] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState('feeds');
+  const [error, setError] = useState(null);
+
+  // Move translations hook to top level - always call it
+  const t = useTranslations('RssFeeds');
 
   useEffect(() => {
-    setIsClient(true);
+    try {
+      setIsClient(true);
 
-    // Load API key from storage (same as main page)
-    const storedKey = localStorage.getItem('torboxApiKey');
-    const storedKeys = localStorage.getItem('torboxApiKeys');
+      // Load API key from storage (same as main page)
+      const storedKey = localStorage.getItem('torboxApiKey');
+      const storedKeys = localStorage.getItem('torboxApiKeys');
 
-    if (storedKey) {
-      setApiKey(storedKey);
-    } else if (storedKeys) {
-      // If no active key but we have stored keys, use the first one
-      const keys = JSON.parse(storedKeys);
-      if (keys.length > 0) {
-        setApiKey(keys[0].key);
-        localStorage.setItem('torboxApiKey', keys[0].key);
+      if (storedKey) {
+        setApiKey(storedKey);
+      } else if (storedKeys) {
+        // If no active key but we have stored keys, use the first one
+        const keys = JSON.parse(storedKeys);
+        if (keys.length > 0) {
+          setApiKey(keys[0].key);
+          localStorage.setItem('torboxApiKey', keys[0].key);
+        }
       }
+    } catch (err) {
+      console.error('Error in RSS page useEffect:', err);
+      setError(err.message);
     }
   }, []);
 
@@ -58,7 +66,6 @@ export default function RssPage() {
       icon: Icons.List,
       component: RssItemsManager,
     },
-
   ];
 
   // Don't render anything until client-side hydration is complete
@@ -67,6 +74,26 @@ export default function RssPage() {
       <div
         className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
       ></div>
+    );
+  }
+
+  // Handle errors
+  if (error) {
+    return (
+      <div className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4 text-red-600">Error Loading RSS Page</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

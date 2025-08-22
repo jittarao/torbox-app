@@ -580,6 +580,7 @@
     "itemCount": "Éléments",
     "actions": "Actions",
     "noFeeds": "Aucun flux RSS configuré",
+    "never": "Jamais",
     "loading": "Chargement des flux RSS...",
     "error": "Erreur lors du chargement des flux RSS",
     "addSuccess": "Flux RSS ajouté avec succès",

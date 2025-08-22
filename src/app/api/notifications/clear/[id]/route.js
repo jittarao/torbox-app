@@ -31,16 +31,25 @@ export async function POST(request, { params }) {
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
+        // Don't send a request body for individual notification clear
       },
     );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return Response.json(
+        { success: false, error: errorData.detail || `HTTP ${response.status}` },
+        { status: response.status },
+      );
+    }
 
     const data = await response.json();
     return Response.json(data);
   } catch (error) {
+    console.error('Error clearing notification:', error);
     return Response.json(
       { success: false, error: error.message },
       { status: 500 },

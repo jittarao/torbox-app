@@ -99,12 +99,18 @@ export default function SearchResults({ apiKey }) {
     try {
       let result;
       if (searchType === 'usenet') {
-        result = await uploadItem({
+        const uploadData = {
           type: 'usenet',
           data: item.nzb,
-          name: item.raw_title,
           asQueued: false,
-        });
+        };
+        
+        // Only add name for non-API NZB links
+        if (!item.nzb.includes('api')) {
+          uploadData.name = item.raw_title;
+        }
+        
+        result = await uploadItem(uploadData);
       } else {
         result = await uploadItem({
           type: 'magnet',

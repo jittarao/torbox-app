@@ -25,7 +25,37 @@ export function useNotifications(apiKey) {
     try {
       const response = await apiClient.getNotifications();
       
-      if (response.success && response.data) {
+      if (response.success) {
+        // Handle different response formats from TorBox API
+        let notificationData = [];
+        
+        if (response.data) {
+          if (Array.isArray(response.data)) {
+            notificationData = response.data;
+          } else if (response.data.data && Array.isArray(response.data.data)) {
+            // Nested data structure
+            notificationData = response.data.data;
+          } else if (typeof response.data === 'object') {
+            // Single notification object
+            notificationData = [response.data];
+          }
+        } else if (Array.isArray(response)) {
+          // Direct array response
+          notificationData = response;
+        }
+        
+        // Filter out notifications that have been cleared locally (due to TorBox API bug)
+        let clearedNotifications = [];
+        try {
+          clearedNotifications = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
+        } catch (error) {
+          console.error('Error reading cleared notifications from localStorage:', error);
+        }
+        
+        const filteredNotifications = notificationData.filter(notification => 
+          !clearedNotifications.includes(notification.id)
+        );
+        
         // Get read notifications from localStorage
         let readNotifications = [];
         try {
@@ -35,7 +65,7 @@ export function useNotifications(apiKey) {
         }
         
         // Apply read status from localStorage
-        const notificationsWithReadStatus = response.data.map(notification => ({
+        const notificationsWithReadStatus = filteredNotifications.map(notification => ({
           ...notification,
           read: notification.read || readNotifications.includes(notification.id)
         }));
@@ -59,12 +89,22 @@ export function useNotifications(apiKey) {
 
   // Clear all notifications
   const clearAllNotifications = useCallback(async () => {
-    if (!apiKey) return;
+    if (!apiKey) return { success: false, error: 'No API key provided' };
 
     try {
       const response = await apiClient.clearAllNotifications();
       
-      if (response.success) {
+      if (response && response.success) {
+        // Store all current notification IDs as cleared to prevent them from showing up again
+        try {
+          const currentNotificationIds = notifications.map(n => n.id);
+          const clearedNotifications = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
+          const updatedClearedNotifications = [...new Set([...clearedNotifications, ...currentNotificationIds])];
+          localStorage.setItem('clearedNotifications', JSON.stringify(updatedClearedNotifications));
+        } catch (error) {
+          console.error('Error storing cleared notifications in localStorage:', error);
+        }
+        
         setNotifications([]);
         setUnreadCount(0);
         // Clear read status from localStorage
@@ -73,24 +113,55 @@ export function useNotifications(apiKey) {
         } catch (error) {
           console.error('Error clearing read status from localStorage:', error);
         }
-        return { success: true };
+        return { 
+          success: true, 
+          message: 'All notifications cleared successfully'
+        };
       } else {
-        throw new Error(response.error || 'Failed to clear notifications');
+        const errorMsg = response?.error || response?.detail || 'Failed to clear notifications';
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error clearing notifications:', error);
       return { success: false, error: error.message };
     }
-  }, [apiKey, apiClient]);
+  }, [apiKey, apiClient, notifications]);
 
   // Clear specific notification
   const clearNotification = useCallback(async (notificationId) => {
-    if (!apiKey) return;
+    if (!apiKey) return { success: false, error: 'No API key provided' };
 
     try {
       const response = await apiClient.clearNotification(notificationId);
       
-      if (response.success) {
+      if (response && response.success) {
+        // Verify that the notification was actually cleared by fetching again
+        setTimeout(async () => {
+          try {
+            const verifyResponse = await apiClient.getNotifications();
+            if (verifyResponse.success) {
+              const remainingNotifications = Array.isArray(verifyResponse.data) ? verifyResponse.data : (verifyResponse.data?.data || []);
+              const stillExists = remainingNotifications.some(n => n.id === notificationId);
+              if (stillExists) {
+                console.warn('Notification was not actually cleared by TorBox API - this appears to be a TorBox API bug');
+              }
+            }
+          } catch (error) {
+            console.error('Error verifying notification clear:', error);
+          }
+        }, 1000);
+        
+        // Store cleared notifications in localStorage to prevent them from showing up again
+        try {
+          const clearedNotifications = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
+          if (!clearedNotifications.includes(notificationId)) {
+            clearedNotifications.push(notificationId);
+            localStorage.setItem('clearedNotifications', JSON.stringify(clearedNotifications));
+          }
+        } catch (error) {
+          console.error('Error storing cleared notification in localStorage:', error);
+        }
+        
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
         setUnreadCount(prev => Math.max(0, prev - 1));
         
@@ -103,9 +174,13 @@ export function useNotifications(apiKey) {
           console.error('Error updating read status in localStorage:', error);
         }
         
-        return { success: true };
+        return { 
+          success: true, 
+          message: 'Notification cleared successfully'
+        };
       } else {
-        throw new Error(response.error || 'Failed to clear notification');
+        const errorMsg = response?.error || response?.detail || 'Failed to clear notification';
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error clearing notification:', error);
@@ -115,7 +190,7 @@ export function useNotifications(apiKey) {
 
   // Test notifications
   const testNotification = useCallback(async () => {
-    if (!apiKey) return;
+    if (!apiKey) return { success: false, error: 'No API key provided' };
 
     try {
       const response = await apiClient.testNotification();

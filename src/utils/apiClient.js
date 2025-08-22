@@ -192,19 +192,40 @@ class ApiClient {
 
   // Notifications API methods
   async getNotifications() {
-    return this.get('/api/notifications');
+    try {
+      const response = await this.get('/api/notifications');
+      // Return the response directly without wrapping it in a data property
+      return response;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   async clearAllNotifications() {
-    return this.post('/api/notifications', { action: 'clear_all' });
+    try {
+      const response = await this.post('/api/notifications', { action: 'clear_all' });
+      return response;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   async clearNotification(notificationId) {
-    return this.post(`/api/notifications/clear/${notificationId}`);
+    try {
+      const response = await this.post(`/api/notifications/clear/${notificationId}`);
+      return response;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   async testNotification() {
-    return this.post('/api/notifications', { action: 'test' });
+    try {
+      const response = await this.post('/api/notifications', { action: 'test' });
+      return response;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   // RSS API methods
