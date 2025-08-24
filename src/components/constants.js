@@ -36,6 +36,7 @@ export const COLUMNS = {
   updated_at: { key: 'updated_at', sortable: true },
   download_state: { key: 'download_state', sortable: true },
   progress: { key: 'progress', sortable: true },
+  download_progress: { key: 'download_progress', sortable: true },
   ratio: { key: 'ratio', sortable: true, assetTypes: ['torrents'] },
   file_count: { key: 'file_count', sortable: true },
   download_speed: { key: 'download_speed', sortable: true },

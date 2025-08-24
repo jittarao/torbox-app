@@ -6,14 +6,15 @@ export function useColumnManager(activeType = 'torrents') {
   const [activeColumns, setActiveColumns] = useState(() => {
     // Default columns for each type - used for initial server-side rendering
     const defaultColumns = {
-      torrents: ['id', 'name', 'size', 'created_at', 'download_state'],
-      usenet: ['id', 'name', 'size', 'created_at', 'download_state'],
+      torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
+      usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
         'id',
         'name',
         'size',
         'created_at',
         'download_state',
+        'download_progress',
         'original_url',
       ],
     };
@@ -33,14 +34,15 @@ export function useColumnManager(activeType = 'torrents') {
 
     // Default columns for each type
     const defaultColumns = {
-      torrents: ['id', 'name', 'size', 'created_at', 'download_state'],
-      usenet: ['id', 'name', 'size', 'created_at', 'download_state'],
+      torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
+      usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
         'id',
         'name',
         'size',
         'created_at',
         'download_state',
+        'download_progress',
         'original_url',
       ],
     };
@@ -85,14 +87,15 @@ export function useColumnManager(activeType = 'torrents') {
     const stored = localStorage.getItem(storageKey);
 
     const defaultColumns = {
-      torrents: ['id', 'name', 'size', 'created_at', 'download_state'],
-      usenet: ['id', 'name', 'size', 'created_at', 'download_state'],
+      torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
+      usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
         'id',
         'name',
         'size',
         'created_at',
         'download_state',
+        'download_progress',
         'original_url',
       ],
     };

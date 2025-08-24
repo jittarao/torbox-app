@@ -362,6 +362,7 @@
     "updated_at": "Última actualización",
     "download_state": "Estado",
     "progress": "Progreso",
+    "download_progress": "Progreso",
     "ratio": "Proporción",
     "file_count": "Recuento de archivos",
     "download_speed": "Velocidad de descarga",
