@@ -57,7 +57,35 @@ export async function GET() {
     return NextResponse.json(mergedData);
   } catch (error) {
     console.error('Error fetching usenet data:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    
+    // Provide more specific error messages based on the error type
+    let errorMessage = 'Failed to fetch usenet data';
+    let statusCode = 500;
+    
+    if (error.message.includes('502')) {
+      errorMessage = 'TorBox servers are temporarily unavailable. Please try again in a few minutes.';
+      statusCode = 502;
+    } else if (error.message.includes('503')) {
+      errorMessage = 'TorBox servers are temporarily overloaded. Please try again in a few minutes.';
+      statusCode = 503;
+    } else if (error.message.includes('504')) {
+      errorMessage = 'TorBox servers are taking too long to respond. Please try again in a few minutes.';
+      statusCode = 504;
+    } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+      errorMessage = 'Unable to connect to TorBox servers. Please check your internet connection and try again.';
+      statusCode = 503;
+    } else if (error.message.includes('401')) {
+      errorMessage = 'Authentication failed. Please check your API key.';
+      statusCode = 401;
+    } else if (error.message.includes('403')) {
+      errorMessage = 'Access denied. Please check your API key and account status.';
+      statusCode = 403;
+    }
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      originalError: error.message 
+    }, { status: statusCode });
   }
 }
 
@@ -83,13 +111,39 @@ export async function POST(request) {
     const data = await response.json();
 
     if (!response.ok || !data.success) {
+      // Provide more specific error messages based on the response
+      let errorMessage = data.detail || 'Failed to add NZB';
+      let statusCode = response.status || 400;
+      
+      if (response.status === 502) {
+        errorMessage = 'TorBox servers are temporarily unavailable. Please try again in a few minutes.';
+      } else if (response.status === 503) {
+        errorMessage = 'TorBox servers are temporarily overloaded. Please try again in a few minutes.';
+      } else if (response.status === 504) {
+        errorMessage = 'TorBox servers are taking too long to respond. Please try again in a few minutes.';
+      } else if (response.status === 429) {
+        errorMessage = 'Too many requests to TorBox servers. Please wait a moment and try again.';
+      } else if (response.status === 401) {
+        errorMessage = 'Authentication failed. Please check your API key.';
+      } else if (response.status === 403) {
+        errorMessage = 'Access denied. Please check your API key and account status.';
+      } else if (data.error === 'BOZO_NZB') {
+        errorMessage = 'The provided NZB file or link is invalid. Please check the file and try again.';
+      } else if (data.error === 'DOWNLOAD_TOO_LARGE') {
+        errorMessage = 'The download is too large for your current plan. Please upgrade your account.';
+      } else if (data.error === 'MONTHLY_LIMIT') {
+        errorMessage = 'You have reached your monthly download limit. Please upgrade your account.';
+      } else if (data.error === 'ACTIVE_LIMIT') {
+        errorMessage = 'You have reached your maximum active downloads limit. Please wait for some to complete.';
+      }
+      
       return Response.json(
         {
           success: false,
           error: data.error,
-          detail: data.detail || 'Failed to add NZB',
+          detail: errorMessage,
         },
-        { status: response.status || 400 },
+        { status: statusCode },
       );
     }
 

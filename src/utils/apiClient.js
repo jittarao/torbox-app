@@ -306,8 +306,12 @@ class ApiClient {
     return this.get('/api/stats/30days');
   }
 
-  async getSpeedtestFiles() {
-    return this.get('/api/speedtest');
+  async getSpeedtestFiles(userIp, region, testLength = 'short') {
+    const params = {};
+    if (userIp) params.user_ip = userIp;
+    if (region) params.region = region;
+    if (testLength) params.test_length = testLength;
+    return this.get('/api/speedtest', params);
   }
 
   // Health check

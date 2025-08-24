@@ -36,8 +36,8 @@ Thumbs.db
 .gitignore
 
 # Docker
-Dockerfile
-docker-compose.yml
+Dockerfile*
+docker-compose*.yml
 .dockerignore
 
 # Documentation
@@ -108,3 +108,35 @@ temp/
 
 # Local development
 data/
+
+# Test files
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.jsx
+**/*.spec.ts
+**/*.spec.tsx
+test/
+tests/
+__tests__/
+
+# Development tools
+.eslintrc*
+.prettierrc*
+.prettierignore
+jest.config.*
+cypress/
+cypress.config.*
+
+# Build artifacts
+build/
+dist/
+*.map
+
+# Performance monitoring
+.perf/
+
+# Local configuration
+.local/

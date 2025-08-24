@@ -24,6 +24,7 @@
       "linkHistory": "Link History",
       "archived": "Archived",
       "rss": "RSS Feeds",
+      "speedtest": "Speed Test",
       "user": "User",
       "systemStatus": "System Status",
       "referrals": "Referrals",
@@ -100,8 +101,24 @@
     "copyLink": "Copy link",
     "copyAll": "Copy All",
     "copied": "Copied!",
-    "visitLink": "Visit Link",
-    "developerNote": "These are the developer's referral codes"
+    "error": "Error copying to clipboard",
+    "developerNote": "These are the developer's referral codes",
+    "visitLink": "Visit Link"
+  },
+  "Speedtest": {
+    "title": "Speed Test",
+    "description": "Test your connection speed to TorBox servers worldwide",
+    "serverPingResults": "Server Ping Results",
+    "refresh": "Refresh",
+    "loadingRegions": "Loading regions...",
+    "startSpeedTest": "Start Speed Test",
+    "runningSpeedTest": "Running Speed Test...",
+    "runTestAgain": "Run Test Again",
+    "location": "Location",
+    "ping": "Ping",
+    "downloadSpeed": "Download Speed",
+    "uploadSpeed": "Upload Speed",
+    "pleaseEnterApiKey": "Please enter your API key to use the speed test"
   },
   "ActionButtons": {
     "downloadLinks": "Get Download Links",
@@ -198,36 +215,58 @@
   "ItemUploader": {
     "title": {
       "default": "Upload",
-      "torrents": "Upload Torrents",
+      "torrents": "Upload Torrent Files",
       "usenet": "Upload NZB Files",
-      "webdl": "Add Web Downloads"
+      "webdl": "Upload Web Downloads"
     },
     "placeholder": {
       "torrents": "Paste magnet links here (one per line)",
       "usenet": "Paste NZB links here (one per line)",
-      "webdl": "Paste web download links here (one per line)",
-      "webdlPassword": "Enter password (optional)"
+      "webdl": "Paste download links here (one per line)",
+      "webdlPassword": "Password (if required)"
     },
     "dropzone": {
       "torrents": "Drop torrent files here",
       "usenet": "Drop NZB files here"
     },
     "button": {
-      "torrents": "Upload Torrents",
+      "torrents": "Upload Torrent",
       "usenet": "Upload NZB",
-      "webdl": "Add Links"
-    },
-    "options": {
-      "show": "Show options",
-      "hide": "Hide options"
+      "webdl": "Upload Download"
     },
     "section": {
-      "show": "Show section",
-      "hide": "Hide section"
+      "show": "Show",
+      "hide": "Hide"
+    },
+    "options": {
+      "show": "Options",
+      "hide": "Hide Options"
     },
     "status": {
-      "processing": "{count} of {total} items processed",
-      "clearItems": "Clear items"
+      "processing": "Processing {count} of {total} items...",
+      "clearItems": "Clear Items"
+    },
+    "errors": {
+      "serverUnavailable": "TorBox servers are temporarily unavailable. Please try again in a few minutes.",
+      "serverOverloaded": "TorBox servers are temporarily overloaded. Please try again in a few minutes.",
+      "serverTimeout": "TorBox servers are taking too long to respond. Please try again in a few minutes.",
+      "networkError": "Unable to connect to TorBox servers. Please check your internet connection and try again.",
+      "authFailed": "Authentication failed. Please check your API key.",
+      "accessDenied": "Access denied. Please check your API key and account status.",
+      "tooManyRequests": "Too many requests to TorBox servers. Please wait a moment and try again.",
+      "invalidNzb": "The provided NZB file or link is invalid. Please check the file and try again.",
+      "downloadTooLarge": "The download is too large for your current plan. Please upgrade your account.",
+      "monthlyLimit": "You have reached your monthly download limit. Please upgrade your account.",
+      "activeLimit": "You have reached your maximum active downloads limit. Please wait for some to complete.",
+      "uploadFailed": "Upload Failed",
+      "temporaryIssue": "This is likely a temporary issue with TorBox servers. Please try again in a few minutes."
+    },
+    "help": {
+      "nzbTips": "NZB Upload Tips",
+      "validLinks": "Make sure your NZB links are valid and accessible",
+      "checkApiKey": "Check that your API key is correct and has sufficient permissions",
+      "serverErrors": "If you see server errors, wait a few minutes and try again",
+      "downloadSlots": "Ensure your account has available download slots"
     }
   },
   "SpeedChart": {
@@ -488,7 +527,9 @@
       "torrentAdded": "Torrent added to TorBox successfully",
       "nzbAdded": "NZB added to TorBox successfully",
       "torrentAddFailed": "Failed to add torrent: {error}",
-      "nzbAddFailed": "Failed to add NZB: {error}"
+      "nzbAddFailed": "Failed to add NZB: {error}",
+      "uploadSuccess": "Successfully uploaded {count} {type}",
+      "uploadSuccessPlural": "Successfully uploaded {count} {type}s"
     },
     "metadata": {
       "days": "days",
