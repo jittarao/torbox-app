@@ -362,6 +362,7 @@
     "updated_at": "最終更新日",
     "download_state": "状態",
     "progress": "進行状況",
+    "download_progress": "進捗",
     "ratio": "比率",
     "file_count": "ファイル数",
     "download_speed": "ダウンロード速度",

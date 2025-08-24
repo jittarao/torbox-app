@@ -1,6 +1,7 @@
 import {
   formatSize,
   formatSpeed,
+  formatEta,
   timeAgo,
   formatDate,
 } from './utils/formatters';
@@ -84,6 +85,8 @@ export default function ItemCard({
         return columnT('total_uploaded');
       case 'original_url':
         return columnT('original_url');
+      case 'download_progress':
+        return columnT('download_progress');
     }
   };
 
@@ -116,7 +119,59 @@ export default function ItemCard({
         return <Icons.CloudUpload />;
       case 'original_url':
         return <Icons.Link />;
+      case 'download_progress':
+        return <Icons.Download />;
     }
+  };
+
+  const renderDownloadProgress = (item) => {
+    // Only show progress for active downloads
+    if (!item.active || item.download_finished) {
+      return null;
+    }
+
+    const downloadSpeed = item.download_speed || 0;
+    const totalSize = item.size || 0;
+    const downloadedSize = item.total_downloaded || 0;
+    
+    // Calculate progress percentage based on downloaded vs total size
+    const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
+    
+    // Calculate ETA based on remaining size and speed
+    const remainingSize = totalSize - downloadedSize;
+    const etaSeconds = downloadSpeed > 0 ? remainingSize / downloadSpeed : 0;
+
+    return (
+      <div className="flex flex-col gap-1 min-w-0">
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(100, progress)}%` }}
+          />
+        </div>
+        
+        {/* Progress text */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-primary-text/70 dark:text-primary-text-dark/70">
+            {progress.toFixed(1)}%
+          </span>
+          <span className="text-primary-text/60 dark:text-primary-text-dark/60">
+            {formatSize(downloadedSize)} / {formatSize(totalSize)}
+          </span>
+        </div>
+        
+        {/* Speed and ETA */}
+        {downloadSpeed > 0 && (
+          <div className="flex items-center justify-between text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+            <span>↓ {formatSpeed(downloadSpeed)}</span>
+            {etaSeconds > 0 && (
+              <span>ETA: {formatEta(etaSeconds, commonT)}</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const getColumnValue = (column, item) => {
@@ -149,6 +204,8 @@ export default function ItemCard({
         return formatSize(item.total_downloaded);
       case 'total_uploaded':
         return formatSize(item.total_uploaded);
+      case 'download_progress':
+        return renderDownloadProgress(item);
       case 'original_url':
         return item.original_url;
     }
@@ -215,6 +272,7 @@ export default function ItemCard({
             } text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
           >
             <DownloadStateBadge item={item} size={isMobile ? 'xs' : 'sm'} />
+            {activeColumns.includes('download_progress') && renderDownloadProgress(item)}
             {!isMobile ? (
               <>
                 {filteredColumns.map((column) => (

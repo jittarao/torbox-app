@@ -34,6 +34,57 @@ export default function ItemRow({
   viewMode = 'table',
 }) {
   const commonT = useTranslations('Common');
+  
+  const renderDownloadProgress = (item) => {
+    // Only show progress for active downloads
+    if (!item.active || item.download_finished) {
+      return <span className="text-primary-text/40 dark:text-primary-text-dark/40">-</span>;
+    }
+
+    const downloadSpeed = item.download_speed || 0;
+    const totalSize = item.size || 0;
+    const downloadedSize = item.total_downloaded || 0;
+    
+    // Calculate progress percentage based on downloaded vs total size
+    const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
+    
+    // Calculate ETA based on remaining size and speed
+    const remainingSize = totalSize - downloadedSize;
+    const etaSeconds = downloadSpeed > 0 ? remainingSize / downloadSpeed : 0;
+
+    return (
+      <div className="flex flex-col gap-1 min-w-0">
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(100, progress)}%` }}
+          />
+        </div>
+        
+        {/* Progress text */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-primary-text/70 dark:text-primary-text-dark/70">
+            {progress.toFixed(1)}%
+          </span>
+          <span className="text-primary-text/60 dark:text-primary-text-dark/60">
+            {formatSize(downloadedSize)} / {formatSize(totalSize)}
+          </span>
+        </div>
+        
+        {/* Speed and ETA */}
+        {downloadSpeed > 0 && (
+          <div className="flex items-center justify-between text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+            <span>↓ {formatSpeed(downloadSpeed)}</span>
+            {etaSeconds > 0 && (
+              <span>ETA: {formatEta(etaSeconds, commonT)}</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderCell = (columnId) => {
     const baseStyle = {};
 
@@ -142,6 +193,16 @@ export default function ItemRow({
             <span className="text-xs">
               {((item.progress || 0) * 100).toFixed(1)}%
             </span>
+          </td>
+        );
+      case 'download_progress':
+        return (
+          <td
+            key={columnId}
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
+          >
+            {renderDownloadProgress(item)}
           </td>
         );
       case 'ratio':
