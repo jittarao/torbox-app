@@ -47,6 +47,7 @@ export default function ItemCard({
       ![
         'name',
         'progress',
+        'download_progress',
         'download_state',
         'download_speed',
         'upload_speed',
@@ -272,7 +273,6 @@ export default function ItemCard({
             } text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
           >
             <DownloadStateBadge item={item} size={isMobile ? 'xs' : 'sm'} />
-            {activeColumns.includes('download_progress') && renderDownloadProgress(item)}
             {!isMobile ? (
               <>
                 {filteredColumns.map((column) => (
