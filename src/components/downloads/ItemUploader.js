@@ -371,6 +371,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                     <li>• {t('help.checkApiKey')}</li>
                     <li>• {t('help.serverErrors')}</li>
                     <li>• {t('help.downloadSlots')}</li>
+                    <li>• {t('help.uploadLimit')}</li>
                   </ul>
                 </div>
               </div>
