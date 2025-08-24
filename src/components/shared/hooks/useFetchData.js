@@ -248,7 +248,26 @@ export function useFetchData(apiKey, type = 'torrents') {
         console.error(`Error fetching ${activeType} data:`, err);
         // Only set error state if this is the latest fetch and current type
         if (currentFetchId === rateData.latestFetchId && activeType === type) {
-          setError(err.message);
+          // Provide more user-friendly error messages
+          let userMessage = `Failed to fetch ${activeType} data`;
+          
+          if (err.message.includes('502')) {
+            userMessage = `TorBox servers are temporarily unavailable. ${activeType} data may not be up to date.`;
+          } else if (err.message.includes('503')) {
+            userMessage = `TorBox servers are temporarily overloaded. ${activeType} data may not be up to date.`;
+          } else if (err.message.includes('504')) {
+            userMessage = `TorBox servers are taking too long to respond. ${activeType} data may not be up to date.`;
+          } else if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
+            userMessage = `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
+          } else if (err.message.includes('401')) {
+            userMessage = 'Authentication failed. Please check your API key.';
+          } else if (err.message.includes('403')) {
+            userMessage = 'Access denied. Please check your API key and account status.';
+          } else if (err.message.includes('429')) {
+            userMessage = 'Too many requests to TorBox servers. Please wait a moment.';
+          }
+          
+          setError(userMessage);
         }
         setLoading(false);
         return [];

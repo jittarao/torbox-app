@@ -9,6 +9,7 @@ import UploadProgress from './UploadProgress';
 import useIsMobile from '@/hooks/useIsMobile';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
+import Toast from '../shared/Toast';
 
 // Local storage keys
 const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
@@ -39,6 +40,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
+  const [toast, setToast] = useState(null);
 
   // Set initial expanded state based on localStorage or screen size
   useEffect(() => {
@@ -106,6 +108,39 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   useEffect(() => {
     setError(null);
   }, [activeType, setItems, setError]);
+
+  // Show toast notification when error occurs
+  useEffect(() => {
+    if (error) {
+      setToast({
+        message: error,
+        type: 'error'
+      });
+    }
+  }, [error]);
+
+  // Show success notification when upload completes
+  const handleUploadComplete = () => {
+    const successCount = items.filter(item => item.status === 'success').length;
+    const totalCount = items.length;
+    
+    if (successCount > 0 && successCount === totalCount) {
+      setToast({
+        message: `Successfully uploaded ${successCount} ${activeType === 'usenet' ? 'NZB' : activeType === 'torrents' ? 'torrent' : 'download'}${successCount > 1 ? 's' : ''}`,
+        type: 'success'
+      });
+    }
+  };
+
+  // Monitor upload completion
+  useEffect(() => {
+    const hasCompletedUploads = items.some(item => item.status === 'success');
+    const hasNoQueuedItems = !items.some(item => item.status === 'queued' || item.status === 'processing');
+    
+    if (hasCompletedUploads && hasNoQueuedItems && !isUploading) {
+      handleUploadComplete();
+    }
+  }, [items, isUploading, activeType]);
 
   // Get asset type specific labels
   const getAssetTypeInfo = () => {
@@ -304,8 +339,41 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           <UploadProgress progress={progress} uploading={isUploading} />
 
           {error && (
-            <div className="text-red-500 mt-3 text-xs lg:text-sm break-words">
-              {error}
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <div className="text-sm text-red-700 dark:text-red-300">
+                  <p className="font-medium">{t('errors.uploadFailed')}</p>
+                  <p className="mt-1 break-words">{error}</p>
+                  {error.includes('temporarily') && (
+                    <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                      {t('errors.temporaryIssue')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Help section for common issues */}
+          {activeType === 'usenet' && (
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="font-medium">{t('help.nzbTips')}</p>
+                  <ul className="mt-1 text-xs space-y-1">
+                    <li>• {t('help.validLinks')}</li>
+                    <li>• {t('help.checkApiKey')}</li>
+                    <li>• {t('help.serverErrors')}</li>
+                    <li>• {t('help.downloadSlots')}</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           )}
 
@@ -333,6 +401,14 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               </div>
             )}
         </>
+      )}
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

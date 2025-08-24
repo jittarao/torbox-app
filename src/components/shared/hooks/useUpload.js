@@ -282,7 +282,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     }
 
     // Add name if it exists, but not for NZB API links that use content disposition
-    if (item.name && !(item.type === 'usenet' && item.data.includes('api') && (item.data.includes('nzb') || item.data.includes('usenet')))) {
+    if (item.name && !(item.type === 'usenet' && typeof item.data === 'string' && item.data.includes('api') && (item.data.includes('nzb') || item.data.includes('usenet')))) {
       formData.append('name', item.name);
     }
 
@@ -338,11 +338,14 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
               current: currentProgress.current + 1,
               total: currentProgress.total,
             });
+            
+            // Clear any previous errors on success
+            setError(null);
             return true;
           }
 
           updateItemStatus(itemIndex, 'error', result.error);
-          setError(result.error);
+          setError(result.userMessage || result.error);
           return false;
         }),
       );
