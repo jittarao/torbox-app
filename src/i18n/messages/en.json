@@ -266,7 +266,8 @@
       "validLinks": "Make sure your NZB links are valid and accessible",
       "checkApiKey": "Check that your API key is correct and has sufficient permissions",
       "serverErrors": "If you see server errors, wait a few minutes and try again",
-      "downloadSlots": "Ensure your account has available download slots"
+      "downloadSlots": "Ensure your account has available download slots",
+      "uploadLimit": "Upload no more than 10 NZB files at once to avoid server errors"
     }
   },
   "SpeedChart": {

@@ -226,6 +226,14 @@
     "status": {
       "processing": "{count} sur {total} éléments traités",
       "clearItems": "Effacer les éléments"
+    },
+    "help": {
+      "nzbTips": "Conseils de téléchargement NZB",
+      "validLinks": "Assurez-vous que vos liens NZB sont valides et accessibles",
+      "checkApiKey": "Vérifiez que votre clé API est correcte et a des permissions suffisantes",
+      "serverErrors": "Si vous voyez des erreurs de serveur, attendez quelques minutes et réessayez",
+      "downloadSlots": "Assurez-vous que votre compte a des emplacements de téléchargement disponibles",
+      "uploadLimit": "Ne téléchargez pas plus de 10 fichiers NZB à la fois pour éviter les erreurs de serveur"
     }
   },
   "SpeedChart": {
