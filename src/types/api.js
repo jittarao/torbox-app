@@ -232,7 +232,7 @@ export const API_RESPONSE_TYPES = {
     downloads: 'number',
     uploads: 'number',
     size: 'number',
-  }[],
+  },
 
   // Integration types
   INTEGRATION_JOB: {

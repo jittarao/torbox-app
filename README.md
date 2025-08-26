@@ -36,49 +36,29 @@ cd torbox-app
 2. Install dependencies:
 ```bash
 npm install
-# or
-yarn install
 ```
 
 3. Run the development server:
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
 
 ## Requirements
 
-### For Docker:
-- Docker and Docker Compose
-- A running TorBox instance with API access
-- Valid TorBox API key
-
-### For Local Development:
-- Node.js 18.0 or later
+- Node.js 18.0 or later (for local development)
+- Docker and Docker Compose (for Docker deployment)
 - A running TorBox instance with API access
 - Valid TorBox API key
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 15 with App Router
+- React 19 with hooks
 - Tailwind CSS
-- React Hooks
-- Server Components
-
-### Configuration
-- **Port**: 3000 (accessible at http://localhost:3000)
-- **Health Check**: Available at `/api/health`
-
-## Development
-
-The project uses:
-- Modern React patterns with hooks
-- Tailwind CSS for styling
-- Next.js App Router
-- Server-side API handling
+- Zustand for state management
+- next-intl for internationalization
 
 ## Contributing
 

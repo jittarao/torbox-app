@@ -24,10 +24,35 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      
+      // Try to parse JSON response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, create a basic error object
+        data = { error: `HTTP ${response.status}`, detail: 'Invalid response format' };
+      }
 
       if (!response.ok) {
-        throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+        // Check for specific error types
+        if (data.error === 'AUTH_ERROR' || data.error === 'NO_AUTH' || data.error?.includes('auth')) {
+          throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
+        }
+        
+        // Handle 422 validation errors (provider not connected)
+        if (response.status === 422) {
+          throw new Error(`AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`);
+        }
+        
+        // Handle 404 errors (endpoint not found)
+        if (response.status === 404) {
+          throw new Error(`AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`);
+        }
+        
+        // Handle different error formats
+        const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       return data;
@@ -330,6 +355,10 @@ class ApiClient {
 
   async cancelIntegrationJob(jobId) {
     return this.delete(`/api/integration/job/${jobId}`);
+  }
+
+  async getCloudProviderStatus() {
+    return this.get('/api/integration/status');
   }
 
   async addToGoogleDrive(data) {

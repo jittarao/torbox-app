@@ -34,6 +34,18 @@ export default function Downloads({ apiKey }) {
   const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
 
+  // Function to expand all items with files
+  const expandAllFiles = () => {
+    const itemsWithFiles = items.filter(item => item.files && item.files.length > 0);
+    const itemIds = itemsWithFiles.map(item => item.id);
+    setExpandedItems(new Set(itemIds));
+  };
+
+  // Function to collapse all files
+  const collapseAllFiles = () => {
+    setExpandedItems(new Set());
+  };
+
   const { loading, items, setItems, fetchItems } = useFetchData(
     apiKey,
     activeType,
@@ -290,6 +302,11 @@ export default function Downloads({ apiKey }) {
                 getTotalDownloadSize={getTotalDownloadSize}
                 isDownloadPanelOpen={isDownloadPanelOpen}
                 setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+                apiKey={apiKey}
+                setToast={setToast}
+                expandAllFiles={expandAllFiles}
+                collapseAllFiles={collapseAllFiles}
+                expandedItems={expandedItems}
               />
             </div>
 
