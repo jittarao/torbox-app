@@ -153,7 +153,9 @@
     "hideSensitive": "Ocultar contenido sensible",
     "showSensitive": "Mostrar contenido sensible",
     "enterFullscreen": "Entrar en pantalla completa",
-    "exitFullscreen": "Salir de pantalla completa"
+    "exitFullscreen": "Salir de pantalla completa",
+    "expandAllFiles": "Expandir todos los archivos",
+    "collapseAllFiles": "Colapsar todos los archivos"
   },
   "ColumnManager": {
     "reorderColumns": "Reordenar columnas",

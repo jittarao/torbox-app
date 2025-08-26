@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { phEvent } from '@/utils/sa';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
+import { createApiClient } from '@/utils/apiClient';
+import { INTEGRATION_TYPES } from '@/types/api';
 
 export default function ActionButtons({
   selectedItems,
@@ -20,11 +22,66 @@ export default function ActionButtons({
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
   activeType = 'torrents',
+  apiKey,
+  setToast,
 }) {
   const t = useTranslations('ActionButtons');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
+  const [showCloudUpload, setShowCloudUpload] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [connectedProviders, setConnectedProviders] = useState({});
   const isMobile = useIsMobile();
+  const apiClient = createApiClient(apiKey);
+  const cloudUploadRef = useRef(null);
+
+  // Check for connected providers on mount
+  useEffect(() => {
+    const checkConnectedProviders = async () => {
+      try {
+        const response = await apiClient.getIntegrationJobs();
+        if (response && response.jobs) {
+          // Extract unique provider types from active jobs
+          const providers = new Set();
+          response.jobs.forEach(job => {
+            if (job.provider) {
+              providers.add(job.provider);
+            }
+          });
+          
+          const connected = {};
+          providers.forEach(provider => {
+            connected[provider] = true;
+          });
+          setConnectedProviders(connected);
+        }
+      } catch (error) {
+        console.log('No connected providers found or integration not available');
+        // Don't show error toast for this as it's expected when integration is not available
+      }
+    };
+
+    if (apiKey) {
+      checkConnectedProviders();
+    }
+  }, [apiKey]);
+
+  // Close cloud upload dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (cloudUploadRef.current && !cloudUploadRef.current.contains(event.target)) {
+        setShowCloudUpload(false);
+      }
+    };
+
+    if (showCloudUpload) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCloudUpload]);
 
   const handleDownloadClick = () => {
     onBulkDownload();
@@ -44,6 +101,134 @@ export default function ActionButtons({
       onBulkExport();
     }
     phEvent('bulk_export_torrents');
+  };
+
+  const handleBulkCloudUpload = async (providerId) => {
+    if (isUploading || !selectedItems.items?.size) return;
+    
+    // Check if any providers are connected
+    if (Object.keys(connectedProviders).length === 0) {
+      setToast({
+        message: 'Please connect to a cloud provider first in the Cloud Storage Manager. Only Google Drive, Dropbox, and OneDrive support OAuth authentication.',
+        type: 'info',
+      });
+      setShowCloudUpload(false);
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      const selectedItemsArray = Array.from(selectedItems.items);
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const itemId of selectedItemsArray) {
+        try {
+          const uploadData = {
+            id: itemId,
+            file_id: null, // Will upload as zip for bulk operations
+            zip: true,
+            type: activeType,
+          };
+
+          let response;
+          switch (providerId) {
+            case INTEGRATION_TYPES.GOOGLE_DRIVE:
+              response = await apiClient.addToGoogleDrive(uploadData);
+              break;
+            case INTEGRATION_TYPES.DROPBOX:
+              response = await apiClient.addToDropbox(uploadData);
+              break;
+            case INTEGRATION_TYPES.ONEDRIVE:
+              response = await apiClient.addToOneDrive(uploadData);
+              break;
+            case INTEGRATION_TYPES.GOFILE:
+              response = await apiClient.addToGofile(uploadData);
+              break;
+            case INTEGRATION_TYPES.FICHIER:
+              response = await apiClient.addTo1Fichier(uploadData);
+              break;
+            case INTEGRATION_TYPES.PIXELDRAIN:
+              response = await apiClient.addToPixeldrain(uploadData);
+              break;
+            default:
+              throw new Error('Unknown provider');
+          }
+
+          if (response && response.success) {
+            successCount++;
+          } else {
+            console.error(`Upload failed for item ${itemId}:`, response);
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`Error uploading item ${itemId}:`, error);
+          
+          // Check if it's an authentication error
+          if (error.message && (error.message.includes('AUTH_ERROR') || error.message.includes('Provider not connected'))) {
+            setToast({
+              message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
+              type: 'error',
+            });
+            setIsUploading(false);
+            setShowCloudUpload(false);
+            return;
+          }
+          
+          // Check for other specific error types
+          if (error.message && (error.message.includes('NO_AUTH') || error.message.includes('Authentication required'))) {
+            setToast({
+              message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
+              type: 'error',
+            });
+            setIsUploading(false);
+            setShowCloudUpload(false);
+            return;
+          }
+          
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        setToast({
+          message: t('bulkUploadSuccess', { count: successCount, provider: getProviderName(providerId) }),
+          type: 'success',
+        });
+        phEvent('bulk_cloud_upload', { provider: providerId, count: successCount });
+      }
+
+      if (errorCount > 0) {
+        setToast({
+          message: t('bulkUploadPartial', { success: successCount, failed: errorCount }),
+          type: 'warning',
+        });
+      }
+
+      setSelectedItems({ items: new Set() });
+    } catch (error) {
+      console.error('Error in bulk cloud upload:', error);
+      setToast({
+        message: t('bulkUploadFailed'),
+        type: 'error',
+      });
+    } finally {
+      setIsUploading(false);
+      setShowCloudUpload(false);
+    }
+  };
+
+  const getProviderName = (providerId) => {
+    const providers = {
+      [INTEGRATION_TYPES.GOOGLE_DRIVE]: 'Google Drive',
+      [INTEGRATION_TYPES.DROPBOX]: 'Dropbox',
+      [INTEGRATION_TYPES.ONEDRIVE]: 'OneDrive',
+      [INTEGRATION_TYPES.GOFILE]: 'GoFile',
+      [INTEGRATION_TYPES.FICHIER]: '1Fichier',
+      [INTEGRATION_TYPES.PIXELDRAIN]: 'Pixeldrain',
+    };
+    return providers[providerId] || providerId;
   };
 
   return (
@@ -67,6 +252,61 @@ export default function ActionButtons({
         >
           {isExporting ? t('exporting') : t('exportSelected')}
         </button>
+      )}
+
+      {/* Bulk Cloud Upload button */}
+      {selectedItems.items?.size > 0 && (
+        <div className="relative" ref={cloudUploadRef}>
+          <button
+            onClick={() => {
+              if (Object.keys(connectedProviders).length === 0) {
+                setToast({
+                  message: 'Please connect to a cloud provider first in the Cloud Storage Manager',
+                  type: 'info',
+                });
+              } else {
+                setShowCloudUpload(!showCloudUpload);
+              }
+            }}
+            disabled={isUploading}
+            className="bg-green-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-green-600 
+            disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            <Icons.Cloud />
+            {isUploading ? t('uploading') : t('uploadToCloud')}
+            <Icons.ChevronDown className={`w-3 h-3 transition-transform ${showCloudUpload ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showCloudUpload && (
+            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 min-w-[200px]">
+              <div className="py-1">
+                {/* Help message */}
+                <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                  Connect to providers in Cloud Storage Manager first
+                </div>
+                
+                {[
+                  { id: INTEGRATION_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: Icons.GoogleDrive },
+                  { id: INTEGRATION_TYPES.DROPBOX, name: 'Dropbox', icon: Icons.Dropbox },
+                  { id: INTEGRATION_TYPES.ONEDRIVE, name: 'OneDrive', icon: Icons.OneDrive },
+                  { id: INTEGRATION_TYPES.GOFILE, name: 'GoFile', icon: Icons.GoFile },
+                  { id: INTEGRATION_TYPES.FICHIER, name: '1Fichier', icon: Icons.Fichier },
+                  { id: INTEGRATION_TYPES.PIXELDRAIN, name: 'Pixeldrain', icon: Icons.Pixeldrain },
+                ].map((provider) => (
+                  <button
+                    key={provider.id}
+                    onClick={() => handleBulkCloudUpload(provider.id)}
+                    disabled={isUploading}
+                    className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    <provider.icon className="w-4 h-4 mr-3" />
+                    {provider.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (

@@ -126,6 +126,8 @@
     "fetchingLinks": "Fetching Links...",
     "exportSelected": "Export Selected",
     "exporting": "Exporting...",
+    "uploadToCloud": "Upload to Cloud",
+    "uploading": "Uploading...",
     "delete": "Delete",
     "deleteConfirm": {
       "title": "Confirm Delete",
@@ -136,7 +138,10 @@
       "includeParentDownloads": "Delete parent downloads",
       "includeParentDownloadsTooltip": "When files within downloads are selected, checking this option will delete the entire download."
     },
-    "clear": "Clear"
+    "clear": "Clear",
+    "bulkUploadSuccess": "Successfully uploaded {count} items to {provider}",
+    "bulkUploadPartial": "Uploaded {success} items, {failed} failed",
+    "bulkUploadFailed": "Failed to upload items"
   },
   "SearchBar": {
     "placeholder": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
@@ -172,7 +177,9 @@
     "hideSensitive": "Hide sensitive content",
     "showSensitive": "Show sensitive content",
     "enterFullscreen": "Enter fullscreen",
-    "exitFullscreen": "Exit fullscreen"
+    "exitFullscreen": "Exit fullscreen",
+    "expandAllFiles": "Expand all files",
+    "collapseAllFiles": "Collapse all files"
   },
   "ColumnManager": {
     "reorderColumns": "Reorder columns",
@@ -476,6 +483,7 @@
     "reannounce": "Reannounce",
     "exportTorrent": "Export .torrent",
     "copySourceUrl": "Copy Source URL",
+    "uploadToCloud": "Upload to Cloud",
     "toast": {
       "idCopied": "ID copied to clipboard",
       "hashNotAvailable": "Hash not available",
@@ -491,7 +499,9 @@
       "exportTorrentSuccess": "Torrent file exported successfully",
       "exportTorrentFailed": "Failed to export torrent file",
       "exportMagnetSuccess": "Magnet link exported successfully",
-      "exportMagnetFailed": "Failed to export magnet link"
+      "exportMagnetFailed": "Failed to export magnet link",
+      "uploadStarted": "Upload started successfully",
+      "uploadFailed": "Failed to start upload"
     }
   },
   "CardList": {
@@ -701,6 +711,27 @@
       "noLink": "No download link available",
       "downloadStarted": "Download started successfully",
       "downloadFailed": "Failed to start download"
+    }
+  },
+  "CloudUpload": {
+    "title": "Cloud Storage Manager",
+    "manageConnections": "Manage Connections",
+    "connectedProviders": "Connected Providers",
+    "connected": "Connected",
+    "notConnected": "Not Connected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "activeJobs": "Active Jobs",
+    "noActiveJobs": "No active jobs",
+    "cancel": "Cancel",
+    "complete": "Complete",
+    "toast": {
+      "connectionSuccess": "Successfully connected to provider",
+      "connectionError": "Failed to connect to provider",
+      "disconnectionSuccess": "Successfully disconnected from provider",
+      "disconnectionError": "Failed to disconnect from provider",
+      "jobCancelled": "Job cancelled successfully",
+      "jobCancelError": "Failed to cancel job"
     }
   },
   "User": {

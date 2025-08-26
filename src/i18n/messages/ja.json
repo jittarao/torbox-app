@@ -153,7 +153,9 @@
     "hideSensitive": "機密コンテンツを隠す",
     "showSensitive": "機密コンテンツを表示する",
     "enterFullscreen": "フルスクリーンに入る",
-    "exitFullscreen": "フルスクリーンを終了する"
+    "exitFullscreen": "フルスクリーンを終了する",
+    "expandAllFiles": "すべてのファイルを展開",
+    "collapseAllFiles": "すべてのファイルを折りたたみ"
   },
   "ColumnManager": {
     "reorderColumns": "列の並べ替え",

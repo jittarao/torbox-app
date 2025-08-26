@@ -40,12 +40,12 @@ export default function NotificationBell({ apiKey }) {
       >
         <Icons.Bell className={`h-6 w-6 ${unreadCount > 0 ? 'text-blue-600 dark:text-blue-400' : ''}`} />
         
-        {/* Notification badge */}
-        {unreadCount > 0 && !loading && (
+        {/* Notification badge - Hidden */}
+        {/* {unreadCount > 0 && !loading && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
-        )}
+        )} */}
         
         {/* Loading indicator */}
         {loading && (

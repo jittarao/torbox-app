@@ -42,6 +42,11 @@ export default function ActionBar({
   getTotalDownloadSize,
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
+  apiKey,
+  setToast,
+  expandAllFiles,
+  collapseAllFiles,
+  expandedItems,
 }) {
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
@@ -115,6 +120,8 @@ export default function ActionBar({
             isDownloadPanelOpen={isDownloadPanelOpen}
             setIsDownloadPanelOpen={setIsDownloadPanelOpen}
             activeType={activeType}
+            apiKey={apiKey}
+            setToast={setToast}
           />
         )}
       </div>
@@ -162,6 +169,10 @@ export default function ActionBar({
           onFullscreenToggle={onFullscreenToggle}
           viewMode={viewMode}
           onViewModeChange={onViewModeChange}
+          expandAllFiles={expandAllFiles}
+          collapseAllFiles={collapseAllFiles}
+          expandedItems={expandedItems}
+          unfilteredItems={unfilteredItems}
         />
 
         {/* Column manager */}

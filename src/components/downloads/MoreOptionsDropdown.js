@@ -4,6 +4,8 @@ import Icons from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
+import { createApiClient } from '@/utils/apiClient';
+import { INTEGRATION_TYPES } from '@/types/api';
 
 export default function MoreOptionsDropdown({
   item,
@@ -16,10 +18,13 @@ export default function MoreOptionsDropdown({
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isExporting, setIsExporting] = useState(false);
   const [isReannouncing, setIsReannouncing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showCloudUpload, setShowCloudUpload] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
   const t = useTranslations('MoreOptionsDropdown');
+  const apiClient = createApiClient(apiKey);
 
   useEffect(() => {
     setIsMounted(true);
@@ -308,6 +313,85 @@ export default function MoreOptionsDropdown({
     }
   };
 
+  // Handle cloud upload
+  const handleCloudUpload = async (providerId) => {
+    if (isUploading) return;
+    setIsUploading(true);
+    try {
+      const uploadData = {
+        id: item.id,
+        file_id: item.files?.[0]?.id || null,
+        zip: item.files?.length > 1,
+        type: activeType,
+      };
+
+      let response;
+      switch (providerId) {
+        case INTEGRATION_TYPES.GOOGLE_DRIVE:
+          response = await apiClient.addToGoogleDrive(uploadData);
+          break;
+        case INTEGRATION_TYPES.DROPBOX:
+          response = await apiClient.addToDropbox(uploadData);
+          break;
+        case INTEGRATION_TYPES.ONEDRIVE:
+          response = await apiClient.addToOneDrive(uploadData);
+          break;
+        case INTEGRATION_TYPES.GOFILE:
+          response = await apiClient.addToGofile(uploadData);
+          break;
+        case INTEGRATION_TYPES.FICHIER:
+          response = await apiClient.addTo1Fichier(uploadData);
+          break;
+        case INTEGRATION_TYPES.PIXELDRAIN:
+          response = await apiClient.addToPixeldrain(uploadData);
+          break;
+        default:
+          throw new Error('Unknown provider');
+      }
+
+      if (response && response.success) {
+        setToast({
+          message: t('toast.uploadStarted'),
+          type: 'success',
+        });
+        phEvent('cloud_upload_started', { provider: providerId });
+      } else {
+        throw new Error(response?.error || response?.detail || t('toast.uploadFailed'));
+      }
+    } catch (error) {
+      console.error('Error uploading to cloud:', error);
+      
+      // Check if it's an authentication error
+      if (error.message && (error.message.includes('AUTH_ERROR') || error.message.includes('NO_AUTH') || error.message.includes('Authentication required') || error.message.includes('Provider not connected'))) {
+        setToast({
+          message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
+          type: 'error',
+        });
+      } else {
+        setToast({
+          message: t('toast.uploadFailed'),
+          type: 'error',
+        });
+      }
+    } finally {
+      setIsUploading(false);
+      setShowCloudUpload(false);
+      setIsMenuOpen(false);
+    }
+  };
+
+  const getProviderName = (providerId) => {
+    const providers = {
+      [INTEGRATION_TYPES.GOOGLE_DRIVE]: 'Google Drive',
+      [INTEGRATION_TYPES.DROPBOX]: 'Dropbox',
+      [INTEGRATION_TYPES.ONEDRIVE]: 'OneDrive',
+      [INTEGRATION_TYPES.GOFILE]: 'GoFile',
+      [INTEGRATION_TYPES.FICHIER]: '1Fichier',
+      [INTEGRATION_TYPES.PIXELDRAIN]: 'Pixeldrain',
+    };
+    return providers[providerId] || providerId;
+  };
+
   const renderMenuItems = () => {
     const items = [];
 
@@ -333,6 +417,62 @@ export default function MoreOptionsDropdown({
         <span className="ml-2">{t('copyHash')}</span>
       </button>,
     );
+
+    // Cloud upload option
+    items.push(
+      <button
+        key="cloud-upload"
+        onClick={() => {
+          setToast({
+            message: 'Please connect to a cloud provider first in the Cloud Storage Manager',
+            type: 'info',
+          });
+          setShowCloudUpload(false);
+          setIsMenuOpen(false);
+        }}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      >
+        <Icons.Cloud />
+        <span className="ml-2">{t('uploadToCloud')}</span>
+        <Icons.ChevronDown className={`ml-auto w-4 h-4 transition-transform ${showCloudUpload ? 'rotate-180' : ''}`} />
+      </button>,
+    );
+
+    // Cloud upload submenu
+    if (showCloudUpload) {
+      // Add help message
+      items.push(
+        <div
+          key="cloud-upload-help"
+          className="px-4 py-2 text-xs text-primary-text/60 dark:text-primary-text-dark/60 border-b border-border dark:border-border-dark"
+        >
+          Connect to providers in Cloud Storage Manager first
+        </div>,
+      );
+
+      const providers = [
+        { id: INTEGRATION_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: Icons.GoogleDrive },
+        { id: INTEGRATION_TYPES.DROPBOX, name: 'Dropbox', icon: Icons.Dropbox },
+        { id: INTEGRATION_TYPES.ONEDRIVE, name: 'OneDrive', icon: Icons.OneDrive },
+        { id: INTEGRATION_TYPES.GOFILE, name: 'GoFile', icon: Icons.GoFile },
+        { id: INTEGRATION_TYPES.FICHIER, name: '1Fichier', icon: Icons.Fichier },
+        { id: INTEGRATION_TYPES.PIXELDRAIN, name: 'Pixeldrain', icon: Icons.Pixeldrain },
+      ];
+
+      providers.forEach((provider) => {
+        items.push(
+          <button
+            key={`upload-${provider.id}`}
+            onClick={() => handleCloudUpload(provider.id)}
+            disabled={isUploading}
+            className="flex items-center w-full px-4 py-2 pl-8 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+          >
+            {isUploading ? <Spinner size="xs" /> : <provider.icon className="w-4 h-4" />}
+            <span className="ml-2">{provider.name}</span>
+          </button>,
+        );
+      });
+    }
 
     // Torrent-specific options
     if (activeType === 'torrents') {

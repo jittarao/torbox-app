@@ -1,18 +1,15 @@
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import {
   API_BASE,
   API_VERSION,
   TORBOX_MANAGER_VERSION,
 } from '@/components/constants';
 
-export async function GET(request) {
+export async function DELETE(request, { params }) {
+  const { job_id } = params;
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
-  const { searchParams } = new URL(request.url);
-  const userIp = searchParams.get('user_ip');
-  const region = searchParams.get('region');
-  const testLength = searchParams.get('test_length') || 'short';
 
   if (!apiKey) {
     return NextResponse.json(
@@ -22,18 +19,10 @@ export async function GET(request) {
   }
 
   try {
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (userIp && userIp !== 'unknown') params.append('user_ip', userIp);
-    if (testLength) params.append('test_length', testLength);
-    
-    // Only specify region if explicitly requested
-    // This allows us to get all servers when no region is specified
-    if (region) params.append('region', region);
-
     const response = await fetch(
-      `${API_BASE}/${API_VERSION}/api/speedtest?${params}`,
+      `${API_BASE}/${API_VERSION}/api/integration/job/${job_id}`,
       {
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -47,7 +36,7 @@ export async function GET(request) {
         {
           success: false,
           error: errorData.error || `API responded with status: ${response.status}`,
-          detail: errorData.detail || 'Failed to fetch speedtest data',
+          detail: errorData.detail || 'Failed to cancel integration job',
         },
         { status: response.status },
       );
@@ -56,10 +45,11 @@ export async function GET(request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching speedtest data:', error);
+    console.error('Error cancelling integration job:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 },
     );
   }
 }
+
