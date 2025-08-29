@@ -12,7 +12,7 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
 import ReferralDropdown from '@/components/ReferralDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
-import CloudUploadManager from '@/components/downloads/CloudUploadManager';
+// import CloudUploadManager from '@/components/downloads/CloudUploadManager';
 
 export default function Header({ apiKey }) {
   const t = useTranslations('Header');
@@ -150,7 +150,7 @@ export default function Header({ apiKey }) {
 
             {/* Dark mode toggle, Notifications, and Language Switcher */}
             <div className="flex items-center gap-4">
-              {apiKey && <CloudUploadManager apiKey={apiKey} setToast={() => {}} />}
+              {/* {apiKey && <CloudUploadManager apiKey={apiKey} setToast={() => {}} />} */}
               <ReferralDropdown />
               {apiKey && <NotificationBell apiKey={apiKey} />}
               <SystemStatusIndicator apiKey={apiKey} />

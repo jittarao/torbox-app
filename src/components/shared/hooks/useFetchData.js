@@ -208,13 +208,13 @@ export function useFetchData(apiKey, type = 'torrents') {
           // Update the appropriate state based on the type
           switch (activeType) {
             case 'usenet':
-              setUsenetItems(sortedItems);
+              setUsenetItems(sortedItems.map(item => ({ ...item, assetType: 'usenet' })));
               break;
             case 'webdl':
-              setWebdlItems(sortedItems);
+              setWebdlItems(sortedItems.map(item => ({ ...item, assetType: 'webdl' })));
               break;
             default:
-              setTorrents(sortedItems);
+              setTorrents(sortedItems.map(item => ({ ...item, assetType: 'torrents' })));
               // Only check auto-start for torrents if 30 seconds have elapsed
               if (
                 now - lastAutoStartCheckRef.current >=
@@ -289,6 +289,14 @@ export function useFetchData(apiKey, type = 'torrents') {
   // Active data based on the current type
   const items = useMemo(() => {
     switch (type) {
+      case 'all':
+        // Combine all types (assetType is already present on each item)
+        const allItems = [
+          ...(torrents || []),
+          ...(usenetItems || []),
+          ...(webdlItems || [])
+        ];
+        return allItems;
       case 'usenet':
         return usenetItems || [];
       case 'webdl':
@@ -301,6 +309,18 @@ export function useFetchData(apiKey, type = 'torrents') {
   // Setter and fetch functions based on the current type
   const setItems = useMemo(() => {
     switch (type) {
+      case 'all':
+        // For 'all' type, we need to update the appropriate individual state
+        // This is a bit complex since we need to determine which type each item belongs to
+        return (newItems) => {
+          const torrentItems = newItems.filter(item => item.assetType === 'torrents');
+          const usenetItems = newItems.filter(item => item.assetType === 'usenet');
+          const webdlItems = newItems.filter(item => item.assetType === 'webdl');
+          
+          setTorrents(torrentItems);
+          setUsenetItems(usenetItems);
+          setWebdlItems(webdlItems);
+        };
       case 'usenet':
         return setUsenetItems;
       case 'webdl':
@@ -314,6 +334,13 @@ export function useFetchData(apiKey, type = 'torrents') {
   const fetchItems = useMemo(() => {
     return (bypassCache) => {
       switch (type) {
+        case 'all':
+          // For 'all' type, fetch all types
+          return Promise.all([
+            fetchLocalItems(bypassCache, 'torrents'),
+            fetchLocalItems(bypassCache, 'usenet'),
+            fetchLocalItems(bypassCache, 'webdl')
+          ]);
         case 'usenet':
           return fetchLocalItems(bypassCache, 'usenet');
         case 'webdl':

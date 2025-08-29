@@ -33,11 +33,13 @@ export default function DownloadStateBadge({ item, size = 'default' }) {
 
   const badgeStyle = styleMap[status?.label] || grayStyle;
   const statusText =
-    t(`${status?.label.toLowerCase()}`) ||
-    item.download_state
-      ?.split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ') ||
+    t(`${status?.label?.toLowerCase()}`) ||
+    (item.download_state
+      ? item.download_state
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ')
+      : null) ||
     t('unknown');
 
   // Size variants

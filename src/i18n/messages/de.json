@@ -163,6 +163,8 @@
   },
   "Common": {
     "itemTypes": {
+      "all": "alle",
+      "All": "Alle",
       "torrent": "torrent",
       "Torrent": "Torrent ",
       "torrents": "torrents",
@@ -376,6 +378,7 @@
     "peers": "Peers",
     "original_url": "Quell-URL ",
     "expires_at": "Ablaufdatum",
+    "asset_type": "Typ",
     "actions": "Aktionen"
   },
   "Statuses": {

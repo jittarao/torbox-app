@@ -24,7 +24,7 @@ import { formatSize } from './utils/formatters';
 
 export default function Downloads({ apiKey }) {
   const [toast, setToast] = useState(null);
-  const [activeType, setActiveType] = useState('torrents');
+  const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
   const [downloadHistory, setDownloadHistory] = useState([]);
@@ -32,6 +32,7 @@ export default function Downloads({ apiKey }) {
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedUploadSections, setExpandedUploadSections] = useState(new Set());
   const hasExpandedRef = useRef(false);
 
   // Function to expand all items with files
@@ -233,7 +234,114 @@ export default function Downloads({ apiKey }) {
         }}
       />
 
-      <ItemUploader apiKey={apiKey} activeType={activeType} />
+      {activeType !== 'all' && <ItemUploader apiKey={apiKey} activeType={activeType} />}
+
+      {/* Collapsible sections for "all" view */}
+      {activeType === 'all' && (
+        <div className="space-y-4 mb-6">
+          {/* Gap to match other pages */}
+          <div className="h-4"></div>
+
+          {/* Torrents Upload Section */}
+          <div className="border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+            <button
+              onClick={() => {
+                const newExpanded = new Set(expandedUploadSections);
+                if (newExpanded.has('torrents')) {
+                  newExpanded.delete('torrents');
+                } else {
+                  newExpanded.add('torrents');
+                }
+                setExpandedUploadSections(newExpanded);
+              }}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
+            >
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">Upload Torrents</span>
+              <svg
+                className={`w-5 h-5 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform ${
+                  expandedUploadSections.has('torrents') ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {expandedUploadSections.has('torrents') && (
+              <div className="px-4 pb-4">
+                <ItemUploader apiKey={apiKey} activeType="torrents" />
+              </div>
+            )}
+          </div>
+
+          {/* Usenet Upload Section */}
+          <div className="border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+            <button
+              onClick={() => {
+                const newExpanded = new Set(expandedUploadSections);
+                if (newExpanded.has('usenet')) {
+                  newExpanded.delete('usenet');
+                } else {
+                  newExpanded.add('usenet');
+                }
+                setExpandedUploadSections(newExpanded);
+              }}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
+            >
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">Upload NZB Files</span>
+              <svg
+                className={`w-5 h-5 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform ${
+                  expandedUploadSections.has('usenet') ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {expandedUploadSections.has('usenet') && (
+              <div className="px-4 pb-4">
+                <ItemUploader apiKey={apiKey} activeType="usenet" />
+              </div>
+            )}
+          </div>
+
+          {/* Web Downloads Upload Section */}
+          <div className="border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+            <button
+              onClick={() => {
+                const newExpanded = new Set(expandedUploadSections);
+                if (newExpanded.has('webdl')) {
+                  newExpanded.delete('webdl');
+                } else {
+                  newExpanded.add('webdl');
+                }
+                setExpandedUploadSections(newExpanded);
+              }}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
+            >
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">Add Web Uploads</span>
+              <svg
+                className={`w-5 h-5 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform ${
+                  expandedUploadSections.has('webdl') ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {expandedUploadSections.has('webdl') && (
+              <div className="px-4 pb-4">
+                <ItemUploader apiKey={apiKey} activeType="webdl" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {activeType === 'torrents' && <AutomationRules />}
 
@@ -285,7 +393,7 @@ export default function Downloads({ apiKey }) {
                 }
                 isDeleting={isDeleting}
                 onBulkDelete={(includeParentDownloads) =>
-                  deleteItems(selectedItems, includeParentDownloads)
+                  deleteItems(selectedItems, includeParentDownloads, items)
                 }
                 isExporting={isExporting}
                 onBulkExport={handleBulkExport}
