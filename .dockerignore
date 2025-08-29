@@ -35,9 +35,14 @@ Thumbs.db
 .git
 .gitignore
 
-# Docker
-Dockerfile*
-docker-compose*.yml
+# Docker (keep only what we need for production build)
+docker/Dockerfile.dev
+docker/docker-compose.dev.yml
+docker/docker-compose.prod.yml
+docker/docker-compose.ghcr.yml
+docker/dev.sh
+docker/build-optimized.sh
+docker/README.md
 .dockerignore
 
 # Documentation
