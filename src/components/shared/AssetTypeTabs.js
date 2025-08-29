@@ -8,6 +8,11 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
 
   const tabs = [
     {
+      id: 'all',
+      label: t('itemTypes.All'),
+      icon: <Icons.All className="w-4 h-4 md:w-5 md:h-5" />,
+    },
+    {
       id: 'torrents',
       label: t('itemTypes.Torrents'),
       icon: <Icons.Torrent className="w-4 h-4 md:w-5 md:h-5 rotate-[135deg]" />,

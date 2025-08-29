@@ -113,7 +113,9 @@ export default function ItemActions({
     setIsDeleting(true);
 
     try {
-      await onDelete(item.id);
+      // For 'all' type, pass the item's assetType to the delete function
+      const itemAssetType = activeType === 'all' ? item.assetType : null;
+      await onDelete(item.id, false, itemAssetType);
       phEvent('delete_item');
     } catch (error) {
       console.error('Error deleting:', error);

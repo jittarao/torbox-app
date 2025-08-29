@@ -14,6 +14,7 @@ import Toast from '../shared/Toast';
 // Local storage keys
 const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
 const UPLOADER_OPTIONS_KEY = 'uploader-options-expanded';
+const NZB_TIPS_HIDDEN_KEY = 'nzb-tips-hidden';
 
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const t = useTranslations('ItemUploader');
@@ -41,6 +42,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
   const [toast, setToast] = useState(null);
+  const [nzbTipsHidden, setNzbTipsHidden] = useState(false);
 
   // Set initial expanded state based on localStorage or screen size
   useEffect(() => {
@@ -74,6 +76,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           setShowOptions(savedOptionsState === 'true');
         }
       }
+
+      // Load NZB tips hidden state
+      const savedNzbTipsHidden = localStorage.getItem(NZB_TIPS_HIDDEN_KEY);
+      if (savedNzbTipsHidden !== null) {
+        setNzbTipsHidden(savedNzbTipsHidden === 'true');
+      }
     } else {
       // Fallback if localStorage is not available
       handleResize();
@@ -103,6 +111,13 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
       localStorage.setItem(UPLOADER_OPTIONS_KEY, showOptions.toString());
     }
   }, [showOptions, isClient, activeType]);
+
+  // Save NZB tips hidden state to localStorage when it changes
+  useEffect(() => {
+    if (isClient && typeof localStorage !== 'undefined') {
+      localStorage.setItem(NZB_TIPS_HIDDEN_KEY, nzbTipsHidden.toString());
+    }
+  }, [nzbTipsHidden, isClient]);
 
   // Clear items when switching asset types
   useEffect(() => {
@@ -358,23 +373,49 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           )}
 
           {/* Help section for common issues */}
-          {activeType === 'usenet' && (
+          {activeType === 'usenet' && !nzbTipsHidden && (
             <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                <div className="text-sm text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">{t('help.nzbTips')}</p>
-                  <ul className="mt-1 text-xs space-y-1">
-                    <li>• {t('help.validLinks')}</li>
-                    <li>• {t('help.checkApiKey')}</li>
-                    <li>• {t('help.serverErrors')}</li>
-                    <li>• {t('help.downloadSlots')}</li>
-                    <li>• {t('help.uploadLimit')}</li>
-                  </ul>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-2 flex-1">
+                  <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    <p className="font-medium">{t('help.nzbTips')}</p>
+                    <ul className="mt-1 text-xs space-y-1">
+                      <li>• {t('help.validLinks')}</li>
+                      <li>• {t('help.checkApiKey')}</li>
+                      <li>• {t('help.serverErrors')}</li>
+                      <li>• {t('help.downloadSlots')}</li>
+                      <li>• {t('help.uploadLimit')}</li>
+                    </ul>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setNzbTipsHidden(true)}
+                  className="ml-2 p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                  aria-label="Hide tips"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
+            </div>
+          )}
+
+          {/* Show tips button when hidden */}
+          {activeType === 'usenet' && nzbTipsHidden && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={() => setNzbTipsHidden(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Show NZB Tips
+              </button>
             </div>
           )}
 

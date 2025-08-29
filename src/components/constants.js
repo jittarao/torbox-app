@@ -64,6 +64,7 @@ export const COLUMNS = {
     assetTypes: ['webdl', 'usenet'],
   },
   expires_at: { key: 'expires_at', sortable: true },
+  asset_type: { key: 'asset_type', sortable: true, assetTypes: ['all'] },
 };
 
 export const STATUS_OPTIONS = [

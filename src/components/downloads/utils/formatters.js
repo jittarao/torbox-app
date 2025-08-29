@@ -1,17 +1,41 @@
 import { createTranslator } from 'next-intl';
 
 export const formatSize = (bytes, locale = 'en') => {
+  // Handle all edge cases: null, undefined, NaN, negative values
+  if (
+    bytes === null ||
+    bytes === undefined ||
+    isNaN(bytes) ||
+    bytes < 0
+  ) {
+    return 'Unknown';
+  }
+  
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 B';
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (
-    new Intl.NumberFormat(locale, {
-      maximumFractionDigits: 1,
-      minimumFractionDigits: 1,
-    }).format(bytes / Math.pow(1024, i)) +
-    ' ' +
-    sizes[i]
-  );
+  
+  try {
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    
+    // Ensure i is within valid range for the sizes array
+    if (i < 0 || i >= sizes.length) {
+      return 'Unknown';
+    }
+    
+    const value = bytes / Math.pow(1024, i);
+    
+    return (
+      new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 1,
+      }).format(value) +
+      ' ' +
+      sizes[i]
+    );
+  } catch (error) {
+    // Fallback in case of any calculation errors
+    return 'Unknown';
+  }
 };
 
 export const formatSpeed = (bytesPerSecond, locale = 'en') => {
@@ -83,12 +107,15 @@ export const timeAgo = (dateString, t) => {
 };
 
 export const formatEta = (seconds, t) => {
-  if (!seconds || seconds < 0) return t('time.unknown');
+  if (!seconds || seconds < 0 || isNaN(seconds)) return t('time.unknown');
   if (seconds === 0) return t('time.complete');
 
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
+  // Round to nearest second to avoid long decimal values
+  const roundedSeconds = Math.round(seconds);
+  
+  const hours = Math.floor(roundedSeconds / 3600);
+  const minutes = Math.floor((roundedSeconds % 3600) / 60);
+  const remainingSeconds = roundedSeconds % 60;
 
   if (hours > 0) return `${hours}${t('time.h')} ${minutes}${t('time.m')}`;
   if (minutes > 0)

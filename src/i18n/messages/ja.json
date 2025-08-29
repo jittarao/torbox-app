@@ -163,6 +163,8 @@
   },
   "Common": {
     "itemTypes": {
+      "all": "すべて",
+      "All": "すべて",
       "torrent": "torrent",
       "Torrent": "Torrent",
       "torrents": "torrents",
@@ -376,6 +378,7 @@
     "peers": "ピア",
     "original_url": "ソースURL",
     "expires_at": "有効期限",
+    "asset_type": "タイプ",
     "actions": "アクション"
   },
   "Statuses": {

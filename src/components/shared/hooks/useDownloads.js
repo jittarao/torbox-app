@@ -41,6 +41,9 @@ export function useDownloads(
         return '/api/usenet/download';
       case 'webdl':
         return '/api/webdl/download';
+      case 'all':
+        // For 'all' type, we'll need to determine the endpoint based on the item's assetType
+        return '/api/torrents/download'; // Default fallback
       default:
         return '/api/torrents/download';
     }
@@ -52,6 +55,9 @@ export function useDownloads(
         return 'usenet_id';
       case 'webdl':
         return 'web_id';
+      case 'all':
+        // For 'all' type, we'll need to determine the ID field based on the item's assetType
+        return 'torrent_id'; // Default fallback
       default:
         return 'torrent_id';
     }
@@ -75,12 +81,34 @@ export function useDownloads(
   ) => {
     if (!apiKey) return false;
 
-    // Determine the ID field based on asset type if not explicitly provided
-    if (!idField) {
-      idField = getIdField();
+    // For 'all' type, determine the actual asset type from metadata
+    let actualAssetType = assetType;
+    let actualEndpoint = getDownloadEndpoint();
+    let actualIdField = idField || getIdField();
+
+    if (assetType === 'all' && metadata.item) {
+      actualAssetType = metadata.item.assetType || 'torrents';
+      
+      // Determine the correct endpoint and ID field based on the actual asset type
+      switch (actualAssetType) {
+        case 'usenet':
+          actualEndpoint = '/api/usenet/download';
+          actualIdField = 'usenet_id';
+          break;
+        case 'webdl':
+          actualEndpoint = '/api/webdl/download';
+          actualIdField = 'web_id';
+          break;
+        default:
+          actualEndpoint = '/api/torrents/download';
+          actualIdField = 'torrent_id';
+      }
     }
 
-    const endpoint = getDownloadEndpoint();
+    // Determine the ID field based on asset type if not explicitly provided
+    if (!idField) {
+      idField = actualIdField;
+    }
     const fileId = options.fileId;
 
     // Check if the download already exists in the download history
@@ -91,7 +119,7 @@ export function useDownloads(
         (download) =>
           download.itemId === id &&
           download.fileId === fileId &&
-          download.assetType === assetType &&
+          download.assetType === actualAssetType &&
           Math.abs(
             new Date().getTime() - new Date(download.generatedAt).getTime(),
           ) <=
@@ -101,7 +129,7 @@ export function useDownloads(
       existingDownload = downloadHistory.find(
         (download) =>
           download.itemId === id &&
-          download.assetType === assetType &&
+          download.assetType === actualAssetType &&
           !download.fileId &&
           Math.abs(
             new Date().getTime() - new Date(download.generatedAt).getTime(),
@@ -123,7 +151,7 @@ export function useDownloads(
         : { zip_link: 'true' }),
     });
 
-    const result = await retryFetch(`${endpoint}?${params}`, {
+    const result = await retryFetch(`${actualEndpoint}?${params}`, {
       headers: { 'x-api-key': apiKey },
       permanent: [
         (data) =>
@@ -161,7 +189,7 @@ export function useDownloads(
           itemId: id,
           fileId: fileId || null,
           url: downloadUrl,
-          assetType,
+          assetType: actualAssetType,
           generatedAt: new Date().toISOString(),
           metadata: optimizedMetadata,
         };

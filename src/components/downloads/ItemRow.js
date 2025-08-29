@@ -278,6 +278,27 @@ export default function ItemRow({
             {item.files?.length || 0}
           </td>
         );
+      case 'asset_type':
+        return (
+          <td
+            key={columnId}
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
+          >
+            <div className="flex items-center gap-2">
+              <span className={`inline-block w-2 h-2 rounded-full ${
+                item.assetType === 'torrents' ? 'bg-blue-500' :
+                item.assetType === 'usenet' ? 'bg-green-500' :
+                item.assetType === 'webdl' ? 'bg-purple-500' : 'bg-gray-500'
+              }`}></span>
+              <span className="capitalize">
+                {item.assetType === 'torrents' ? 'Torrent' :
+                 item.assetType === 'usenet' ? 'Usenet' :
+                 item.assetType === 'webdl' ? 'Web' : 'Unknown'}
+              </span>
+            </div>
+          </td>
+        );
       case 'error':
         return (
           <td

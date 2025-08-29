@@ -6,6 +6,7 @@ export function useColumnManager(activeType = 'torrents') {
   const [activeColumns, setActiveColumns] = useState(() => {
     // Default columns for each type - used for initial server-side rendering
     const defaultColumns = {
+      all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
       torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
@@ -34,6 +35,7 @@ export function useColumnManager(activeType = 'torrents') {
 
     // Default columns for each type
     const defaultColumns = {
+      all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
       torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
@@ -87,6 +89,7 @@ export function useColumnManager(activeType = 'torrents') {
     const stored = localStorage.getItem(storageKey);
 
     const defaultColumns = {
+      all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
       torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [

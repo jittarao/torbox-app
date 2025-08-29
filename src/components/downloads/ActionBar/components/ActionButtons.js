@@ -254,60 +254,7 @@ export default function ActionButtons({
         </button>
       )}
 
-      {/* Bulk Cloud Upload button */}
-      {selectedItems.items?.size > 0 && (
-        <div className="relative" ref={cloudUploadRef}>
-          <button
-            onClick={() => {
-              if (Object.keys(connectedProviders).length === 0) {
-                setToast({
-                  message: 'Please connect to a cloud provider first in the Cloud Storage Manager',
-                  type: 'info',
-                });
-              } else {
-                setShowCloudUpload(!showCloudUpload);
-              }
-            }}
-            disabled={isUploading}
-            className="bg-green-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-green-600 
-            disabled:opacity-50 transition-colors flex items-center gap-2"
-          >
-            <Icons.Cloud />
-            {isUploading ? t('uploading') : t('uploadToCloud')}
-            <Icons.ChevronDown className={`w-3 h-3 transition-transform ${showCloudUpload ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showCloudUpload && (
-            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 min-w-[200px]">
-              <div className="py-1">
-                {/* Help message */}
-                <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  Connect to providers in Cloud Storage Manager first
-                </div>
-                
-                {[
-                  { id: INTEGRATION_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: Icons.GoogleDrive },
-                  { id: INTEGRATION_TYPES.DROPBOX, name: 'Dropbox', icon: Icons.Dropbox },
-                  { id: INTEGRATION_TYPES.ONEDRIVE, name: 'OneDrive', icon: Icons.OneDrive },
-                  { id: INTEGRATION_TYPES.GOFILE, name: 'GoFile', icon: Icons.GoFile },
-                  { id: INTEGRATION_TYPES.FICHIER, name: '1Fichier', icon: Icons.Fichier },
-                  { id: INTEGRATION_TYPES.PIXELDRAIN, name: 'Pixeldrain', icon: Icons.Pixeldrain },
-                ].map((provider) => (
-                  <button
-                    key={provider.id}
-                    onClick={() => handleBulkCloudUpload(provider.id)}
-                    disabled={isUploading}
-                    className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
-                  >
-                    <provider.icon className="w-4 h-4 mr-3" />
-                    {provider.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Bulk Cloud Upload button - Temporarily hidden */}
 
       {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
         <>
