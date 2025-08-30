@@ -79,7 +79,7 @@ export default function ActionBar({
   const itemTypePlural = `${itemTypeName}s`;
 
   const sortOptions = activeColumns.map((column) => ({
-    label: t(`${COLUMNS[column].key}`),
+    label: COLUMNS[column].displayName ? COLUMNS[column].displayName : t(`${COLUMNS[column].key}`),
     value: column,
   }));
 

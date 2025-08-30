@@ -59,7 +59,16 @@ export function useColumnManager(activeType = 'torrents') {
       // Filter for valid columns that are applicable to this asset type
       const validColumns = storedColumns.filter((col) => {
         const column = COLUMNS[col];
-        // Include column if it exists and either has no assetTypes restriction or includes the current type
+        // For "all" tab, include columns that are either universal or specifically allowed for "all"
+        if (activeType === 'all') {
+          return (
+            column &&
+            (!column.assetTypes || 
+             column.assetTypes.includes('all') || 
+             column.assetTypes.includes(activeType))
+          );
+        }
+        // For specific tabs, include column if it exists and either has no assetTypes restriction or includes the current type
         return (
           column &&
           (!column.assetTypes || column.assetTypes.includes(activeType))
@@ -113,6 +122,15 @@ export function useColumnManager(activeType = 'torrents') {
       // Filter for valid columns that are applicable to this asset type
       const validColumns = storedColumns.filter((col) => {
         const column = COLUMNS[col];
+        // For "all" tab, include columns that are either universal or specifically allowed for "all"
+        if (activeType === 'all') {
+          return (
+            column &&
+            (!column.assetTypes || 
+             column.assetTypes.includes('all') || 
+             column.assetTypes.includes(activeType))
+          );
+        }
         return (
           column &&
           (!column.assetTypes || column.assetTypes.includes(activeType))
@@ -137,6 +155,15 @@ export function useColumnManager(activeType = 'torrents') {
     // Filter for valid columns that are applicable to this asset type
     const validColumns = newColumns.filter((col) => {
       const column = COLUMNS[col];
+      // For "all" tab, include columns that are either universal or specifically allowed for "all"
+      if (activeType === 'all') {
+        return (
+          column &&
+          (!column.assetTypes || 
+           column.assetTypes.includes('all') || 
+           column.assetTypes.includes(activeType))
+        );
+      }
       return (
         column && (!column.assetTypes || column.assetTypes.includes(activeType))
       );

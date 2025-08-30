@@ -124,6 +124,15 @@ export default function ColumnManager({
   // Filter columns based on asset type
   const availableColumns = useMemo(() => {
     return Object.entries(columns).filter(([id, column]) => {
+      // For "all" tab, include columns that are either universal or specifically allowed for "all"
+      if (activeType === 'all') {
+        return (
+          !column.assetTypes || 
+          column.assetTypes.includes('all') || 
+          column.assetTypes.includes(activeType)
+        );
+      }
+      // For specific tabs, include column if it exists and either has no assetTypes restriction or includes the current type
       return !column.assetTypes || column.assetTypes.includes(activeType);
     });
   }, [columns, activeType]);
@@ -176,7 +185,7 @@ export default function ColumnManager({
                         <SortableItem
                           key={columnId}
                           id={columnId}
-                          label={columnT(columns[columnId].key)}
+                          label={columns[columnId].displayName ? columns[columnId].displayName : columnT(columns[columnId].key)}
                         />
                       ))}
                     </div>
@@ -191,7 +200,7 @@ export default function ColumnManager({
               </h3>
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="flex flex-col gap-2 pb-2">
-                  {availableColumns.map(([id, { label }]) => (
+                  {availableColumns.map(([id, column]) => (
                     <label key={id} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -200,7 +209,7 @@ export default function ColumnManager({
                         className="accent-accent dark:accent-accent-dark"
                       />
                       <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                        {columnT(id)}
+                        {column.displayName ? column.displayName : columnT(id)}
                       </span>
                     </label>
                   ))}
