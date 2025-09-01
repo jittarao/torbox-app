@@ -120,6 +120,10 @@ public
 # Docker
 .dockerignore
 docker-compose.override.yml
+docker.sh
+
+# Ignore entire docker folder (legacy files)
+docker/
 
 # IDE and Editor files
 .vscode/
@@ -156,14 +160,5 @@ temp/
 # Local development
 .local/
 
+# Scripts (ignore build scripts)
 /scripts/
-docker.sh
-# Docker files (only keep what's needed for GitHub Actions build)
-docker/Dockerfile.dev
-docker/docker-compose.dev.yml
-docker/docker-compose.prod.yml
-docker/docker-compose.ghcr.yml
-docker/dev.sh
-docker/build-optimized.sh
-docker/prod.sh
-docker/README.md
