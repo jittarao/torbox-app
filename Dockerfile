@@ -10,7 +10,7 @@ COPY package.json package-lock.json* ./
 
 # Install dependencies with optimizations
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --only=production --prefer-offline --no-audit && \
+    npm install --only=production --prefer-offline --no-audit --no-optional && \
     npm cache clean --force
 
 FROM node:22-alpine AS builder
@@ -27,7 +27,7 @@ COPY package.json package-lock.json* ./
 
 # Install all dependencies (including dev dependencies)
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+    npm install --prefer-offline --no-audit --no-optional
 
 # Copy source code
 COPY . .
@@ -72,7 +72,7 @@ USER nextjs
 
 # Health check with timeout
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+    CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
