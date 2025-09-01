@@ -10,7 +10,7 @@ COPY package.json package-lock.json* ./
 
 # Install dependencies with optimizations
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --only=production --prefer-offline --no-audit --no-optional && \
+    npm install --only=production --prefer-offline --no-audit && \
     npm cache clean --force
 
 FROM node:22-alpine AS builder
@@ -25,9 +25,9 @@ RUN apk add --no-cache libc6-compat
 # Copy package files first for better layer caching
 COPY package.json package-lock.json* ./
 
-# Install all dependencies (including dev dependencies)
+# Install all dependencies (including dev dependencies and optional dependencies)
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --prefer-offline --no-audit --no-optional
+    npm install --prefer-offline --no-audit
 
 # Copy source code
 COPY . .
