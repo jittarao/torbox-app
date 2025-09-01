@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Production build
+# Next.js build output
 .next
 out
 
@@ -35,19 +35,26 @@ Thumbs.db
 .git
 .gitignore
 
-# Docker (keep only what we need for production build)
-docker/Dockerfile.dev
-docker/docker-compose.dev.yml
-docker/docker-compose.prod.yml
-docker/docker-compose.ghcr.yml
-docker/dev.sh
-docker/build-optimized.sh
-docker/README.md
-.dockerignore
+# Docker files (keep only the root Dockerfile)
+docker/
+docker-compose*.yml
+docker.sh
 
 # Documentation
 README.md
 LICENSE
+*.md
+
+# Development files
+.eslintrc*
+.prettierrc*
+.eslintignore
+.prettierignore
+
+# Testing
+coverage
+.nyc_output
+.jest
 
 # Logs
 logs
@@ -62,23 +69,11 @@ pids
 # Coverage directory used by tools like istanbul
 coverage
 
-# nyc test coverage
-.nyc_output
-
 # Dependency directories
 jspm_packages/
 
 # Optional npm cache directory
 .npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -93,55 +88,42 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
+# next.js build output
 .next
 
-# Nuxt.js build / generate output
+# nuxt.js build output
 .nuxt
-dist
 
-# Storybook build outputs
-.out
-.storybook-out
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
 
 # Temporary folders
 tmp/
 temp/
 
+# Build artifacts
+dist/
+build/
+
+# Package manager lock files (we'll copy package.json and package-lock.json separately)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Sentry
 .sentryclirc
-
-# Local development
-data/
-
-# Test files
-**/*.test.js
-**/*.test.jsx
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.js
-**/*.spec.jsx
-**/*.spec.ts
-**/*.spec.tsx
-test/
-tests/
-__tests__/
-
-# Development tools
-.eslintrc*
-.prettierrc*
-.prettierignore
-jest.config.*
-cypress/
-cypress.config.*
-
-# Build artifacts
-build/
-dist/
-*.map
-
-# Performance monitoring
-.perf/
-
-# Local configuration
-.local/
