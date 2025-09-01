@@ -56,6 +56,8 @@ export function useDelete(
 
   const batchDelete = async (ids, items = []) => {
     try {
+      let successfulIds = [];
+      
       // For 'all' type, we need to group items by their asset type and delete them separately
       if (assetType === 'all' && items.length > 0) {
         const groupedItems = {
@@ -73,18 +75,14 @@ export function useDelete(
         });
         
         // Delete each group separately
-        const allSuccessfulIds = [];
         for (const [type, typeIds] of Object.entries(groupedItems)) {
           if (typeIds.length > 0) {
-            const successfulIds = await batchDeleteHelper(typeIds, apiKey, type);
-            allSuccessfulIds.push(...successfulIds);
+            const typeSuccessfulIds = await batchDeleteHelper(typeIds, apiKey, type);
+            successfulIds.push(...typeSuccessfulIds);
           }
         }
-        
-        return allSuccessfulIds;
       } else {
-        const successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
-        return successfulIds;
+        successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
       }
 
       // Update UI for successful deletes
