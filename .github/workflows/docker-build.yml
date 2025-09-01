@@ -46,6 +46,15 @@ jobs:
           echo "Repository: ${{ github.repository }}"
           echo "This step ensures the package is ready for Docker push"
 
+      - name: Debug permissions
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Token permissions: ${{ secrets.GITHUB_TOKEN }}"
+          echo "Package registry: ghcr.io"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
