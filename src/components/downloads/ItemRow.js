@@ -43,10 +43,26 @@ export default function ItemRow({
 
     const downloadSpeed = item.download_speed || 0;
     const totalSize = item.size || 0;
-    const downloadedSize = item.total_downloaded || 0;
     
-    // Calculate progress percentage based on downloaded vs total size
-    const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
+    // For usenet and webdl, use the progress field if available
+    // For torrents, calculate from total_downloaded if available
+    let progress = 0;
+    let downloadedSize = 0;
+    
+    if (item.assetType === 'usenet' || item.assetType === 'webdl') {
+      // Use progress field (0-1) for usenet and webdl
+      progress = (item.progress || 0) * 100;
+      downloadedSize = totalSize * (item.progress || 0);
+    } else {
+      // For torrents, use total_downloaded if available, otherwise fall back to progress
+      downloadedSize = item.total_downloaded || 0;
+      if (totalSize > 0 && downloadedSize > 0) {
+        progress = (downloadedSize / totalSize) * 100;
+      } else if (item.progress !== undefined) {
+        progress = (item.progress || 0) * 100;
+        downloadedSize = totalSize * (item.progress || 0);
+      }
+    }
     
     // Calculate ETA based on remaining size and speed
     const remainingSize = totalSize - downloadedSize;
