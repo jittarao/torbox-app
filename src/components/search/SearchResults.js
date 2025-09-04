@@ -105,8 +105,8 @@ export default function SearchResults({ apiKey }) {
           asQueued: false,
         };
         
-        // Only add name for non-API NZB links
-        if (!item.nzb.includes('api')) {
+        // Only add name for TorBox API search results - removed a ! before item.nzb
+        if (item.nzb.includes('api')) {
           uploadData.name = item.raw_title;
         }
         
