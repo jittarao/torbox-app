@@ -418,61 +418,61 @@ export default function MoreOptionsDropdown({
       </button>,
     );
 
-    // Cloud upload option
-    items.push(
-      <button
-        key="cloud-upload"
-        onClick={() => {
-          setToast({
-            message: 'Please connect to a cloud provider first in the Cloud Storage Manager',
-            type: 'info',
-          });
-          setShowCloudUpload(false);
-          setIsMenuOpen(false);
-        }}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-      >
-        <Icons.Cloud />
-        <span className="ml-2">{t('uploadToCloud')}</span>
-        <Icons.ChevronDown className={`ml-auto w-4 h-4 transition-transform ${showCloudUpload ? 'rotate-180' : ''}`} />
-      </button>,
-    );
+    // Cloud upload option - HIDDEN FOR NOW
+    // items.push(
+    //   <button
+    //     key="cloud-upload"
+    //     onClick={() => {
+    //       setToast({
+    //         message: 'Please connect to a cloud provider first in the Cloud Storage Manager',
+    //         type: 'info',
+    //       });
+    //       setShowCloudUpload(false);
+    //       setIsMenuOpen(false);
+    //     }}
+    //     className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+    //   >
+    //     <Icons.Cloud />
+    //     <span className="ml-2">{t('uploadToCloud')}</span>
+    //     <Icons.ChevronDown className={`ml-auto w-4 h-4 transition-transform ${showCloudUpload ? 'rotate-180' : ''}`} />
+    //   </button>,
+    // );
 
-    // Cloud upload submenu
-    if (showCloudUpload) {
-      // Add help message
-      items.push(
-        <div
-          key="cloud-upload-help"
-          className="px-4 py-2 text-xs text-primary-text/60 dark:text-primary-text-dark/60 border-b border-border dark:border-border-dark"
-        >
-          Connect to providers in Cloud Storage Manager first
-        </div>,
-      );
+    // Cloud upload submenu - HIDDEN FOR NOW
+    // if (showCloudUpload) {
+    //   // Add help message
+    //   items.push(
+    //     <div
+    //       key="cloud-upload-help"
+    //       className="px-4 py-2 text-xs text-primary-text/60 dark:text-primary-text-dark/60 border-b border-border dark:border-border-dark"
+    //     >
+    //       Connect to providers in Cloud Storage Manager first
+    //     </div>,
+    //   );
 
-      const providers = [
-        { id: INTEGRATION_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: Icons.GoogleDrive },
-        { id: INTEGRATION_TYPES.DROPBOX, name: 'Dropbox', icon: Icons.Dropbox },
-        { id: INTEGRATION_TYPES.ONEDRIVE, name: 'OneDrive', icon: Icons.OneDrive },
-        { id: INTEGRATION_TYPES.GOFILE, name: 'GoFile', icon: Icons.GoFile },
-        { id: INTEGRATION_TYPES.FICHIER, name: '1Fichier', icon: Icons.Fichier },
-        { id: INTEGRATION_TYPES.PIXELDRAIN, name: 'Pixeldrain', icon: Icons.Pixeldrain },
-      ];
+    //   const providers = [
+    //     { id: INTEGRATION_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: Icons.GoogleDrive },
+    //     { id: INTEGRATION_TYPES.DROPBOX, name: 'Dropbox', icon: Icons.Dropbox },
+    //     { id: INTEGRATION_TYPES.ONEDRIVE, name: 'OneDrive', icon: Icons.OneDrive },
+    //     { id: INTEGRATION_TYPES.GOFILE, name: 'GoFile', icon: Icons.GoFile },
+    //     { id: INTEGRATION_TYPES.FICHIER, name: '1Fichier', icon: Icons.Fichier },
+    //     { id: INTEGRATION_TYPES.PIXELDRAIN, name: 'Pixeldrain', icon: Icons.Pixeldrain },
+    //   ];
 
-      providers.forEach((provider) => {
-        items.push(
-          <button
-            key={`upload-${provider.id}`}
-            onClick={() => handleCloudUpload(provider.id)}
-            disabled={isUploading}
-            className="flex items-center w-full px-4 py-2 pl-8 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
-          >
-            {isUploading ? <Spinner size="xs" /> : <provider.icon className="w-4 h-4" />}
-            <span className="ml-2">{provider.name}</span>
-          </button>,
-        );
-      });
-    }
+    //   providers.forEach((provider) => {
+    //     items.push(
+    //       <button
+    //         key={`upload-${provider.id}`}
+    //         onClick={() => handleCloudUpload(provider.id)}
+    //         disabled={isUploading}
+    //         className="flex items-center w-full px-4 py-2 pl-8 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+    //       >
+    //         {isUploading ? <Spinner size="xs" /> : <provider.icon className="w-4 h-4" />}
+    //         <span className="ml-2">{provider.name}</span>
+    //       </button>,
+    //     );
+    //   });
+    // }
 
     // Torrent-specific options
     if (activeType === 'torrents') {
