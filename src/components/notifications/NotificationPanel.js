@@ -15,6 +15,8 @@ export default function NotificationPanel({ apiKey, onClose }) {
     clearNotification,
     markAsRead,
     markAllAsRead,
+    retryFetch,
+    consecutiveErrors,
   } = useNotifications(apiKey);
   
   const [operationStatus, setOperationStatus] = useState({ type: '', message: '', show: false });
@@ -206,9 +208,14 @@ export default function NotificationPanel({ apiKey, onClose }) {
               <p className="text-sm text-red-600 dark:text-red-400">
                 {error}
               </p>
+              {consecutiveErrors >= 3 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Automatic retries paused due to connection issues
+                </p>
+              )}
               <button
-                onClick={() => window.location.reload()}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                onClick={retryFetch}
+                className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Retry
               </button>
