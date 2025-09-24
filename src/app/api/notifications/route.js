@@ -18,6 +18,9 @@ export async function GET() {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    
     const response = await fetch(
       `${API_BASE}/${API_VERSION}/api/notifications/mynotifications`,
       {
@@ -25,8 +28,11 @@ export async function GET() {
           'Authorization': `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
+        signal: controller.signal,
       },
     );
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -40,6 +46,22 @@ export async function GET() {
     return Response.json(data);
   } catch (error) {
     console.error('Error fetching notifications:', error);
+    
+    // Handle specific error types
+    if (error.name === 'AbortError') {
+      return Response.json(
+        { success: false, error: 'Request timeout - connection to TorBox API failed' },
+        { status: 408 },
+      );
+    }
+    
+    if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
+      return Response.json(
+        { success: false, error: 'Connection timeout - TorBox API is unreachable' },
+        { status: 408 },
+      );
+    }
+    
     return Response.json(
       { success: false, error: error.message },
       { status: 500 },

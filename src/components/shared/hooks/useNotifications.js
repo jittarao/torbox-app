@@ -9,12 +9,24 @@ export function useNotifications(apiKey) {
   const [error, setError] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isPolling, setIsPolling] = useState(true);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
+  const [lastErrorTime, setLastErrorTime] = useState(null);
 
   const apiClient = createApiClient(apiKey);
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     if (!apiKey) return;
+
+    // Check if we should skip this request due to recent errors
+    const now = Date.now();
+    const timeSinceLastError = lastErrorTime ? now - lastErrorTime : Infinity;
+    const backoffTime = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000); // Max 5 minutes
+    
+    if (consecutiveErrors >= 3 && timeSinceLastError < backoffTime) {
+      console.log(`Skipping notification fetch due to consecutive errors. Backoff: ${backoffTime}ms`);
+      return;
+    }
 
     // Don't show loading state if we already have notifications
     if (notifications.length === 0) {
@@ -26,6 +38,10 @@ export function useNotifications(apiKey) {
       const response = await apiClient.getNotifications();
       
       if (response.success) {
+        // Reset error state on successful fetch
+        setConsecutiveErrors(0);
+        setLastErrorTime(null);
+        
         // Handle different response formats from TorBox API
         let notificationData = [];
         
@@ -74,18 +90,38 @@ export function useNotifications(apiKey) {
         const unread = notificationsWithReadStatus.filter(notification => !notification.read).length;
         setUnreadCount(unread);
       } else {
-        setError(response.error || 'Failed to fetch notifications');
+        const errorMsg = response.error || 'Failed to fetch notifications';
+        setError(errorMsg);
+        setConsecutiveErrors(prev => prev + 1);
+        setLastErrorTime(now);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      // Only set error if it's not a network error (CORS, etc.)
-      if (error.message !== 'NetworkError when attempting to fetch resource.') {
+      
+      // Check if it's a connection timeout or network error
+      const isConnectionError = error.message?.includes('Connect Timeout Error') || 
+                               error.message?.includes('fetch failed') ||
+                               error.message?.includes('NetworkError') ||
+                               error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT';
+      
+      if (isConnectionError) {
+        setConsecutiveErrors(prev => prev + 1);
+        setLastErrorTime(now);
+        setError('Connection timeout - notifications temporarily unavailable');
+        
+        // Stop polling after 3 consecutive connection errors
+        if (consecutiveErrors >= 2) {
+          setIsPolling(false);
+          console.log('Stopping notification polling due to consecutive connection errors');
+        }
+      } else {
+        // Only set error for non-connection errors
         setError(error.message);
       }
     } finally {
       setLoading(false);
     }
-  }, [apiKey, apiClient, notifications.length]);
+  }, [apiKey, apiClient, notifications.length, consecutiveErrors, lastErrorTime]);
 
   // Clear all notifications
   const clearAllNotifications = useCallback(async () => {
@@ -259,6 +295,15 @@ export function useNotifications(apiKey) {
     setUnreadCount(prev => Math.max(0, prev - 1));
   }, []);
 
+  // Manual retry function
+  const retryFetch = useCallback(() => {
+    setConsecutiveErrors(0);
+    setLastErrorTime(null);
+    setError(null);
+    setIsPolling(true);
+    fetchNotifications();
+  }, [fetchNotifications]);
+
   // Initial fetch - only run once
   useEffect(() => {
     if (apiKey && notifications.length === 0) {
@@ -275,7 +320,14 @@ export function useNotifications(apiKey) {
     }, 120000); // 2 minutes
 
     return () => clearInterval(interval);
-  }, [apiKey, isPolling]); // Remove fetchNotifications from dependencies
+  }, [apiKey, isPolling, fetchNotifications]);
+
+  // Reset error state when API key changes
+  useEffect(() => {
+    setConsecutiveErrors(0);
+    setLastErrorTime(null);
+    setError(null);
+  }, [apiKey]);
 
   return {
     notifications,
@@ -291,5 +343,7 @@ export function useNotifications(apiKey) {
     addNotification,
     removeNotification,
     setIsPolling,
+    retryFetch,
+    consecutiveErrors,
   };
 }
