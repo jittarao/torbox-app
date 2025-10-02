@@ -281,8 +281,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       formData.append('password', webdlPassword);
     }
 
-    // Add name if it exists, but not for NZB API links that use content disposition
-    if (item.name && !(item.type === 'usenet' && typeof item.data === 'string' && item.data.includes('api') && (item.data.includes('nzb') || item.data.includes('usenet')))) {
+    // Add name if it exists
+    if (item.name) {
       formData.append('name', item.name);
     }
 
