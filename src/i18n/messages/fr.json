@@ -86,7 +86,8 @@
     "add": "Ajouter",
     "deleteKey": "Supprimer la clé",
     "noKeys": "Aucune clé enregistrée",
-    "close": "Fermer"
+    "close": "Fermer",
+    "toggleOpen": "Garder ouvert"
   },
   "ActionButtons": {
     "downloadLinks": "Obtenir les liens de téléchargement",

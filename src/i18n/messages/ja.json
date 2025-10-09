@@ -86,7 +86,8 @@
     "add": "追加",
     "deleteKey": "キーを削除",
     "noKeys": "保存されたキーがありません",
-    "close": "閉じる"
+    "close": "閉じる",
+    "toggleOpen": "開いたままにする"
   },
   "ActionButtons": {
     "downloadLinks": "ダウンロードリンクを取得",

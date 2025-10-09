@@ -25,6 +25,11 @@ export const useSearchStore = create((set, get) => ({
     if (query) get().fetchResults();
   },
 
+  // Clear results when API key changes
+  clearResults: () => {
+    set({ results: [], filteredResults: [], error: null });
+  },
+
   setQuery: (query) => {
     set({ query, results: [], filteredResults: [], error: null });
     if (query) {
