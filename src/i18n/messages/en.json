@@ -418,6 +418,7 @@
     "original_url": "Source URL",
     "expires_at": "Expires At",
     "asset_type": "Type",
+    "private": "Private Tracker",
     "actions": "Actions"
   },
   "Statuses": {

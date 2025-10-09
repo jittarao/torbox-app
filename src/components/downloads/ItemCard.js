@@ -90,6 +90,8 @@ export default function ItemCard({
         return columnT('download_progress');
       case 'asset_type':
         return columnT('asset_type');
+      case 'private':
+        return columnT('private');
     }
   };
 
@@ -126,6 +128,8 @@ export default function ItemCard({
         return <Icons.Download />;
       case 'asset_type':
         return <Icons.All />;
+      case 'private':
+        return <Icons.Private />;
     }
   };
 
@@ -244,6 +248,15 @@ export default function ItemCard({
             </span>
           </div>
         );
+      case 'private':
+        return item.private ? (
+          <div className="flex items-center gap-2">
+            <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+            <span>Private</span>
+          </div>
+        ) : (
+          <span>Public</span>
+        );
     }
   };
 
@@ -293,6 +306,11 @@ export default function ItemCard({
                     }`}
                   ></span>
                 </Tooltip>
+                {item.private && (
+                  <Tooltip content="Private Tracker">
+                    <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                  </Tooltip>
+                )}
                 {item.name && (
                   <Tooltip content={!isBlurred ? item.name : ''}>
                     <span>{item.name || 'Unnamed Item'}</span>

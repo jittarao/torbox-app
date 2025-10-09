@@ -379,6 +379,7 @@
     "original_url": "URL source",
     "expires_at": "Expire à",
     "asset_type": "Type",
+    "private": "Tracker Privé",
     "actions": "Actions"
   },
   "Statuses": {
