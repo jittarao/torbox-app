@@ -25,7 +25,7 @@ const SORT_OPTIONS = {
 };
 
 export default function SearchResults({ apiKey }) {
-  const { filteredResults, results, loading, error, searchType } = useSearchStore();
+  const { filteredResults, results, loading, error, searchType, clearResults } = useSearchStore();
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
@@ -35,6 +35,11 @@ export default function SearchResults({ apiKey }) {
   const [addedItems, setAddedItems] = useState([]);
   const [hideTorBoxIndexers, setHideTorBoxIndexers] = useState(false);
   const t = useTranslations('SearchResults');
+
+  // Clear results when API key changes
+  useEffect(() => {
+    clearResults();
+  }, [apiKey]);
 
   // Update sort key when search type changes
   useEffect(() => {

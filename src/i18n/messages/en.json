@@ -87,7 +87,8 @@
     "add": "Add",
     "deleteKey": "Delete Key",
     "noKeys": "No saved keys",
-    "close": "Close"
+    "close": "Close",
+    "toggleOpen": "Toggle Open"
   },
   "Referral": {
     "referral": "Referral",

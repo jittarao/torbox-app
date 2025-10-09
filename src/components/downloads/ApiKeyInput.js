@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
@@ -13,6 +13,22 @@ export default function ApiKeyInput({
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const [showManager, setShowManager] = useState(false);
+  const [keepManagerOpen, setKeepManagerOpen] = useState(false);
+
+  // Load manager open state from localStorage on mount
+  useEffect(() => {
+    const storedState = localStorage.getItem('torboxKeepManagerOpen');
+    if (storedState === 'true') {
+      setKeepManagerOpen(true);
+      setShowManager(true);
+    }
+  }, []);
+
+  // Save manager open state to localStorage
+  const handleKeepManagerToggle = (keepOpen) => {
+    setKeepManagerOpen(keepOpen);
+    localStorage.setItem('torboxKeepManagerOpen', keepOpen.toString());
+  };
 
   return (
     <div className="space-y-4">
@@ -62,6 +78,8 @@ export default function ApiKeyInput({
           onKeySelect={onKeyChange}
           activeKey={value}
           onClose={() => setShowManager(false)}
+          keepOpen={keepManagerOpen}
+          onKeepOpenToggle={handleKeepManagerToggle}
         />
       )}
     </div>

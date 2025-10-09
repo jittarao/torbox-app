@@ -47,7 +47,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     webdlRef.current = webdlItems;
   }, [webdlItems]);
 
-  // One-time effect to fetch all data types on initial mount
+  // Fetch all data types on initial mount and when API key changes
   useEffect(() => {
     const fetchAllTypes = async () => {
       if (!apiKey) return;
@@ -60,8 +60,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     };
 
     fetchAllTypes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [apiKey]);
 
   const isRateLimited = useCallback(
     (activeType = type) => {

@@ -86,7 +86,8 @@
     "add": "Hinzufügen",
     "deleteKey": "Schlüssel löschen",
     "noKeys": "Keine gespeicherten Schlüssel",
-    "close": "Schließen"
+    "close": "Schließen",
+    "toggleOpen": "Offen halten"
   },
   "ActionButtons": {
     "downloadLinks": "Download-Links abrufen",
