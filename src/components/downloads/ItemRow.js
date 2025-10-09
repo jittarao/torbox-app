@@ -10,6 +10,7 @@ import {
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
+import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 export default function ItemRow({
@@ -127,6 +128,11 @@ export default function ItemRow({
                     }`}
                   ></span>
                 </Tooltip>
+                {item.private && (
+                  <Tooltip content="Private Tracker">
+                    <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                  </Tooltip>
+                )}
                 {item.name && (
                   <Tooltip content={!isBlurred ? item.name : ''}>
                     <span>{item.name || 'Unnamed Item'}</span>
@@ -313,6 +319,23 @@ export default function ItemRow({
                  item.assetType === 'webdl' ? 'Web' : 'Unknown'}
               </span>
             </div>
+          </td>
+        );
+      case 'private':
+        return (
+          <td
+            key={columnId}
+            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
+          >
+            {item.private ? (
+              <div className="flex items-center gap-2">
+                <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                <span>Private</span>
+              </div>
+            ) : (
+              <span>Public</span>
+            )}
           </td>
         );
       case 'error':

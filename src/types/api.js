@@ -35,6 +35,7 @@ export const API_RESPONSE_TYPES = {
     files: 'TORRENT_FILE[]',
     inactive_check: 'number',
     availability: 'number',
+    private: 'boolean',
   },
 
   TORRENT_FILE: {
