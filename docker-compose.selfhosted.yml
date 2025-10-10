@@ -1,0 +1,21 @@
+services:
+  torbox-app:
+    image: ghcr.io/crazycacti/torbox-app:latest
+    container_name: torbox-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - torbox-backend
+
+  torbox-backend:
+    image: ghcr.io/crazycacti/torbox-app:backend-latest
+    container_name: torbox-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - TORBOX_API_KEY=${TORBOX_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL}
+    volumes:
+      - backend-data:/app/data

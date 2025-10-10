@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { timeAgo } from '@/components/downloads/utils/formatters';
+import { useAutomationRulesStorage, useBackendMode } from '@/utils/backendDetector';
 
 const TRIGGER_TYPES = {
   INTERVAL: 'interval',
@@ -45,7 +46,8 @@ const ACTION_TYPES = {
 export default function AutomationRules() {
   const t = useTranslations('AutomationRules');
   const commonT = useTranslations('Common');
-  const [rules, setRules] = useState([]);
+  const { mode: backendMode } = useBackendMode();
+  const [rules, setRules, loading, error] = useAutomationRulesStorage();
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
@@ -69,17 +71,8 @@ export default function AutomationRules() {
     },
   });
 
-  useEffect(() => {
-    const savedRules = localStorage.getItem('torboxAutomationRules');
-    if (savedRules) {
-      setRules(JSON.parse(savedRules));
-    }
-  }, []);
-
-  const saveRules = (updatedRules) => {
-    localStorage.setItem('torboxAutomationRules', JSON.stringify(updatedRules));
-    setRules(updatedRules);
-  };
+  // Backend mode indicator
+  const isBackendMode = backendMode === 'backend';
 
   const handleAddRule = () => {
     if (!newRule.name) return;
@@ -98,7 +91,7 @@ export default function AutomationRules() {
             }
           : rule,
       );
-      saveRules(updatedRules);
+      setRules(updatedRules);
       setEditingRuleId(null);
     } else {
       // Add new rule with metadata
@@ -119,7 +112,7 @@ export default function AutomationRules() {
           },
         },
       ];
-      saveRules(updatedRules);
+      setRules(updatedRules);
     }
 
     setIsAddingRule(false);
@@ -259,6 +252,11 @@ export default function AutomationRules() {
           <span className="text-xs text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 px-1.5 py-0.5 rounded-md">
             Beta
           </span>
+          {isBackendMode && (
+            <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-1.5 py-0.5 rounded-md">
+              24/7
+            </span>
+          )}
           <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             ({activeRules.length} rule{activeRules.length === 1 ? '' : 's'}{' '}
             active)

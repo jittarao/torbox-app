@@ -1,0 +1,94 @@
+name: Release Backend
+
+on:
+  push:
+    tags:
+      - 'backend-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Backend version to release'
+        required: true
+        default: 'backend-v0.1.0'
+
+jobs:
+  release-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/crazycacti/torbox-app
+          tags: |
+            type=ref,event=tag
+            type=raw,value=backend-latest
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/crazycacti/torbox-app:backend-${{ github.ref_name }}
+            ghcr.io/crazycacti/torbox-app:backend-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: TorBox Backend ${{ github.ref_name }}
+          body: |
+            ## TorBox Backend Release ${{ github.ref_name }}
+
+            This release includes the self-hosted backend option for 24/7 automation.
+
+            ### Features
+            - 24/7 automation rule execution
+            - SQLite database for persistent storage
+            - REST API for frontend integration
+            - Cron job system for scheduled tasks
+            - Health monitoring and logging
+
+            ### Deployment
+            ```bash
+            # Self-hosted deployment
+            docker compose -f docker-compose.selfhosted.yml up -d
+            ```
+
+            ### Images
+            - `ghcr.io/crazycacti/torbox-backend:${{ github.ref_name }}`
+            - `ghcr.io/crazycacti/torbox-app:${{ github.ref_name }}`
+          draft: false
+          prerelease: false
+
+      - name: Update README with backend info
+        run: |
+          echo "## Backend Release ${{ github.ref_name }}" >> backend/CHANGELOG.md
+          echo "- Released $(date)" >> backend/CHANGELOG.md
+          echo "- Docker images: ghcr.io/crazycacti/torbox-backend:${{ github.ref_name }}" >> backend/CHANGELOG.md
+          echo "" >> backend/CHANGELOG.md
