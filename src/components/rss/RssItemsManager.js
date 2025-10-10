@@ -89,7 +89,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
 
       // Add name for non-NZB downloads or NZB downloads that aren't API links
       if (downloadType !== 'usenet' || !item.link.includes('api')) {
-        uploadData.name = item.title;
+        uploadData.name = item.name || item.title;
       }
 
       // Add password for webdl if available
@@ -131,7 +131,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
       if (!item || typeof item !== 'object') return false;
       
       // Search filter
-      if (searchTerm && !item.title?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (searchTerm && !(item.name || item.title)?.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
       
@@ -345,7 +345,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-medium text-primary-text dark:text-primary-text-dark truncate">
-                          {item.title}
+                          {item.name || item.title}
                         </h3>
                         <span
                           className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"

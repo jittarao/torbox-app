@@ -7,7 +7,15 @@ export function useArchive(apiKey) {
 
   const getArchivedDownloads = () => {
     const archived = localStorage.getItem(ARCHIVE_KEY);
-    return archived ? JSON.parse(archived) : [];
+    if (archived) {
+      try {
+        return JSON.parse(archived);
+      } catch (error) {
+        console.error('Error parsing archived downloads from localStorage:', error);
+        return [];
+      }
+    }
+    return [];
   };
 
   const archiveDownload = (download) => {

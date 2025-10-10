@@ -21,6 +21,7 @@ const CONDITION_TYPES = {
   FILE_SIZE: 'file_size',
   AGE: 'age',
   TRACKER: 'tracker',
+  INACTIVE: 'inactive',
 };
 
 const COMPARISON_OPERATORS = {
@@ -43,6 +44,48 @@ const ACTION_TYPES = {
   FORCE_START: 'force_start',
 };
 
+// Preset automation rules - will be created inside component to access translations
+const createPresetRules = (t) => [
+  {
+    name: t('presets.deleteInactive'),
+    trigger: { type: 'interval', value: 30 },
+    conditions: [
+      { type: 'inactive', operator: 'gt', value: 0 }
+    ],
+    logicOperator: 'and',
+    action: { type: 'delete' }
+  },
+  {
+    name: t('presets.deleteStalled'),
+    trigger: { type: 'interval', value: 30 },
+    conditions: [
+      { type: 'stalled_time', operator: 'gt', value: 1 }
+    ],
+    logicOperator: 'and',
+    action: { type: 'delete' }
+  },
+  {
+    name: t('presets.deleteQueued'),
+    trigger: { type: 'interval', value: 30 },
+    conditions: [
+      { type: 'inactive', operator: 'gt', value: 0 },
+      { type: 'age', operator: 'gt', value: 6 }
+    ],
+    logicOperator: 'and',
+    action: { type: 'delete' }
+  },
+  {
+    name: t('presets.stopSeedingLowRatio'),
+    trigger: { type: 'interval', value: 30 },
+    conditions: [
+      { type: 'seeding_ratio', operator: 'gt', value: 1 },
+      { type: 'seeding_time', operator: 'gt', value: 48 }
+    ],
+    logicOperator: 'and',
+    action: { type: 'stop_seeding' }
+  }
+];
+
 export default function AutomationRules() {
   const t = useTranslations('AutomationRules');
   const commonT = useTranslations('Common');
@@ -51,6 +94,8 @@ export default function AutomationRules() {
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
+  const [viewingLogsRuleId, setViewingLogsRuleId] = useState(null);
+  const [ruleLogs, setRuleLogs] = useState({});
   const [newRule, setNewRule] = useState({
     name: '',
     enabled: true,
@@ -70,6 +115,21 @@ export default function AutomationRules() {
       type: ACTION_TYPES.STOP_SEEDING,
     },
   });
+
+  // Apply a preset rule
+  const applyPreset = (preset) => {
+    const ruleWithId = {
+      ...preset,
+      id: Date.now().toString(),
+      enabled: true,
+      metadata: {
+        created_at: Date.now(),
+        execution_count: 0,
+        last_execution: null,
+      }
+    };
+    setRules(prev => [...prev, ruleWithId]);
+  };
 
   // Backend mode indicator
   const isBackendMode = backendMode === 'backend';
@@ -167,6 +227,31 @@ export default function AutomationRules() {
     saveRules(updatedRules);
   };
 
+  const handleViewLogs = (ruleId) => {
+    setViewingLogsRuleId(ruleId);
+    loadRuleLogs(ruleId);
+  };
+
+  const loadRuleLogs = (ruleId) => {
+    try {
+      const logs = localStorage.getItem(`torboxRuleLogs_${ruleId}`);
+      if (logs) {
+        const parsedLogs = JSON.parse(logs);
+        setRuleLogs(prev => ({ ...prev, [ruleId]: parsedLogs }));
+      } else {
+        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+      }
+    } catch (error) {
+      console.error('Error loading rule logs:', error);
+      setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+    }
+  };
+
+  const clearRuleLogs = (ruleId) => {
+    localStorage.removeItem(`torboxRuleLogs_${ruleId}`);
+    setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+  };
+
   const getConditionText = (conditions, logicOperator) => {
     const operatorText = {
       [COMPARISON_OPERATORS.GT]: '>',
@@ -197,9 +282,11 @@ export default function AutomationRules() {
         return `file size ${operator} ${condition.value} GB`;
       } else if (condition.type === CONDITION_TYPES.AGE) {
         return `age ${operator} ${condition.value} ${commonT('hours')}`;
-      } else if (condition.type === CONDITION_TYPES.TRACKER) {
-        return `tracker ${operator} ${condition.value}`;
-      }
+    } else if (condition.type === CONDITION_TYPES.TRACKER) {
+      return `tracker ${operator} ${condition.value}`;
+    } else if (condition.type === CONDITION_TYPES.INACTIVE) {
+      return `inactive downloads ${operator} ${condition.value}`;
+    }
       return '';
     });
 
@@ -312,6 +399,13 @@ export default function AutomationRules() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => handleViewLogs(rule.id)}
+                      className="text-blue-500 dark:text-blue-400 hover:opacity-80"
+                      title={t('viewLogs')}
+                    >
+                      <Icons.Clock />
+                    </button>
+                    <button
                       onClick={() => handleEditRule(rule)}
                       className="text-accent dark:text-accent-dark hover:opacity-80"
                     >
@@ -364,13 +458,42 @@ export default function AutomationRules() {
             ))}
 
             {!isAddingRule && (
-              <div className="flex justify-center items-center">
-                <button
-                  onClick={() => setIsAddingRule(true)}
-                  className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
-                >
-                  + {t('addRule')}
-                </button>
+              <div className="space-y-4">
+                {/* Preset Rules */}
+                <div className="border-t border-border dark:border-border-dark pt-4">
+                  <h4 className="text-sm font-medium text-primary-text dark:text-primary-text-dark mb-3">
+                    {t('presets.title')}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {createPresetRules(t).map((preset, index) => (
+                      <button
+                        key={index}
+                        onClick={() => applyPreset(preset)}
+                        className="text-left p-3 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
+                      >
+                        <div className="font-medium text-primary-text dark:text-primary-text-dark mb-1">
+                          {preset.name}
+                        </div>
+                        <div className="text-gray-600 dark:text-gray-400 text-[10px]">
+                          {preset.conditions.length === 1 
+                            ? `${preset.conditions[0].type} ${preset.conditions[0].operator} ${preset.conditions[0].value}`
+                            : `${preset.conditions.length} conditions`
+                          } → {preset.action.type}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Add Custom Rule */}
+                <div className="flex justify-center items-center">
+                  <button
+                    onClick={() => setIsAddingRule(true)}
+                    className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
+                  >
+                    + {t('addRule')}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -506,10 +629,13 @@ export default function AutomationRules() {
                           <option value={CONDITION_TYPES.AGE}>
                             {t('conditions.age')}
                           </option>
-                          <option value={CONDITION_TYPES.TRACKER}>
-                            {t('conditions.tracker')}
-                          </option>
-                        </select>
+                    <option value={CONDITION_TYPES.TRACKER}>
+                      {t('conditions.tracker')}
+                    </option>
+                    <option value={CONDITION_TYPES.INACTIVE}>
+                      {t('conditions.inactive')}
+                    </option>
+                  </select>
 
                         <select
                           value={condition.operator}
@@ -546,17 +672,19 @@ export default function AutomationRules() {
                           }
                         />
                         <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                          {condition.type.includes('time') || condition.type === CONDITION_TYPES.AGE
-                            ? commonT('hours')
-                            : condition.type === CONDITION_TYPES.SEEDS || condition.type === CONDITION_TYPES.PEERS
-                            ? 'count'
-                            : condition.type === CONDITION_TYPES.DOWNLOAD_SPEED || condition.type === CONDITION_TYPES.UPLOAD_SPEED
-                            ? 'KB/s'
-                            : condition.type === CONDITION_TYPES.FILE_SIZE
-                            ? 'GB'
-                            : condition.type === CONDITION_TYPES.TRACKER
-                            ? 'domain'
-                            : ''}
+                    {condition.type.includes('time') || condition.type === CONDITION_TYPES.AGE
+                      ? commonT('hours')
+                      : condition.type === CONDITION_TYPES.SEEDS || condition.type === CONDITION_TYPES.PEERS
+                      ? 'count'
+                      : condition.type === CONDITION_TYPES.DOWNLOAD_SPEED || condition.type === CONDITION_TYPES.UPLOAD_SPEED
+                      ? 'KB/s'
+                      : condition.type === CONDITION_TYPES.FILE_SIZE
+                      ? 'GB'
+                      : condition.type === CONDITION_TYPES.TRACKER
+                      ? 'domain'
+                      : condition.type === CONDITION_TYPES.INACTIVE
+                      ? 'count'
+                      : ''}
                         </span>
                       </div>
                     </div>
@@ -629,6 +757,74 @@ export default function AutomationRules() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Rule Logs Modal */}
+      {viewingLogsRuleId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background dark:bg-background-dark rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
+                {t('ruleLogs')} - {rules.find(r => r.id === viewingLogsRuleId)?.name}
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => clearRuleLogs(viewingLogsRuleId)}
+                  className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                >
+                  {t('clearLogs')}
+                </button>
+                <button
+                  onClick={() => setViewingLogsRuleId(null)}
+                  className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                >
+                  {t('close')}
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              {ruleLogs[viewingLogsRuleId]?.length === 0 ? (
+                <div className="text-center text-primary-text/70 dark:text-primary-text-dark/70 py-8">
+                  {t('noLogs')}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {ruleLogs[viewingLogsRuleId]?.map((log, index) => (
+                    <div key={index} className="p-3 border border-border dark:border-border-dark rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
+                          {new Date(log.timestamp).toLocaleString()}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          log.success 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          {log.success ? t('success') : t('failed')}
+                        </span>
+                      </div>
+                      <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+                        <div><strong>{t('action')}:</strong> {log.action}</div>
+                        {log.itemsAffected > 0 && (
+                          <div><strong>{t('itemsAffected')}:</strong> {log.itemsAffected}</div>
+                        )}
+                        {log.details && (
+                          <div><strong>{t('details')}:</strong> {log.details}</div>
+                        )}
+                        {log.error && (
+                          <div className="text-red-500 dark:text-red-400">
+                            <strong>{t('error')}:</strong> {log.error}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

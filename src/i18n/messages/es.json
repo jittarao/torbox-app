@@ -65,7 +65,7 @@
     "footer": {
       "description": "No almacenamos ninguna de sus información. Esta aplicación es completamente de código abierto en",
       "github": "GitHub",
-      "forkNote": "Este es un fork del TorBox Manager de jittarao. v0.1.21"
+      "forkNote": "Este es un fork del TorBox Manager de jittarao. v0.1.22"
     }
   },
   "ApiKeyInput": {
@@ -325,7 +325,13 @@
       "stalledTime": "Tiempo de pausa",
       "seedingRatio": "Proporción de siembra",
       "seeds": "Semillas",
-      "peers": "Pares"
+      "peers": "Pares",
+      "downloadSpeed": "Velocidad de descarga",
+      "uploadSpeed": "Velocidad de subida",
+      "fileSize": "Tamaño de archivo",
+      "age": "Edad",
+      "tracker": "Tracker",
+      "inactive": "Descargas inactivas"
     },
     "operators": {
       "gt": "es mayor que",
@@ -345,6 +351,13 @@
       "show": "Mostrar reglas",
       "hide": "Ocultar reglas"
     },
+    "presets": {
+      "title": "Configuraciones Rápidas",
+      "deleteInactive": "Eliminar Descargas Inactivas",
+      "deleteStalled": "Eliminar Descargas Bloqueadas (1+ horas)",
+      "deleteQueued": "Eliminar Descargas en Cola (6+ horas)",
+      "stopSeedingLowRatio": "Detener Seeding con Ratio Bajo"
+    },
     "cancel": "Cancelar",
     "add": "Añadir regla",
     "update": "Actualizar regla",
@@ -355,7 +368,17 @@
     "neverExecuted": "nunca ejecutado",
     "lastTriggered": "último activado",
     "triggers": "activadores",
-    "enabledAt": "habilitado a"
+    "enabledAt": "habilitado a",
+    "viewLogs": "Ver Registros",
+    "ruleLogs": "Registros de Regla",
+    "clearLogs": "Limpiar Registros",
+    "close": "Cerrar",
+    "noLogs": "No hay registros disponibles",
+    "success": "Éxito",
+    "failed": "Falló",
+    "itemsAffected": "Elementos Afectados",
+    "details": "Detalles",
+    "error": "Error"
   },
   "Columns": {
     "id": "ID",

@@ -179,7 +179,12 @@ export default function Downloads({ apiKey }) {
   useEffect(() => {
     const storedDownloadHistory = localStorage.getItem('torboxDownloadHistory');
     if (storedDownloadHistory) {
-      setDownloadHistory(JSON.parse(storedDownloadHistory));
+      try {
+        setDownloadHistory(JSON.parse(storedDownloadHistory));
+      } catch (error) {
+        console.error('Error parsing download history from localStorage:', error);
+        setDownloadHistory([]);
+      }
     }
   }, []);
 

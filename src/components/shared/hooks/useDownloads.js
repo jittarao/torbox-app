@@ -11,7 +11,15 @@ const DOWNLOAD_HISTORY_KEY = 'torboxDownloadHistory';
 // Helper to get/set localStorage
 const getDownloadHistory = () => {
   const history = localStorage.getItem(DOWNLOAD_HISTORY_KEY);
-  return history ? JSON.parse(history) : [];
+  if (history) {
+    try {
+      return JSON.parse(history);
+    } catch (error) {
+      console.error('Error parsing download history from localStorage:', error);
+      return [];
+    }
+  }
+  return [];
 };
 
 const addToDownloadHistory = (link) => {
