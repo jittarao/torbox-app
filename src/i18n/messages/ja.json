@@ -65,7 +65,7 @@
     "footer": {
       "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
       "github": "GitHub",
-      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.20"
+      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.21"
     }
   },
   "ApiKeyInput": {

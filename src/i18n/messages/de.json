@@ -65,7 +65,7 @@
     "footer": {
       "description": "Wir speichern keine Ihrer Informationen. Diese App ist vollständig Open Source auf",
       "github": "GitHub",
-      "forkNote": "Dies ist ein Fork von jittaraos TorBox Manager. v0.1.20"
+      "forkNote": "Dies ist ein Fork von jittaraos TorBox Manager. v0.1.21"
     }
   },
   "ApiKeyInput": {
