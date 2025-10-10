@@ -348,13 +348,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                           {item.title}
                         </h3>
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            getItemType(item.link) === 'torrent'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                              : getItemType(item.link) === 'usenet'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                          }`}
+                          className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
                         >
                           {getItemType(item.link)}
                         </span>
@@ -394,7 +388,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                           href={item.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1 text-xs bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         >
                           <Icons.ExternalLink className="w-3 h-3" />
                         </a>
