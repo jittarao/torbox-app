@@ -23,9 +23,9 @@ class AutomationEngine {
       }
       
       this.isInitialized = true;
-      console.log(`✅ Automation engine initialized with ${rules.length} rules`);
+      console.log(`Automation engine initialized with ${rules.length} rules`);
     } catch (error) {
-      console.error('❌ Failed to initialize automation engine:', error);
+      console.error('Failed to initialize automation engine:', error);
       throw error;
     }
   }
@@ -41,7 +41,7 @@ class AutomationEngine {
       const cronExpression = this.convertToCron(rule.trigger_config);
       
       if (!cronExpression) {
-        console.warn(`⚠️  Invalid trigger configuration for rule: ${rule.name}`);
+        console.warn(`Invalid trigger configuration for rule: ${rule.name}`);
         return;
       }
 
@@ -56,9 +56,9 @@ class AutomationEngine {
       job.start();
       this.runningJobs.set(rule.id, job);
       
-      console.log(`✅ Started rule: ${rule.name} (${cronExpression})`);
+      console.log(`Started rule: ${rule.name} (${cronExpression})`);
     } catch (error) {
-      console.error(`❌ Failed to start rule ${rule.name}:`, error);
+      console.error(`Failed to start rule ${rule.name}:`, error);
     }
   }
 
@@ -68,7 +68,7 @@ class AutomationEngine {
       job.stop();
       job.destroy();
       this.runningJobs.delete(ruleId);
-      console.log(`🛑 Stopped rule: ${ruleId}`);
+      console.log(`Stopped rule: ${ruleId}`);
     }
   }
 
@@ -83,12 +83,12 @@ class AutomationEngine {
       const matchingItems = this.evaluateConditions(rule, torrents);
       
       if (matchingItems.length === 0) {
-        console.log(`⏭️  No items match conditions for rule: ${rule.name}`);
+        console.log(`No items match conditions for rule: ${rule.name}`);
         await this.database.logRuleExecution(rule.id, rule.name, 'execution', 0, true);
         return;
       }
 
-      console.log(`✨ Rule ${rule.name} triggered for ${matchingItems.length} items`);
+      console.log(`Rule ${rule.name} triggered for ${matchingItems.length} items`);
 
       // Execute actions on matching items
       let successCount = 0;
@@ -99,7 +99,7 @@ class AutomationEngine {
           await this.executeAction(rule.action_config, item);
           successCount++;
         } catch (error) {
-          console.error(`❌ Action failed for item ${item.name}:`, error);
+          console.error(`Action failed for item ${item.name}:`, error);
           errorCount++;
         }
       }
@@ -114,9 +114,9 @@ class AutomationEngine {
         errorCount > 0 ? `${errorCount} actions failed` : null
       );
 
-      console.log(`✅ Rule ${rule.name} completed: ${successCount} successful, ${errorCount} failed`);
+      console.log(`Rule ${rule.name} completed: ${successCount} successful, ${errorCount} failed`);
     } catch (error) {
-      console.error(`❌ Rule execution failed for ${rule.name}:`, error);
+      console.error(`Rule execution failed for ${rule.name}:`, error);
       await this.database.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
     }
   }
@@ -259,9 +259,9 @@ class AutomationEngine {
         }
       }
       
-      console.log(`✅ Reloaded ${rules.length} automation rules`);
+      console.log(`Reloaded ${rules.length} automation rules`);
     } catch (error) {
-      console.error('❌ Failed to reload automation rules:', error);
+      console.error('Failed to reload automation rules:', error);
     }
   }
 
@@ -274,7 +274,7 @@ class AutomationEngine {
   }
 
   shutdown() {
-    console.log('🛑 Shutting down automation engine...');
+    console.log('Shutting down automation engine...');
     
     for (const [ruleId, job] of this.runningJobs) {
       job.stop();
@@ -282,7 +282,7 @@ class AutomationEngine {
     }
     this.runningJobs.clear();
     
-    console.log('✅ Automation engine shutdown complete');
+    console.log('Automation engine shutdown complete');
   }
 }
 

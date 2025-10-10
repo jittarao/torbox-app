@@ -6,9 +6,28 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    # depends_on:
+    #   - torbox-backend
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.tbm.rule=Host(`${TORBOX_MANAGER_HOSTNAME?}`)"
     #   - "traefik.http.routers.tbm.entrypoints=websecure"
     #   - "traefik.http.routers.tbm.tls.certresolver=myresolver"
     #   - "traefik.http.routers.tbm.middlewares=authelia@docker"
+
+  # Self-hosted backend for 24/7 automation (optional)
+  # Uncomment the following to enable 24/7 automation rules
+  # torbox-backend:
+  #   image: ghcr.io/crazycacti/torbox-app:backend-latest
+  #   container_name: torbox-backend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3001:3001"
+  #   environment:
+  #     - TORBOX_API_KEY=${TORBOX_API_KEY}
+  #     - FRONTEND_URL=${FRONTEND_URL}
+  #   volumes:
+  #     - backend-data:/app/data
+
+# volumes:
+#   backend-data:
