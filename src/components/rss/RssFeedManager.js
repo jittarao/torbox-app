@@ -10,10 +10,59 @@ import Toast from '@/components/shared/Toast';
 
 export default function RssFeedManager({ apiKey, setToast }) {
   const t = useTranslations('RssFeeds');
-  const { feeds, loading, error, addFeed, modifyFeed, controlFeed } = useRssFeeds(apiKey);
+  const { feeds, loading, error, addFeed, modifyFeed, controlFeed, getFeedItems } = useRssFeeds(apiKey);
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingFeed, setEditingFeed] = useState(null);
+  const [itemCounts, setItemCounts] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchItemCounts();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Fetch item counts for all feeds
+  const fetchItemCounts = async () => {
+    if (!feeds.length) return;
+    
+    const counts = {};
+    for (const feed of feeds) {
+      try {
+        // Fetch a reasonable number to get the count
+        const result = await getFeedItems(feed.id, 0, 250);
+        counts[feed.id] = result.success ? (result.data?.length || 0) : 0;
+      } catch (error) {
+        console.error(`Error fetching items for feed ${feed.id}:`, error);
+        counts[feed.id] = 0;
+      }
+    }
+    setItemCounts(counts);
+  };
+
+  // Fetch item counts when feeds change
+  useEffect(() => {
+    if (feeds.length > 0) {
+      fetchItemCounts();
+    }
+  }, [feeds]);
+
+  // Auto-refresh feeds every 30 seconds to get items quickly
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (feeds.length > 0) {
+        fetchItemCounts();
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [feeds]);
+
   const [formData, setFormData] = useState({
     name: '',
     url: '',
@@ -46,7 +95,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
 
       setIsSubmitting(true);
       const result = editingFeed 
-        ? await modifyFeed({ id: editingFeed.id, ...formData })
+        ? await modifyFeed({ rss_feed_id: editingFeed.id, ...formData })
         : await addFeed(formData);
 
       if (result.success) {
@@ -131,7 +180,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
       const result = await controlFeed(feedId, operation);
       if (result.success) {
         setToast({
-          message: operation === 'enable' ? t('enableSuccess') : t('disableSuccess'),
+          message: operation === 'resume' ? t('enableSuccess') : t('disableSuccess'),
           type: 'success',
         });
       } else {
@@ -173,11 +222,13 @@ export default function RssFeedManager({ apiKey, setToast }) {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return t('never');
+    if (!dateString || dateString === 'never' || dateString === 'Never') return t('never');
     try {
-      return new Date(dateString).toLocaleString();
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return t('never');
+      return date.toLocaleString();
     } catch (error) {
-      return t('unknown');
+      return t('never');
     }
   };
 
@@ -224,13 +275,23 @@ export default function RssFeedManager({ apiKey, setToast }) {
         <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark">
           {t('title')}
         </h2>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
-        >
-          <Icons.Plus className="w-4 h-4" />
-          {t('addFeed')}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {refreshing ? <Icons.Loading className="w-4 h-4 animate-spin" /> : <Icons.Refresh className="w-4 h-4" />}
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
+          >
+            <Icons.Plus className="w-4 h-4" />
+            {t('addFeed')}
+          </button>
+        </div>
       </div>
 
       {/* Add/Edit Form */}
@@ -418,12 +479,12 @@ export default function RssFeedManager({ apiKey, setToast }) {
                     </h3>
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
-                        feed.enabled
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        feed.status === 'active'
+                          ? 'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark'
+                          : 'bg-label-default-bg text-label-default-text dark:bg-label-default-bg-dark dark:text-label-default-text-dark'
                       }`}
                     >
-                      {feed.enabled ? t('enabled') : t('disabled')}
+                      {feed.status === 'active' ? t('enabled') : t('disabled')}
                     </span>
                   </div>
                   <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mb-2 break-all">
@@ -431,23 +492,20 @@ export default function RssFeedManager({ apiKey, setToast }) {
                   </p>
                   <div className="flex gap-4 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
                     <span>{t('lastCheck')}: {formatDate(feed.last_check)}</span>
-                    <span>{t('itemCount')}: {feed.item_count || 0}</span>
+                    <span>{t('status')}: {feed.status === 'active' ? t('active') : t('inactive')}</span>
+                    <span>{t('items')}: {itemCounts[feed.id] || 0}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
                   <button
-                    onClick={() => handleControl(feed.id, feed.enabled ? 'disable' : 'enable')}
-                    className={`px-3 py-1 text-xs rounded ${
-                      feed.enabled
-                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800'
-                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
-                    } transition-colors`}
+                    onClick={() => handleControl(feed.id, feed.status === 'active' ? 'pause' : 'resume')}
+                    className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
-                    {feed.enabled ? t('disable') : t('enable')}
+                    {feed.status === 'active' ? t('disable') : t('enable')}
                   </button>
                   <button
                     onClick={() => handleEdit(feed)}
-                    className="px-3 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                    className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     <Icons.Edit className="w-3 h-3" />
                   </button>
@@ -455,7 +513,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
                     onClick={() => handleDelete(feed.id)}
                     confirmIcon={<Icons.Check className="w-3 h-3" />}
                     defaultIcon={<Icons.Delete className="w-3 h-3" />}
-                    className="px-3 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                    className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     title={t('confirmDelete.title')}
                     message={t('confirmDelete.message')}
                     confirmText={t('confirmDelete.confirm')}

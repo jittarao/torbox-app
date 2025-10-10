@@ -268,14 +268,14 @@ class ApiClient {
 
   async controlRssFeed(feedId, operation) {
     return this.post('/api/rss/controlrss', {
-      feed_id: feedId,
+      rss_feed_id: feedId,
       operation,
     });
   }
 
   async getRssFeedItems(feedId, offset = 0, limit = 100) {
     return this.get('/api/rss/getfeeditems', {
-      feed_id: feedId,
+      rss_feed_id: feedId,
       offset,
       limit,
     });
