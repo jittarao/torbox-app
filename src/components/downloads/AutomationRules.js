@@ -15,6 +15,11 @@ const CONDITION_TYPES = {
   STALLED_TIME: 'stalled_time',
   SEEDS: 'seeds',
   PEERS: 'peers',
+  DOWNLOAD_SPEED: 'download_speed',
+  UPLOAD_SPEED: 'upload_speed',
+  FILE_SIZE: 'file_size',
+  AGE: 'age',
+  TRACKER: 'tracker',
 };
 
 const COMPARISON_OPERATORS = {
@@ -191,6 +196,16 @@ export default function AutomationRules() {
         return `seeds ${operator} ${condition.value}`;
       } else if (condition.type === CONDITION_TYPES.PEERS) {
         return `peers ${operator} ${condition.value}`;
+      } else if (condition.type === CONDITION_TYPES.DOWNLOAD_SPEED) {
+        return `download speed ${operator} ${condition.value} KB/s`;
+      } else if (condition.type === CONDITION_TYPES.UPLOAD_SPEED) {
+        return `upload speed ${operator} ${condition.value} KB/s`;
+      } else if (condition.type === CONDITION_TYPES.FILE_SIZE) {
+        return `file size ${operator} ${condition.value} GB`;
+      } else if (condition.type === CONDITION_TYPES.AGE) {
+        return `age ${operator} ${condition.value} ${commonT('hours')}`;
+      } else if (condition.type === CONDITION_TYPES.TRACKER) {
+        return `tracker ${operator} ${condition.value}`;
       }
       return '';
     });
@@ -481,6 +496,21 @@ export default function AutomationRules() {
                           <option value={CONDITION_TYPES.PEERS}>
                             {t('conditions.peers')}
                           </option>
+                          <option value={CONDITION_TYPES.DOWNLOAD_SPEED}>
+                            {t('conditions.downloadSpeed')}
+                          </option>
+                          <option value={CONDITION_TYPES.UPLOAD_SPEED}>
+                            {t('conditions.uploadSpeed')}
+                          </option>
+                          <option value={CONDITION_TYPES.FILE_SIZE}>
+                            {t('conditions.fileSize')}
+                          </option>
+                          <option value={CONDITION_TYPES.AGE}>
+                            {t('conditions.age')}
+                          </option>
+                          <option value={CONDITION_TYPES.TRACKER}>
+                            {t('conditions.tracker')}
+                          </option>
                         </select>
 
                         <select
@@ -518,10 +548,16 @@ export default function AutomationRules() {
                           }
                         />
                         <span className="text-sm text-primary-text dark:text-primary-text-dark">
-                          {condition.type.includes('time')
+                          {condition.type.includes('time') || condition.type === CONDITION_TYPES.AGE
                             ? commonT('hours')
                             : condition.type === CONDITION_TYPES.SEEDS || condition.type === CONDITION_TYPES.PEERS
                             ? 'count'
+                            : condition.type === CONDITION_TYPES.DOWNLOAD_SPEED || condition.type === CONDITION_TYPES.UPLOAD_SPEED
+                            ? 'KB/s'
+                            : condition.type === CONDITION_TYPES.FILE_SIZE
+                            ? 'GB'
+                            : condition.type === CONDITION_TYPES.TRACKER
+                            ? 'domain'
                             : ''}
                         </span>
                       </div>

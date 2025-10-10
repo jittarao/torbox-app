@@ -65,7 +65,7 @@
     "footer": {
       "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
       "github": "GitHub",
-      "forkNote": "これはjittaraoのTorBox Managerのフォークです"
+      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.20"
     }
   },
   "ApiKeyInput": {
@@ -635,7 +635,7 @@
     }
   },
   "RssItems": {
-    "title": "RSSアイテム",
+    "title": "タイトル",
     "refresh": "更新",
     "selectFeed": "RSSフィードを選択",
     "selectFeedPlaceholder": "アイテムを表示するフィードを選択",
@@ -648,7 +648,6 @@
     "webdl": "Webダウンロード",
     "sortBy": "並び替え",
     "date": "日付",
-    "title": "タイトル",
     "size": "サイズ",
     "sortOrder": "並び順",
     "newestFirst": "新しい順",
