@@ -65,7 +65,7 @@
     "footer": {
       "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
       "github": "GitHub",
-      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.21"
+      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.22"
     }
   },
   "ApiKeyInput": {
@@ -325,7 +325,13 @@
       "stalledTime": "ブロック時間",
       "seedingRatio": "シーディング比率",
       "seeds": "シード",
-      "peers": "ピア"
+      "peers": "ピア",
+      "downloadSpeed": "ダウンロード速度",
+      "uploadSpeed": "アップロード速度",
+      "fileSize": "ファイルサイズ",
+      "age": "年齢",
+      "tracker": "トラッカー",
+      "inactive": "非アクティブダウンロード"
     },
     "operators": {
       "gt": "より大きい",
@@ -345,6 +351,13 @@
       "show": "ルールを表示",
       "hide": "ルールを非表示"
     },
+    "presets": {
+      "title": "クイックプリセット",
+      "deleteInactive": "非アクティブダウンロードを削除",
+      "deleteStalled": "ブロックされたダウンロードを削除（1時間以上）",
+      "deleteQueued": "キューされたダウンロードを削除（6時間以上）",
+      "stopSeedingLowRatio": "低比率でシーディングを停止"
+    },
     "cancel": "キャンセル",
     "add": "ルールを追加",
     "update": "ルールを更新",
@@ -355,7 +368,17 @@
     "neverExecuted": "一度も実行されなかった",
     "lastTriggered": "最後にトリガーされた",
     "triggers": "トリガー",
-    "enabledAt": "有効化日時"
+    "enabledAt": "有効化日時",
+    "viewLogs": "ログを表示",
+    "ruleLogs": "ルールログ",
+    "clearLogs": "ログをクリア",
+    "close": "閉じる",
+    "noLogs": "ログがありません",
+    "success": "成功",
+    "failed": "失敗",
+    "itemsAffected": "影響を受けたアイテム",
+    "details": "詳細",
+    "error": "エラー"
   },
   "Columns": {
     "id": "ID",

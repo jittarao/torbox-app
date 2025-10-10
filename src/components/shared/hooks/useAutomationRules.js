@@ -29,6 +29,35 @@ export function useAutomationRules(items, apiKey, activeType) {
   const { controlTorrent, controlQueuedItem } = useUpload(apiKey);
   const { archiveDownload } = useArchive(apiKey);
 
+  // Log rule execution
+  const logRuleExecution = (ruleId, action, success, itemsAffected = 0, details = '', error = '') => {
+    try {
+      const logEntry = {
+        timestamp: Date.now(),
+        action,
+        success,
+        itemsAffected,
+        details,
+        error
+      };
+      
+      const existingLogs = localStorage.getItem(`torboxRuleLogs_${ruleId}`);
+      const logs = existingLogs ? JSON.parse(existingLogs) : [];
+      
+      // Add new log entry
+      logs.unshift(logEntry);
+      
+      // Keep only last 100 log entries per rule
+      if (logs.length > 100) {
+        logs.splice(100);
+      }
+      
+      localStorage.setItem(`torboxRuleLogs_${ruleId}`, JSON.stringify(logs));
+    } catch (err) {
+      console.error('Error logging rule execution:', err);
+    }
+  };
+
   // Helper functions for rule metadata
   const getRuleMetadata = (rule, now = Date.now()) => {
     return (
@@ -128,11 +157,15 @@ export function useAutomationRules(items, apiKey, activeType) {
           case 'age':
             conditionValue = (now - new Date(item.created_at).getTime()) / (1000 * 60 * 60); // Hours since created
             break;
-          case 'tracker':
-            // For tracker, we'll do a string comparison instead of numeric
-            const trackerUrl = item.tracker || '';
-            conditionValue = trackerUrl.includes(condition.value) ? 1 : 0;
-            break;
+        case 'tracker':
+          // For tracker, we'll do a string comparison instead of numeric
+          const trackerUrl = item.tracker || '';
+          conditionValue = trackerUrl.includes(condition.value) ? 1 : 0;
+          break;
+        case 'inactive':
+          // Check if download is inactive (not active)
+          conditionValue = item.active ? 0 : 1;
+          break;
         }
 
         const conditionMet = compareValues(
@@ -166,12 +199,14 @@ export function useAutomationRules(items, apiKey, activeType) {
     });
 
     // Execute actions on matching items
+    let totalItemsAffected = 0;
+    let totalErrors = 0;
+    const actionDetails = [];
 
     // Execute actions
     for (const item of matchingItems) {
       try {
         // Execute the action
-
         let actionSucceeded = false;
         let result;
 
@@ -200,13 +235,18 @@ export function useAutomationRules(items, apiKey, activeType) {
         }
 
         if (actionSucceeded) {
+          totalItemsAffected++;
+          actionDetails.push(`${item.name || 'Unknown item'}`);
           // Only increment execution count when action succeeds
           updateRuleMetadata(rule.id, {
             lastExecutedAt: now,
             executionCount: (getRuleMetadata(rule).executionCount || 0) + 1,
           });
+        } else {
+          totalErrors++;
         }
       } catch (error) {
+        totalErrors++;
         console.error('❌ Action execution failed:', {
           ruleName: rule.name,
           itemName: item.name,
@@ -215,6 +255,14 @@ export function useAutomationRules(items, apiKey, activeType) {
         });
       }
     }
+
+    // Log the rule execution
+    const actionText = rule.action.type.replace('_', ' ');
+    const success = totalItemsAffected > 0;
+    const details = actionDetails.length > 0 ? `Items: ${actionDetails.slice(0, 3).join(', ')}${actionDetails.length > 3 ? '...' : ''}` : '';
+    const error = totalErrors > 0 ? `Failed on ${totalErrors} items` : '';
+
+    logRuleExecution(rule.id, actionText, success, totalItemsAffected, details, error);
   };
 
   // Update items ref when items change
@@ -236,8 +284,13 @@ export function useAutomationRules(items, apiKey, activeType) {
 
     const savedRules = localStorage.getItem('torboxAutomationRules');
     if (savedRules) {
-      rulesRef.current = JSON.parse(savedRules);
-      // Rules loaded from storage
+      try {
+        rulesRef.current = JSON.parse(savedRules);
+        // Rules loaded from storage
+      } catch (error) {
+        console.error('Error parsing automation rules from localStorage:', error);
+        rulesRef.current = [];
+      }
     }
 
     function setupRuleInterval(rule) {
@@ -288,7 +341,8 @@ export function useAutomationRules(items, apiKey, activeType) {
     const handleStorageChange = (e) => {
       if (e.key === 'torboxAutomationRules') {
         // Rules updated, reload intervals
-        const newRules = JSON.parse(e.newValue || '[]');
+        try {
+          const newRules = JSON.parse(e.newValue || '[]');
 
         // Find rules that were deleted or disabled
         rulesRef.current.forEach((oldRule) => {
@@ -303,6 +357,9 @@ export function useAutomationRules(items, apiKey, activeType) {
 
         rulesRef.current = newRules;
         rulesRef.current.forEach(setupRuleInterval);
+        } catch (error) {
+          console.error('Error parsing automation rules from storage change:', error);
+        }
       }
     };
 

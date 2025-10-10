@@ -65,7 +65,7 @@
     "footer": {
       "description": "Nous ne stockons aucune de vos informations. Cette application est entièrement open source sur",
       "github": "GitHub",
-      "forkNote": "Ceci est un fork du TorBox Manager de jittarao. v0.1.21"
+      "forkNote": "Ceci est un fork du TorBox Manager de jittarao. v0.1.22"
     }
   },
   "ApiKeyInput": {
@@ -325,7 +325,13 @@
       "stalledTime": "Temps de pause",
       "seedingRatio": "Ratio de semence",
       "seeds": "Graines",
-      "peers": "Pairs"
+      "peers": "Pairs",
+      "downloadSpeed": "Vitesse de téléchargement",
+      "uploadSpeed": "Vitesse de téléversement",
+      "fileSize": "Taille de fichier",
+      "age": "Âge",
+      "tracker": "Tracker",
+      "inactive": "Téléchargements inactifs"
     },
     "operators": {
       "gt": "est supérieur à",
@@ -345,6 +351,13 @@
       "show": "Afficher les règles",
       "hide": "Masquer les règles"
     },
+    "presets": {
+      "title": "Préréglages Rapides",
+      "deleteInactive": "Supprimer les Téléchargements Inactifs",
+      "deleteStalled": "Supprimer les Téléchargements Bloqués (1+ heures)",
+      "deleteQueued": "Supprimer les Téléchargements en File (6+ heures)",
+      "stopSeedingLowRatio": "Arrêter le Seeding avec Ratio Faible"
+    },
     "cancel": "Annuler",
     "add": "Ajouter une règle",
     "update": "Mettre à jour la règle",
@@ -355,7 +368,17 @@
     "neverExecuted": "jamais exécuté",
     "lastTriggered": "dernier activé",
     "triggers": "activateurs",
-    "enabledAt": "activé le"
+    "enabledAt": "activé le",
+    "viewLogs": "Voir les Journaux",
+    "ruleLogs": "Journaux de Règle",
+    "clearLogs": "Effacer les Journaux",
+    "close": "Fermer",
+    "noLogs": "Aucun journal disponible",
+    "success": "Succès",
+    "failed": "Échec",
+    "itemsAffected": "Éléments Affectés",
+    "details": "Détails",
+    "error": "Erreur"
   },
   "Columns": {
     "id": "ID",

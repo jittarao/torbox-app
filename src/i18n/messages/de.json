@@ -65,7 +65,7 @@
     "footer": {
       "description": "Wir speichern keine Ihrer Informationen. Diese App ist vollständig Open Source auf",
       "github": "GitHub",
-      "forkNote": "Dies ist ein Fork von jittaraos TorBox Manager. v0.1.21"
+      "forkNote": "Dies ist ein Fork von jittaraos TorBox Manager. v0.1.22"
     }
   },
   "ApiKeyInput": {
@@ -325,7 +325,13 @@
       "stalledTime": "Blockierte Zeit",
       "seedingRatio": "Seeding Verhältnis",
       "seeds": "Seeds",
-      "peers": "Peers"
+      "peers": "Peers",
+      "downloadSpeed": "Download Geschwindigkeit",
+      "uploadSpeed": "Upload Geschwindigkeit",
+      "fileSize": "Dateigröße",
+      "age": "Alter",
+      "tracker": "Tracker",
+      "inactive": "Inaktive Downloads"
     },
     "operators": {
       "gt": "ist größer als",
@@ -345,6 +351,13 @@
       "show": "Regeln anzeigen",
       "hide": "Regeln ausblenden"
     },
+    "presets": {
+      "title": "Schnelle Voreinstellungen",
+      "deleteInactive": "Inaktive Downloads löschen",
+      "deleteStalled": "Blockierte Downloads löschen (1+ Stunden)",
+      "deleteQueued": "Warteschlangen-Downloads löschen (6+ Stunden)",
+      "stopSeedingLowRatio": "Seeding bei niedrigem Verhältnis stoppen"
+    },
     "cancel": "Abbrechen",
     "add": "Regel hinzufügen",
     "update": "Regel aktualisieren",
@@ -355,7 +368,17 @@
     "neverExecuted": "nie ausgeführt",
     "lastTriggered": "letzter Auslöser",
     "triggers": "Auslöser",
-    "enabledAt": "aktiviert am"
+    "enabledAt": "aktiviert am",
+    "viewLogs": "Protokolle anzeigen",
+    "ruleLogs": "Regel-Protokolle",
+    "clearLogs": "Protokolle löschen",
+    "close": "Schließen",
+    "noLogs": "Keine Protokolle verfügbar",
+    "success": "Erfolgreich",
+    "failed": "Fehlgeschlagen",
+    "itemsAffected": "Betroffene Elemente",
+    "details": "Details",
+    "error": "Fehler"
   },
   "Columns": {
     "id": "ID ",
@@ -656,6 +679,7 @@
     "noMatchingItems": "Keine Elemente entsprechen Ihren Suchkriterien",
     "download": "Herunterladen",
     "published": "Veröffentlicht",
+    "size": "Größe",
     "category": "Kategorie",
     "noDescription": "Keine Beschreibung verfügbar",
     "unknown": "Unbekannt",

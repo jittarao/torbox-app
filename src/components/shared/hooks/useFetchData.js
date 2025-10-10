@@ -354,9 +354,14 @@ export function useFetchData(apiKey, type = 'torrents') {
   const checkActiveRules = useCallback(() => {
     const rules = localStorage.getItem('torboxAutomationRules');
     if (rules) {
-      const parsedRules = JSON.parse(rules);
-      const activeRules = parsedRules.filter((rule) => rule.enabled);
-      setHasActiveRules(activeRules.length > 0);
+      try {
+        const parsedRules = JSON.parse(rules);
+        const activeRules = parsedRules.filter((rule) => rule.enabled);
+        setHasActiveRules(activeRules.length > 0);
+      } catch (error) {
+        console.error('Error parsing automation rules from localStorage:', error);
+        setHasActiveRules(false);
+      }
     } else {
       setHasActiveRules(false);
     }

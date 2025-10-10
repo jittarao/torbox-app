@@ -12,14 +12,19 @@ export default function LinkHistoryPage() {
   const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
-    const downloadHistory = JSON.parse(
-      localStorage.getItem('torboxDownloadHistory') || '[]',
-    );
-    const storedKey = localStorage.getItem('torboxApiKey');
-    
-    setHistory(downloadHistory);
-    if (storedKey) {
-      setApiKey(storedKey);
+    try {
+      const downloadHistory = JSON.parse(
+        localStorage.getItem('torboxDownloadHistory') || '[]',
+      );
+      const storedKey = localStorage.getItem('torboxApiKey');
+      
+      setHistory(downloadHistory);
+      if (storedKey) {
+        setApiKey(storedKey);
+      }
+    } catch (error) {
+      console.error('Error parsing download history from localStorage:', error);
+      setHistory([]);
     }
   }, []);
 

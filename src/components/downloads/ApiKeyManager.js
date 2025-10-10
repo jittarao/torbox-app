@@ -13,7 +13,12 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpe
   useEffect(() => {
     const storedKeys = localStorage.getItem('torboxApiKeys');
     if (storedKeys) {
-      setKeys(JSON.parse(storedKeys));
+      try {
+        setKeys(JSON.parse(storedKeys));
+      } catch (error) {
+        console.error('Error parsing API keys from localStorage:', error);
+        setKeys([]);
+      }
     }
   }, []);
 

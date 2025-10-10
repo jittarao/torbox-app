@@ -66,7 +66,7 @@
     "footer": {
       "description": "We don't store any of your information. This app is fully open source on",
       "github": "GitHub",
-      "forkNote": "This is a fork of jittarao's TorBox Manager. v0.1.21"
+      "forkNote": "This is a fork of jittarao's TorBox Manager. v0.1.22"
     }
   },
   "ApiKeyInput": {
@@ -369,7 +369,8 @@
       "uploadSpeed": "Upload Speed",
       "fileSize": "File Size",
       "age": "Age",
-      "tracker": "Tracker"
+      "tracker": "Tracker",
+      "inactive": "Inactive Downloads"
     },
     "operators": {
       "gt": "is greater than",
@@ -389,6 +390,13 @@
       "show": "Show rules",
       "hide": "Hide rules"
     },
+    "presets": {
+      "title": "Quick Presets",
+      "deleteInactive": "Delete Inactive Downloads",
+      "deleteStalled": "Delete Stalled Downloads (1+ hours)",
+      "deleteQueued": "Delete Queued Downloads (6+ hours)",
+      "stopSeedingLowRatio": "Stop Seeding Low Ratio"
+    },
     "cancel": "Cancel",
     "add": "Add Rule",
     "update": "Update Rule",
@@ -399,7 +407,17 @@
     "neverExecuted": "never executed",
     "lastTriggered": "last triggered",
     "triggers": "triggers",
-    "enabledAt": "enabled"
+    "enabledAt": "enabled",
+    "viewLogs": "View Logs",
+    "ruleLogs": "Rule Logs",
+    "clearLogs": "Clear Logs",
+    "close": "Close",
+    "noLogs": "No logs available",
+    "success": "Success",
+    "failed": "Failed",
+    "itemsAffected": "Items Affected",
+    "details": "Details",
+    "error": "Error"
   },
   "Columns": {
     "id": "ID",
@@ -716,6 +734,7 @@
     "noMatchingItems": "No items match your search criteria",
     "download": "Download",
     "published": "Published",
+    "size": "Size",
     "category": "Category",
     "noDescription": "No description available",
     "unknown": "Unknown",

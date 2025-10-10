@@ -36,10 +36,14 @@ export default function Home() {
       setApiKey(storedKey);
     } else if (storedKeys) {
       // If no active key but we have stored keys, use the first one
-      const keys = JSON.parse(storedKeys);
-      if (keys.length > 0) {
-        setApiKey(keys[0].key);
-        localStorage.setItem('torboxApiKey', keys[0].key);
+      try {
+        const keys = JSON.parse(storedKeys);
+        if (keys.length > 0) {
+          setApiKey(keys[0].key);
+          localStorage.setItem('torboxApiKey', keys[0].key);
+        }
+      } catch (error) {
+        console.error('Error parsing API keys from localStorage:', error);
       }
     }
     setLoading(false);
