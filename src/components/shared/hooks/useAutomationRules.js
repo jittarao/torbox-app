@@ -45,7 +45,7 @@ export function useAutomationRules(items, apiKey, activeType) {
   };
 
   const updateRuleMetadata = (ruleId, updates) => {
-    // console.log('📝 Updating rule metadata:', { ruleId, updates });
+    // Update rule metadata in storage
     const updatedRules = rulesRef.current.map((rule) =>
       rule.id === ruleId
         ? {
@@ -71,13 +71,10 @@ export function useAutomationRules(items, apiKey, activeType) {
     const items = unfilteredItems.filter((item) =>
       item.hasOwnProperty('active'),
     );
-    // console.log('🔄 Checking rule:', { ruleName: rule.name, ruleId: rule.id });
+    // Check if rule should execute
 
     if (!rule.enabled) {
-      // console.log('⏭️ Rule skipped - disabled:', {
-      //   ruleName: rule.name,
-      //   ruleId: rule.id,
-      // });
+      // Skip disabled rules
       return;
     }
 
@@ -119,6 +116,23 @@ export function useAutomationRules(items, apiKey, activeType) {
           case 'peers':
             conditionValue = item.peers || 0;
             break;
+          case 'download_speed':
+            conditionValue = (item.download_speed || 0) / 1024; // Convert to KB/s
+            break;
+          case 'upload_speed':
+            conditionValue = (item.upload_speed || 0) / 1024; // Convert to KB/s
+            break;
+          case 'file_size':
+            conditionValue = (item.size || 0) / (1024 * 1024 * 1024); // Convert to GB
+            break;
+          case 'age':
+            conditionValue = (now - new Date(item.created_at).getTime()) / (1000 * 60 * 60); // Hours since created
+            break;
+          case 'tracker':
+            // For tracker, we'll do a string comparison instead of numeric
+            const trackerUrl = item.tracker || '';
+            conditionValue = trackerUrl.includes(condition.value) ? 1 : 0;
+            break;
         }
 
         const conditionMet = compareValues(
@@ -127,14 +141,7 @@ export function useAutomationRules(items, apiKey, activeType) {
           condition.value,
         );
 
-        // console.log('🎯 Condition check:', {
-        //   ruleName: rule.name,
-        //   itemName: item.name,
-        //   type: condition.type,
-        //   value: conditionValue,
-        //   threshold: condition.value,
-        //   met: conditionMet,
-        // });
+        // Check if condition is met
 
         return conditionMet;
       });
@@ -148,7 +155,7 @@ export function useAutomationRules(items, apiKey, activeType) {
     });
 
     if (matchingItems.length === 0) {
-      // console.log('⏭️ No items match conditions for rule:', rule.name);
+      // No items match the rule conditions
       return;
     }
 
@@ -158,52 +165,36 @@ export function useAutomationRules(items, apiKey, activeType) {
       triggeredCount: (getRuleMetadata(rule).triggeredCount || 0) + 1,
     });
 
-    // console.log('✨ Rule triggered for items:', {
-    //   ruleName: rule.name,
-    //   items: matchingItems.map((i) => i.name),
-    // });
+    // Execute actions on matching items
 
     // Execute actions
     for (const item of matchingItems) {
       try {
-        // console.log('🎬 Executing action:', {
-        //   ruleName: rule.name,
-        //   itemName: item.name,
-        //   action: rule.action.type,
-        // });
+        // Execute the action
 
         let actionSucceeded = false;
         let result;
 
         switch (rule.action.type) {
           case 'stop_seeding':
-            // console.log('🛑 Stop seeding:', {
-            //   itemName: item.name,
-            //   itemId: item.id,
-            // });
+            // Stop seeding the torrent
             result = await controlTorrent(item.id, 'stop_seeding');
             actionSucceeded = result.success;
             break;
           case 'archive':
-            // console.log('📦 Archive:', {
-            //   itemName: item.name,
-            //   itemId: item.id,
-            // });
+            // Archive the download
             archiveDownload(item);
             result = await deleteItemHelper(item.id, apiKey);
             actionSucceeded = result.success;
             break;
           case 'delete':
-            // console.log('🗑️ Delete:', { itemName: item.name, itemId: item.id });
+            // Delete the download
             result = await deleteItemHelper(item.id, apiKey);
             actionSucceeded = result.success;
             break;
           case 'force_start':
-            // console.log('▶️ Force start:', {
-            //   itemName: item.name,
-            //   itemId: item.id,
-            // });
-            result = await controlQueuedItem(item.id, 'force_start');
+            // Force start the download
+            result = await controlQueuedItem(item.id, 'start');
             actionSucceeded = result.success;
             break;
         }
@@ -241,17 +232,17 @@ export function useAutomationRules(items, apiKey, activeType) {
     if (initializationRef.current) return;
     initializationRef.current = true;
 
-    // // console.log('🔄 Initial setup of automation rules');
+    // Initialize automation rules
 
     const savedRules = localStorage.getItem('torboxAutomationRules');
     if (savedRules) {
       rulesRef.current = JSON.parse(savedRules);
-      // console.log('📥 Loaded rules from storage:', rulesRef.current);
+      // Rules loaded from storage
     }
 
     function setupRuleInterval(rule) {
       if (!rule.enabled) {
-        // console.log('⏭️ Skipping disabled rule:', rule.name);
+        // Skip disabled rules
         return;
       }
 
@@ -265,18 +256,10 @@ export function useAutomationRules(items, apiKey, activeType) {
         const remainingTime = initialDelay - timeSinceRef;
         initialDelay = Math.max(0, remainingTime);
 
-        // console.log('⏰ Calculated initial delay:', {
-        //   ruleName: rule.name,
-        //   referenceTime: new Date(referenceTime).toISOString(),
-        //   initialDelay: Math.round(initialDelay / 1000) + 's',
-        // });
+        // Calculate initial delay for rule execution
       }
 
-      // console.log('⏱️ Setting up rule timer:', {
-      //   ruleName: rule.name,
-      //   interval: rule.trigger.value + 'm',
-      //   initialDelay: Math.round(initialDelay / 1000) + 's',
-      // });
+      // Set up rule timer
 
       // Clear any existing interval
       if (intervalsRef.current[rule.id]) {
@@ -285,12 +268,12 @@ export function useAutomationRules(items, apiKey, activeType) {
 
       // Set up new interval
       setTimeout(() => {
-        // console.log('🏃 Initial rule execution:', rule.name);
+        // Execute rule initially
         executeRule(rule, itemsRef.current);
 
         intervalsRef.current[rule.id] = setInterval(
           () => {
-            // console.log('⏰ Interval triggered for rule:', rule.name);
+            // Execute rule on interval
             executeRule(rule, itemsRef.current);
           },
           rule.trigger.value * 1000 * 60,
@@ -304,7 +287,7 @@ export function useAutomationRules(items, apiKey, activeType) {
     // Listen for rule changes in storage
     const handleStorageChange = (e) => {
       if (e.key === 'torboxAutomationRules') {
-        // console.log('📝 Rules updated in storage, reloading intervals');
+        // Rules updated, reload intervals
         const newRules = JSON.parse(e.newValue || '[]');
 
         // Find rules that were deleted or disabled
@@ -326,7 +309,7 @@ export function useAutomationRules(items, apiKey, activeType) {
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      // console.log('♻️ Cleaning up rule intervals');
+      // Clean up rule intervals
       window.removeEventListener('storage', handleStorageChange);
       Object.values(intervalsRef.current).forEach((interval) =>
         clearInterval(interval),

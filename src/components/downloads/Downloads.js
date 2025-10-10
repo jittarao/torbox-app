@@ -343,7 +343,7 @@ export default function Downloads({ apiKey }) {
         </div>
       )}
 
-      {activeType === 'torrents' && <AutomationRules />}
+      {(activeType === 'torrents' || activeType === 'all') && <AutomationRules />}
 
       {loading && items.length === 0 ? (
         <div className="flex justify-center items-center">

@@ -66,7 +66,7 @@
     "footer": {
       "description": "We don't store any of your information. This app is fully open source on",
       "github": "GitHub",
-      "forkNote": "This is a fork of jittarao's TorBox Manager"
+      "forkNote": "This is a fork of jittarao's TorBox Manager. v0.1.19"
     }
   },
   "ApiKeyInput": {
@@ -364,7 +364,12 @@
       "stalledTime": "Stalled Time",
       "seedingRatio": "Seeding Ratio",
       "seeds": "Seeds",
-      "peers": "Peers"
+      "peers": "Peers",
+      "downloadSpeed": "Download Speed",
+      "uploadSpeed": "Upload Speed",
+      "fileSize": "File Size",
+      "age": "Age",
+      "tracker": "Tracker"
     },
     "operators": {
       "gt": "is greater than",

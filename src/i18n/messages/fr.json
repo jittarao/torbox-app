@@ -65,7 +65,7 @@
     "footer": {
       "description": "Nous ne stockons aucune de vos informations. Cette application est entièrement open source sur",
       "github": "GitHub",
-      "forkNote": "Ceci est un fork du TorBox Manager de jittarao"
+      "forkNote": "Ceci est un fork du TorBox Manager de jittarao. v0.1.20"
     }
   },
   "ApiKeyInput": {
@@ -635,7 +635,7 @@
     }
   },
   "RssItems": {
-    "title": "Éléments RSS",
+    "title": "Titre",
     "refresh": "Actualiser",
     "selectFeed": "Sélectionner le Flux RSS",
     "selectFeedPlaceholder": "Choisissez un flux pour voir les éléments",
@@ -648,7 +648,6 @@
     "webdl": "Téléchargement Web",
     "sortBy": "Trier Par",
     "date": "Date",
-    "title": "Titre",
     "size": "Taille",
     "sortOrder": "Ordre de Tri",
     "newestFirst": "Plus Récents en Premier",
