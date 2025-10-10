@@ -35,12 +35,14 @@ git clone https://github.com/crazycacti/torbox-app.git
 cd torbox-app
 ```
 
-2. Start with backend:
+2. Enable the backend by uncommenting the backend section in `docker-compose.yml`
+
+3. Start with backend:
 ```bash
-docker compose -f docker-compose.selfhosted.yml up -d
+docker compose up -d
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key - automation rules will now run 24/7!
+4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key - automation rules will now run 24/7!
 
 ### Local Development
 
