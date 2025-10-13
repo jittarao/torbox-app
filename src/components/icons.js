@@ -89,22 +89,6 @@ const UploadIcon = ({ className = 'h-5 w-5' }) => (
   </svg>
 );
 
-const SpeedIcon = ({ className = 'h-5 w-5' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M13 10V3L4 14h7v7l9-11h-7z"
-    />
-  </svg>
-);
 
 const WarningIcon = ({ className = 'h-5 w-5' }) => (
   <svg
@@ -1249,7 +1233,6 @@ export const Icons = {
   Activity: ActivityIcon,
   DollarSign: DollarSignIcon,
   RotateCcw: RotateCcwIcon,
-  Speed: SpeedIcon,
   Warning: WarningIcon,
   Spinner: SpinnerIcon,
   Cloud: CloudIcon,

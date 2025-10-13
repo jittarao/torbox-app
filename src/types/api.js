@@ -276,12 +276,6 @@ export const API_RESPONSE_TYPES = {
     size: 'number',
   },
 
-  // Speed test types
-  SPEEDTEST_FILE: {
-    name: 'string',
-    size: 'number',
-    url: 'string',
-  },
 };
 
 // API Error types

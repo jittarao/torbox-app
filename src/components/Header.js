@@ -123,17 +123,6 @@ export default function Header({ apiKey }) {
               {t('menu.rss')}
             </Link>
 
-            {/* Speedtest temporarily hidden - will be reimplemented later
-            <Link
-              href="/speedtest"
-              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
-                ${pathname === '/speedtest' || locales.some((locale) => pathname === `/${locale}/speedtest`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
-            >
-              <Icons.Speed />
-              {t('menu.speedtest')}
-            </Link>
-            */}
 
             <Link
               href="/user"
@@ -210,16 +199,6 @@ export default function Header({ apiKey }) {
             </Link>
 
             <Link
-              href="/user"
-              className={`block text-white dark:text-primary-text-dark font-medium 
-                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                ${pathname === '/user' || locales.some((locale) => pathname === `/${locale}/user`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t('menu.user')}
-            </Link>
-
-            <Link
               href="/rss"
               className={`block text-white dark:text-primary-text-dark font-medium 
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
@@ -229,17 +208,16 @@ export default function Header({ apiKey }) {
               {t('menu.rss')}
             </Link>
 
-            {/* Speedtest temporarily hidden - will be reimplemented later
             <Link
-              href="/speedtest"
+              href="/user"
               className={`block text-white dark:text-primary-text-dark font-medium 
                 hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                ${pathname === '/speedtest' || locales.some((locale) => pathname === `/${locale}/speedtest`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                ${pathname === '/user' || locales.some((locale) => pathname === `/${locale}/user`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
               onClick={() => setIsMenuOpen(false)}
             >
-              {t('menu.speedtest')}
+              {t('menu.user')}
             </Link>
-            */}
+
             <div className="py-2 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-white dark:text-primary-text-dark">

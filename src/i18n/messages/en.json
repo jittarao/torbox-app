@@ -24,7 +24,6 @@
       "linkHistory": "Link History",
       "archived": "Archived",
       "rss": "RSS Feeds",
-      "speedtest": "Speed Test",
       "user": "User",
       "systemStatus": "System Status",
       "referrals": "Referrals",
@@ -105,21 +104,6 @@
     "error": "Error copying to clipboard",
     "developerNote": "These are the developer's referral codes",
     "visitLink": "Visit Link"
-  },
-  "Speedtest": {
-    "title": "Speed Test",
-    "description": "Test your connection speed to TorBox servers worldwide",
-    "serverPingResults": "Server Ping Results",
-    "refresh": "Refresh",
-    "loadingRegions": "Loading regions...",
-    "startSpeedTest": "Start Speed Test",
-    "runningSpeedTest": "Running Speed Test...",
-    "runTestAgain": "Run Test Again",
-    "location": "Location",
-    "ping": "Ping",
-    "downloadSpeed": "Download Speed",
-    "uploadSpeed": "Upload Speed",
-    "pleaseEnterApiKey": "Please enter your API key to use the speed test"
   },
   "ActionButtons": {
     "downloadLinks": "Get Download Links",
