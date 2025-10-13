@@ -204,15 +204,15 @@ export default function UserProfile({ apiKey, setToast }) {
               
               {/* Referral Link */}
               {userData.user_referral && (
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                   <span className="text-muted dark:text-muted-dark">{t('referralLink')}:</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-text dark:text-text-dark font-medium font-mono text-sm max-w-xs truncate">
+                    <span className="text-text dark:text-text-dark font-medium font-mono text-sm break-all">
                       https://torbox.app/subscription?referral={userData.user_referral}
                     </span>
                     <button
                       onClick={copyReferralLink}
-                      className="p-1 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded transition-colors"
+                      className="p-1 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded transition-colors flex-shrink-0"
                       title={t('copyLink')}
                     >
                       {copiedLink ? (
@@ -290,6 +290,20 @@ export default function UserProfile({ apiKey, setToast }) {
               <div className="flex justify-between">
                 <span className="text-muted dark:text-muted-dark">{t('profile.totalUploaded')}:</span>
                 <span className="text-text dark:text-text-dark font-medium">{formatBytes(userData.total_bytes_uploaded || 0)}</span>
+              </div>
+              
+              {/* Ratio Calculation */}
+              <div className="flex justify-between">
+                <span className="text-muted dark:text-muted-dark">Ratio:</span>
+                <span className="text-text dark:text-text-dark font-medium">
+                  {(() => {
+                    const downloaded = userData.total_bytes_downloaded || 0;
+                    const uploaded = userData.total_bytes_uploaded || 0;
+                    if (downloaded === 0) return '∞';
+                    const ratio = uploaded / downloaded;
+                    return ratio.toFixed(2);
+                  })()}
+                </span>
               </div>
             </div>
           </div>

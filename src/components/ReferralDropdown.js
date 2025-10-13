@@ -100,16 +100,16 @@ export default function ReferralDropdown() {
               <label className="block text-xs font-medium text-primary-text dark:text-primary-text-dark mb-2">
                 {t('referralCode')}
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
                   value={REFERRAL_CODE}
                   readOnly
-                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono"
+                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono min-w-0"
                 />
                 <button
                   onClick={() => copyToClipboard(REFERRAL_CODE, 'code')}
-                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors"
+                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors flex-shrink-0"
                   title={t('copyCode')}
                 >
                   {copiedItem === 'code' ? (
@@ -126,18 +126,18 @@ export default function ReferralDropdown() {
               <label className="block text-xs font-medium text-primary-text dark:text-primary-text-dark mb-2">
                 {t('referralLink')}
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
                   value={REFERRAL_LINK}
                   readOnly
-                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono truncate"
+                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono min-w-0 break-all"
                 />
                 <a
                   href={REFERRAL_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors"
+                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors flex-shrink-0"
                   title={t('visitLink')}
                 >
                   <Icons.ExternalLink className="w-4 h-4" />
