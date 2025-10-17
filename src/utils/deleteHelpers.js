@@ -42,7 +42,6 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents') => {
 
     throw new Error(result.error || 'Unknown error occurred');
   } catch (error) {
-    console.error('Error deleting item:', { id, assetType, error: error.message });
     return { success: false, error: error.message };
   }
 };
@@ -71,7 +70,6 @@ export const batchDeleteHelper = async (
 
     return successfulIds;
   } catch (error) {
-    console.error('Error in batch delete:', error);
     return [];
   }
 };

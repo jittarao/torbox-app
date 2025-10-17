@@ -12,6 +12,7 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
 import ReferralDropdown from '@/components/ReferralDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getVersion } from '@/utils/version';
 // import CloudUploadManager from '@/components/downloads/CloudUploadManager';
 
 export default function Header({ apiKey }) {
@@ -35,9 +36,14 @@ export default function Header({ apiKey }) {
               width={24}
               height={24}
             />
-            <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
-              {t('title')}
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
+                {t('title')}
+              </h1>
+              <span className="text-xs text-white/70 dark:text-primary-text-dark/70 font-normal">
+                v{getVersion()}
+              </span>
+            </div>
           </Link>
 
           {/* Mobile menu button */}
