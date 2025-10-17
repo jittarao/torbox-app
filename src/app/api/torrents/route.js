@@ -17,7 +17,10 @@ export async function GET() {
     // Add timestamp to force cache bypass
     const timestamp = Date.now();
     
-    // Fetch both regular and queued torrents in parallel
+    // Fetch both regular and queued torrents in parallel with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
     const [torrentsResponse, queuedResponse] = await Promise.all([
       fetch(
         `${API_BASE}/${API_VERSION}/api/torrents/mylist?bypass_cache=true&_t=${timestamp}`,
@@ -29,6 +32,7 @@ export async function GET() {
             'Pragma': 'no-cache',
             'Expires': '0',
           },
+          signal: controller.signal,
         },
       ),
       fetch(
@@ -41,9 +45,12 @@ export async function GET() {
             'Pragma': 'no-cache',
             'Expires': '0',
           },
+          signal: controller.signal,
         },
       ),
     ]);
+    
+    clearTimeout(timeoutId);
 
     const [torrentsData, queuedData] = await Promise.all([
       torrentsResponse.json(),
@@ -65,6 +72,16 @@ export async function GET() {
       },
     });
   } catch (error) {
+    console.error('Error fetching torrents:', error);
+    
+    // Handle timeout specifically
+    if (error.name === 'AbortError') {
+      return Response.json({ 
+        success: false, 
+        error: 'Request timeout - API took longer than 30 seconds to respond' 
+      }, { status: 408 });
+    }
+    
     return Response.json(
       { success: false, error: error.message },
       { status: 500 },

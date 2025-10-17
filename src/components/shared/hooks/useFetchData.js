@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { isQueuedItem, getAutoStartOptions, sortItems } from '@/utils/utility';
 import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
+import { perfMonitor } from '@/utils/performance';
 
 // Rate limit constants
 const MAX_CALLS = 5;
@@ -19,7 +20,7 @@ const AUTOMATION_POLLING_INTERVAL = 300000; // 5 minutes in ms
 // 3. ✅ No polling when browser is not focused AND (auto-start is disabled OR no queued torrents)
 
 export function useFetchData(apiKey, type = 'torrents') {
-  // Separate state for each data type
+  // Separate state for each data type - ensure they're always arrays
   const [torrents, setTorrents] = useState([]);
   const [usenetItems, setUsenetItems] = useState([]);
   const [webdlItems, setWebdlItems] = useState([]);
@@ -189,6 +190,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
 
       try {
+        perfMonitor.startTimer(`fetch-${activeType}`);
         const response = await fetch(endpoint, {
           headers: {
             'x-api-key': apiKey,
@@ -204,6 +206,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         }
 
         const data = await response.json();
+        perfMonitor.endTimer(`fetch-${activeType}`);
 
         if (
           data.success &&
@@ -286,6 +289,7 @@ export function useFetchData(apiKey, type = 'torrents') {
           setError(userMessage);
         }
         setLoading(false);
+        // Return empty array to prevent undefined state
         return [];
       }
     },
@@ -329,6 +333,12 @@ export function useFetchData(apiKey, type = 'torrents') {
         // For 'all' type, we need to update the appropriate individual state
         // This is a bit complex since we need to determine which type each item belongs to
         return (newItems) => {
+          // Safety check: ensure newItems is an array
+          if (!Array.isArray(newItems)) {
+            console.warn('setItems called with non-array:', newItems);
+            return;
+          }
+          
           const torrentItems = newItems.filter(item => item.assetType === 'torrents');
           const usenetItems = newItems.filter(item => item.assetType === 'usenet');
           const webdlItems = newItems.filter(item => item.assetType === 'webdl');

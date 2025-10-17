@@ -65,7 +65,7 @@
     "footer": {
       "description": "We don't store any of your information. This app is fully open source on",
       "github": "GitHub",
-      "forkNote": "This is a fork of jittarao's TorBox Manager. v0.1.24"
+      "forkNote": "This is a fork of jittarao's TorBox Manager. v0.1.25"
     }
   },
   "ApiKeyInput": {

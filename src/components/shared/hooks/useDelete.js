@@ -87,7 +87,14 @@ export function useDelete(
 
       // Update UI for successful deletes
       if (successfulIds.length > 0) {
-        setItems((prev) => prev.filter((t) => !successfulIds.includes(t.id)));
+        setItems((prev) => {
+          // Safety check: ensure prev is an array
+          if (!Array.isArray(prev)) {
+            console.warn('setItems called with non-array prev:', prev);
+            return prev || [];
+          }
+          return prev.filter((t) => !successfulIds.includes(t.id));
+        });
         setSelectedItems((prev) => ({
           items: new Set(
             [...prev.items].filter((id) => !successfulIds.includes(id)),
