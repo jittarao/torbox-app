@@ -21,8 +21,10 @@ import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import AutomationRules from './AutomationRules';
 import { formatSize } from './utils/formatters';
+import { useTranslations } from 'next-intl';
 
 export default function Downloads({ apiKey }) {
+  const t = useTranslations('Common');
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -261,7 +263,7 @@ export default function Downloads({ apiKey }) {
               }}
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
             >
-              <span className="font-medium text-primary-text dark:text-primary-text-dark">Upload Torrents</span>
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">{t('uploadSections.torrents')}</span>
               <svg
                 className={`w-5 h-5 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform ${
                   expandedUploadSections.has('torrents') ? 'rotate-180' : ''
@@ -294,7 +296,7 @@ export default function Downloads({ apiKey }) {
               }}
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
             >
-              <span className="font-medium text-primary-text dark:text-primary-text-dark">Upload NZB Files</span>
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">{t('uploadSections.usenet')}</span>
               <svg
                 className={`w-5 h-5 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform ${
                   expandedUploadSections.has('usenet') ? 'rotate-180' : ''
@@ -327,7 +329,7 @@ export default function Downloads({ apiKey }) {
               }}
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
             >
-              <span className="font-medium text-primary-text dark:text-primary-text-dark">Add Web Uploads</span>
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">{t('uploadSections.webdl')}</span>
               <svg
                 className={`w-5 h-5 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform ${
                   expandedUploadSections.has('webdl') ? 'rotate-180' : ''

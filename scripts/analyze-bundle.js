@@ -14,7 +14,7 @@ function analyzeBundleSizes() {
   const buildDir = path.join(process.cwd(), '.next/static/chunks');
   
   if (!fs.existsSync(buildDir)) {
-    console.log('Build directory not found. Run "npm run build" first.');
+    console.log('Build directory not found. Run "bun run build" first.');
     return;
   }
 

@@ -26,7 +26,7 @@ docker compose -f docker-compose.selfhosted.yml up -d
 1. Install dependencies:
 ```bash
 cd backend
-npm install
+bun install
 ```
 
 2. Set environment variables:
@@ -37,7 +37,7 @@ cp env.example .env
 
 3. Start the server:
 ```bash
-npm start
+bun start
 ```
 
 ## Configuration

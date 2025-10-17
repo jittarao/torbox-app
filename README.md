@@ -54,12 +54,12 @@ cd torbox-app
 
 2. Install dependencies:
 ```bash
-npm install
+bun install
 ```
 
 3. Run the development server:
 ```bash
-npm run dev
+bun run dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.

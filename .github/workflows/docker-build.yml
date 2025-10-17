@@ -29,6 +29,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Set up Bun for version extraction
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       # Set up QEMU for multi-platform builds
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -55,7 +61,7 @@ jobs:
 
       - name: Get version from package.json
         id: package-version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        run: echo "version=$(bun -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Get commit hash
         id: commit
@@ -79,6 +85,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+            BUN_VERSION=latest
 
       - name: Build and push backend Docker image
         if: github.event_name != 'pull_request'
@@ -94,6 +101,9 @@ jobs:
             ghcr.io/${{ github.repository }}:backend-${{ steps.commit.outputs.commit }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            BUN_VERSION=latest
 
       - name: Build summary
         if: github.event_name != 'pull_request'

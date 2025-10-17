@@ -137,7 +137,7 @@
     "seasonPlaceholder": "S01",
     "episodePlaceholder": "E01",
     "yearPlaceholder": "2024",
-    "quality.all": "Toutes les qualités",
+    "qualityAll": "Toutes les qualités",
     "minSize": "Taille min. (GB)",
     "minSeeders": "Seeders min.",
     "clearFilters": "Effacer les filtres"
@@ -182,6 +182,11 @@
       "Web": "Web",
       "webdl": "webdl",
       "Webdl": "Webdl"
+    },
+    "uploadSections": {
+      "torrents": "Téléverser des torrents",
+      "usenet": "Téléverser des fichiers NZB",
+      "webdl": "Ajouter des téléchargements Web"
     },
     "time": {
       "in": "dans ",
@@ -690,6 +695,27 @@
       "downloadFailed": "Échec du démarrage du téléchargement"
     }
   },
+  "CloudUpload": {
+    "title": "Gestionnaire de Stockage Cloud",
+    "manageConnections": "Gérer les Connexions",
+    "connectedProviders": "Fournisseurs Connectés",
+    "connected": "Connecté",
+    "notConnected": "Non Connecté",
+    "connect": "Se Connecter",
+    "disconnect": "Se Déconnecter",
+    "activeJobs": "Travaux Actifs",
+    "noActiveJobs": "Aucun travail actif",
+    "cancel": "Annuler",
+    "complete": "Terminer",
+    "toast": {
+      "connectionSuccess": "Connecté avec succès au fournisseur",
+      "connectionError": "Échec de la connexion au fournisseur",
+      "disconnectionSuccess": "Déconnecté avec succès du fournisseur",
+      "disconnectionError": "Échec de la déconnexion du fournisseur",
+      "jobCancelled": "Travail annulé avec succès",
+      "jobCancelError": "Échec de l'annulation du travail"
+    }
+  },
   "User": {
     "title": "Profil Utilisateur",
     "description": "Gérez votre compte et consultez vos statistiques",
@@ -710,6 +736,7 @@
       "totalDownloads": "Total des Téléchargements",
       "totalSize": "Total Téléchargé",
       "totalUploaded": "Total Téléversé",
+      "ratio": "Ratio",
       "torrentDownloads": "Téléchargements Torrent",
       "webDownloads": "Téléchargements Web",
       "usenetDownloads": "Téléchargements Usenet"

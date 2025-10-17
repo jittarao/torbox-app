@@ -3,6 +3,7 @@ import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/cons
 class ApiClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
+    this.etags = new Map(); // Store ETags per endpoint
     this.baseHeaders = {
       'Content-Type': 'application/json',
       'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -10,20 +11,37 @@ class ApiClient {
     };
   }
 
-  // Generic request method with error handling
+  // Generic request method with error handling and ETag support
   async request(endpoint, options = {}) {
     // For client-side requests, use relative URLs to go through Next.js API routes
     const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
-    const config = {
-      headers: {
-        ...this.baseHeaders,
-        ...options.headers,
-      },
-      ...options,
+    
+    const headers = {
+      ...this.baseHeaders,
+      ...options.headers,
     };
+
+    // Add ETag if we have one for this endpoint
+    const etag = this.etags.get(endpoint);
+    if (etag) {
+      headers['If-None-Match'] = etag;
+    }
+
+    const config = { ...options, headers };
 
     try {
       const response = await fetch(url, config);
+      
+      // Store ETag for future requests
+      const responseETag = response.headers.get('ETag');
+      if (responseETag) {
+        this.etags.set(endpoint, responseETag);
+      }
+
+      // Handle 304 Not Modified (ETag working)
+      if (response.status === 304) {
+        return { success: true, data: [], cached: true };
+      }
       
       // Try to parse JSON response
       let data;
