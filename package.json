@@ -6,13 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
-    "build:check": "bun run build && node scripts/analyze-bundle.js",
+    "build:check": "bun run build && bun run scripts/analyze-bundle.js",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "version:patch": "node scripts/update-version.js patch",
-    "version:minor": "node scripts/update-version.js minor",
-    "version:major": "node scripts/update-version.js major"
+    "version:patch": "bun run scripts/update-version.js patch",
+    "version:minor": "bun run scripts/update-version.js minor",
+    "version:major": "bun run scripts/update-version.js major"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
