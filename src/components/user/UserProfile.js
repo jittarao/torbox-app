@@ -294,7 +294,7 @@ export default function UserProfile({ apiKey, setToast }) {
               
               {/* Ratio Calculation */}
               <div className="flex justify-between">
-                <span className="text-muted dark:text-muted-dark">Ratio:</span>
+                <span className="text-muted dark:text-muted-dark">{t('profile.ratio')}:</span>
                 <span className="text-text dark:text-text-dark font-medium">
                   {(() => {
                     const downloaded = userData.total_bytes_downloaded || 0;

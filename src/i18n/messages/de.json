@@ -137,7 +137,7 @@
     "seasonPlaceholder": "S01",
     "episodePlaceholder": "E01",
     "yearPlaceholder": "2024",
-    "quality.all": "Alle Qualitäten",
+    "qualityAll": "Alle Qualitäten",
     "minSize": "Min. Größe (GB)",
     "minSeeders": "Min. Seeder",
     "clearFilters": "Filter löschen"
@@ -182,6 +182,11 @@
       "Web": "Web",
       "webdl": "webdl ",
       "Webdl": "Webdl"
+    },
+    "uploadSections": {
+      "torrents": "Torrents hochladen",
+      "usenet": "NZB-Dateien hochladen",
+      "webdl": "Web-Downloads hinzufügen"
     },
     "time": {
       "in": "vor",
@@ -689,6 +694,27 @@
       "downloadFailed": "Download konnte nicht gestartet werden"
     }
   },
+  "CloudUpload": {
+    "title": "Cloud-Speicher-Manager",
+    "manageConnections": "Verbindungen verwalten",
+    "connectedProviders": "Verbundene Anbieter",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "activeJobs": "Aktive Jobs",
+    "noActiveJobs": "Keine aktiven Jobs",
+    "cancel": "Abbrechen",
+    "complete": "Abgeschlossen",
+    "toast": {
+      "connectionSuccess": "Erfolgreich mit Anbieter verbunden",
+      "connectionError": "Verbindung zum Anbieter fehlgeschlagen",
+      "disconnectionSuccess": "Erfolgreich vom Anbieter getrennt",
+      "disconnectionError": "Trennung vom Anbieter fehlgeschlagen",
+      "jobCancelled": "Job erfolgreich abgebrochen",
+      "jobCancelError": "Job-Abbruch fehlgeschlagen"
+    }
+  },
   "User": {
     "title": "Benutzerprofil",
     "description": "Verwalten Sie Ihr Konto und sehen Sie Ihre Statistiken",
@@ -709,6 +735,7 @@
       "totalDownloads": "Gesamte Downloads",
       "totalSize": "Gesamt heruntergeladen",
       "totalUploaded": "Gesamt hochgeladen",
+      "ratio": "Verhältnis",
       "torrentDownloads": "Torrent-Downloads",
       "webDownloads": "Web-Downloads",
       "usenetDownloads": "Usenet-Downloads"

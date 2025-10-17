@@ -24,7 +24,7 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
     },
     {
       id: 'webdl',
-      label: t('itemTypes.Web'),
+      label: t('itemTypes.Webdl'),
       icon: <Icons.Webdl className="w-4 h-4 md:w-5 md:h-5" />,
     },
   ];

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { isQueuedItem, getAutoStartOptions, sortItems } from '@/utils/utility';
 import { retryFetch } from '@/utils/retryFetch';
+import { validateUserData } from '@/utils/monitoring';
 
 // Rate limit constants
 const MAX_CALLS = 5;
@@ -132,9 +133,16 @@ export function useFetchData(apiKey, type = 'torrents') {
   );
 
   const fetchLocalItems = useCallback(
-    async (bypassCache = false, customType = null) => {
+    async (bypassCache = false, customType = null, retryCount = 0) => {
       const activeType = customType || type;
       setLoading(true);
+      
+      // Prevent infinite retry loops
+      if (retryCount > 1) {
+        console.error('Max retry attempts reached, giving up');
+        setLoading(false);
+        return [];
+      }
 
       if (!apiKey) {
         setLoading(false);
@@ -185,6 +193,7 @@ export function useFetchData(apiKey, type = 'torrents') {
           headers: {
             'x-api-key': apiKey,
             ...(bypassCache && { 'bypass-cache': 'true' }),
+            'Cache-Control': 'no-cache', // Force fresh data to prevent cross-user contamination
           },
         });
 
@@ -201,6 +210,14 @@ export function useFetchData(apiKey, type = 'torrents') {
           data.data &&
           Array.isArray(data.data)
         ) {
+          // Validate user data to prevent cross-user contamination
+          if (!validateUserData(data.data, apiKey)) {
+            console.warn(`Invalid user data detected (attempt ${retryCount + 1}/2), retrying with cache bypass`);
+            // Add a small delay before retry to avoid overwhelming the API
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return fetchLocalItems(true, customType, retryCount + 1);
+          }
+
           // Sort items by added date if available
           const sortedItems = sortItems(data.data);
 

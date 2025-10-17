@@ -1,19 +1,17 @@
 # syntax=docker/dockerfile:1.4
-FROM node:22-alpine AS deps
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 
 # Install dependencies for native modules if needed
 RUN apk add --no-cache libc6-compat
 
 # Copy package files first for better layer caching
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
-# Install dependencies with optimizations
-RUN --mount=type=cache,target=/root/.npm \
-    npm install --only=production --prefer-offline --no-audit && \
-    npm cache clean --force
+# Install dependencies with optimizations and frozen lockfile
+RUN bun install --production --frozen-lockfile --no-cache
 
-FROM node:22-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 # Disable Next.js telemetry
@@ -23,20 +21,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache libc6-compat
 
 # Copy package files first for better layer caching
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
 # Install all dependencies (including dev dependencies and optional dependencies)
-RUN --mount=type=cache,target=/root/.npm \
-    npm install --prefer-offline --no-audit
+RUN bun install --frozen-lockfile --no-cache
 
 # Copy source code
 COPY . .
 
 # Build the application with optimizations
-RUN --mount=type=cache,target=/app/.next/cache \
-    npm run build
+RUN bun run build
 
-FROM node:22-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 
 # Disable Next.js telemetry in production as well
@@ -48,6 +44,9 @@ RUN apk add --no-cache dumb-init
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001 -G nodejs
+
+# Set working directory permissions
+RUN chown -R nextjs:nodejs /app
 
 # Copy built application
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

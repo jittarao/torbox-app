@@ -1,6 +1,6 @@
 {
   "name": "torbox-backend",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "TorBox Manager Backend - Self-hosted automation and data persistence",
   "main": "src/index.js",
   "scripts": {
@@ -24,5 +24,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "trustedDependencies": [
+    "sqlite3"
+  ]
 }

@@ -145,7 +145,7 @@
     "seasonPlaceholder": "S01",
     "episodePlaceholder": "E01",
     "yearPlaceholder": "2024",
-    "quality.all": "All Qualities",
+    "qualityAll": "All Qualities",
     "minSize": "Min Size (GB)",
     "minSeeders": "Min Seeders",
     "clearFilters": "Clear Filters"
@@ -190,6 +190,11 @@
       "Web": "Web",
       "webdl": "webdl",
       "Webdl": "Webdl"
+    },
+    "uploadSections": {
+      "torrents": "Upload Torrents",
+      "usenet": "Upload NZB Files",
+      "webdl": "Add Web Downloads"
     },
     "time": {
       "in": "in ",
@@ -769,6 +774,7 @@
       "totalDownloads": "Total Downloads",
       "totalSize": "Total Downloaded",
       "totalUploaded": "Total Uploaded",
+      "ratio": "Ratio",
       "torrentDownloads": "Torrent Downloads",
       "webDownloads": "Web Downloads",
       "usenetDownloads": "Usenet Downloads"

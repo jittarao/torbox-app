@@ -10,30 +10,41 @@ import { headers } from 'next/headers';
 export async function GET() {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
-  const bypassCache = headersList.get('bypass-cache') === 'true';
+  
+  // Always bypass cache for user-specific data to prevent cross-user contamination
+  const bypassCache = true;
 
   if (!apiKey) {
     return NextResponse.json({ error: 'API key is required' }, { status: 400 });
   }
 
   try {
+    // Add timestamp to force cache bypass
+    const timestamp = Date.now();
+    
     // Fetch both regular and queued web downloads in parallel
     const [downloadsResponse, queuedResponse] = await Promise.all([
       fetch(
-        `${API_BASE}/${API_VERSION}/api/webdl/mylist${bypassCache ? '?bypass_cache=true' : ''}`,
+        `${API_BASE}/${API_VERSION}/api/webdl/mylist?bypass_cache=true&_t=${timestamp}`,
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
           },
         },
       ),
       fetch(
-        `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=webdl${bypassCache ? '&bypass_cache=true' : ''}`,
+        `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=webdl&bypass_cache=true&_t=${timestamp}`,
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
           },
         },
       ),
@@ -54,7 +65,14 @@ export async function GET() {
       data: [...(downloadsData.data || []), ...(queuedData.data || [])],
     };
 
-    return NextResponse.json(mergedData);
+    return NextResponse.json(mergedData, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Vary': 'Authorization', // Ensure cache varies by user
+      },
+    });
   } catch (error) {
     console.error('Error fetching web download data:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

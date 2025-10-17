@@ -64,7 +64,7 @@ export default function SearchBar() {
   ];
 
   const QUALITY_OPTIONS = [
-    { value: '', label: 'All Qualities' },
+    { value: '', label: t('qualityAll') },
     { value: '2160p', label: '4K (2160p)' },
     { value: '1080p', label: 'Full HD (1080p)' },
     { value: '720p', label: 'HD (720p)' },
