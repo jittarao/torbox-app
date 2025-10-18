@@ -22,6 +22,20 @@ const CONDITION_TYPES = {
   AGE: 'age',
   TRACKER: 'tracker',
   INACTIVE: 'inactive',
+  PROGRESS: 'progress',
+  TOTAL_UPLOADED: 'total_uploaded',
+  TOTAL_DOWNLOADED: 'total_downloaded',
+  AVAILABILITY: 'availability',
+  ETA: 'eta',
+  DOWNLOAD_FINISHED: 'download_finished',
+  CACHED: 'cached',
+  PRIVATE: 'private',
+  LONG_TERM_SEEDING: 'long_term_seeding',
+  SEED_TORRENT: 'seed_torrent',
+  DOWNLOAD_STATE: 'download_state',
+  NAME_CONTAINS: 'name_contains',
+  FILE_COUNT: 'file_count',
+  EXPIRES_AT: 'expires_at',
 };
 
 const COMPARISON_OPERATORS = {
@@ -83,6 +97,28 @@ const createPresetRules = (t) => [
     ],
     logicOperator: 'and',
     action: { type: 'stop_seeding' }
+  },
+  // Availability-based rules
+  {
+    name: t('presets.deleteUnavailable'),
+    trigger: { type: 'interval', value: 60 },
+    conditions: [
+      { type: 'availability', operator: 'eq', value: 0 },
+      { type: 'age', operator: 'gt', value: 48 }
+    ],
+    logicOperator: 'and',
+    action: { type: 'delete' }
+  },
+  // Progress-based rules
+  {
+    name: t('presets.deleteIncomplete'),
+    trigger: { type: 'interval', value: 60 },
+    conditions: [
+      { type: 'progress', operator: 'lt', value: 1 },
+      { type: 'age', operator: 'gt', value: 72 }
+    ],
+    logicOperator: 'and',
+    action: { type: 'delete' }
   }
 ];
 
@@ -117,7 +153,7 @@ export default function AutomationRules() {
   });
 
   // Apply a preset rule
-  const applyPreset = (preset) => {
+  const applyPreset = async (preset) => {
     const ruleWithId = {
       ...preset,
       id: Date.now().toString(),
@@ -128,7 +164,13 @@ export default function AutomationRules() {
         last_execution: null,
       }
     };
-    setRules(prev => [...prev, ruleWithId]);
+    
+    // Update local state
+    const updatedRules = [...rules, ruleWithId];
+    setRules(updatedRules);
+    
+    // Save to backend/localStorage
+    await saveRules(updatedRules);
   };
 
   // Backend mode indicator
@@ -203,28 +245,98 @@ export default function AutomationRules() {
     setIsAddingRule(true);
   };
 
-  const handleDeleteRule = (ruleId) => {
-    const updatedRules = rules.filter((rule) => rule.id !== ruleId);
-    saveRules(updatedRules);
+  const handleDeleteRule = async (ruleId) => {
+    try {
+      if (isBackendMode) {
+        // Use backend API for individual rule deletion
+        const response = await fetch(`/api/automation/rules/${ruleId}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete rule: ${response.status}`);
+        }
+      }
+      
+      // Update local state
+      const updatedRules = rules.filter((rule) => rule.id !== ruleId);
+      setRules(updatedRules);
+      
+      // Also update localStorage as backup
+      localStorage.setItem('torboxAutomationRules', JSON.stringify(updatedRules));
+    } catch (error) {
+      console.error('Error deleting rule:', error);
+      // Fallback to local-only deletion
+      const updatedRules = rules.filter((rule) => rule.id !== ruleId);
+      setRules(updatedRules);
+      localStorage.setItem('torboxAutomationRules', JSON.stringify(updatedRules));
+    }
   };
 
-  const handleToggleRule = (ruleId) => {
-    const updatedRules = rules.map((rule) => {
-      if (rule.id === ruleId) {
-        const now = Date.now();
-        return {
-          ...rule,
-          enabled: !rule.enabled,
-          metadata: {
-            ...rule.metadata,
-            lastEnabledAt: rule.enabled ? null : now,
-            updatedAt: now,
+  const handleToggleRule = async (ruleId) => {
+    try {
+      const rule = rules.find(r => r.id === ruleId);
+      if (!rule) return;
+      
+      const newEnabled = !rule.enabled;
+      
+      if (isBackendMode) {
+        // Use backend API for individual rule update
+        const response = await fetch(`/api/automation/rules/${ruleId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        };
+          body: JSON.stringify({ enabled: newEnabled }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update rule: ${response.status}`);
+        }
       }
-      return rule;
-    });
-    saveRules(updatedRules);
+      
+      // Update local state
+      const updatedRules = rules.map((rule) => {
+        if (rule.id === ruleId) {
+          const now = Date.now();
+          return {
+            ...rule,
+            enabled: newEnabled,
+            metadata: {
+              ...rule.metadata,
+              lastEnabledAt: rule.enabled ? null : now,
+              updatedAt: now,
+            },
+          };
+        }
+        return rule;
+      });
+      
+      setRules(updatedRules);
+      
+      // Also update localStorage as backup
+      localStorage.setItem('torboxAutomationRules', JSON.stringify(updatedRules));
+    } catch (error) {
+      console.error('Error toggling rule:', error);
+      // Fallback to local-only update
+      const updatedRules = rules.map((rule) => {
+        if (rule.id === ruleId) {
+          const now = Date.now();
+          return {
+            ...rule,
+            enabled: !rule.enabled,
+            metadata: {
+              ...rule.metadata,
+              lastEnabledAt: rule.enabled ? null : now,
+              updatedAt: now,
+            },
+          };
+        }
+        return rule;
+      });
+      setRules(updatedRules);
+      localStorage.setItem('torboxAutomationRules', JSON.stringify(updatedRules));
+    }
   };
 
   const handleViewLogs = (ruleId) => {
@@ -232,8 +344,19 @@ export default function AutomationRules() {
     loadRuleLogs(ruleId);
   };
 
-  const loadRuleLogs = (ruleId) => {
+  const loadRuleLogs = async (ruleId) => {
     try {
+      if (isBackendMode) {
+        // Try backend first
+        const response = await fetch(`/api/automation/rules/${ruleId}/logs`);
+        if (response.ok) {
+          const data = await response.json();
+          setRuleLogs(prev => ({ ...prev, [ruleId]: data.logs || [] }));
+          return;
+        }
+      }
+      
+      // Fallback to localStorage
       const logs = localStorage.getItem(`torboxRuleLogs_${ruleId}`);
       if (logs) {
         const parsedLogs = JSON.parse(logs);
@@ -762,10 +885,10 @@ export default function AutomationRules() {
 
       {/* Rule Logs Modal */}
       {viewingLogsRuleId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background dark:bg-background-dark rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 max-w-2xl w-full max-h-[70vh] overflow-hidden flex flex-col shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {t('ruleLogs')} - {rules.find(r => r.id === viewingLogsRuleId)?.name}
               </h3>
               <div className="flex gap-2">
@@ -786,15 +909,15 @@ export default function AutomationRules() {
             
             <div className="flex-1 overflow-y-auto">
               {ruleLogs[viewingLogsRuleId]?.length === 0 ? (
-                <div className="text-center text-primary-text/70 dark:text-primary-text-dark/70 py-8">
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                   {t('noLogs')}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {ruleLogs[viewingLogsRuleId]?.map((log, index) => (
-                    <div key={index} className="p-3 border border-border dark:border-border-dark rounded-lg">
+                    <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {new Date(log.timestamp).toLocaleString()}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded ${
@@ -805,7 +928,7 @@ export default function AutomationRules() {
                           {log.success ? t('success') : t('failed')}
                         </span>
                       </div>
-                      <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
                         <div><strong>{t('action')}:</strong> {log.action}</div>
                         {log.itemsAffected > 0 && (
                           <div><strong>{t('itemsAffected')}:</strong> {log.itemsAffected}</div>

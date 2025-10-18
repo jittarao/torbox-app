@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 class ApiClient {
   constructor(apiKey) {
@@ -159,4 +159,4 @@ class ApiClient {
   }
 }
 
-module.exports = ApiClient;
+export default ApiClient;

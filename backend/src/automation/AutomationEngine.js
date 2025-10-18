@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+import cron from 'node-cron';
 
 class AutomationEngine {
   constructor(database, apiClient) {
@@ -66,7 +66,6 @@ class AutomationEngine {
     const job = this.runningJobs.get(ruleId);
     if (job) {
       job.stop();
-      job.destroy();
       this.runningJobs.delete(ruleId);
       console.log(`Stopped rule: ${ruleId}`);
     }
@@ -96,7 +95,7 @@ class AutomationEngine {
 
       for (const item of matchingItems) {
         try {
-          await this.executeAction(rule.action_config, item);
+          await this.executeAction(rule.action || rule.action_config, item);
           successCount++;
         } catch (error) {
           console.error(`Action failed for item ${item.name}:`, error);
@@ -150,7 +149,8 @@ class AutomationEngine {
         break;
         
       case 'stalled_time':
-        if (['stalled', 'stalledDL', 'stalled (no seeds)'].includes(item.download_state) && item.active) {
+        // Check for stalled states that exist in TorBox API
+        if (['uploading (no peers)', 'downloading'].includes(item.download_state) && item.active) {
           conditionValue = (now - new Date(item.updated_at).getTime()) / (1000 * 60 * 60);
         } else {
           return false;
@@ -168,6 +168,110 @@ class AutomationEngine {
         
       case 'peers':
         conditionValue = item.peers || 0;
+        break;
+        
+      case 'inactive':
+        // Check if torrent is inactive (expired torrents)
+        const isInactive = item.download_state === 'expired';
+        conditionValue = isInactive ? 1 : 0;
+        break;
+        
+      case 'age':
+        // Calculate age in hours since creation
+        conditionValue = (now - new Date(item.created_at).getTime()) / (1000 * 60 * 60);
+        break;
+        
+      case 'download_speed':
+        conditionValue = item.download_speed || 0;
+        break;
+        
+      case 'upload_speed':
+        conditionValue = item.upload_speed || 0;
+        break;
+        
+      case 'file_size':
+        // Convert bytes to GB
+        conditionValue = (item.size || 0) / (1024 * 1024 * 1024);
+        break;
+        
+      case 'tracker':
+        // Check if tracker matches (string comparison)
+        const trackerMatch = item.tracker && item.tracker.includes(condition.value);
+        return trackerMatch;
+        
+      case 'progress':
+        // Check download progress percentage
+        conditionValue = item.progress || 0;
+        break;
+        
+      case 'total_uploaded':
+        // Check total uploaded bytes
+        conditionValue = (item.total_uploaded || 0) / (1024 * 1024 * 1024); // Convert to GB
+        break;
+        
+      case 'total_downloaded':
+        // Check total downloaded bytes
+        conditionValue = (item.total_downloaded || 0) / (1024 * 1024 * 1024); // Convert to GB
+        break;
+        
+      case 'availability':
+        // Check torrent availability
+        conditionValue = item.availability || 0;
+        break;
+        
+      case 'eta':
+        // Check estimated time to completion (in seconds)
+        conditionValue = item.eta || 0;
+        break;
+        
+      case 'download_finished':
+        // Check if download is finished
+        conditionValue = item.download_finished ? 1 : 0;
+        break;
+        
+      case 'cached':
+        // Check if torrent is cached
+        conditionValue = item.cached ? 1 : 0;
+        break;
+        
+      case 'private':
+        // Check if torrent is private
+        conditionValue = item.private ? 1 : 0;
+        break;
+        
+      case 'long_term_seeding':
+        // Check if torrent is set for long-term seeding
+        conditionValue = item.long_term_seeding ? 1 : 0;
+        break;
+        
+      case 'seed_torrent':
+        // Check if torrent is a seed torrent
+        conditionValue = item.seed_torrent ? 1 : 0;
+        break;
+        
+      case 'download_state':
+        // Check specific download state
+        const stateMatch = item.download_state === condition.value;
+        return stateMatch;
+        
+      case 'name_contains':
+        // Check if torrent name contains specific text
+        const nameMatch = item.name && item.name.toLowerCase().includes(condition.value.toLowerCase());
+        return nameMatch;
+        
+      case 'file_count':
+        // Check number of files in torrent
+        conditionValue = item.files ? item.files.length : 0;
+        break;
+        
+      case 'expires_at':
+        // Check if torrent has expiration date
+        if (item.expires_at) {
+          const expirationTime = new Date(item.expires_at).getTime();
+          conditionValue = (expirationTime - now) / (1000 * 60 * 60); // Hours until expiration
+        } else {
+          conditionValue = -1; // No expiration
+        }
         break;
         
       default:
@@ -245,7 +349,6 @@ class AutomationEngine {
       // Stop all existing jobs
       for (const [ruleId, job] of this.runningJobs) {
         job.stop();
-        job.destroy();
       }
       this.runningJobs.clear();
       
@@ -278,7 +381,6 @@ class AutomationEngine {
     
     for (const [ruleId, job] of this.runningJobs) {
       job.stop();
-      job.destroy();
     }
     this.runningJobs.clear();
     
@@ -286,4 +388,4 @@ class AutomationEngine {
   }
 }
 
-module.exports = AutomationEngine;
+export default AutomationEngine;

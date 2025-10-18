@@ -1,15 +1,15 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const cron = require('node-cron');
-const path = require('path');
-const fs = require('fs');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
+import cron from 'node-cron';
+import path from 'path';
+import fs from 'fs';
 
-const Database = require('./database/Database');
-const AutomationEngine = require('./automation/AutomationEngine');
-const ApiClient = require('./api/ApiClient');
+import Database from './database/Database.js';
+import AutomationEngine from './automation/AutomationEngine.js';
+import ApiClient from './api/ApiClient.js';
 
 class TorBoxBackend {
   constructor() {
@@ -76,7 +76,20 @@ class TorBoxBackend {
     this.app.get('/api/automation/rules', async (req, res) => {
       try {
         const rules = await this.database.getAutomationRules();
-        res.json({ success: true, rules });
+        // Transform database structure to match frontend expectations
+        const transformedRules = rules.map(rule => ({
+          id: rule.id,
+          name: rule.name,
+          enabled: rule.enabled === 1,
+          trigger: rule.trigger_config,
+          conditions: rule.conditions,
+          logicOperator: rule.logic_operator || 'and',
+          action: rule.action_config,
+          metadata: rule.metadata,
+          created_at: rule.created_at,
+          updated_at: rule.updated_at
+        }));
+        res.json({ success: true, rules: transformedRules });
       } catch (error) {
         console.error('Error fetching automation rules:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -85,7 +98,9 @@ class TorBoxBackend {
 
     this.app.post('/api/automation/rules', async (req, res) => {
       try {
+        console.log('Received request body:', JSON.stringify(req.body, null, 2));
         const { rules } = req.body;
+        console.log('Extracted rules:', rules);
         await this.database.saveAutomationRules(rules);
         
         // Restart automation engine with new rules
@@ -96,6 +111,105 @@ class TorBoxBackend {
         res.json({ success: true, message: 'Rules saved successfully' });
       } catch (error) {
         console.error('Error saving automation rules:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // Individual rule operations
+    this.app.put('/api/automation/rules/:id', async (req, res) => {
+      try {
+        const ruleId = parseInt(req.params.id);
+        const { enabled } = req.body;
+        
+        if (enabled !== undefined) {
+          await this.database.updateRuleStatus(ruleId, enabled);
+          res.json({ success: true, message: 'Rule updated successfully' });
+        } else {
+          res.status(400).json({ success: false, error: 'Missing enabled field' });
+        }
+      } catch (error) {
+        console.error('Error updating rule:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.delete('/api/automation/rules/:id', async (req, res) => {
+      try {
+        const ruleId = parseInt(req.params.id);
+        await this.database.deleteRule(ruleId);
+        res.json({ success: true, message: 'Rule deleted successfully' });
+      } catch (error) {
+        console.error('Error deleting rule:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // Rule execution logs endpoint
+    this.app.get('/api/automation/rules/:id/logs', async (req, res) => {
+      try {
+        const ruleId = parseInt(req.params.id);
+        const logs = await this.database.getRuleExecutionHistory(ruleId);
+        res.json({ success: true, logs });
+      } catch (error) {
+        console.error('Error fetching rule logs:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // API key management endpoints
+    this.app.post('/api/backend/api-key', async (req, res) => {
+      try {
+        const { apiKey } = req.body;
+        
+        if (!apiKey) {
+          return res.status(400).json({ success: false, error: 'API key is required' });
+        }
+
+        // Initialize API client with the provided key
+        this.apiClient = new ApiClient(apiKey);
+        
+        // Test the API key by making a simple request
+        try {
+          await this.apiClient.getTorrents();
+          console.log('TorBox API key validated and client initialized');
+        } catch (error) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Invalid API key or TorBox API unavailable' 
+          });
+        }
+
+        // Initialize automation engine if not already done
+        if (!this.automationEngine) {
+          this.automationEngine = new AutomationEngine(this.database, this.apiClient);
+          await this.automationEngine.initialize();
+          console.log('Automation engine initialized with user-provided API key');
+        } else {
+          // Update existing automation engine with new API client
+          this.automationEngine.apiClient = this.apiClient;
+          await this.automationEngine.reloadRules();
+          console.log('Automation engine updated with new API key');
+        }
+
+        res.json({ success: true, message: 'API key set successfully' });
+      } catch (error) {
+        console.error('Error setting API key:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.get('/api/backend/api-key/status', async (req, res) => {
+      try {
+        const hasApiKey = !!this.apiClient;
+        const automationStatus = this.automationEngine ? this.automationEngine.getStatus() : null;
+        
+        res.json({ 
+          success: true, 
+          hasApiKey,
+          automationEngine: automationStatus
+        });
+      } catch (error) {
+        console.error('Error checking API key status:', error);
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -126,6 +240,12 @@ class TorBoxBackend {
     this.app.get('/api/storage/:key', async (req, res) => {
       try {
         const { key } = req.params;
+        
+        // Validate key to prevent path traversal
+        if (!key || key.includes('..') || key.includes('/') || key.includes('\\')) {
+          return res.status(400).json({ success: false, error: 'Invalid key format' });
+        }
+        
         const value = await this.database.getStorageValue(key);
         res.json({ success: true, value });
       } catch (error) {
@@ -137,6 +257,12 @@ class TorBoxBackend {
     this.app.post('/api/storage/:key', async (req, res) => {
       try {
         const { key } = req.params;
+        
+        // Validate key to prevent path traversal
+        if (!key || key.includes('..') || key.includes('/') || key.includes('\\')) {
+          return res.status(400).json({ success: false, error: 'Invalid key format' });
+        }
+        
         const { value } = req.body;
         await this.database.setStorageValue(key, value);
         res.json({ success: true, message: 'Value saved successfully' });
@@ -169,7 +295,7 @@ class TorBoxBackend {
   async initializeServices() {
     try {
       // Initialize database
-      await this.database.initialize();
+      this.database.initialize();
       console.log('Database initialized');
 
       // Initialize API client if TorBox API key is provided
@@ -219,4 +345,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-module.exports = TorBoxBackend;
+export default TorBoxBackend;
