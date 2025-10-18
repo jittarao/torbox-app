@@ -21,11 +21,10 @@ services:
   #   image: ghcr.io/crazycacti/torbox-app:backend-latest
   #   container_name: torbox-backend
   #   restart: unless-stopped
-  #   ports:
-  #     - "3001:3001"
   #   environment:
   #     - TORBOX_API_KEY=${TORBOX_API_KEY}
   #     - FRONTEND_URL=${FRONTEND_URL}
+  #     - BACKEND_URL=http://torbox-backend:3001
   #   volumes:
   #     - backend-data:/app/data
 

@@ -8,9 +8,9 @@ export function getVersion() {
     }
     
     // Fallback to package.json version
-    return '0.1.25';
+    return '0.1.26';
   } catch (error) {
     console.warn('Could not get version:', error);
-    return '0.1.25';
+    return '0.1.26';
   }
 }

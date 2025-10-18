@@ -65,7 +65,7 @@
     "footer": {
       "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
       "github": "GitHub",
-      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.25"
+      "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.26"
     }
   },
   "ApiKeyInput": {
@@ -361,7 +361,9 @@
       "deleteInactive": "非アクティブダウンロードを削除",
       "deleteStalled": "ブロックされたダウンロードを削除（1時間以上）",
       "deleteQueued": "キューされたダウンロードを削除（6時間以上）",
-      "stopSeedingLowRatio": "低比率でシーディングを停止"
+      "stopSeedingLowRatio": "低比率でシーディングを停止",
+      "deleteUnavailable": "利用できないトレントを削除",
+      "deleteIncomplete": "不完全なトレントを削除"
     },
     "cancel": "キャンセル",
     "add": "ルールを追加",

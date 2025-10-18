@@ -65,7 +65,7 @@
     "footer": {
       "description": "Nous ne stockons aucune de vos informations. Cette application est entièrement open source sur",
       "github": "GitHub",
-      "forkNote": "Ceci est un fork du TorBox Manager de jittarao. v0.1.25"
+      "forkNote": "Ceci est un fork du TorBox Manager de jittarao. v0.1.26"
     }
   },
   "ApiKeyInput": {
@@ -361,7 +361,9 @@
       "deleteInactive": "Supprimer les Téléchargements Inactifs",
       "deleteStalled": "Supprimer les Téléchargements Bloqués (1+ heures)",
       "deleteQueued": "Supprimer les Téléchargements en File (6+ heures)",
-      "stopSeedingLowRatio": "Arrêter le Seeding avec Ratio Faible"
+      "stopSeedingLowRatio": "Arrêter le Seeding avec Ratio Faible",
+      "deleteUnavailable": "Supprimer les Torrents Indisponibles",
+      "deleteIncomplete": "Supprimer les Torrents Incomplets"
     },
     "cancel": "Annuler",
     "add": "Ajouter une règle",

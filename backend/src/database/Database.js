@@ -1,6 +1,6 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+import { Database as SQLiteDatabase } from 'bun:sqlite';
+import path from 'path';
+import fs from 'fs';
 
 class Database {
   constructor() {
@@ -14,7 +14,7 @@ class Database {
     console.log('Database path:', this.dbPath);
   }
 
-  async initialize() {
+  initialize() {
     try {
       // Ensure data directory exists
       const dataDir = path.dirname(this.dbPath);
@@ -23,10 +23,10 @@ class Database {
       }
 
       // Initialize database connection
-      this.db = new sqlite3.Database(this.dbPath);
+      this.db = new SQLiteDatabase(this.dbPath);
       
       // Create tables
-      await this.createTables();
+      this.createTables();
       
       console.log(`Database initialized at: ${this.dbPath}`);
     } catch (error) {
@@ -35,7 +35,7 @@ class Database {
     }
   }
 
-  async createTables() {
+  createTables() {
     const tables = [
       // Automation rules table
       `CREATE TABLE IF NOT EXISTS automation_rules (
@@ -70,6 +70,14 @@ class Database {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`,
 
+      // Storage table for key-value pairs
+      `CREATE TABLE IF NOT EXISTS storage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE NOT NULL,
+        value TEXT NOT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+
       // API keys table (encrypted)
       `CREATE TABLE IF NOT EXISTS api_keys (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,50 +102,39 @@ class Database {
     ];
 
     for (const table of tables) {
-      await this.runQuery(table);
+      this.runQuery(table);
     }
   }
 
   runQuery(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ id: this.lastID, changes: this.changes });
-        }
-      });
-    });
+    try {
+      const result = this.db.prepare(sql).run(params);
+      return { id: result.lastInsertRowid, changes: result.changes };
+    } catch (error) {
+      throw error;
+    }
   }
 
   getQuery(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
-    });
+    try {
+      return this.db.prepare(sql).get(params);
+    } catch (error) {
+      throw error;
+    }
   }
 
   allQuery(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    });
+    try {
+      return this.db.prepare(sql).all(params);
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Automation rules methods
   async getAutomationRules() {
     const sql = 'SELECT * FROM automation_rules ORDER BY created_at DESC';
-    const rules = await this.allQuery(sql);
+    const rules = this.allQuery(sql);
     return rules.map(rule => ({
       ...rule,
       trigger_config: JSON.parse(rule.trigger_config),
@@ -149,7 +146,7 @@ class Database {
 
   async saveAutomationRules(rules) {
     // Clear existing rules
-    await this.runQuery('DELETE FROM automation_rules');
+    this.runQuery('DELETE FROM automation_rules');
     
     // Insert new rules
     for (const rule of rules) {
@@ -157,7 +154,7 @@ class Database {
         INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      await this.runQuery(sql, [
+      this.runQuery(sql, [
         rule.name,
         rule.enabled,
         JSON.stringify(rule.trigger || rule.trigger_config),
@@ -171,12 +168,12 @@ class Database {
   // Download history methods
   async getDownloadHistory() {
     const sql = 'SELECT * FROM download_history ORDER BY downloaded_at DESC LIMIT 1000';
-    return await this.allQuery(sql);
+    return this.allQuery(sql);
   }
 
   async saveDownloadHistory(history) {
     // Clear existing history
-    await this.runQuery('DELETE FROM download_history');
+    this.runQuery('DELETE FROM download_history');
     
     // Insert new history
     for (const item of history) {
@@ -184,7 +181,7 @@ class Database {
         INSERT INTO download_history (item_id, item_name, item_type, download_url, file_size, status)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      await this.runQuery(sql, [
+      this.runQuery(sql, [
         item.id || item.item_id,
         item.name || item.item_name,
         item.type || item.item_type,
@@ -197,17 +194,17 @@ class Database {
 
   // Generic storage methods
   async getStorageValue(key) {
-    const sql = 'SELECT setting_value FROM user_settings WHERE setting_key = ?';
-    const result = await this.getQuery(sql, [key]);
-    return result ? JSON.parse(result.setting_value) : null;
+    const sql = 'SELECT value FROM storage WHERE key = ?';
+    const result = this.getQuery(sql, [key]);
+    return result ? JSON.parse(result.value) : null;
   }
 
   async setStorageValue(key, value) {
     const sql = `
-      INSERT OR REPLACE INTO user_settings (setting_key, setting_value, updated_at)
+      INSERT OR REPLACE INTO storage (key, value, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
     `;
-    await this.runQuery(sql, [key, JSON.stringify(value)]);
+    this.runQuery(sql, [key, JSON.stringify(value)]);
   }
 
   // Rule execution logging
@@ -216,7 +213,7 @@ class Database {
       INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
-    await this.runQuery(sql, [ruleId, ruleName, executionType, itemsProcessed, success, errorMessage]);
+    this.runQuery(sql, [ruleId, ruleName, executionType, itemsProcessed, success, errorMessage]);
   }
 
   async getRuleExecutionHistory(ruleId = null, limit = 100) {
@@ -231,7 +228,19 @@ class Database {
     sql += ' ORDER BY executed_at DESC LIMIT ?';
     params.push(limit);
     
-    return await this.allQuery(sql, params);
+    return this.allQuery(sql, params);
+  }
+
+  // Update rule status (enable/disable)
+  updateRuleStatus(ruleId, enabled) {
+    const sql = 'UPDATE automation_rules SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+    this.runQuery(sql, [enabled ? 1 : 0, ruleId]);
+  }
+
+  // Delete a rule
+  deleteRule(ruleId) {
+    const sql = 'DELETE FROM automation_rules WHERE id = ?';
+    this.runQuery(sql, [ruleId]);
   }
 
   // Close database connection
@@ -242,4 +251,4 @@ class Database {
   }
 }
 
-module.exports = Database;
+export default Database;
