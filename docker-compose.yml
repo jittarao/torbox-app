@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      - BACKEND_DISABLED=true # If you want to use the local backend, set this to false or remove it
     # depends_on:
     #   - torbox-backend
     # labels:

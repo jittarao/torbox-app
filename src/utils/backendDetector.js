@@ -11,6 +11,14 @@ export const useBackendMode = () => {
 
   useEffect(() => {
     const checkBackend = async () => {
+      // Check if we already know the backend status
+      const cachedMode = sessionStorage.getItem('torboxBackendMode');
+      if (cachedMode) {
+        setMode(cachedMode);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
@@ -24,14 +32,22 @@ export const useBackendMode = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setMode(data.available ? 'backend' : 'local');
+          const detectedMode = data.available ? 'backend' : 'local';
+          setMode(detectedMode);
+          sessionStorage.setItem('torboxBackendMode', detectedMode);
         } else {
           setMode('local');
+          sessionStorage.setItem('torboxBackendMode', 'local');
         }
       } catch (err) {
-        console.log('Backend not available, using local storage:', err.message);
+        // Only log once to avoid console spam
+        if (!window.backendModeLogged) {
+          console.log('Backend not available, using local storage mode');
+          window.backendModeLogged = true;
+        }
         setMode('local');
         setError(err.message);
+        sessionStorage.setItem('torboxBackendMode', 'local');
       } finally {
         setIsLoading(false);
       }

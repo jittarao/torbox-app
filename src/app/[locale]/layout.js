@@ -22,13 +22,13 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: 'TorBox Manager',
-  description: 'TorBox Manager v0.1.26',
+  description: 'TorBox Manager v0.1.27',
   manifest: '/manifest.json',
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'black-translucent',
   openGraph: {
     title: 'TorBox Manager',
-    description: 'TorBox Manager v0.1.26',
+    description: 'TorBox Manager v0.1.27',
     type: 'website',
     locale: 'en_US',
     siteName: 'TorBox Manager',
@@ -36,7 +36,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'TorBox Manager',
-    description: 'TorBox Manager v0.1.26',
+    description: 'TorBox Manager v0.1.27',
   },
   robots: {
     index: true,

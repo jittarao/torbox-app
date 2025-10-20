@@ -4,6 +4,16 @@ import http from 'http';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET() {
+  // Check if backend is explicitly disabled
+  if (process.env.BACKEND_DISABLED === 'true') {
+    return NextResponse.json({ 
+      available: false, 
+      mode: 'local',
+      version: '0.1.0',
+      uptime: 0
+    });
+  }
+
   try {
     const url = new URL(`${BACKEND_URL}/api/backend/status`);
     
@@ -40,7 +50,11 @@ export async function GET() {
       });
     }
   } catch (error) {
-    console.log('Backend not available:', error.message);
+    // Only log once per session to avoid spam
+    if (!global.backendStatusLogged) {
+      console.log('Backend not available, using local storage mode');
+      global.backendStatusLogged = true;
+    }
     // Backend not available, return local mode
     return NextResponse.json({ 
       available: false, 
