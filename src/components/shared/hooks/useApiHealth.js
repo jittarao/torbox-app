@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
+const HEALTH_CHECK_INTERVAL = 60000; // 60 seconds (reduced frequency)
 const API_HEALTH_TIMEOUT = 5000; // 5 seconds
 
 export function useApiHealth(apiKey) {
