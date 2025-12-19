@@ -88,7 +88,7 @@ jspm_packages/
 public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
-
+Torbox_API
 # Nuxt.js build / generate output
 .nuxt
 dist
