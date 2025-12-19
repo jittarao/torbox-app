@@ -694,10 +694,10 @@ export default function AutomationRules() {
                             logicOperator: e.target.value,
                           })
                         }
-                        className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                        className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-surface dark:bg-surface-dark"
                       >
-                        <option value={LOGIC_OPERATORS.AND}>ALL conditions (AND)</option>
-                        <option value={LOGIC_OPERATORS.OR}>ANY condition (OR)</option>
+                        <option value={LOGIC_OPERATORS.AND} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">ALL conditions (AND)</option>
+                        <option value={LOGIC_OPERATORS.OR} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">ANY condition (OR)</option>
                       </select>
                     </div>
                   )}
@@ -723,39 +723,39 @@ export default function AutomationRules() {
                         <select
                           value={condition.type}
                           onChange={(e) => updateCondition(index, 'type', e.target.value)}
-                          className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                          className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-surface dark:bg-surface-dark"
                         >
-                          <option value={CONDITION_TYPES.SEEDING_TIME}>
+                          <option value={CONDITION_TYPES.SEEDING_TIME} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.seedingTime')}
                           </option>
-                          <option value={CONDITION_TYPES.SEEDING_RATIO}>
+                          <option value={CONDITION_TYPES.SEEDING_RATIO} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.seedingRatio')}
                           </option>
-                          <option value={CONDITION_TYPES.STALLED_TIME}>
+                          <option value={CONDITION_TYPES.STALLED_TIME} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.stalledTime')}
                           </option>
-                          <option value={CONDITION_TYPES.SEEDS}>
+                          <option value={CONDITION_TYPES.SEEDS} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.seeds')}
                           </option>
-                          <option value={CONDITION_TYPES.PEERS}>
+                          <option value={CONDITION_TYPES.PEERS} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.peers')}
                           </option>
-                          <option value={CONDITION_TYPES.DOWNLOAD_SPEED}>
+                          <option value={CONDITION_TYPES.DOWNLOAD_SPEED} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.downloadSpeed')}
                           </option>
-                          <option value={CONDITION_TYPES.UPLOAD_SPEED}>
+                          <option value={CONDITION_TYPES.UPLOAD_SPEED} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.uploadSpeed')}
                           </option>
-                          <option value={CONDITION_TYPES.FILE_SIZE}>
+                          <option value={CONDITION_TYPES.FILE_SIZE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.fileSize')}
                           </option>
-                          <option value={CONDITION_TYPES.AGE}>
+                          <option value={CONDITION_TYPES.AGE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('conditions.age')}
                           </option>
-                    <option value={CONDITION_TYPES.TRACKER}>
+                    <option value={CONDITION_TYPES.TRACKER} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                       {t('conditions.tracker')}
                     </option>
-                    <option value={CONDITION_TYPES.INACTIVE}>
+                    <option value={CONDITION_TYPES.INACTIVE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                       {t('conditions.inactive')}
                     </option>
                   </select>
@@ -763,21 +763,21 @@ export default function AutomationRules() {
                         <select
                           value={condition.operator}
                           onChange={(e) => updateCondition(index, 'operator', e.target.value)}
-                          className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                          className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-surface dark:bg-surface-dark"
                         >
-                          <option value={COMPARISON_OPERATORS.GT}>
+                          <option value={COMPARISON_OPERATORS.GT} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('operators.gt')}
                           </option>
-                          <option value={COMPARISON_OPERATORS.LT}>
+                          <option value={COMPARISON_OPERATORS.LT} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('operators.lt')}
                           </option>
-                          <option value={COMPARISON_OPERATORS.GTE}>
+                          <option value={COMPARISON_OPERATORS.GTE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('operators.gte')}
                           </option>
-                          <option value={COMPARISON_OPERATORS.LTE}>
+                          <option value={COMPARISON_OPERATORS.LTE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('operators.lte')}
                           </option>
-                          <option value={COMPARISON_OPERATORS.EQ}>
+                          <option value={COMPARISON_OPERATORS.EQ} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                             {t('operators.eq')}
                           </option>
                         </select>
@@ -827,18 +827,18 @@ export default function AutomationRules() {
                         action: { type: e.target.value },
                       })
                     }
-                    className="w-full px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
+                    className="w-full px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-surface dark:bg-surface-dark"
                   >
-                    <option value={ACTION_TYPES.STOP_SEEDING}>
+                    <option value={ACTION_TYPES.STOP_SEEDING} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                       {t('actions.stopSeeding')}
                     </option>
-                    <option value={ACTION_TYPES.ARCHIVE}>
+                    <option value={ACTION_TYPES.ARCHIVE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                       {t('actions.archive')}
                     </option>
-                    <option value={ACTION_TYPES.DELETE}>
+                    <option value={ACTION_TYPES.DELETE} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                       {t('actions.delete')}
                     </option>
-                    <option value={ACTION_TYPES.FORCE_START}>
+                    <option value={ACTION_TYPES.FORCE_START} className="bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark">
                       {t('actions.forceStart')}
                     </option>
                   </select>
