@@ -21,12 +21,13 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [linux/amd64, linux/arm64]
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
+            suffix: amd64
           - platform: linux/arm64
             runner: ubuntu-22.04-arm
+            suffix: arm64
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -82,9 +83,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.package-version.outputs.version }}
-            ghcr.io/${{ github.repository }}:${{ steps.commit.outputs.commit }}
+            ghcr.io/${{ github.repository }}:latest-${{ matrix.suffix }}
+            ghcr.io/${{ github.repository }}:${{ steps.package-version.outputs.version }}-${{ matrix.suffix }}
+            ghcr.io/${{ github.repository }}:${{ steps.commit.outputs.commit }}-${{ matrix.suffix }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
           build-args: |
@@ -100,9 +101,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:backend-latest
-            ghcr.io/${{ github.repository }}:backend-${{ steps.package-version.outputs.version }}
-            ghcr.io/${{ github.repository }}:backend-${{ steps.commit.outputs.commit }}
+            ghcr.io/${{ github.repository }}:backend-latest-${{ matrix.suffix }}
+            ghcr.io/${{ github.repository }}:backend-${{ steps.package-version.outputs.version }}-${{ matrix.suffix }}
+            ghcr.io/${{ github.repository }}:backend-${{ steps.commit.outputs.commit }}-${{ matrix.suffix }}
           cache-from: type=gha,scope=backend-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=backend-${{ matrix.platform }}
           build-args: |
@@ -110,7 +111,7 @@ jobs:
             BUN_VERSION=latest
 
       - name: Build summary
-        if: github.event_name != 'pull_request' && matrix.platform == 'linux/amd64'
+        if: github.event_name != 'pull_request' && matrix.suffix == 'amd64'
         run: |
           echo "## Docker Image Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -132,7 +133,7 @@ jobs:
           echo "Both frontend and backend images successfully built and pushed to GHCR!" >> $GITHUB_STEP_SUMMARY
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request' && matrix.platform == 'linux/amd64'
+        if: github.event_name == 'pull_request' && matrix.suffix == 'amd64'
         uses: actions/github-script@v7
         with:
           script: |
@@ -157,3 +158,75 @@ jobs:
             
             To deploy, merge this PR or create a release tag.`
             })
+
+  create-manifests:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from package.json
+        id: package-version
+        run: echo "version=$(bun -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Get commit hash
+        id: commit
+        run: |
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "commit=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+      - name: Create and push multi-platform manifest (frontend)
+        run: |
+          docker buildx imagetools create -t \
+            ghcr.io/${{ github.repository }}:latest \
+            ghcr.io/${{ github.repository }}:latest-amd64 \
+            ghcr.io/${{ github.repository }}:latest-arm64
+          
+          docker buildx imagetools create -t \
+            ghcr.io/${{ github.repository }}:${{ steps.package-version.outputs.version }} \
+            ghcr.io/${{ github.repository }}:${{ steps.package-version.outputs.version }}-amd64 \
+            ghcr.io/${{ github.repository }}:${{ steps.package-version.outputs.version }}-arm64
+          
+          docker buildx imagetools create -t \
+            ghcr.io/${{ github.repository }}:${{ steps.commit.outputs.commit }} \
+            ghcr.io/${{ github.repository }}:${{ steps.commit.outputs.commit }}-amd64 \
+            ghcr.io/${{ github.repository }}:${{ steps.commit.outputs.commit }}-arm64
+
+      - name: Create and push multi-platform manifest (backend)
+        run: |
+          docker buildx imagetools create -t \
+            ghcr.io/${{ github.repository }}:backend-latest \
+            ghcr.io/${{ github.repository }}:backend-latest-amd64 \
+            ghcr.io/${{ github.repository }}:backend-latest-arm64
+          
+          docker buildx imagetools create -t \
+            ghcr.io/${{ github.repository }}:backend-${{ steps.package-version.outputs.version }} \
+            ghcr.io/${{ github.repository }}:backend-${{ steps.package-version.outputs.version }}-amd64 \
+            ghcr.io/${{ github.repository }}:backend-${{ steps.package-version.outputs.version }}-arm64
+          
+          docker buildx imagetools create -t \
+            ghcr.io/${{ github.repository }}:backend-${{ steps.commit.outputs.commit }} \
+            ghcr.io/${{ github.repository }}:backend-${{ steps.commit.outputs.commit }}-amd64 \
+            ghcr.io/${{ github.repository }}:backend-${{ steps.commit.outputs.commit }}-arm64
