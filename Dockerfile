@@ -32,7 +32,7 @@ COPY . .
 # Build the application with optimizations
 RUN bun run build
 
-FROM oven/bun:1-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Disable Next.js telemetry in production as well
