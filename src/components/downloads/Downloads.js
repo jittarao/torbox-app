@@ -377,7 +377,7 @@ export default function Downloads({ apiKey }) {
           <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
           <div
-            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : ''} ${
+            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'overflow-y-auto'} ${
               downloadLinks.length > 0 ? 'mb-12' : ''
             }`}
           >

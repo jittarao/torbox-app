@@ -18,7 +18,7 @@ export default function SearchBar({ search, onSearchChange }) {
         })}
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="w-full pl-10 pr-10 py-2 min-w-64 rounded-lg border border-border dark:border-border-dark 
+        className="w-full pl-10 pr-10 py-2 min-w-64 md:min-w-[26rem] rounded-lg border border-border dark:border-border-dark 
           bg-transparent text-primary-text dark:text-primary-text-dark 
           placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
           focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
