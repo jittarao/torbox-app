@@ -5,9 +5,9 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "migration:create": "node scripts/create-migration.js"
+    "start": "bun src/index.js",
+    "dev": "nodemon --exec bun src/index.js",
+    "migration:create": "bun scripts/create-migration.js"
   },
   "dependencies": {
     "express": "^4.21.2",
