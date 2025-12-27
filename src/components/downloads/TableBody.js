@@ -114,14 +114,14 @@ export default function TableBody({
   const assetKey = (itemId, fileId) =>
     fileId ? `${itemId}-${fileId}` : itemId;
 
-  const handleFileDownload = async (itemId, fileId, copyLink = false) => {
-    const key = assetKey(itemId, fileId);
+  const handleFileDownload = async (itemId, file, copyLink = false) => {
+    const key = assetKey(itemId, file.id);
     if (copyLink) {
       setIsCopying((prev) => ({ ...prev, [key]: true }));
     } else {
       setIsDownloading((prev) => ({ ...prev, [key]: true }));
     }
-    const options = { fileId };
+    const options = { fileId: file.id, filename: file.name };
 
     const idField =
       activeType === 'usenet'

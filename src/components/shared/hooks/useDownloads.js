@@ -224,15 +224,28 @@ export function useDownloads(
     try {
       const result = await requestDownloadLink(id, options, idField, metadata);
       if (result.success) {
+        // Determine filename with extension for download managers
+        let filename = options.filename;
+        if (!filename) {
+          // Get filename from metadata
+          const file = metadata.item?.files?.find((f) => f.id === options.fileId);
+          filename = file?.name || `${options.fileId}.zip`;
+        }
+
+        // Append filename parameter to URL
+        const url = new URL(result.data.url);
+        url.searchParams.set('filename', filename);
+        const urlWithFilename = url.toString();
+
         if (copyLink) {
           try {
-            await navigator.clipboard.writeText(result.data.url);
+            await navigator.clipboard.writeText(urlWithFilename);
           } catch (error) {
             if (error.name === 'NotAllowedError') {
               // Store URL and set up focus listener
               const handleFocus = async () => {
                 try {
-                  await navigator.clipboard.writeText(result.data.url);
+                  await navigator.clipboard.writeText(urlWithFilename);
                   window.removeEventListener('focus', handleFocus);
                 } catch (err) {
                   console.error('Error copying to clipboard on focus:', err);
@@ -339,9 +352,18 @@ export function useDownloads(
                 );
 
           if (result.success) {
+            // Determine filename with extension for download managers
+            const filename =
+              task.type === 'item' ? `${task.name}.zip` : task.name;
+            
+            // Append filename parameter to URL
+            const url = new URL(result.data.url);
+            url.searchParams.set('filename', filename);
+            const urlWithFilename = url.toString();
+
             setDownloadLinks((prev) => [
               ...prev,
-              { ...result.data, name: task.name },
+              { ...result.data, url: urlWithFilename, name: task.name },
             ]);
             setDownloadProgress((prev) => ({
               ...prev,
