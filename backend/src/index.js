@@ -295,7 +295,7 @@ class TorBoxBackend {
   async initializeServices() {
     try {
       // Initialize database
-      this.database.initialize();
+      await this.database.initialize();
       console.log('Database initialized');
 
       // Initialize API client if TorBox API key is provided

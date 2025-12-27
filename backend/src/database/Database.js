@@ -1,10 +1,12 @@
 import { Database as SQLiteDatabase } from 'bun:sqlite';
 import path from 'path';
 import fs from 'fs';
+import MigrationRunner from './MigrationRunner.js';
 
 class Database {
   constructor() {
     this.db = null;
+    this.migrationRunner = null;
     // Handle both sqlite:// URL format and direct path
     const dbUrl = process.env.DATABASE_URL || '/app/data/torbox.db';
     this.dbPath = dbUrl.startsWith('sqlite://') 
@@ -14,7 +16,7 @@ class Database {
     console.log('Database path:', this.dbPath);
   }
 
-  initialize() {
+  async initialize() {
     try {
       // Ensure data directory exists
       const dataDir = path.dirname(this.dbPath);
@@ -25,8 +27,11 @@ class Database {
       // Initialize database connection
       this.db = new SQLiteDatabase(this.dbPath);
       
-      // Create tables
-      this.createTables();
+      // Initialize migration runner
+      this.migrationRunner = new MigrationRunner(this.db);
+      
+      // Run migrations
+      await this.migrationRunner.runMigrations();
       
       console.log(`Database initialized at: ${this.dbPath}`);
     } catch (error) {
@@ -35,75 +40,24 @@ class Database {
     }
   }
 
-  createTables() {
-    const tables = [
-      // Automation rules table
-      `CREATE TABLE IF NOT EXISTS automation_rules (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        enabled BOOLEAN DEFAULT true,
-        trigger_config TEXT NOT NULL,
-        conditions TEXT NOT NULL,
-        action_config TEXT NOT NULL,
-        metadata TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // Download history table
-      `CREATE TABLE IF NOT EXISTS download_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id TEXT NOT NULL,
-        item_name TEXT NOT NULL,
-        item_type TEXT NOT NULL,
-        download_url TEXT NOT NULL,
-        file_size INTEGER,
-        status TEXT DEFAULT 'completed',
-        downloaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // User settings table
-      `CREATE TABLE IF NOT EXISTS user_settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        setting_key TEXT UNIQUE NOT NULL,
-        setting_value TEXT NOT NULL,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // Storage table for key-value pairs
-      `CREATE TABLE IF NOT EXISTS storage (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        key TEXT UNIQUE NOT NULL,
-        value TEXT NOT NULL,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // API keys table (encrypted)
-      `CREATE TABLE IF NOT EXISTS api_keys (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        key_name TEXT NOT NULL,
-        encrypted_key TEXT NOT NULL,
-        is_active BOOLEAN DEFAULT false,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // Rule execution log
-      `CREATE TABLE IF NOT EXISTS rule_execution_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        rule_id INTEGER NOT NULL,
-        rule_name TEXT NOT NULL,
-        execution_type TEXT NOT NULL,
-        items_processed INTEGER DEFAULT 0,
-        success BOOLEAN DEFAULT true,
-        error_message TEXT,
-        executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (rule_id) REFERENCES automation_rules (id)
-      )`
-    ];
-
-    for (const table of tables) {
-      this.runQuery(table);
+  /**
+   * Get migration status (for debugging/admin purposes)
+   */
+  getMigrationStatus() {
+    if (!this.migrationRunner) {
+      throw new Error('Database not initialized. Call initialize() first.');
     }
+    return this.migrationRunner.getMigrationStatus();
+  }
+
+  /**
+   * Rollback a specific migration (use with caution)
+   */
+  async rollbackMigration(version) {
+    if (!this.migrationRunner) {
+      throw new Error('Database not initialized. Call initialize() first.');
+    }
+    return await this.migrationRunner.rollbackMigration(version);
   }
 
   runQuery(sql, params = []) {
