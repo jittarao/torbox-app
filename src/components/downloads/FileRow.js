@@ -128,7 +128,7 @@ export default function FileRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFileDownload(item.id, file.id, true);
+                  handleFileDownload(item.id, file, true);
                 }}
                 disabled={isCopying[assetKey(item.id, file.id)]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
@@ -146,7 +146,7 @@ export default function FileRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFileDownload(item.id, file.id);
+                  handleFileDownload(item.id, file);
                 }}
                 disabled={isDownloading[assetKey(item.id, file.id)]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
