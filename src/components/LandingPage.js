@@ -110,7 +110,7 @@ export default function LandingPage({ onKeyChange }) {
             <p className="text-sm text-gray-400 mb-2">
               {referralT('landingDescription')}{' '}
               <a
-                href="https://torbox.app/subscription?referral=09c3f0f3-4e61-4634-a6dc-40af39f8165c"
+                href="https://torbox.app/subscription?referral=7908ea44-023c-45f5-86ce-564bc6edaf34"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 underline"
@@ -120,7 +120,7 @@ export default function LandingPage({ onKeyChange }) {
               {' '}or{' '}
               <button
                 onClick={async () => {
-                  await navigator.clipboard.writeText('09c3f0f3-4e61-4634-a6dc-40af39f8165c');
+                  await navigator.clipboard.writeText('7908ea44-023c-45f5-86ce-564bc6edaf34');
                   setShowCopied(true);
                   setTimeout(() => setShowCopied(false), 2000);
                 }}
