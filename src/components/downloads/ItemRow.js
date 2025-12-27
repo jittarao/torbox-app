@@ -33,6 +33,7 @@ export default function ItemRow({
   isMobile = false,
   isBlurred = false,
   viewMode = 'table',
+  style,
 }) {
   const commonT = useTranslations('Common');
   
@@ -377,6 +378,7 @@ export default function ItemRow({
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
+      style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
         if (e.shiftKey) {
