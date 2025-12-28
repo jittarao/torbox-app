@@ -56,6 +56,14 @@
             "itemName": "Artikelname",
             "itemType": "Artikeltyp"
         },
+        "emptyState": {
+            "title": "Keine archivierten Downloads",
+            "description": "Stellen Sie eine Automatisierungsregel ein, um Downloads automatisch zu archivieren. Wenn ein Download archiviert wird, finden Sie ihn hier, um ihn wiederherzustellen, zu kopieren oder zu löschen.",
+            "howItWorks": "Wie es funktioniert:",
+            "step1": "Eine Regel mit \"Download archivieren\" Aktion hinzufügen",
+            "step2": "Wenn die Regel ausgelöst wird, werden passende Downloads archiviert",
+            "step3": "Sie erscheinen hier, so dass Sie wiederherstellen, kopieren oder löschen können"
+        },
         "title": "Archivierte Downloads",
         "toast": {
             "magnetCopied": "Magnet-Link in die Zwischenablage kopiert"
