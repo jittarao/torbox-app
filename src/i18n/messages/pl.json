@@ -57,12 +57,12 @@
             "itemType": "Typ elementu"
         },
         "emptyState": {
-            "title": "Brak zarchiwizowanych pobierań",
             "description": "Skonfiguruj regułę automatyzacji, aby archiwizować pobierania automatycznie. Gdy pobieranie jest archiwizowane, znajdziesz je tutaj, aby przywrócić, skopiować lub usunąć.",
             "howItWorks": "Jak to działa:",
             "step1": "Dodaj regułę z akcją \"Zarchiwizuj pobieranie\"",
             "step2": "Gdy reguła jest uruchomiona, pasujące pobierania są archiwizowane",
-            "step3": "Pojawiają się tutaj, aby przywrócić, skopiować lub usunąć"
+            "step3": "Pojawiają się tutaj, aby przywrócić, skopiować lub usunąć",
+            "title": "Brak zarchiwizowanych pobierań"
         },
         "title": "Zarchiwizowane pobierania",
         "toast": {

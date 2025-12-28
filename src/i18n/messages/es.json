@@ -57,12 +57,12 @@
             "itemType": "Tipo de elemento"
         },
         "emptyState": {
-            "title": "No hay descargas archivadas",
             "description": "Configura una regla de automatización para archivar descargas automáticamente. Cuando una descarga se archiva, la encontrarás aquí para restaurar, copiar o eliminar.",
             "howItWorks": "Cómo funciona:",
             "step1": "Añade una regla con \"Archivar descarga\" como acción",
             "step2": "Cuando la regla se activa, las descargas que coincidan con las condiciones se archivan",
-            "step3": "Aparecen aquí para que puedas restaurar, copiar o eliminar"
+            "step3": "Aparecen aquí para que puedas restaurar, copiar o eliminar",
+            "title": "No hay descargas archivadas"
         },
         "title": "Descargas archivadas",
         "toast": {
