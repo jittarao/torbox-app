@@ -274,11 +274,15 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   const calculateWaitTime = (uploadsInLastMinute, uploadsInLastHour) => {
     const now = Date.now();
     
+    // Ensure arrays are defined (default to empty arrays)
+    const safeMinute = Array.isArray(uploadsInLastMinute) ? uploadsInLastMinute : [];
+    const safeHour = Array.isArray(uploadsInLastHour) ? uploadsInLastHour : [];
+    
     // Clean old entries
-    const recentMinute = uploadsInLastMinute.filter(
+    const recentMinute = safeMinute.filter(
       (time) => now - time < MINUTE_MS
     );
-    const recentHour = uploadsInLastHour.filter(
+    const recentHour = safeHour.filter(
       (time) => now - time < HOUR_MS
     );
 
@@ -307,10 +311,15 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Get available rate limit capacity
   const getAvailableCapacity = (uploadsInLastMinute, uploadsInLastHour) => {
     const now = Date.now();
-    const recentMinute = uploadsInLastMinute.filter(
+    
+    // Ensure arrays are defined (default to empty arrays)
+    const safeMinute = Array.isArray(uploadsInLastMinute) ? uploadsInLastMinute : [];
+    const safeHour = Array.isArray(uploadsInLastHour) ? uploadsInLastHour : [];
+    
+    const recentMinute = safeMinute.filter(
       (time) => now - time < MINUTE_MS
     );
-    const recentHour = uploadsInLastHour.filter(
+    const recentHour = safeHour.filter(
       (time) => now - time < HOUR_MS
     );
 
@@ -337,8 +346,18 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Upload a single item
   const uploadItem = async (item, uploadsInLastMinute, uploadsInLastHour) => {
+    // Use rateLimitInfo state if arrays are not provided (for external calls)
+    const minuteArray = uploadsInLastMinute ?? rateLimitInfo.uploadsInLastMinute ?? [];
+    const hourArray = uploadsInLastHour ?? rateLimitInfo.uploadsInLastHour ?? [];
+    
+    // Ensure arrays are valid
+    if (!Array.isArray(minuteArray) || !Array.isArray(hourArray)) {
+      console.error('[uploadItem] Invalid rate limit arrays:', { minuteArray, hourArray });
+      throw new Error('Invalid rate limit tracking arrays');
+    }
+    
     // Wait for rate limit before uploading
-    const rateLimit = await waitForRateLimit(uploadsInLastMinute, uploadsInLastHour);
+    const rateLimit = await waitForRateLimit(minuteArray, hourArray);
     let currentMinute = rateLimit.uploadsInLastMinute;
     let currentHour = rateLimit.uploadsInLastHour;
 

@@ -45,7 +45,7 @@
     },
     "ArchivedDownloads": {
         "actions": {
-            "add_to_torbox": "TorBoxに追加",
+            "addToTorBox": "TorBoxに追加",
             "copyMagnet": "マグネットリンクをコピー",
             "remove": "削除"
         },
@@ -645,7 +645,7 @@
         "actions": {
             "added": "追加済み",
             "adding": "追加中...",
-            "addToTorbox": "TorBoxに追加",
+            "addToTorBox": "TorBoxに追加",
             "copyLink": "リンクをコピー",
             "copyMagnet": "マグネットリンクをコピー"
         },

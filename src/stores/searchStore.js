@@ -222,7 +222,7 @@ export const useSearchStore = create((set, get) => ({
       });
     }
 
-    console.log('Filtered results count:', filtered.length);
+    // console.log('Filtered results count:', filtered.length);
     set({ filteredResults: filtered });
   },
 

@@ -107,11 +107,11 @@ export default function ArchivedDownloads({ apiKey }) {
                       className={`p-1.5 rounded-full text-green-500 dark:text-green-400 
                         hover:bg-green-500/5 dark:hover:bg-green-400/5 transition-all duration-200
                         disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
-                      title={archivedT('actions.add_to_torbox')}
+                      title={archivedT('actions.addToTorBox')}
                     >
                       {isMobile ? (
                         <div className="flex items-center justify-center gap-2">
-                          <Icons.Restore /> {archivedT('actions.add_to_torbox')}
+                          <Icons.Restore /> {archivedT('actions.addToTorBox')}
                         </div>
                       ) : (
                         <Icons.Restore />

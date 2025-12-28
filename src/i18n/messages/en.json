@@ -45,7 +45,7 @@
     },
     "ArchivedDownloads": {
         "actions": {
-            "add_to_torbox": "Add to TorBox",
+            "addToTorBox": "Add to TorBox",
             "copyMagnet": "Copy Magnet",
             "remove": "Remove"
         },
@@ -645,7 +645,7 @@
         "actions": {
             "added": "Added",
             "adding": "Adding...",
-            "addToTorbox": "Add to TorBox",
+            "addToTorBox": "Add to TorBox",
             "copyLink": "Copy Link",
             "copyMagnet": "Copy Magnet"
         },
