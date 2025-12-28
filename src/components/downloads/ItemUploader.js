@@ -35,6 +35,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     progress,
     webdlPassword,
     setWebdlPassword,
+    rateLimitInfo,
   } = useUpload(apiKey, activeType);
 
   // State to track if the uploader is expanded or collapsed
@@ -335,39 +336,75 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
           {items.filter((item) => item.status === 'queued').length > 0 &&
             !isUploading && (
-              <div className="flex justify-end">
-                <button
-                  onClick={() => {
-                    uploadItems();
-                    phEvent('upload_items');
-                  }}
-                  disabled={isUploading}
-                  className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-4 py-2 mb-4 rounded-md
-                    transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
-                >
-                  {assetTypeInfo.buttonText} (
-                  {items.filter((item) => item.status === 'queued').length})
-                </button>
-              </div>
+              <>
+                {items.filter((item) => item.status === 'queued').length > 10 && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">
+                        <p className="font-medium">{t('rateLimit.info')}</p>
+                        <p className="mt-1 text-xs">
+                          {t('rateLimit.details', {
+                            count: items.filter((item) => item.status === 'queued').length,
+                            perMinute: 10,
+                            perHour: 60,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      uploadItems();
+                      phEvent('upload_items');
+                    }}
+                    disabled={isUploading}
+                    className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-4 py-2 mb-4 rounded-md
+                      transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
+                  >
+                    {assetTypeInfo.buttonText} (
+                    {items.filter((item) => item.status === 'queued').length})
+                  </button>
+                </div>
+              </>
             )}
 
-          <UploadProgress progress={progress} uploading={isUploading} />
+          <UploadProgress 
+            progress={progress} 
+            uploading={isUploading} 
+            rateLimitInfo={rateLimitInfo}
+          />
 
           {error && (
             <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <div className="text-sm text-red-700 dark:text-red-300">
-                  <p className="font-medium">{t('errors.uploadFailed')}</p>
-                  <p className="mt-1 break-words">{error}</p>
-                  {error.includes('temporarily') && (
-                    <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-                      {t('errors.temporaryIssue')}
-                    </p>
-                  )}
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-2 flex-1">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <div className="text-sm text-red-700 dark:text-red-300">
+                    <p className="font-medium">{t('errors.uploadFailed')}</p>
+                    <p className="mt-1 break-words">{error}</p>
+                    {error.includes('temporarily') && (
+                      <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                        {t('errors.temporaryIssue')}
+                      </p>
+                    )}
+                  </div>
                 </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-2 p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                  aria-label="Dismiss error"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}
@@ -419,18 +456,28 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             </div>
           )}
 
-          {items.length > 0 &&
-            !items.some(
-              (item) =>
-                item.status === 'queued' || item.status === 'processing',
-            ) && (
+          {(() => {
+            const hasNoActiveItems = items.length > 0 &&
+              !items.some(
+                (item) =>
+                  item.status === 'queued' || item.status === 'processing',
+              );
+            
+            if (!hasNoActiveItems) return null;
+            
+            const successCount = items.filter((item) => item.status === 'success').length;
+            const totalCount = items.length;
+            const allCompleted = successCount === totalCount;
+            
+            return (
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-end mt-4">
                 <h3 className="text-xs lg:text-sm text-primary-text dark:text-primary-text-dark/70">
-                  {t('status.processing', {
-                    count: items.filter((item) => item.status === 'success')
-                      .length,
-                    total: items.length,
-                  })}
+                  {allCompleted
+                    ? t('status.allCompleted', { count: successCount })
+                    : t('status.completed', {
+                        count: successCount,
+                        total: totalCount,
+                      })}
                 </h3>
 
                 <button
@@ -441,7 +488,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                   {t('status.clearItems')}
                 </button>
               </div>
-            )}
+            );
+          })()}
         </>
       )}
       
