@@ -20,7 +20,6 @@ export default function LanguageSwitcher({ compact = false }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const [currentLocale, setCurrentLocale] = useState(locale);
 
   // Load saved language preference on mount
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function LanguageSwitcher({ compact = false }) {
     setIsOpen(false);
     // Store the language preference in localStorage
     localStorage.setItem('preferredLanguage', newLocale);
-    setCurrentLocale(newLocale);
     router.push(pathname.replace(locale, newLocale));
   };
 

@@ -22,10 +22,8 @@ import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import AutomationRules from './AutomationRules';
 import { formatSize } from './utils/formatters';
-import { useTranslations } from 'next-intl';
 
 export default function Downloads({ apiKey }) {
-  const t = useTranslations('Common');
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -35,7 +33,6 @@ export default function Downloads({ apiKey }) {
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
-  const [expandedUploadSections, setExpandedUploadSections] = useState(new Set());
   const hasExpandedRef = useRef(false);
   const isMobile = useIsMobile();
 
