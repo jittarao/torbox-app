@@ -14,7 +14,7 @@ const languages = {
   pl: { name: 'Polski', flag: '/images/flags/flag-pl.png' },
 };
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ compact = false }) {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -82,7 +82,11 @@ export default function LanguageSwitcher() {
           width={24}
           height={16}
         />
-        <span className="text-sm">{languages[locale].name}</span>
+        {compact ? (
+          <span className="text-sm font-medium uppercase">{locale}</span>
+        ) : (
+          <span className="text-sm">{languages[locale].name}</span>
+        )}
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

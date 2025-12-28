@@ -263,7 +263,9 @@
         "menu": {
             "archived": "Archivados",
             "downloads": "Descargas",
+            "language": "Idioma",
             "linkHistory": "Historial de enlaces",
+            "more": "Más",
             "notifications": "Notificaciones",
             "referrals": "Referencias",
             "rss": "Feeds RSS",

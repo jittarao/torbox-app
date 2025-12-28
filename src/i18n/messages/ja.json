@@ -263,7 +263,9 @@
         "menu": {
             "archived": "アーカイブ",
             "downloads": "ダウンロード",
+            "language": "言語",
             "linkHistory": "リンク履歴",
+            "more": "もっと",
             "notifications": "通知",
             "referrals": "紹介",
             "rss": "RSSフィード",
