@@ -263,7 +263,9 @@
         "menu": {
             "archived": "Archived",
             "downloads": "Downloads",
+            "language": "Language",
             "linkHistory": "Link History",
+            "more": "More",
             "notifications": "Notifications",
             "referrals": "Referrals",
             "rss": "RSS Feeds",
