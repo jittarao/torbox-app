@@ -9,6 +9,7 @@ import { useFilter } from '../shared/hooks/useFilter';
 import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
 import { useAutomationRules } from '../shared/hooks/useAutomationRules';
+import useIsMobile from '../../hooks/useIsMobile';
 
 import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
 import DownloadPanel from './DownloadPanel';
@@ -36,6 +37,7 @@ export default function Downloads({ apiKey }) {
   const [isExporting, setIsExporting] = useState(false);
   const [expandedUploadSections, setExpandedUploadSections] = useState(new Set());
   const hasExpandedRef = useRef(false);
+  const isMobile = useIsMobile();
 
   // Function to expand all items with files
   const expandAllFiles = () => {
@@ -284,7 +286,7 @@ export default function Downloads({ apiKey }) {
           <div
             className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'overflow-y-auto'} ${
               downloadLinks.length > 0 ? 'mb-12' : ''
-            }`}
+            } ${!isFullscreen && isMobile && viewMode === 'card' ? 'max-h-[calc(100vh-300px)]' : !isFullscreen && viewMode === 'card' ? 'max-h-[calc(100vh-250px)]' : ''}`}
           >
             {/* Wrap ActionBar in a sticky container */}
             <div className="sticky top-0 z-20">
