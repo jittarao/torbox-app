@@ -57,12 +57,12 @@
             "itemType": "Type d'élément"
         },
         "emptyState": {
-            "title": "Aucun téléchargement archivé",
             "description": "Configurez une règle d'automatisation pour archiver les téléchargements automatiquement. Lorsqu'un téléchargement est archivé, vous le trouverez ici pour le restaurer, le copier ou le supprimer.",
             "howItWorks": "Comment ça fonctionne :",
             "step1": "Ajoutez une règle avec l'action \"Archiver le téléchargement\"",
             "step2": "Lorsque la règle est déclenchée, les téléchargements correspondants sont archivés",
-            "step3": "Ils apparaissent ici pour que vous puissiez les restaurer, les copier ou les supprimer"
+            "step3": "Ils apparaissent ici pour que vous puissiez les restaurer, les copier ou les supprimer",
+            "title": "Aucun téléchargement archivé"
         },
         "title": "Téléchargements archivés",
         "toast": {
