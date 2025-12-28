@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useDeferredValue } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import ItemCard from './ItemCard';
@@ -36,13 +36,16 @@ export default function CardList({
     setDownloadHistory,
   );
 
+  // Defer items update to prevent synchronous updates during render
+  const deferredItems = useDeferredValue(items);
+
   // Only virtualize ItemCards - FileList will handle its own virtualization
   const flattenedRows = useMemo(() => {
-    return items.map((item, itemIndex) => ({
+    return deferredItems.map((item, itemIndex) => ({
       item,
       itemIndex,
     }));
-  }, [items]);
+  }, [deferredItems]);
 
   // Find scrollable parent container
   const getScrollElement = () => {
