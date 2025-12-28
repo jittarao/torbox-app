@@ -431,6 +431,14 @@
             "itemId": "ID de l'élément",
             "itemName": "Nom de l'élément"
         },
+        "emptyState": {
+            "description": "Lorsque vous générez un lien de téléchargement pour un torrent, usenet ou téléchargement web, il apparaîtra ici.",
+            "important": "Important :",
+            "step1": "Générez des liens de téléchargement depuis la page principale des téléchargements",
+            "step2": "Vous pouvez copier, retélécharger ou supprimer des liens de votre historique",
+            "step3": "Tous les liens de téléchargement expirent en 4 heures",
+            "title": "Aucun lien de téléchargement"
+        },
         "expired": "Expiré",
         "title": "Historique des liens"
     },
