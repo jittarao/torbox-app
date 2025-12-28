@@ -405,7 +405,6 @@
         },
         "footer": {
             "description": "Wir speichern keine Ihrer Informationen. Diese App ist vollständig Open Source auf",
-            "forkNote": "Dies ist ein Fork von jittaraos TorBox Manager. v0.1.27",
             "github": "GitHub"
         },
         "subtitle": "Die Alternative zur TorBox-Benutzeroberfläche für Power-User. Auf Geschwindigkeit und Effizienz ausgelegt. ",
