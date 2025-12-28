@@ -16,6 +16,13 @@ const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
 const UPLOADER_OPTIONS_KEY = 'uploader-options-expanded';
 const NZB_TIPS_HIDDEN_KEY = 'nzb-tips-hidden';
 
+// Default expanded states for each uploader type
+const DEFAULT_EXPANDED_STATES = {
+  torrents: false,
+  usenet: false,
+  webdl: false,
+};
+
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const t = useTranslations('ItemUploader');
   const {
@@ -45,30 +52,45 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const [toast, setToast] = useState(null);
   const [nzbTipsHidden, setNzbTipsHidden] = useState(false);
 
-  // Set initial expanded state based on localStorage or screen size
+  // Helper function to get expanded states from localStorage
+  const getExpandedStates = () => {
+    if (typeof localStorage === 'undefined') {
+      return DEFAULT_EXPANDED_STATES;
+    }
+    
+    try {
+      const saved = localStorage.getItem(UPLOADER_EXPANDED_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Merge with defaults to handle missing keys
+        return { ...DEFAULT_EXPANDED_STATES, ...parsed };
+      }
+    } catch (error) {
+      console.error('Error parsing uploader expanded states:', error);
+    }
+    
+    return DEFAULT_EXPANDED_STATES;
+  };
+
+  // Helper function to save expanded states to localStorage
+  const saveExpandedStates = (states) => {
+    if (typeof localStorage === 'undefined') return;
+    
+    try {
+      localStorage.setItem(UPLOADER_EXPANDED_KEY, JSON.stringify(states));
+    } catch (error) {
+      console.error('Error saving uploader expanded states:', error);
+    }
+  };
+
+  // Set initial expanded state based on localStorage
   useEffect(() => {
     setIsClient(true);
 
-    const handleResize = () => {
-      // Only set default state if no localStorage value exists
-      if (
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem(UPLOADER_EXPANDED_KEY) === null
-      ) {
-        // Desktop (>= 1024px) is expanded by default, mobile/tablet is collapsed
-        setIsExpanded(window.innerWidth >= 1024);
-      }
-    };
-
-    // Try to get saved preference from localStorage
+    // Get saved preference from localStorage for this specific uploader type
     if (typeof localStorage !== 'undefined') {
-      const savedState = localStorage.getItem(UPLOADER_EXPANDED_KEY);
-      if (savedState !== null) {
-        setIsExpanded(savedState === 'true');
-      } else {
-        // If no saved preference, set based on screen size
-        handleResize();
-      }
+      const expandedStates = getExpandedStates();
+      setIsExpanded(expandedStates[activeType] || false);
 
       // Also load options expanded state
       if (activeType === 'torrents') {
@@ -83,24 +105,17 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
       if (savedNzbTipsHidden !== null) {
         setNzbTipsHidden(savedNzbTipsHidden === 'true');
       }
-    } else {
-      // Fallback if localStorage is not available
-      handleResize();
     }
-
-    // Add resize listener (only affects initial state when no localStorage value exists)
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
   }, [activeType, setShowOptions]);
 
   // Save expanded state to localStorage when it changes
   useEffect(() => {
     if (isClient && typeof localStorage !== 'undefined') {
-      localStorage.setItem(UPLOADER_EXPANDED_KEY, isExpanded.toString());
+      const expandedStates = getExpandedStates();
+      expandedStates[activeType] = isExpanded;
+      saveExpandedStates(expandedStates);
     }
-  }, [isExpanded, isClient]);
+  }, [isExpanded, isClient, activeType]);
 
   // Save options expanded state to localStorage when it changes
   useEffect(() => {
