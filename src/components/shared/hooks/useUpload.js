@@ -467,26 +467,60 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
     // Calculate estimated completion time
     const calculateEstimatedTime = (remaining, uploadsInMinute, uploadsInHour) => {
+      if (remaining === 0) return null;
+      
       const now = Date.now();
-      let estimatedMs = 0;
+      let currentTime = now;
       let tempMinute = [...uploadsInMinute];
       let tempHour = [...uploadsInHour];
 
+      // Helper to calculate wait time with simulated time
+      const calculateWaitTimeAt = (simulatedTime, minuteArray, hourArray) => {
+        const recentMinute = minuteArray.filter((time) => simulatedTime - time < MINUTE_MS);
+        const recentHour = hourArray.filter((time) => simulatedTime - time < HOUR_MS);
+
+        let waitTime = 0;
+
+        // Check per-minute limit
+        if (recentMinute.length >= RATE_LIMIT_PER_MINUTE) {
+          const oldestInMinute = Math.min(...recentMinute);
+          waitTime = Math.max(waitTime, MINUTE_MS - (simulatedTime - oldestInMinute));
+        }
+
+        // Check per-hour limit
+        if (recentHour.length >= RATE_LIMIT_PER_HOUR) {
+          const oldestInHour = Math.min(...recentHour);
+          waitTime = Math.max(waitTime, HOUR_MS - (simulatedTime - oldestInHour));
+        }
+
+        return waitTime;
+      };
+
       for (let i = 0; i < remaining; i++) {
-        const rateLimit = calculateWaitTime(tempMinute, tempHour);
-        estimatedMs += rateLimit.waitTimeMs + MIN_UPLOAD_DELAY_MS;
+        // Clean old entries based on current simulation time
+        tempMinute = tempMinute.filter((time) => currentTime - time < MINUTE_MS);
+        tempHour = tempHour.filter((time) => currentTime - time < HOUR_MS);
+        
+        // Check if we need to wait due to rate limits
+        const waitTime = calculateWaitTimeAt(currentTime, tempMinute, tempHour);
+        if (waitTime > 0) {
+          currentTime += waitTime;
+          // Clean old entries again after waiting
+          tempMinute = tempMinute.filter((time) => currentTime - time < MINUTE_MS);
+          tempHour = tempHour.filter((time) => currentTime - time < HOUR_MS);
+        }
         
         // Simulate adding upload timestamp
-        const uploadTime = now + estimatedMs;
-        tempMinute.push(uploadTime);
-        tempHour.push(uploadTime);
+        tempMinute.push(currentTime);
+        tempHour.push(currentTime);
         
-        // Clean old entries
-        tempMinute = tempMinute.filter((time) => uploadTime - time < MINUTE_MS);
-        tempHour = tempHour.filter((time) => uploadTime - time < HOUR_MS);
+        // Add minimum delay between uploads (only if not the last item)
+        if (i < remaining - 1) {
+          currentTime += MIN_UPLOAD_DELAY_MS;
+        }
       }
 
-      return now + estimatedMs;
+      return currentTime;
     };
 
     const estimatedCompletion = calculateEstimatedTime(
