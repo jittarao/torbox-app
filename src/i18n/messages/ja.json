@@ -1,812 +1,819 @@
 {
-  "ActionButtons": {
-      "bulkUploadFailed": "アイテムのアップロードに失敗しました",
-      "bulkUploadPartial": "{success} アイテムが正常にアップロードされました、{failed} 失敗しました",
-      "bulkUploadSuccess": "{count} アイテムが {provider} に正常にアップロードされました",
-      "clear": "クリア",
-      "delete": "削除",
-      "deleteConfirm": {
-          "cancel": "キャンセル",
-          "confirm": "削除",
-          "deleting": "削除中...",
-          "includeParentDownloads": "親ダウンロードを削除",
-          "includeParentDownloadsTooltip": "ダウンロード内のファイルを選択した場合、このオプションはダウンロード全体を削除します。",
-          "message": "{count} {type} を削除してもよろしいですか？この操作は取り消しできません。",
-          "title": "削除の確認"
-      },
-      "downloadLinks": "ダウンロードリンクを取得",
-      "downloadLinksMobile": "リンクを取得",
-      "exporting": "エクスポート中...",
-      "exportSelected": "選択したエクスポート",
-      "fetchingLinks": "リンク取得中...",
-      "uploading": "アップロード中...",
-      "uploadToCloud": "クラウドにアップロード"
-  },
-  "ApiKeyInput": {
-      "hide": "APIキーを隠す",
-      "manageKeys": "APIキーを管理",
-      "placeholder": "TorBox APIキーを入力してください",
-      "show": "APIキーを表示"
-  },
-  "ApiKeyManager": {
-      "add": "追加",
-      "addKey": "キーを追加",
-      "addNewKey": "新しいAPIキーを追加",
-      "apiKey": "APIキー",
-      "apiKeyPlaceholder": "Enter your API key",
-      "cancel": "キャンセル",
-      "close": "閉じる",
-      "deleteKey": "キーを削除",
-      "keyLabel": "キーラベル",
-      "keyLabelPlaceholder": "e.g. Personal, Family",
-      "noKeys": "保存されたキーがありません",
-      "savedKeys": "保存されたAPIキー",
-      "toggleOpen": "開いたままにする"
-  },
-  "ArchivedDownloads": {
-      "actions": {
-          "add_to_torbox": "TorBoxに追加",
-          "copyMagnet": "マグネットリンクをコピー",
-          "remove": "削除"
-      },
-      "columns": {
-          "actions": "アクション",
-          "archivedAt": "アーカイブ日時",
-          "itemId": "アイテムID",
-          "itemName": "アイテム名",
-          "itemType": "アイテムタイプ"
-      },
-      "title": "アーカイブされたダウンロード",
-      "toast": {
-          "magnetCopied": "マグネットリンクがクリップボードにコピーされました"
-      }
-  },
-  "AutomationRules": {
-      "action": "アクション",
-      "actions": {
-          "archive": "アーカイブ",
-          "delete": "削除",
-          "forceStart": "強制開始",
-          "stopSeeding": "シーディングを停止"
-      },
-      "add": "ルールを追加",
-      "addRule": "ルールを追加",
-      "cancel": "キャンセル",
-      "checkEvery": "毎回チェック",
-      "clearLogs": "ログをクリア",
-      "close": "閉じる",
-      "condition": "条件",
-      "conditions": {
-          "age": "年齢",
-          "downloadSpeed": "ダウンロード速度",
-          "fileSize": "ファイルサイズ",
-          "inactive": "非アクティブダウンロード",
-          "peers": "ピア",
-          "seedingRatio": "シーディング比率",
-          "seedingTime": "シーディング時間",
-          "seeds": "シード",
-          "stalledTime": "ブロック時間",
-          "tracker": "トラッカー",
-          "uploadSpeed": "アップロード速度"
-      },
-      "delete": "ルールを削除",
-      "details": "詳細",
-      "enabledAt": "有効化日時",
-      "error": "エラー",
-      "executions": "実行",
-      "failed": "失敗",
-      "itemsAffected": "影響を受けたアイテム",
-      "lastTriggered": "最後にトリガーされた",
-      "neverExecuted": "一度も実行されなかった",
-      "neverTriggered": "一度もトリガーされなかった",
-      "noLogs": "ログがありません",
-      "noRules": "自動化ルールがありません",
-      "operators": {
-          "eq": "等しい",
-          "gt": "より大きい",
-          "gte": "以上",
-          "lt": "より小さい",
-          "lte": "以下"
-      },
-      "presets": {
-          "deleteInactive": "非アクティブダウンロードを削除",
-          "deleteIncomplete": "不完全なトレントを削除",
-          "deleteQueued": "キューされたダウンロードを削除（6時間以上）",
-          "deleteStalled": "ブロックされたダウンロードを削除（1時間以上）",
-          "deleteUnavailable": "利用できないトレントを削除",
-          "stopSeedingLowRatio": "低比率でシーディングを停止",
-          "title": "クイックプリセット"
-      },
-      "ruleLogs": "ルールログ",
-      "ruleName": "ルール名",
-      "ruleNamePlaceholder": "ルール名を入力",
-      "section": {
-          "hide": "ルールを非表示",
-          "show": "ルールを表示"
-      },
-      "success": "成功",
-      "title": "自動化ルール",
-      "triggers": "トリガー",
-      "update": "ルールを更新",
-      "viewLogs": "ログを表示"
-  },
-  "CardList": {
-      "toast": {
-          "copyLink": "リンクがクリップボードにコピーされました",
-          "copyLinkFailed": "リンクのコピーに失敗しました"
-      }
-  },
-  "CloudUpload": {
-      "activeJobs": "アクティブジョブ",
-      "cancel": "キャンセル",
-      "complete": "完了",
-      "connect": "接続",
-      "connected": "接続済み",
-      "connectedProviders": "接続済みプロバイダー",
-      "disconnect": "切断",
-      "manageConnections": "接続を管理",
-      "noActiveJobs": "アクティブジョブなし",
-      "notConnected": "未接続",
-      "title": "クラウドストレージマネージャー",
-      "toast": {
-          "connectionError": "プロバイダーへの接続に失敗しました",
-          "connectionSuccess": "プロバイダーに正常に接続しました",
-          "disconnectionError": "プロバイダーからの切断に失敗しました",
-          "disconnectionSuccess": "プロバイダーから正常に切断しました",
-          "jobCancelError": "ジョブのキャンセルに失敗しました",
-          "jobCancelled": "ジョブが正常にキャンセルされました"
-      }
-  },
-  "ColumnManager": {
-      "manageColumns": "列の管理",
-      "reorderColumns": "列の並べ替え"
-  },
-  "Columns": {
-      "actions": "アクション",
-      "asset_type": "タイプ",
-      "cached_at": "キャッシュ日時",
-      "created_at": "追加日時",
-      "download_progress": "進捗",
-      "download_speed": "ダウンロード速度",
-      "download_state": "状態",
-      "eta": "ETA",
-      "expires_at": "有効期限",
-      "file_count": "ファイル数",
-      "hash": "ハッシュ",
-      "id": "ID",
-      "name": "名前",
-      "original_url": "ソースURL",
-      "peers": "ピア",
-      "private": "プライベートトラッカー",
-      "progress": "進行状況",
-      "ratio": "比率",
-      "seeds": "シード",
-      "size": "サイズ",
-      "total_downloaded": "合計ダウンロード",
-      "total_uploaded": "合計アップロード",
-      "updated_at": "最終更新日",
-      "upload_speed": "アップロード速度"
-  },
-  "Common": {
-      "hours": "時間",
-      "itemTypes": {
-          "all": "すべて",
-          "All": "すべて",
-          "file": "file",
-          "File": "File",
-          "files": "files",
-          "Files": "Files",
-          "torrent": "torrent",
-          "Torrent": "Torrent",
-          "torrents": "torrents",
-          "Torrents": "Torrents",
-          "usenet": "usenet",
-          "Usenet": "Usenet",
-          "usenets": "usenets",
-          "Usenets": "Usenets",
-          "web": "web",
-          "Web": "Web",
-          "webdl": "webdl",
-          "Webdl": "Webdl"
-      },
-      "minutes": "分",
-      "time": {
-          "ago": "前",
-          "complete": "完了",
-          "d": "日",
-          "h": "時間",
-          "in": "あと",
-          "m": "分",
-          "mo": "ヶ月",
-          "s": "秒",
-          "unknown": "不明",
-          "y": "年"
-      },
-      "uploadSections": {
-          "torrents": "トレントをアップロード",
-          "usenet": "NZBファイルをアップロード",
-          "webdl": "ウェブダウンロードを追加"
-      }
-  },
-  "DownloadPanel": {
-      "actions": {
-          "clearAll": "すべてクリア",
-          "copyAll": "すべてのリンクをコピー",
-          "copyLink": "リンクをコピー",
-          "downloadFile": "ファイルをダウンロード"
-      },
-      "status": {
-          "fetching": "{total}件中{current}件の取得中",
-          "generating": "リンクを生成中...",
-          "generatingMore": "さらにリンクを生成中..."
-      },
-      "title": {
-          "multiple": "ダウンロードリンク",
-          "single": "ダウンロードリンク"
-      },
-      "toast": {
-          "copyAllFailed": "リンクのコピーにすべて失敗しました",
-          "copyFailed": "リンクのコピーに失敗しました",
-          "linkCopied": "リンクがクリップボードにコピーされました！",
-          "linksCopied": "リンクがクリップボードにコピーされました！"
-      }
-  },
-  "FileActions": {
-      "copyLink": "リンクをコピー",
-      "download": "ファイルをダウンロード"
-  },
-  "Header": {
-      "logo": "TorBox Manager Logo",
-      "menu": {
-          "archived": "アーカイブ",
-          "downloads": "ダウンロード",
-          "linkHistory": "リンク履歴",
-          "notifications": "通知",
-          "referrals": "紹介",
-          "rss": "RSSフィード",
-          "search": "検索",
-          "systemStatus": "システムステータス",
-          "toggle": "メニューの切り替え",
-          "user": "ユーザー"
-      },
-      "theme": {
-          "toggleDark": "ダークモードの切り替え",
-          "toggleLight": "ライトモードの切り替え"
-      },
-      "title": "TorBox Manager"
-  },
-  "Index": {
-      "description": "Torrent and Debrid Manager",
-      "search": "検索",
-      "searchPlaceholder": "Torrentsを検索...",
-      "title": "TorBox Manager"
-  },
-  "ItemActionButtons": {
-      "delete": {
-          "label": "削除",
-          "title": "削除"
-      },
-      "download": {
-          "label": "ダウンロード",
-          "title": "ダウンロード"
-      },
-      "export": {
-          "label": "エクスポート",
-          "title": "エクスポート"
-      },
-      "files": {
-          "hide": "ファイルを隠す",
-          "label": "ファイル",
-          "show": "ファイルを表示"
-      },
-      "start": {
-          "label": "開始",
-          "title": "強制開始"
-      },
-      "stop": {
-          "label": "停止",
-          "title": "シードの停止"
-      }
-  },
-  "ItemActions": {
-      "toast": {
-          "deleteAllFailed": "アイテムの削除に失敗しました",
-          "deleteAllSuccess": "すべてのアイテムが正常に削除されました",
-          "deleteError": "削除に失敗しました: {error}",
-          "deletePartialSuccess": "{total} アイテムのうち {count} を削除",
-          "deleteSuccess": "削除に成功しました",
-          "downloadFailed": "ダウンロード開始に失敗しました",
-          "downloadStarted": "ダウンロードが正常に開始しました",
-          "exportTorrentFailed": "トレントファイルのエクスポートに失敗しました",
-          "exportTorrentSuccess": "トレントファイルが正常にエクスポートされました",
-          "noFiles": "ダウンロード可能なファイルはありません",
-          "seedingStopFailed": "トレントのシードに失敗しました",
-          "seedingStopped": "トレントのシードが正常に停止しました"
-      }
-  },
-  "ItemUploader": {
-      "button": {
-          "torrents": "トレントをアップロード",
-          "usenet": "NZBファイルをアップロード",
-          "webdl": "リンクを追加"
-      },
-      "dropzone": {
-          "torrents": "トレントファイルをここにドロップします",
-          "usenet": "NZBファイルをここにドロップします"
-      },
-      "errors": {
-          "accessDenied": "アクセスが拒否されました。APIキーとアカウント状態を確認してください。",
-          "activeLimit": "アクティブなダウンロードの制限に達しました。一部のダウンロードが完了するまで待ってください。",
-          "authFailed": "認証に失敗しました。APIキーを確認してください。",
-          "downloadTooLarge": "ダウンロードするファイルが現在のプランに収まりません。アカウントをアップグレードしてください。",
-          "invalidNzb": "提供されたNZBファイルまたはリンクが無効です。ファイルを確認してから再試行してください。",
-          "monthlyLimit": "月ごとのダウンロード制限に達しました。アカウントをアップグレードしてください。",
-          "networkError": "TorBoxサーバーに接続できません。インターネット接続を確認してから再試行してください。",
-          "serverOverloaded": "TorBoxサーバーが一時的に過負荷状態です。数分後に再試行してください。",
-          "serverTimeout": "TorBoxサーバーが応答を返さないようです。数分後に再試行してください。",
-          "serverUnavailable": "TorBoxサーバーが一時的に利用できません。数分後に再試行してください。",
-          "temporaryIssue": "TorBoxサーバーで一時的な問題が発生している可能性があります。数分後に再試行してください。",
-          "tooManyRequests": "TorBoxサーバーへのリクエストが多すぎます。しばらく待ってから再試行してください。",
-          "uploadFailed": "アップロードに失敗しました"
-      },
-      "help": {
-          "checkApiKey": "APIキーが正しく、十分な権限があることを確認してください",
-          "downloadSlots": "アカウントに利用可能なダウンロードスロットがあることを確認してください",
-          "nzbTips": "NZBアップロードのヒント",
-          "serverErrors": "サーバーエラーが表示される場合は、数分待ってから再試行してください",
-          "uploadLimit": "サーバーエラーを避けるため、一度に10個以上のNZBファイルをアップロードしないでください",
-          "validLinks": "NZBリンクが有効でアクセス可能であることを確認してください"
-      },
-      "options": {
-          "hide": "オプションを隠す",
-          "show": "オプションを表示"
-      },
-      "placeholder": {
-          "torrents": "マグネットリンクをここに貼り付けます（1行につき1つ）",
-          "usenet": "NZBリンクをここに貼り付けます（1行につき1つ）",
-          "webdl": "ウェブダウンロードリンクをここに貼り付けます（1行につき1つ）",
-          "webdlPassword": "パスワードを入力してください（オプション）"
-      },
-      "rateLimit": {
-          "details": "{count} アイテムがキューにあります。TorBoxは1分あたり {perMinute} アイテムと1時間あたり {perHour} アイテムに制限しています。大規模なバッチは適切な遅延で自動的に処理されます。",
-          "info": "レート制限"
-      },
-      "section": {
-          "hide": "セクションを隠す",
-          "show": "セクションを表示"
-      },
-      "status": {
-          "allCompleted": "すべての {count} アイテムが正常に処理されました",
-          "clearItems": "アイテムをクリア",
-          "completed": "{count} アイテムのうち {total} アイテムが正常に処理されました",
-          "processing": "{count} of {total} items processed"
-      },
-      "title": {
-          "default": "アップロード",
-          "torrents": "トレントのアップロード",
-          "usenet": "NZBファイルのアップロード",
-          "webdl": "ウェブダウンロードの追加"
-      }
-  },
-  "LandingPage": {
-      "apiKeyInput": {
-          "description": "APIキーは次の場所で確認できます",
-          "link": "torbox.app/settings",
-          "title": "TorBox APIキーを入力"
-      },
-      "features": {
-          "batchUpload": {
-              "description": "ワンクリックで複数のトレントをアップロード",
-              "title": "バッチアップロード"
-          },
-          "debrid": {
-              "description": "Debridサービスとのスムーズな統合",
-              "title": "Debrid-統合"
-          },
-          "search": {
-              "description": "複数のトレントサイトを検索",
-              "title": "スマート検索"
-          }
-      },
-      "footer": {
-          "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
-          "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.27",
-          "github": "GitHub"
-      },
-      "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
-      "title": "TorBox Manager"
-  },
-  "LinkHistory": {
-      "actions": {
-          "copy": "コピー",
-          "download": "ダウンロード",
-          "remove": "削除"
-      },
-      "columns": {
-          "actions": "アクション",
-          "expiresAt": "有効期限",
-          "fileName": "ファイル名",
-          "itemId": "アイテムID",
-          "itemName": "アイテム名"
-      },
-      "expired": "期限切れ",
-      "title": "リンク履歴"
-  },
-  "MoreOptionsDropdown": {
-      "copyFullMagnet": "完全なマグネットリンクをコピー",
-      "copyHash": "ハッシュをコピー",
-      "copyId": "IDをコピー",
-      "copyShortMagnet": "ショートマグネットリンクをコピー",
-      "copySourceUrl": "ソース URL をコピー",
-      "exportTorrent": ".torrent ファイルをエクスポート",
-      "label": "オプション",
-      "reannounce": "再アナウンス",
-      "title": "オプション",
-      "toast": {
-          "clipboardError": "クリップボードへのコピーに失敗しました",
-          "exportMagnetFailed": "マグネットリンクのエクスポートに失敗しました",
-          "exportMagnetSuccess": "マグネットリンクが正常にエクスポートされました",
-          "exportTorrentFailed": "トレントファイルのエクスポートに失敗しました",
-          "exportTorrentSuccess": "トレントファイルが正常にエクスポートされました",
-          "fullMagnetCopied": "完全なマグネットリンクがクリップボードにコピーされました",
-          "hashCopied": "ハッシュがクリップボードにコピーされました",
-          "hashNotAvailable": "ハッシュが利用できません",
-          "idCopied": "クリップボードにコピーされた ID",
-          "magnetError": "マグネットリンクの取得に失敗しました",
-          "reannounceFailed": "トレントの再アナウンスに失敗しました",
-          "reannounceSuccess": "トレントの再アナウンスに成功しました",
-          "shortMagnetCopied": "ショートマグネットリンクがクリップボードにコピーされました",
-          "sourceUrlCopied": "ソース URL がクリップボードにコピーされました",
-          "sourceUrlNotAvailable": "ソースURLが利用できません",
-          "uploadFailed": "アップロードに失敗しました",
-          "uploadStarted": "アップロードが正常に開始されました"
-      },
-      "uploadToCloud": "クラウドにアップロード"
-  },
-  "Navigation": {
-      "home": "ホーム",
-      "search": "検索",
-      "settings": "設定"
-  },
-  "Notifications": {
-      "clear": "クリア",
-      "clearAll": "すべてクリア",
-      "loading": "通知を読み込み中...",
-      "markAllAsRead": "すべて既読にする",
-      "markAsRead": "既読にする",
-      "noNotifications": "通知がありません",
-      "notifications": "通知",
-      "testNotification": "テスト通知"
-  },
-  "Referral": {
-      "copied": "コピーしました！",
-      "copyAll": "すべてコピー",
-      "copyCode": "コードをコピー",
-      "copyLink": "リンクをコピー",
-      "description": "友達とTorBoxを共有して報酬を獲得しましょう！",
-      "developerNote": "これらは開発者の紹介コードです",
-      "error": "コピーに失敗しました",
-      "landingDescription": "TorBoxアカウントが必要ですか？紹介リンクを使用してサインアップし、始めましょう！",
-      "referral": "紹介",
-      "referralCode": "紹介コード",
-      "referralLink": "紹介リンク",
-      "signUp": "TorBoxにサインアップ",
-      "title": "紹介プログラム",
-      "visitLink": "リンクを訪問"
-  },
-  "RssFeeds": {
-      "actions": "アクション",
-      "active": "アクティブ",
-      "addError": "RSSフィードの追加に失敗しました",
-      "addFeed": "RSSフィードを追加",
-      "addSuccess": "RSSフィードが正常に追加されました",
-      "cancel": "キャンセル",
-      "confirmDelete": {
-          "cancel": "キャンセル",
-          "confirm": "削除",
-          "message": "このRSSフィードを削除してもよろしいですか？この操作は元に戻せません。",
-          "title": "RSSフィードを削除"
-      },
-      "delete": "削除",
-      "deleteError": "RSSフィードの削除に失敗しました",
-      "deleteSuccess": "RSSフィードが正常に削除されました",
-      "disable": "無効化",
-      "disabled": "無効",
-      "disableError": "RSSフィードの無効化に失敗しました",
-      "disableSuccess": "RSSフィードが正常に無効化されました",
-      "dontOlderThan": "古いアイテムを除外（日）",
-      "dontOlderThanPlaceholder": "X日より古いアイテムを除外",
-      "dontRegex": "除外正規表現（オプション）",
-      "dontRegexPlaceholder": "この正規表現に一致するアイテムを除外",
-      "doRegex": "ダウンロード正規表現（オプション）",
-      "doRegexPlaceholder": "この正規表現に一致するアイテムをダウンロード",
-      "downloadType": "ダウンロードタイプ",
-      "downloadTypePlaceholder": "ダウンロードタイプを選択",
-      "editError": "RSSフィードの更新に失敗しました",
-      "editFeed": "RSSフィードを編集",
-      "editSuccess": "RSSフィードが正常に更新されました",
-      "enable": "有効化",
-      "enabled": "有効",
-      "enableError": "RSSフィードの有効化に失敗しました",
-      "enableSuccess": "RSSフィードが正常に有効化されました",
-      "error": "RSSフィードの読み込みエラー",
-      "feedName": "フィード名",
-      "feedNamePlaceholder": "フィード名を入力",
-      "feedUrl": "フィードURL",
-      "feedUrlPlaceholder": "RSSフィードURLを入力",
-      "inactive": "非アクティブ",
-      "itemCount": "アイテム",
-      "items": "アイテム",
-      "lastCheck": "最終チェック",
-      "loading": "RSSフィードを読み込み中...",
-      "never": "なし",
-      "noFeeds": "RSSフィードが設定されていません",
-      "options": {
-          "auto": "自動",
-          "dontSeed": "シードしない",
-          "seed": "シード",
-          "torrent": "トレント",
-          "usenet": "ユーズネット",
-          "webdl": "Webダウンロード"
-      },
-      "pageDescription": "RSSフィードの管理とアイテムの閲覧",
-      "pageTitle": "RSS管理",
-      "passCheck": "チェックをスキップ",
-      "passCheckDescription": "このフィードのキャッシュチェックをスキップ",
-      "save": "保存",
-      "scanInterval": "スキャン間隔（分）",
-      "scanIntervalPlaceholder": "このフィードをスキャンする頻度",
-      "status": "ステータス",
-      "tabs": {
-          "feeds": "フィード管理",
-          "items": "アイテム管理"
-      },
-      "title": "RSSフィード",
-      "torrentSeeding": "トレントシーディング",
-      "torrentSeedingPlaceholder": "シーディング設定を選択",
-      "validation": {
-          "nameRequired": "フィード名が必要です",
-          "urlInvalid": "有効なRSSフィードURLを入力してください",
-          "urlRequired": "フィードURLが必要です"
-      }
-  },
-  "RssItems": {
-      "allTypes": "すべてのタイプ",
-      "category": "カテゴリ",
-      "date": "日付",
-      "download": "ダウンロード",
-      "error": "アイテムの読み込みエラー",
-      "loading": "アイテムを読み込み中...",
-      "newestFirst": "新しい順",
-      "noDescription": "説明がありません",
-      "noItems": "アイテムが見つかりません",
-      "noMatchingItems": "検索条件に一致するアイテムがありません",
-      "oldestFirst": "古い順",
-      "published": "公開日",
-      "refresh": "更新",
-      "search": "検索",
-      "searchPlaceholder": "アイテムを検索...",
-      "selectFeed": "RSSフィードを選択",
-      "selectFeedPlaceholder": "アイテムを表示するフィードを選択",
-      "size": "サイズ",
-      "sortBy": "並び替え",
-      "sortOrder": "並び順",
-      "title": "タイトル",
-      "toast": {
-          "downloadFailed": "ダウンロードの開始に失敗しました",
-          "downloadStarted": "ダウンロードが正常に開始されました",
-          "noLink": "ダウンロードリンクが利用できません"
-      },
-      "torrent": "トレント",
-      "type": "タイプ",
-      "unknown": "不明",
-      "usenet": "ユーズネット",
-      "webdl": "Webダウンロード"
-  },
-  "SearchBar": {
-      "clearFilters": "フィルターをクリア",
-      "clearHistory": "クリア",
-      "clearSearch": "検索をクリア",
-      "customEngines": "カスタムエンジン",
-      "episode": "エピソード",
-      "episodePlaceholder": "E01",
-      "hideAdvanced": "詳細を隠す",
-      "minSeeders": "最小シーダー",
-      "minSize": "最小サイズ (GB)",
-      "placeholder": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
-      "quality": "品質",
-      "qualityAll": "すべての品質",
-      "recentSearches": "最近の検索",
-      "search": "検索",
-      "searchExamples": "検索例",
-      "season": "シーズン",
-      "seasonPlaceholder": "S01",
-      "showAdvanced": "詳細を表示",
-      "year": "年",
-      "yearPlaceholder": "2024"
-  },
-  "SearchResults": {
-      "actions": {
-          "added": "追加済み",
-          "adding": "追加中...",
-          "addToTorbox": "TorBoxに追加",
-          "copyLink": "リンクをコピー",
-          "copyMagnet": "マグネットリンクをコピー"
-      },
-      "cachedOnly": "キャッシュのみ",
-      "hideTorBoxIndexers": "TorBoxのインデックスを非表示にする",
-      "metadata": {
-          "cached": "キャッシュ",
-          "days": "日"
-      },
-      "noResults": "該当なし",
-      "results": "{count} 件ヒット",
-      "sort": {
-          "age": "最新",
-          "seeders": "最多シーダー",
-          "size": "最大サイズ"
-      },
-      "toast": {
-          "magnetCopied": "マグネットリンクがクリップボードにコピーされました",
-          "nzbAdded": "NZBがTorBoxに正常に追加されました",
-          "nzbAddFailed": "NZBの追加に失敗しました: {error}",
-          "nzbCopied": "NZBリンクがクリップボードにコピーされました",
-          "torrentAdded": "TorrentがTorBoxに正常に追加されました",
-          "torrentAddFailed": "Torrentの追加に失敗しました: {error}",
-          "uploadSuccess": "正常に {count} {type} がアップロードされました",
-          "uploadSuccessPlural": "正常に {count} {type}s がアップロードされました"
-      }
-  },
-  "SpeedChart": {
-      "chart": {
-          "hide": "グラフを隠す",
-          "show": "グラフを表示"
-      },
-      "labels": {
-          "download": "ダウンロード",
-          "upload": "アップロード"
-      },
-      "scale": {
-          "linear": "線形",
-          "logarithmic": "対数"
-      },
-      "timeRanges": {
-          "10m": "過去10分",
-          "1h": "過去1時間",
-          "1m": "過去1分",
-          "3h": "過去3時間",
-          "6h": "過去6時間",
-          "all": "すべて"
-      },
-      "title": {
-          "default": "ネットワーク",
-          "full": "ネットワーク活動"
-      }
-  },
-  "Statuses": {
-      "checking_resume_data": "リザムーデータのチェック中",
-      "completed": "完了",
-      "downloading": "ダウンロード中",
-      "failed": "失敗",
-      "inactive": "非アクティブ",
-      "meta_dl": "メタデータのダウンロード中",
-      "queued": "キューに入れられた",
-      "seeding": "シーディング",
-      "stalled": "ブロックされた",
-      "unknown": "不明",
-      "uploading": "アップロード中"
-  },
-  "StatusSection": {
-      "selectedFiles": "{fileCount} files selected ({size})",
-      "selectedItems": "{itemCount} {type}が選択されています ({size})",
-      "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
-      "total": "{count} {type}"
-  },
-  "SystemStatus": {
-      "error": "エラー",
-      "hoursAgo": "{hours}時間前",
-      "justNow": "今",
-      "lastCheck": "最終チェック",
-      "minutesAgo": "{minutes}分前",
-      "never": "なし",
-      "refreshStatus": "システムステータスを更新",
-      "status": {
-          "apiUnhealthy": "API接続の問題",
-          "apiUnhealthyDescription": "TorBox APIが正常に応答していません",
-          "healthy": "システム正常",
-          "healthyDescription": "すべてのシステムが正常に動作しています",
-          "noApiKey": "APIキーなし",
-          "noApiKeyDescription": "TorBox接続を確認するにはAPIキーが必要です",
-          "unhealthy": "システム異常",
-          "unhealthyDescription": "ローカルアプリケーションに問題が発生しています",
-          "unknown": "ステータス不明",
-          "unknownDescription": "システムステータスを確認できません"
-      }
-  },
-  "TableBody": {
-      "toast": {
-          "copyLink": "リンクがクリップボードにコピーされました",
-          "copyLinkFailed": "リンクのコピーに失敗しました"
-      }
-  },
-  "TorrentOptions": {
-      "allowZip": {
-          "description": "100以上のファイルを含むトレント用",
-          "label": "ZIPを許可"
-      },
-      "autoStart": {
-          "label": "自動スタートを有効にする",
-          "limit": "アクティブなトレントの上限:",
-          "title": "キューに入れられたトレントの処理",
-          "tooltip": "指定した上限まで自動的にトレントのダウンロードを開始"
-      },
-      "instantQueue": {
-          "description": "待ち行列をスキップ",
-          "label": "インスタントキュー"
-      },
-      "seedingPreference": {
-          "always": "常にシード",
-          "auto": "自動（デフォルト）",
-          "label": "シーディングの優先順位",
-          "never": "シードしない"
-      },
-      "title": "グローバルアップロードオプション"
-  },
-  "User": {
-      "copyLink": "リンクをコピー",
-      "copyLinkFailed": "リンクのコピーに失敗しました",
-      "description": "アカウントを管理し、統計を確認",
-      "errors": {
-          "reloadPage": "ページを再読み込み",
-          "renderError": "プロフィールの表示中にエラーが発生しました"
-      },
-      "noData": "データがありません",
-      "plans": {
-          "essential": "エッセンシャル",
-          "free": "無料",
-          "pro": "プロ",
-          "standard": "スタンダード",
-          "unknown": "不明"
-      },
-      "profile": {
-          "accountStatus": "アカウントステータス",
-          "basicInfo": "基本情報",
-          "createdAt": "作成日",
-          "downloadBreakdown": "ダウンロード内訳",
-          "email": "メールアドレス",
-          "lastLogin": "最終更新",
-          "plan": "プラン",
-          "planExpiry": "プラン期限",
-          "ratio": "比率",
-          "referralCode": "紹介コード",
-          "status": "ステータス",
-          "title": "ユーザープロフィール",
-          "torrentDownloads": "トレントダウンロード",
-          "totalDownloads": "総ダウンロード数",
-          "totalSize": "総ダウンロード容量",
-          "totalUploaded": "総アップロード容量",
-          "usage": "使用統計",
-          "usenetDownloads": "ユーズネットダウンロード",
-          "userId": "ユーザーID",
-          "webDownloads": "Webダウンロード"
-      },
-      "referralLink": "紹介リンク",
-      "retry": "再試行",
-      "status": {
-          "active": "アクティブ",
-          "expired": "期限切れ",
-          "free": "無料"
-      },
-      "title": "ユーザープロフィール"
-  },
-  "ViewControls": {
-      "cardView": "カードビュー",
-      "collapseAllFiles": "すべてのファイルを折りたたみ",
-      "enterFullscreen": "フルスクリーンに入る",
-      "exitFullscreen": "フルスクリーンを終了する",
-      "expandAllFiles": "すべてのファイルを展開",
-      "hideSensitive": "機密コンテンツを隠す",
-      "showSensitive": "機密コンテンツを表示する",
-      "tableView": "テーブルビュー"
-  }
+    "ActionButtons": {
+        "bulkUploadFailed": "アイテムのアップロードに失敗しました",
+        "bulkUploadPartial": "{success} アイテムが正常にアップロードされました、{failed} 失敗しました",
+        "bulkUploadSuccess": "{count} アイテムが {provider} に正常にアップロードされました",
+        "clear": "クリア",
+        "delete": "削除",
+        "deleteConfirm": {
+            "cancel": "キャンセル",
+            "confirm": "削除",
+            "deleting": "削除中...",
+            "includeParentDownloads": "親ダウンロードを削除",
+            "includeParentDownloadsTooltip": "ダウンロード内のファイルを選択した場合、このオプションはダウンロード全体を削除します。",
+            "message": "{count} {type} を削除してもよろしいですか？この操作は取り消しできません。",
+            "title": "削除の確認"
+        },
+        "downloadLinks": "ダウンロードリンクを取得",
+        "downloadLinksMobile": "リンクを取得",
+        "exporting": "エクスポート中...",
+        "exportSelected": "選択したエクスポート",
+        "fetchingLinks": "リンク取得中...",
+        "uploading": "アップロード中...",
+        "uploadToCloud": "クラウドにアップロード"
+    },
+    "ApiKeyInput": {
+        "hide": "APIキーを隠す",
+        "manageKeys": "APIキーを管理",
+        "placeholder": "TorBox APIキーを入力してください",
+        "show": "APIキーを表示"
+    },
+    "ApiKeyManager": {
+        "add": "追加",
+        "addKey": "キーを追加",
+        "addNewKey": "新しいAPIキーを追加",
+        "apiKey": "APIキー",
+        "apiKeyPlaceholder": "Enter your API key",
+        "cancel": "キャンセル",
+        "close": "閉じる",
+        "deleteKey": "キーを削除",
+        "keyLabel": "キーラベル",
+        "keyLabelPlaceholder": "e.g. Personal, Family",
+        "noKeys": "保存されたキーがありません",
+        "savedKeys": "保存されたAPIキー",
+        "toggleOpen": "開いたままにする"
+    },
+    "ArchivedDownloads": {
+        "actions": {
+            "add_to_torbox": "TorBoxに追加",
+            "copyMagnet": "マグネットリンクをコピー",
+            "remove": "削除"
+        },
+        "columns": {
+            "actions": "アクション",
+            "archivedAt": "アーカイブ日時",
+            "itemId": "アイテムID",
+            "itemName": "アイテム名",
+            "itemType": "アイテムタイプ"
+        },
+        "title": "アーカイブされたダウンロード",
+        "toast": {
+            "magnetCopied": "マグネットリンクがクリップボードにコピーされました"
+        }
+    },
+    "AutomationRules": {
+        "action": "アクション",
+        "actions": {
+            "archive": "アーカイブ",
+            "delete": "削除",
+            "forceStart": "強制開始",
+            "stopSeeding": "シーディングを停止"
+        },
+        "add": "ルールを追加",
+        "addRule": "ルールを追加",
+        "cancel": "キャンセル",
+        "checkEvery": "毎回チェック",
+        "clearLogs": "ログをクリア",
+        "close": "閉じる",
+        "condition": "条件",
+        "conditions": {
+            "age": "年齢",
+            "downloadSpeed": "ダウンロード速度",
+            "fileSize": "ファイルサイズ",
+            "inactive": "非アクティブダウンロード",
+            "peers": "ピア",
+            "seedingRatio": "シーディング比率",
+            "seedingTime": "シーディング時間",
+            "seeds": "シード",
+            "stalledTime": "ブロック時間",
+            "tracker": "トラッカー",
+            "uploadSpeed": "アップロード速度"
+        },
+        "delete": "ルールを削除",
+        "details": "詳細",
+        "enabledAt": "有効化日時",
+        "error": "エラー",
+        "executions": "実行",
+        "failed": "失敗",
+        "itemsAffected": "影響を受けたアイテム",
+        "lastTriggered": "最後にトリガーされた",
+        "neverExecuted": "一度も実行されなかった",
+        "neverTriggered": "一度もトリガーされなかった",
+        "noLogs": "ログがありません",
+        "noRules": "自動化ルールがありません",
+        "operators": {
+            "eq": "等しい",
+            "gt": "より大きい",
+            "gte": "以上",
+            "lt": "より小さい",
+            "lte": "以下"
+        },
+        "presets": {
+            "deleteInactive": "非アクティブダウンロードを削除",
+            "deleteIncomplete": "不完全なトレントを削除",
+            "deleteQueued": "キューされたダウンロードを削除（6時間以上）",
+            "deleteStalled": "ブロックされたダウンロードを削除（1時間以上）",
+            "deleteUnavailable": "利用できないトレントを削除",
+            "stopSeedingLowRatio": "低比率でシーディングを停止",
+            "title": "クイックプリセット"
+        },
+        "ruleLogs": "ルールログ",
+        "ruleName": "ルール名",
+        "ruleNamePlaceholder": "ルール名を入力",
+        "section": {
+            "hide": "ルールを非表示",
+            "show": "ルールを表示"
+        },
+        "success": "成功",
+        "title": "自動化ルール",
+        "triggers": "トリガー",
+        "update": "ルールを更新",
+        "viewLogs": "ログを表示"
+    },
+    "CardList": {
+        "toast": {
+            "copyLink": "リンクがクリップボードにコピーされました",
+            "copyLinkFailed": "リンクのコピーに失敗しました"
+        }
+    },
+    "CloudUpload": {
+        "activeJobs": "アクティブジョブ",
+        "cancel": "キャンセル",
+        "complete": "完了",
+        "connect": "接続",
+        "connected": "接続済み",
+        "connectedProviders": "接続済みプロバイダー",
+        "disconnect": "切断",
+        "manageConnections": "接続を管理",
+        "noActiveJobs": "アクティブジョブなし",
+        "notConnected": "未接続",
+        "title": "クラウドストレージマネージャー",
+        "toast": {
+            "connectionError": "プロバイダーへの接続に失敗しました",
+            "connectionSuccess": "プロバイダーに正常に接続しました",
+            "disconnectionError": "プロバイダーからの切断に失敗しました",
+            "disconnectionSuccess": "プロバイダーから正常に切断しました",
+            "jobCancelError": "ジョブのキャンセルに失敗しました",
+            "jobCancelled": "ジョブが正常にキャンセルされました"
+        }
+    },
+    "ColumnManager": {
+        "manageColumns": "列の管理",
+        "reorderColumns": "列の並べ替え"
+    },
+    "Columns": {
+        "actions": "アクション",
+        "asset_type": "タイプ",
+        "cached_at": "キャッシュ日時",
+        "created_at": "追加日時",
+        "download_progress": "進捗",
+        "download_speed": "ダウンロード速度",
+        "download_state": "状態",
+        "eta": "ETA",
+        "expires_at": "有効期限",
+        "file_count": "ファイル数",
+        "hash": "ハッシュ",
+        "id": "ID",
+        "name": "名前",
+        "original_url": "ソースURL",
+        "peers": "ピア",
+        "private": "プライベートトラッカー",
+        "progress": "進行状況",
+        "ratio": "比率",
+        "seeds": "シード",
+        "size": "サイズ",
+        "total_downloaded": "合計ダウンロード",
+        "total_uploaded": "合計アップロード",
+        "updated_at": "最終更新日",
+        "upload_speed": "アップロード速度"
+    },
+    "Common": {
+        "hours": "時間",
+        "itemTypes": {
+            "all": "すべて",
+            "All": "すべて",
+            "file": "file",
+            "File": "File",
+            "files": "files",
+            "Files": "Files",
+            "torrent": "torrent",
+            "Torrent": "Torrent",
+            "torrents": "torrents",
+            "Torrents": "Torrents",
+            "usenet": "usenet",
+            "Usenet": "Usenet",
+            "usenets": "usenets",
+            "Usenets": "Usenets",
+            "web": "web",
+            "Web": "Web",
+            "webdl": "webdl",
+            "Webdl": "Webdl"
+        },
+        "minutes": "分",
+        "time": {
+            "ago": "前",
+            "complete": "完了",
+            "d": "日",
+            "h": "時間",
+            "in": "あと",
+            "m": "分",
+            "mo": "ヶ月",
+            "s": "秒",
+            "unknown": "不明",
+            "y": "年"
+        }
+    },
+    "DownloadPanel": {
+        "actions": {
+            "clearAll": "すべてクリア",
+            "copyAll": "すべてのリンクをコピー",
+            "copyLink": "リンクをコピー",
+            "downloadFile": "ファイルをダウンロード"
+        },
+        "status": {
+            "fetching": "{total}件中{current}件の取得中",
+            "generating": "リンクを生成中...",
+            "generatingMore": "さらにリンクを生成中..."
+        },
+        "title": {
+            "multiple": "ダウンロードリンク",
+            "single": "ダウンロードリンク"
+        },
+        "toast": {
+            "copyAllFailed": "リンクのコピーにすべて失敗しました",
+            "copyFailed": "リンクのコピーに失敗しました",
+            "linkCopied": "リンクがクリップボードにコピーされました！",
+            "linksCopied": "リンクがクリップボードにコピーされました！"
+        }
+    },
+    "FileActions": {
+        "copyLink": "リンクをコピー",
+        "download": "ファイルをダウンロード"
+    },
+    "Header": {
+        "logo": "TorBox Manager Logo",
+        "menu": {
+            "archived": "アーカイブ",
+            "downloads": "ダウンロード",
+            "linkHistory": "リンク履歴",
+            "notifications": "通知",
+            "referrals": "紹介",
+            "rss": "RSSフィード",
+            "search": "検索",
+            "systemStatus": "システムステータス",
+            "toggle": "メニューの切り替え",
+            "user": "ユーザー"
+        },
+        "theme": {
+            "toggleDark": "ダークモードの切り替え",
+            "toggleLight": "ライトモードの切り替え"
+        },
+        "title": "TorBox Manager"
+    },
+    "Index": {
+        "description": "Torrent and Debrid Manager",
+        "search": "検索",
+        "searchPlaceholder": "Torrentsを検索...",
+        "title": "TorBox Manager"
+    },
+    "ItemActionButtons": {
+        "delete": {
+            "label": "削除",
+            "title": "削除"
+        },
+        "download": {
+            "label": "ダウンロード",
+            "title": "ダウンロード"
+        },
+        "export": {
+            "label": "エクスポート",
+            "title": "エクスポート"
+        },
+        "files": {
+            "hide": "ファイルを隠す",
+            "label": "ファイル",
+            "show": "ファイルを表示"
+        },
+        "start": {
+            "label": "開始",
+            "title": "強制開始"
+        },
+        "stop": {
+            "label": "停止",
+            "title": "シードの停止"
+        }
+    },
+    "ItemActions": {
+        "toast": {
+            "deleteAllFailed": "アイテムの削除に失敗しました",
+            "deleteAllSuccess": "すべてのアイテムが正常に削除されました",
+            "deleteError": "削除に失敗しました: {error}",
+            "deletePartialSuccess": "{total} アイテムのうち {count} を削除",
+            "deleteSuccess": "削除に成功しました",
+            "downloadFailed": "ダウンロード開始に失敗しました",
+            "downloadStarted": "ダウンロードが正常に開始しました",
+            "exportTorrentFailed": "トレントファイルのエクスポートに失敗しました",
+            "exportTorrentSuccess": "トレントファイルが正常にエクスポートされました",
+            "noFiles": "ダウンロード可能なファイルはありません",
+            "seedingStopFailed": "トレントのシードに失敗しました",
+            "seedingStopped": "トレントのシードが正常に停止しました"
+        }
+    },
+    "ItemUploader": {
+        "button": {
+            "torrents": "トレントをアップロード",
+            "usenet": "NZBファイルをアップロード",
+            "webdl": "リンクを追加"
+        },
+        "dropzone": {
+            "torrents": "トレントファイルをここにドロップします",
+            "usenet": "NZBファイルをここにドロップします"
+        },
+        "errors": {
+            "accessDenied": "アクセスが拒否されました。APIキーとアカウント状態を確認してください。",
+            "activeLimit": "アクティブなダウンロードの制限に達しました。一部のダウンロードが完了するまで待ってください。",
+            "authFailed": "認証に失敗しました。APIキーを確認してください。",
+            "downloadTooLarge": "ダウンロードするファイルが現在のプランに収まりません。アカウントをアップグレードしてください。",
+            "invalidNzb": "提供されたNZBファイルまたはリンクが無効です。ファイルを確認してから再試行してください。",
+            "monthlyLimit": "月ごとのダウンロード制限に達しました。アカウントをアップグレードしてください。",
+            "networkError": "TorBoxサーバーに接続できません。インターネット接続を確認してから再試行してください。",
+            "serverOverloaded": "TorBoxサーバーが一時的に過負荷状態です。数分後に再試行してください。",
+            "serverTimeout": "TorBoxサーバーが応答を返さないようです。数分後に再試行してください。",
+            "serverUnavailable": "TorBoxサーバーが一時的に利用できません。数分後に再試行してください。",
+            "temporaryIssue": "TorBoxサーバーで一時的な問題が発生している可能性があります。数分後に再試行してください。",
+            "tooManyRequests": "TorBoxサーバーへのリクエストが多すぎます。しばらく待ってから再試行してください。",
+            "uploadFailed": "アップロードに失敗しました"
+        },
+        "help": {
+            "checkApiKey": "APIキーが正しく、十分な権限があることを確認してください",
+            "downloadSlots": "アカウントに利用可能なダウンロードスロットがあることを確認してください",
+            "nzbTips": "NZBアップロードのヒント",
+            "serverErrors": "サーバーエラーが表示される場合は、数分待ってから再試行してください",
+            "uploadLimit": "サーバーエラーを避けるため、一度に10個以上のNZBファイルをアップロードしないでください",
+            "validLinks": "NZBリンクが有効でアクセス可能であることを確認してください"
+        },
+        "options": {
+            "hide": "オプションを隠す",
+            "show": "オプションを表示"
+        },
+        "placeholder": {
+            "torrents": "マグネットリンクをここに貼り付けます（1行につき1つ）",
+            "usenet": "NZBリンクをここに貼り付けます（1行につき1つ）",
+            "webdl": "ウェブダウンロードリンクをここに貼り付けます（1行につき1つ）",
+            "webdlPassword": "パスワードを入力してください（オプション）"
+        },
+        "rateLimit": {
+            "details": "{count} アイテムがキューにあります。TorBoxは1分あたり {perMinute} アイテムと1時間あたり {perHour} アイテムに制限しています。大規模なバッチは適切な遅延で自動的に処理されます。",
+            "info": "レート制限"
+        },
+        "section": {
+            "hide": "セクションを隠す",
+            "show": "セクションを表示"
+        },
+        "status": {
+            "allCompleted": "すべての {count} アイテムが正常に処理されました",
+            "clearItems": "アイテムをクリア",
+            "completed": "{count} アイテムのうち {total} アイテムが正常に処理されました",
+            "processing": "{count} of {total} items processed"
+        },
+        "title": {
+            "default": "アップロード",
+            "torrents": "トレントのアップロード",
+            "usenet": "NZBファイルのアップロード",
+            "webdl": "ウェブダウンロードの追加"
+        }
+    },
+    "LandingPage": {
+        "apiKeyInput": {
+            "description": "APIキーは次の場所で確認できます",
+            "link": "torbox.app/settings",
+            "title": "TorBox APIキーを入力"
+        },
+        "features": {
+            "batchUpload": {
+                "description": "ワンクリックで複数のトレントをアップロード",
+                "title": "バッチアップロード"
+            },
+            "debrid": {
+                "description": "Debridサービスとのスムーズな統合",
+                "title": "Debrid-統合"
+            },
+            "search": {
+                "description": "複数のトレントサイトを検索",
+                "title": "スマート検索"
+            }
+        },
+        "footer": {
+            "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
+            "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.27",
+            "github": "GitHub"
+        },
+        "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
+        "title": "TorBox Manager"
+    },
+    "LinkHistory": {
+        "actions": {
+            "copy": "コピー",
+            "download": "ダウンロード",
+            "remove": "削除"
+        },
+        "columns": {
+            "actions": "アクション",
+            "expiresAt": "有効期限",
+            "fileName": "ファイル名",
+            "itemId": "アイテムID",
+            "itemName": "アイテム名"
+        },
+        "expired": "期限切れ",
+        "title": "リンク履歴"
+    },
+    "MoreOptionsDropdown": {
+        "copyFullMagnet": "完全なマグネットリンクをコピー",
+        "copyHash": "ハッシュをコピー",
+        "copyId": "IDをコピー",
+        "copyShortMagnet": "ショートマグネットリンクをコピー",
+        "copySourceUrl": "ソース URL をコピー",
+        "exportTorrent": ".torrent ファイルをエクスポート",
+        "label": "オプション",
+        "reannounce": "再アナウンス",
+        "title": "オプション",
+        "toast": {
+            "clipboardError": "クリップボードへのコピーに失敗しました",
+            "exportMagnetFailed": "マグネットリンクのエクスポートに失敗しました",
+            "exportMagnetSuccess": "マグネットリンクが正常にエクスポートされました",
+            "exportTorrentFailed": "トレントファイルのエクスポートに失敗しました",
+            "exportTorrentSuccess": "トレントファイルが正常にエクスポートされました",
+            "fullMagnetCopied": "完全なマグネットリンクがクリップボードにコピーされました",
+            "hashCopied": "ハッシュがクリップボードにコピーされました",
+            "hashNotAvailable": "ハッシュが利用できません",
+            "idCopied": "クリップボードにコピーされた ID",
+            "magnetError": "マグネットリンクの取得に失敗しました",
+            "reannounceFailed": "トレントの再アナウンスに失敗しました",
+            "reannounceSuccess": "トレントの再アナウンスに成功しました",
+            "shortMagnetCopied": "ショートマグネットリンクがクリップボードにコピーされました",
+            "sourceUrlCopied": "ソース URL がクリップボードにコピーされました",
+            "sourceUrlNotAvailable": "ソースURLが利用できません",
+            "uploadFailed": "アップロードに失敗しました",
+            "uploadStarted": "アップロードが正常に開始されました"
+        },
+        "uploadToCloud": "クラウドにアップロード"
+    },
+    "Navigation": {
+        "home": "ホーム",
+        "search": "検索",
+        "settings": "設定"
+    },
+    "Notifications": {
+        "clear": "クリア",
+        "clearAll": "すべてクリア",
+        "loading": "通知を読み込み中...",
+        "markAllAsRead": "すべて既読にする",
+        "markAsRead": "既読にする",
+        "noNotifications": "通知がありません",
+        "notifications": "通知",
+        "testNotification": "テスト通知"
+    },
+    "Referral": {
+        "copied": "コピーしました！",
+        "copyAll": "すべてコピー",
+        "copyCode": "コードをコピー",
+        "copyLink": "リンクをコピー",
+        "description": "友達とTorBoxを共有して報酬を獲得しましょう！",
+        "developerNote": "これらは開発者の紹介コードです",
+        "error": "コピーに失敗しました",
+        "landingDescription": "TorBoxアカウントが必要ですか？紹介リンクを使用してサインアップし、始めましょう！",
+        "referral": "紹介",
+        "referralCode": "紹介コード",
+        "referralLink": "紹介リンク",
+        "signUp": "TorBoxにサインアップ",
+        "title": "紹介プログラム",
+        "visitLink": "リンクを訪問"
+    },
+    "RssFeeds": {
+        "actions": "アクション",
+        "active": "アクティブ",
+        "addError": "RSSフィードの追加に失敗しました",
+        "addFeed": "RSSフィードを追加",
+        "addSuccess": "RSSフィードが正常に追加されました",
+        "cancel": "キャンセル",
+        "confirmDelete": {
+            "cancel": "キャンセル",
+            "confirm": "削除",
+            "message": "このRSSフィードを削除してもよろしいですか？この操作は元に戻せません。",
+            "title": "RSSフィードを削除"
+        },
+        "delete": "削除",
+        "deleteError": "RSSフィードの削除に失敗しました",
+        "deleteSuccess": "RSSフィードが正常に削除されました",
+        "disable": "無効化",
+        "disabled": "無効",
+        "disableError": "RSSフィードの無効化に失敗しました",
+        "disableSuccess": "RSSフィードが正常に無効化されました",
+        "dontOlderThan": "古いアイテムを除外（日）",
+        "dontOlderThanPlaceholder": "X日より古いアイテムを除外",
+        "dontRegex": "除外正規表現（オプション）",
+        "dontRegexPlaceholder": "この正規表現に一致するアイテムを除外",
+        "doRegex": "ダウンロード正規表現（オプション）",
+        "doRegexPlaceholder": "この正規表現に一致するアイテムをダウンロード",
+        "downloadType": "ダウンロードタイプ",
+        "downloadTypePlaceholder": "ダウンロードタイプを選択",
+        "editError": "RSSフィードの更新に失敗しました",
+        "editFeed": "RSSフィードを編集",
+        "editSuccess": "RSSフィードが正常に更新されました",
+        "enable": "有効化",
+        "enabled": "有効",
+        "enableError": "RSSフィードの有効化に失敗しました",
+        "enableSuccess": "RSSフィードが正常に有効化されました",
+        "error": "RSSフィードの読み込みエラー",
+        "feedName": "フィード名",
+        "feedNamePlaceholder": "フィード名を入力",
+        "feedUrl": "フィードURL",
+        "feedUrlPlaceholder": "RSSフィードURLを入力",
+        "inactive": "非アクティブ",
+        "itemCount": "アイテム",
+        "items": "アイテム",
+        "lastCheck": "最終チェック",
+        "loading": "RSSフィードを読み込み中...",
+        "never": "なし",
+        "noFeeds": "RSSフィードが設定されていません",
+        "options": {
+            "auto": "自動",
+            "dontSeed": "シードしない",
+            "seed": "シード",
+            "torrent": "トレント",
+            "usenet": "ユーズネット",
+            "webdl": "Webダウンロード"
+        },
+        "pageDescription": "RSSフィードの管理とアイテムの閲覧",
+        "pageTitle": "RSS管理",
+        "passCheck": "チェックをスキップ",
+        "passCheckDescription": "このフィードのキャッシュチェックをスキップ",
+        "save": "保存",
+        "scanInterval": "スキャン間隔（分）",
+        "scanIntervalPlaceholder": "このフィードをスキャンする頻度",
+        "status": "ステータス",
+        "tabs": {
+            "feeds": "フィード管理",
+            "items": "アイテム管理"
+        },
+        "title": "RSSフィード",
+        "torrentSeeding": "トレントシーディング",
+        "torrentSeedingPlaceholder": "シーディング設定を選択",
+        "validation": {
+            "nameRequired": "フィード名が必要です",
+            "urlInvalid": "有効なRSSフィードURLを入力してください",
+            "urlRequired": "フィードURLが必要です"
+        }
+    },
+    "RssItems": {
+        "allTypes": "すべてのタイプ",
+        "category": "カテゴリ",
+        "date": "日付",
+        "download": "ダウンロード",
+        "error": "アイテムの読み込みエラー",
+        "loading": "アイテムを読み込み中...",
+        "newestFirst": "新しい順",
+        "noDescription": "説明がありません",
+        "noItems": "アイテムが見つかりません",
+        "noMatchingItems": "検索条件に一致するアイテムがありません",
+        "oldestFirst": "古い順",
+        "published": "公開日",
+        "refresh": "更新",
+        "search": "検索",
+        "searchPlaceholder": "アイテムを検索...",
+        "selectFeed": "RSSフィードを選択",
+        "selectFeedPlaceholder": "アイテムを表示するフィードを選択",
+        "size": "サイズ",
+        "sortBy": "並び替え",
+        "sortOrder": "並び順",
+        "title": "タイトル",
+        "toast": {
+            "downloadFailed": "ダウンロードの開始に失敗しました",
+            "downloadStarted": "ダウンロードが正常に開始されました",
+            "noLink": "ダウンロードリンクが利用できません"
+        },
+        "torrent": "トレント",
+        "type": "タイプ",
+        "unknown": "不明",
+        "usenet": "ユーズネット",
+        "webdl": "Webダウンロード"
+    },
+    "SearchBar": {
+        "clearFilters": "フィルターをクリア",
+        "clearHistory": "クリア",
+        "clearSearch": "検索をクリア",
+        "customEngines": "カスタムエンジン",
+        "episode": "エピソード",
+        "episodePlaceholder": "E01",
+        "hideAdvanced": "詳細を隠す",
+        "minSeeders": "最小シーダー",
+        "minSize": "最小サイズ (GB)",
+        "placeholder": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
+        "quality": "品質",
+        "qualityAll": "すべての品質",
+        "recentSearches": "最近の検索",
+        "search": "検索",
+        "searchExamples": "検索例",
+        "season": "シーズン",
+        "seasonPlaceholder": "S01",
+        "showAdvanced": "詳細を表示",
+        "year": "年",
+        "yearPlaceholder": "2024"
+    },
+    "SearchResults": {
+        "actions": {
+            "added": "追加済み",
+            "adding": "追加中...",
+            "addToTorbox": "TorBoxに追加",
+            "copyLink": "リンクをコピー",
+            "copyMagnet": "マグネットリンクをコピー"
+        },
+        "cachedOnly": "キャッシュのみ",
+        "hideTorBoxIndexers": "TorBoxのインデックスを非表示にする",
+        "metadata": {
+            "cached": "キャッシュ",
+            "days": "日"
+        },
+        "noResults": "該当なし",
+        "results": "{count} 件ヒット",
+        "sort": {
+            "age": "最新",
+            "seeders": "最多シーダー",
+            "size": "最大サイズ"
+        },
+        "toast": {
+            "magnetCopied": "マグネットリンクがクリップボードにコピーされました",
+            "nzbAdded": "NZBがTorBoxに正常に追加されました",
+            "nzbAddFailed": "NZBの追加に失敗しました: {error}",
+            "nzbCopied": "NZBリンクがクリップボードにコピーされました",
+            "torrentAdded": "TorrentがTorBoxに正常に追加されました",
+            "torrentAddFailed": "Torrentの追加に失敗しました: {error}",
+            "uploadSuccess": "正常に {count} {type} がアップロードされました",
+            "uploadSuccessPlural": "正常に {count} {type}s がアップロードされました"
+        }
+    },
+    "SpeedChart": {
+        "chart": {
+            "hide": "グラフを隠す",
+            "show": "グラフを表示"
+        },
+        "labels": {
+            "download": "ダウンロード",
+            "upload": "アップロード"
+        },
+        "scale": {
+            "linear": "線形",
+            "logarithmic": "対数"
+        },
+        "timeRanges": {
+            "10m": "過去10分",
+            "1h": "過去1時間",
+            "1m": "過去1分",
+            "3h": "過去3時間",
+            "6h": "過去6時間",
+            "all": "すべて"
+        },
+        "title": {
+            "default": "ネットワーク",
+            "full": "ネットワーク活動"
+        }
+    },
+    "Statuses": {
+        "checking_resume_data": "リザムーデータのチェック中",
+        "completed": "完了",
+        "downloading": "ダウンロード中",
+        "failed": "失敗",
+        "inactive": "非アクティブ",
+        "meta_dl": "メタデータのダウンロード中",
+        "queued": "キューに入れられた",
+        "seeding": "シーディング",
+        "stalled": "ブロックされた",
+        "unknown": "不明",
+        "uploading": "アップロード中"
+    },
+    "StatusSection": {
+        "selectedFiles": "{fileCount} files selected ({size})",
+        "selectedItems": "{itemCount} {type}が選択されています ({size})",
+        "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
+        "total": "{count} {type}"
+    },
+    "SystemStatus": {
+        "error": "エラー",
+        "hoursAgo": "{hours}時間前",
+        "justNow": "今",
+        "lastCheck": "最終チェック",
+        "minutesAgo": "{minutes}分前",
+        "never": "なし",
+        "refreshStatus": "システムステータスを更新",
+        "status": {
+            "apiUnhealthy": "API接続の問題",
+            "apiUnhealthyDescription": "TorBox APIが正常に応答していません",
+            "healthy": "システム正常",
+            "healthyDescription": "すべてのシステムが正常に動作しています",
+            "noApiKey": "APIキーなし",
+            "noApiKeyDescription": "TorBox接続を確認するにはAPIキーが必要です",
+            "unhealthy": "システム異常",
+            "unhealthyDescription": "ローカルアプリケーションに問題が発生しています",
+            "unknown": "ステータス不明",
+            "unknownDescription": "システムステータスを確認できません"
+        }
+    },
+    "TableBody": {
+        "toast": {
+            "copyLink": "リンクがクリップボードにコピーされました",
+            "copyLinkFailed": "リンクのコピーに失敗しました"
+        }
+    },
+    "TorrentOptions": {
+        "allowZip": {
+            "description": "100以上のファイルを含むトレント用",
+            "label": "ZIPを許可"
+        },
+        "autoStart": {
+            "label": "自動スタートを有効にする",
+            "limit": "アクティブなトレントの上限:",
+            "title": "キューに入れられたトレントの処理",
+            "tooltip": "指定した上限まで自動的にトレントのダウンロードを開始"
+        },
+        "instantQueue": {
+            "description": "待ち行列をスキップ",
+            "label": "インスタントキュー"
+        },
+        "seedingPreference": {
+            "always": "常にシード",
+            "auto": "自動（デフォルト）",
+            "label": "シーディングの優先順位",
+            "never": "シードしない"
+        },
+        "title": "グローバルアップロードオプション"
+    },
+    "UploadProgress": {
+        "approachingRateLimit": "レート制限に近づいています:",
+        "approachingRateLimitDetails": "分あたり {perMinute}/10、時間あたり {perHour}/60",
+        "estimatedCompletion": "推定完了時間:",
+        "pleaseWait": "お待ちください...",
+        "preparingUploads": "アップロードを準備中...",
+        "rateLimit": "レート制限:",
+        "rateLimitActive": "レート制限が有効です:",
+        "remaining": "（残り {remaining}）",
+        "uploading": "{total} 件中 {current} 件をアップロード中",
+        "waitingBeforeNext": "次のアップロードまで {time} 待機中"
+    },
+    "User": {
+        "copyLink": "リンクをコピー",
+        "copyLinkFailed": "リンクのコピーに失敗しました",
+        "description": "アカウントを管理し、統計を確認",
+        "errors": {
+            "reloadPage": "ページを再読み込み",
+            "renderError": "プロフィールの表示中にエラーが発生しました"
+        },
+        "noData": "データがありません",
+        "plans": {
+            "essential": "エッセンシャル",
+            "free": "無料",
+            "pro": "プロ",
+            "standard": "スタンダード",
+            "unknown": "不明"
+        },
+        "profile": {
+            "accountStatus": "アカウントステータス",
+            "basicInfo": "基本情報",
+            "createdAt": "作成日",
+            "downloadBreakdown": "ダウンロード内訳",
+            "email": "メールアドレス",
+            "lastLogin": "最終更新",
+            "plan": "プラン",
+            "planExpiry": "プラン期限",
+            "ratio": "比率",
+            "referralCode": "紹介コード",
+            "status": "ステータス",
+            "title": "ユーザープロフィール",
+            "torrentDownloads": "トレントダウンロード",
+            "totalDownloads": "総ダウンロード数",
+            "totalSize": "総ダウンロード容量",
+            "totalUploaded": "総アップロード容量",
+            "usage": "使用統計",
+            "usenetDownloads": "ユーズネットダウンロード",
+            "userId": "ユーザーID",
+            "webDownloads": "Webダウンロード"
+        },
+        "referralLink": "紹介リンク",
+        "retry": "再試行",
+        "status": {
+            "active": "アクティブ",
+            "expired": "期限切れ",
+            "free": "無料"
+        },
+        "title": "ユーザープロフィール"
+    },
+    "ViewControls": {
+        "cardView": "カードビュー",
+        "collapseAllFiles": "すべてのファイルを折りたたみ",
+        "enterFullscreen": "フルスクリーンに入る",
+        "exitFullscreen": "フルスクリーンを終了する",
+        "expandAllFiles": "すべてのファイルを展開",
+        "hideSensitive": "機密コンテンツを隠す",
+        "showSensitive": "機密コンテンツを表示する",
+        "tableView": "テーブルビュー"
+    }
 }

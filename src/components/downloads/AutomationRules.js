@@ -453,10 +453,10 @@ export default function AutomationRules() {
   };
 
   return (
-    <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+    <div className="px-2 py-2 lg:p-4 mt-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
+          <h2 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
             {t('title')}
           </h2>
           <span className="text-xs text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 px-1.5 py-0.5 rounded-md">

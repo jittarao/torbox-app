@@ -67,7 +67,7 @@ const ensureValidData = (data) => {
 // Local storage key for chart expanded state
 const CHART_EXPANDED_KEY = 'speedchart-expanded';
 
-export default function SpeedChart({ items, activeType }) {
+export default function SpeedChart({ items }) {
   const t = useTranslations('SpeedChart');
   const [timeRange, setTimeRange] = useState('10m');
   const [useLogScale, setUseLogScale] = useState(false);
@@ -366,7 +366,7 @@ export default function SpeedChart({ items, activeType }) {
     <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
         <div className="flex items-center gap-4">
-          <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
+          <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
             {isMobile ? t('title.default') : t('title.full')}
           </h3>
 

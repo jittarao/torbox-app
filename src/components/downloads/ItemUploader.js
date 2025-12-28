@@ -214,9 +214,9 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   if (!isClient) return null;
 
   return (
-    <div className="mt-4 px-2 py-2 lg:p-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
+    <div className="px-2 py-2 lg:p-4 mt-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
-        <h3 className="text-md lg:text-lg font-medium text-primary-text dark:text-primary-text-dark">
+        <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
           {isMobile ? t('title.default') : assetTypeInfo.title}
         </h3>
         <div className="flex items-center gap-2 lg:gap-4">

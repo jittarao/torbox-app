@@ -10,9 +10,9 @@ updates:
       timezone: "UTC"
     open-pull-requests-limit: 10
     reviewers:
-      - "crazycacti"
+      - "jittarao"
     assignees:
-      - "crazycacti"
+      - "jittarao"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
@@ -48,9 +48,9 @@ updates:
       timezone: "UTC"
     open-pull-requests-limit: 5
     reviewers:
-      - "crazycacti"
+      - "jittarao"
     assignees:
-      - "crazycacti"
+      - "jittarao"
     commit-message:
       prefix: "ci"
       include: "scope"
@@ -69,9 +69,9 @@ updates:
       timezone: "UTC"
     open-pull-requests-limit: 5
     reviewers:
-      - "crazycacti"
+      - "jittarao"
     assignees:
-      - "crazycacti"
+      - "jittarao"
     commit-message:
       prefix: "ci"
       include: "scope"
