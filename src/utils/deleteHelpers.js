@@ -32,7 +32,7 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents') => {
         (data) =>
           Object.values(NON_RETRYABLE_ERRORS).some(
             (err) => data.error?.includes(err) || data.detail?.includes(err),
-          ),
+          ) && data.error !== 'DATABASE_ERROR', // Allow retries for DATABASE_ERROR
       ],
     });
 
@@ -40,9 +40,8 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents') => {
       return { success: true };
     }
 
-    throw new Error(result.error);
+    throw new Error(result.error || 'Unknown error occurred');
   } catch (error) {
-    console.error('Error deleting:', error);
     return { success: false, error: error.message };
   }
 };
@@ -71,7 +70,6 @@ export const batchDeleteHelper = async (
 
     return successfulIds;
   } catch (error) {
-    console.error('Error in batch delete:', error);
     return [];
   }
 };

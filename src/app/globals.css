@@ -27,21 +27,40 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out;
-}
-
 .container {
   max-width: 1600px;
+}
+
+/* Fix select and option styling for dark mode, especially in Firefox */
+select {
+  background-color: #F0EEE7;
+  color: #1F321A;
+}
+
+select option {
+  background-color: #F0EEE7;
+  color: #1F321A;
+}
+
+.dark select {
+  background-color: #111827;
+  color: #E5E7EB;
+}
+
+.dark select option {
+  background-color: #111827;
+  color: #E5E7EB;
+}
+
+/* Firefox-specific fix for select dropdown options */
+@-moz-document url-prefix() {
+  select option {
+    background-color: #F0EEE7 !important;
+    color: #1F321A !important;
+  }
+  
+  .dark select option {
+    background-color: #111827 !important;
+    color: #E5E7EB !important;
+  }
 }

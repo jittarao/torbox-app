@@ -89,6 +89,41 @@ const UploadIcon = ({ className = 'h-5 w-5' }) => (
   </svg>
 );
 
+
+const WarningIcon = ({ className = 'h-5 w-5' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+    />
+  </svg>
+);
+
+const SpinnerIcon = ({ className = 'h-5 w-5' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    />
+  </svg>
+);
+
 const DeleteIcon = ({ className = 'h-5 w-5' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -667,6 +702,468 @@ const RestoreIcon = ({ className = 'h-4 w-4' }) => (
     <path d="M3 3v5h5" />
   </svg>
 );
+
+const BellIcon = ({ className = 'h-6 w-6' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </svg>
+);
+
+const TrashIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M3 6h18" />
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+  </svg>
+);
+
+const CheckCircleIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <path d="m9 11 3 3L22 4" />
+  </svg>
+);
+
+const ExclamationTriangleIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+  </svg>
+);
+
+const XCircleIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="m15 9-6 6" />
+    <path d="m9 9 6 6" />
+  </svg>
+);
+
+const QuestionMarkCircleIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <path d="M12 17h.01" />
+  </svg>
+);
+
+const KeyIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
+  </svg>
+);
+
+const RssIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M4 11a9 9 0 0 1 9 9" />
+    <path d="M4 4a16 16 0 0 1 16 16" />
+    <circle cx="5" cy="19" r="1" />
+  </svg>
+);
+
+const AutomationIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M12 2v4" />
+    <path d="M12 18v4" />
+    <path d="M4.93 4.93l2.83 2.83" />
+    <path d="M16.24 16.24l2.83 2.83" />
+    <path d="M2 12h4" />
+    <path d="M18 12h4" />
+    <path d="M4.93 19.07l2.83-2.83" />
+    <path d="M16.24 7.76l2.83-2.83" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const ExternalLinkIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" x2="21" y1="14" y2="3" />
+  </svg>
+);
+
+const CogIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+const FilterIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+const GiftIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+    />
+  </svg>
+);
+
+const UserIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+    />
+  </svg>
+);
+
+const AlertCircleIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+const BarChart3Icon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M3 3v18h18" />
+    <path d="M18 17V9" />
+    <path d="M13 17V5" />
+    <path d="M8 17v-3" />
+  </svg>
+);
+
+const CreditCardIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <rect width="20" height="14" x="2" y="5" rx="2" />
+    <line x1="2" x2="22" y1="10" y2="10" />
+  </svg>
+);
+
+const ReceiptIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
+    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+    <path d="M12 17.5v-11" />
+  </svg>
+);
+
+const HardDriveIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M22 12h-4l-3 9H9l-3-9H2" />
+    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+  </svg>
+);
+
+const ActivityIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
+
+const DollarSignIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+);
+
+const RotateCcwIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+    <path d="M8 16H3v5" />
+  </svg>
+);
+
+// Cloud Storage Provider Icons
+const CloudIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284" />
+  </svg>
+);
+
+const GoogleDriveIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M7.76 16.24C6.67 15.16 6 13.66 6 12s.67-3.16 1.76-4.24lC8.84 5.76C10.34 5 12 5s3.16.67 4.24 1.76L21 3v6h-6l2.24-2.24C16.16 6.67 14.66 6 13 6s-3.16.67-4.24 1.76L6 12l1.76 4.24z"/>
+  </svg>
+);
+
+const DropboxIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M6 2l6 4 6-4v4l-6 4-6-4V2zm0 8l6 4 6-4v4l-6 4-6-4v-4zm0 8l6 4 6-4v4l-6 4-6-4v-4z"/>
+  </svg>
+);
+
+const OneDriveIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .494.083.964.237 1.4-1.272.65-2.147 2.018-2.147 3.6 0 1.83 1.66 3.2 3.5 3.2.47 0 .92-.086 1.335-.25.62 1.334 1.926 2.25 3.437 2.25 1.512 0 2.818-.916 3.437-2.25.415.163.865.248 1.336.248 1.84 0 3.5-1.37 3.5-3.2zm-6.5-1.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5z"/>
+  </svg>
+);
+
+const GoFileIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+  </svg>
+);
+
+const FichierIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+  </svg>
+);
+
+const PixeldrainIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+  </svg>
+);
+
+const XIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+const ExpandAllIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M7 13l5 5 5-5" />
+    <path d="M7 6l5 5 5-5" />
+  </svg>
+);
+
+const CollapseAllIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path d="M7 11l5-5 5 5" />
+    <path d="M7 18l5-5 5 5" />
+  </svg>
+);
+
+const PrivateIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+    />
+  </svg>
+);
+
+const AllIcon = ({ className = 'h-4 w-4' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+    />
+  </svg>
+);
+
 export const Icons = {
   Link: LinkIcon,
   MagnifyingGlass: MagnifyingGlassIcon,
@@ -714,6 +1211,42 @@ export const Icons = {
   Edit: EditIcon,
   Archive: ArchiveIcon,
   Restore: RestoreIcon,
+  Bell: BellIcon,
+  Trash: TrashIcon,
+  CheckCircle: CheckCircleIcon,
+  ExclamationTriangle: ExclamationTriangleIcon,
+  XCircle: XCircleIcon,
+  QuestionMarkCircle: QuestionMarkCircleIcon,
+  Key: KeyIcon,
+  Rss: RssIcon,
+  Automation: AutomationIcon,
+  ExternalLink: ExternalLinkIcon,
+  Cog: CogIcon,
+  Filter: FilterIcon,
+  Gift: GiftIcon,
+  User: UserIcon,
+  AlertCircle: AlertCircleIcon,
+  BarChart3: BarChart3Icon,
+  CreditCard: CreditCardIcon,
+  Receipt: ReceiptIcon,
+  HardDrive: HardDriveIcon,
+  Activity: ActivityIcon,
+  DollarSign: DollarSignIcon,
+  RotateCcw: RotateCcwIcon,
+  Warning: WarningIcon,
+  Spinner: SpinnerIcon,
+  Cloud: CloudIcon,
+  GoogleDrive: GoogleDriveIcon,
+  Dropbox: DropboxIcon,
+  OneDrive: OneDriveIcon,
+  GoFile: GoFileIcon,
+  Fichier: FichierIcon,
+  Pixeldrain: PixeldrainIcon,
+  X: XIcon,
+  All: AllIcon,
+  ExpandAll: ExpandAllIcon,
+  CollapseAll: CollapseAllIcon,
+  Private: PrivateIcon,
 };
 
 export default Icons;

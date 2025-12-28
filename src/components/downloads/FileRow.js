@@ -22,14 +22,22 @@ export default function FileRow({
   isMobile = false,
   isBlurred = false,
   tableWidth,
+  fileIndex = null, // If provided, render only this specific file
 }) {
   const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) =>
     fileId ? `${itemId}-${fileId}` : itemId;
 
+  // If fileIndex is provided, render only that file; otherwise render all files
+  const filesToRender = fileIndex !== null 
+    ? [item.files[fileIndex]].filter(Boolean)
+    : item.files;
+
   return (
     <>
-      {item.files.map((file, index) => {
+      {filesToRender.map((file, index) => {
+        // Use the provided fileIndex for the actual index, or use the map index
+        const actualIndex = fileIndex !== null ? fileIndex : index;
         const isChecked =
           selectedItems.files.get(item.id)?.has(file.id) || false;
         const isDisabled = selectedItems.items?.has(item.id);
@@ -59,7 +67,7 @@ export default function FileRow({
             onClick={(e) => {
               // Ignore clicks on buttons or if disabled
               if (e.target.closest('button') || isDisabled) return;
-              handleFileSelection(item.id, index, file, !isChecked, e.shiftKey);
+              handleFileSelection(item.id, actualIndex, file, !isChecked, e.shiftKey);
             }}
           >
             <td className="px-3 md:px-4 py-2 text-center whitespace-nowrap">
@@ -70,7 +78,7 @@ export default function FileRow({
                 onChange={(e) =>
                   handleFileSelection(
                     item.id,
-                    index,
+                    actualIndex,
                     file,
                     e.target.checked,
                     e.shiftKey,
@@ -128,7 +136,7 @@ export default function FileRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFileDownload(item.id, file.id, true);
+                  handleFileDownload(item.id, file, true);
                 }}
                 disabled={isCopying[assetKey(item.id, file.id)]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 
@@ -146,7 +154,7 @@ export default function FileRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFileDownload(item.id, file.id);
+                  handleFileDownload(item.id, file);
                 }}
                 disabled={isDownloading[assetKey(item.id, file.id)]}
                 className="p-1.5 rounded-full text-accent dark:text-accent-dark 

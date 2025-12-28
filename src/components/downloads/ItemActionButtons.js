@@ -16,18 +16,31 @@ export default function ItemActionButtons({
   onStopSeeding,
   onForceStart,
   onDownload,
+  onExport,
+  isExporting,
   viewMode,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [privateTrackerWarning, setPrivateTrackerWarning] = useState(false);
   const t = useTranslations('ItemActionButtons');
 
   const handleStopSeeding = async (e) => {
     e.stopPropagation();
+    
+    // Check if this is a private tracker torrent
+    if (item.private && !privateTrackerWarning) {
+      setPrivateTrackerWarning(true);
+      // Auto-reset warning after 3 seconds
+      setTimeout(() => setPrivateTrackerWarning(false), 3000);
+      return;
+    }
+    
     setIsStopping(true);
     try {
       await onStopSeeding();
       phEvent('stop_seeding_item');
+      setPrivateTrackerWarning(false);
     } finally {
       setIsStopping(false);
     }
@@ -55,6 +68,13 @@ export default function ItemActionButtons({
     await onDelete();
   };
 
+  const handleExport = async (e) => {
+    e.stopPropagation();
+    if (onExport) {
+      await onExport();
+    }
+  };
+
   return (
     <>
       {/* Stop seeding button */}
@@ -65,14 +85,19 @@ export default function ItemActionButtons({
           <button
             onClick={handleStopSeeding}
             disabled={isStopping}
-            className={`text-red-400 dark:text-red-400 
-              hover:text-red-600 dark:hover:text-red-500 transition-colors
-              disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
-            title={t('stop.title')}
+            className={`${
+              privateTrackerWarning 
+                ? 'text-orange-500 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/10' 
+                : 'text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500'
+            } transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
+            title={privateTrackerWarning ? 'Click again to confirm stopping private tracker seeding' : t('stop.title')}
           >
             {isStopping ? <Spinner size="sm" /> : <Icons.Stop />}
             {isMobile && (
-              <span className="ml-2 text-xs">{t('stop.label')}</span>
+              <span className="ml-2 text-xs">
+                {privateTrackerWarning ? 'Confirm Stop' : t('stop.label')}
+              </span>
             )}
           </button>
         )}
@@ -130,6 +155,23 @@ export default function ItemActionButtons({
           {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
           {isMobile && (
             <span className="ml-2 text-xs">{t('download.label')}</span>
+          )}
+        </button>
+      )}
+
+      {/* Export button - only for torrents */}
+      {activeType === 'torrents' && onExport && (
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className={`p-1.5 rounded-full text-blue-500 dark:text-blue-400 
+          hover:bg-blue-500/5 dark:hover:bg-blue-400/5 transition-colors
+          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+          title={t('export.title')}
+        >
+          {isExporting ? <Spinner size="sm" /> : <Icons.Link />}
+          {isMobile && (
+            <span className="ml-2 text-xs">{t('export.label')}</span>
           )}
         </button>
       )}

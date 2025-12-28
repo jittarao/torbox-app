@@ -1,6 +1,7 @@
 import {
   formatSize,
   formatSpeed,
+  formatEta,
   timeAgo,
   formatDate,
 } from './utils/formatters';
@@ -46,6 +47,7 @@ export default function ItemCard({
       ![
         'name',
         'progress',
+        'download_progress',
         'download_state',
         'download_speed',
         'upload_speed',
@@ -84,6 +86,12 @@ export default function ItemCard({
         return columnT('total_uploaded');
       case 'original_url':
         return columnT('original_url');
+      case 'download_progress':
+        return columnT('download_progress');
+      case 'asset_type':
+        return columnT('asset_type');
+      case 'private':
+        return columnT('private');
     }
   };
 
@@ -116,7 +124,79 @@ export default function ItemCard({
         return <Icons.CloudUpload />;
       case 'original_url':
         return <Icons.Link />;
+      case 'download_progress':
+        return <Icons.Download />;
+      case 'asset_type':
+        return <Icons.All />;
+      case 'private':
+        return <Icons.Private />;
     }
+  };
+
+  const renderDownloadProgress = (item) => {
+    // Only show progress for active downloads
+    if (!item.active || item.download_finished) {
+      return null;
+    }
+
+    const downloadSpeed = item.download_speed || 0;
+    const totalSize = item.size || 0;
+    
+    // For usenet and webdl, use the progress field if available
+    // For torrents, calculate from total_downloaded if available
+    let progress = 0;
+    let downloadedSize = 0;
+    
+    if (item.assetType === 'usenet' || item.assetType === 'webdl') {
+      // Use progress field (0-1) for usenet and webdl
+      progress = (item.progress || 0) * 100;
+      downloadedSize = totalSize * (item.progress || 0);
+    } else {
+      // For torrents, use total_downloaded if available, otherwise fall back to progress
+      downloadedSize = item.total_downloaded || 0;
+      if (totalSize > 0 && downloadedSize > 0) {
+        progress = (downloadedSize / totalSize) * 100;
+      } else if (item.progress !== undefined) {
+        progress = (item.progress || 0) * 100;
+        downloadedSize = totalSize * (item.progress || 0);
+      }
+    }
+    
+    // Calculate ETA based on remaining size and speed
+    const remainingSize = totalSize - downloadedSize;
+    const etaSeconds = downloadSpeed > 0 ? remainingSize / downloadSpeed : 0;
+
+    return (
+      <div className="flex flex-col gap-1 min-w-0">
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(100, progress)}%` }}
+          />
+        </div>
+        
+        {/* Progress text */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-primary-text/70 dark:text-primary-text-dark/70">
+            {progress.toFixed(1)}%
+          </span>
+          <span className="text-primary-text/60 dark:text-primary-text-dark/60">
+            {formatSize(downloadedSize)} / {formatSize(totalSize)}
+          </span>
+        </div>
+        
+        {/* Speed and ETA */}
+        {downloadSpeed > 0 && (
+          <div className="flex items-center justify-between text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+            <span>↓ {formatSpeed(downloadSpeed)}</span>
+            {etaSeconds > 0 && (
+              <span>ETA: {formatEta(etaSeconds, commonT)}</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const getColumnValue = (column, item) => {
@@ -149,8 +229,34 @@ export default function ItemCard({
         return formatSize(item.total_downloaded);
       case 'total_uploaded':
         return formatSize(item.total_uploaded);
+      case 'download_progress':
+        return renderDownloadProgress(item);
       case 'original_url':
         return item.original_url;
+      case 'asset_type':
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`inline-block w-2 h-2 rounded-full ${
+              item.assetType === 'torrents' ? 'bg-blue-500' :
+              item.assetType === 'usenet' ? 'bg-green-500' :
+              item.assetType === 'webdl' ? 'bg-purple-500' : 'bg-gray-500'
+            }`}></span>
+            <span className="capitalize">
+              {item.assetType === 'torrents' ? 'Torrent' :
+               item.assetType === 'usenet' ? 'Usenet' :
+               item.assetType === 'webdl' ? 'Web' : 'Unknown'}
+            </span>
+          </div>
+        );
+      case 'private':
+        return item.private ? (
+          <div className="flex items-center gap-2">
+            <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+            <span>Private</span>
+          </div>
+        ) : (
+          <span>Public</span>
+        );
     }
   };
 
@@ -200,6 +306,11 @@ export default function ItemCard({
                     }`}
                   ></span>
                 </Tooltip>
+                {item.private && (
+                  <Tooltip content="Private Tracker">
+                    <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                  </Tooltip>
+                )}
                 {item.name && (
                   <Tooltip content={!isBlurred ? item.name : ''}>
                     <span>{item.name || 'Unnamed Item'}</span>
@@ -244,7 +355,12 @@ export default function ItemCard({
               </>
             ) : (
               <>
-                <span>{formatSize(item.size || 0)}</span> •{' '}
+                <span>{formatSize(item.size || 0)}</span>{' '}
+                {item.ratio !== undefined && item.ratio !== null && (
+                  <>
+                    <span>{item.ratio.toFixed(2)}</span>{' '}
+                  </>
+                )}
                 <span>{timeAgo(item.created_at, commonT)}</span>
               </>
             )}

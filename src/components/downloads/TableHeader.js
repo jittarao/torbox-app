@@ -51,7 +51,7 @@ export default function TableHeader({
                   : ''
               }`}
             >
-              {columnT(column.key)}
+              {column.displayName ? column.displayName : columnT(column.key)}
               {sortField === columnId && (
                 <span className="ml-1 text-accent dark:text-accent-dark">
                   {sortDirection === 'asc' ? '↑' : '↓'}

@@ -9,13 +9,23 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function LinkHistoryPage() {
   const [history, setHistory] = useState([]);
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
-    const downloadHistory = JSON.parse(
-      localStorage.getItem('torboxDownloadHistory') || '[]',
-    );
-
-    setHistory(downloadHistory);
+    try {
+      const downloadHistory = JSON.parse(
+        localStorage.getItem('torboxDownloadHistory') || '[]',
+      );
+      const storedKey = localStorage.getItem('torboxApiKey');
+      
+      setHistory(downloadHistory);
+      if (storedKey) {
+        setApiKey(storedKey);
+      }
+    } catch (error) {
+      console.error('Error parsing download history from localStorage:', error);
+      setHistory([]);
+    }
   }, []);
 
   const deleteHistoryItem = (id) => {
@@ -28,7 +38,7 @@ export default function LinkHistoryPage() {
     <main
       className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
     >
-      <Header />
+      <Header apiKey={apiKey} />
       <div className="container mx-auto p-4">
         <LinkHistory history={history} onDelete={deleteHistoryItem} />
       </div>

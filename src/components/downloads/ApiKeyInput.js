@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
@@ -13,6 +13,22 @@ export default function ApiKeyInput({
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const [showManager, setShowManager] = useState(false);
+  const [keepManagerOpen, setKeepManagerOpen] = useState(false);
+
+  // Load manager open state from localStorage on mount
+  useEffect(() => {
+    const storedState = localStorage.getItem('torboxKeepManagerOpen');
+    if (storedState === 'true') {
+      setKeepManagerOpen(true);
+      setShowManager(true);
+    }
+  }, []);
+
+  // Save manager open state to localStorage
+  const handleKeepManagerToggle = (keepOpen) => {
+    setKeepManagerOpen(keepOpen);
+    localStorage.setItem('torboxKeepManagerOpen', keepOpen.toString());
+  };
 
   return (
     <div className="space-y-4">
@@ -23,7 +39,7 @@ export default function ApiKeyInput({
             value={value}
             onChange={(e) => onKeyChange(e.target.value)}
             placeholder={t('placeholder')}
-            className="w-full px-3 py-2 pr-12 md:p-3.5 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
+            className="w-full px-3 py-2 pr-12 md:p-3 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
               bg-transparent text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
               focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
@@ -62,6 +78,8 @@ export default function ApiKeyInput({
           onKeySelect={onKeyChange}
           activeKey={value}
           onClose={() => setShowManager(false)}
+          keepOpen={keepManagerOpen}
+          onKeepOpenToggle={handleKeepManagerToggle}
         />
       )}
     </div>

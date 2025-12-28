@@ -71,6 +71,8 @@ export const getStatusStyles = (status) => {
 
 export const getItemTypeName = (activeType) => {
   switch (activeType) {
+    case 'all':
+      return 'download';
     case 'usenet':
       return 'usenet';
     case 'webdl':

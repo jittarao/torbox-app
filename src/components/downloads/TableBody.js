@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
 import { useDownloads } from '../shared/hooks/useDownloads';
@@ -42,6 +43,56 @@ export default function TableBody({
     setDownloadHistory,
   );
   const isMobile = useIsMobile();
+  const tbodyRef = useRef(null);
+
+  // Create flattened array of rows (item rows + file rows when expanded)
+  const flattenedRows = useMemo(() => {
+    const rows = [];
+    items.forEach((item, itemIndex) => {
+      // Add item row
+      rows.push({
+        type: 'item',
+        item,
+        itemIndex,
+        virtualIndex: rows.length,
+      });
+
+      // Add file rows if expanded
+      if (expandedItems.has(item.id) && item.files && item.files.length > 0) {
+        item.files.forEach((file, fileIndex) => {
+          rows.push({
+            type: 'file',
+            item,
+            file,
+            itemIndex,
+            fileIndex,
+            virtualIndex: rows.length,
+          });
+        });
+      }
+    });
+    return rows;
+  }, [items, expandedItems]);
+
+  // Find scrollable parent container (the div with id="items-table")
+  const getScrollElement = () => {
+    if (typeof document !== 'undefined') {
+      return document.getElementById('items-table');
+    }
+    return null;
+  };
+
+  // Virtualizer setup
+  const virtualizer = useVirtualizer({
+    count: flattenedRows.length,
+    getScrollElement,
+    estimateSize: (index) => {
+      const row = flattenedRows[index];
+      // Estimate: item rows ~60px, file rows ~50px
+      return row.type === 'item' ? 60 : 50;
+    },
+    overscan: 5,
+  });
 
   const handleItemSelection = (
     itemId,
@@ -114,14 +165,14 @@ export default function TableBody({
   const assetKey = (itemId, fileId) =>
     fileId ? `${itemId}-${fileId}` : itemId;
 
-  const handleFileDownload = async (itemId, fileId, copyLink = false) => {
-    const key = assetKey(itemId, fileId);
+  const handleFileDownload = async (itemId, file, copyLink = false) => {
+    const key = assetKey(itemId, file.id);
     if (copyLink) {
       setIsCopying((prev) => ({ ...prev, [key]: true }));
     } else {
       setIsDownloading((prev) => ({ ...prev, [key]: true }));
     }
-    const options = { fileId };
+    const options = { fileId: file.id, filename: file.name };
 
     const idField =
       activeType === 'usenet'
@@ -164,52 +215,85 @@ export default function TableBody({
     );
   };
 
+  const virtualRows = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
+  const startOffset = virtualRows[0]?.start ?? 0;
+
   return (
-    <tbody className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark">
-      {items.map((item, index) => (
-        <Fragment key={item.id}>
-          <ItemRow
-            item={item}
-            activeColumns={activeColumns}
-            columnWidths={columnWidths}
-            selectedItems={selectedItems}
-            setItems={setItems}
-            setSelectedItems={setSelectedItems}
-            downloadHistory={downloadHistory}
-            setDownloadHistory={setDownloadHistory}
-            onRowSelect={onRowSelect}
-            expandedItems={expandedItems}
-            toggleFiles={toggleFiles}
-            apiKey={apiKey}
-            onDelete={onDelete}
-            // props for shift+click functionality
-            rowIndex={index}
-            handleItemSelection={handleItemSelection}
-            setToast={setToast}
-            activeType={activeType}
-            isMobile={isMobile}
-            isBlurred={isBlurred}
-            viewMode={viewMode}
-            tableWidth={tableWidth}
-          />
-          {expandedItems.has(item.id) && item.files && (
+    <tbody
+      ref={tbodyRef}
+      className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark"
+    >
+      {/* Top spacer */}
+      {startOffset > 0 && (
+        <tr>
+          <td colSpan={activeColumns.length + 2} style={{ height: startOffset, padding: 0 }} />
+        </tr>
+      )}
+      {/* Virtualized rows */}
+      {virtualRows.map((virtualRow) => {
+        const row = flattenedRows[virtualRow.index];
+
+        if (row.type === 'item') {
+          return (
+            <ItemRow
+              key={`item-${row.item.id}`}
+              item={row.item}
+              activeColumns={activeColumns}
+              columnWidths={columnWidths}
+              selectedItems={selectedItems}
+              setItems={setItems}
+              setSelectedItems={setSelectedItems}
+              downloadHistory={downloadHistory}
+              setDownloadHistory={setDownloadHistory}
+              onRowSelect={onRowSelect}
+              expandedItems={expandedItems}
+              toggleFiles={toggleFiles}
+              apiKey={apiKey}
+              onDelete={onDelete}
+              rowIndex={row.itemIndex}
+              handleItemSelection={handleItemSelection}
+              setToast={setToast}
+              activeType={activeType}
+              isMobile={isMobile}
+              isBlurred={isBlurred}
+              viewMode={viewMode}
+              tableWidth={tableWidth}
+            />
+          );
+        } else {
+          // File row - use FileRow component to render the specific file
+          return (
             <FileRow
-              item={item}
+              key={`file-${row.item.id}-${row.file.id}`}
+              item={row.item}
               selectedItems={selectedItems}
               handleFileSelection={handleFileSelection}
               handleFileDownload={handleFileDownload}
-              downloadHistory={downloadHistory}
               activeColumns={activeColumns}
-              isMobile={isMobile}
-              isBlurred={isBlurred}
+              downloadHistory={downloadHistory}
               isCopying={isCopying}
               isDownloading={isDownloading}
-              isTable={true}
+              isMobile={isMobile}
+              isBlurred={isBlurred}
               tableWidth={tableWidth}
+              fileIndex={row.fileIndex}
             />
-          )}
-        </Fragment>
-      ))}
+          );
+        }
+      })}
+      {/* Bottom spacer */}
+      {virtualRows.length > 0 && (
+        <tr>
+          <td
+            colSpan={activeColumns.length + 2}
+            style={{
+              height: totalSize - (virtualRows[virtualRows.length - 1]?.end ?? 0),
+              padding: 0,
+            }}
+          />
+        </tr>
+      )}
     </tbody>
   );
 }
