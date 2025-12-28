@@ -33,6 +33,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -133,17 +134,25 @@ jobs:
           echo "Both frontend and backend images successfully built and pushed to GHCR!" >> $GITHUB_STEP_SUMMARY
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request' && 
-            matrix.suffix == 'amd64' && 
-            github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'pull_request' && matrix.suffix == 'amd64'
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## Docker Build Summary
+            // Only comment on PRs from the same repository (not forks)
+            const isFork = context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
+            
+            if (isFork) {
+              console.log('Skipping comment: PR is from a fork. Build summary available in workflow logs.');
+              return;
+            }
+            
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## Docker Build Summary
             
             **Build completed successfully!**
             
@@ -159,7 +168,16 @@ jobs:
             The images were built but not pushed (PR builds are for testing only).
             
             To deploy, merge this PR or create a release tag.`
-            })
+              });
+              console.log('Successfully commented on PR');
+            } catch (error) {
+              // Silently fail for permission issues
+              if (error.status === 403 || error.status === 404) {
+                console.log('Cannot comment on PR (insufficient permissions). Build summary available in workflow logs.');
+              } else {
+                throw error;
+              }
+            }
 
   create-manifests:
     needs: build
