@@ -32,6 +32,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const lastAutoStartCheckRef = useRef(0);
   const processedQueueIdsRef = useRef(new Set());
   const [hasActiveRules, setHasActiveRules] = useState(false);
+  const fetchInProgressRef = useRef(false);
 
   // A per-type rate limit tracker
   const rateLimitDataRef = useRef({});
@@ -48,21 +49,6 @@ export function useFetchData(apiKey, type = 'torrents') {
   useEffect(() => {
     webdlRef.current = webdlItems;
   }, [webdlItems]);
-
-  // Fetch all data types on initial mount and when API key changes
-  useEffect(() => {
-    const fetchAllTypes = async () => {
-      if (!apiKey) return;
-
-      await Promise.all([
-        fetchLocalItems(true, 'torrents'),
-        fetchLocalItems(true, 'usenet'),
-        fetchLocalItems(true, 'webdl'),
-      ]);
-    };
-
-    fetchAllTypes();
-  }, [apiKey]);
 
   const isRateLimited = useCallback(
     (activeType = type) => {
@@ -137,11 +123,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     async (bypassCache = false, customType = null, retryCount = 0, skipLoading = false) => {
       const activeType = customType || type;
       
-      // Only manage loading state for top-level calls
-      if (!skipLoading) {
-        setLoading(true);
-      }
-      
       // Prevent infinite retry loops
       if (retryCount > 1) {
         console.error('Max retry attempts reached, giving up');
@@ -151,6 +132,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         return [];
       }
 
+      // Check apiKey early, but don't set loading for 'all' type until all fetches complete
       if (!apiKey) {
         if (!skipLoading) {
           setLoading(false);
@@ -158,17 +140,33 @@ export function useFetchData(apiKey, type = 'torrents') {
         return [];
       }
 
+      // Only set loading to true for top-level calls (not when skipLoading is true)
+      if (!skipLoading) {
+        setLoading(true);
+      }
+
       // Handle "all" type by fetching all three types
+      // For 'all' type, we manage loading state only at the top level
       if (activeType === 'all') {
-        const results = await Promise.all([
+        // Fetch all three types with skipLoading=true so they don't modify loading state
+        // Use Promise.allSettled to ensure we wait for ALL three fetches to complete,
+        // regardless of success or failure, then set loading to false
+        const results = await Promise.allSettled([
           fetchLocalItems(bypassCache, 'torrents', retryCount, true),
           fetchLocalItems(bypassCache, 'usenet', retryCount, true),
           fetchLocalItems(bypassCache, 'webdl', retryCount, true),
         ]);
+        
+        // Extract results from settled promises (handle both fulfilled and rejected)
+        const flattenedResults = results
+          .map((result) => (result.status === 'fulfilled' ? result.value : []))
+          .flat();
+        
+        // Only set loading to false after ALL three fetches complete
         if (!skipLoading) {
           setLoading(false);
         }
-        return results.flat();
+        return flattenedResults;
       }
 
       // Ensure rate limit data exists for the active type
@@ -331,17 +329,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     [apiKey, checkAndAutoStartTorrents, isRateLimited, type],
   );
 
-  // Fetch data on type change
-  useEffect(() => {
-    const initialFetch = async () => {
-      // Only fetch the current active type when type changes
-      await fetchLocalItems(true, type);
-    };
-
-    initialFetch();
-  }, [type, fetchLocalItems]);
-
-  // Active data based on the current type
+   // Active data based on the current type
   const items = useMemo(() => {
     switch (type) {
       case 'all':
@@ -360,6 +348,39 @@ export function useFetchData(apiKey, type = 'torrents') {
         return torrents || [];
     }
   }, [type, torrents, usenetItems, webdlItems]);
+
+  // Fetch data on type change or apiKey change
+  useEffect(() => {
+    // Return if apiKey is not set
+    if (!apiKey) {
+      // Set loading to false to prevent loading state from being stuck on true
+      setLoading(false);
+      fetchInProgressRef.current = false;
+      return;
+    }
+    
+    // Return if fetch is already in progress
+    if (fetchInProgressRef.current) {
+      return;
+    }
+    
+    // Set fetchInProgressRef to true to prevent multiple simultaneous fetches
+    fetchInProgressRef.current = true;
+    
+    const initialFetch = async () => {
+      try {
+        // Only fetch the current active type when type changes
+        // Set skipLoading to false on initial fetch
+        // Set skipLoading to true on subsequent fetches
+        await fetchLocalItems(true, type, 0, items.length === 0 ? false : true);
+      } finally {
+        fetchInProgressRef.current = false;
+      }
+    };
+
+    initialFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, apiKey]);
 
   // Setter and fetch functions based on the current type
   const setItems = useMemo(() => {
@@ -502,7 +523,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         interval = setInterval(() => {
           // Check rate limiting for current type
           if (!isRateLimited()) {
-            fetchLocalItems(true);
+            fetchLocalItems(true, type, 0, true);
           }
         }, currentPollingInterval);
       }
@@ -524,7 +545,7 @@ export function useFetchData(apiKey, type = 'torrents') {
           : 0;
         // Only fetch if we've been inactive for a while and not rate limited
         if (inactiveDuration > 10000 && !isRateLimited()) {
-          fetchLocalItems(true);
+          fetchLocalItems(true, type, 0, true);
         }
         lastInactiveTime = null;
       } else {

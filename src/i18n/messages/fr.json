@@ -740,6 +740,7 @@
         }
     },
     "TableBody": {
+        "noDownloads": "Aucun téléchargement",
         "toast": {
             "copyLink": "Lien copié dans le presse-papiers",
             "copyLinkFailed": "Échec de la copie du lien"

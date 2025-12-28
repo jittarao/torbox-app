@@ -740,6 +740,7 @@
         }
     },
     "TableBody": {
+        "noDownloads": "No downloads",
         "toast": {
             "copyLink": "Link copied to clipboard",
             "copyLinkFailed": "Failed to copy link"

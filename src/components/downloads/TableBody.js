@@ -219,6 +219,25 @@ export default function TableBody({
   const totalSize = virtualizer.getTotalSize();
   const startOffset = virtualRows[0]?.start ?? 0;
 
+  // Show empty state when there are no items
+  if (items.length === 0) {
+    return (
+      <tbody
+        ref={tbodyRef}
+        className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark"
+      >
+        <tr>
+          <td
+            colSpan={activeColumns.length + 2}
+            className="text-center py-8 text-text-secondary dark:text-text-secondary-dark"
+          >
+            {t('noDownloads')}
+          </td>
+        </tr>
+      </tbody>
+    );
+  }
+
   return (
     <tbody
       ref={tbodyRef}
