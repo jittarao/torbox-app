@@ -364,7 +364,7 @@ export default function SearchResults({ apiKey }) {
                         ) ? (
                         t('actions.added')
                       ) : (
-                        t('actions.addToTorbox')
+                        t('actions.addToTorBox')
                       )}
                     </button>
                   </div>
