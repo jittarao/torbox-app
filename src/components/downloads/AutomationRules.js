@@ -132,7 +132,9 @@ export default function AutomationRules() {
   const [editingRuleId, setEditingRuleId] = useState(null);
   const [viewingLogsRuleId, setViewingLogsRuleId] = useState(null);
   const [ruleLogs, setRuleLogs] = useState({});
-  const [newRule, setNewRule] = useState({
+
+  // Default new rule structure
+  const getDefaultNewRule = () => ({
     name: '',
     enabled: true,
     trigger: {
@@ -151,6 +153,8 @@ export default function AutomationRules() {
       type: ACTION_TYPES.STOP_SEEDING,
     },
   });
+
+  const [newRule, setNewRule] = useState(getDefaultNewRule());
 
   // Apply a preset rule
   const applyPreset = async (preset) => {
@@ -218,25 +222,7 @@ export default function AutomationRules() {
     }
 
     setIsAddingRule(false);
-    setNewRule({
-      name: '',
-      enabled: true,
-      trigger: {
-        type: TRIGGER_TYPES.INTERVAL,
-        value: 5,
-      },
-      conditions: [
-        {
-          type: CONDITION_TYPES.SEEDING_TIME,
-          operator: COMPARISON_OPERATORS.GT,
-          value: 30,
-        },
-      ],
-      logicOperator: LOGIC_OPERATORS.AND,
-      action: {
-        type: ACTION_TYPES.STOP_SEEDING,
-      },
-    });
+    setNewRule(getDefaultNewRule());
   };
 
   const handleEditRule = (rule) => {
@@ -672,7 +658,7 @@ export default function AutomationRules() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                      {t('conditions')}
+                      {t('condition')}
                     </label>
                     <button
                       type="button"
@@ -849,22 +835,7 @@ export default function AutomationRules() {
                     onClick={() => {
                       setIsAddingRule(false);
                       setEditingRuleId(null);
-                      setNewRule({
-                        name: '',
-                        enabled: true,
-                        trigger: {
-                          type: TRIGGER_TYPES.INTERVAL,
-                          value: 5,
-                        },
-                        condition: {
-                          type: CONDITION_TYPES.SEEDING_TIME,
-                          operator: COMPARISON_OPERATORS.GT,
-                          value: 30,
-                        },
-                        action: {
-                          type: ACTION_TYPES.STOP_SEEDING,
-                        },
-                      });
+                      setNewRule(getDefaultNewRule());
                     }}
                     className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
                   >
