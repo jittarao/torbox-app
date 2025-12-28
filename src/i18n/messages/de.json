@@ -740,6 +740,7 @@
         }
     },
     "TableBody": {
+        "noDownloads": "Keine Downloads",
         "toast": {
             "copyLink": "Link wurde in die Zwischenablage kopiert",
             "copyLinkFailed": "Link konnte nicht kopiert werden"

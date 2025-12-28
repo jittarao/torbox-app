@@ -740,6 +740,7 @@
         }
     },
     "TableBody": {
+        "noDownloads": "No hay descargas",
         "toast": {
             "copyLink": "Enlace copiado al portapapeles",
             "copyLinkFailed": "Error al copiar enlace"
