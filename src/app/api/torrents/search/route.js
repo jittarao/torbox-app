@@ -4,12 +4,18 @@ import {
   TORBOX_MANAGER_VERSION,
 } from '@/components/constants';
 
+const SEARCH_PREFIXES = ['imdb', 'tvdb', 'jikan'];
+
 export async function GET(req) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const { searchParams } = new URL(req.url);
   const query = decodeURIComponent(searchParams.get('query'));
   const searchUserEngines = searchParams.get('search_user_engines') === 'true';
+  const season = searchParams.get('season');
+  const episode = searchParams.get('episode');
+  const year = searchParams.get('year');
+  const quality = searchParams.get('quality');
 
   if (!query) {
     return new Response(
@@ -29,14 +35,21 @@ export async function GET(req) {
       metadata: true,
       check_cache: true,
       search_user_engines: searchUserEngines,
+      ...(season && { season }),
+      ...(episode && { episode }),
+      ...(year && { year }),
+      ...(quality && { quality }),
     });
 
     let endpoint;
     console.log(`Query: ${query}`);
-    if (query.startsWith('imdb:')) {
-      const imdbId = query.substring(5); // Remove 'imdb:' prefix
-      console.log(`Fetching IMDB ID: ${imdbId}`);
-      endpoint = `${API_SEARCH_BASE}/torrents/imdb:${imdbId}?${params}`;
+    
+    // Check for supported search engine prefixes
+    const searchEngine = SEARCH_PREFIXES.find((prefix) => query.startsWith(prefix + ":"));
+    if (searchEngine) {
+      const systemId = query.substring(searchEngine.length + 1);
+      console.log(`Fetching ${searchEngine} ID: ${systemId}`);
+      endpoint = `${API_SEARCH_BASE}/torrents/${searchEngine}:${systemId}?${params}`;
     } else {
       endpoint = `${API_SEARCH_BASE}/torrents/search/${encodeURIComponent(query)}?${params}`;
     }

@@ -8,33 +8,18 @@ import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Icons from '@/components/icons';
 import { locales } from '@/i18n/settings';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
+import ReferralDropdown from '@/components/ReferralDropdown';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getVersion } from '@/utils/version';
+// import CloudUploadManager from '@/components/downloads/CloudUploadManager';
 
-export default function Header() {
+export default function Header({ apiKey }) {
   const t = useTranslations('Header');
   const pathname = usePathname();
-  const [darkMode, setDarkMode] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const { darkMode, toggleDarkMode, isClient } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    // Set isClient to true once component is mounted
-    setIsClient(true);
-
-    // Check initial theme
-    const isDark =
-      localStorage.getItem('darkMode') === 'true' ||
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(isDark);
-    document.documentElement.classList.toggle('dark', isDark);
-  }, []);
-
-  // Only render the toggle button client-side
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode);
-    document.documentElement.classList.toggle('dark', newDarkMode);
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -51,9 +36,14 @@ export default function Header() {
               width={24}
               height={24}
             />
-            <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
-              {t('title')}
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
+                {t('title')}
+              </h1>
+              <span className="text-xs text-white/70 dark:text-primary-text-dark/70 font-normal">
+                v{getVersion()}
+              </span>
+            </div>
           </Link>
 
           {/* Mobile menu button */}
@@ -129,11 +119,36 @@ export default function Header() {
               {t('menu.linkHistory')}
             </Link>
 
+            <Link
+              href="/rss"
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+                ${pathname === '/rss' || locales.some((locale) => pathname === `/${locale}/rss`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+            >
+              <Icons.Rss />
+              {t('menu.rss')}
+            </Link>
+
+
+            <Link
+              href="/user"
+              className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors pb-2
+                ${pathname === '/user' || locales.some((locale) => pathname === `/${locale}/user`) ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+            >
+              <Icons.User />
+              {t('menu.user')}
+            </Link>
+
             {/* Divider */}
             <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
 
-            {/* Dark mode toggle and Language Switcher */}
+            {/* Dark mode toggle, Notifications, and Language Switcher */}
             <div className="flex items-center gap-4">
+              {/* {apiKey && <CloudUploadManager apiKey={apiKey} setToast={() => {}} />} */}
+              <ReferralDropdown />
+              {apiKey && <NotificationBell apiKey={apiKey} />}
+              <SystemStatusIndicator apiKey={apiKey} />
               {isClient && (
                 <button
                   onClick={toggleDarkMode}
@@ -158,7 +173,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 space-y-4 animate-slide-up">
+          <div className="md:hidden mt-4 space-y-4">
             <Link
               href="/"
               className={`block text-white dark:text-primary-text-dark font-medium 
@@ -188,7 +203,40 @@ export default function Header() {
             >
               {t('menu.linkHistory')}
             </Link>
+
+            <Link
+              href="/rss"
+              className={`block text-white dark:text-primary-text-dark font-medium 
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                ${pathname === '/rss' || locales.some((locale) => pathname === `/${locale}/rss`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t('menu.rss')}
+            </Link>
+
+            <Link
+              href="/user"
+              className={`block text-white dark:text-primary-text-dark font-medium 
+                hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                ${pathname === '/user' || locales.some((locale) => pathname === `/${locale}/user`) ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t('menu.user')}
+            </Link>
+
             <div className="py-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark">
+                  {t('menu.systemStatus')}
+                </span>
+                <SystemStatusIndicator apiKey={apiKey} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark">
+                  {t('menu.referrals')}
+                </span>
+                <ReferralDropdown />
+              </div>
               {isClient && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

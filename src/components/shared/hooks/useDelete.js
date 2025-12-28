@@ -18,12 +18,14 @@ export function useDelete(
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
 
-  const deleteItem = async (id, bulk = false) => {
+  const deleteItem = async (id, bulk = false, itemAssetType = null) => {
     if (!apiKey) return;
 
     try {
       setIsDeleting(true);
-      const result = await deleteItemHelper(id, apiKey, assetType);
+      // For 'all' type, determine the actual asset type from the item
+      const actualAssetType = assetType === 'all' && itemAssetType ? itemAssetType : assetType;
+      const result = await deleteItemHelper(id, apiKey, actualAssetType);
 
       if (result.success) {
         // Refresh the list after deletion
@@ -52,13 +54,47 @@ export function useDelete(
     }
   };
 
-  const batchDelete = async (ids) => {
+  const batchDelete = async (ids, items = []) => {
     try {
-      const successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
+      let successfulIds = [];
+      
+      // For 'all' type, we need to group items by their asset type and delete them separately
+      if (assetType === 'all' && items.length > 0) {
+        const groupedItems = {
+          torrents: [],
+          usenet: [],
+          webdl: []
+        };
+        
+        // Group items by their asset type
+        items.forEach(item => {
+          const itemAssetType = item.assetType || 'torrents';
+          if (groupedItems[itemAssetType]) {
+            groupedItems[itemAssetType].push(item.id);
+          }
+        });
+        
+        // Delete each group separately
+        for (const [type, typeIds] of Object.entries(groupedItems)) {
+          if (typeIds.length > 0) {
+            const typeSuccessfulIds = await batchDeleteHelper(typeIds, apiKey, type);
+            successfulIds.push(...typeSuccessfulIds);
+          }
+        }
+      } else {
+        successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
+      }
 
       // Update UI for successful deletes
       if (successfulIds.length > 0) {
-        setItems((prev) => prev.filter((t) => !successfulIds.includes(t.id)));
+        setItems((prev) => {
+          // Safety check: ensure prev is an array
+          if (!Array.isArray(prev)) {
+            console.warn('setItems called with non-array prev:', prev);
+            return prev || [];
+          }
+          return prev.filter((t) => !successfulIds.includes(t.id));
+        });
         setSelectedItems((prev) => ({
           items: new Set(
             [...prev.items].filter((id) => !successfulIds.includes(id)),
@@ -106,7 +142,7 @@ export function useDelete(
     }
   };
 
-  const deleteItems = async (selectedItems, deleteParentDownloads = false) => {
+  const deleteItems = async (selectedItems, deleteParentDownloads = false, allItems = []) => {
     if (
       !apiKey ||
       (selectedItems.items.size === 0 && selectedItems.files.size === 0)
@@ -126,7 +162,10 @@ export function useDelete(
         });
       }
 
-      return await batchDelete(Array.from(itemsToDelete));
+      // Filter the items to only include the ones being deleted
+      const itemsToDeleteList = allItems.filter(item => itemsToDelete.has(item.id));
+
+      return await batchDelete(Array.from(itemsToDelete), itemsToDeleteList);
     } catch (error) {
       console.error('Error bulk deleting:', error);
       setToast({

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
-export default function ApiKeyManager({ onKeySelect, activeKey, onClose }) {
+export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpen, onKeepOpenToggle }) {
   const t = useTranslations('ApiKeyManager');
   const [keys, setKeys] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -13,7 +13,12 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose }) {
   useEffect(() => {
     const storedKeys = localStorage.getItem('torboxApiKeys');
     if (storedKeys) {
-      setKeys(JSON.parse(storedKeys));
+      try {
+        setKeys(JSON.parse(storedKeys));
+      } catch (error) {
+        console.error('Error parsing API keys from localStorage:', error);
+        setKeys([]);
+      }
     }
   }, []);
 
@@ -43,6 +48,27 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose }) {
           {t('savedKeys')}
         </h3>
         <div className="flex gap-2">
+          {/* Keep Manager Open Toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
+                ${
+                  keepOpen
+                    ? 'bg-accent dark:bg-accent-dark'
+                    : 'bg-border dark:bg-border-dark'
+                }`}
+              onClick={() => onKeepOpenToggle(!keepOpen)}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${keepOpen ? 'translate-x-4' : 'translate-x-1'}`}
+              />
+            </div>
+            <span className="text-sm text-primary-text dark:text-primary-text-dark">
+              {t('toggleOpen')}
+            </span>
+          </label>
+          
           <button
             onClick={() => setShowAddForm(true)}
             className="text-sm bg-accent dark:bg-accent-dark text-white px-3 py-1.5 rounded-lg
@@ -53,17 +79,27 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose }) {
             {t('addKey')}
           </button>
           <button
-            onClick={onClose}
-            className="text-primary-text/70 dark:text-primary-text-dark/70 
+            onClick={() => {
+              if (keepOpen) {
+                // If keep open is enabled, don't close the manager
+                return;
+              }
+              onClose();
+            }}
+            className={`text-primary-text/70 dark:text-primary-text-dark/70 
               hover:text-primary-text dark:hover:text-primary-text-dark
-              p-1.5 rounded-lg transition-colors"
-            aria-label={t('close')}
-            title={t('close')}
+              p-1.5 rounded-lg transition-colors ${
+                keepOpen ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            aria-label={keepOpen ? 'Manager stays open' : t('close')}
+            title={keepOpen ? 'Manager stays open - disable "Toggle Open" to close' : t('close')}
+            disabled={keepOpen}
           >
             <Icons.Times className="w-5 h-5" />
           </button>
         </div>
       </div>
+
 
       {keys.length > 0 ? (
         <div className="space-y-2">

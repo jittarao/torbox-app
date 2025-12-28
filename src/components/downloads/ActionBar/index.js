@@ -25,8 +25,10 @@ export default function ActionBar({
   onStatusChange,
   isDownloading,
   isDeleting,
+  isExporting,
   onBulkDownload,
   onBulkDelete,
+  onBulkExport,
   activeType = 'torrents',
   isBlurred = false,
   onBlurToggle,
@@ -40,6 +42,11 @@ export default function ActionBar({
   getTotalDownloadSize,
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
+  apiKey,
+  setToast,
+  expandAllFiles,
+  collapseAllFiles,
+  expandedItems,
 }) {
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
@@ -72,7 +79,7 @@ export default function ActionBar({
   const itemTypePlural = `${itemTypeName}s`;
 
   const sortOptions = activeColumns.map((column) => ({
-    label: t(`${COLUMNS[column].key}`),
+    label: COLUMNS[column].displayName ? COLUMNS[column].displayName : t(`${COLUMNS[column].key}`),
     value: column,
   }));
 
@@ -104,12 +111,17 @@ export default function ActionBar({
             hasSelectedFiles={hasSelectedFiles}
             isDownloading={isDownloading}
             isDeleting={isDeleting}
+            isExporting={isExporting}
             onBulkDownload={onBulkDownload}
             onBulkDelete={onBulkDelete}
+            onBulkExport={onBulkExport}
             itemTypeName={itemTypeName}
             itemTypePlural={itemTypePlural}
             isDownloadPanelOpen={isDownloadPanelOpen}
             setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+            activeType={activeType}
+            apiKey={apiKey}
+            setToast={setToast}
           />
         )}
       </div>
@@ -157,6 +169,10 @@ export default function ActionBar({
           onFullscreenToggle={onFullscreenToggle}
           viewMode={viewMode}
           onViewModeChange={onViewModeChange}
+          expandAllFiles={expandAllFiles}
+          collapseAllFiles={collapseAllFiles}
+          expandedItems={expandedItems}
+          unfilteredItems={unfilteredItems}
         />
 
         {/* Column manager */}

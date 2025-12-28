@@ -1,7 +1,7 @@
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
-export default function SearchBar({ search, onSearchChange }) {
+export default function SearchBar({ search, onSearchChange, itemTypePlural }) {
   const t = useTranslations();
   return (
     <div className="relative flex-1">
@@ -13,8 +13,8 @@ export default function SearchBar({ search, onSearchChange }) {
       </div>
       <input
         type="text"
-        placeholder={t('SearchBar.placeholder', {
-          itemType: t('Common.itemTypes.torrents'),
+        placeholder={t('SearchBar.placeholderDownloads', {
+          itemType: itemTypePlural,
         })}
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}

@@ -11,6 +11,7 @@ const languages = {
   de: { name: 'Deutsch', flag: '/images/flags/flag-de.png' },
   fr: { name: 'Français', flag: '/images/flags/flag-fr.png' },
   ja: { name: '日本語', flag: '/images/flags/flag-ja.png' },
+  pl: { name: 'Polski', flag: '/images/flags/flag-pl.png' },
 };
 
 export default function LanguageSwitcher() {
@@ -19,6 +20,17 @@ export default function LanguageSwitcher() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [currentLocale, setCurrentLocale] = useState(locale);
+
+  // Load saved language preference on mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('preferredLanguage');
+    if (savedLanguage && savedLanguage !== locale) {
+      // Redirect to the saved language if it's different from current
+      const newPath = pathname.replace(locale, savedLanguage);
+      router.push(newPath);
+    }
+  }, [locale, pathname, router]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -27,12 +39,34 @@ export default function LanguageSwitcher() {
       }
     };
 
+    const handleResize = () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleScroll = () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isOpen]);
 
   const handleLanguageChange = (newLocale) => {
     setIsOpen(false);
+    // Store the language preference in localStorage
+    localStorage.setItem('preferredLanguage', newLocale);
+    setCurrentLocale(newLocale);
     router.push(pathname.replace(locale, newLocale));
   };
 

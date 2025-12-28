@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import ItemCard from './ItemCard';
 import { useTranslations } from 'next-intl';
@@ -27,12 +28,58 @@ export default function CardList({
   const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
+  const parentRef = useRef(null);
   const { downloadSingle } = useDownloads(
     apiKey,
     activeType,
     downloadHistory,
     setDownloadHistory,
   );
+
+  // Only virtualize ItemCards - FileList will handle its own virtualization
+  const flattenedRows = useMemo(() => {
+    return items.map((item, itemIndex) => ({
+      item,
+      itemIndex,
+    }));
+  }, [items]);
+
+  // Find scrollable parent container
+  const getScrollElement = () => {
+    if (parentRef.current) {
+      // Find the nearest scrollable parent
+      let parent = parentRef.current.parentElement;
+      while (parent) {
+        const style = window.getComputedStyle(parent);
+        if (
+          style.overflowY === 'auto' ||
+          style.overflowY === 'scroll' ||
+          parent.scrollHeight > parent.clientHeight
+        ) {
+          return parent;
+        }
+        parent = parent.parentElement;
+      }
+      // Fallback to window
+      return null;
+    }
+    return null;
+  };
+
+  // Virtualizer setup - use dynamic measurements for variable heights
+  const virtualizer = useVirtualizer({
+    count: flattenedRows.length,
+    getScrollElement,
+    estimateSize: () => {
+      // Initial estimate: ItemCard ~100px (will be measured dynamically)
+      return 100;
+    },
+    measureElement: (element) => {
+      // Measure the actual rendered height of the element
+      return element.getBoundingClientRect().height + 10;
+    },
+    overscan: 5,
+  });
 
   const handleItemSelection = (
     itemId,
@@ -105,14 +152,14 @@ export default function CardList({
   const assetKey = (itemId, fileId) =>
     fileId ? `${itemId}-${fileId}` : itemId;
 
-  const handleFileDownload = async (itemId, fileId, copyLink = false) => {
-    const key = assetKey(itemId, fileId);
+  const handleFileDownload = async (itemId, file, copyLink = false) => {
+    const key = assetKey(itemId, file.id);
     if (copyLink) {
       setIsCopying((prev) => ({ ...prev, [key]: true }));
     } else {
       setIsDownloading((prev) => ({ ...prev, [key]: true }));
     }
-    const options = { fileId };
+    const options = { fileId: file.id, filename: file.name };
 
     const idField =
       activeType === 'usenet'
@@ -167,36 +214,67 @@ export default function CardList({
     );
   };
 
+  const virtualRows = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
+
   return (
-    <div className={`flex flex-col gap-2 ${isFullscreen ? 'p-4' : 'p-0'}`}>
-      {items.map((item, index) => (
-        <ItemCard
-          key={item.id}
-          item={item}
-          index={index}
-          selectedItems={selectedItems}
-          downloadHistory={downloadHistory}
-          setDownloadHistory={setDownloadHistory}
-          isItemDownloaded={isItemDownloaded}
-          isFileDownloaded={isFileDownloaded}
-          isBlurred={isBlurred}
-          isDisabled={isDisabled}
-          activeColumns={activeColumns}
-          onItemSelect={handleItemSelection}
-          onFileSelect={handleFileSelection}
-          onFileDownload={handleFileDownload}
-          onDelete={onDelete}
-          toggleFiles={toggleFiles}
-          expandedItems={expandedItems}
-          setItems={setItems}
-          setSelectedItems={setSelectedItems}
-          setToast={setToast}
-          activeType={activeType}
-          viewMode={viewMode}
-          isCopying={isCopying}
-          isDownloading={isDownloading}
-        />
-      ))}
+    <div
+      ref={parentRef}
+      className={`${isFullscreen ? 'p-4' : 'p-0'}`}
+      style={{
+        position: 'relative',
+        height: `${totalSize}px`,
+      }}
+    >
+      {/* Virtualized rows - only ItemCards */}
+      {virtualRows.map((virtualRow) => {
+        const row = flattenedRows[virtualRow.index];
+
+        // Calculate item card position
+        const itemCardStyle = {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          transform: `translateY(${virtualRow.start}px)`,
+          marginBottom: '8px', // Add gap between cards
+        };
+
+        return (
+          <div
+            key={`item-${row.item.id}`}
+            data-index={virtualRow.index}
+            ref={virtualizer.measureElement}
+            style={itemCardStyle}
+          >
+            <ItemCard
+              item={row.item}
+              index={row.itemIndex}
+              selectedItems={selectedItems}
+              downloadHistory={downloadHistory}
+              setDownloadHistory={setDownloadHistory}
+              isItemDownloaded={isItemDownloaded}
+              isFileDownloaded={isFileDownloaded}
+              isBlurred={isBlurred}
+              isDisabled={isDisabled}
+              activeColumns={activeColumns}
+              onItemSelect={handleItemSelection}
+              onFileSelect={handleFileSelection}
+              onFileDownload={handleFileDownload}
+              onDelete={onDelete}
+              toggleFiles={toggleFiles}
+              expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
+              setItems={setItems}
+              setSelectedItems={setSelectedItems}
+              setToast={setToast}
+              activeType={activeType}
+              viewMode={viewMode}
+              isCopying={isCopying}
+              isDownloading={isDownloading}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

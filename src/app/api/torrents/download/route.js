@@ -13,6 +13,11 @@ export async function GET(request) {
   const torrentId = searchParams.get('torrent_id');
   const fileId = searchParams.get('file_id');
   const zipLink = searchParams.get('zip_link') === 'true';
+  
+  // Get user's IP address for CDN optimization
+  const forwardedFor = headersList.get('x-forwarded-for');
+  const realIp = headersList.get('x-real-ip');
+  const userIp = forwardedFor?.split(',')[0] || realIp || headersList.get('x-client-ip') || 'unknown';
 
   if (!apiKey) {
     return NextResponse.json(
@@ -34,6 +39,7 @@ export async function GET(request) {
       torrent_id: torrentId,
       ...(fileId && { file_id: fileId }),
       ...(zipLink && { zip_link: zipLink }),
+      user_ip: userIp,
     });
     const apiUrl = `${API_BASE}/${API_VERSION}/api/torrents/requestdl?${queryParams}`;
     const response = await fetch(apiUrl, {

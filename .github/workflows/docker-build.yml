@@ -1,0 +1,317 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to tag (optional)'
+        required: false
+        type: string
+
+# Prevent multiple concurrent runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  build:
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            suffix: amd64
+          - platform: linux/arm64
+            runner: ubuntu-22.04-arm
+            suffix: arm64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up Bun for version extraction
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from package.json
+        id: package-version
+        run: echo "version=$(bun -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Get commit hash
+        id: commit
+        run: |
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "commit=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "Commit: $COMMIT_HASH"
+
+      - name: Determine image tags
+        id: tags
+        run: |
+          VERSION="${{ steps.package-version.outputs.version }}"
+          COMMIT="${{ steps.commit.outputs.commit }}"
+          REPO="${{ env.IMAGE_NAME }}"
+          SUFFIX="${{ matrix.suffix }}"
+          
+          # Use workflow_dispatch version if provided, otherwise use package.json version
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tags=ghcr.io/$REPO:latest-$SUFFIX,ghcr.io/$REPO:$VERSION-$SUFFIX,ghcr.io/$REPO:$COMMIT-$SUFFIX" >> $GITHUB_OUTPUT
+          echo "backend-tags=ghcr.io/$REPO:backend-latest-$SUFFIX,ghcr.io/$REPO:backend-$VERSION-$SUFFIX,ghcr.io/$REPO:backend-$COMMIT-$SUFFIX" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image (frontend)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=frontend-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.platform }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            BUN_VERSION=latest
+          labels: |
+            org.opencontainers.image.title=TorBox Frontend
+            org.opencontainers.image.description=TorBox Manager Frontend
+            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
+            org.opencontainers.image.revision=${{ steps.commit.outputs.commit }}
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+          provenance: false
+          sbom: false
+
+      - name: Build and push Docker image (backend)
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.tags.outputs.backend-tags }}
+          cache-from: type=gha,scope=backend-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=backend-${{ matrix.platform }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            BUN_VERSION=latest
+          labels: |
+            org.opencontainers.image.title=TorBox Backend
+            org.opencontainers.image.description=TorBox Manager Backend
+            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
+            org.opencontainers.image.revision=${{ steps.commit.outputs.commit }}
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+          provenance: false
+          sbom: false
+
+      - name: Build summary
+        if: matrix.suffix == 'amd64'
+        run: |
+          IS_PR="${{ github.event_name == 'pull_request' }}"
+          VERSION="${{ steps.tags.outputs.version }}"
+          COMMIT="${{ steps.commit.outputs.commit }}"
+          REPO="ghcr.io/${{ env.IMAGE_NAME }}"
+          
+          echo "## Docker Image Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** $REPO" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** $COMMIT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend Images:" >> $GITHUB_STEP_SUMMARY
+          echo "  - \`$REPO:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "  - \`$REPO:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "  - \`$REPO:$COMMIT\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$IS_PR" != "true" ]; then
+            echo "### Backend Images:" >> $GITHUB_STEP_SUMMARY
+            echo "  - \`$REPO:backend-latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "  - \`$REPO:backend-$VERSION\`" >> $GITHUB_STEP_SUMMARY
+            echo "  - \`$REPO:backend-$COMMIT\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Both frontend and backend images successfully built and pushed to GHCR!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Images were built but not pushed (PR builds are for testing only)." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && matrix.suffix == 'amd64'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            // Only comment on PRs from the same repository (not forks)
+            const isFork = context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
+            
+            if (isFork) {
+              console.log('Skipping comment: PR is from a fork. Build summary available in workflow logs.');
+              return;
+            }
+            
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🐳 Docker Build Summary
+            
+            ✅ **Build completed successfully!**
+            
+            - **Repository:** ghcr.io/${{ github.repository }}
+            - **Version:** ${{ steps.tags.outputs.version }}
+            - **Commit:** ${{ steps.commit.outputs.commit }}
+            - **Platforms:** linux/amd64, linux/arm64
+            
+            ### Images Built (not pushed):
+            - **Frontend:** \`ghcr.io/${{ github.repository }}:latest\`
+            - **Backend:** \`ghcr.io/${{ github.repository }}:backend-latest\`
+            
+            ℹ️ Images were built but not pushed (PR builds are for testing only).
+            
+            To deploy, merge this PR or create a release tag.`
+              });
+              console.log('Successfully commented on PR');
+            } catch (error) {
+              // Silently fail for permission issues
+              if (error.status === 403 || error.status === 404) {
+                console.log('Cannot comment on PR (insufficient permissions). Build summary available in workflow logs.');
+              } else {
+                throw error;
+              }
+            }
+
+  create-manifests:
+    needs: build
+    if: github.event_name != 'pull_request'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from package.json
+        id: package-version
+        run: echo "version=$(bun -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Get commit hash
+        id: commit
+        run: |
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "commit=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+      - name: Determine image tags
+        id: tags
+        run: |
+          VERSION="${{ steps.package-version.outputs.version }}"
+          COMMIT="${{ steps.commit.outputs.commit }}"
+          REPO="${{ env.IMAGE_NAME }}"
+          
+          # Use workflow_dispatch version if provided, otherwise use package.json version
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create and push multi-platform manifest (frontend)
+        run: |
+          REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          VERSION="${{ steps.tags.outputs.version }}"
+          COMMIT="${{ steps.commit.outputs.commit }}"
+          
+          echo "Creating multi-platform manifests for frontend..."
+          
+          docker buildx imagetools create -t "$REPO:latest" \
+            "$REPO:latest-amd64" \
+            "$REPO:latest-arm64"
+          
+          docker buildx imagetools create -t "$REPO:$VERSION" \
+            "$REPO:$VERSION-amd64" \
+            "$REPO:$VERSION-arm64"
+          
+          docker buildx imagetools create -t "$REPO:$COMMIT" \
+            "$REPO:$COMMIT-amd64" \
+            "$REPO:$COMMIT-arm64"
+          
+          echo "✅ Frontend multi-platform manifests created successfully"
+
+      - name: Create and push multi-platform manifest (backend)
+        run: |
+          REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          VERSION="${{ steps.tags.outputs.version }}"
+          COMMIT="${{ steps.commit.outputs.commit }}"
+          
+          echo "Creating multi-platform manifests for backend..."
+          
+          docker buildx imagetools create -t "$REPO:backend-latest" \
+            "$REPO:backend-latest-amd64" \
+            "$REPO:backend-latest-arm64"
+          
+          docker buildx imagetools create -t "$REPO:backend-$VERSION" \
+            "$REPO:backend-$VERSION-amd64" \
+            "$REPO:backend-$VERSION-arm64"
+          
+          docker buildx imagetools create -t "$REPO:backend-$COMMIT" \
+            "$REPO:backend-$COMMIT-amd64" \
+            "$REPO:backend-$COMMIT-arm64"
+          
+          echo "✅ Backend multi-platform manifests created successfully"

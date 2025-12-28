@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import { FileHandler } from '@/components/shared/FileHandler';
 import { PostHogProvider } from './providers';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -21,10 +22,33 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: 'TorBox Manager',
-  description: 'TorBox Manager',
+  description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
   manifest: '/manifest.json',
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'black-translucent',
+  openGraph: {
+    title: 'TorBox Manager',
+    description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'TorBox Manager',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TorBox Manager',
+    description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export const viewport = {
@@ -56,12 +80,14 @@ export default async function LocaleLayout({ children, params }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
       >
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <PostHogProvider>
-            <FileHandler />
-            {children}
-          </PostHogProvider>
-        </NextIntlClientProvider>
+        <ThemeProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <PostHogProvider>
+              <FileHandler />
+              {children}
+            </PostHogProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

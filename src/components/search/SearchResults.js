@@ -25,7 +25,7 @@ const SORT_OPTIONS = {
 };
 
 export default function SearchResults({ apiKey }) {
-  const { results, loading, error, searchType } = useSearchStore();
+  const { filteredResults, results, loading, error, searchType, clearResults } = useSearchStore();
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
@@ -36,6 +36,11 @@ export default function SearchResults({ apiKey }) {
   const [hideTorBoxIndexers, setHideTorBoxIndexers] = useState(false);
   const t = useTranslations('SearchResults');
 
+  // Clear results when API key changes
+  useEffect(() => {
+    clearResults();
+  }, [apiKey]);
+
   // Update sort key when search type changes
   useEffect(() => {
     if (searchType === 'usenet' && sortKey === 'seeders') {
@@ -45,7 +50,7 @@ export default function SearchResults({ apiKey }) {
   }, [searchType, sortKey]);
 
   const sortedResults = useMemo(() => {
-    return [...results].sort((a, b) => {
+    return [...filteredResults].sort((a, b) => {
       const modifier = sortDir === 'desc' ? -1 : 1;
 
       switch (sortKey) {
@@ -71,9 +76,9 @@ export default function SearchResults({ apiKey }) {
           return 0;
       }
     });
-  }, [results, sortKey, sortDir, searchType]);
+  }, [filteredResults, sortKey, sortDir, searchType]);
 
-  const filteredResults = useMemo(() => {
+  const displayResults = useMemo(() => {
     let tempResults = sortedResults;
     if (hideTorBoxIndexers) {
       tempResults = tempResults.filter(
@@ -99,12 +104,18 @@ export default function SearchResults({ apiKey }) {
     try {
       let result;
       if (searchType === 'usenet') {
-        result = await uploadItem({
+        const uploadData = {
           type: 'usenet',
           data: item.nzb,
-          name: item.raw_title,
           asQueued: false,
-        });
+        };
+        
+        // Only add name for TorBox API search results - removed a ! before item.nzb
+        if (item.nzb.includes('api')) {
+          uploadData.name = item.raw_title;
+        }
+        
+        result = await uploadItem(uploadData);
       } else {
         result = await uploadItem({
           type: 'magnet',
@@ -155,7 +166,7 @@ export default function SearchResults({ apiKey }) {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
             <div className="flex items-center gap-4">
               <h2 className="text-lg md:text-xl font-semibold text-primary-text dark:text-primary-text-dark">
-                {t('results', { count: filteredResults.length })}
+                {t('results', { count: displayResults.length })}
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -239,7 +250,7 @@ export default function SearchResults({ apiKey }) {
 
           {/* Search results list */}
           <div className="space-y-4">
-            {filteredResults.map((item) => (
+            {displayResults.map((item) => (
               <div
                 key={item.hash}
                 className="p-4 rounded-lg border border-border dark:border-border-dark 

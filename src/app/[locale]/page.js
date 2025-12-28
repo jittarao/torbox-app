@@ -3,8 +3,16 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
-import Downloads from '@/components/downloads/Downloads';
-import LandingPage from '@/components/LandingPage';
+import dynamic from 'next/dynamic';
+
+const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
+  loading: () => <div className="flex justify-center items-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>,
+  ssr: false
+});
+
+const LandingPage = dynamic(() => import('@/components/LandingPage'), {
+  ssr: false
+});
 import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
 import { useUpload } from '@/components/shared/hooks/useUpload';
@@ -28,10 +36,14 @@ export default function Home() {
       setApiKey(storedKey);
     } else if (storedKeys) {
       // If no active key but we have stored keys, use the first one
-      const keys = JSON.parse(storedKeys);
-      if (keys.length > 0) {
-        setApiKey(keys[0].key);
-        localStorage.setItem('torboxApiKey', keys[0].key);
+      try {
+        const keys = JSON.parse(storedKeys);
+        if (keys.length > 0) {
+          setApiKey(keys[0].key);
+          localStorage.setItem('torboxApiKey', keys[0].key);
+        }
+      } catch (error) {
+        console.error('Error parsing API keys from localStorage:', error);
       }
     }
     setLoading(false);
@@ -129,7 +141,7 @@ export default function Home() {
         <LandingPage onKeyChange={handleKeyChange} />
       ) : (
         <>
-          <Header />
+          <Header apiKey={apiKey} />
           <div className="container mx-auto p-4">
             <ApiKeyInput
               value={apiKey}

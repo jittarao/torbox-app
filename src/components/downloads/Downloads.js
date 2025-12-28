@@ -9,6 +9,7 @@ import { useFilter } from '../shared/hooks/useFilter';
 import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
 import { useAutomationRules } from '../shared/hooks/useAutomationRules';
+
 import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
 import DownloadPanel from './DownloadPanel';
 import ItemUploader from './ItemUploader';
@@ -20,17 +21,33 @@ import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import AutomationRules from './AutomationRules';
 import { formatSize } from './utils/formatters';
+import { useTranslations } from 'next-intl';
 
 export default function Downloads({ apiKey }) {
+  const t = useTranslations('Common');
   const [toast, setToast] = useState(null);
-  const [activeType, setActiveType] = useState('torrents');
+  const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
   const [downloadHistory, setDownloadHistory] = useState([]);
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
+  const [isExporting, setIsExporting] = useState(false);
+  const [expandedUploadSections, setExpandedUploadSections] = useState(new Set());
   const hasExpandedRef = useRef(false);
+
+  // Function to expand all items with files
+  const expandAllFiles = () => {
+    const itemsWithFiles = items.filter(item => item.files && item.files.length > 0);
+    const itemIds = itemsWithFiles.map(item => item.id);
+    setExpandedItems(new Set(itemIds));
+  };
+
+  // Function to collapse all files
+  const collapseAllFiles = () => {
+    setExpandedItems(new Set());
+  };
 
   const { loading, items, setItems, fetchItems } = useFetchData(
     apiKey,
@@ -77,6 +94,69 @@ export default function Downloads({ apiKey }) {
     setIsFullscreen((prev) => !prev);
   };
 
+  // Bulk export torrent files
+  const handleBulkExport = async () => {
+    if (isExporting || activeType !== 'torrents') return;
+    setIsExporting(true);
+
+    try {
+      const selectedItemIds = Array.from(selectedItems.items);
+      if (selectedItemIds.length === 0) {
+        setToast({
+          message: 'No items selected for export',
+          type: 'error',
+        });
+        return;
+      }
+
+      // Export each selected torrent
+      for (const itemId of selectedItemIds) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) continue;
+
+        try {
+          const response = await fetch(
+            `/api/torrents/export?torrent_id=${itemId}&type=torrent`,
+            {
+              headers: {
+                'x-api-key': apiKey,
+              },
+            },
+          );
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${item.name || item.id}.torrent`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          } else {
+            console.error(`Failed to export torrent ${itemId}`);
+          }
+        } catch (error) {
+          console.error(`Error exporting torrent ${itemId}:`, error);
+        }
+      }
+
+      setToast({
+        message: `Exported ${selectedItemIds.length} torrent files`,
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error during bulk export:', error);
+      setToast({
+        message: 'Failed to export torrent files',
+        type: 'error',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const toggleFiles = (itemId) => {
     setExpandedItems((prev) => {
       const newSet = new Set(prev);
@@ -99,7 +179,12 @@ export default function Downloads({ apiKey }) {
   useEffect(() => {
     const storedDownloadHistory = localStorage.getItem('torboxDownloadHistory');
     if (storedDownloadHistory) {
-      setDownloadHistory(JSON.parse(storedDownloadHistory));
+      try {
+        setDownloadHistory(JSON.parse(storedDownloadHistory));
+      } catch (error) {
+        console.error('Error parsing download history from localStorage:', error);
+        setDownloadHistory([]);
+      }
     }
   }, []);
 
@@ -154,9 +239,23 @@ export default function Downloads({ apiKey }) {
         }}
       />
 
-      <ItemUploader apiKey={apiKey} activeType={activeType} />
+      {activeType !== 'all' && <ItemUploader apiKey={apiKey} activeType={activeType} />}
 
-      {activeType === 'torrents' && <AutomationRules />}
+      {/* Collapsible sections for "all" view */}
+      {activeType === 'all' && (
+        <div className="mb-4">
+          {/* Torrents Upload Section */}
+          <ItemUploader apiKey={apiKey} activeType="torrents" />
+
+          {/* Usenet Upload Section */}
+          <ItemUploader apiKey={apiKey} activeType="usenet" />
+
+          {/* Web Downloads Upload Section */}
+          <ItemUploader apiKey={apiKey} activeType="webdl" />
+        </div>
+      )}
+
+      {(activeType === 'torrents' || activeType === 'all') && <AutomationRules />}
 
       {loading && items.length === 0 ? (
         <div className="flex justify-center items-center">
@@ -167,7 +266,7 @@ export default function Downloads({ apiKey }) {
         </div>
       ) : (
         <>
-          <SpeedChart items={items} activeType={activeType} />
+          <SpeedChart items={items} />
 
           <DownloadPanel
             downloadLinks={downloadLinks}
@@ -183,7 +282,7 @@ export default function Downloads({ apiKey }) {
           <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
           <div
-            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : ''} ${
+            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'overflow-y-auto'} ${
               downloadLinks.length > 0 ? 'mb-12' : ''
             }`}
           >
@@ -206,8 +305,10 @@ export default function Downloads({ apiKey }) {
                 }
                 isDeleting={isDeleting}
                 onBulkDelete={(includeParentDownloads) =>
-                  deleteItems(selectedItems, includeParentDownloads)
+                  deleteItems(selectedItems, includeParentDownloads, items)
                 }
+                isExporting={isExporting}
+                onBulkExport={handleBulkExport}
                 activeType={activeType}
                 isBlurred={isBlurred}
                 onBlurToggle={() => setIsBlurred(!isBlurred)}
@@ -221,6 +322,11 @@ export default function Downloads({ apiKey }) {
                 getTotalDownloadSize={getTotalDownloadSize}
                 isDownloadPanelOpen={isDownloadPanelOpen}
                 setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+                apiKey={apiKey}
+                setToast={setToast}
+                expandAllFiles={expandAllFiles}
+                collapseAllFiles={collapseAllFiles}
+                expandedItems={expandedItems}
               />
             </div>
 

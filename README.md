@@ -7,8 +7,44 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 - **Batch Upload**: Upload multiple torrents with a single click
 - **Smart Downloads**: Cherry-pick specific files across multiple torrents
 - **Customizable Interface**: Tailor the workflow to match your needs
+- **Automation Rules**: Smart automation for torrent management
+- **Self-Hosted Backend**: Optional 24/7 automation with persistent storage
 
 ## Getting Started
+
+### Docker (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/jittarao/torbox-app.git
+cd torbox-app
+```
+
+2. Start the application:
+```bash
+docker compose up -d
+```
+
+3. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
+
+### Self-Hosted Backend (24/7 Automation)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/jittarao/torbox-app.git
+cd torbox-app
+```
+
+2. Enable the backend by uncommenting the backend section in `docker-compose.yml`
+
+3. Start with backend:
+```bash
+docker compose up -d
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key - automation rules will now run 24/7!
+
+### Local Development
 
 1. Clone the repository:
 ```bash
@@ -18,40 +54,37 @@ cd torbox-app
 
 2. Install dependencies:
 ```bash
-npm install
-# or
-yarn install
+bun install
 ```
 
 3. Run the development server:
 ```bash
-npm run dev
-# or
-yarn dev
+bun run dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
 
+## Deployment Options
+
+| Option | Use Case | Automation | Storage | Complexity |
+|--------|----------|------------|---------|------------|
+| **Frontend Only** | Standard usage | Browser-based | Local storage | Simple |
+| **Self-Hosted Backend** | 24/7 automation | Background | Database + local | Moderate |
+
 ## Requirements
 
-- Node.js 18.0 or later
+- Docker and Docker Compose (for Docker deployment)
+- Node.js 18.0 or later (for local development)
 - A running TorBox instance with API access
 - Valid TorBox API key
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 15 with App Router
+- React 19 with hooks
 - Tailwind CSS
-- React Hooks
-- Server Components
-
-## Development
-
-The project uses:
-- Modern React patterns with hooks
-- Tailwind CSS for styling
-- Next.js App Router
-- Server-side API handling
+- Zustand for state management
+- next-intl for internationalization
 
 ## Contributing
 
