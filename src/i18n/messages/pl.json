@@ -431,6 +431,14 @@
             "itemId": "ID elementu",
             "itemName": "Nazwa elementu"
         },
+        "emptyState": {
+            "description": "Gdy generujesz link do pobierania dla torrentów, usenetu lub pobierania internetowego, pojawi się tutaj.",
+            "important": "Ważne:",
+            "step1": "Generuj linki do pobierania ze strony głównej pobierania",
+            "step2": "Możesz skopiować, ponownie pobrać lub usunąć linki z historii",
+            "step3": "Wszystkie linki do pobierania wygasają w ciągu 4 godzin",
+            "title": "Brak linków do pobierania"
+        },
         "expired": "Wygasł",
         "title": "Historia linków"
     },

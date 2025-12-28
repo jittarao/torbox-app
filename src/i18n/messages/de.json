@@ -431,6 +431,14 @@
             "itemId": "Artikel-ID",
             "itemName": "Artikelname"
         },
+        "emptyState": {
+            "description": "Wenn Sie einen Download-Link für Torrents, Usenet oder Web-Downloads generieren, erscheint er hier.",
+            "important": "Wichtig:",
+            "step1": "Generieren Sie Download-Links von der Hauptdownloads-Seite",
+            "step2": "Sie können Links kopieren, erneut herunterladen oder aus Ihrem Verlauf entfernen",
+            "step3": "Alle Download-Links laufen in 4 Stunden ab",
+            "title": "Keine Download-Links"
+        },
         "expired": "Abgelaufen",
         "title": "Link-Verlauf"
     },

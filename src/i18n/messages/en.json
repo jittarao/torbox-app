@@ -431,6 +431,14 @@
             "itemId": "Item ID",
             "itemName": "Item Name"
         },
+        "emptyState": {
+            "description": "When you generate a download link for any torrent, usenet, or web download, it will appear here.",
+            "important": "Important:",
+            "step1": "Generate download links from the main downloads page",
+            "step2": "You can copy, redownload, or remove links from your history",
+            "step3": "All download links expire in 4 hours",
+            "title": "No Download Links"
+        },
         "expired": "Expired",
         "title": "Link History"
     },

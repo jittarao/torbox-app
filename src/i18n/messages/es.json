@@ -431,6 +431,14 @@
             "itemId": "ID del elemento",
             "itemName": "Nombre del elemento"
         },
+        "emptyState": {
+            "description": "Cuando generas un enlace de descarga para cualquier torrent, usenet o descarga web, aparecerá aquí.",
+            "important": "Importante:",
+            "step1": "Genera enlaces de descarga desde la página principal de descargas",
+            "step2": "Puedes copiar, volver a descargar o eliminar enlaces de tu historial",
+            "step3": "Todos los enlaces de descarga expiran en 4 horas",
+            "title": "No hay enlaces de descarga"
+        },
         "expired": "Expirado",
         "title": "Historial de enlaces"
     },
