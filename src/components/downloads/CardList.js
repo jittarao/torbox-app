@@ -47,20 +47,22 @@ export default function CardList({
   // Find scrollable parent container
   const getScrollElement = () => {
     if (parentRef.current) {
-      // Find the nearest scrollable parent
+      // Find the nearest scrollable parent with a constrained height
       let parent = parentRef.current.parentElement;
       while (parent) {
         const style = window.getComputedStyle(parent);
-        if (
-          style.overflowY === 'auto' ||
-          style.overflowY === 'scroll' ||
-          parent.scrollHeight > parent.clientHeight
-        ) {
+        const hasOverflow = style.overflowY === 'auto' || style.overflowY === 'scroll';
+        const hasMaxHeight = style.maxHeight && style.maxHeight !== 'none';
+        const hasHeight = style.height && style.height !== 'auto';
+        const isScrollable = parent.scrollHeight > parent.clientHeight;
+        
+        // Check if parent has overflow and a height constraint (required for virtualization)
+        if (hasOverflow && (hasMaxHeight || hasHeight || isScrollable)) {
           return parent;
         }
         parent = parent.parentElement;
       }
-      // Fallback to window
+      // Fallback to window if no constrained parent found
       return null;
     }
     return null;
