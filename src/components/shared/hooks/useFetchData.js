@@ -134,20 +134,41 @@ export function useFetchData(apiKey, type = 'torrents') {
   );
 
   const fetchLocalItems = useCallback(
-    async (bypassCache = false, customType = null, retryCount = 0) => {
+    async (bypassCache = false, customType = null, retryCount = 0, skipLoading = false) => {
       const activeType = customType || type;
-      setLoading(true);
+      
+      // Only manage loading state for top-level calls
+      if (!skipLoading) {
+        setLoading(true);
+      }
       
       // Prevent infinite retry loops
       if (retryCount > 1) {
         console.error('Max retry attempts reached, giving up');
-        setLoading(false);
+        if (!skipLoading) {
+          setLoading(false);
+        }
         return [];
       }
 
       if (!apiKey) {
-        setLoading(false);
+        if (!skipLoading) {
+          setLoading(false);
+        }
         return [];
+      }
+
+      // Handle "all" type by fetching all three types
+      if (activeType === 'all') {
+        const results = await Promise.all([
+          fetchLocalItems(bypassCache, 'torrents', retryCount, true),
+          fetchLocalItems(bypassCache, 'usenet', retryCount, true),
+          fetchLocalItems(bypassCache, 'webdl', retryCount, true),
+        ]);
+        if (!skipLoading) {
+          setLoading(false);
+        }
+        return results.flat();
       }
 
       // Ensure rate limit data exists for the active type
@@ -162,6 +183,9 @@ export function useFetchData(apiKey, type = 'torrents') {
 
       if (isRateLimited(activeType)) {
         console.warn(`Rate limit reached for ${activeType}, skipping fetch`);
+        if (!skipLoading) {
+          setLoading(false);
+        }
         return [];
       }
 
@@ -173,6 +197,9 @@ export function useFetchData(apiKey, type = 'torrents') {
 
       // If this call isn't the latest, do not update state
       if (currentFetchId !== rateData.latestFetchId) {
+        if (!skipLoading) {
+          setLoading(false);
+        }
         return [];
       }
 
@@ -248,18 +275,24 @@ export function useFetchData(apiKey, type = 'torrents') {
             setError(null);
           }
 
-          setLoading(false);
+          if (!skipLoading) {
+            setLoading(false);
+          }
 
           // Return the fetched data
           return sortedItems;
         } else {
           if (data.success && data.data && Array.isArray(data.data) && data.data.length === 0) {
             // Empty data is valid, just return empty array
-            setLoading(false);
+            if (!skipLoading) {
+              setLoading(false);
+            }
             return [];
           } else {
             console.error(`Invalid ${activeType} data format:`, data);
-            setLoading(false);
+            if (!skipLoading) {
+              setLoading(false);
+            }
             return [];
           }
         }
@@ -288,7 +321,9 @@ export function useFetchData(apiKey, type = 'torrents') {
           
           setError(userMessage);
         }
-        setLoading(false);
+        if (!skipLoading) {
+          setLoading(false);
+        }
         // Return empty array to prevent undefined state
         return [];
       }
