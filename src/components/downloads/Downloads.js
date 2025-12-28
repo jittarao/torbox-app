@@ -90,8 +90,6 @@ export default function Downloads({ apiKey }) {
   // Initialize automation rules
   useAutomationRules(items, apiKey, activeType);
 
-
-
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
   };
