@@ -19,7 +19,7 @@ export default function MoreOptionsDropdown({
   const [isExporting, setIsExporting] = useState(false);
   const [isReannouncing, setIsReannouncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [showCloudUpload, setShowCloudUpload] = useState(false);
+  // const [showCloudUpload, setShowCloudUpload] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -375,7 +375,7 @@ export default function MoreOptionsDropdown({
       }
     } finally {
       setIsUploading(false);
-      setShowCloudUpload(false);
+      // setShowCloudUpload(false);
       setIsMenuOpen(false);
     }
   };

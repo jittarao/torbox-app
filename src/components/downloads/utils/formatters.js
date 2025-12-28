@@ -1,5 +1,3 @@
-import { createTranslator } from 'next-intl';
-
 export const formatSize = (bytes, locale = 'en') => {
   // Handle all edge cases: null, undefined, NaN, negative values
   if (
