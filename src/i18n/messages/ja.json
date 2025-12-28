@@ -495,6 +495,7 @@
         "addFeed": "RSSフィードを追加",
         "addSuccess": "RSSフィードが正常に追加されました",
         "cancel": "キャンセル",
+        "checkingSubscription": "サブスクリプションを確認中...",
         "confirmDelete": {
             "cancel": "キャンセル",
             "confirm": "削除",
@@ -547,6 +548,8 @@
         "pageTitle": "RSS管理",
         "passCheck": "チェックをスキップ",
         "passCheckDescription": "このフィードのキャッシュチェックをスキップ",
+        "proSubscriptionRequired": "Proサブスクリプションが必要です",
+        "proUserRequired": "RSSフィードを使用するには、Proユーザーである必要があります。",
         "save": "保存",
         "scanInterval": "スキャン間隔（分）",
         "scanIntervalPlaceholder": "このフィードをスキャンする頻度",

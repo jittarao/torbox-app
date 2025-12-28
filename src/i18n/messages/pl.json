@@ -495,6 +495,7 @@
         "addFeed": "Dodaj kanał RSS",
         "addSuccess": "Kanał RSS dodany pomyślnie",
         "cancel": "Anuluj",
+        "checkingSubscription": "Sprawdzanie subskrypcji...",
         "confirmDelete": {
             "cancel": "Anuluj",
             "confirm": "Usuń",
@@ -547,6 +548,8 @@
         "pageTitle": "Zarządzanie RSS",
         "passCheck": "Pomiń sprawdzenie",
         "passCheckDescription": "Pomiń sprawdzanie cache dla tego kanału",
+        "proSubscriptionRequired": "Wymagana Subskrypcja Pro",
+        "proUserRequired": "Musisz być użytkownikiem Pro, aby korzystać z RSS Feeds.",
         "save": "Zapisz",
         "scanInterval": "Interwał skanowania (minuty)",
         "scanIntervalPlaceholder": "Jak często skanować ten kanał",

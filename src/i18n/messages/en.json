@@ -495,6 +495,7 @@
         "addFeed": "Add RSS Feed",
         "addSuccess": "RSS feed added successfully",
         "cancel": "Cancel",
+        "checkingSubscription": "Checking subscription...",
         "confirmDelete": {
             "cancel": "Cancel",
             "confirm": "Delete",
@@ -547,6 +548,8 @@
         "pageTitle": "RSS Management",
         "passCheck": "Pass Check",
         "passCheckDescription": "Skip cache checking for this feed",
+        "proSubscriptionRequired": "Pro Subscription Required",
+        "proUserRequired": "You need to be a Pro user to use RSS Feeds.",
         "save": "Save",
         "scanInterval": "Scan Interval (minutes)",
         "scanIntervalPlaceholder": "How often to scan this feed",

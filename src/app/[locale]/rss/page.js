@@ -7,6 +7,7 @@ import RssFeedManager from '@/components/rss/RssFeedManager';
 import RssItemsManager from '@/components/rss/RssItemsManager';
 
 import Toast from '@/components/shared/Toast';
+import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
 import { Inter } from 'next/font/google';
 
@@ -18,6 +19,8 @@ export default function RssPage() {
   const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState('feeds');
   const [error, setError] = useState(null);
+  const [userPlan, setUserPlan] = useState(null);
+  const [checkingPlan, setCheckingPlan] = useState(false);
 
   // Move translations hook to top level - always call it
   const t = useTranslations('RssFeeds');
@@ -45,6 +48,46 @@ export default function RssPage() {
       setError(err.message);
     }
   }, []);
+
+  // Fetch user plan when apiKey is available
+  useEffect(() => {
+    if (!apiKey) {
+      setUserPlan(null);
+      return;
+    }
+
+    const fetchUserPlan = async () => {
+      setCheckingPlan(true);
+      try {
+        const response = await fetch('/api/user/me', {
+          headers: {
+            'x-api-key': apiKey,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Response structure: { success: true, data: { plan: ... } }
+        if (data.success && data.data) {
+          setUserPlan(data.data.plan);
+        } else {
+          // If response doesn't have success/data structure, try direct access
+          setUserPlan(data.plan || data.data?.plan || null);
+        }
+      } catch (err) {
+        console.error('Error fetching user plan:', err);
+        setUserPlan(null);
+      } finally {
+        setCheckingPlan(false);
+      }
+    };
+
+    fetchUserPlan();
+  }, [apiKey]);
 
   // Handle API key change
   const handleKeyChange = (newKey) => {
@@ -115,6 +158,41 @@ export default function RssPage() {
             </div>
           </div>
         </div>
+      ) : checkingPlan ? (
+        <>
+          <Header apiKey={apiKey} />
+          <div className="container mx-auto p-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex justify-center items-center min-h-[60vh]">
+                <div className="text-center">
+                  <Spinner size="lg" />
+                  <p className="mt-4 text-primary-text dark:text-primary-text-dark">
+                    {t('checkingSubscription')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : userPlan !== 2 ? (
+        <>
+          <Header apiKey={apiKey} />
+          <div className="container mx-auto p-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex justify-center items-center min-h-[60vh]">
+                <div className="text-center bg-surface-alt dark:bg-surface-alt-dark p-8 rounded-lg border border-border dark:border-border-dark max-w-md">
+                  <Icons.ExclamationTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
+                  <h2 className="text-2xl font-bold mb-4 text-primary-text dark:text-primary-text-dark">
+                    {t('proSubscriptionRequired')}
+                  </h2>
+                  <p className="text-primary-text/70 dark:text-primary-text-dark/70">
+                    {t('proUserRequired')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       ) : (
         <>
           <Header apiKey={apiKey} />
