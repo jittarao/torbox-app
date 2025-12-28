@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
-import { timeAgo } from '@/components/downloads/utils/formatters';
 import { useAutomationRulesStorage, useBackendMode } from '@/utils/backendDetector';
 
 const TRIGGER_TYPES = {
@@ -172,9 +171,6 @@ export default function AutomationRules() {
     // Update local state
     const updatedRules = [...rules, ruleWithId];
     setRules(updatedRules);
-    
-    // Save to backend/localStorage
-    await saveRules(updatedRules);
   };
 
   // Backend mode indicator
