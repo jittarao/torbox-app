@@ -23,13 +23,13 @@ module.exports = {
           dark: '#60A5FA', // Dark mode accent - nice blue
         },
         surface: {
-          DEFAULT: '#F0EEE7', // Main layout bg
+          DEFAULT: '#FFFBEF', // Main layout bg
           dark: '#111827', // Dark mode bg - deep gray
           alt: {
             DEFAULT: '#EEE8D5', // Table header bg
             dark: '#0c141e', // Dark mode alt bg - slightly lighter
             hover: {
-              DEFAULT: '#f0ece1',
+              DEFAULT: '#f5f1e5',
               dark: '#151f32',
             },
             selected: {
@@ -53,45 +53,45 @@ module.exports = {
         label: {
           // GREEN
           success: {
-            text: '#5f7458',
+            text: '#387d20',
             'text-dark': '#34D399', // Dark mode success - emerald
-            bg: '#dbecd6',
+            bg: '#e2f1de',
             'bg-dark': '#064E3B', // Dark mode success bg
           },
           // RED
           danger: {
-            text: '#7f4549',
+            text: '#c1444c',
             'text-dark': '#F87171', // Dark mode danger - red
-            bg: '#f1dbe0',
+            bg: '#f7dfe2',
             'bg-dark': '#7F1D1D', // Dark mode danger bg - deep red
           },
           // YELLOW
           warning: {
-            text: '#6f5f44',
+            text: '#d9a31b',
             'text-dark': '#F59E0B', // Dark mode yellow - amber
-            bg: '#eee6c8',
+            bg: '#f7f0df',
             'bg-dark': '#78350F', // Dark mode warning bg - brown
           },
           // BLUE
           active: {
-            text: '#4f5f7f',
+            text: '#3871e3',
             'text-dark': '#5a94f3', // Dark mode blue
-            bg: '#dbe0f1',
+            bg: '#dee5f9',
             'bg-dark': '#1E3A8A', // Dark mode active bg - deep blue
           },
           // GRAY
           default: {
-            text: '#5f5f5f',
+            text: '#828282',
             'text-dark': '#95979d', // Dark mode gray
-            bg: '#dfdfdf',
+            bg: '#e7e7e7',
             'bg-dark': '#374151', // Dark mode default bg - slightly lighter
           },
         },
         downloaded: {
-          DEFAULT: '#dfe6da',
+          DEFAULT: '#e8f1e8',
           dark: '#0e222b',
           hover: {
-            DEFAULT: '#d8e5cf',
+            DEFAULT: '#e1f0e1',
             dark: '#101f26',
           },
         },

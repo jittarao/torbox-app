@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #f0eee7;
+  --background: #FFFBEF;
   --foreground: #1f321a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0c1708;
-    --foreground: #f0eee7;
+    --foreground: #FFFBEF;
   }
 }
 
 @layer base {
   .dark {
     --background: #0c1708;
-    --foreground: #f0eee7;
+    --foreground: #FFFBEF;
   }
 }
 
@@ -33,12 +33,12 @@ body {
 
 /* Fix select and option styling for dark mode, especially in Firefox */
 select {
-  background-color: #F0EEE7;
+  background-color: #FFFBEF;
   color: #1F321A;
 }
 
 select option {
-  background-color: #F0EEE7;
+  background-color: #FFFBEF;
   color: #1F321A;
 }
 
@@ -55,7 +55,7 @@ select option {
 /* Firefox-specific fix for select dropdown options */
 @-moz-document url-prefix() {
   select option {
-    background-color: #F0EEE7 !important;
+    background-color: #FFFBEF !important;
     color: #1F321A !important;
   }
   
