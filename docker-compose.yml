@@ -1,7 +1,7 @@
 
 services:
   torbox-app:
-    image: ghcr.io/crazycacti/torbox-app:latest
+    image: ghcr.io/jittarao/torbox-app:latest
     container_name: torbox-app
     restart: unless-stopped
     ports:
@@ -20,7 +20,7 @@ services:
   # Self-hosted backend for 24/7 automation (optional)
   # Uncomment the following to enable 24/7 automation rules
   # torbox-backend:
-  #   image: ghcr.io/crazycacti/torbox-app:backend-latest
+  #   image: ghcr.io/jittarao/torbox-app:backend-latest
   #   container_name: torbox-backend
   #   restart: unless-stopped
   #   environment:

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 
 function formatTime(ms) {
   if (!ms || ms <= 0) return null;
@@ -19,6 +20,7 @@ function formatTime(ms) {
 }
 
 export default function UploadProgress({ progress, uploading, rateLimitInfo }) {
+  const t = useTranslations('UploadProgress');
   const [currentWaitTime, setCurrentWaitTime] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(null);
 
@@ -84,15 +86,15 @@ export default function UploadProgress({ progress, uploading, rateLimitInfo }) {
       <div className="text-center text-sm text-primary-text/70 dark:text-primary-text-dark/70">
         {uploading ? (
           <>
-            Uploading {current} of {total}
+            {t('uploading', { current, total })}
             {remaining > 0 && (
               <span className="ml-2 text-xs">
-                ({remaining} remaining)
+                {t('remaining', { remaining })}
               </span>
             )}
           </>
         ) : (
-          <span>Preparing uploads...</span>
+          <span>{t('preparingUploads')}</span>
         )}
       </div>
 
@@ -106,20 +108,20 @@ export default function UploadProgress({ progress, uploading, rateLimitInfo }) {
             <div className="flex-1 text-xs text-yellow-700 dark:text-yellow-300">
               {currentWaitTime > 0 ? (
                 <p>
-                  <span className="font-medium">Rate limit:</span> Waiting {formatTime(currentWaitTime)} before next upload
+                  <span className="font-medium">{t('rateLimit')}</span> {t('waitingBeforeNext', { time: formatTime(currentWaitTime) })}
                 </p>
               ) : isNearLimit ? (
                 <p>
-                  <span className="font-medium">Approaching rate limit:</span> {uploadsInMinute}/10 per minute, {uploadsInHour}/60 per hour
+                  <span className="font-medium">{t('approachingRateLimit')}</span> {t('approachingRateLimitDetails', { perMinute: uploadsInMinute, perHour: uploadsInHour })}
                 </p>
               ) : (
                 <p>
-                  <span className="font-medium">Rate limit active:</span> Please wait...
+                  <span className="font-medium">{t('rateLimitActive')}</span> {t('pleaseWait')}
                 </p>
               )}
               {estimatedTime && estimatedTime > 0 && (
                 <p className="mt-1">
-                  Estimated completion: {formatTime(estimatedTime)}
+                  {t('estimatedCompletion')} {formatTime(estimatedTime)}
                 </p>
               )}
             </div>
