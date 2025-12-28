@@ -144,7 +144,7 @@ export default function SearchBar() {
               if (searchHistory.length > 0) setShowHistory(true);
               setShowSuggestions(true);
             }}
-            placeholder={t('placeholder')}
+            placeholder={t('placeholderSearch')}
             className="w-full px-4 py-2 pl-10 pr-10 rounded-lg border border-border dark:border-border-dark
               bg-transparent text-sm text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
