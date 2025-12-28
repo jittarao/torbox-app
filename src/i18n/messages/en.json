@@ -405,7 +405,6 @@
         },
         "footer": {
             "description": "We don't store any of your information. This app is fully open source on",
-            "forkNote": "This is a fork of jittarao's TorBox Manager. v0.1.27",
             "github": "GitHub"
         },
         "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",

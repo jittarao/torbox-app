@@ -143,9 +143,6 @@ export default function LandingPage({ onKeyChange }) {
                 {t('footer.github')}
               </a>
             </p>
-            <p className="mt-2">
-              {t('footer.forkNote')}
-            </p>
           </footer>
         </div>
       </div>

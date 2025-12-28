@@ -405,7 +405,6 @@
         },
         "footer": {
             "description": "No almacenamos ninguna de sus información. Esta aplicación es completamente de código abierto en",
-            "forkNote": "Este es un fork del TorBox Manager de jittarao. v0.1.27",
             "github": "GitHub"
         },
         "subtitle": "La alternativa del usuario avanzado a la interfaz de usuario de TorBox. Creado para la velocidad y la eficiencia.",

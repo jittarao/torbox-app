@@ -405,7 +405,6 @@
         },
         "footer": {
             "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
-            "forkNote": "これはjittaraoのTorBox Manager のフォークです. v0.1.27",
             "github": "GitHub"
         },
         "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
