@@ -419,16 +419,16 @@ export function useFetchData(apiKey, type = 'torrents') {
         case 'all':
           // For 'all' type, fetch all types
           return Promise.all([
-            fetchLocalItems(bypassCache, 'torrents'),
-            fetchLocalItems(bypassCache, 'usenet'),
-            fetchLocalItems(bypassCache, 'webdl')
+            fetchLocalItems(bypassCache, 'torrents', 0, true),
+            fetchLocalItems(bypassCache, 'usenet', 0, true),
+            fetchLocalItems(bypassCache, 'webdl', 0, true)
           ]);
         case 'usenet':
-          return fetchLocalItems(bypassCache, 'usenet');
+          return fetchLocalItems(bypassCache, 'usenet', 0, true);
         case 'webdl':
-          return fetchLocalItems(bypassCache, 'webdl');
+          return fetchLocalItems(bypassCache, 'webdl', 0, true);
         default:
-          return fetchLocalItems(bypassCache, 'torrents');
+          return fetchLocalItems(bypassCache, 'torrents', 0, true);
       }
     };
   }, [type, fetchLocalItems]);

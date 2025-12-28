@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useDeferredValue } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
@@ -45,10 +45,14 @@ export default function TableBody({
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
 
+  // Defer items update to prevent synchronous updates during render
+  const deferredItems = useDeferredValue(items);
+  const deferredExpandedItems = useDeferredValue(expandedItems);
+
   // Create flattened array of rows (item rows + file rows when expanded)
   const flattenedRows = useMemo(() => {
     const rows = [];
-    items.forEach((item, itemIndex) => {
+    deferredItems.forEach((item, itemIndex) => {
       // Add item row
       rows.push({
         type: 'item',
@@ -58,7 +62,7 @@ export default function TableBody({
       });
 
       // Add file rows if expanded
-      if (expandedItems.has(item.id) && item.files && item.files.length > 0) {
+      if (deferredExpandedItems.has(item.id) && item.files && item.files.length > 0) {
         item.files.forEach((file, fileIndex) => {
           rows.push({
             type: 'file',
@@ -72,7 +76,7 @@ export default function TableBody({
       }
     });
     return rows;
-  }, [items, expandedItems]);
+  }, [deferredItems, deferredExpandedItems]);
 
   // Find scrollable parent container (the div with id="items-table")
   const getScrollElement = () => {
@@ -220,7 +224,7 @@ export default function TableBody({
   const startOffset = virtualRows[0]?.start ?? 0;
 
   // Show empty state when there are no items
-  if (items.length === 0) {
+  if (deferredItems.length === 0) {
     return (
       <tbody
         ref={tbodyRef}
