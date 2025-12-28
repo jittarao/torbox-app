@@ -277,7 +277,62 @@ export default function Header({ apiKey }) {
               </Link>
             </div>
 
-            {/* Tier 1: Utility Items */}
+            {/* Tier 1: Secondary Navigation */}
+            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
+            <Link
+                href="/user"
+                className={`block text-white dark:text-primary-text-dark font-medium 
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                  ${isActive('/user') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icons.User className="w-5 h-5" />
+                  {t('menu.user')}
+                </div>
+              </Link>
+
+              <Link
+                href="/link-history"
+                className={`block text-white dark:text-primary-text-dark font-medium 
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                  ${isActive('/link-history') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icons.History className="w-5 h-5" />
+                  {t('menu.linkHistory')}
+                </div>
+              </Link>
+
+              <Link
+                href="/archived"
+                className={`block text-white dark:text-primary-text-dark font-medium 
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                  ${isActive('/archived') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icons.Archive className="w-5 h-5" />
+                  {t('menu.archived')}
+                </div>
+              </Link>
+
+              <Link
+                href="/rss"
+                className={`block text-white dark:text-primary-text-dark font-medium 
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                  ${isActive('/rss') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icons.Rss className="w-5 h-5" />
+                  {t('menu.rss')}
+                </div>
+              </Link>
+            </div>
+
+            {/* Tier 2: Utility Items */}
             <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
               <div className="flex items-center justify-between py-2">
                 <span className="text-white dark:text-primary-text-dark font-medium">
@@ -299,61 +354,6 @@ export default function Header({ apiKey }) {
                 </span>
                 <SystemStatusIndicator apiKey={apiKey} />
               </div>
-            </div>
-
-            {/* Tier 2: Secondary Navigation */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
-              <Link
-                href="/archived"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/archived') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.Archive className="w-5 h-5" />
-                  {t('menu.archived')}
-                </div>
-              </Link>
-
-              <Link
-                href="/link-history"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/link-history') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.History className="w-5 h-5" />
-                  {t('menu.linkHistory')}
-                </div>
-              </Link>
-
-              <Link
-                href="/rss"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/rss') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.Rss className="w-5 h-5" />
-                  {t('menu.rss')}
-                </div>
-              </Link>
-
-              <Link
-                href="/user"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/user') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.User className="w-5 h-5" />
-                  {t('menu.user')}
-                </div>
-              </Link>
             </div>
 
             {/* Settings */}
