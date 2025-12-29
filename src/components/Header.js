@@ -44,6 +44,10 @@ export default function Header({ apiKey }) {
   }, [isMoreMenuOpen]);
 
   const isActive = (path) => {
+    // Handle root path specially - it can be `/` or `/${locale}`
+    if (path === '/') {
+      return pathname === '/' || locales.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`);
+    }
     return pathname === path || locales.some((locale) => pathname === `/${locale}${path}`);
   };
 
@@ -106,7 +110,7 @@ export default function Header({ apiKey }) {
               <Link
                 href="/"
                 className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
                   ${isActive('/') ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
               >
                 <Icons.Download />
@@ -116,7 +120,7 @@ export default function Header({ apiKey }) {
               <Link
                 href="/search"
                 className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
                   ${isActive('/search') ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
               >
                 <Icons.MagnifyingGlass />
@@ -128,7 +132,7 @@ export default function Header({ apiKey }) {
                 <button
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
                   className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                    hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors
+                    hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
                     ${isActive('/archived') || isActive('/link-history') || isActive('/rss') || isActive('/user') 
                       ? 'border-b-2 border-accent dark:border-accent-dark' 
                       : ''}`}
