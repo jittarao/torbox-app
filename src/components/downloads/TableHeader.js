@@ -25,7 +25,7 @@ export default function TableHeader({
   return (
     <thead className="bg-surface-alt dark:bg-surface-alt-dark">
       <tr className="table-row">
-        <th className="px-3 md:px-4 py-3 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[60px] min-w-[60px] max-w-[60px]">
+        <th className="px-2 md:px-4 py-3 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[48px] min-w-[48px] max-w-[48px] md:w-[60px] md:min-w-[60px] md:max-w-[60px]">
           <input
             type="checkbox"
             onChange={(e) => onSelectAll(items, e.target.checked)}
@@ -45,7 +45,7 @@ export default function TableHeader({
               onWidthChange={(width) => updateColumnWidth(columnId, width)}
               sortable={column.sortable}
               onClick={() => column.sortable && onSort(columnId)}
-              className={`px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase ${
+              className={`px-2 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase ${
                 column.sortable
                   ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors'
                   : ''
@@ -60,7 +60,7 @@ export default function TableHeader({
             </ResizableColumn>
           );
         })}
-        <th className="px-3 md:px-4 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[100px]">
+        <th className="px-2 md:px-4 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[100px]">
           {columnT('actions')}
         </th>
       </tr>

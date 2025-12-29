@@ -77,7 +77,7 @@ export default function ItemsTable({
     <>
       {/* Mobile notice - only show if isClient (client-side) to prevent hydration mismatch */}
       {isClient && showMobileNotice && (
-        <div className="md:hidden p-3 my-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
+        <div className="md:hidden p-3 mb-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
           <p>
             Viewing simplified table on mobile. Rotate device or use larger
             screen for full view.

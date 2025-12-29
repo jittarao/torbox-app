@@ -111,7 +111,7 @@ export default function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-3 md:px-4 py-4 max-w-[150px] relative"
+            className="px-2 md:px-4 py-4 max-w-[150px] relative"
             style={baseStyle}
           >
             <div
@@ -396,7 +396,7 @@ export default function ItemRow({
         handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
       }}
     >
-      <td className="px-3 md:px-4 py-4 text-center whitespace-nowrap">
+      <td className="px-2 md:px-4 py-4 text-center whitespace-nowrap">
         <input
           type="checkbox"
           checked={selectedItems.items?.has(item.id)}
@@ -409,7 +409,7 @@ export default function ItemRow({
         />
       </td>
       {visibleColumns.map((columnId) => renderCell(columnId))}
-      <td className="px-3 md:px-4 py-4 pb-[16.5] whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
+      <td className="px-2 md:px-4 py-4 pb-[16.5] whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
         <ItemActions
           item={item}
           apiKey={apiKey}
