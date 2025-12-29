@@ -241,6 +241,15 @@ export default function Header({ apiKey }) {
                 </button>
               )}
               <LanguageSwitcher compact={true} />
+              <a
+                href="https://github.com/jittarao/torbox-app"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub Repository"
+                className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+              >
+                <Icons.GitHub className="w-5 h-5" />
+              </a>
             </div>
           </div>
         </div>
@@ -386,6 +395,20 @@ export default function Header({ apiKey }) {
                     {t('menu.language') || 'Language'}
                   </span>
                   <LanguageSwitcher />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white dark:text-primary-text-dark font-medium">
+                    GitHub
+                  </span>
+                  <a
+                    href="https://github.com/jittarao/torbox-app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="GitHub Repository"
+                    className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+                  >
+                    <Icons.GitHub className="w-5 h-5" />
+                  </a>
                 </div>
               </div>
             )}

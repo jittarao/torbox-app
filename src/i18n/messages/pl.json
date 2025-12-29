@@ -495,15 +495,15 @@
         "copyAll": "Skopiuj wszystkie",
         "copyCode": "Skopiuj kod",
         "copyLink": "Skopiuj link",
-        "description": "Podziel się TorBox z przyjaciółmi i zarabiaj nagrody!",
-        "developerNote": "To są kody referalne dla twórcy",
+        "description": "Użyj kodu poniżej, aby uzyskać dodatkowe 7 dni za każdy zakupiony miesiąc.",
+        "developerNote": "To jest kod referalny twórcy.",
         "error": "Błąd skopiowania do schowka",
         "landingDescription": "Potrzebujesz konta TorBox? Użyj naszego linku referalnego, aby zarejestrować się i zacząć!",
         "referral": "Referral",
         "referralCode": "Kod referalny",
         "referralLink": "Link referalny",
         "signUp": "Zarejestruj się w TorBox",
-        "title": "Program referalny",
+        "title": "Uzyskaj darmowy czas premium",
         "visitLink": "Odwiedź link"
     },
     "RssFeeds": {

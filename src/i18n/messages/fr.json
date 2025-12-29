@@ -495,15 +495,15 @@
         "copyAll": "Tout copier",
         "copyCode": "Copier le code",
         "copyLink": "Copier le lien",
-        "description": "Partagez TorBox avec vos amis et gagnez des récompenses !",
-        "developerNote": "Ce sont les codes de parrainage du développeur",
+        "description": "Utilisez le code ci-dessous pour obtenir 7 jours supplémentaires pour chaque mois acheté.",
+        "developerNote": "Ce est le code de parrainage du développeur.",
         "error": "Erreur de copie dans le presse-papiers",
         "landingDescription": "Besoin d'un compte TorBox ? Utilisez notre lien de parrainage pour vous inscrire et commencer !",
         "referral": "Parrainage",
         "referralCode": "Code de parrainage",
         "referralLink": "Lien de parrainage",
         "signUp": "S'inscrire à TorBox",
-        "title": "Programme de parrainage",
+        "title": "Obtenir du temps premium gratuit",
         "visitLink": "Visiter le lien"
     },
     "RssFeeds": {

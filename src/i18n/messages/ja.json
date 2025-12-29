@@ -495,15 +495,15 @@
         "copyAll": "すべてコピー",
         "copyCode": "コードをコピー",
         "copyLink": "リンクをコピー",
-        "description": "友達とTorBoxを共有して報酬を獲得しましょう！",
-        "developerNote": "これらは開発者の紹介コードです",
+        "description": "紹介リンクを使用してサインアップし、始めましょう！",
+        "developerNote": "これは開発者の紹介コードです",
         "error": "コピーに失敗しました",
         "landingDescription": "TorBoxアカウントが必要ですか？紹介リンクを使用してサインアップし、始めましょう！",
         "referral": "紹介",
         "referralCode": "紹介コード",
         "referralLink": "紹介リンク",
         "signUp": "TorBoxにサインアップ",
-        "title": "紹介プログラム",
+        "title": "無料のプレミアム時間を取得",
         "visitLink": "リンクを訪問"
     },
     "RssFeeds": {
