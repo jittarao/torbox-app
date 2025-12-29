@@ -11,6 +11,7 @@ import ViewControls from './components/ViewControls';
 import { useStatusCounts } from './hooks/useStatusCounts';
 import Dropdown from '@/components/shared/Dropdown';
 import { useTranslations } from 'next-intl';
+import useIsMobile from '@/hooks/useIsMobile';
 
 export default function ActionBar({
   unfilteredItems,
@@ -48,6 +49,7 @@ export default function ActionBar({
   collapseAllFiles,
   expandedItems,
 }) {
+  const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
 
@@ -143,7 +145,7 @@ export default function ActionBar({
         /> */}
 
         {/* Sort downloads list */}
-        {viewMode === 'card' && (
+        {viewMode === 'card' || (isMobile && viewMode === 'table') && (
           <div className="flex items-center gap-1">
             <Dropdown
               options={sortOptions}

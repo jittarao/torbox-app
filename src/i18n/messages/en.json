@@ -105,6 +105,7 @@
         "failed": "Failed",
         "itemsAffected": "Items Affected",
         "lastTriggered": "last triggered",
+        "mobileTitle": "Rules",
         "neverExecuted": "never executed",
         "neverTriggered": "never triggered",
         "noLogs": "No logs available",

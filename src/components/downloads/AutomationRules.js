@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useAutomationRulesStorage, useBackendMode } from '@/utils/backendDetector';
+import useIsMobile from '@/hooks/useIsMobile';
 
 const TRIGGER_TYPES = {
   INTERVAL: 'interval',
@@ -131,6 +132,7 @@ export default function AutomationRules() {
   const [editingRuleId, setEditingRuleId] = useState(null);
   const [viewingLogsRuleId, setViewingLogsRuleId] = useState(null);
   const [ruleLogs, setRuleLogs] = useState({});
+  const isMobile = useIsMobile();
 
   // Default new rule structure
   const getDefaultNewRule = () => ({
@@ -436,11 +438,11 @@ export default function AutomationRules() {
 
   return (
     <div className="px-2 py-2 lg:p-4 mt-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
-            {t('title')}
-          </h2>
+          <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
+            {isMobile ? t('mobileTitle') : t('title')}
+          </h3>
           <span className="text-xs text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 px-1.5 py-0.5 rounded-md">
             Beta
           </span>
@@ -449,7 +451,7 @@ export default function AutomationRules() {
               24/7
             </span>
           )}
-          <span className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+          <span className="text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             ({activeRules.length} rule{activeRules.length === 1 ? '' : 's'}{' '}
             active)
           </span>

@@ -25,6 +25,7 @@ const DEFAULT_EXPANDED_STATES = {
 
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const t = useTranslations('ItemUploader');
+  const commonT = useTranslations('Common');
   const {
     items,
     setItems,
@@ -179,6 +180,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
       case 'usenet':
         return {
           title: t('title.usenet'),
+          mobileTitle: commonT('itemTypes.Usenet'),
           inputPlaceholder: t('placeholder.usenet'),
           dropzoneText: t('dropzone.usenet'),
           buttonText: t('button.usenet'),
@@ -188,6 +190,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
       case 'webdl':
         return {
           title: t('title.webdl'),
+          mobileTitle: commonT('itemTypes.Web'),
           inputPlaceholder: t('placeholder.webdl'),
           dropzoneText: '',
           buttonText: t('button.webdl'),
@@ -197,6 +200,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
       default:
         return {
           title: t('title.torrents'),
+          mobileTitle: commonT('itemTypes.Torrents'),
           inputPlaceholder: t('placeholder.torrents'),
           dropzoneText: t('dropzone.torrents'),
           buttonText: t('button.torrents'),
@@ -232,7 +236,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     <div className="px-2 py-2 lg:p-4 mt-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
         <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
-          {isMobile ? t('title.default') : assetTypeInfo.title}
+          {isMobile ? assetTypeInfo.mobileTitle : assetTypeInfo.title}
         </h3>
         <div className="flex items-center gap-2 lg:gap-4">
           {activeType === 'torrents' && isExpanded && (

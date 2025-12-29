@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useApiHealth } from './hooks/useApiHealth';
 import Icons from '@/components/icons';
@@ -8,10 +8,7 @@ import Icons from '@/components/icons';
 export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const t = useTranslations('SystemStatus');
   const [showTooltip, setShowTooltip] = useState(false);
-
   const { overallStatus, lastCheck, error, refreshHealth, isLoading } = useApiHealth(apiKey);
-
-
 
   // Status configuration
   const statusConfig = {

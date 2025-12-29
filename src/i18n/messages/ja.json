@@ -105,6 +105,7 @@
         "failed": "失敗",
         "itemsAffected": "影響を受けたアイテム",
         "lastTriggered": "最後にトリガーされた",
+        "mobileTitle": "ルール",
         "neverExecuted": "一度も実行されなかった",
         "neverTriggered": "一度もトリガーされなかった",
         "noLogs": "ログがありません",

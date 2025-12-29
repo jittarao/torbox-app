@@ -97,14 +97,16 @@ export default function FileRow({
                 className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4'}`}
                 style={{
                   maxWidth:
-                    tableWidth -
-                    ACTIONS_COLUMN_WIDTH -
-                    CHECKBOX_COLUMN_WIDTH -
-                    EXTRA_COLUMN_PADDING,
+                    isMobile
+                      ? "100%"
+                      : tableWidth -
+                        ACTIONS_COLUMN_WIDTH -
+                        CHECKBOX_COLUMN_WIDTH -
+                        EXTRA_COLUMN_PADDING,
                 }}
               >
                 <div
-                  className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
+                  className={`text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
                 >
                   <Tooltip
                     content={isBlurred ? '' : file.short_name || file.name}
