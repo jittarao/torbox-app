@@ -18,9 +18,10 @@ export async function GET() {
   }
 
   try {
-    // Test TorBox API connectivity with a simple request
+    const startTime = Date.now();
+    // Test TorBox API connectivity using the UP endpoint
     const response = await fetch(
-      `${API_BASE}/${API_VERSION}/api/torrents/mylist?limit=1`,
+      API_BASE,
       {
         method: 'GET',
         headers: {
@@ -31,23 +32,40 @@ export async function GET() {
       }
     );
 
+    const responseTime = Date.now() - startTime;
+
     if (response.ok) {
-      return NextResponse.json(
-        { 
-          status: 'healthy',
-          message: 'TorBox API is responding normally',
-          timestamp: new Date().toISOString(),
-          responseTime: Date.now() - Date.now() // Placeholder for actual timing
-        },
-        { status: 200 }
-      );
+      const data = await response.json();
+      // Check if the UP endpoint returned the expected success response
+      if (data.success === true) {
+        return NextResponse.json(
+          { 
+            status: 'healthy',
+            message: data.detail || 'TorBox API is responding normally',
+            timestamp: new Date().toISOString(),
+            responseTime
+          },
+          { status: 200 }
+        );
+      } else {
+        return NextResponse.json(
+          { 
+            status: 'unhealthy',
+            message: data.detail || 'TorBox API UP endpoint returned unexpected response',
+            timestamp: new Date().toISOString(),
+            responseTime
+          },
+          { status: 200 } // Return 200 to indicate our endpoint is working
+        );
+      }
     } else {
       return NextResponse.json(
         { 
           status: 'unhealthy',
           message: `TorBox API responded with status: ${response.status}`,
           timestamp: new Date().toISOString(),
-          statusCode: response.status
+          statusCode: response.status,
+          responseTime
         },
         { status: 200 } // Return 200 to indicate our endpoint is working
       );
