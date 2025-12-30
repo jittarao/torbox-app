@@ -3,64 +3,57 @@
 @tailwind utilities;
 
 :root {
-  --background: #FFFBEF;
-  --foreground: #1f321a;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --accent: #6366f1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c1708;
-    --foreground: #FFFBEF;
-  }
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --accent: #818cf8;
 }
 
 @layer base {
-  .dark {
-    --background: #0c1708;
-    --foreground: #FFFBEF;
+  * {
+    @apply border-border dark:border-border-dark transition-colors duration-200;
+  }
+  
+  body {
+    @apply bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark font-sans antialiased selection:bg-primary/30;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: 'Inter', sans-serif;
+@layer components {
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/20 shadow-premium dark:shadow-premium-dark;
+  }
 }
 
 .container {
-  max-width: 1600px;
+  max-width: 1400px;
 }
 
-/* Fix select and option styling for dark mode, especially in Firefox */
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 dark:bg-slate-700 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600;
+}
+
+/* Fix select and option styling for dark mode */
 select {
-  background-color: #FFFBEF;
-  color: #1F321A;
+  @apply bg-surface dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark rounded-lg border border-border dark:border-border-dark px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50;
 }
 
 select option {
-  background-color: #FFFBEF;
-  color: #1F321A;
+  @apply bg-surface dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark;
 }
 
-.dark select {
-  background-color: #111827;
-  color: #E5E7EB;
-}
-
-.dark select option {
-  background-color: #111827;
-  color: #E5E7EB;
-}
-
-/* Firefox-specific fix for select dropdown options */
-@-moz-document url-prefix() {
-  select option {
-    background-color: #FFFBEF !important;
-    color: #1F321A !important;
-  }
-  
-  .dark select option {
-    background-color: #111827 !important;
-    color: #E5E7EB !important;
-  }
-}

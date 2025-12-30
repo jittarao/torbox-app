@@ -3,11 +3,11 @@
   "version": "0.1.27",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev -p 5000 --turbopack",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "build:check": "bun run build && bun run scripts/analyze-bundle.js",
-    "start": "next start",
+    "start": "next start -p 5000",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "version:patch": "bun run scripts/update-version.js patch",

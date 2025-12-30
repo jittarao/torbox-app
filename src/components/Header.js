@@ -5,15 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Icons from '@/components/icons';
-import { locales } from '@/i18n/settings';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
-import ReferralDropdown from '@/components/ReferralDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getVersion } from '@/utils/version';
-// import CloudUploadManager from '@/components/downloads/CloudUploadManager';
 
 export default function Header({ apiKey }) {
   const t = useTranslations('Header');
@@ -21,13 +17,32 @@ export default function Header({ apiKey }) {
   const { darkMode, toggleDarkMode, isClient } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [activeKeyLabel, setActiveKeyLabel] = useState('');
   const moreMenuRef = useRef(null);
+
+  useEffect(() => {
+    const fetchActiveKeyLabel = async () => {
+      if (!apiKey) return;
+      try {
+        const response = await fetch('/api/keys');
+        if (response.ok) {
+          const keys = await response.json();
+          const currentKey = keys.find(k => k.key === apiKey);
+          if (currentKey) {
+            setActiveKeyLabel(currentKey.label);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching keys in header:', error);
+      }
+    };
+    fetchActiveKeyLabel();
+  }, [apiKey]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Close more menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
@@ -44,30 +59,31 @@ export default function Header({ apiKey }) {
   }, [isMoreMenuOpen]);
 
   const isActive = (path) => {
-    // Handle root path specially - it can be `/` or `/${locale}`
-    if (path === '/') {
-      return pathname === '/' || locales.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`);
-    }
-    return pathname === path || locales.some((locale) => pathname === `/${locale}${path}`);
+    return pathname === path || pathname === `/en${path}`;
   };
 
   return (
-    <div className="bg-primary dark:bg-surface-alt-dark border-b border-primary-border dark:border-border-dark">
-      <div className="container mx-auto px-4 py-4">
+    <header className="sticky top-0 z-50 w-full glass border-b border-border/50 dark:border-border-dark/50">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/images/TBM-logo.png"
-              alt={t('logo')}
-              width={24}
-              height={24}
-            />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-primary/10 group-hover:scale-110 transition-transform">
+              <Image
+                src="/images/TBM-logo.png"
+                alt={t('logo')}
+                width={28}
+                height={28}
+                className="drop-shadow-sm"
+              />
+            </div>
             <div className="flex flex-col">
-              <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
+              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-indigo-500 dark:to-indigo-300">
                 {t('title')}
               </h1>
-              <span className="text-xs text-white/70 dark:text-primary-text-dark/70 font-normal">
-                v{getVersion()}
+              <span className="text-[10px] uppercase tracking-widest font-bold text-primary-text/40 dark:text-primary-text-dark/40 flex gap-2">
+                <span>v{getVersion()}</span>
+                <span className="text-primary/60">•</span>
+                <span>Author: Onkar</span>
               </span>
             </div>
           </Link>
@@ -76,7 +92,7 @@ export default function Header({ apiKey }) {
           <button
             onClick={toggleMenu}
             aria-label={t('menu.toggle')}
-            className="md:hidden text-white dark:text-primary-text-dark"
+            className="md:hidden p-2 rounded-lg hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -86,339 +102,207 @@ export default function Header({ apiKey }) {
               className="w-6 h-6"
             >
               {isMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               )}
             </svg>
           </button>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4">
-            {/* Tier 1: Primary Navigation */}
-            <div className="flex items-center gap-4">
+          <nav className="hidden md:flex items-center gap-6">
+            <div className="flex items-center gap-1 bg-surface-alt/50 dark:bg-surface-alt-dark/50 p-1 rounded-2xl border border-border/30 dark:border-border-dark/30">
+              {activeKeyLabel && (
+                <div className="px-3 py-2 flex items-center gap-2 border-r border-border/20 dark:border-border-dark/20 mr-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-primary-text/40 dark:text-primary-text-dark/40">
+                    Active: <span className="text-primary font-black">{activeKeyLabel}</span>
+                  </span>
+                </div>
+              )}
+
               <Link
                 href="/"
-                className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                  ${isActive('/') ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2
+                  ${isActive('/')
+                    ? 'bg-surface dark:bg-surface-dark shadow-premium dark:shadow-premium-dark text-primary'
+                    : 'text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary'}`}
               >
-                <Icons.Download />
+                <Icons.Download className="w-4 h-4" />
                 {t('menu.downloads')}
               </Link>
 
               <Link
                 href="/search"
-                className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                  ${isActive('/search') ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2
+                  ${isActive('/search')
+                    ? 'bg-white dark:bg-slate-800 shadow-premium text-primary'
+                    : 'text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary'}`}
               >
-                <Icons.MagnifyingGlass />
+                <Icons.MagnifyingGlass className="w-4 h-4" />
                 {t('menu.search')}
               </Link>
 
-              {/* More Menu Dropdown */}
               <div className="relative" ref={moreMenuRef}>
                 <button
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                  className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                    hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                    ${isActive('/archived') || isActive('/link-history') || isActive('/rss') || isActive('/user') 
-                      ? 'border-b-2 border-accent dark:border-accent-dark' 
-                      : ''}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2
+                    ${isActive('/archived') || isActive('/link-history') || isActive('/rss') || isActive('/user') || isActive('/manage-keys')
+                      ? 'bg-white dark:bg-slate-800 shadow-premium text-primary'
+                      : 'text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary'}`}
                 >
-                  <Icons.VerticalEllipsis className="w-5 h-5" />
+                  <Icons.VerticalEllipsis className="w-4 h-4" />
                   <span>{t('menu.more') || 'More'}</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform ${isMoreMenuOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
                 </button>
 
                 {isMoreMenuOpen && (
-                  <div className="absolute right-0 z-20 mt-2 py-2 w-48 bg-white dark:bg-surface-alt-dark rounded-md shadow-lg border border-primary-border dark:border-border-dark">
-                    <Link
-                      href="/user"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/user')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.User className="w-4 h-4" />
-                      <span>{t('menu.user')}</span>
-                    </Link>
-
-                    <Link
-                      href="/link-history"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/link-history')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.History className="w-4 h-4" />
-                      <span>{t('menu.linkHistory')}</span>
-                    </Link>
-
-                    <Link
-                      href="/archived"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/archived')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.Archive className="w-4 h-4" />
-                      <span>{t('menu.archived')}</span>
-                    </Link>
-
-                    <Link
-                      href="/rss"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/rss')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.Rss className="w-4 h-4" />
-                      <span>{t('menu.rss')}</span>
-                    </Link>
+                  <div className="absolute right-0 mt-3 py-2 w-56 glass rounded-2xl shadow-xl border border-border/50 dark:border-border-dark/50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {[
+                      { href: '/user', icon: Icons.User, label: t('menu.user') },
+                      { href: '/manage-keys', icon: Icons.Preferences, label: t('menu.manageKeys') || 'Manage Keys' },
+                      { href: '/link-history', icon: Icons.History, label: t('menu.linkHistory') },
+                      { href: '/archived', icon: Icons.Archive, label: t('menu.archived') },
+                      { href: '/rss', icon: Icons.Rss, label: t('menu.rss') }
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMoreMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors mx-2 rounded-xl ${isActive(item.href)
+                          ? 'text-primary bg-primary/10'
+                          : 'text-primary-text/70 dark:text-primary-text-dark/70 hover:bg-surface-alt/50 dark:hover:bg-surface-alt-dark/50'
+                          }`}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
+            <div className="h-6 w-px bg-border/50 dark:bg-border-dark/50"></div>
 
-            {/* Tier 1: Utility Items */}
             <div className="flex items-center gap-3">
-              <ReferralDropdown />
               {apiKey && <NotificationBell apiKey={apiKey} />}
               <SystemStatusIndicator apiKey={apiKey} />
             </div>
 
-            {/* Divider */}
-            <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
+            <div className="h-6 w-px bg-border/50 dark:bg-border-dark/50"></div>
 
-            {/* Settings: Dark mode toggle and Language Switcher */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {isClient && (
                 <button
                   onClick={toggleDarkMode}
-                  aria-label={
-                    darkMode ? t('theme.toggleLight') : t('theme.toggleDark')
-                  }
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
+                  aria-label={darkMode ? t('theme.toggleLight') : t('theme.toggleDark')}
+                  className="group relative flex items-center justify-center w-10 h-10 rounded-xl bg-surface-alt/50 dark:bg-surface-alt-dark/50 border border-border/30 dark:border-border-dark/30 hover:scale-110 active:scale-95 transition-all"
                 >
-                  <span
-                    className={`${
-                      darkMode ? 'translate-x-6' : 'translate-x-1'
-                    } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
-                  >
-                    {darkMode ? <Icons.Moon /> : <Icons.Sun />}
-                  </span>
+                  <div className="relative overflow-hidden w-5 h-5">
+                    <div className={`transition-transform duration-500 ${darkMode ? 'translate-y-0' : 'translate-y-8'}`}>
+                      <Icons.Moon className="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <div className={`absolute top-0 transition-transform duration-500 ${darkMode ? '-translate-y-8' : 'translate-y-0'}`}>
+                      <Icons.Sun className="w-5 h-5 text-amber-500" />
+                    </div>
+                  </div>
                 </button>
               )}
-              <LanguageSwitcher compact={true} />
+
               <a
-                href="https://github.com/jittarao/torbox-app"
+                href="https://github.com/onkarvelhals/torbox-app-enhanced"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="GitHub Repository"
-                className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+                className="p-2 rounded-xl text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary hover:bg-primary/10 transition-all"
               >
                 <Icons.GitHub className="w-5 h-5" />
               </a>
             </div>
-          </div>
+          </nav>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 space-y-4">
-            {/* Tier 1: Primary Navigation */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
-              <Link
-                href="/"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.Download className="w-5 h-5" />
-                  {t('menu.downloads')}
-                </div>
-              </Link>
-
-              <Link
-                href="/search"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/search') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.MagnifyingGlass className="w-5 h-5" />
-                  {t('menu.search')}
-                </div>
-              </Link>
-            </div>
-
-            {/* Tier 1: Secondary Navigation */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
-            <Link
-                href="/user"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/user') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.User className="w-5 h-5" />
-                  {t('menu.user')}
-                </div>
-              </Link>
-
-              <Link
-                href="/link-history"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/link-history') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.History className="w-5 h-5" />
-                  {t('menu.linkHistory')}
-                </div>
-              </Link>
-
-              <Link
-                href="/archived"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/archived') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.Archive className="w-5 h-5" />
-                  {t('menu.archived')}
-                </div>
-              </Link>
-
-              <Link
-                href="/rss"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/rss') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.Rss className="w-5 h-5" />
-                  {t('menu.rss')}
-                </div>
-              </Link>
-            </div>
-
-            {/* Tier 2: Utility Items */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
-              <div className="flex items-center justify-between py-2">
-                <span className="text-white dark:text-primary-text-dark font-medium">
-                  {t('menu.referrals')}
-                </span>
-                <ReferralDropdown />
+          <div className="md:hidden mt-6 pb-6 animate-in slide-in-from-top-4 duration-300">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/"
+                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${isActive('/') ? 'border-primary bg-primary/5 text-primary' : 'border-border/30 text-primary-text/60'
+                    }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Icons.Download className="w-6 h-6" />
+                  <span className="text-xs font-bold">{t('menu.downloads')}</span>
+                </Link>
+                <Link
+                  href="/search"
+                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${isActive('/search') ? 'border-primary bg-primary/5 text-primary' : 'border-border/30 text-primary-text/60'
+                    }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Icons.MagnifyingGlass className="w-6 h-6" />
+                  <span className="text-xs font-bold">{t('menu.search')}</span>
+                </Link>
               </div>
-              {apiKey && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    {t('menu.notifications')}
-                  </span>
-                  <NotificationBell apiKey={apiKey} />
-                </div>
-              )}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-white dark:text-primary-text-dark font-medium">
-                  {t('menu.systemStatus')}
-                </span>
-                <SystemStatusIndicator apiKey={apiKey} />
-              </div>
-            </div>
 
-            {/* Settings */}
-            {isClient && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    {t('theme.toggleDark')}
-                  </span>
-                  <button
-                    onClick={toggleDarkMode}
-                    aria-label={
-                      darkMode
-                        ? t('theme.toggleLight')
-                        : t('theme.toggleDark')
-                    }
-                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
+              <div className="glass rounded-3xl p-2 space-y-1">
+                {[
+                  { href: '/user', icon: Icons.User, label: t('menu.user') },
+                  { href: '/manage-keys', icon: Icons.Preferences, label: t('menu.manageKeys') || 'Manage Keys' },
+                  { href: '/link-history', icon: Icons.History, label: t('menu.linkHistory') },
+                  { href: '/archived', icon: Icons.Archive, label: t('menu.archived') },
+                  { href: '/rss', icon: Icons.Rss, label: t('menu.rss') }
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`flex items-center gap-4 p-3 rounded-2xl text-sm font-medium transition-colors ${isActive(item.href) ? 'bg-primary/10 text-primary' : 'hover:bg-surface-alt/50'
+                      }`}
                   >
-                    <span
-                      className={`${
-                        darkMode ? 'translate-x-6' : 'translate-x-1'
-                      } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
-                    >
-                      {darkMode ? <Icons.Moon /> : <Icons.Sun />}
-                    </span>
-                  </button>
-                </div>
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="glass rounded-3xl p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    {t('menu.language') || 'Language'}
-                  </span>
-                  <LanguageSwitcher />
+                  <span className="text-sm font-bold text-primary-text/60 uppercase tracking-wider">{t('menu.settings') || 'Settings'}</span>
+                  <div className="flex items-center gap-2">
+                    {isClient && (
+                      <button
+                        onClick={toggleDarkMode}
+                        className="p-2 rounded-xl bg-surface-alt/50 dark:bg-surface-alt-dark/50 border border-border/30"
+                      >
+                        {darkMode ? <Icons.Moon className="w-5 h-5 text-indigo-400" /> : <Icons.Sun className="w-5 h-5 text-amber-500" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    GitHub
-                  </span>
+
+                <div className="h-px bg-border/30"></div>
+
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center gap-3">
+                    {apiKey && <NotificationBell apiKey={apiKey} />}
+                    <SystemStatusIndicator apiKey={apiKey} />
+                  </div>
                   <a
-                    href="https://github.com/jittarao/torbox-app"
+                    href="https://github.com/onkarvelhals/torbox-app-enhanced"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="GitHub Repository"
-                    className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+                    className="p-2 rounded-xl bg-surface-alt/50 border border-border/30"
                   >
                     <Icons.GitHub className="w-5 h-5" />
                   </a>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </header>
   );
 }

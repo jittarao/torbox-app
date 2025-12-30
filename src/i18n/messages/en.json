@@ -260,17 +260,19 @@
         "download": "Download File"
     },
     "Header": {
-        "logo": "TorBox Manager Logo",
+        "logo": "Torbox Enhanced Logo",
         "menu": {
             "archived": "Archived",
             "downloads": "Downloads",
             "language": "Language",
             "linkHistory": "Link History",
+            "manageKeys": "Manage Keys",
             "more": "More",
             "notifications": "Notifications",
             "referrals": "Referrals",
             "rss": "RSS Feeds",
             "search": "Search",
+            "settings": "Settings",
             "systemStatus": "System Status",
             "toggle": "Toggle menu",
             "user": "User"
@@ -279,13 +281,13 @@
             "toggleDark": "Toggle dark mode",
             "toggleLight": "Toggle light mode"
         },
-        "title": "TorBox Manager"
+        "title": "Torbox Enhanced"
     },
     "Index": {
         "description": "Torrent and Debrid Manager",
         "search": "Search",
         "searchPlaceholder": "Search torrents...",
-        "title": "TorBox Manager"
+        "title": "Torbox Enhanced"
     },
     "ItemActionButtons": {
         "delete": {
@@ -397,7 +399,11 @@
     "LandingPage": {
         "apiKeyInput": {
             "description": "Find your API key at",
+            "invalid": "Invalid or expired API key. Please check again.",
+            "keyName": "Key Name",
+            "keyNamePlaceholder": "e.g. MyAccount",
             "link": "torbox.app/settings",
+            "start": "Start",
             "title": "Enter TorBox API Key"
         },
         "features": {
@@ -419,7 +425,8 @@
             "github": "GitHub"
         },
         "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",
-        "title": "TorBox Manager"
+        "title": "Torbox Enhanced",
+        "version": "Premium Experience"
     },
     "LinkHistory": {
         "actions": {

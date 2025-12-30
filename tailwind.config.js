@@ -10,100 +10,99 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1c3017', // Main menu bg
-          border: '#374832', // Main menu border
-          hover: '#243d1d',
+          DEFAULT: '#6366f1', // Indigo 500
+          foreground: '#ffffff',
+          border: '#e2e8f0', // Slate 200
+          hover: '#4f46e5', // Indigo 600
           text: {
-            DEFAULT: '#1F321A', // Normal text
-            dark: '#E5E7EB', // Dark mode text - lighter gray
+            DEFAULT: '#1e293b', // Slate 800
+            dark: '#f8fafc', // Slate 50
           },
         },
         accent: {
-          DEFAULT: '#f2761e', // Action buttons/links
-          dark: '#60A5FA', // Dark mode accent - nice blue
+          DEFAULT: '#f59e0b', // Amber 500
+          dark: '#fbbf24', // Amber 400
+          hover: '#d97706', // Amber 600
         },
         surface: {
-          DEFAULT: '#FFFBEF', // Main layout bg
-          dark: '#111827', // Dark mode bg - deep gray
+          DEFAULT: '#ffffff',
+          dark: '#0f172a', // Slate 900
           alt: {
-            DEFAULT: '#EEE8D5', // Table header bg
-            dark: '#0c141e', // Dark mode alt bg - slightly lighter
+            DEFAULT: '#f1f5f9', // Slate 100
+            dark: '#1e293b', // Slate 800
             hover: {
-              DEFAULT: '#f5f1e5',
-              dark: '#151f32',
+              DEFAULT: '#e2e8f0', // Slate 200
+              dark: '#334155', // Slate 700
             },
             selected: {
-              DEFAULT: '#efeadc',
-              dark: '#090f18',
+              DEFAULT: '#eef2ff', // Indigo 50
+              dark: '#312e81', // Indigo 900
               hover: {
-                DEFAULT: '#efe8d7',
-                dark: '#0c1420',
+                DEFAULT: '#e0e7ff', // Indigo 100
+                dark: '#3730a3', // Indigo 800
               },
             },
           },
           hover: {
-            DEFAULT: '#f2761e07', // Changed to warm cream color
-            dark: '#111827', // Dark mode hover - medium gray
+            DEFAULT: '#f8fafc', // Slate 50
+            dark: '#1e293b', // Slate 800
           },
         },
         border: {
-          DEFAULT: '#cecece',
-          dark: '#3c3c3c', // Dark mode border - medium gray
+          DEFAULT: '#e2e8f0', // Slate 200
+          dark: '#334155', // Slate 700
         },
         label: {
-          // GREEN
           success: {
-            text: '#387d20',
-            'text-dark': '#34D399', // Dark mode success - emerald
-            bg: '#e2f1de',
-            'bg-dark': '#064E3B', // Dark mode success bg
+            text: '#15803d', // Green 700
+            'text-dark': '#4ade80', // Green 400
+            bg: '#f0fdf4', // Green 50
+            'bg-dark': '#064e3b', // Green 900
           },
-          // RED
           danger: {
-            text: '#c1444c',
-            'text-dark': '#F87171', // Dark mode danger - red
-            bg: '#f7dfe2',
-            'bg-dark': '#7F1D1D', // Dark mode danger bg - deep red
+            text: '#b91c1c', // Red 700
+            'text-dark': '#f87171', // Red 400
+            bg: '#fef2f2', // Red 50
+            'bg-dark': '#7f1d1d', // Red 900
           },
-          // YELLOW
           warning: {
-            text: '#d9a31b',
-            'text-dark': '#F59E0B', // Dark mode yellow - amber
-            bg: '#f7f0df',
-            'bg-dark': '#78350F', // Dark mode warning bg - brown
+            text: '#a16207', // Amber 700
+            'text-dark': '#fbbf24', // Amber 400
+            bg: '#fffbeb', // Amber 50
+            'bg-dark': '#78350f', // Amber 900
           },
-          // BLUE
           active: {
-            text: '#3871e3',
-            'text-dark': '#5a94f3', // Dark mode blue
-            bg: '#dee5f9',
-            'bg-dark': '#1E3A8A', // Dark mode active bg - deep blue
+            text: '#1d4ed8', // Blue 700
+            'text-dark': '#60a5fa', // Blue 400
+            bg: '#eff6ff', // Blue 50
+            'bg-dark': '#1e3a8a', // Blue 900
           },
-          // GRAY
           default: {
-            text: '#828282',
-            'text-dark': '#95979d', // Dark mode gray
-            bg: '#e7e7e7',
-            'bg-dark': '#374151', // Dark mode default bg - slightly lighter
+            text: '#475569', // Slate 600
+            'text-dark': '#94a3b8', // Slate 400
+            bg: '#f8fafc', // Slate 50
+            'bg-dark': '#334155', // Slate 700
           },
         },
         downloaded: {
-          DEFAULT: '#e8f1e8',
-          dark: '#0e222b',
+          DEFAULT: '#f0fdfa', // Teal 50
+          dark: '#042f2e', // Teal 950
           hover: {
-            DEFAULT: '#e1f0e1',
-            dark: '#101f26',
+            DEFAULT: '#ccfbf1', // Teal 100
+            dark: '#134e4a', // Teal 900
           },
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui'],
+        sans: ['var(--font-geist-sans)', 'Inter', 'system-ui'],
+        mono: ['var(--font-geist-mono)', 'monospace'],
       },
-      borderColor: {
-        DEFAULT: '#cecece',
-        dark: '#3c3c3c',
+      boxShadow: {
+        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 4px 15px -5px rgba(0, 0, 0, 0.05)',
+        'premium-dark': '0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 4px 15px -5px rgba(0, 0, 0, 0.2)',
       },
     },
   },
   plugins: [],
 };
+

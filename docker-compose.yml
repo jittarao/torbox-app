@@ -1,13 +1,14 @@
-
 services:
   torbox-app:
-    image: ghcr.io/jittarao/torbox-app:latest
+    image: ghcr.io/onkarvelhals/torbox-app-enhanced:latest
     container_name: torbox-app
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - BACKEND_DISABLED=true # If you want to use the local backend, set this to false or remove it
+      - BACKEND_DISABLED=true
+    volumes:
+      - torbox-data:/app/data
     # depends_on:
     #   - torbox-backend
     # labels:
@@ -30,5 +31,5 @@ services:
   #   volumes:
   #     - backend-data:/app/data
 
-# volumes:
-#   backend-data:
+volumes:
+  torbox-data:

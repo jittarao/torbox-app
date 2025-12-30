@@ -10,46 +10,52 @@ export default function AssetTypeTabs({ activeType, onTypeChange }) {
     {
       id: 'all',
       label: t('itemTypes.All'),
-      icon: <Icons.All className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <Icons.All className="w-4 h-4" />,
     },
     {
       id: 'torrents',
       label: t('itemTypes.Torrents'),
-      icon: <Icons.Torrent className="w-4 h-4 md:w-5 md:h-5 rotate-[135deg]" />,
+      icon: <Icons.Torrent className="w-4 h-4 rotate-[135deg]" />,
     },
     {
       id: 'usenet',
       label: t('itemTypes.Usenet'),
-      icon: <Icons.Usenet className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <Icons.Usenet className="w-4 h-4" />,
     },
     {
       id: 'webdl',
       label: t('itemTypes.Webdl'),
-      icon: <Icons.Webdl className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <Icons.Webdl className="w-4 h-4" />,
     },
   ];
 
   return (
-    <div className="border-b border-border dark:border-border-dark overflow-x-auto overflow-y-hidden">
-      <nav className="-mb-px flex justify-start md:justify-center space-x-2 md:space-x-8 px-4 md:px-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTypeChange(tab.id)}
-            className={`
-              whitespace-nowrap py-3 md:py-4 px-3 md:px-1 border-b-2 font-medium text-sm flex items-center gap-2 md:gap-1 flex-1 md:flex-initial justify-center
-              ${
-                activeType === tab.id
-                  ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
-                  : 'border-transparent text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:border-border dark:hover:border-border-dark'
-              }
-            `}
-          >
-            {tab.icon}
-            <span className="w-max">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
+    <div className="flex justify-center mb-8 px-4">
+      <div className="flex p-1.5 glass rounded-2xl border border-border/50 dark:border-border-dark/50 gap-1 overflow-x-auto no-scrollbar max-w-full">
+        {tabs.map((tab) => {
+          const isActive = activeType === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTypeChange(tab.id)}
+              className={`
+                relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap
+                ${isActive
+                  ? 'bg-primary text-white shadow-premium dark:shadow-premium-dark scale-100'
+                  : 'text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary hover:bg-primary/5 active:scale-95'
+                }
+              `}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {isActive && (
+                <span className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white/40"></span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
+

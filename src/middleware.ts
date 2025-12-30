@@ -3,8 +3,8 @@ import { routing } from './i18n/routing';
 
 export default createMiddleware({
   ...routing,
-  // Enable locale detection and persistence
-  localeDetection: true,
+  // Disable locale detection to strictly use English
+  localeDetection: false,
   // Default locale fallback
   defaultLocale: 'en',
 });

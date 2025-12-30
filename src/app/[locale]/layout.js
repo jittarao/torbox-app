@@ -21,21 +21,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: 'TorBox Manager',
+  title: 'Torbox Enhanced',
   description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
   manifest: '/manifest.json',
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'black-translucent',
   openGraph: {
-    title: 'TorBox Manager',
+    title: 'Torbox Enhanced',
     description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
     type: 'website',
     locale: 'en_US',
-    siteName: 'TorBox Manager',
+    siteName: 'Torbox Enhanced',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TorBox Manager',
+    title: 'Torbox Enhanced',
     description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
   },
   robots: {

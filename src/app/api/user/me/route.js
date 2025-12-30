@@ -8,7 +8,8 @@ import {
 
 export async function GET() {
   const headersList = await headers();
-  const apiKey = headersList.get('x-api-key');
+  const rawApiKey = headersList.get('x-api-key');
+  const apiKey = rawApiKey?.trim();
 
   if (!apiKey) {
     return NextResponse.json(
@@ -18,8 +19,11 @@ export async function GET() {
   }
 
   try {
+    const url = `${API_BASE}/${API_VERSION}/api/user/me`;
+    console.log(`Verifying key at: ${url}`);
+
     const response = await fetch(
-      `${API_BASE}/${API_VERSION}/api/user/me`,
+      url,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,

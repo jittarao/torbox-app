@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import dynamic from 'next/dynamic';
@@ -30,23 +30,54 @@ export default function Home() {
 
     // Load API key from storage
     const storedKey = localStorage.getItem('torboxApiKey');
-    const storedKeys = localStorage.getItem('torboxApiKeys');
 
-    if (storedKey) {
-      setApiKey(storedKey);
-    } else if (storedKeys) {
-      // If no active key but we have stored keys, use the first one
+    const initializeKeys = async () => {
+      // 1. Try fetching from server first
+      let serverKeys = [];
       try {
-        const keys = JSON.parse(storedKeys);
-        if (keys.length > 0) {
-          setApiKey(keys[0].key);
-          localStorage.setItem('torboxApiKey', keys[0].key);
+        const response = await fetch('/api/keys');
+        if (response.ok) {
+          serverKeys = await response.json();
         }
       } catch (error) {
-        console.error('Error parsing API keys from localStorage:', error);
+        console.error('Error fetching API keys from server:', error);
       }
-    }
-    setLoading(false);
+
+      // 2. Migration: If server is empty but we have local keys, sync them
+      if (serverKeys.length === 0) {
+        const storedKeys = localStorage.getItem('torboxApiKeys');
+        if (storedKeys) {
+          try {
+            const parsedKeys = JSON.parse(storedKeys);
+            for (const k of parsedKeys) {
+              await fetch('/api/keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label: k.label, key: k.key }),
+              });
+            }
+            // Refresh server keys after migration
+            const response = await fetch('/api/keys');
+            if (response.ok) serverKeys = await response.json();
+          } catch (e) {
+            console.error('Migration failed:', e);
+          }
+        }
+      }
+
+      // 3. Set the active key
+      if (storedKey) {
+        setApiKey(storedKey);
+      } else if (serverKeys.length > 0) {
+        const firstKey = serverKeys[0].key;
+        setApiKey(firstKey);
+        localStorage.setItem('torboxApiKey', firstKey);
+      }
+
+      setLoading(false);
+    };
+
+    initializeKeys();
 
     // Register protocol handler
     if (
@@ -117,10 +148,32 @@ export default function Home() {
     }
   });
 
+  const syncTimeoutRef = useRef(null);
+
   // Handle API key change
-  const handleKeyChange = (newKey) => {
+  const handleKeyChange = (newKey, label = 'Main Key') => {
     setApiKey(newKey);
     localStorage.setItem('torboxApiKey', newKey);
+
+    // Debounce server synchronization
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    if (newKey && newKey.length > 10) { // Only sync if it looks like a real key
+      syncTimeoutRef.current = setTimeout(async () => {
+        try {
+          await fetch('/api/keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label, key: newKey }),
+          });
+        } catch (error) {
+          // Silent fail for background sync
+          console.warn('Background sync to server failed:', error);
+        }
+      }, 1000);
+    }
   };
 
   // Don't render anything until client-side hydration is complete
@@ -143,11 +196,6 @@ export default function Home() {
         <>
           <Header apiKey={apiKey} />
           <div className="container mx-auto p-4">
-            <ApiKeyInput
-              value={apiKey}
-              onKeyChange={handleKeyChange}
-              allowKeyManager={true}
-            />
             <Downloads apiKey={apiKey} />
           </div>
         </>
