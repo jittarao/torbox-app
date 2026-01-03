@@ -21,10 +21,18 @@
   }
 }
 
+html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 .container {
