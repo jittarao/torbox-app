@@ -1,17 +1,48 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
+import { isMultiUserBackendEnabled } from '@/utils/backendConfig';
+import { getDatabase } from '@/database/db';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET() {
-  // Check if backend is explicitly disabled
-  if (process.env.BACKEND_DISABLED === 'true') {
+  // Check if multi-user backend is enabled
+  const multiUserBackendEnabled = isMultiUserBackendEnabled();
+  
+  // Check if legacy backend is explicitly disabled
+  if (process.env.BACKEND_DISABLED === 'true' && !multiUserBackendEnabled) {
     return NextResponse.json({ 
       available: false, 
       mode: 'local',
       version: '0.1.0',
-      uptime: 0
+      uptime: 0,
+      multiUserBackend: false
     });
+  }
+  
+  // If multi-user backend is enabled, check database availability
+  if (multiUserBackendEnabled) {
+    const db = getDatabase();
+    if (db && db.isInitialized) {
+      return NextResponse.json({
+        available: true,
+        mode: 'backend',
+        version: '0.1.27',
+        uptime: process.uptime(),
+        multiUserBackend: true,
+        database: 'connected'
+      });
+    } else {
+      return NextResponse.json({
+        available: false,
+        mode: 'local',
+        version: '0.1.27',
+        uptime: 0,
+        multiUserBackend: true,
+        database: 'disconnected',
+        error: 'Database not initialized'
+      });
+    }
   }
 
   try {

@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react';
 
 /**
  * Hook to detect if backend is available and determine storage mode
- * @returns {Object} { mode: 'local' | 'backend', isLoading: boolean, error: string | null }
+ * @returns {Object} { mode: 'local' | 'backend', isLoading: boolean, error: string | null, multiUserBackend: boolean }
  */
 export const useBackendMode = () => {
   const [mode, setMode] = useState('local');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [multiUserBackend, setMultiUserBackend] = useState(false);
 
   useEffect(() => {
     const checkBackend = async () => {
       // Check if we already know the backend status
       const cachedMode = sessionStorage.getItem('torboxBackendMode');
+      const cachedMultiUser = sessionStorage.getItem('torboxMultiUserBackend');
       if (cachedMode) {
         setMode(cachedMode);
+        setMultiUserBackend(cachedMultiUser === 'true');
         setIsLoading(false);
         return;
       }
@@ -34,10 +37,14 @@ export const useBackendMode = () => {
           const data = await response.json();
           const detectedMode = data.available ? 'backend' : 'local';
           setMode(detectedMode);
+          setMultiUserBackend(data.multiUserBackend === true);
           sessionStorage.setItem('torboxBackendMode', detectedMode);
+          sessionStorage.setItem('torboxMultiUserBackend', String(data.multiUserBackend === true));
         } else {
           setMode('local');
+          setMultiUserBackend(false);
           sessionStorage.setItem('torboxBackendMode', 'local');
+          sessionStorage.setItem('torboxMultiUserBackend', 'false');
         }
       } catch (err) {
         // Only log once to avoid console spam
@@ -46,8 +53,10 @@ export const useBackendMode = () => {
           window.backendModeLogged = true;
         }
         setMode('local');
+        setMultiUserBackend(false);
         setError(err.message);
         sessionStorage.setItem('torboxBackendMode', 'local');
+        sessionStorage.setItem('torboxMultiUserBackend', 'false');
       } finally {
         setIsLoading(false);
       }
@@ -56,7 +65,7 @@ export const useBackendMode = () => {
     checkBackend();
   }, []);
 
-  return { mode, isLoading, error };
+  return { mode, isLoading, error, multiUserBackend };
 };
 
 /**

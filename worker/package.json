@@ -1,0 +1,23 @@
+{
+  "name": "torbox-worker",
+  "version": "0.1.27",
+  "description": "TorBox Manager Worker - Background polling and automation",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "node-cron": "^3.0.3",
+    "axios": "^1.7.9",
+    "pg": "^8.13.1",
+    "dotenv": "^16.4.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

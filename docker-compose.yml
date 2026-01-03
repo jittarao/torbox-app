@@ -1,5 +1,23 @@
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: torbox-postgres
+    restart: unless-stopped
+    ports:
+      # - "5432:5432"
+      - "15432:5432"  # Use 15432 on host to avoid conflicts
+    environment:
+      POSTGRES_DB: torbox
+      POSTGRES_USER: torbox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U torbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   torbox-app:
     image: ghcr.io/jittarao/torbox-app:latest
     container_name: torbox-app
@@ -7,28 +25,31 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - BACKEND_DISABLED=true # If you want to use the local backend, set this to false or remove it
-    # depends_on:
-    #   - torbox-backend
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.http.routers.tbm.rule=Host(`${TORBOX_MANAGER_HOSTNAME?}`)"
-    #   - "traefik.http.routers.tbm.entrypoints=websecure"
-    #   - "traefik.http.routers.tbm.tls.certresolver=myresolver"
-    #   - "traefik.http.routers.tbm.middlewares=authelia@docker"
+      DATABASE_URL: postgresql://torbox:${POSTGRES_PASSWORD:-changeme}@postgres:5432/torbox
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      POLLING_INTERVAL_MINUTES: ${POLLING_INTERVAL_MINUTES:-30}
+      POLLING_INTERVAL_INTERNAL_MINUTES: ${POLLING_INTERVAL_INTERNAL_MINUTES:-2}
+      SNAPSHOT_RETENTION_DAYS: ${SNAPSHOT_RETENTION_DAYS:-30}
+      WORKER_ENABLED: ${WORKER_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  # Self-hosted backend for 24/7 automation (optional)
-  # Uncomment the following to enable 24/7 automation rules
-  # torbox-backend:
-  #   image: ghcr.io/jittarao/torbox-app:backend-latest
-  #   container_name: torbox-backend
-  #   restart: unless-stopped
-  #   environment:
-  #     - TORBOX_API_KEY=${TORBOX_API_KEY}
-  #     - FRONTEND_URL=${FRONTEND_URL}
-  #     - BACKEND_URL=http://torbox-backend:3001
-  #   volumes:
-  #     - backend-data:/app/data
+  torbox-worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    container_name: torbox-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://torbox:${POSTGRES_PASSWORD:-changeme}@postgres:5432/torbox
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      POLLING_INTERVAL_MINUTES: ${POLLING_INTERVAL_MINUTES:-30}
+      POLLING_INTERVAL_INTERNAL_MINUTES: ${POLLING_INTERVAL_INTERNAL_MINUTES:-2}
+      SNAPSHOT_RETENTION_DAYS: ${SNAPSHOT_RETENTION_DAYS:-30}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-# volumes:
-#   backend-data:
+volumes:
+  postgres-data:

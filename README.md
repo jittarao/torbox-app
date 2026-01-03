@@ -24,9 +24,11 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 ### Automation
 
 - **Automation Rules**: Create smart automation rules for torrent management
-- **Self-Hosted Backend**: Optional 24/7 automation with persistent storage
+- **Multi-User Backend**: Optional 24/7 automation with persistent storage
   - Run automation rules continuously in the background
-  - SQLite database for data persistence
+  - PostgreSQL database for multi-user support
+  - Background worker for polling and automation
+  - Torrent snapshots for accurate metrics (stalled time, seeding time, etc.)
 
 ### User Experience
 
@@ -111,30 +113,51 @@ docker compose up -d
 
 ### Local Development
 
+For detailed development setup instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md).
+
+Quick start:
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/jittarao/torbox-app.git
 cd torbox-app
 ```
 
-2. Install dependencies:
+2. Set up PostgreSQL (using Docker):
 ```bash
-bun install
+docker compose up -d postgres
 ```
 
-3. Run the development server:
-```bash
-bun run dev
+3. Create `.env.local` file with required variables (see [DEVELOPMENT.md](./DEVELOPMENT.md)):
+```env
+DATABASE_URL=postgresql://torbox:changeme@localhost:5432/torbox
+ENCRYPTION_KEY=your-generated-encryption-key-here
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
+4. Install dependencies:
+```bash
+npm install
+cd worker && npm install && cd ..
+```
+
+5. Start Next.js (Terminal 1):
+```bash
+npm run dev
+```
+
+6. Start Worker (Terminal 2):
+```bash
+cd worker && npm run dev
+```
+
+7. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
 
 ## Deployment Options
 
 | Option | Use Case | Automation | Storage | Complexity |
 |--------|----------|------------|---------|------------|
 | **Frontend Only** | Standard usage | Browser-based | Local storage | Simple |
-| **Self-Hosted Backend** | 24/7 automation | Background | Database + local | Moderate |
+| **Multi-User Backend** | 24/7 automation, public instances | Background worker | PostgreSQL | Moderate |
 
 ## Configuration
 
@@ -179,12 +202,12 @@ For self-hosted backend deployment:
 - **@dnd-kit** for drag-and-drop functionality
 - **next-pwa** for Progressive Web App support
 
-### Backend (Optional)
-- **Express.js** web framework
-- **SQLite** for local database
+### Backend (Multi-User Architecture)
+- **PostgreSQL** for multi-user database
+- **Express.js** worker server for background jobs
 - **node-cron** for task scheduling
-- **Helmet** for security headers
-- **CORS** for cross-origin requests
+- **Staggered polling** for efficient API usage
+- **Encrypted API key storage** for security
 
 ## Project Structure
 
@@ -201,11 +224,16 @@ torbox-app/
 │   ├── i18n/             # Internationalization config
 │   ├── stores/           # Zustand stores
 │   └── utils/            # Utility functions
-├── backend/              # Self-hosted backend (optional)
+├── src/
+│   ├── database/         # PostgreSQL database and migrations
+│   │   ├── migrations/   # Database migration files
+│   │   └── encryption.js # API key encryption utilities
+├── worker/               # Background worker server
 │   ├── src/
+│   │   ├── poller/       # TorBox API polling
 │   │   ├── automation/   # Automation engine
-│   │   ├── database/     # Database and migrations
-│   │   └── api/          # API client
+│   │   └── scheduler/    # Job scheduling
+├── backend/              # Legacy backend (deprecated)
 └── public/               # Static assets
 ```
 
@@ -215,13 +243,18 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 
 ### Development Setup
 
+**📖 See [DEVELOPMENT.md](./DEVELOPMENT.md) for comprehensive development setup instructions.**
+
+Quick overview:
+
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Test thoroughly
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+2. Set up local development environment (see [DEVELOPMENT.md](./DEVELOPMENT.md))
+3. Create a feature branch: `git checkout -b feature/amazing-feature`
+4. Make your changes
+5. Test thoroughly
+6. Commit your changes: `git commit -m 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
 
 ### Code Style
 
@@ -229,6 +262,8 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 - Use meaningful variable and function names
 - Add comments for complex logic
 - Ensure all new features are properly internationalized
+- Always use parameterized database queries
+- Handle database availability gracefully (check for null)
 
 ## License
 

@@ -8,6 +8,9 @@ const withNextIntl = createNextIntlPlugin();
 const nextConfig = {
   output: 'standalone',
   
+  // Server external packages (Node.js only - prevents bundling in Edge runtime)
+  serverExternalPackages: ['pg', 'pg-pool'],
+  
   // Optimize bundle size
   experimental: {
     optimizePackageImports: ['lodash', 'date-fns', 'chart.js'],
@@ -44,6 +47,24 @@ const nextConfig = {
           reportFilename: 'bundle-analysis.html',
         })
       );
+    }
+    
+    // Exclude database files from Edge runtime
+    // These files use Node.js-only modules (fs, path, pg, etc.)
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    };
+    
+    // Mark database files as external for Edge runtime
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+        pg: false,
+        'pg-pool': false,
+      };
     }
     
     // Optimize bundle splitting

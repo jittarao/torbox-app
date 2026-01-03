@@ -22,12 +22,14 @@ import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import AutomationRules from './AutomationRules';
 import { formatSize } from './utils/formatters';
+import { useBackendMode } from '@/utils/backendDetector';
 
 export default function Downloads({ apiKey }) {
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
+  const { multiUserBackend } = useBackendMode();
   const [downloadHistory, setDownloadHistory] = useState([]);
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
@@ -254,7 +256,7 @@ export default function Downloads({ apiKey }) {
         </div>
       )}
 
-      {(activeType === 'torrents' || activeType === 'all') && <AutomationRules />}
+      {(activeType === 'torrents' || activeType === 'all') && multiUserBackend && <AutomationRules />}
 
       {loading ? (
         <div className="flex justify-center items-center">
