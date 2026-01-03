@@ -165,6 +165,7 @@ export default function ActionBar({
 
         {/* View controls such as blur, fullscreen, and view mode */}
         <ViewControls
+          isMobile={isMobile}
           isBlurred={isBlurred}
           onBlurToggle={onBlurToggle}
           isFullscreen={isFullscreen}

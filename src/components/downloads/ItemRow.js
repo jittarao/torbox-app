@@ -34,6 +34,8 @@ export default function ItemRow({
   isBlurred = false,
   viewMode = 'table',
   style,
+  measureRef,
+  dataIndex,
 }) {
   const commonT = useTranslations('Common');
   
@@ -371,6 +373,8 @@ export default function ItemRow({
 
   return (
     <tr
+      ref={measureRef}
+      data-index={dataIndex}
       className={`${
         selectedItems.items?.has(item.id)
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'

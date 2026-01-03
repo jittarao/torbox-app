@@ -171,7 +171,8 @@ export default function Downloads({ apiKey }) {
   useEffect(() => {
     const storedViewMode = localStorage.getItem('downloads-view-mode');
     if (storedViewMode) {
-      setViewMode(storedViewMode);
+      // If mobile, always set to table view
+      setViewMode(isMobile ? 'table' : storedViewMode);
     }
   }, []);
 

@@ -92,8 +92,18 @@ export default function TableBody({
     getScrollElement,
     estimateSize: (index) => {
       const row = flattenedRows[index];
-      // Estimate: item rows ~60px, file rows ~50px
-      return row.type === 'item' ? 60 : 50;
+      // Height estimates for mobile vs desktop
+      // Mobile rows are much taller due to vertical action layout and extra info
+      if (isMobile) {
+        return row.type === 'item' ? 170 : 60;
+      }
+      // Desktop estimates
+      return row.type === 'item' ? 70 : 50;
+    },
+    measureElement: (element) => {
+      // Measure the actual rendered height of the row
+      // Add a small buffer for borders/spacing
+      return element.getBoundingClientRect().height + 1;
     },
     overscan: 5,
   });
@@ -282,6 +292,8 @@ export default function TableBody({
               isBlurred={isBlurred}
               viewMode={viewMode}
               tableWidth={tableWidth}
+              measureRef={virtualizer.measureElement}
+              dataIndex={virtualRow.index}
             />
           );
         } else {
@@ -301,6 +313,8 @@ export default function TableBody({
               isBlurred={isBlurred}
               tableWidth={tableWidth}
               fileIndex={row.fileIndex}
+              measureRef={virtualizer.measureElement}
+              dataIndex={virtualRow.index}
             />
           );
         }

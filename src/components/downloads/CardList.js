@@ -1,4 +1,5 @@
 import { useRef, useState, useMemo, useDeferredValue } from 'react';
+import useIsMobile from '@/hooks/useIsMobile';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import ItemCard from './ItemCard';
@@ -35,6 +36,7 @@ export default function CardList({
     downloadHistory,
     setDownloadHistory,
   );
+  const isMobile = useIsMobile();
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -76,12 +78,15 @@ export default function CardList({
     count: flattenedRows.length,
     getScrollElement,
     estimateSize: () => {
-      // Initial estimate: ItemCard ~100px (will be measured dynamically)
-      return 100;
+      // Height estimates for mobile vs desktop
+      // Mobile cards are taller due to vertical layouts
+      // This will be refined by measureElement, but a good estimate helps initial render
+      return isMobile ? 170 : 82;
     },
     measureElement: (element) => {
       // Measure the actual rendered height of the element
-      return element.getBoundingClientRect().height + 10;
+      // Add margin for spacing between cards
+      return element.getBoundingClientRect().height + 8;
     },
     overscan: 5,
   });
