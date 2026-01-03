@@ -281,7 +281,7 @@ export default function ItemCard({
       } px-2 py-4 md:p-4 relative rounded-lg border border-border dark:border-border-dark overflow-hidden cursor-pointer`}
     >
       <div className="flex justify-between gap-2">
-        <div className="flex flex-col justify-between gap-2 min-w-0">
+        <div className="flex flex-col justify-center gap-2 min-w-0">
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -377,6 +377,7 @@ export default function ItemCard({
             setSelectedItems={setSelectedItems}
             setToast={setToast}
             activeType={activeType}
+            isMobile={isMobile}
             viewMode={viewMode}
             downloadHistory={downloadHistory}
             setDownloadHistory={setDownloadHistory}

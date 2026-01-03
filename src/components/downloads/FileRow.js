@@ -23,6 +23,8 @@ export default function FileRow({
   isBlurred = false,
   tableWidth,
   fileIndex = null, // If provided, render only this specific file
+  measureRef,
+  dataIndex,
 }) {
   const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) =>
@@ -50,6 +52,8 @@ export default function FileRow({
 
         return (
           <tr
+            ref={fileIndex !== null ? measureRef : undefined}
+            data-index={fileIndex !== null ? dataIndex : undefined}
             key={`${item.id}-${file.id}`}
             className={`border-accent/5 dark:border-accent-dark/5 ${
               isChecked
