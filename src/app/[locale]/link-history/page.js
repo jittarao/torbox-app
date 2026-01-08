@@ -19,8 +19,23 @@ export default function LinkHistoryPage() {
       const storedKey = localStorage.getItem('torboxApiKey');
       
       setHistory(downloadHistory);
+      let loadedKey = null;
       if (storedKey) {
+        loadedKey = storedKey;
         setApiKey(storedKey);
+      }
+      
+      // Ensure user database exists for loaded API key
+      if (loadedKey) {
+        import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+          ensureUserDb(loadedKey).then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          }).catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
+        });
       }
     } catch (error) {
       console.error('Error parsing download history from localStorage:', error);

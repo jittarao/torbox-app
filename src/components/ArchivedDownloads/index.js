@@ -13,16 +13,47 @@ export default function ArchivedDownloads({ apiKey }) {
   const archivedT = useTranslations('ArchivedDownloads');
   const isMobile = useIsMobile();
   const [toast, setToast] = useState(null);
-  const { getArchivedDownloads, removeFromArchive, restoreFromArchive } =
-    useArchive(apiKey);
+  const { 
+    getArchivedDownloads, 
+    removeFromArchive, 
+    restoreFromArchive,
+    loading,
+    error,
+    pagination,
+    fetchPage
+  } = useArchive(apiKey);
   const archivedItems = getArchivedDownloads();
 
-  const handleRemove = (id) => {
-    removeFromArchive(id);
+  const handleRemove = async (id) => {
+    try {
+      await removeFromArchive(id);
+      setToast({
+        message: archivedT('toast.removed'),
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error removing from archive:', error);
+      setToast({
+        message: error.message || archivedT('toast.removeError'),
+        type: 'error',
+      });
+    }
   };
 
-  const handleRestore = (download) => {
-    restoreFromArchive(download);
+  const handleRestore = async (download) => {
+    try {
+      await restoreFromArchive(download);
+      setToast({
+        message: archivedT('toast.restored'),
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error restoring from archive:', error);
+      setToast({
+        message: error.message || archivedT('toast.restoreError'),
+        type: 'error',
+      });
+    }
   };
 
   const handleCopyMagnet = async (download) => {
@@ -34,6 +65,40 @@ export default function ArchivedDownloads({ apiKey }) {
       type: 'success',
     });
   };
+
+  if (loading) {
+    return (
+      <>
+        <h1 className="text-md lg:text-xl mb-4 font-medium text-primary-text dark:text-primary-text-dark">
+          {archivedT('title')}
+        </h1>
+        <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
+          <div className="text-center">
+            <p className="text-md text-primary-text/70 dark:text-primary-text-dark/70">
+              {t('loading') || 'Loading...'}
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <h1 className="text-md lg:text-xl mb-4 font-medium text-primary-text dark:text-primary-text-dark">
+          {archivedT('title')}
+        </h1>
+        <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
+          <div className="text-center">
+            <p className="text-md text-red-500 dark:text-red-400">
+              {error}
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -158,6 +223,32 @@ export default function ArchivedDownloads({ apiKey }) {
           </table>
         </div>
       )}
+      
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+            {t('showing') || 'Showing'} {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} {t('of') || 'of'} {pagination.total}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => fetchPage(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              className="px-4 py-2 rounded-md border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+            >
+              {t('previous') || 'Previous'}
+            </button>
+            <button
+              onClick={() => fetchPage(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+              className="px-4 py-2 rounded-md border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+            >
+              {t('next') || 'Next'}
+            </button>
+          </div>
+        </div>
+      )}
+      
       {toast && (
         <Toast
           message={toast.message}
