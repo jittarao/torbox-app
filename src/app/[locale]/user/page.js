@@ -24,19 +24,35 @@ export default function UserPage() {
     const storedKey = localStorage.getItem('torboxApiKey');
     const storedKeys = localStorage.getItem('torboxApiKeys');
 
+    let loadedKey = null;
     if (storedKey) {
+      loadedKey = storedKey;
       setApiKey(storedKey);
     } else if (storedKeys) {
       // If no active key but we have stored keys, use the first one
       try {
         const keys = JSON.parse(storedKeys);
         if (keys.length > 0) {
+          loadedKey = keys[0].key;
           setApiKey(keys[0].key);
           localStorage.setItem('torboxApiKey', keys[0].key);
         }
       } catch (error) {
         console.error('Error parsing API keys from localStorage:', error);
       }
+    }
+
+    // Ensure user database exists for loaded API key
+    if (loadedKey) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(loadedKey).then((result) => {
+          if (result.success && result.wasCreated) {
+            console.log('User database created for existing API key');
+          }
+        }).catch((error) => {
+          console.error('Error ensuring user database on load:', error);
+        });
+      });
     }
   }, []);
 

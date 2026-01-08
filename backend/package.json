@@ -7,7 +7,8 @@
   "scripts": {
     "start": "bun src/index.js",
     "dev": "nodemon --exec bun src/index.js",
-    "migration:create": "bun scripts/create-migration.js"
+    "migration:create": "bun scripts/create-migration.js",
+    "test": "bun test"
   },
   "dependencies": {
     "express": "^4.21.2",

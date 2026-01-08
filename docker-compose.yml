@@ -1,15 +1,133 @@
+# Docker Compose configuration for TBM application
+# This file defines the services, volumes, and networks needed to run the TBM app stack
+version: '3.8'
 
 services:
-  torbox-app:
-    image: ghcr.io/jittarao/torbox-app:latest
-    container_name: torbox-app
+  # Backend API service - handles torrent management, automation rules, and data persistence
+  torbox-backend:
+    # Docker image from GitHub Container Registry
+    image: ghcr.io/jittarao/torbox-app:backend-latest
+    # Container name for easy identification
+    container_name: torbox-backend
+    # Automatically restart container if it stops (unless manually stopped)
     restart: unless-stopped
+    # Port mapping: host:container (expose backend API on port 3001)
+    ports:
+      - "3001:3001"
+    # Environment variables for backend configuration
+    environment:
+      # Encryption key for securing sensitive data (required - set in .env file)
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      # Frontend URL for CORS and redirects (defaults to localhost:3000)
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      # Node.js environment mode
+      - NODE_ENV=production
+      # Port the backend service listens on inside the container
+      - PORT=3001
+    # Persistent volume for backend data (databases, user files, etc.)
+    volumes:
+      - backend-data:/app/data
+    # Health check to ensure backend is running and responding
+    healthcheck:
+      # Test command: check if /health endpoint responds successfully
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      # Check health every 30 seconds
+      interval: 30s
+      # Timeout after 10 seconds if no response
+      timeout: 10s
+      # Mark as unhealthy after 3 consecutive failures
+      retries: 3
+      # Allow 10 seconds for initial startup before health checks begin
+      start_period: 10s
+    # Connect to the Torbox network for inter-service communication
+    networks:
+      - torbox-network
+    # Logging configuration to prevent disk space issues
+    logging:
+      driver: "json-file"
+      options:
+        # Maximum size per log file
+        max-size: "10m"
+        # Maximum number of log files to keep (rotates when max-size is reached)
+        max-file: "3"
+    # Security option: prevent container from gaining new privileges
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits - uncomment to restrict CPU and memory usage
+    # Useful for production environments with resource constraints
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+  # Frontend Next.js application - user interface for Torbox
+  torbox-app:
+    # Docker image from GitHub Container Registry
+    image: ghcr.io/jittarao/torbox-app:latest
+    # Container name for easy identification
+    container_name: torbox-app
+    # Automatically restart container if it stops (unless manually stopped)
+    restart: unless-stopped
+    # Port mapping: host:container (expose frontend on port 3000)
     ports:
       - "3000:3000"
+    # Environment variables for frontend configuration
     environment:
-      - BACKEND_DISABLED=true # If you want to use the local backend, set this to false or remove it
-    # depends_on:
-    #   - torbox-backend
+      # Enable backend integration (set to true to use external backend)
+      - BACKEND_DISABLED=false
+      # Backend API URL (uses service name for internal Docker network communication)
+      - BACKEND_URL=http://torbox-backend:3001
+      # Node.js environment mode
+      - NODE_ENV=production
+      # Disable Next.js telemetry data collection
+      - NEXT_TELEMETRY_DISABLED=1
+    # Service dependencies: wait for backend to be healthy before starting
+    depends_on:
+      torbox-backend:
+        # Only start frontend after backend passes health check
+        condition: service_healthy
+    # Connect to the Torbox network for inter-service communication
+    networks:
+      - torbox-network
+    # Logging configuration to prevent disk space issues
+    logging:
+      driver: "json-file"
+      options:
+        # Maximum size per log file
+        max-size: "10m"
+        # Maximum number of log files to keep (rotates when max-size is reached)
+        max-file: "3"
+    # Security option: prevent container from gaining new privileges
+    security_opt:
+      - no-new-privileges:true
+    # Health check to ensure frontend is running and responding
+    healthcheck:
+      # Test command: check if frontend responds to HTTP requests
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      # Check health every 30 seconds
+      interval: 30s
+      # Timeout after 10 seconds if no response
+      timeout: 10s
+      # Mark as unhealthy after 3 consecutive failures
+      retries: 3
+      # Allow 15 seconds for initial startup before health checks begin
+      start_period: 15s
+    # Resource limits - uncomment to restrict CPU and memory usage
+    # Useful for production environments with resource constraints
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+    # Traefik reverse proxy labels - uncomment if using Traefik as reverse proxy
+    # Provides automatic HTTPS, routing, and middleware integration
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.tbm.rule=Host(`${TORBOX_MANAGER_HOSTNAME?}`)"
@@ -17,18 +135,27 @@ services:
     #   - "traefik.http.routers.tbm.tls.certresolver=myresolver"
     #   - "traefik.http.routers.tbm.middlewares=authelia@docker"
 
-  # Self-hosted backend for 24/7 automation (optional)
-  # Uncomment the following to enable 24/7 automation rules
-  # torbox-backend:
-  #   image: ghcr.io/jittarao/torbox-app:backend-latest
-  #   container_name: torbox-backend
-  #   restart: unless-stopped
-  #   environment:
-  #     - TORBOX_API_KEY=${TORBOX_API_KEY}
-  #     - FRONTEND_URL=${FRONTEND_URL}
-  #     - BACKEND_URL=http://torbox-backend:3001
-  #   volumes:
-  #     - backend-data:/app/data
+# Named volumes for persistent data storage
+volumes:
+  # Backend data volume - stores databases, user files, and application data
+  backend-data:
+    # Use local Docker volume driver (default)
+    driver: local
+    # Custom volume location - uncomment to mount a specific host directory
+    # Useful for backups, external storage, or accessing data from host
+    # driver_opts:
+    #   type: none
+    #   device: /path/to/backend/data
+    #   o: bind
 
-# volumes:
-#   backend-data:
+# Docker networks for service communication
+networks:
+  # Internal network for Torbox services to communicate
+  torbox-network:
+    # Bridge network driver (default) - allows containers to communicate
+    driver: bridge
+    # Custom network configuration - uncomment to specify subnet
+    # Useful for network isolation or integration with existing Docker networks
+    # ipam:
+    #   config:
+    #     - subnet: 172.28.0.0/16
