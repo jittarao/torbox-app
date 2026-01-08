@@ -46,69 +46,7 @@ The automation engine consists of several components:
 
 ## Quick Start
 
-### Docker (Recommended)
-
-1. Set environment variables in `.env`:
-```bash
-ENCRYPTION_KEY=your-base64-encryption-key-here
-FRONTEND_URL=http://localhost:3000
-```
-
-2. Generate an encryption key:
-```bash
-# Windows PowerShell:
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
-
-# macOS/Linux:
-openssl rand -base64 32
-```
-
-3. Start the backend:
-```bash
-docker compose up -d torbox-backend
-```
-
-4. The backend will be available at `http://localhost:3001`
-
-### Local Development
-
-1. Install dependencies:
-```bash
-cd backend
-bun install
-```
-
-2. Set environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your settings
-```
-
-3. Start the server:
-```bash
-bun start
-```
-
-5. For development with auto-reload:
-```bash
-bun run dev
-```
-
-## Configuration
-
-### Environment Variables
-
-| Variable            | Description                                      | Default                      | Required   |
-|---------------------|--------------------------------------------------|------------------------------|------------|
-| `FRONTEND_URL`      | Frontend URL for CORS                            | `http://localhost:3000`      | Yes        |
-| `ENCRYPTION_KEY`    | Base64-encoded key for API key encryption        | -                            | Yes        |
-| `PORT`              | Port for backend server                          | `3001`                       | Yes        |
-| `NODE_ENV`          | Node environment                                 | `production`                 | Yes        |
-| `TORBOX_API_BASE`   | TorBox API base URL                              | `https://api.torbox.app`     | No         |
-| `TORBOX_API_VERSION`| TorBox API version                               | `v1`                         | No         |
-| `MASTER_DB_PATH`    | Directory for master database                    | `/app/data/master.db`        | No         |
-| `USER_DB_DIR`       | Directory for user database files                | `/app/data/users`            | No         |
-| `MAX_DB_CONNECTIONS`| Maximum pooled database connections              | `200`                        | No         |
+For deployment instructions, see [DEPLOYMENT.md](../DEPLOYMENT.md).
 
 ### API Endpoints
 
@@ -195,7 +133,7 @@ Rules are evaluated on each polling cycle:
 
 ## Requirements
 
-- Node.js 18.0 or later
+- Node.js 18.0 or later (or Bun)
 - Docker (for containerized deployment)
 - TorBox API access
 
