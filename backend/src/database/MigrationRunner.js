@@ -6,9 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class MigrationRunner {
-  constructor(db) {
+  constructor(db, dbType = 'user') {
     this.db = db;
-    this.migrationsDir = path.join(__dirname, 'migrations');
+    this.dbType = dbType; // 'master' or 'user'
+    this.migrationsDir = path.join(__dirname, 'migrations', dbType);
   }
 
   /**
@@ -20,7 +21,7 @@ class MigrationRunner {
     }
 
     const files = fs.readdirSync(this.migrationsDir)
-      .filter(file => file.endsWith('.js') && file !== '000_migrations_table.js')
+      .filter(file => file.endsWith('.js'))
       .sort();
 
     return files;
@@ -195,7 +196,7 @@ class MigrationRunner {
         
         const migrationsTable = await import(migrationUrl);
         migrationsTable.up(this.db);
-        console.log('Created schema_migrations table');
+        console.log(`Created schema_migrations table for ${this.dbType} database`);
       }
     } catch (error) {
       console.error('Error ensuring migrations table:', error);

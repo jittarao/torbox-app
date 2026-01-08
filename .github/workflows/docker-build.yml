@@ -1,11 +1,19 @@
+# GitHub Actions workflow for building and pushing Docker images
+# Builds both frontend and backend images for multiple platforms (AMD64 and ARM64)
+# Pushes to GitHub Container Registry (GHCR) and creates multi-platform manifests
 name: Build and Push Docker Image
 
+# Workflow triggers
 on:
+  # Trigger on pushes to main/master branches
   push:
     branches: [ main, master ]
+    # Also trigger on version tags (e.g., v1.0.0)
     tags: [ 'v*' ]
+  # Trigger on pull requests to main/master for testing builds
   pull_request:
     branches: [ main, master ]
+  # Allow manual workflow dispatch with optional version override
   workflow_dispatch:
     inputs:
       version:
@@ -13,53 +21,70 @@ on:
         required: false
         type: string
 
-# Prevent multiple concurrent runs for the same PR
+# Prevent multiple concurrent runs for the same PR or branch
+# This cancels in-progress runs when a new commit is pushed, saving CI resources
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Global environment variables used across all jobs
 env:
+  # GitHub Container Registry URL
   REGISTRY: ghcr.io
+  # Image name based on repository (e.g., owner/repo-name)
   IMAGE_NAME: ${{ github.repository }}
+  # Enable Docker BuildKit for faster, more efficient builds
   DOCKER_BUILDKIT: 1
 
 jobs:
+  # Main build job - builds Docker images for multiple platforms
   build:
+    # Timeout after 60 minutes to prevent stuck builds
     timeout-minutes: 60
+    # Build strategy: run builds for multiple platforms in parallel
     strategy:
+      # Continue building other platforms even if one fails
       fail-fast: false
+      # Matrix strategy builds for both AMD64 and ARM64 architectures
       matrix:
         include:
+          # AMD64 (Intel/AMD x86_64) platform
           - platform: linux/amd64
             runner: ubuntu-latest
             suffix: amd64
+          # ARM64 (Apple Silicon, ARM servers) platform
           - platform: linux/arm64
             runner: ubuntu-22.04-arm
             suffix: arm64
     runs-on: ${{ matrix.runner }}
+    # Permissions required for the workflow
     permissions:
-      contents: read
-      packages: write
-      id-token: write
-      pull-requests: write
+      contents: read      # Read repository contents
+      packages: write     # Push images to GHCR
+      id-token: write     # OIDC token for authentication
+      pull-requests: write # Comment on pull requests
 
     steps:
+      # Checkout repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Set up Bun for version extraction
+      # Set up Bun runtime for extracting version from package.json
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # Set up Docker Buildx
+      # Set up Docker Buildx for multi-platform builds
+      # Buildx enables building for multiple architectures simultaneously
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             network=host
 
+      # Authenticate with GitHub Container Registry
+      # Only login for non-PR events (PRs don't push images)
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -68,10 +93,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Extract version from package.json for image tagging
       - name: Get version from package.json
         id: package-version
         run: echo "version=$(bun -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
+      # Get short commit hash for image tagging
       - name: Get commit hash
         id: commit
         run: |
@@ -79,6 +106,8 @@ jobs:
           echo "commit=$COMMIT_HASH" >> $GITHUB_OUTPUT
           echo "Commit: $COMMIT_HASH"
 
+      # Determine all image tags for both frontend and backend
+      # Creates tags: latest, version, and commit hash (each with platform suffix)
       - name: Determine image tags
         id: tags
         run: |
@@ -88,59 +117,75 @@ jobs:
           SUFFIX="${{ matrix.suffix }}"
           
           # Use workflow_dispatch version if provided, otherwise use package.json version
+          # Allows manual version override when triggering workflow manually
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
           fi
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Frontend tags: latest-amd64, version-amd64, commit-amd64 (and arm64 variants)
           echo "tags=ghcr.io/$REPO:latest-$SUFFIX,ghcr.io/$REPO:$VERSION-$SUFFIX,ghcr.io/$REPO:$COMMIT-$SUFFIX" >> $GITHUB_OUTPUT
+          # Backend tags: backend-latest-amd64, backend-version-amd64, backend-commit-amd64 (and arm64 variants)
           echo "backend-tags=ghcr.io/$REPO:backend-latest-$SUFFIX,ghcr.io/$REPO:backend-$VERSION-$SUFFIX,ghcr.io/$REPO:backend-$COMMIT-$SUFFIX" >> $GITHUB_OUTPUT
 
+      # Build and push frontend Docker image
+      # Uses GitHub Actions cache for faster subsequent builds
       - name: Build and push Docker image (frontend)
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
-          platforms: ${{ matrix.platform }}
+          context: .                    # Build context (root directory)
+          file: ./Dockerfile            # Dockerfile location
+          platforms: ${{ matrix.platform }}  # Target platform (amd64 or arm64)
+          # Only push images for non-PR events (PRs build but don't push)
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.tags.outputs.tags }}
+          # Use GitHub Actions cache for build layers (speeds up builds)
           cache-from: type=gha,scope=frontend-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=frontend-${{ matrix.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUN_VERSION=latest
+          # OCI image labels for metadata (visible in container registries)
           labels: |
             org.opencontainers.image.title=TorBox Frontend
             org.opencontainers.image.description=TorBox Manager Frontend
             org.opencontainers.image.version=${{ steps.tags.outputs.version }}
             org.opencontainers.image.revision=${{ steps.commit.outputs.commit }}
             org.opencontainers.image.source=${{ github.repositoryUrl }}
+          # Disable provenance and SBOM generation (can be enabled for security scanning)
           provenance: false
           sbom: false
 
+      # Build and push backend Docker image
+      # Only builds for non-PR events (PRs don't need backend images)
       - name: Build and push Docker image (backend)
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          platforms: ${{ matrix.platform }}
-          push: true
+          context: ./backend             # Build context (backend directory)
+          file: ./backend/Dockerfile    # Backend Dockerfile location
+          platforms: ${{ matrix.platform }}  # Target platform (amd64 or arm64)
+          push: true                    # Always push backend images (only runs for non-PRs)
           tags: ${{ steps.tags.outputs.backend-tags }}
+          # Use GitHub Actions cache for build layers
           cache-from: type=gha,scope=backend-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=backend-${{ matrix.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUN_VERSION=latest
+          # OCI image labels for metadata
           labels: |
             org.opencontainers.image.title=TorBox Backend
             org.opencontainers.image.description=TorBox Manager Backend
             org.opencontainers.image.version=${{ steps.tags.outputs.version }}
             org.opencontainers.image.revision=${{ steps.commit.outputs.commit }}
             org.opencontainers.image.source=${{ github.repositoryUrl }}
+          # Disable provenance and SBOM generation
           provenance: false
           sbom: false
 
+      # Generate build summary for GitHub Actions UI
+      # Only run once (on amd64 build) to avoid duplicate summaries
       - name: Build summary
         if: matrix.suffix == 'amd64'
         run: |
@@ -149,6 +194,8 @@ jobs:
           COMMIT="${{ steps.commit.outputs.commit }}"
           REPO="ghcr.io/${{ env.IMAGE_NAME }}"
           
+          # Write markdown summary to GitHub Actions step summary
+          # This appears in the Actions UI for easy reference
           echo "## Docker Image Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository:** $REPO" >> $GITHUB_STEP_SUMMARY
@@ -173,6 +220,8 @@ jobs:
             echo "ℹ️ Images were built but not pushed (PR builds are for testing only)." >> $GITHUB_STEP_SUMMARY
           fi
 
+      # Comment on pull requests with build summary
+      # Only comments on PRs from the same repository (not forks) to avoid permission issues
       - name: Comment on PR
         if: github.event_name == 'pull_request' && matrix.suffix == 'amd64'
         uses: actions/github-script@v7
@@ -180,6 +229,7 @@ jobs:
         with:
           script: |
             // Only comment on PRs from the same repository (not forks)
+            // Forks may not have permission to comment, so we skip them gracefully
             const isFork = context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
             
             if (isFork) {
@@ -188,6 +238,7 @@ jobs:
             }
             
             try {
+              // Post a comment on the PR with build information
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -211,7 +262,8 @@ jobs:
               });
               console.log('Successfully commented on PR');
             } catch (error) {
-              // Silently fail for permission issues
+              // Silently fail for permission issues (403/404)
+              // This prevents workflow failures when bot doesn't have comment permissions
               if (error.status === 403 || error.status === 404) {
                 console.log('Cannot comment on PR (insufficient permissions). Build summary available in workflow logs.');
               } else {
@@ -219,28 +271,38 @@ jobs:
               }
             }
 
+  # Create multi-platform manifests job
+  # Combines platform-specific images (amd64, arm64) into single tags
+  # This allows users to pull images without specifying platform (Docker auto-selects)
   create-manifests:
+    # Wait for build job to complete successfully
     needs: build
+    # Only create manifests for non-PR events (PRs don't push images)
     if: github.event_name != 'pull_request'
+    # Timeout after 30 minutes
     timeout-minutes: 30
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
-      id-token: write
+      contents: read      # Read repository contents
+      packages: write     # Push manifests to GHCR
+      id-token: write     # OIDC token for authentication
 
     steps:
+      # Checkout repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Set up Bun for version extraction
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
+      # Set up Docker Buildx for manifest operations
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Authenticate with GitHub Container Registry
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -248,16 +310,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Extract version from package.json
       - name: Get version from package.json
         id: package-version
         run: echo "version=$(bun -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
+      # Get short commit hash
       - name: Get commit hash
         id: commit
         run: |
           COMMIT_HASH=$(git rev-parse --short HEAD)
           echo "commit=$COMMIT_HASH" >> $GITHUB_OUTPUT
 
+      # Determine image tags (same logic as build job)
       - name: Determine image tags
         id: tags
         run: |
@@ -272,6 +337,9 @@ jobs:
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      # Create multi-platform manifest for frontend images
+      # Combines amd64 and arm64 images into single tags (latest, version, commit)
+      # Users can pull without specifying platform - Docker auto-selects correct architecture
       - name: Create and push multi-platform manifest (frontend)
         run: |
           REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
@@ -280,20 +348,25 @@ jobs:
           
           echo "Creating multi-platform manifests for frontend..."
           
+          # Create manifest for 'latest' tag combining both platforms
           docker buildx imagetools create -t "$REPO:latest" \
             "$REPO:latest-amd64" \
             "$REPO:latest-arm64"
           
+          # Create manifest for version tag combining both platforms
           docker buildx imagetools create -t "$REPO:$VERSION" \
             "$REPO:$VERSION-amd64" \
             "$REPO:$VERSION-arm64"
           
+          # Create manifest for commit tag combining both platforms
           docker buildx imagetools create -t "$REPO:$COMMIT" \
             "$REPO:$COMMIT-amd64" \
             "$REPO:$COMMIT-arm64"
           
           echo "✅ Frontend multi-platform manifests created successfully"
 
+      # Create multi-platform manifest for backend images
+      # Combines amd64 and arm64 images into single tags (backend-latest, backend-version, backend-commit)
       - name: Create and push multi-platform manifest (backend)
         run: |
           REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
@@ -302,14 +375,17 @@ jobs:
           
           echo "Creating multi-platform manifests for backend..."
           
+          # Create manifest for 'backend-latest' tag combining both platforms
           docker buildx imagetools create -t "$REPO:backend-latest" \
             "$REPO:backend-latest-amd64" \
             "$REPO:backend-latest-arm64"
           
+          # Create manifest for backend version tag combining both platforms
           docker buildx imagetools create -t "$REPO:backend-$VERSION" \
             "$REPO:backend-$VERSION-amd64" \
             "$REPO:backend-$VERSION-arm64"
           
+          # Create manifest for backend commit tag combining both platforms
           docker buildx imagetools create -t "$REPO:backend-$COMMIT" \
             "$REPO:backend-$COMMIT-amd64" \
             "$REPO:backend-$COMMIT-arm64"

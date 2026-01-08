@@ -1,19 +1,30 @@
-import cron from 'node-cron';
+import RuleEvaluator from './RuleEvaluator.js';
+import ApiClient from '../api/ApiClient.js';
+import { decrypt } from '../utils/crypto.js';
 
+/**
+ * Per-user Automation Engine
+ * Evaluates and executes automation rules for a single user
+ */
 class AutomationEngine {
-  constructor(database, apiClient) {
-    this.database = database;
-    this.apiClient = apiClient;
+  constructor(authId, encryptedApiKey, userDb, masterDb = null) {
+    this.authId = authId;
+    this.encryptedApiKey = encryptedApiKey;
+    this.userDb = userDb;
+    this.masterDb = masterDb;
+    this.apiKey = decrypt(encryptedApiKey);
+    this.apiClient = new ApiClient(this.apiKey);
+    this.ruleEvaluator = new RuleEvaluator(userDb, this.apiClient);
     this.runningJobs = new Map();
     this.isInitialized = false;
   }
 
   async initialize() {
     try {
-      console.log('🔄 Initializing automation engine...');
+      console.log(`[AutomationEngine ${this.authId}] Initializing...`);
       
-      // Load existing rules from database
-      const rules = await this.database.getAutomationRules();
+      // Load existing rules from user database
+      const rules = await this.getAutomationRules();
       
       // Start all enabled rules
       for (const rule of rules) {
@@ -22,14 +33,90 @@ class AutomationEngine {
         }
       }
       
+      // Sync active rules flag to master DB
+      await this.syncActiveRulesFlag();
+      
       this.isInitialized = true;
-      console.log(`Automation engine initialized with ${rules.length} rules`);
+      console.log(`[AutomationEngine ${this.authId}] Initialized with ${rules.length} rules`);
     } catch (error) {
-      console.error('Failed to initialize automation engine:', error);
+      console.error(`[AutomationEngine ${this.authId}] Failed to initialize:`, error);
       throw error;
     }
   }
 
+  /**
+   * Get automation rules from user database
+   */
+  async getAutomationRules() {
+    const sql = 'SELECT * FROM automation_rules ORDER BY created_at DESC';
+    const rules = this.userDb.prepare(sql).all();
+    return rules.map(rule => ({
+      ...rule,
+      enabled: rule.enabled === 1,
+      trigger_config: JSON.parse(rule.trigger_config),
+      conditions: JSON.parse(rule.conditions),
+      action_config: JSON.parse(rule.action_config),
+      metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
+      cooldown_minutes: rule.cooldown_minutes || 0,
+      last_executed_at: rule.last_executed_at,
+      execution_count: rule.execution_count || 0
+    }));
+  }
+
+  /**
+   * Check if user has any enabled automation rules
+   * @returns {boolean} - True if at least one rule is enabled
+   */
+  hasActiveRules() {
+    const result = this.userDb.prepare(`
+      SELECT COUNT(*) as count 
+      FROM automation_rules 
+      WHERE enabled = 1
+    `).get();
+    return result && result.count > 0;
+  }
+
+  /**
+   * Update active rules flag in master database
+   * @param {boolean} hasActiveRules - Whether user has active rules
+   */
+  async updateMasterDbActiveRulesFlag(hasActiveRules) {
+    if (!this.masterDb) {
+      return; // Master DB not available
+    }
+    try {
+      this.masterDb.updateActiveRulesFlag(this.authId, hasActiveRules);
+    } catch (error) {
+      console.error(`[AutomationEngine ${this.authId}] Failed to update active rules flag:`, error);
+    }
+  }
+
+  /**
+   * Sync active rules flag to master database
+   */
+  async syncActiveRulesFlag() {
+    const hasActive = this.hasActiveRules();
+    await this.updateMasterDbActiveRulesFlag(hasActive);
+  }
+
+  /**
+   * Reset next poll timestamp to 5 minutes from now (when rules change)
+   */
+  async resetNextPollAt() {
+    if (!this.masterDb) {
+      return; // Master DB not available
+    }
+    try {
+      const nextPollAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+      this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
+    } catch (error) {
+      console.error(`[AutomationEngine ${this.authId}] Failed to reset next poll at:`, error);
+    }
+  }
+
+  /**
+   * Start a rule (for cron-based triggers)
+   */
   async startRule(rule) {
     try {
       // Stop existing job if it exists
@@ -37,323 +124,204 @@ class AutomationEngine {
         this.stopRule(rule.id);
       }
 
-      // Convert trigger to cron expression
-      const cronExpression = this.convertToCron(rule.trigger_config);
+      // For now, rules are evaluated on each poll cycle
+      // Cron-based triggers can be added later if needed
+      // This method is kept for compatibility
       
-      if (!cronExpression) {
-        console.warn(`Invalid trigger configuration for rule: ${rule.name}`);
-        return;
-      }
-
-      // Create cron job
-      const job = cron.schedule(cronExpression, async () => {
-        await this.executeRule(rule);
-      }, {
-        scheduled: false // Don't start immediately
-      });
-
-      // Start the job
-      job.start();
-      this.runningJobs.set(rule.id, job);
-      
-      console.log(`Started rule: ${rule.name} (${cronExpression})`);
+      console.log(`[AutomationEngine ${this.authId}] Rule ${rule.name} ready`);
     } catch (error) {
-      console.error(`Failed to start rule ${rule.name}:`, error);
+      console.error(`[AutomationEngine ${this.authId}] Failed to start rule ${rule.name}:`, error);
     }
   }
 
   stopRule(ruleId) {
-    const job = this.runningJobs.get(ruleId);
-    if (job) {
-      job.stop();
+    if (this.runningJobs.has(ruleId)) {
       this.runningJobs.delete(ruleId);
-      console.log(`Stopped rule: ${ruleId}`);
+      console.log(`[AutomationEngine ${this.authId}] Stopped rule ${ruleId}`);
     }
   }
 
-  async executeRule(rule) {
+  /**
+   * Evaluate and execute rules (called after each poll)
+   * @param {Array} torrents - Current torrents from API
+   */
+  async evaluateRules(torrents) {
     try {
-      console.log(`🔄 Executing rule: ${rule.name}`);
-      
-      // Fetch current torrents from TorBox API
-      const torrents = await this.apiClient.getTorrents();
-      
-      // Apply rule conditions
-      const matchingItems = this.evaluateConditions(rule, torrents);
-      
-      if (matchingItems.length === 0) {
-        console.log(`No items match conditions for rule: ${rule.name}`);
-        await this.database.logRuleExecution(rule.id, rule.name, 'execution', 0, true);
-        return;
+      const rules = await this.getAutomationRules();
+      const enabledRules = rules.filter(r => r.enabled);
+
+      if (enabledRules.length === 0) {
+        return { evaluated: 0, executed: 0 };
       }
 
-      console.log(`Rule ${rule.name} triggered for ${matchingItems.length} items`);
+      let executedCount = 0;
 
-      // Execute actions on matching items
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const item of matchingItems) {
+      for (const rule of enabledRules) {
         try {
-          await this.executeAction(rule.action || rule.action_config, item);
-          successCount++;
+          // Check cooldown
+          if (rule.cooldown_minutes && rule.last_executed_at) {
+            const lastExecuted = new Date(rule.last_executed_at);
+            const cooldownMs = rule.cooldown_minutes * 60 * 1000;
+            const timeSinceLastExecution = Date.now() - lastExecuted.getTime();
+            
+            if (timeSinceLastExecution < cooldownMs) {
+              continue; // Still in cooldown
+            }
+          }
+
+          // Evaluate rule
+          const matchingTorrents = await this.ruleEvaluator.evaluateRule(rule, torrents);
+
+          if (matchingTorrents.length === 0) {
+            continue;
+          }
+
+          console.log(`[AutomationEngine ${this.authId}] Rule ${rule.name} matched ${matchingTorrents.length} torrents`);
+
+          // Execute actions
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const torrent of matchingTorrents) {
+            try {
+              await this.ruleEvaluator.executeAction(rule.action_config, torrent);
+              successCount++;
+            } catch (error) {
+              console.error(`[AutomationEngine ${this.authId}] Action failed for torrent ${torrent.id}:`, error);
+              errorCount++;
+            }
+          }
+
+          // Update rule execution status
+          this.userDb.prepare(`
+            UPDATE automation_rules 
+            SET last_executed_at = CURRENT_TIMESTAMP,
+                execution_count = execution_count + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(rule.id);
+
+          // Log execution
+          await this.logRuleExecution(
+            rule.id,
+            rule.name,
+            'execution',
+            matchingTorrents.length,
+            errorCount === 0,
+            errorCount > 0 ? `${errorCount} actions failed` : null
+          );
+
+          executedCount++;
         } catch (error) {
-          console.error(`Action failed for item ${item.name}:`, error);
-          errorCount++;
+          console.error(`[AutomationEngine ${this.authId}] Rule evaluation failed for ${rule.name}:`, error);
+          await this.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
         }
       }
 
-      // Log execution
-      await this.database.logRuleExecution(
-        rule.id, 
-        rule.name, 
-        'execution', 
-        matchingItems.length, 
-        errorCount === 0,
-        errorCount > 0 ? `${errorCount} actions failed` : null
-      );
-
-      console.log(`Rule ${rule.name} completed: ${successCount} successful, ${errorCount} failed`);
+      return { evaluated: enabledRules.length, executed: executedCount };
     } catch (error) {
-      console.error(`Rule execution failed for ${rule.name}:`, error);
-      await this.database.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
+      console.error(`[AutomationEngine ${this.authId}] Failed to evaluate rules:`, error);
+      return { evaluated: 0, executed: 0, error: error.message };
     }
   }
 
-  evaluateConditions(rule, items) {
-    const conditions = rule.conditions || [];
-    const logicOperator = rule.logicOperator || 'and';
+  /**
+   * Log rule execution
+   */
+  async logRuleExecution(ruleId, ruleName, executionType, itemsProcessed = 0, success = true, errorMessage = null) {
+    const sql = `
+      INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    this.userDb.prepare(sql).run(ruleId, ruleName, executionType, itemsProcessed, success ? 1 : 0, errorMessage);
+  }
+
+  /**
+   * Save automation rules
+   */
+  async saveAutomationRules(rules) {
+    // Clear existing rules
+    this.userDb.prepare('DELETE FROM automation_rules').run();
     
-    return items.filter(item => {
-      const conditionResults = conditions.map(condition => {
-        return this.evaluateCondition(condition, item);
-      });
-
-      // Apply logic operator
-      if (logicOperator === 'or') {
-        return conditionResults.some(result => result);
-      } else {
-        return conditionResults.every(result => result);
-      }
-    });
-  }
-
-  evaluateCondition(condition, item) {
-    const now = Date.now();
-    let conditionValue = 0;
-
-    switch (condition.type) {
-      case 'seeding_time':
-        if (!item.active) return false;
-        conditionValue = (now - new Date(item.cached_at).getTime()) / (1000 * 60 * 60);
-        break;
-        
-      case 'stalled_time':
-        // Check for stalled states that exist in TorBox API
-        if (['uploading (no peers)', 'downloading'].includes(item.download_state) && item.active) {
-          conditionValue = (now - new Date(item.updated_at).getTime()) / (1000 * 60 * 60);
-        } else {
-          return false;
-        }
-        break;
-        
-      case 'seeding_ratio':
-        if (!item.active) return false;
-        conditionValue = item.ratio || 0;
-        break;
-        
-      case 'seeds':
-        conditionValue = item.seeds || 0;
-        break;
-        
-      case 'peers':
-        conditionValue = item.peers || 0;
-        break;
-        
-      case 'inactive':
-        // Check if torrent is inactive (expired torrents)
-        const isInactive = item.download_state === 'expired';
-        conditionValue = isInactive ? 1 : 0;
-        break;
-        
-      case 'age':
-        // Calculate age in hours since creation
-        conditionValue = (now - new Date(item.created_at).getTime()) / (1000 * 60 * 60);
-        break;
-        
-      case 'download_speed':
-        conditionValue = item.download_speed || 0;
-        break;
-        
-      case 'upload_speed':
-        conditionValue = item.upload_speed || 0;
-        break;
-        
-      case 'file_size':
-        // Convert bytes to GB
-        conditionValue = (item.size || 0) / (1024 * 1024 * 1024);
-        break;
-        
-      case 'tracker':
-        // Check if tracker matches (string comparison)
-        const trackerMatch = item.tracker && item.tracker.includes(condition.value);
-        return trackerMatch;
-        
-      case 'progress':
-        // Check download progress percentage
-        conditionValue = item.progress || 0;
-        break;
-        
-      case 'total_uploaded':
-        // Check total uploaded bytes
-        conditionValue = (item.total_uploaded || 0) / (1024 * 1024 * 1024); // Convert to GB
-        break;
-        
-      case 'total_downloaded':
-        // Check total downloaded bytes
-        conditionValue = (item.total_downloaded || 0) / (1024 * 1024 * 1024); // Convert to GB
-        break;
-        
-      case 'availability':
-        // Check torrent availability
-        conditionValue = item.availability || 0;
-        break;
-        
-      case 'eta':
-        // Check estimated time to completion (in seconds)
-        conditionValue = item.eta || 0;
-        break;
-        
-      case 'download_finished':
-        // Check if download is finished
-        conditionValue = item.download_finished ? 1 : 0;
-        break;
-        
-      case 'cached':
-        // Check if torrent is cached
-        conditionValue = item.cached ? 1 : 0;
-        break;
-        
-      case 'private':
-        // Check if torrent is private
-        conditionValue = item.private ? 1 : 0;
-        break;
-        
-      case 'long_term_seeding':
-        // Check if torrent is set for long-term seeding
-        conditionValue = item.long_term_seeding ? 1 : 0;
-        break;
-        
-      case 'seed_torrent':
-        // Check if torrent is a seed torrent
-        conditionValue = item.seed_torrent ? 1 : 0;
-        break;
-        
-      case 'download_state':
-        // Check specific download state
-        const stateMatch = item.download_state === condition.value;
-        return stateMatch;
-        
-      case 'name_contains':
-        // Check if torrent name contains specific text
-        const nameMatch = item.name && item.name.toLowerCase().includes(condition.value.toLowerCase());
-        return nameMatch;
-        
-      case 'file_count':
-        // Check number of files in torrent
-        conditionValue = item.files ? item.files.length : 0;
-        break;
-        
-      case 'expires_at':
-        // Check if torrent has expiration date
-        if (item.expires_at) {
-          const expirationTime = new Date(item.expires_at).getTime();
-          conditionValue = (expirationTime - now) / (1000 * 60 * 60); // Hours until expiration
-        } else {
-          conditionValue = -1; // No expiration
-        }
-        break;
-        
-      default:
-        return false;
+    // Insert new rules
+    for (const rule of rules) {
+      const sql = `
+        INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      this.userDb.prepare(sql).run(
+        rule.name,
+        rule.enabled ? 1 : 0,
+        JSON.stringify(rule.trigger || rule.trigger_config),
+        JSON.stringify(rule.conditions),
+        JSON.stringify(rule.action || rule.action_config),
+        JSON.stringify(rule.metadata || {}),
+        rule.cooldown_minutes || 0
+      );
     }
 
-    return this.compareValues(conditionValue, condition.operator, condition.value);
-  }
-
-  compareValues(value1, operator, value2) {
-    switch (operator) {
-      case 'gt': return value1 > value2;
-      case 'lt': return value1 < value2;
-      case 'gte': return value1 >= value2;
-      case 'lte': return value1 <= value2;
-      case 'eq': return value1 === value2;
-      default: return false;
+    // Update master DB flag and reset polling
+    const hasActive = rules.some(r => r.enabled);
+    await this.updateMasterDbActiveRulesFlag(hasActive);
+    if (hasActive) {
+      await this.resetNextPollAt();
     }
   }
 
-  async executeAction(action, item) {
-    switch (action.type) {
-      case 'stop_seeding':
-        return await this.apiClient.controlTorrent(item.id, 'stop_seeding');
-        
-      case 'archive':
-        // Archive and delete
-        await this.apiClient.archiveDownload(item);
-        return await this.apiClient.deleteTorrent(item.id);
-        
-      case 'delete':
-        return await this.apiClient.deleteTorrent(item.id);
-        
-      case 'force_start':
-        return await this.apiClient.controlQueuedTorrent(item.id, 'force_start');
-        
-      default:
-        throw new Error(`Unknown action type: ${action.type}`);
+  /**
+   * Update rule status
+   */
+  async updateRuleStatus(ruleId, enabled) {
+    this.userDb.prepare(`
+      UPDATE automation_rules 
+      SET enabled = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).run(enabled ? 1 : 0, ruleId);
+
+    // Update master DB flag and reset polling if enabling
+    await this.syncActiveRulesFlag();
+    if (enabled) {
+      await this.resetNextPollAt();
     }
   }
 
-  convertToCron(trigger) {
-    // Convert interval-based trigger to cron expression
-    if (trigger.type === 'interval' && trigger.value) {
-      const minutes = trigger.value;
-      
-      if (minutes < 1) {
-        return null; // Invalid interval
-      }
-      
-      // Convert minutes to cron expression
-      if (minutes === 1) {
-        return '* * * * *'; // Every minute
-      } else if (minutes < 60) {
-        return `*/${minutes} * * * *`; // Every N minutes
-      } else {
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = minutes % 60;
-        
-        if (remainingMinutes === 0) {
-          return `0 */${hours} * * *`; // Every N hours
-        } else {
-          return `${remainingMinutes} */${hours} * * *`; // Every N hours at M minutes
-        }
-      }
+  /**
+   * Delete a rule
+   */
+  async deleteRule(ruleId) {
+    this.userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(ruleId);
+
+    // Update master DB flag
+    await this.syncActiveRulesFlag();
+  }
+
+  /**
+   * Get rule execution history
+   */
+  getRuleExecutionHistory(ruleId = null, limit = 100) {
+    let sql = 'SELECT * FROM rule_execution_log';
+    const params = [];
+    
+    if (ruleId) {
+      sql += ' WHERE rule_id = ?';
+      params.push(ruleId);
     }
     
-    return null;
+    sql += ' ORDER BY executed_at DESC LIMIT ?';
+    params.push(limit);
+    
+    return this.userDb.prepare(sql).all(...params);
   }
 
   async reloadRules() {
     try {
-      console.log('🔄 Reloading automation rules...');
+      console.log(`[AutomationEngine ${this.authId}] Reloading rules...`);
       
       // Stop all existing jobs
-      for (const [ruleId, job] of this.runningJobs) {
-        job.stop();
-      }
       this.runningJobs.clear();
       
       // Reload rules from database
-      const rules = await this.database.getAutomationRules();
+      const rules = await this.getAutomationRules();
       
       // Start enabled rules
       for (const rule of rules) {
@@ -362,29 +330,23 @@ class AutomationEngine {
         }
       }
       
-      console.log(`Reloaded ${rules.length} automation rules`);
+      console.log(`[AutomationEngine ${this.authId}] Reloaded ${rules.length} rules`);
     } catch (error) {
-      console.error('Failed to reload automation rules:', error);
+      console.error(`[AutomationEngine ${this.authId}] Failed to reload rules:`, error);
     }
   }
 
   getStatus() {
     return {
+      authId: this.authId,
       initialized: this.isInitialized,
-      runningJobs: this.runningJobs.size,
-      rules: Array.from(this.runningJobs.keys())
+      runningJobs: this.runningJobs.size
     };
   }
 
   shutdown() {
-    console.log('Shutting down automation engine...');
-    
-    for (const [ruleId, job] of this.runningJobs) {
-      job.stop();
-    }
+    console.log(`[AutomationEngine ${this.authId}] Shutting down...`);
     this.runningJobs.clear();
-    
-    console.log('Automation engine shutdown complete');
   }
 }
 

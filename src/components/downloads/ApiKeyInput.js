@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
+import { ensureUserDb } from '@/utils/ensureUserDb';
 
 export default function ApiKeyInput({
   value,
@@ -14,6 +15,7 @@ export default function ApiKeyInput({
   const [showKey, setShowKey] = useState(false);
   const [showManager, setShowManager] = useState(false);
   const [keepManagerOpen, setKeepManagerOpen] = useState(false);
+  const ensureDbTimeoutRef = useRef(null);
 
   // Load manager open state from localStorage on mount
   useEffect(() => {
@@ -29,6 +31,31 @@ export default function ApiKeyInput({
     setKeepManagerOpen(keepOpen);
     localStorage.setItem('torboxKeepManagerOpen', keepOpen.toString());
   };
+
+  // Ensure user database exists when API key is set
+  useEffect(() => {
+    // Clear any pending timeout
+    if (ensureDbTimeoutRef.current) {
+      clearTimeout(ensureDbTimeoutRef.current);
+    }
+
+    // Only ensure DB if we have a valid-looking API key (at least 20 chars)
+    if (value && value.length >= 20) {
+      // Debounce the API call - wait 1 second after user stops typing
+      ensureDbTimeoutRef.current = setTimeout(async () => {
+        const result = await ensureUserDb(value);
+        if (result.success && result.wasCreated) {
+          console.log('User database created for API key');
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (ensureDbTimeoutRef.current) {
+        clearTimeout(ensureDbTimeoutRef.current);
+      }
+    };
+  }, [value]);
 
   return (
     <div className="space-y-4">

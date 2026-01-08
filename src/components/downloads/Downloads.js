@@ -8,7 +8,6 @@ import { useFetchData } from '../shared/hooks/useFetchData';
 import { useFilter } from '../shared/hooks/useFilter';
 import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
-import { useAutomationRules } from '../shared/hooks/useAutomationRules';
 import useIsMobile from '../../hooks/useIsMobile';
 
 import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
@@ -35,6 +34,21 @@ export default function Downloads({ apiKey }) {
   const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
   const isMobile = useIsMobile();
+
+  // Ensure user database exists when API key is provided
+  useEffect(() => {
+    if (apiKey && apiKey.length >= 20) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(apiKey).then((result) => {
+          if (result.success && result.wasCreated) {
+            console.log('User database created for API key in Downloads component');
+          }
+        }).catch((error) => {
+          console.error('Error ensuring user database:', error);
+        });
+      });
+    }
+  }, [apiKey]);
 
   // Function to expand all items with files
   const expandAllFiles = () => {
@@ -85,9 +99,6 @@ export default function Downloads({ apiKey }) {
     useFilter(items);
 
   const sortedItems = sortTorrents(filteredItems);
-
-  // Initialize automation rules
-  useAutomationRules(items, apiKey, activeType);
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
