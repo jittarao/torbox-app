@@ -67,91 +67,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 
 ## Getting Started
 
-### Docker (Recommended)
-
-1. Clone the repository:
-```bash
-git clone https://github.com/jittarao/torbox-app.git
-cd torbox-app
-```
-
-2. Start the application:
-```bash
-docker compose up -d
-```
-
-3. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
-
-### Self-Hosted Backend (24/7 Automation)
-
-1. Clone the repository:
-```bash
-git clone https://github.com/jittarao/torbox-app.git
-cd torbox-app
-```
-
-2. Enable the backend by uncommenting the backend section in `docker-compose.yml` (OPTIONAL):
-```yaml
-torbox-backend:
-  image: ghcr.io/jittarao/torbox-app:backend-latest
-  container_name: torbox-backend
-  restart: unless-stopped
-  environment:
-    - FRONTEND_URL=${FRONTEND_URL}
-    - ENCRYPTION_KEY=your-encryption-key-here
-  volumes:
-    - backend-data:/app/data
-```
-
-3. Set environment variables (create a `.env` file or export them):
-```bash
-FRONTEND_URL=http://localhost:3000
-ENCRYPTION_KEY=your-encryption-key-here
-```
-
-4. Generate an encryption key (required for API key encryption):
-```bash
-# Windows PowerShell:
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
-
-# macOS/Linux:
-openssl rand -base64 32
-```
-
-5. Start with backend:
-```bash
-docker compose up -d
-```
-
-6. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key!
-   - User databases are automatically created when you enter an API key
-
-### Local Development
-
-1. Clone the repository:
-```bash
-git clone https://github.com/jittarao/torbox-app.git
-cd torbox-app
-```
-
-2. Install dependencies:
-```bash
-bun install
-```
-
-3. Run the development server:
-```bash
-bun run dev
-```
-
-4. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
-
-## Deployment Options
-
-| Option | Use Case | Automation | Storage | Complexity |
-|--------|----------|------------|---------|------------|
-| **Frontend Only** | Standard usage | Browser-based | Local storage | Simple |
-| **Self-Hosted Backend** | 24/7 automation | Background | Per-user databases | Moderate |
+For deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Backend Architecture
 
@@ -162,32 +78,6 @@ The self-hosted backend uses a **multi-user architecture**:
 - **Connection Pooling**: LRU cache for efficient database connection management
 - **Automatic Provisioning**: User databases are created on-demand when API keys are entered
 
-## Configuration
-
-### Environment Variables
-
-For self-hosted frontend deployment:
-
-| Variable          | Description                                   | Default                  | Required |
-|-------------------|-----------------------------------------------|--------------------------|----------|
-| `BACKEND_URL`     | URL of the backend API server                 | `http://localhost:3001`  | No       |
-| `BACKEND_DISABLED`| Disable backend usage (set to `true`/`false`) | `false`                  | No       |
-
-For self-hosted backend deployment:
-
-| Variable            | Description                                      | Default                      | Required   |
-|---------------------|--------------------------------------------------|------------------------------|------------|
-| `FRONTEND_URL`      | Frontend URL for CORS                            | `http://localhost:3000`      | Yes        |
-| `ENCRYPTION_KEY`    | Base64-encoded key for API key encryption        | -                            | Yes        |
-| `PORT`              | Port for backend server                          | `3001`                       | Yes        |
-| `NODE_ENV`          | Node environment                                 | `production`                 | Yes        |
-| `TORBOX_API_BASE`   | TorBox API base URL                              | `https://api.torbox.app`     | No         |
-| `TORBOX_API_VERSION`| TorBox API version                               | `v1`                         | No         |
-| `MASTER_DB_PATH`    | Directory for master database                    | `/app/data/master.db`        | No         |
-| `USER_DB_DIR`       | Directory for user database files                | `/app/data/users`            | No         |
-| `MAX_DB_CONNECTIONS`| Maximum pooled database connections              | `200`                        | No         |
-
-
 ### API Key Setup
 
 1. Get your API key from [torbox.app/settings](https://torbox.app/settings)
@@ -197,13 +87,9 @@ For self-hosted backend deployment:
 
 ## Requirements
 
-- **Docker Deployment**:
-  - Docker and Docker Compose
-  - Valid TorBox API key
-
-- **Local Development**:
-  - Node.js 18.0 or later (or Bun)
-  - Valid TorBox API key
+- **Docker Deployment**: Docker and Docker Compose
+- **Local Development**: Node.js 18.0 or later (or Bun)
+- **Valid TorBox API key** (get yours from [torbox.app/settings](https://torbox.app/settings))
 
 ## Tech Stack
 
