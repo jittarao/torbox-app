@@ -67,7 +67,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Set up Bun runtime for extracting version from package.json
       - name: Set up Bun
@@ -290,7 +290,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Set up Bun for version extraction
       - name: Set up Bun
