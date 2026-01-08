@@ -166,6 +166,7 @@ export const useAutomationRulesStorage = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const apiKey = localStorage.getItem('torboxApiKey');
 
   useEffect(() => {
     const loadRules = async () => {
@@ -174,75 +175,77 @@ export const useAutomationRulesStorage = () => {
         setError(null);
 
         if (mode === 'backend') {
-          // Try backend first
-          const response = await fetch('/api/automation/rules');
+          // Load from backend only
+          const headers = {
+            'Content-Type': 'application/json',
+          };
+          
+          if (apiKey) {
+            headers['x-api-key'] = apiKey;
+          }
+
+          const response = await fetch('/api/automation/rules', {
+            headers
+          });
+          
           if (response.ok) {
             const data = await response.json();
             setRules(data.rules || []);
           } else {
-            // Fallback to local storage
-            const localRules = localStorage.getItem('torboxAutomationRules');
-            setRules(localRules ? JSON.parse(localRules) : []);
+            // Backend unavailable, return empty array
+            setRules([]);
           }
         } else {
-          // Use local storage
-          const localRules = localStorage.getItem('torboxAutomationRules');
-          setRules(localRules ? JSON.parse(localRules) : []);
+          // No backend mode, return empty array
+          setRules([]);
         }
       } catch (err) {
         console.error('Error loading automation rules:', err);
         setError(err.message);
-        
-        // Fallback to local storage
-        try {
-          const localRules = localStorage.getItem('torboxAutomationRules');
-          setRules(localRules ? JSON.parse(localRules) : []);
-        } catch (localErr) {
-          console.error('Local storage fallback failed:', localErr);
-          setRules([]);
-        }
+        setRules([]);
       } finally {
         setLoading(false);
       }
     };
 
     loadRules();
-  }, [mode]);
+  }, [mode, apiKey]);
 
   const saveRules = async (newRules) => {
     try {
       setError(null);
 
       if (mode === 'backend') {
-        // Save to backend
+        // Save to backend only
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (apiKey) {
+          headers['x-api-key'] = apiKey;
+        }
+
         const response = await fetch('/api/automation/rules', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({ rules: newRules }),
         });
 
         if (!response.ok) {
-          throw new Error(`Backend save failed: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Backend save failed: ${response.status}`);
         }
+        
+        // Update local state after successful backend save
+        setRules(newRules);
+      } else {
+        // No backend mode, just update local state
+        setRules(newRules);
       }
-
-      // Always save to local storage as backup
-      localStorage.setItem('torboxAutomationRules', JSON.stringify(newRules));
-      setRules(newRules);
     } catch (err) {
       console.error('Error saving automation rules:', err);
       setError(err.message);
-      
-      // Fallback to local storage only
-      try {
-        localStorage.setItem('torboxAutomationRules', JSON.stringify(newRules));
-        setRules(newRules);
-      } catch (localErr) {
-        console.error('Local storage fallback failed:', localErr);
-        setError(localErr.message);
-      }
+      throw err; // Re-throw so caller can handle the error
     }
   };
 

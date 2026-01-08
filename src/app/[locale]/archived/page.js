@@ -13,9 +13,25 @@ export default function ArchivedDownloadsPage() {
 
   useEffect(() => {
     const storedKey = localStorage.getItem('torboxApiKey');
+    let loadedKey = null;
     if (storedKey) {
+      loadedKey = storedKey;
       setApiKey(storedKey);
     }
+    
+    // Ensure user database exists for loaded API key
+    if (loadedKey) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(loadedKey).then((result) => {
+          if (result.success && result.wasCreated) {
+            console.log('User database created for existing API key');
+          }
+        }).catch((error) => {
+          console.error('Error ensuring user database on load:', error);
+        });
+      });
+    }
+    
     setLoading(false);
   }, []);
 

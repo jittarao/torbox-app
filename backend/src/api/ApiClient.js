@@ -92,18 +92,6 @@ class ApiClient {
     }
   }
 
-  async archiveDownload(item) {
-    try {
-      // Archive functionality - this would depend on TorBox API
-      // For now, we'll just log the action
-      console.log(`Archiving download: ${item.name} (${item.id})`);
-      return { success: true, message: 'Archive functionality not yet implemented' };
-    } catch (error) {
-      console.error(`Error archiving download ${item.id}:`, error.message);
-      throw error;
-    }
-  }
-
   async getUsenetDownloads(bypassCache = false) {
     try {
       const response = await this.client.get('/api/usenet/mylist', {

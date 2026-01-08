@@ -24,9 +24,17 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 ### Automation
 
 - **Automation Rules**: Create smart automation rules for torrent management
+  - Multiple condition types (status, ratio, speed, age, etc.)
+  - Complex condition logic (AND/OR operators)
+  - Preset rules for common scenarios
+  - Rule execution logs and history
 - **Self-Hosted Backend**: Optional 24/7 automation with persistent storage
+  - Multi-user architecture with per-user database isolation
   - Run automation rules continuously in the background
   - SQLite database for data persistence
+  - Intelligent polling based on user activity
+  - State diffing for efficient change detection
+  - Speed aggregation for performance metrics
 
 ### User Experience
 
@@ -89,25 +97,34 @@ torbox-backend:
   container_name: torbox-backend
   restart: unless-stopped
   environment:
-    - TORBOX_API_KEY=${TORBOX_API_KEY}
     - FRONTEND_URL=${FRONTEND_URL}
-    - BACKEND_URL=http://torbox-backend:3001
+    - ENCRYPTION_KEY=your-encryption-key-here
   volumes:
     - backend-data:/app/data
 ```
 
 3. Set environment variables (create a `.env` file or export them):
 ```bash
-TORBOX_API_KEY=your_api_key_here
 FRONTEND_URL=http://localhost:3000
+ENCRYPTION_KEY=your-encryption-key-here
 ```
 
-4. Start with backend:
+4. Generate an encryption key (required for API key encryption):
+```bash
+# Windows PowerShell:
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+
+# macOS/Linux:
+openssl rand -base64 32
+```
+
+5. Start with backend:
 ```bash
 docker compose up -d
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key!
+6. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key!
+   - User databases are automatically created when you enter an API key
 
 ### Local Development
 
@@ -134,21 +151,42 @@ bun run dev
 | Option | Use Case | Automation | Storage | Complexity |
 |--------|----------|------------|---------|------------|
 | **Frontend Only** | Standard usage | Browser-based | Local storage | Simple |
-| **Self-Hosted Backend** | 24/7 automation | Background | Database + local | Moderate |
+| **Self-Hosted Backend** | 24/7 automation | Background | Per-user databases | Moderate |
+
+### Backend Architecture
+
+The self-hosted backend uses a **multi-user architecture**:
+
+- **Master Database**: Stores user registry and encrypted API keys
+- **User Databases**: Separate SQLite database per user for data isolation
+- **Connection Pooling**: LRU cache for efficient database connection management
+- **Automatic Provisioning**: User databases are created on-demand when API keys are entered
 
 ## Configuration
 
 ### Environment Variables
 
-For frontend-only deployment, no environment variables are required. The API key is stored in browser localStorage.
+For self-hosted frontend deployment:
+
+| Variable          | Description                                   | Default                  | Required |
+|-------------------|-----------------------------------------------|--------------------------|----------|
+| `BACKEND_URL`     | URL of the backend API server                 | `http://localhost:3001`  | No       |
+| `BACKEND_DISABLED`| Disable backend usage (set to `true`/`false`) | `false`                  | No       |
 
 For self-hosted backend deployment:
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `TORBOX_API_KEY` | Your TorBox API key | - | Yes |
-| `FRONTEND_URL` | Frontend URL for CORS | `http://localhost:3000` | No |
-| `BACKEND_URL` | Backend URL | `http://torbox-backend:3001` | No |
+| Variable            | Description                                      | Default                      | Required   |
+|---------------------|--------------------------------------------------|------------------------------|------------|
+| `FRONTEND_URL`      | Frontend URL for CORS                            | `http://localhost:3000`      | Yes        |
+| `ENCRYPTION_KEY`    | Base64-encoded key for API key encryption        | -                            | Yes        |
+| `PORT`              | Port for backend server                          | `3001`                       | Yes        |
+| `NODE_ENV`          | Node environment                                 | `production`                 | Yes        |
+| `TORBOX_API_BASE`   | TorBox API base URL                              | `https://api.torbox.app`     | No         |
+| `TORBOX_API_VERSION`| TorBox API version                               | `v1`                         | No         |
+| `MASTER_DB_PATH`    | Directory for master database                    | `/app/data/master.db`        | No         |
+| `USER_DB_DIR`       | Directory for user database files                | `/app/data/users`            | No         |
+| `MAX_DB_CONNECTIONS`| Maximum pooled database connections              | `200`                        | No         |
+
 
 ### API Key Setup
 
@@ -181,10 +219,12 @@ For self-hosted backend deployment:
 
 ### Backend (Optional)
 - **Express.js** web framework
-- **SQLite** for local database
-- **node-cron** for task scheduling
+- **SQLite** for master and per-user databases (data isolation)
+- **Bun** runtime for high performance
 - **Helmet** for security headers
 - **CORS** for cross-origin requests
+- **Automation Engine** with rule evaluation and state diffing
+- **Connection Pooling** with LRU cache for scalability
 
 ## Project Structure
 
@@ -204,8 +244,22 @@ torbox-app/
 ├── backend/              # Self-hosted backend (optional)
 │   ├── src/
 │   │   ├── automation/   # Automation engine
+│   │   │   ├── AutomationEngine.js    # Per-user rule engine
+│   │   │   ├── RuleEvaluator.js       # Condition evaluation
+│   │   │   ├── StateDiffEngine.js     # State change detection
+│   │   │   ├── DerivedFieldsEngine.js # Computed fields
+│   │   │   ├── SpeedAggregator.js     # Speed metrics
+│   │   │   ├── PollingScheduler.js    # Intelligent polling
+│   │   │   └── UserPoller.js          # API polling
 │   │   ├── database/     # Database and migrations
-│   │   └── api/          # API client
+│   │   │   ├── Database.js            # Master database
+│   │   │   ├── UserDatabaseManager.js # User DB manager
+│   │   │   ├── MigrationRunner.js     # Migration system
+│   │   │   └── migrations/
+│   │   │       ├── master/            # Master DB migrations
+│   │   │       └── user/               # User DB migrations
+│   │   ├── api/          # API client
+│   │   └── utils/        # Utilities (crypto, status helpers)
 └── public/               # Static assets
 ```
 

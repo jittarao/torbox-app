@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
+import { ensureUserDb } from '@/utils/ensureUserDb';
 
 export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpen, onKeepOpenToggle }) {
   const t = useTranslations('ApiKeyManager');
@@ -122,7 +123,15 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpe
                   }`}
                 />
                 <button
-                  onClick={() => onKeySelect(keyItem.key)}
+                  onClick={async () => {
+                    // Ensure user database exists when selecting a key
+                    const result = await ensureUserDb(keyItem.key);
+                    if (result.success && result.wasCreated) {
+                      console.log('User database created for API key');
+                    }
+                    
+                    onKeySelect(keyItem.key);
+                  }}
                   className="flex-1 text-left"
                 >
                   <div className="font-medium text-primary-text dark:text-primary-text-dark">
