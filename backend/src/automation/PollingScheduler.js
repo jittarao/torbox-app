@@ -267,4 +267,3 @@ class PollingScheduler {
 }
 
 export default PollingScheduler;
-
