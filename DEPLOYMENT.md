@@ -305,7 +305,15 @@ openssl rand -base64 32
 
 Save this key securely - you'll need it in the next step.
 
-### 7. Run Backend Service
+### 7. Create Docker Network
+
+Create a Docker network so the containers can communicate with each other:
+
+```bash
+docker network create torbox-network
+```
+
+### 8. Run Backend Service
 
 Run the backend on port 3001 (internal, not exposed to internet):
 
@@ -313,6 +321,7 @@ Run the backend on port 3001 (internal, not exposed to internet):
 docker run -d \
   --name torbox-backend \
   --restart=always \
+  --network torbox-network \
   -p 127.0.0.1:3001:3001 \
   --log-driver json-file \
   --log-opt max-size=10m \
@@ -338,7 +347,7 @@ Test the backend:
 curl http://localhost:3001/health
 ```
 
-### 8. Run Frontend Service
+### 9. Run Frontend Service
 
 Run the frontend on port 3000 (internal, Caddy will expose 80/443):
 
@@ -346,16 +355,21 @@ Run the frontend on port 3000 (internal, Caddy will expose 80/443):
 docker run -d \
   --name torbox-app \
   --restart=always \
+  --network torbox-network \
   -p 127.0.0.1:3000:3000 \
   --log-driver json-file \
   --log-opt max-size=10m \
   --log-opt max-file=3 \
-  -e BACKEND_URL=http://localhost:3001 \
+  -e BACKEND_URL=http://torbox-backend:3001 \
   -e BACKEND_DISABLED=false \
   -e NODE_ENV=production \
   -e NEXT_TELEMETRY_DISABLED=1 \
   ghcr.io/jittarao/torbox-app:latest
 ```
+
+**Important**: 
+- The `BACKEND_URL` is set to `http://torbox-backend:3001` (using the container name) instead of `localhost` because containers communicate via Docker network using container names
+- Both containers must be on the same Docker network (`torbox-network`) for this to work
 
 **Note**: The `--log-driver` and `--log-opt` flags configure log rotation (10MB max per file, 3 files max) to prevent disk space issues. These are optional but recommended for production.
 
@@ -365,7 +379,7 @@ Test the frontend:
 curl http://localhost:3000
 ```
 
-### 9. Install and Configure Caddy
+### 10. Install and Configure Caddy
 
 Install Caddy:
 
@@ -402,7 +416,7 @@ sudo systemctl status caddy
 curl -I https://yourdomain.com
 ```
 
-### 10. Auto-Update Containers (Watchtower)
+### 11. Auto-Update Containers (Watchtower)
 
 Set up Watchtower to automatically update your containers:
 
@@ -423,7 +437,7 @@ This will check for updates every hour and automatically pull and restart contai
 
 **Note**: The `--log-driver` and `--log-opt` flags configure log rotation (10MB max per file, 3 files max) to prevent disk space issues. These are optional but recommended for production.
 
-### 11. Verify Deployment
+### 12. Verify Deployment
 
 1. Visit `https://yourdomain.com` in your browser
 2. Enter your TorBox API key when prompted
