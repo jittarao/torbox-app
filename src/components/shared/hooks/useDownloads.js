@@ -30,6 +30,17 @@ const addToDownloadHistory = (link) => {
   localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(trimmedHistory));
 };
 
+// Sanitize filename by extracting the actual filename from folder/filename format
+// and replacing invalid characters that can cause issues in URLs or file systems
+const sanitizeFilename = (filename) => {
+  if (!filename) return filename;
+  // Split by / and use the last part (handles folder/filename.ext format from TorBox)
+  const actualFilename = filename.split('/').pop();
+  // Replace invalid filename characters with underscore (excluding / since we've already handled it)
+  // This prevents issues with download managers that decode URLs and interpret special chars
+  return actualFilename.replace(/[<>:"\\|?*\x00-\x1F]/g, '_');
+};
+
 export function useDownloads(
   apiKey,
   assetType = 'torrents',
@@ -232,9 +243,13 @@ export function useDownloads(
           filename = file?.name || `${options.fileId}.zip`;
         }
 
+        // Sanitize filename to remove invalid characters (like forward slashes)
+        // that can cause download managers to misinterpret the URL
+        const sanitizedFilename = sanitizeFilename(filename);
+
         // Append filename parameter to URL
         const url = new URL(result.data.url);
-        const encodedFilename = encodeURIComponent(filename);
+        const encodedFilename = encodeURIComponent(sanitizedFilename);
         const separator = url.search ? '&' : '?';
         const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
@@ -357,9 +372,13 @@ export function useDownloads(
             const filename =
               task.type === 'item' ? `${task.name}.zip` : task.name;
             
+            // Sanitize filename to remove invalid characters (like forward slashes)
+            // that can cause download managers to misinterpret the URL
+            const sanitizedFilename = sanitizeFilename(filename);
+
             // Append filename parameter to URL
             const url = new URL(result.data.url);
-            const encodedFilename = encodeURIComponent(filename);
+            const encodedFilename = encodeURIComponent(sanitizedFilename);
             const separator = url.search ? '&' : '?';
             const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
