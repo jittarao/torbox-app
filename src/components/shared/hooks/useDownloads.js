@@ -234,8 +234,9 @@ export function useDownloads(
 
         // Append filename parameter to URL
         const url = new URL(result.data.url);
-        url.searchParams.set('filename', filename);
-        const urlWithFilename = url.toString();
+        const encodedFilename = encodeURIComponent(filename);
+        const separator = url.search ? '&' : '?';
+        const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
         if (copyLink) {
           try {
@@ -358,8 +359,9 @@ export function useDownloads(
             
             // Append filename parameter to URL
             const url = new URL(result.data.url);
-            url.searchParams.set('filename', filename);
-            const urlWithFilename = url.toString();
+            const encodedFilename = encodeURIComponent(filename);
+            const separator = url.search ? '&' : '?';
+            const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
             setDownloadLinks((prev) => [
               ...prev,
