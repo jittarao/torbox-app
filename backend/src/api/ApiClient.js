@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../utils/logger.js';
 
 class ApiClient {
   constructor(apiKey) {
@@ -43,7 +44,10 @@ class ApiClient {
       
       return [...torrents, ...queued];
     } catch (error) {
-      console.error('Error fetching torrents:', error.message);
+      logger.error('Error fetching torrents', error, {
+        endpoint: '/api/torrents/mylist',
+        bypassCache,
+      });
       throw error;
     }
   }
@@ -56,7 +60,11 @@ class ApiClient {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error controlling torrent ${torrentId}:`, error.message);
+      logger.error('Error controlling torrent', error, {
+        endpoint: '/api/torrents/controltorrent',
+        torrentId,
+        operation,
+      });
       throw error;
     }
   }
@@ -70,7 +78,11 @@ class ApiClient {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error controlling queued torrent ${queuedId}:`, error.message);
+      logger.error('Error controlling queued torrent', error, {
+        endpoint: '/api/queued/controlqueued',
+        queuedId,
+        operation,
+      });
       throw error;
     }
   }
@@ -87,7 +99,9 @@ class ApiClient {
         return await this.controlTorrent(torrentId, 'delete');
       }
     } catch (error) {
-      console.error(`Error deleting torrent ${torrentId}:`, error.message);
+      logger.error('Error deleting torrent', error, {
+        torrentId,
+      });
       throw error;
     }
   }
@@ -99,7 +113,10 @@ class ApiClient {
       });
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching usenet downloads:', error.message);
+      logger.error('Error fetching usenet downloads', error, {
+        endpoint: '/api/usenet/mylist',
+        bypassCache,
+      });
       throw error;
     }
   }
@@ -111,7 +128,10 @@ class ApiClient {
       });
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching web downloads:', error.message);
+      logger.error('Error fetching web downloads', error, {
+        endpoint: '/api/webdl/mylist',
+        bypassCache,
+      });
       throw error;
     }
   }
@@ -121,7 +141,9 @@ class ApiClient {
       const response = await this.client.get('/api/stats');
       return response.data;
     } catch (error) {
-      console.error('Error fetching stats:', error.message);
+      logger.error('Error fetching stats', error, {
+        endpoint: '/api/stats',
+      });
       throw error;
     }
   }
@@ -131,7 +153,9 @@ class ApiClient {
       const response = await this.client.get('/api/health');
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('TorBox API connection test failed:', error.message);
+      logger.error('TorBox API connection test failed', error, {
+        endpoint: '/api/health',
+      });
       return { success: false, error: error.message };
     }
   }

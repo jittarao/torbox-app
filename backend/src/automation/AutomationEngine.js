@@ -1,6 +1,7 @@
 import RuleEvaluator from './RuleEvaluator.js';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
+import logger from '../utils/logger.js';
 
 /**
  * Per-user Automation Engine
@@ -21,7 +22,7 @@ class AutomationEngine {
 
   async initialize() {
     try {
-      console.log(`[AutomationEngine ${this.authId}] Initializing...`);
+      logger.info('AutomationEngine initializing', { authId: this.authId });
       
       // Load existing rules from user database
       const rules = await this.getAutomationRules();
@@ -37,9 +38,13 @@ class AutomationEngine {
       await this.syncActiveRulesFlag();
       
       this.isInitialized = true;
-      console.log(`[AutomationEngine ${this.authId}] Initialized with ${rules.length} rules`);
+      logger.info('AutomationEngine initialized', {
+        authId: this.authId,
+        totalRules: rules.length,
+        enabledRules: rules.filter(r => r.enabled).length,
+      });
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to initialize:`, error);
+      logger.error('AutomationEngine failed to initialize', error, { authId: this.authId });
       throw error;
     }
   }
@@ -154,7 +159,10 @@ class AutomationEngine {
     try {
       this.masterDb.updateActiveRulesFlag(this.authId, hasActiveRules);
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to update active rules flag:`, error);
+      logger.error('Failed to update active rules flag in master DB', error, {
+        authId: this.authId,
+        hasActiveRules,
+      });
     }
   }
 
@@ -177,7 +185,9 @@ class AutomationEngine {
       const nextPollAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to reset next poll at:`, error);
+      logger.error('Failed to reset next poll timestamp', error, {
+        authId: this.authId,
+      });
     }
   }
 
@@ -195,16 +205,27 @@ class AutomationEngine {
       // Cron-based triggers can be added later if needed
       // This method is kept for compatibility
       
-      console.log(`[AutomationEngine ${this.authId}] Rule ${rule.name} ready`);
+      logger.debug('Rule ready', {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+      });
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to start rule ${rule.name}:`, error);
+      logger.error('Failed to start rule', error, {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+      });
     }
   }
 
   stopRule(ruleId) {
     if (this.runningJobs.has(ruleId)) {
       this.runningJobs.delete(ruleId);
-      console.log(`[AutomationEngine ${this.authId}] Stopped rule ${ruleId}`);
+      logger.debug('Rule stopped', {
+        authId: this.authId,
+        ruleId,
+      });
     }
   }
 
@@ -243,7 +264,12 @@ class AutomationEngine {
             continue;
           }
 
-          console.log(`[AutomationEngine ${this.authId}] Rule ${rule.name} matched ${matchingTorrents.length} torrents`);
+          logger.info('Rule matched torrents', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            matchedCount: matchingTorrents.length,
+          });
 
           // Execute actions
           let successCount = 0;
@@ -254,7 +280,13 @@ class AutomationEngine {
               await this.ruleEvaluator.executeAction(rule.action_config, torrent);
               successCount++;
             } catch (error) {
-              console.error(`[AutomationEngine ${this.authId}] Action failed for torrent ${torrent.id}:`, error);
+              logger.error('Action failed for torrent', error, {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                torrentId: torrent.id,
+                torrentName: torrent.name,
+              });
               errorCount++;
             }
           }
@@ -281,14 +313,20 @@ class AutomationEngine {
 
           executedCount++;
         } catch (error) {
-          console.error(`[AutomationEngine ${this.authId}] Rule evaluation failed for ${rule.name}:`, error);
+          logger.error('Rule evaluation failed', error, {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+          });
           await this.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
         }
       }
 
       return { evaluated: enabledRules.length, executed: executedCount };
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to evaluate rules:`, error);
+      logger.error('Failed to evaluate rules', error, {
+        authId: this.authId,
+      });
       return { evaluated: 0, executed: 0, error: error.message };
     }
   }
@@ -395,7 +433,7 @@ class AutomationEngine {
 
   async reloadRules() {
     try {
-      console.log(`[AutomationEngine ${this.authId}] Reloading rules...`);
+      logger.info('Reloading rules', { authId: this.authId });
       
       // Stop all existing jobs
       this.runningJobs.clear();
@@ -410,9 +448,13 @@ class AutomationEngine {
         }
       }
       
-      console.log(`[AutomationEngine ${this.authId}] Reloaded ${rules.length} rules`);
+      logger.info('Rules reloaded', {
+        authId: this.authId,
+        totalRules: rules.length,
+        enabledRules: rules.filter(r => r.enabled).length,
+      });
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to reload rules:`, error);
+      logger.error('Failed to reload rules', error, { authId: this.authId });
     }
   }
 
@@ -425,7 +467,7 @@ class AutomationEngine {
   }
 
   shutdown() {
-    console.log(`[AutomationEngine ${this.authId}] Shutting down...`);
+    logger.info('AutomationEngine shutting down', { authId: this.authId });
     this.runningJobs.clear();
   }
 }

@@ -1,4 +1,5 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
+import logger from '../utils/logger.js';
 
 /**
  * Rule Evaluator
@@ -464,7 +465,7 @@ class RuleEvaluator {
       `).get(id);
 
       if (existing) {
-        console.log(`Download ${id} already archived, skipping`);
+        logger.debug('Download already archived, skipping', { torrentId: id });
         return { success: true, message: 'Already archived' };
       }
 
@@ -476,7 +477,10 @@ class RuleEvaluator {
 
       return { success: true, message: 'Download archived successfully' };
     } catch (error) {
-      console.error(`Error archiving download ${torrent.id}:`, error);
+      logger.error('Error archiving download', error, {
+        torrentId: torrent.id,
+        torrentName: torrent.name,
+      });
       throw error;
     }
   }
