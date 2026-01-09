@@ -162,6 +162,13 @@
             "uploadStalledTime": "アップロード停止時間",
             "uploadStalledTimeDescription": "アップロード活動が停止してからの時間（分単位）"
         },
+        "conditionGroups": {
+            "downloading": "ダウンロード中",
+            "lifecycle": "ライフサイクル",
+            "metadata": "メタデータ",
+            "seeding": "シーディング中",
+            "stalled": "ブロック中"
+        },
         "delete": "ルールを削除",
         "details": "詳細",
         "enabledAt": "有効化日時",

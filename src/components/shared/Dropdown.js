@@ -26,8 +26,16 @@ export default function Dropdown({
   }, []);
 
   const selectedOption = options.find(
-    (option) =>
-      option.value === value || JSON.stringify(option.value) === value,
+    (option) => {
+      // Handle null/undefined comparison
+      if (option.value === null && (value === null || value === 'null')) return true;
+      if (option.value === null || value === null) return false;
+      // Handle number comparison
+      if (typeof option.value === 'number' && typeof value === 'string') {
+        return option.value === parseInt(value, 10);
+      }
+      return option.value === value || JSON.stringify(option.value) === String(value);
+    }
   );
 
   return (
@@ -58,7 +66,7 @@ export default function Dropdown({
 
       {isOpen && (
         <div
-          className="absolute z-10 w-full mt-1 bg-surface dark:bg-surface-dark 
+          className="absolute z-10 min-w-full mt-1 bg-surface dark:bg-surface-dark 
           border border-border dark:border-border-dark rounded shadow-lg"
         >
           {options.map((option) => (
@@ -72,12 +80,16 @@ export default function Dropdown({
                 onChange(newValue);
                 setIsOpen(false);
               }}
-              className={`block w-full text-left px-4 py-2 text-sm
+              className={`block w-full text-left px-4 py-2 text-sm whitespace-nowrap
                 hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark
                 transition-colors flex justify-between items-center
                 ${
-                  option.value === value ||
-                  JSON.stringify(option.value) === value
+                  (option.value === null && (value === null || value === 'null')) ||
+                  (option.value !== null && value !== null && (
+                    option.value === value ||
+                    (typeof option.value === 'number' && typeof value === 'string' && option.value === parseInt(value, 10)) ||
+                    JSON.stringify(option.value) === String(value)
+                  ))
                     ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
                     : 'text-primary-text dark:text-primary-text-dark'
                 }`}

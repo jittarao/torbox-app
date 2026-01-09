@@ -162,6 +162,13 @@
             "uploadStalledTime": "Temps d'arrêt de l'envoi",
             "uploadStalledTimeDescription": "Temps écoulé depuis l'arrêt de l'activité d'envoi (en minutes)"
         },
+        "conditionGroups": {
+            "downloading": "Téléchargement",
+            "lifecycle": "Cycle de vie",
+            "metadata": "Métadonnées",
+            "seeding": "Partage",
+            "stalled": "En attente"
+        },
         "delete": "Supprimer",
         "details": "Détails",
         "enabledAt": "activé le",

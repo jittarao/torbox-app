@@ -4,7 +4,7 @@ import {
   LOGIC_OPERATORS,
   ACTION_TYPES 
 } from '../constants';
-import ConditionInput from './ConditionInput';
+import ConditionFilterGroup from './ConditionFilterGroup';
 import Select from '@/components/shared/Select';
 
 export default function RuleForm({ 
@@ -12,6 +12,9 @@ export default function RuleForm({
   onRuleChange,
   onSubmit, 
   onCancel, 
+  onAddGroup,
+  onRemoveGroup,
+  onUpdateGroup,
   onAddCondition, 
   onRemoveCondition, 
   onUpdateCondition,
@@ -19,6 +22,9 @@ export default function RuleForm({
   t,
   commonT 
 }) {
+  // Rules always have groups structure (migrated in backend)
+  const ruleGroups = rule.groups || [];
+  const groupLogicOperator = rule.logicOperator || LOGIC_OPERATORS.AND;
   return (
     <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg">
       <div className="space-y-4">
@@ -71,18 +77,18 @@ export default function RuleForm({
             </label>
             <button
               type="button"
-              onClick={onAddCondition}
+              onClick={onAddGroup}
               className="text-xs text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80"
             >
-              + Add Condition
+              + Add Group
             </button>
           </div>
 
-          {/* Logic Operator (only show if multiple conditions) */}
-          {rule.conditions.length > 1 && (
+          {/* Logic Operator (only show if multiple groups) */}
+          {ruleGroups.length > 1 && (
             <div className="w-64 mb-3">
               <Select
-                value={rule.logicOperator}
+                value={groupLogicOperator}
                 onChange={(e) =>
                   onRuleChange({
                     ...rule,
@@ -90,24 +96,45 @@ export default function RuleForm({
                   })
                 }
               >
-                <option value={LOGIC_OPERATORS.AND}>ALL conditions (AND)</option>
-                <option value={LOGIC_OPERATORS.OR}>ANY condition (OR)</option>
+                <option value={LOGIC_OPERATORS.AND}>ALL groups (AND)</option>
+                <option value={LOGIC_OPERATORS.OR}>ANY group (OR)</option>
               </Select>
             </div>
           )}
 
-          {/* Multiple Conditions */}
-          {rule.conditions.map((condition, index) => (
-            <ConditionInput
-              key={index}
-              condition={condition}
-              index={index}
-              totalConditions={rule.conditions.length}
-              onUpdate={onUpdateCondition}
-              onRemove={onRemoveCondition}
-              t={t}
-            />
-          ))}
+          {/* Condition Groups */}
+          {ruleGroups.length === 0 ? (
+            <div className="py-4 text-center">
+              <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 italic">
+                No condition groups. Click "+ Add Group" to create one.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {ruleGroups.map((group, groupIndex) => (
+                <div key={groupIndex} className="relative">
+                  {groupIndex > 0 && (
+                    <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
+                      <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
+                        {groupLogicOperator}
+                      </div>
+                    </div>
+                  )}
+                  <ConditionFilterGroup
+                    group={group}
+                    groupIndex={groupIndex}
+                    totalGroups={ruleGroups.length}
+                    onUpdateGroup={onUpdateGroup}
+                    onRemoveGroup={onRemoveGroup}
+                    onAddCondition={onAddCondition}
+                    onUpdateCondition={onUpdateCondition}
+                    onRemoveCondition={onRemoveCondition}
+                    t={t}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Action */}

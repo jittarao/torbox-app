@@ -45,22 +45,89 @@ class AutomationEngine {
   }
 
   /**
+   * Migrate old flat conditions structure to new group structure
+   * @param {Object} rule - Rule to migrate
+   * @returns {Object} - Migrated rule
+   */
+  migrateRuleToGroups(rule) {
+    // If rule already has groups structure, return as is
+    if (rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0) {
+      return rule;
+    }
+    
+    // If conditions is an array (old format), convert to group structure
+    if (Array.isArray(rule.conditions)) {
+      return {
+        ...rule,
+        logicOperator: rule.logicOperator || 'and',
+        groups: [
+          {
+            logicOperator: 'and',
+            conditions: rule.conditions,
+          },
+        ],
+      };
+    }
+    
+    // If no conditions, return with empty group structure
+    return {
+      ...rule,
+      logicOperator: rule.logicOperator || 'and',
+      groups: [
+        {
+          logicOperator: 'and',
+          conditions: [],
+        },
+      ],
+    };
+  }
+
+  /**
    * Get automation rules from user database
+   * Always returns rules in the new group structure format
    */
   async getAutomationRules() {
     const sql = 'SELECT * FROM automation_rules ORDER BY created_at DESC';
     const rules = this.userDb.prepare(sql).all();
-    return rules.map(rule => ({
-      ...rule,
-      enabled: rule.enabled === 1,
-      trigger_config: JSON.parse(rule.trigger_config),
-      conditions: JSON.parse(rule.conditions),
-      action_config: JSON.parse(rule.action_config),
-      metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
-      cooldown_minutes: rule.cooldown_minutes || 0,
-      last_executed_at: rule.last_executed_at,
-      execution_count: rule.execution_count || 0
-    }));
+    return rules.map(rule => {
+      const parsedConditions = JSON.parse(rule.conditions);
+      
+      // Check if conditions is actually groups structure
+      const hasGroups = parsedConditions && typeof parsedConditions === 'object' && 
+                       Array.isArray(parsedConditions.groups) && parsedConditions.groups.length > 0;
+      
+      const ruleObj = {
+        id: rule.id,
+        name: rule.name,
+        enabled: rule.enabled === 1,
+        trigger: JSON.parse(rule.trigger_config),
+        action: JSON.parse(rule.action_config),
+        metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
+        cooldown_minutes: rule.cooldown_minutes || 0,
+        last_executed_at: rule.last_executed_at,
+        execution_count: rule.execution_count || 0,
+        created_at: rule.created_at,
+        updated_at: rule.updated_at,
+      };
+      
+      // If stored as groups structure, extract it
+      if (hasGroups) {
+        ruleObj.groups = parsedConditions.groups;
+        ruleObj.logicOperator = parsedConditions.logicOperator || 'and';
+      } else {
+        // Old format - conditions is an array, migrate to groups
+        ruleObj.logicOperator = 'and';
+        ruleObj.groups = [
+          {
+            logicOperator: 'and',
+            conditions: Array.isArray(parsedConditions) ? parsedConditions : [],
+          },
+        ];
+      }
+      
+      // Always return in new group structure format
+      return this.migrateRuleToGroups(ruleObj);
+    });
   }
 
   /**
@@ -192,11 +259,12 @@ class AutomationEngine {
             }
           }
 
-          // Update rule execution status
+          // Update rule execution status and set 5-minute cooldown
           this.userDb.prepare(`
             UPDATE automation_rules 
             SET last_executed_at = CURRENT_TIMESTAMP,
                 execution_count = execution_count + 1,
+                cooldown_minutes = 5,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `).run(rule.id);
@@ -245,18 +313,30 @@ class AutomationEngine {
     
     // Insert new rules
     for (const rule of rules) {
+      // Migrate rule to group structure if needed
+      const migratedRule = this.migrateRuleToGroups(rule);
+      
+      // Store groups structure in conditions field
+      // Format: { logicOperator: 'and'|'or', groups: [...] }
+      const conditionsToStore = migratedRule.groups && Array.isArray(migratedRule.groups)
+        ? {
+            logicOperator: migratedRule.logicOperator || 'and',
+            groups: migratedRule.groups,
+          }
+        : migratedRule.conditions || [];
+      
       const sql = `
         INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
       this.userDb.prepare(sql).run(
-        rule.name,
-        rule.enabled ? 1 : 0,
-        JSON.stringify(rule.trigger || rule.trigger_config),
-        JSON.stringify(rule.conditions),
-        JSON.stringify(rule.action || rule.action_config),
-        JSON.stringify(rule.metadata || {}),
-        rule.cooldown_minutes || 0
+        migratedRule.name,
+        migratedRule.enabled ? 1 : 0,
+        JSON.stringify(migratedRule.trigger || migratedRule.trigger_config),
+        JSON.stringify(conditionsToStore),
+        JSON.stringify(migratedRule.action || migratedRule.action_config),
+        JSON.stringify(migratedRule.metadata || {}),
+        migratedRule.cooldown_minutes || 0
       );
     }
 
