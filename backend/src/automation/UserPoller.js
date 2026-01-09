@@ -3,6 +3,7 @@ import StateDiffEngine from './StateDiffEngine.js';
 import DerivedFieldsEngine from './DerivedFieldsEngine.js';
 import SpeedAggregator from './SpeedAggregator.js';
 import { decrypt } from '../utils/crypto.js';
+import logger from '../utils/logger.js';
 
 /**
  * Per-user poller
@@ -93,7 +94,7 @@ class UserPoller {
    */
   async poll() {
     if (this.isPolling) {
-      console.log(`[UserPoller ${this.authId}] Skipping poll - previous poll still running`);
+      logger.warn('Skipping poll - previous poll still running', { authId: this.authId });
       return;
     }
 
@@ -110,7 +111,7 @@ class UserPoller {
     const startTime = new Date();
 
     try {
-      console.log(`[UserPoller ${this.authId}] Starting poll...`);
+      logger.debug('Starting poll', { authId: this.authId });
       
       // Fetch torrents from API
       const torrents = await this.apiClient.getTorrents(true); // bypass cache
@@ -151,10 +152,17 @@ class UserPoller {
       this.lastPollError = null;
       
       const duration = (new Date() - startTime) / 1000;
-      console.log(`[UserPoller ${this.authId}] Poll completed in ${duration.toFixed(2)}s - ` +
-        `New: ${changes.new.length}, Updated: ${changes.updated.length}, Removed: ${changes.removed.length}, ` +
-        `Rules: ${ruleResults.evaluated} evaluated, ${ruleResults.executed} executed, ` +
-        `Non-terminal: ${nonTerminalCount}, Next poll: ${nextPollAt.toISOString()}`);
+      logger.info('Poll completed', {
+        authId: this.authId,
+        duration: `${duration.toFixed(2)}s`,
+        new: changes.new.length,
+        updated: changes.updated.length,
+        removed: changes.removed.length,
+        rulesEvaluated: ruleResults.evaluated,
+        rulesExecuted: ruleResults.executed,
+        nonTerminalCount,
+        nextPollAt: nextPollAt.toISOString(),
+      });
       
       return {
         success: true,
@@ -166,7 +174,7 @@ class UserPoller {
       };
     } catch (error) {
       this.lastPollError = error.message;
-      console.error(`[UserPoller ${this.authId}] Poll failed:`, error);
+      logger.error('Poll failed', error, { authId: this.authId });
       
       return {
         success: false,
