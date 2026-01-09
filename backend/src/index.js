@@ -504,7 +504,7 @@ class TorBoxBackend {
       // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(
         this.userDatabaseManager, 
-        this.masterDatabase.db,
+        this.masterDatabase,
         this.automationEngines
       );
       await this.pollingScheduler.start();
