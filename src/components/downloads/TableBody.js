@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useDeferredValue } from 'react';
+import { useState, useRef, useMemo, useDeferredValue, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
@@ -44,14 +44,23 @@ export default function TableBody({
   );
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
+  const scrollElementRef = useRef(null);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
   const deferredExpandedItems = useDeferredValue(expandedItems);
 
+  // Create a stable representation of expanded items for memoization
+  // Convert Set to sorted array for stable comparison
+  const expandedItemsArray = useMemo(() => {
+    return Array.from(deferredExpandedItems).sort();
+  }, [deferredExpandedItems]);
+
   // Create flattened array of rows (item rows + file rows when expanded)
   const flattenedRows = useMemo(() => {
     const rows = [];
+    const expandedSet = new Set(expandedItemsArray);
+    
     deferredItems.forEach((item, itemIndex) => {
       // Add item row
       rows.push({
@@ -62,7 +71,7 @@ export default function TableBody({
       });
 
       // Add file rows if expanded
-      if (deferredExpandedItems.has(item.id) && item.files && item.files.length > 0) {
+      if (expandedSet.has(item.id) && item.files && item.files.length > 0) {
         item.files.forEach((file, fileIndex) => {
           rows.push({
             type: 'file',
@@ -76,36 +85,50 @@ export default function TableBody({
       }
     });
     return rows;
-  }, [deferredItems, deferredExpandedItems]);
+  }, [deferredItems, expandedItemsArray]);
 
   // Find scrollable parent container (the div with id="items-table")
-  const getScrollElement = () => {
+  // Cache the element in a ref to avoid repeated DOM queries during scroll
+  const getScrollElement = useCallback(() => {
+    if (scrollElementRef.current) {
+      return scrollElementRef.current;
+    }
     if (typeof document !== 'undefined') {
-      return document.getElementById('items-table');
+      const element = document.getElementById('items-table');
+      if (element) {
+        scrollElementRef.current = element;
+      }
+      return element;
     }
     return null;
-  };
+  }, []);
+
+  // Memoize measureElement to prevent unnecessary re-renders
+  const measureElement = useCallback((element) => {
+    // Measure the actual rendered height of the row
+    // Add a small buffer for borders/spacing
+    return element.getBoundingClientRect().height + 1;
+  }, []);
+
+  // Memoize estimateSize to prevent recalculation on every render
+  const estimateSize = useCallback((index) => {
+    const row = flattenedRows[index];
+    // Height estimates for mobile vs desktop
+    // Mobile rows are much taller due to vertical action layout and extra info
+    if (isMobile) {
+      return row?.type === 'item' ? 170 : 60;
+    }
+    // Desktop estimates
+    return row?.type === 'item' ? 70 : 50;
+  }, [flattenedRows, isMobile]);
 
   // Virtualizer setup
   const virtualizer = useVirtualizer({
     count: flattenedRows.length,
     getScrollElement,
-    estimateSize: (index) => {
-      const row = flattenedRows[index];
-      // Height estimates for mobile vs desktop
-      // Mobile rows are much taller due to vertical action layout and extra info
-      if (isMobile) {
-        return row.type === 'item' ? 170 : 60;
-      }
-      // Desktop estimates
-      return row.type === 'item' ? 70 : 50;
-    },
-    measureElement: (element) => {
-      // Measure the actual rendered height of the row
-      // Add a small buffer for borders/spacing
-      return element.getBoundingClientRect().height + 1;
-    },
-    overscan: 5,
+    estimateSize,
+    measureElement,
+    overscan: 3, // Reduced from 5 to improve scroll performance
   });
 
   const handleItemSelection = (
