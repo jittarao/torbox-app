@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Icons from '@/components/icons';
 import { formatSize } from './utils/formatters';
 import Spinner from '@/components/shared/Spinner';
@@ -10,7 +11,7 @@ const ACTIONS_COLUMN_WIDTH = 210;
 const CHECKBOX_COLUMN_WIDTH = 60;
 const EXTRA_COLUMN_PADDING = 10;
 
-export default function FileRow({
+function FileRow({
   item,
   selectedItems,
   handleFileSelection,
@@ -180,3 +181,5 @@ export default function FileRow({
     </>
   );
 }
+
+export default memo(FileRow);

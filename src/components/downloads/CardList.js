@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useDeferredValue } from 'react';
+import { useRef, useState, useMemo, useDeferredValue, useCallback } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloads } from '../shared/hooks/useDownloads';
@@ -37,6 +37,7 @@ export default function CardList({
     setDownloadHistory,
   );
   const isMobile = useIsMobile();
+  const scrollElementRef = useRef(null);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -50,7 +51,11 @@ export default function CardList({
   }, [deferredItems]);
 
   // Find scrollable parent container
-  const getScrollElement = () => {
+  // Cache the element in a ref to avoid repeated DOM queries during scroll
+  const getScrollElement = useCallback(() => {
+    if (scrollElementRef.current) {
+      return scrollElementRef.current;
+    }
     if (parentRef.current) {
       // Find the nearest scrollable parent with a constrained height
       let parent = parentRef.current.parentElement;
@@ -63,6 +68,7 @@ export default function CardList({
         
         // Check if parent has overflow and a height constraint (required for virtualization)
         if (hasOverflow && (hasMaxHeight || hasHeight || isScrollable)) {
+          scrollElementRef.current = parent;
           return parent;
         }
         parent = parent.parentElement;
@@ -71,24 +77,30 @@ export default function CardList({
       return null;
     }
     return null;
-  };
+  }, []);
+
+  // Memoize measureElement to prevent unnecessary re-renders
+  const measureElement = useCallback((element) => {
+    // Measure the actual rendered height of the element
+    // Add margin for spacing between cards
+    return element.getBoundingClientRect().height + 8;
+  }, []);
+
+  // Memoize estimateSize to prevent recalculation on every render
+  const estimateSize = useCallback(() => {
+    // Height estimates for mobile vs desktop
+    // Mobile cards are taller due to vertical layouts
+    // This will be refined by measureElement, but a good estimate helps initial render
+    return isMobile ? 170 : 82;
+  }, [isMobile]);
 
   // Virtualizer setup - use dynamic measurements for variable heights
   const virtualizer = useVirtualizer({
     count: flattenedRows.length,
     getScrollElement,
-    estimateSize: () => {
-      // Height estimates for mobile vs desktop
-      // Mobile cards are taller due to vertical layouts
-      // This will be refined by measureElement, but a good estimate helps initial render
-      return isMobile ? 170 : 82;
-    },
-    measureElement: (element) => {
-      // Measure the actual rendered height of the element
-      // Add margin for spacing between cards
-      return element.getBoundingClientRect().height + 8;
-    },
-    overscan: 5,
+    estimateSize,
+    measureElement,
+    overscan: 3, // Reduced from 5 to improve scroll performance
   });
 
   const handleItemSelection = (
