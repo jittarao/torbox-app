@@ -221,20 +221,7 @@ class TorBoxBackend {
         }
 
         const rules = await engine.getAutomationRules();
-        const transformedRules = rules.map(rule => ({
-          id: rule.id,
-          name: rule.name,
-          enabled: rule.enabled,
-          trigger: rule.trigger_config,
-          conditions: rule.conditions,
-          logicOperator: 'and',
-          action: rule.action_config,
-          metadata: rule.metadata,
-          cooldown_minutes: rule.cooldown_minutes,
-          created_at: rule.created_at,
-          updated_at: rule.updated_at
-        }));
-        res.json({ success: true, rules: transformedRules });
+        res.json({ success: true, rules });
       } catch (error) {
         console.error('Error fetching automation rules:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -466,6 +453,240 @@ class TorBoxBackend {
         res.json({ success: true, message: 'Archived download deleted successfully' });
       } catch (error) {
         console.error('Error deleting archived download:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // Custom views endpoints (per-user)
+    this.app.get('/api/custom-views', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        const views = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          ORDER BY created_at DESC
+        `).all();
+
+        // Parse JSON fields for all views
+        const parsedViews = views.map(view => {
+          const parsed = { ...view };
+          if (parsed.filters) {
+            parsed.filters = JSON.parse(parsed.filters);
+          }
+          if (parsed.visible_columns) {
+            parsed.visible_columns = JSON.parse(parsed.visible_columns);
+          }
+          return parsed;
+        });
+
+        res.json({ success: true, views: parsedViews });
+      } catch (error) {
+        console.error('Error fetching custom views:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.post('/api/custom-views', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
+
+        if (!name || !filters) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'name and filters are required' 
+          });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        
+        const result = userDb.db.prepare(`
+          INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          name,
+          JSON.stringify(filters),
+          sort_field || null,
+          sort_direction || null,
+          visible_columns ? JSON.stringify(visible_columns) : null,
+          asset_type || null
+        );
+
+        const view = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          WHERE id = ?
+        `).get(result.lastInsertRowid);
+
+        // Parse JSON fields
+        view.filters = JSON.parse(view.filters);
+        if (view.visible_columns) {
+          view.visible_columns = JSON.parse(view.visible_columns);
+        }
+
+        res.json({ success: true, view });
+      } catch (error) {
+        console.error('Error creating custom view:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.get('/api/custom-views/:id', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const viewId = parseInt(req.params.id);
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        const view = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          WHERE id = ?
+        `).get(viewId);
+
+        if (!view) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Custom view not found' 
+          });
+        }
+
+        // Parse JSON fields
+        view.filters = JSON.parse(view.filters);
+        if (view.visible_columns) {
+          view.visible_columns = JSON.parse(view.visible_columns);
+        }
+
+        res.json({ success: true, view });
+      } catch (error) {
+        console.error('Error fetching custom view:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.put('/api/custom-views/:id', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'] || req.query.authId;
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const viewId = parseInt(req.params.id);
+        const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db.prepare(`
+          SELECT id FROM custom_views WHERE id = ?
+        `).get(viewId);
+
+        if (!existing) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Custom view not found' 
+          });
+        }
+
+        // Build update query dynamically
+        const updates = [];
+        const values = [];
+
+        if (name !== undefined) {
+          updates.push('name = ?');
+          values.push(name);
+        }
+        if (filters !== undefined) {
+          updates.push('filters = ?');
+          values.push(JSON.stringify(filters));
+        }
+        if (sort_field !== undefined) {
+          updates.push('sort_field = ?');
+          values.push(sort_field || null);
+        }
+        if (sort_direction !== undefined) {
+          updates.push('sort_direction = ?');
+          values.push(sort_direction || null);
+        }
+        if (visible_columns !== undefined) {
+          updates.push('visible_columns = ?');
+          values.push(visible_columns ? JSON.stringify(visible_columns) : null);
+        }
+        if (asset_type !== undefined) {
+          updates.push('asset_type = ?');
+          values.push(asset_type || null);
+        }
+
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(viewId);
+
+        userDb.db.prepare(`
+          UPDATE custom_views
+          SET ${updates.join(', ')}
+          WHERE id = ?
+        `).run(...values);
+
+        const view = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          WHERE id = ?
+        `).get(viewId);
+
+        // Parse JSON fields
+        view.filters = JSON.parse(view.filters);
+        if (view.visible_columns) {
+          view.visible_columns = JSON.parse(view.visible_columns);
+        }
+
+        res.json({ success: true, view });
+      } catch (error) {
+        console.error('Error updating custom view:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.delete('/api/custom-views/:id', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const viewId = parseInt(req.params.id);
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db.prepare(`
+          SELECT id FROM custom_views WHERE id = ?
+        `).get(viewId);
+
+        if (!existing) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Custom view not found' 
+          });
+        }
+
+        // Delete
+        userDb.db.prepare(`
+          DELETE FROM custom_views WHERE id = ?
+        `).run(viewId);
+
+        res.json({ success: true, message: 'Custom view deleted successfully' });
+      } catch (error) {
+        console.error('Error deleting custom view:', error);
         res.status(500).json({ success: false, error: error.message });
       }
     });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAutomationRulesStorage, useBackendMode } from '@/utils/backendDetector';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -16,7 +16,7 @@ import RuleForm from './components/RuleForm';
 import PresetRulesSection from './components/PresetRulesSection';
 import RuleLogsModal from './components/RuleLogsModal';
 
-// Default new rule structure
+// Default new rule structure (using groups)
 const getDefaultNewRule = () => ({
   name: '',
   enabled: true,
@@ -24,14 +24,19 @@ const getDefaultNewRule = () => ({
     type: TRIGGER_TYPES.INTERVAL,
     value: 30,
   },
-  conditions: [
+  logicOperator: LOGIC_OPERATORS.AND,
+  groups: [
     {
-      type: CONDITION_TYPES.RATIO,
-      operator: COMPARISON_OPERATORS.GT,
-      value: 1,
+      logicOperator: LOGIC_OPERATORS.AND,
+      conditions: [
+        {
+          type: CONDITION_TYPES.RATIO,
+          operator: COMPARISON_OPERATORS.GT,
+          value: 1,
+        },
+      ],
     },
   ],
-  logicOperator: LOGIC_OPERATORS.AND,
   action: {
     type: ACTION_TYPES.STOP_SEEDING,
   },
@@ -118,6 +123,7 @@ export default function AutomationRules() {
   };
 
   const handleEditRule = (rule) => {
+    // Rules from backend are always in group structure
     setNewRule(rule);
     setEditingRuleId(rule.id);
     setIsAddingRule(true);
@@ -252,38 +258,112 @@ export default function AutomationRules() {
     }
   };
 
-  // Helper functions for managing multiple conditions
-  const addCondition = () => {
-    setNewRule({
-      ...newRule,
-      conditions: [
-        ...newRule.conditions,
-        {
-          type: CONDITION_TYPES.RATIO,
-          operator: COMPARISON_OPERATORS.GT,
-          value: 1,
-        },
-      ],
+  // Helper functions for managing groups and conditions
+  const handleAddGroup = () => {
+    setNewRule((prevRule) => {
+      return {
+        ...prevRule,
+        groups: [
+          ...(prevRule.groups || []),
+          {
+            logicOperator: LOGIC_OPERATORS.AND,
+            conditions: [],
+          },
+        ],
+      };
     });
   };
 
-  const removeCondition = (index) => {
-    if (newRule.conditions.length > 1) {
-      setNewRule({
-        ...newRule,
-        conditions: newRule.conditions.filter((_, i) => i !== index),
-      });
-    }
+  const handleRemoveGroup = (groupIndex) => {
+    setNewRule((prevRule) => {
+      const newGroups = (prevRule.groups || []).filter((_, i) => i !== groupIndex);
+      if (newGroups.length === 0) {
+        // Ensure at least one group exists
+        return {
+          ...prevRule,
+          groups: [
+            {
+              logicOperator: LOGIC_OPERATORS.AND,
+              conditions: [],
+            },
+          ],
+        };
+      }
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
   };
 
-  const updateCondition = (index, field, value) => {
-    setNewRule((prevRule) => ({
-      ...prevRule,
-      conditions: prevRule.conditions.map((condition, i) =>
-        i === index ? { ...condition, [field]: value } : condition,
-      ),
-    }));
+  const handleUpdateGroup = (groupIndex, field, value) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        [field]: value,
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
   };
+
+  const handleAddCondition = (groupIndex) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        conditions: [
+          ...(newGroups[groupIndex].conditions || []),
+          {
+            type: CONDITION_TYPES.RATIO,
+            operator: COMPARISON_OPERATORS.GT,
+            value: 1,
+          },
+        ],
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleRemoveCondition = (groupIndex, conditionIndex) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        conditions: (newGroups[groupIndex].conditions || []).filter((_, i) => i !== conditionIndex),
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleUpdateCondition = (groupIndex, conditionIndex, field, value) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      const newConditions = [...(newGroups[groupIndex].conditions || [])];
+      newConditions[conditionIndex] = {
+        ...newConditions[conditionIndex],
+        [field]: value,
+      };
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        conditions: newConditions,
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
 
   const handleCancelForm = () => {
     setIsAddingRule(false);
@@ -386,9 +466,12 @@ export default function AutomationRules() {
               onRuleChange={setNewRule}
               onSubmit={handleAddRule}
               onCancel={handleCancelForm}
-              onAddCondition={addCondition}
-              onRemoveCondition={removeCondition}
-              onUpdateCondition={updateCondition}
+              onAddGroup={handleAddGroup}
+              onRemoveGroup={handleRemoveGroup}
+              onUpdateGroup={handleUpdateGroup}
+              onAddCondition={handleAddCondition}
+              onRemoveCondition={handleRemoveCondition}
+              onUpdateCondition={handleUpdateCondition}
               editingRuleId={editingRuleId}
               t={t}
               commonT={commonT}

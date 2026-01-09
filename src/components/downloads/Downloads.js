@@ -20,6 +20,8 @@ import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import AutomationRules from './AutomationRules';
+import FiltersSection from './FiltersSection';
+import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { formatSize } from './utils/formatters';
 
 export default function Downloads({ apiKey }) {
@@ -93,10 +95,31 @@ export default function Downloads({ apiKey }) {
   );
 
   const { activeColumns, handleColumnChange } = useColumnManager(activeType);
-  const { sortField, sortDirection, handleSort, sortTorrents } = useSort();
+  const { sortField, sortDirection, handleSort, setSort, sortTorrents } = useSort();
 
+  const [columnFilters, setColumnFilters] = useState({
+    logicOperator: 'and',
+    groups: [
+      {
+        logicOperator: 'and',
+        filters: [],
+      },
+    ],
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    logicOperator: 'and',
+    groups: [
+      {
+        logicOperator: 'and',
+        filters: [],
+      },
+    ],
+  });
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } =
-    useFilter(items);
+    useFilter(items, '', 'all', appliedFilters);
+
+  // Custom views
+  const { views, activeView, applyView, clearView } = useCustomViews(apiKey);
 
   const sortedItems = sortTorrents(filteredItems);
 
@@ -289,11 +312,113 @@ export default function Downloads({ apiKey }) {
             setToast={setToast}
           />
 
+          {/* Filters Section */}
+          <FiltersSection
+            apiKey={apiKey}
+            activeType={activeType}
+            columnFilters={columnFilters}
+            setColumnFilters={setColumnFilters}
+            activeView={activeView}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            activeColumns={activeColumns}
+            onApplyView={(view) => {
+              applyView(view);
+              
+              // Reset status filter to 'all' when applying a view
+              setStatusFilter('all');
+              
+              // Parse filters if they're stored as JSON string (defensive)
+              let filters = view.filters;
+              if (typeof filters === 'string') {
+                try {
+                  filters = JSON.parse(filters);
+                } catch (e) {
+                  console.error('Error parsing view filters:', e);
+                  filters = null;
+                }
+              }
+              
+              // Normalize filters structure
+              let normalizedFilters = {
+                logicOperator: 'and',
+                groups: [
+                  {
+                    logicOperator: 'and',
+                    filters: [],
+                  },
+                ],
+              };
+              
+              if (filters) {
+                if (filters.groups && Array.isArray(filters.groups)) {
+                  // New group structure - deep copy to ensure React detects change
+                  normalizedFilters = JSON.parse(JSON.stringify(filters));
+                } else if (Array.isArray(filters)) {
+                  // Old flat structure - convert to groups
+                  normalizedFilters = {
+                    logicOperator: 'and',
+                    groups: [
+                      {
+                        logicOperator: 'and',
+                        filters: filters,
+                      },
+                    ],
+                  };
+                }
+              }
+              
+              // Apply filters - set both draft and applied
+              setColumnFilters(normalizedFilters);
+              setAppliedFilters(normalizedFilters);
+              
+              // Apply sort if specified
+              if (view.sort_field) {
+                setSort(view.sort_field, view.sort_direction || 'desc');
+              }
+              
+              // Apply visible columns if specified
+              let visibleColumns = view.visible_columns;
+              if (visibleColumns) {
+                // Parse visible_columns if it's a JSON string (defensive)
+                if (typeof visibleColumns === 'string') {
+                  try {
+                    visibleColumns = JSON.parse(visibleColumns);
+                  } catch (e) {
+                    console.error('Error parsing visible columns:', e);
+                    visibleColumns = null;
+                  }
+                }
+                if (Array.isArray(visibleColumns) && visibleColumns.length > 0) {
+                  handleColumnChange(visibleColumns);
+                }
+              }
+            }}
+            onClearView={() => {
+              clearView();
+              const emptyFilters = {
+                logicOperator: 'and',
+                groups: [
+                  {
+                    logicOperator: 'and',
+                    filters: [],
+                  },
+                ],
+              };
+              setColumnFilters(emptyFilters);
+              setAppliedFilters(emptyFilters);
+            }}
+            onFiltersChange={(filters) => {
+              // Apply the filters to the table
+              setAppliedFilters(filters);
+            }}
+          />
+
           {/* Divider */}
           <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
           <div
-            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'overflow-y-auto'} ${
+            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
               downloadLinks.length > 0 ? 'mb-12' : ''
             } ${!isFullscreen && isMobile && viewMode === 'card' ? 'max-h-[calc(100vh-300px)]' : !isFullscreen && viewMode === 'card' ? 'max-h-[calc(100vh-250px)]' : ''}`}
           >
@@ -301,6 +426,7 @@ export default function Downloads({ apiKey }) {
             <div className="sticky top-0 z-20">
               <ActionBar
                 unfilteredItems={items}
+                filteredItems={filteredItems}
                 selectedItems={selectedItems}
                 setSelectedItems={setSelectedItems}
                 hasSelectedFiles={hasSelectedFiles}
@@ -330,6 +456,7 @@ export default function Downloads({ apiKey }) {
                 sortField={sortField}
                 sortDir={sortDirection}
                 handleSort={handleSort}
+                setSort={setSort}
                 getTotalDownloadSize={getTotalDownloadSize}
                 isDownloadPanelOpen={isDownloadPanelOpen}
                 setIsDownloadPanelOpen={setIsDownloadPanelOpen}
@@ -338,6 +465,8 @@ export default function Downloads({ apiKey }) {
                 expandAllFiles={expandAllFiles}
                 collapseAllFiles={collapseAllFiles}
                 expandedItems={expandedItems}
+                columnFilters={columnFilters}
+                setColumnFilters={setColumnFilters}
               />
             </div>
 

@@ -1,4 +1,11 @@
-import { CONDITION_TYPES, LOGIC_OPERATORS } from './constants';
+import { 
+  CONDITION_TYPES, 
+  LOGIC_OPERATORS,
+  COMPARISON_OPERATORS,
+  MULTI_SELECT_OPERATORS,
+  BOOLEAN_OPERATORS,
+  STRING_OPERATORS,
+} from './constants';
 
 // Helper to check if a condition type is time-based (relative duration)
 export const isTimeBasedCondition = (conditionType) => {
@@ -224,5 +231,162 @@ export const getConditionUnit = (conditionType) => {
     return 'hours until expiration';
   }
   return '';
+};
+
+// Map condition types to column keys where applicable (for reference only)
+export const CONDITION_TO_COLUMN_MAP = {
+  [CONDITION_TYPES.PROGRESS]: 'progress',
+  [CONDITION_TYPES.RATIO]: 'ratio',
+  [CONDITION_TYPES.SEEDS]: 'seeds',
+  [CONDITION_TYPES.PEERS]: 'peers',
+  [CONDITION_TYPES.FILE_SIZE]: 'size',
+  [CONDITION_TYPES.FILE_COUNT]: 'file_count',
+  [CONDITION_TYPES.NAME]: 'name',
+  [CONDITION_TYPES.TRACKER]: 'tracker',
+  [CONDITION_TYPES.PRIVATE]: 'private',
+  [CONDITION_TYPES.STATUS]: 'download_state',
+  [CONDITION_TYPES.DOWNLOAD_SPEED]: 'download_speed',
+  [CONDITION_TYPES.UPLOAD_SPEED]: 'upload_speed',
+  [CONDITION_TYPES.TOTAL_UPLOADED]: 'total_uploaded',
+  [CONDITION_TYPES.TOTAL_DOWNLOADED]: 'total_downloaded',
+  [CONDITION_TYPES.EXPIRES_AT]: 'expires_at',
+};
+
+// Get column key for a condition type (if applicable)
+export const getColumnKeyForCondition = (conditionType) => {
+  return CONDITION_TO_COLUMN_MAP[conditionType] || null;
+};
+
+// Get condition type filter category (number, text, boolean, status, time, timestamp)
+export const getConditionTypeCategory = (conditionType) => {
+  if (isBooleanCondition(conditionType)) {
+    return 'boolean';
+  }
+  if (isStringCondition(conditionType)) {
+    return 'text';
+  }
+  if (conditionType === CONDITION_TYPES.STATUS) {
+    return 'status';
+  }
+  if (isTimeBasedCondition(conditionType)) {
+    return 'time';
+  }
+  if (isTimestampBasedCondition(conditionType)) {
+    return 'timestamp';
+  }
+  // Default to number for numeric conditions
+  return 'number';
+};
+
+// Get available operators for a condition type
+export const getOperatorsForConditionType = (conditionType) => {
+  if (conditionType === CONDITION_TYPES.STATUS) {
+    return Object.values(MULTI_SELECT_OPERATORS);
+  }
+  if (isBooleanCondition(conditionType)) {
+    return Object.values(BOOLEAN_OPERATORS);
+  }
+  if (isStringCondition(conditionType)) {
+    return Object.values(STRING_OPERATORS);
+  }
+  // All other conditions use comparison operators
+  return Object.values(COMPARISON_OPERATORS);
+};
+
+// Get default operator for a condition type
+export const getDefaultOperatorForConditionType = (conditionType) => {
+  if (conditionType === CONDITION_TYPES.STATUS) {
+    return MULTI_SELECT_OPERATORS.IS_ANY_OF;
+  }
+  if (isBooleanCondition(conditionType)) {
+    return BOOLEAN_OPERATORS.IS_TRUE;
+  }
+  if (isStringCondition(conditionType)) {
+    return STRING_OPERATORS.CONTAINS;
+  }
+  // Default to GT for numeric/time conditions
+  return COMPARISON_OPERATORS.GT;
+};
+
+// Get default value for a condition type
+export const getDefaultValueForConditionType = (conditionType) => {
+  if (conditionType === CONDITION_TYPES.STATUS) {
+    return [];
+  }
+  if (isBooleanCondition(conditionType)) {
+    return true;
+  }
+  if (isStringCondition(conditionType)) {
+    return '';
+  }
+  // Default to 0 for numeric/time conditions
+  return 0;
+};
+
+// Get condition type options for dropdown (similar to getFilterableColumns)
+// Accepts translation function `t` as parameter
+export const getConditionTypeOptions = (t) => {
+  return [
+    {
+      label: t('conditionGroups.lifecycle'),
+      options: [
+        { value: CONDITION_TYPES.STATUS, label: t('conditions.status'), description: t('conditions.statusDescription') },
+        { value: CONDITION_TYPES.IS_ACTIVE, label: t('conditions.isActive'), description: t('conditions.isActiveDescription') },
+        { value: CONDITION_TYPES.EXPIRES_AT, label: t('conditions.expiresAt'), description: t('conditions.expiresAtDescription') },
+      ],
+    },
+    {
+      label: t('conditionGroups.seeding'),
+      options: [
+        { value: CONDITION_TYPES.RATIO, label: t('conditions.seedingRatio'), description: t('conditions.seedingRatioDescription') },
+        { value: CONDITION_TYPES.SEEDING_ENABLED, label: t('conditions.seedingEnabled'), description: t('conditions.seedingEnabledDescription') },
+        { value: CONDITION_TYPES.SEEDING_TIME, label: t('conditions.seedingTime'), description: t('conditions.seedingTimeDescription') },
+        { value: CONDITION_TYPES.SEEDS, label: t('conditions.seeds'), description: t('conditions.seedsDescription') },
+        { value: CONDITION_TYPES.PEERS, label: t('conditions.peers'), description: t('conditions.peersDescription') },
+        { value: CONDITION_TYPES.LONG_TERM_SEEDING, label: t('conditions.longTermSeeding'), description: t('conditions.longTermSeedingDescription') },
+        { value: CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT, label: t('conditions.lastUploadActivity'), description: t('conditions.lastUploadActivityDescription') },
+        { value: CONDITION_TYPES.TOTAL_UPLOADED, label: t('conditions.totalUploaded'), description: t('conditions.totalUploadedDescription') },
+        { value: CONDITION_TYPES.UPLOAD_SPEED, label: t('conditions.uploadSpeed'), description: t('conditions.uploadSpeedDescription') },
+        { value: CONDITION_TYPES.AVG_UPLOAD_SPEED, label: t('conditions.avgUploadSpeed'), description: t('conditions.avgUploadSpeedDescription') },
+      ],
+    },
+    {
+      label: t('conditionGroups.downloading'),
+      options: [
+        { value: CONDITION_TYPES.ETA, label: t('conditions.eta'), description: t('conditions.etaDescription') },
+        { value: CONDITION_TYPES.PROGRESS, label: t('conditions.progress'), description: t('conditions.progressDescription') },
+        { value: CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT, label: t('conditions.lastDownloadActivity'), description: t('conditions.lastDownloadActivityDescription') },
+        { value: CONDITION_TYPES.DOWNLOAD_SPEED, label: t('conditions.downloadSpeed'), description: t('conditions.downloadSpeedDescription') },
+        { value: CONDITION_TYPES.AVG_DOWNLOAD_SPEED, label: t('conditions.avgDownloadSpeed'), description: t('conditions.avgDownloadSpeedDescription') },
+      ],
+    },
+    {
+      label: t('conditionGroups.stalled'),
+      options: [
+        { value: CONDITION_TYPES.DOWNLOAD_STALLED_TIME, label: t('conditions.downloadStalledTime'), description: t('conditions.downloadStalledTimeDescription') },
+        { value: CONDITION_TYPES.UPLOAD_STALLED_TIME, label: t('conditions.uploadStalledTime'), description: t('conditions.uploadStalledTimeDescription') },
+      ],
+    },
+    {
+      label: t('conditionGroups.metadata'),
+      options: [
+        { value: CONDITION_TYPES.AGE, label: t('conditions.age'), description: t('conditions.ageDescription') },
+        { value: CONDITION_TYPES.TRACKER, label: t('conditions.tracker'), description: t('conditions.trackerDescription') },
+        { value: CONDITION_TYPES.AVAILABILITY, label: t('conditions.availability'), description: t('conditions.availabilityDescription') },
+        { value: CONDITION_TYPES.FILE_SIZE, label: t('conditions.fileSize'), description: t('conditions.fileSizeDescription') },
+        { value: CONDITION_TYPES.FILE_COUNT, label: t('conditions.fileCount'), description: t('conditions.fileCountDescription') },
+        { value: CONDITION_TYPES.NAME, label: t('conditions.name'), description: t('conditions.nameDescription') },
+        { value: CONDITION_TYPES.PRIVATE, label: t('conditions.private'), description: t('conditions.privateDescription') },
+        { value: CONDITION_TYPES.CACHED, label: t('conditions.cached'), description: t('conditions.cachedDescription') },
+        { value: CONDITION_TYPES.ALLOW_ZIP, label: t('conditions.allowZip'), description: t('conditions.allowZipDescription') },
+      ],
+    },
+  ];
+};
+
+// Flatten condition type options for simple dropdown
+export const getFlatConditionTypeOptions = (t) => {
+  const grouped = getConditionTypeOptions(t);
+  return grouped.flatMap(group => group.options);
 };
 

@@ -6,6 +6,7 @@ export default function StatusSection({
   statusCounts,
   isStatusSelected,
   unfilteredItems,
+  filteredItems,
   selectedItems,
   hasSelectedFiles,
   statusFilter,
@@ -80,8 +81,22 @@ export default function StatusSection({
         size: downloadSize,
       });
     } else {
+      // Show filtered count if filters are applied, otherwise show total
+      const displayItems = filteredItems || unfilteredItems;
+      const totalCount = unfilteredItems.length;
+      const filteredCount = filteredItems?.length;
+      
+      // If filters are applied and count differs, show "X of Y" format
+      if (filteredItems && filteredCount !== totalCount && filteredCount !== undefined) {
+        const baseText = t('total', {
+          count: filteredCount,
+          type: itemTypePlural,
+        });
+        return `${baseText} (of ${totalCount})`;
+      }
+      
       return t('total', {
-        count: unfilteredItems.length,
+        count: displayItems.length,
         type: itemTypePlural,
       });
     }

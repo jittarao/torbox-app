@@ -162,14 +162,15 @@ export default function ColumnManager({
           ref={menuRef}
           className="absolute right-0 mt-2 w-[28rem] bg-surface dark:bg-surface-dark 
             border border-border dark:border-border-dark rounded-lg z-50 
-            max-h-[calc(100vh-80px)] flex flex-col overflow-hidden"
+            max-h-[calc(100vh-80px)] flex flex-col"
         >
-          <div className="p-4 flex flex-row gap-4 max-h-[calc(100vh-80px)]">
-            <div className="w-1/2 flex flex-col min-h-0">
+          <div className="p-4 flex flex-row gap-4 overflow-hidden">
+            {/* Reorder Columns */}
+            <div className="w-1/2 flex flex-col overflow-hidden">
               <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark shrink-0">
                 {t('reorderColumns')}
               </h3>
-              <div className="min-h-0 flex-1 overflow-y-auto pr-2">
+              <div className="overflow-y-auto pr-2" style={{ maxHeight: '600px' }}>
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -194,11 +195,12 @@ export default function ColumnManager({
               </div>
             </div>
 
-            <div className="w-1/2 flex flex-col min-h-0">
+            {/* Manage Columns */}
+            <div className="w-1/2 flex flex-col overflow-hidden">
               <h3 className="text-sm font-medium mb-2 text-primary-text dark:text-primary-text-dark shrink-0">
                 {t('manageColumns')}
               </h3>
-              <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="overflow-y-auto" style={{ maxHeight: '600px' }}>
                 <div className="flex flex-col gap-2 pb-2">
                   {availableColumns.map(([id, column]) => (
                     <label key={id} className="flex items-center space-x-2">
