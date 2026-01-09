@@ -148,6 +148,7 @@ class AutomationEngine {
     return result && result.count > 0;
   }
 
+
   /**
    * Update active rules flag in master database
    * @param {boolean} hasActiveRules - Whether user has active rules
@@ -242,6 +243,12 @@ class AutomationEngine {
         return { evaluated: 0, executed: 0 };
       }
 
+      logger.debug('Evaluating automation rules', {
+        authId: this.authId,
+        ruleCount: enabledRules.length,
+        torrentCount: torrents.length
+      });
+
       let executedCount = 0;
 
       for (const rule of enabledRules) {
@@ -253,6 +260,15 @@ class AutomationEngine {
             const timeSinceLastExecution = Date.now() - lastExecuted.getTime();
             
             if (timeSinceLastExecution < cooldownMs) {
+              const remainingCooldownMinutes = ((cooldownMs - timeSinceLastExecution) / (60 * 1000)).toFixed(1);
+              logger.debug('Rule skipped due to cooldown', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                cooldownMinutes: rule.cooldown_minutes,
+                remainingCooldownMinutes,
+                lastExecutedAt: rule.last_executed_at
+              });
               continue; // Still in cooldown
             }
           }
@@ -261,6 +277,12 @@ class AutomationEngine {
           const matchingTorrents = await this.ruleEvaluator.evaluateRule(rule, torrents);
 
           if (matchingTorrents.length === 0) {
+            logger.debug('Rule did not match any torrents', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              torrentCount: torrents.length
+            });
             continue;
           }
 
@@ -269,6 +291,7 @@ class AutomationEngine {
             ruleId: rule.id,
             ruleName: rule.name,
             matchedCount: matchingTorrents.length,
+            matchedIds: matchingTorrents.map(t => t.id)
           });
 
           // Execute actions
@@ -277,8 +300,27 @@ class AutomationEngine {
 
           for (const torrent of matchingTorrents) {
             try {
+              logger.debug('Executing action on torrent', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                torrentId: torrent.id,
+                torrentName: torrent.name,
+                action: rule.action_config?.type,
+                torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent)
+              });
+              
               await this.ruleEvaluator.executeAction(rule.action_config, torrent);
               successCount++;
+              
+              logger.debug('Action successfully executed', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                torrentId: torrent.id,
+                torrentName: torrent.name,
+                action: rule.action_config?.type
+              });
             } catch (error) {
               logger.error('Action failed for torrent', error, {
                 authId: this.authId,
@@ -286,6 +328,8 @@ class AutomationEngine {
                 ruleName: rule.name,
                 torrentId: torrent.id,
                 torrentName: torrent.name,
+                torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent),
+                action: rule.action_config?.type
               });
               errorCount++;
             }

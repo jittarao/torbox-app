@@ -337,6 +337,10 @@ class RuleEvaluator {
         const torrentStatus = this.getTorrentStatus(torrent);
         // STATUS value must be an array
         if (!Array.isArray(condition.value)) {
+          logger.debug('STATUS condition has invalid value (not an array)', {
+            torrentId: torrent.id,
+            conditionValue: condition.value
+          });
           return false;
         }
         return condition.value.length > 0 && condition.value.includes(torrentStatus);
