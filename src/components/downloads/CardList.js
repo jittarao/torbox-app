@@ -109,7 +109,7 @@ export default function CardList({
     count: flattenedRows.length,
     estimateSize,
     measureElement,
-    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
+    overscan: 30,
     scrollMargin: containerOffsetTopRef.current || containerOffsetTop,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
@@ -119,14 +119,22 @@ export default function CardList({
     getScrollElement: () => scrollElementRef.current,
     estimateSize,
     measureElement,
-    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
+    overscan: 30,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
   // Use the appropriate virtualizer based on mode
   const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
-  const handleItemSelection = (
+  // Define isDisabled first so it can be used in handlers
+  const isDisabled = useCallback((itemId) => {
+    return (
+      selectedItems.files?.has(itemId) &&
+      selectedItems.files.get(itemId).size > 0
+    );
+  }, [selectedItems]);
+
+  const handleItemSelection = useCallback((
     itemId,
     checked,
     rowIndex,
@@ -170,9 +178,9 @@ export default function CardList({
       });
     }
     lastClickedItemIndexRef.current = rowIndex;
-  };
+  }, [items, setSelectedItems, isDisabled]);
 
-  const handleFileSelection = (
+  const handleFileSelection = useCallback((
     itemId,
     fileIndex,
     file,
@@ -192,12 +200,12 @@ export default function CardList({
       onFileSelect(itemId, file.id, checked);
     }
     lastClickedFileIndexRef.current = fileIndex;
-  };
+  }, [items, onFileSelect]);
 
-  const assetKey = (itemId, fileId) =>
-    fileId ? `${itemId}-${fileId}` : itemId;
+  const assetKey = useCallback((itemId, fileId) =>
+    fileId ? `${itemId}-${fileId}` : itemId, []);
 
-  const handleFileDownload = async (itemId, file, copyLink = false) => {
+  const handleFileDownload = useCallback(async (itemId, file, copyLink = false) => {
     const key = assetKey(itemId, file.id);
     if (copyLink) {
       setIsCopying((prev) => ({ ...prev, [key]: true }));
@@ -238,14 +246,7 @@ export default function CardList({
           setIsDownloading((prev) => ({ ...prev, [key]: false }));
         }
       });
-  };
-
-  const isDisabled = (itemId) => {
-    return (
-      selectedItems.files?.has(itemId) &&
-      selectedItems.files.get(itemId).size > 0
-    );
-  };
+  }, [assetKey, activeType, items, downloadSingle, setToast, t]);
 
   const isItemDownloaded = (itemId) => {
     return downloadHistory.some(
@@ -299,6 +300,7 @@ export default function CardList({
           right: 0,
           transform: `translateY(${cardTop}px)`,
           marginBottom: '8px', // Add gap between cards
+          willChange: 'transform',
         };
 
         return (
@@ -306,10 +308,7 @@ export default function CardList({
             key={`item-${row.item.id}`}
             data-index={virtualRow.index}
             ref={virtualizer.measureElement}
-            style={{
-              ...itemCardStyle,
-              willChange: 'transform',
-            }}
+            style={itemCardStyle}
           >
             <ItemCard
               item={row.item}

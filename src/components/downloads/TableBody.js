@@ -150,7 +150,7 @@ export default function TableBody({
     count: flattenedRows.length,
     estimateSize,
     measureElement,
-    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
+    overscan: 30,
     scrollMargin: tableOffsetTopRef.current || tableOffsetTop,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
@@ -160,14 +160,22 @@ export default function TableBody({
     getScrollElement: () => scrollElementRef.current,
     estimateSize,
     measureElement,
-    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
+    overscan: 30,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
   // Use the appropriate virtualizer based on mode
   const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
-  const handleItemSelection = (
+  // Define isDisabled first so it can be used in handlers
+  const isDisabled = useCallback((itemId) => {
+    return (
+      selectedItems.files?.has(itemId) &&
+      selectedItems.files.get(itemId).size > 0
+    );
+  }, [selectedItems]);
+
+  const handleItemSelection = useCallback((
     itemId,
     checked,
     rowIndex,
@@ -211,9 +219,9 @@ export default function TableBody({
       });
     }
     lastClickedItemIndexRef.current = rowIndex;
-  };
+  }, [items, setSelectedItems, isDisabled]);
 
-  const handleFileSelection = (
+  const handleFileSelection = useCallback((
     itemId,
     fileIndex,
     file,
@@ -233,12 +241,12 @@ export default function TableBody({
       onFileSelect(itemId, file.id, checked);
     }
     lastClickedFileIndexRef.current = fileIndex;
-  };
+  }, [items, onFileSelect]);
 
-  const assetKey = (itemId, fileId) =>
-    fileId ? `${itemId}-${fileId}` : itemId;
+  const assetKey = useCallback((itemId, fileId) =>
+    fileId ? `${itemId}-${fileId}` : itemId, []);
 
-  const handleFileDownload = async (itemId, file, copyLink = false) => {
+  const handleFileDownload = useCallback(async (itemId, file, copyLink = false) => {
     const key = assetKey(itemId, file.id);
     if (copyLink) {
       setIsCopying((prev) => ({ ...prev, [key]: true }));
@@ -279,14 +287,11 @@ export default function TableBody({
           setIsDownloading((prev) => ({ ...prev, [key]: false }));
         }
       });
-  };
+  }, [assetKey, activeType, items, downloadSingle, setToast, t]);
 
-  const isDisabled = (itemId) => {
-    return (
-      selectedItems.files?.has(itemId) &&
-      selectedItems.files.get(itemId).size > 0
-    );
-  };
+  const rowStyle = useMemo(() => ({
+    willChange: 'transform',
+  }), []);
 
   const virtualRows = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
@@ -386,9 +391,7 @@ export default function TableBody({
               tableWidth={tableWidth}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
-              style={{
-                willChange: 'transform',
-              }}
+              style={rowStyle}
             />
           );
         } else {
@@ -410,9 +413,7 @@ export default function TableBody({
               fileIndex={row.fileIndex}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
-              style={{
-                willChange: 'transform',
-              }}
+              style={rowStyle}
             />
           );
         }
