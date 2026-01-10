@@ -106,7 +106,7 @@ class AutomationEngine {
         name: rule.name,
         enabled: rule.enabled === 1,
         trigger: JSON.parse(rule.trigger_config),
-        action: JSON.parse(rule.action_config),
+        action: rule.action_config ? JSON.parse(rule.action_config) : null,
         metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
         cooldown_minutes: rule.cooldown_minutes || 0,
         last_executed_at: rule.last_executed_at,
@@ -273,6 +273,16 @@ class AutomationEngine {
             }
           }
 
+          // Check if rule has an action configured
+          if (!rule.action || !rule.action.type) {
+            logger.warn('Rule has no action configured, skipping execution', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name
+            });
+            continue;
+          }
+
           // Evaluate rule
           const matchingTorrents = await this.ruleEvaluator.evaluateRule(rule, torrents);
 
@@ -306,11 +316,11 @@ class AutomationEngine {
                 ruleName: rule.name,
                 torrentId: torrent.id,
                 torrentName: torrent.name,
-                action: rule.action_config?.type,
+                action: rule.action?.type,
                 torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent)
               });
               
-              await this.ruleEvaluator.executeAction(rule.action_config, torrent);
+              await this.ruleEvaluator.executeAction(rule.action, torrent);
               successCount++;
               
               logger.debug('Action successfully executed', {
@@ -319,7 +329,7 @@ class AutomationEngine {
                 ruleName: rule.name,
                 torrentId: torrent.id,
                 torrentName: torrent.name,
-                action: rule.action_config?.type
+                action: rule.action?.type
               });
             } catch (error) {
               logger.error('Action failed for torrent', error, {
@@ -329,7 +339,7 @@ class AutomationEngine {
                 torrentId: torrent.id,
                 torrentName: torrent.name,
                 torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent),
-                action: rule.action_config?.type
+                action: rule.action?.type
               });
               errorCount++;
             }
