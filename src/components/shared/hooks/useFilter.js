@@ -15,6 +15,7 @@ import {
   isTimestampColumn,
   isBooleanColumn,
   isStatusColumn,
+  isTagsColumn,
 } from '@/components/downloads/CustomViews/utils';
 
 // Evaluate a single filter condition against an item
@@ -174,6 +175,28 @@ const evaluateFilter = (filter, item) => {
         default:
           return true;
       }
+    }
+  }
+
+  // Tag columns (multi-select by tag IDs)
+  if (isTagsColumn(filter.column)) {
+    const itemTags = item.tags || [];
+    const itemTagIds = itemTags.map(tag => tag.id);
+    const filterTagIds = Array.isArray(filterValue) 
+      ? filterValue.map(v => typeof v === 'number' ? v : parseInt(v, 10)).filter(id => !isNaN(id))
+      : [];
+
+    switch (operator) {
+      case MULTI_SELECT_OPERATORS.IS_ANY_OF:
+        if (filterTagIds.length === 0) return true;
+        // Item must have at least one of the selected tags
+        return filterTagIds.some(tagId => itemTagIds.includes(tagId));
+      case MULTI_SELECT_OPERATORS.IS_NONE_OF:
+        if (filterTagIds.length === 0) return true;
+        // Item must have none of the selected tags
+        return !filterTagIds.some(tagId => itemTagIds.includes(tagId));
+      default:
+        return true;
     }
   }
 

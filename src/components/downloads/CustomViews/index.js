@@ -58,7 +58,7 @@ export default function CustomViews({
         type="button"
         onClick={() => setIsManageOpen(true)}
         className="px-2 py-1 text-xs font-medium text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors flex items-center justify-center gap-1"
-        title="Manage views"
+        title="Views"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +74,7 @@ export default function CustomViews({
             d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
           />
         </svg>
-        <span className="hidden sm:inline">Manage</span>
+        <span className="hidden sm:inline">Views</span>
       </button>
 
       {/* Manage Views Modal */}

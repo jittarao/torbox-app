@@ -238,10 +238,13 @@ export default function AutomationRules() {
           'x-api-key': apiKey,
         },
       });
+      
       if (response.ok) {
         const data = await response.json();
         setRuleLogs(prev => ({ ...prev, [ruleId]: data.logs || [] }));
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error loading rule logs:', errorData.error || `HTTP ${response.status}`);
         setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
       }
     } catch (error) {
@@ -252,9 +255,31 @@ export default function AutomationRules() {
 
   const clearRuleLogs = async (ruleId) => {
     try {
-      setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+      if (!isBackendMode) {
+        // No backend available, just clear local state
+        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Clear logs in backend
+      const response = await fetch(`/api/automation/rules/${ruleId}/logs`, {
+        method: 'DELETE',
+        headers: {
+          'x-api-key': apiKey,
+        },
+      });
+
+      if (response.ok) {
+        // Reload logs to ensure UI is in sync (should be empty now)
+        await loadRuleLogs(ruleId);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to clear logs: HTTP ${response.status}`);
+      }
     } catch (error) {
       console.error('Error clearing rule logs:', error);
+      // Optionally show error to user - for now just log it
+      // The logs will remain in local state if backend call fails
     }
   };
 
@@ -475,6 +500,7 @@ export default function AutomationRules() {
               editingRuleId={editingRuleId}
               t={t}
               commonT={commonT}
+              apiKey={apiKey}
             />
           )}
         </div>

@@ -359,6 +359,46 @@ class RuleEvaluator {
         }
         break;
 
+      case 'TAGS':
+        // Get tags for this download
+        const downloadId = torrent.id?.toString() || torrent.torrent_id?.toString() || 
+                          torrent.usenet_id?.toString() || torrent.web_id?.toString();
+        
+        if (!downloadId) {
+          return false;
+        }
+
+        // Fetch tags for this download
+        const downloadTags = this.db.prepare(`
+          SELECT t.id, t.name
+          FROM download_tags dt
+          INNER JOIN tags t ON dt.tag_id = t.id
+          WHERE dt.download_id = ?
+        `).all(downloadId);
+
+        const downloadTagIds = downloadTags.map(tag => tag.id);
+        const conditionTagIds = Array.isArray(condition.value) 
+          ? condition.value.map(v => typeof v === 'number' ? v : parseInt(v, 10)).filter(id => !isNaN(id))
+          : [];
+
+        if (conditionTagIds.length === 0) {
+          return true; // No tags specified means match all
+        }
+
+        switch (condition.operator) {
+          case 'has_any':
+            // Download must have at least one of the specified tags
+            return conditionTagIds.some(tagId => downloadTagIds.includes(tagId));
+          case 'has_all':
+            // Download must have all of the specified tags
+            return conditionTagIds.every(tagId => downloadTagIds.includes(tagId));
+          case 'has_none':
+            // Download must have none of the specified tags
+            return !conditionTagIds.some(tagId => downloadTagIds.includes(tagId));
+          default:
+            return false;
+        }
+
       default:
         return false;
     }

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useSearchStore } from '@/stores/searchStore';
+import { useSearchStore } from '@/store/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';

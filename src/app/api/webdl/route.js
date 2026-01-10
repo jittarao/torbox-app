@@ -5,6 +5,7 @@ import {
   TORBOX_MANAGER_VERSION,
 } from '@/components/constants';
 import { headers } from 'next/headers';
+import { safeJsonParse } from '@/utils/safeJsonParse';
 
 // Get all web downloads
 export async function GET() {
@@ -106,20 +107,18 @@ export async function POST(request) {
       },
     );
 
+    const data = await safeJsonParse(response);
+    
     if (!response.ok) {
-      const errorData = await response.json();
       return NextResponse.json(
         {
           success: false,
-          error:
-            errorData.message ||
-            `API responded with status: ${response.status}`,
+          error: data.error || data.message || `API responded with status: ${response.status}`,
+          detail: data.detail
         },
         { status: response.status },
       );
     }
-
-    const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error creating web download:', error);
@@ -193,7 +192,19 @@ export async function DELETE(request) {
       body,
     });
     
-    const data = await response.json();
+    const data = await safeJsonParse(response);
+    
+    if (!response.ok) {
+      return Response.json(
+        {
+          success: false,
+          error: data.error || `API responded with status: ${response.status}`,
+          detail: data.detail
+        },
+        { status: response.status }
+      );
+    }
+    
     return Response.json(data);
   } catch (error) {
     return Response.json(

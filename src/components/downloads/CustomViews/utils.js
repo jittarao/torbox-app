@@ -40,6 +40,9 @@ export const COLUMN_FILTER_TYPES = {
   // Status/Multi-select columns
   download_state: 'status',
   asset_type: 'status',
+  
+  // Tag columns
+  tags: 'tags',
 };
 
 // Get filter type for a column
@@ -72,6 +75,11 @@ export const isStatusColumn = (columnKey) => {
   return getColumnFilterType(columnKey) === 'status';
 };
 
+// Check if column is tags type
+export const isTagsColumn = (columnKey) => {
+  return getColumnFilterType(columnKey) === 'tags';
+};
+
 // Get available operators for a column type
 export const getOperatorsForColumn = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
@@ -86,6 +94,8 @@ export const getOperatorsForColumn = (columnKey) => {
     case 'boolean':
       return Object.values(BOOLEAN_OPERATORS);
     case 'status':
+      return Object.values(MULTI_SELECT_OPERATORS);
+    case 'tags':
       return Object.values(MULTI_SELECT_OPERATORS);
     default:
       return Object.values(COMPARISON_OPERATORS);
@@ -107,6 +117,8 @@ export const getDefaultOperator = (columnKey) => {
       return BOOLEAN_OPERATORS.IS_TRUE;
     case 'status':
       return MULTI_SELECT_OPERATORS.IS_ANY_OF;
+    case 'tags':
+      return MULTI_SELECT_OPERATORS.IS_ANY_OF;
     default:
       return COMPARISON_OPERATORS.GT;
   }
@@ -127,27 +139,38 @@ export const getDefaultValue = (columnKey) => {
       return true;
     case 'status':
       return [];
+    case 'tags':
+      return [];
     default:
       return 0;
   }
 };
 
-// Get available columns for filtering (excluding id)
+  // Get available columns for filtering (excluding id)
 export const getFilterableColumns = (activeType = 'all') => {
   // Get translations for columns
   const columnT = useTranslations('Columns');
 
   // Columns to exclude from filtering
-  const columnKeysToExclude = ['id', 'hash', 'download_progress', 'asset_type'];
+  const columnKeysToExclude = ['id', 'hash', 'download_progress'];
 
-  // Return the columns that are applicable to the active type
-  return Object.entries(COLUMNS)
+  // Build base columns from COLUMNS
+  const baseColumns = Object.entries(COLUMNS)
     .filter(([key, column]) => !columnKeysToExclude.includes(key))
     .map(([key, column]) => ({
       key,
       label: column.displayName ? column.displayName : columnT(key),
       ...column,
     }));
+
+  // Add tags column
+  baseColumns.push({
+    key: 'tags',
+    label: 'Tags',
+    sortable: false,
+  });
+
+  return baseColumns;
 };
 
 // Get unit for a column (for display)

@@ -6,6 +6,7 @@ import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
+import TagAssignmentModal from '../../Tags/TagAssignmentModal';
 
 export default function ActionButtons({
   selectedItems,
@@ -29,6 +30,7 @@ export default function ActionButtons({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showCloudUpload, setShowCloudUpload] = useState(false);
+  const [showTagAssignment, setShowTagAssignment] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState({});
   const isMobile = useIsMobile();
@@ -254,6 +256,17 @@ export default function ActionButtons({
         </button>
       )}
 
+      {/* Bulk Tag Assignment button */}
+      {selectedItems.items?.size > 0 && (
+        <button
+          onClick={() => setShowTagAssignment(true)}
+          className="bg-purple-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-purple-600 
+          transition-colors"
+        >
+          Assign Tags
+        </button>
+      )}
+
       {/* Bulk Cloud Upload button - Temporarily hidden */}
 
       {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
@@ -341,6 +354,20 @@ export default function ActionButtons({
       >
         {t('clear')}
       </button>
+
+      {/* Tag Assignment Modal */}
+      {showTagAssignment && (
+        <TagAssignmentModal
+          isOpen={showTagAssignment}
+          onClose={() => setShowTagAssignment(false)}
+          downloadIds={Array.from(selectedItems.items || [])}
+          apiKey={apiKey}
+          onSuccess={() => {
+            setSelectedItems({ items: new Set(), files: new Map() });
+            // Tags will be refreshed automatically via useDownloadTags hook
+          }}
+        />
+      )}
     </div>
   );
 }

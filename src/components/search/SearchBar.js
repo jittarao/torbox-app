@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useSearchStore } from '@/stores/searchStore';
+import { useSearchStore } from '@/store/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';

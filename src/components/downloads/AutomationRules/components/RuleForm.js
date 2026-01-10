@@ -6,6 +6,7 @@ import {
 } from '../constants';
 import ConditionFilterGroup from './ConditionFilterGroup';
 import Select from '@/components/shared/Select';
+import { useTranslations } from 'next-intl';
 
 export default function RuleForm({ 
   rule, 
@@ -20,11 +21,13 @@ export default function RuleForm({
   onUpdateCondition,
   editingRuleId,
   t,
-  commonT 
+  commonT,
+  apiKey,
 }) {
   // Rules always have groups structure (migrated in backend)
   const ruleGroups = rule.groups || [];
   const groupLogicOperator = rule.logicOperator || LOGIC_OPERATORS.AND;
+  const automationRulesT = useTranslations('AutomationRules');
   return (
     <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg">
       <div className="space-y-4">
@@ -96,8 +99,8 @@ export default function RuleForm({
                   })
                 }
               >
-                <option value={LOGIC_OPERATORS.AND}>ALL groups (AND)</option>
-                <option value={LOGIC_OPERATORS.OR}>ANY group (OR)</option>
+                <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.andGroups')}</option>
+                <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.orGroups')}</option>
               </Select>
             </div>
           )}
@@ -106,7 +109,7 @@ export default function RuleForm({
           {ruleGroups.length === 0 ? (
             <div className="py-4 text-center">
               <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 italic">
-                No condition groups. Click "+ Add Group" to create one.
+                {automationRulesT('noConditionGroups')}
               </p>
             </div>
           ) : (
@@ -130,6 +133,7 @@ export default function RuleForm({
                     onUpdateCondition={onUpdateCondition}
                     onRemoveCondition={onRemoveCondition}
                     t={t}
+                    apiKey={apiKey}
                   />
                 </div>
               ))}

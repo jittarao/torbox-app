@@ -5,6 +5,7 @@ import {
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
+  TAG_OPERATORS,
 } from '../../AutomationRules/constants';
 import {
   isNumberColumn,
@@ -12,14 +13,17 @@ import {
   isTimestampColumn,
   isBooleanColumn,
   isStatusColumn,
+  isTagsColumn,
   getOperatorsForColumn,
   getDefaultOperator,
   getDefaultValue,
   getColumnUnit,
 } from '../utils';
+import { useTags } from '@/components/shared/hooks/useTags';
 import Select from '@/components/shared/Select';
 import MultiSelect from '@/components/shared/MultiSelect';
 import { STATUS_OPTIONS } from '@/components/constants';
+import { useTranslations } from 'next-intl';
 
 // Map STATUS_OPTIONS labels to backend status values
 const getStatusOptions = () => {
@@ -60,7 +64,11 @@ export default function FilterInput({
   onUpdate, 
   onRemove,
   availableColumns,
+  apiKey,
 }) {
+  const { tags } = useTags(apiKey);
+  const customViewsT = useTranslations('CustomViews');
+  const automationRulesT = useTranslations('AutomationRules');
   const handleFieldChange = (field, value) => {
     if (field === 'column') {
       // When changing column, update operator and value to appropriate defaults
@@ -88,6 +96,20 @@ export default function FilterInput({
     return Array.isArray(filter.value) ? filter.value : [];
   };
 
+  // For TAGS condition, ensure value is an array of tag IDs
+  const getTagsValue = () => {
+    if (filter.column !== 'tags') return filter.value;
+    return Array.isArray(filter.value) ? filter.value : [];
+  };
+
+  // Get tag options for MultiSelect
+  const getTagOptions = () => {
+    return tags.map(tag => ({
+      label: tag.name,
+      value: tag.id,
+    }));
+  };
+
   const columnOptions = availableColumns.map(col => ({
     value: col.key,
     label: col.label,
@@ -98,33 +120,40 @@ export default function FilterInput({
     let label = op;
     if (isNumberColumn(filter.column) || isTimestampColumn(filter.column)) {
       const labels = {
-        [COMPARISON_OPERATORS.GT]: '>',
-        [COMPARISON_OPERATORS.LT]: '<',
-        [COMPARISON_OPERATORS.GTE]: '≥',
-        [COMPARISON_OPERATORS.LTE]: '≤',
-        [COMPARISON_OPERATORS.EQ]: '=',
+        [COMPARISON_OPERATORS.GT]: automationRulesT('operators.gt'),
+        [COMPARISON_OPERATORS.LT]: automationRulesT('operators.lt'),
+        [COMPARISON_OPERATORS.GTE]: automationRulesT('operators.gte'),
+        [COMPARISON_OPERATORS.LTE]: automationRulesT('operators.lte'),
+        [COMPARISON_OPERATORS.EQ]: automationRulesT('operators.eq'),
       };
       label = labels[op] || op;
     } else if (isTextColumn(filter.column)) {
       const labels = {
-        [STRING_OPERATORS.EQUALS]: 'equals',
-        [STRING_OPERATORS.CONTAINS]: 'contains',
-        [STRING_OPERATORS.STARTS_WITH]: 'starts with',
-        [STRING_OPERATORS.ENDS_WITH]: 'ends with',
-        [STRING_OPERATORS.NOT_EQUALS]: 'not equals',
-        [STRING_OPERATORS.NOT_CONTAINS]: 'not contains',
+        [STRING_OPERATORS.EQUALS]: automationRulesT('stringOperators.equals'),
+        [STRING_OPERATORS.CONTAINS]: automationRulesT('stringOperators.contains'),
+        [STRING_OPERATORS.STARTS_WITH]: automationRulesT('stringOperators.startsWith'),
+        [STRING_OPERATORS.ENDS_WITH]: automationRulesT('stringOperators.endsWith'),
+        [STRING_OPERATORS.NOT_EQUALS]: automationRulesT('stringOperators.notEquals'),
+        [STRING_OPERATORS.NOT_CONTAINS]: automationRulesT('stringOperators.notContains'),
       };
       label = labels[op] || op;
     } else if (isBooleanColumn(filter.column)) {
       const labels = {
-        [BOOLEAN_OPERATORS.IS_TRUE]: 'is true',
-        [BOOLEAN_OPERATORS.IS_FALSE]: 'is false',
+        [BOOLEAN_OPERATORS.IS_TRUE]: automationRulesT('booleanValues.true'),
+        [BOOLEAN_OPERATORS.IS_FALSE]: automationRulesT('booleanValues.false'),
       };
       label = labels[op] || op;
     } else if (isStatusColumn(filter.column)) {
       const labels = {
-        [MULTI_SELECT_OPERATORS.IS_ANY_OF]: 'is any of',
-        [MULTI_SELECT_OPERATORS.IS_NONE_OF]: 'is none of',
+        [MULTI_SELECT_OPERATORS.IS_ANY_OF]: automationRulesT('multiSelectOperators.isAnyOf'),
+        [MULTI_SELECT_OPERATORS.IS_NONE_OF]: automationRulesT('multiSelectOperators.isNoneOf'),
+      };
+      label = labels[op] || op;
+    } else if (isTagsColumn(filter.column)) {
+      const labels = {
+        [TAG_OPERATORS.IS_ANY_OF]: automationRulesT('tagOperators.isAnyOf'),
+        [TAG_OPERATORS.IS_ALL_OF]: automationRulesT('tagOperators.isAllOf'),
+        [TAG_OPERATORS.IS_NONE_OF]: automationRulesT('tagOperators.isNoneOf'),
       };
       label = labels[op] || op;
     }
@@ -144,7 +173,7 @@ export default function FilterInput({
         }}
         className="w-full sm:min-w-[120px] sm:flex-1"
       >
-        <option value="">Select...</option>
+        <option value="">{customViewsT('selectPlaceholder')}</option>
         {columnOptions.map(opt => (
           <option key={opt.value} value={String(opt.value)}>
             {opt.label}
@@ -182,7 +211,15 @@ export default function FilterInput({
               value={getStatusValue()}
               onChange={(values) => handleFieldChange('value', values)}
               options={filter.column === 'download_state' ? getStatusOptions() : getAssetTypeOptions()}
-              placeholder="Select..."
+              placeholder={customViewsT('selectPlaceholder')}
+              className="w-full sm:flex-1 sm:min-w-[150px]"
+            />
+          ) : filter.column === 'tags' ? (
+            <MultiSelect
+              value={getTagsValue()}
+              onChange={(values) => handleFieldChange('value', values)}
+              options={getTagOptions()}
+              placeholder={customViewsT('selectTagsPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
           ) : isBooleanColumn(filter.column) ? (
@@ -191,15 +228,15 @@ export default function FilterInput({
               onChange={(e) => handleFieldChange('value', e.target.value === 'true')}
               className="w-full sm:min-w-[100px] sm:w-auto"
             >
-              <option value="true">True</option>
-              <option value="false">False</option>
+              <option value="true">{automationRulesT('booleanValues.true')}</option>
+              <option value="false">{automationRulesT('booleanValues.false')}</option>
             </Select>
           ) : isTextColumn(filter.column) ? (
             <input
               type="text"
               value={filter.value || ''}
               onChange={(e) => handleFieldChange('value', e.target.value)}
-              placeholder="Enter value..."
+              placeholder={customViewsT('enterValuePlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[120px] px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
             />
           ) : (

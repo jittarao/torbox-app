@@ -399,6 +399,7 @@ export default function CardList({
               viewMode={viewMode}
               isCopying={isCopying}
               isDownloading={isDownloading}
+              apiKey={apiKey}
             />
           </div>
         );

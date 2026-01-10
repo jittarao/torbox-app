@@ -82,6 +82,8 @@
             "stopSeedingDescription": "Detener siembra sin eliminar la descarga"
         },
         "add": "Añadir regla",
+        "addCondition": "Añadir condición",
+        "addConditionToGroup": "Añadir condición a grupo",
         "addRule": "Añadir regla",
         "booleanOperators": {
             "isFalse": "Es falso",
@@ -96,6 +98,13 @@
         "clearLogs": "Limpiar Registros",
         "close": "Cerrar",
         "condition": "Condición",
+        "conditionGroups": {
+            "downloading": "Descargando",
+            "lifecycle": "Ciclo de vida",
+            "metadata": "Metadatos",
+            "seeding": "Sembrando",
+            "stalled": "Bloqueado"
+        },
         "conditions": {
             "age": "Edad",
             "ageDescription": "Tiempo desde que el torrent fue agregado (en horas)",
@@ -152,6 +161,8 @@
             "status": "Estado",
             "statusDescription": "Estado actual del torrent (descargando, sembrando, completado, etc.)",
             "statusPlaceholder": "Seleccionar estados...",
+            "tags": "Etiquetas",
+            "tagsPlaceholder": "Seleccionar etiquetas...",
             "totalUploaded": "Total cargado",
             "totalUploadedDescription": "Total de datos cargados (en GB)",
             "tracker": "Rastreador",
@@ -162,13 +173,6 @@
             "uploadStalledTime": "Tiempo de bloqueo de carga",
             "uploadStalledTimeDescription": "Tiempo desde que la actividad de carga se detuvo (en minutos)"
         },
-        "conditionGroups": {
-            "downloading": "Descargando",
-            "lifecycle": "Ciclo de vida",
-            "metadata": "Metadatos",
-            "seeding": "Sembrando",
-            "stalled": "Bloqueado"
-        },
         "delete": "Eliminar",
         "details": "Detalles",
         "enabledAt": "habilitado a",
@@ -177,6 +181,12 @@
         "failed": "Falló",
         "itemsAffected": "Elementos Afectados",
         "lastTriggered": "último activado",
+        "logicOperators": {
+            "and": "UND",
+            "andGroups": "TODOS los grupos (UND)",
+            "or": "ODER",
+            "orGroups": "ALGUN grupo (ODER)"
+        },
         "mobileTitle": "Reglas",
         "multiSelectOperators": {
             "isAnyOf": "Es alguno de",
@@ -184,6 +194,7 @@
         },
         "neverExecuted": "nunca ejecutado",
         "neverTriggered": "nunca activado",
+        "noConditionsInGroup": "No hay condiciones en este grupo. Haz clic en '+ Condición' para añadir una.",
         "noLogs": "No hay registros disponibles",
         "noRules": "No hay reglas de automatización",
         "operators": {
@@ -202,6 +213,8 @@
             "stopSeedingLowRatio": "Detener Seeding con Ratio Bajo",
             "title": "Configuraciones Rápidas"
         },
+        "removeCondition": "Eliminar condición",
+        "removeGroup": "Eliminar grupo",
         "ruleLogs": "Registros de Regla",
         "ruleName": "Nombre de la regla",
         "ruleNamePlaceholder": "Introducir nombre de la regla",
@@ -218,6 +231,11 @@
             "startsWith": "Comienza con"
         },
         "success": "Éxito",
+        "tagOperators": {
+            "isAllOf": "Es todos de",
+            "isAnyOf": "Es alguno de",
+            "isNoneOf": "No es ninguno de"
+        },
         "timeOperators": {
             "eq": "es",
             "gt": "más que",
@@ -330,6 +348,27 @@
             "unknown": "Desconocido",
             "y": "a"
         }
+    },
+    "CustomViews": {
+        "addFilter": "Añadir filtro",
+        "addFilterToGroup": "Añadir filtro a grupo",
+        "addGroup": "Añadir grupo",
+        "betweenGroups": "Entre grupos:",
+        "cancel": "Cancelar",
+        "enterValuePlaceholder": "Introducir valor...",
+        "includeColumns": "Incluir columnas",
+        "includeSort": "Incluir orden",
+        "noFilters": "No hay filtros. Haz clic en '+ Filtro' en un grupo para crear uno.",
+        "noFiltersInGroup": "No hay filtros en este grupo. Haz clic en '+ Filtro' para añadir uno.",
+        "removeGroup": "Eliminar grupo",
+        "save": "Guardar",
+        "saveAsNew": "Guardar como nuevo",
+        "saving": "Guardando...",
+        "selectPlaceholder": "Seleccionar...",
+        "selectTagsPlaceholder": "Seleccionar etiquetas...",
+        "updateView": "Actualizar vista",
+        "updating": "Actualizando...",
+        "viewNamePlaceholder": "Nombre de la vista..."
     },
     "DownloadPanel": {
         "actions": {

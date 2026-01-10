@@ -36,6 +36,7 @@ export const API_RESPONSE_TYPES = {
     inactive_check: 'number',
     availability: 'number',
     private: 'boolean',
+    tags: 'TAG[]',
   },
 
   TORRENT_FILE: {
@@ -65,6 +66,7 @@ export const API_RESPONSE_TYPES = {
     download_present: 'boolean',
     download_finished: 'boolean',
     files: 'USENET_FILE[]',
+    tags: 'TAG[]',
   },
 
   USENET_FILE: {
@@ -95,6 +97,7 @@ export const API_RESPONSE_TYPES = {
     download_finished: 'boolean',
     files: 'WEB_FILE[]',
     original_url: 'string',
+    tags: 'TAG[]',
   },
 
   WEB_FILE: {
@@ -274,6 +277,15 @@ export const API_RESPONSE_TYPES = {
   TORRENT_INFO_FILE: {
     name: 'string',
     size: 'number',
+  },
+
+  // Tag types
+  TAG: {
+    id: 'number',
+    name: 'string',
+    created_at: 'string',
+    updated_at: 'string',
+    usage_count: 'number',
   },
 
 };
