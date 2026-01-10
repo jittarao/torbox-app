@@ -50,6 +50,14 @@ module.exports = {
           DEFAULT: '#cecece',
           dark: '#3c3c3c', // Dark mode border - medium gray
         },
+        muted: {
+          DEFAULT: '#6b7280', // Light mode muted text - gray-500
+          dark: '#9ca3af', // Dark mode muted text - gray-400
+        },
+        text: {
+          DEFAULT: '#1F321A', // Light mode text
+          dark: '#E5E7EB', // Dark mode text
+        },
         label: {
           // GREEN
           success: {

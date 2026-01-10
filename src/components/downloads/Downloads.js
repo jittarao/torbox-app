@@ -24,11 +24,8 @@ import FiltersSection from './FiltersSection';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useTags } from '@/components/shared/hooks/useTags';
-import { useHealthStore } from '@/store/healthStore';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { formatSize } from './utils/formatters';
-
-const HEALTH_CHECK_INTERVAL = 60000; // 60 seconds
 
 export default function Downloads({ apiKey }) {
   const [toast, setToast] = useState(null);
@@ -160,25 +157,6 @@ export default function Downloads({ apiKey }) {
   useEffect(() => {
     if (apiKey && views.length === 0 && !viewsLoading) {
       loadViews();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]);
-
-  // Start health checks once when component mounts
-  const { performHealthCheck } = useHealthStore();
-  useEffect(() => {
-    if (apiKey) {
-      // Perform initial health check
-      performHealthCheck(apiKey);
-
-      // Set up periodic health checks
-      const interval = setInterval(() => {
-        performHealthCheck(apiKey);
-      }, HEALTH_CHECK_INTERVAL);
-
-      return () => {
-        clearInterval(interval);
-      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
