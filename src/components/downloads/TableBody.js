@@ -150,7 +150,7 @@ export default function TableBody({
     count: flattenedRows.length,
     estimateSize,
     measureElement,
-    overscan: 10,
+    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
     scrollMargin: tableOffsetTopRef.current || tableOffsetTop,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
@@ -160,7 +160,7 @@ export default function TableBody({
     getScrollElement: () => scrollElementRef.current,
     estimateSize,
     measureElement,
-    overscan: 10,
+    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
@@ -386,6 +386,9 @@ export default function TableBody({
               tableWidth={tableWidth}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
+              style={{
+                willChange: 'transform',
+              }}
             />
           );
         } else {
@@ -407,6 +410,9 @@ export default function TableBody({
               fileIndex={row.fileIndex}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
+              style={{
+                willChange: 'transform',
+              }}
             />
           );
         }

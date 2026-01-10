@@ -109,7 +109,7 @@ export default function CardList({
     count: flattenedRows.length,
     estimateSize,
     measureElement,
-    overscan: 10,
+    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
     scrollMargin: containerOffsetTopRef.current || containerOffsetTop,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
@@ -119,7 +119,7 @@ export default function CardList({
     getScrollElement: () => scrollElementRef.current,
     estimateSize,
     measureElement,
-    overscan: 10,
+    overscan: 30, // Significantly increased to pre-render more items for fast scrolling
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
@@ -306,7 +306,10 @@ export default function CardList({
             key={`item-${row.item.id}`}
             data-index={virtualRow.index}
             ref={virtualizer.measureElement}
-            style={itemCardStyle}
+            style={{
+              ...itemCardStyle,
+              willChange: 'transform',
+            }}
           >
             <ItemCard
               item={row.item}
