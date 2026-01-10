@@ -93,6 +93,8 @@ export const useDownloadTagsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before fetching download tags
+        set({ loading: false });
         // Fetch latest download-tags list from /api/downloads/tags after assignment
         await get().fetchDownloadTags(apiKey);
         return true;
