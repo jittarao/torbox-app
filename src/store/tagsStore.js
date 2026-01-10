@@ -85,6 +85,8 @@ export const useTagsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before reloading tags
+        set({ loading: false });
         // Reload tags after creation
         await get().loadTags(apiKey);
         return data.tag;
@@ -122,6 +124,8 @@ export const useTagsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before reloading tags
+        set({ loading: false });
         // Reload tags after update
         await get().loadTags(apiKey);
         return data.tag;
@@ -157,6 +161,8 @@ export const useTagsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before reloading tags
+        set({ loading: false });
         // Reload tags after deletion
         await get().loadTags(apiKey);
         return true;

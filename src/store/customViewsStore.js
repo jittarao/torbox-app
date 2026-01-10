@@ -94,6 +94,8 @@ export const useCustomViewsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before reloading views
+        set({ loading: false });
         // Reload views after creation
         await get().loadViews(apiKey);
         return data.view;
@@ -131,6 +133,8 @@ export const useCustomViewsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before reloading views
+        set({ loading: false });
         // Reload views after update
         await get().loadViews(apiKey);
         // Update active view if it's the one being updated
@@ -171,6 +175,8 @@ export const useCustomViewsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
+        // Reset loading before reloading views
+        set({ loading: false });
         // Reload views after deletion
         await get().loadViews(apiKey);
         // Clear active view if it's the one being deleted
