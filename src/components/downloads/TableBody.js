@@ -427,10 +427,15 @@ export default function TableBody({
         </tr>
       )}
       {/* Virtualized rows */}
-      {currentVirtualRows.map((virtualRow) => {
-        const row = flattenedRows[virtualRow.index];
+      {currentVirtualRows
+        .filter((virtualRow) => {
+          // Filter out invalid indices (can happen during data updates)
+          return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
+        })
+        .map((virtualRow) => {
+          const row = flattenedRows[virtualRow.index];
 
-        if (row.type === 'item') {
+          if (row.type === 'item') {
           return (
             <ItemRow
               key={`item-${row.item.id}`}
