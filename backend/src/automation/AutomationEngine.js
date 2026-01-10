@@ -1,6 +1,7 @@
 import RuleEvaluator from './RuleEvaluator.js';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
+import logger from '../utils/logger.js';
 
 /**
  * Per-user Automation Engine
@@ -21,7 +22,7 @@ class AutomationEngine {
 
   async initialize() {
     try {
-      console.log(`[AutomationEngine ${this.authId}] Initializing...`);
+      logger.info('AutomationEngine initializing', { authId: this.authId });
       
       // Load existing rules from user database
       const rules = await this.getAutomationRules();
@@ -37,30 +38,101 @@ class AutomationEngine {
       await this.syncActiveRulesFlag();
       
       this.isInitialized = true;
-      console.log(`[AutomationEngine ${this.authId}] Initialized with ${rules.length} rules`);
+      logger.info('AutomationEngine initialized', {
+        authId: this.authId,
+        totalRules: rules.length,
+        enabledRules: rules.filter(r => r.enabled).length,
+      });
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to initialize:`, error);
+      logger.error('AutomationEngine failed to initialize', error, { authId: this.authId });
       throw error;
     }
   }
 
   /**
+   * Migrate old flat conditions structure to new group structure
+   * @param {Object} rule - Rule to migrate
+   * @returns {Object} - Migrated rule
+   */
+  migrateRuleToGroups(rule) {
+    // If rule already has groups structure, return as is
+    if (rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0) {
+      return rule;
+    }
+    
+    // If conditions is an array (old format), convert to group structure
+    if (Array.isArray(rule.conditions)) {
+      return {
+        ...rule,
+        logicOperator: rule.logicOperator || 'and',
+        groups: [
+          {
+            logicOperator: 'and',
+            conditions: rule.conditions,
+          },
+        ],
+      };
+    }
+    
+    // If no conditions, return with empty group structure
+    return {
+      ...rule,
+      logicOperator: rule.logicOperator || 'and',
+      groups: [
+        {
+          logicOperator: 'and',
+          conditions: [],
+        },
+      ],
+    };
+  }
+
+  /**
    * Get automation rules from user database
+   * Always returns rules in the new group structure format
    */
   async getAutomationRules() {
     const sql = 'SELECT * FROM automation_rules ORDER BY created_at DESC';
     const rules = this.userDb.prepare(sql).all();
-    return rules.map(rule => ({
-      ...rule,
-      enabled: rule.enabled === 1,
-      trigger_config: JSON.parse(rule.trigger_config),
-      conditions: JSON.parse(rule.conditions),
-      action_config: JSON.parse(rule.action_config),
-      metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
-      cooldown_minutes: rule.cooldown_minutes || 0,
-      last_executed_at: rule.last_executed_at,
-      execution_count: rule.execution_count || 0
-    }));
+    return rules.map(rule => {
+      const parsedConditions = JSON.parse(rule.conditions);
+      
+      // Check if conditions is actually groups structure
+      const hasGroups = parsedConditions && typeof parsedConditions === 'object' && 
+                       Array.isArray(parsedConditions.groups) && parsedConditions.groups.length > 0;
+      
+      const ruleObj = {
+        id: rule.id,
+        name: rule.name,
+        enabled: rule.enabled === 1,
+        trigger: JSON.parse(rule.trigger_config),
+        action: JSON.parse(rule.action_config),
+        metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
+        cooldown_minutes: rule.cooldown_minutes || 0,
+        last_executed_at: rule.last_executed_at,
+        execution_count: rule.execution_count || 0,
+        created_at: rule.created_at,
+        updated_at: rule.updated_at,
+      };
+      
+      // If stored as groups structure, extract it
+      if (hasGroups) {
+        ruleObj.groups = parsedConditions.groups;
+        ruleObj.logicOperator = parsedConditions.logicOperator || 'and';
+      } else {
+        // Old format - conditions is an array, migrate to groups
+        ruleObj.logicOperator = 'and';
+        ruleObj.groups = [
+          {
+            logicOperator: 'and',
+            conditions: Array.isArray(parsedConditions) ? parsedConditions : [],
+          },
+        ];
+      }
+      
+      // Always return in new group structure format
+      return this.migrateRuleToGroups(ruleObj);
+    });
   }
 
   /**
@@ -76,6 +148,7 @@ class AutomationEngine {
     return result && result.count > 0;
   }
 
+
   /**
    * Update active rules flag in master database
    * @param {boolean} hasActiveRules - Whether user has active rules
@@ -87,7 +160,10 @@ class AutomationEngine {
     try {
       this.masterDb.updateActiveRulesFlag(this.authId, hasActiveRules);
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to update active rules flag:`, error);
+      logger.error('Failed to update active rules flag in master DB', error, {
+        authId: this.authId,
+        hasActiveRules,
+      });
     }
   }
 
@@ -110,7 +186,9 @@ class AutomationEngine {
       const nextPollAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to reset next poll at:`, error);
+      logger.error('Failed to reset next poll timestamp', error, {
+        authId: this.authId,
+      });
     }
   }
 
@@ -128,16 +206,27 @@ class AutomationEngine {
       // Cron-based triggers can be added later if needed
       // This method is kept for compatibility
       
-      console.log(`[AutomationEngine ${this.authId}] Rule ${rule.name} ready`);
+      logger.debug('Rule ready', {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+      });
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to start rule ${rule.name}:`, error);
+      logger.error('Failed to start rule', error, {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+      });
     }
   }
 
   stopRule(ruleId) {
     if (this.runningJobs.has(ruleId)) {
       this.runningJobs.delete(ruleId);
-      console.log(`[AutomationEngine ${this.authId}] Stopped rule ${ruleId}`);
+      logger.debug('Rule stopped', {
+        authId: this.authId,
+        ruleId,
+      });
     }
   }
 
@@ -154,6 +243,12 @@ class AutomationEngine {
         return { evaluated: 0, executed: 0 };
       }
 
+      logger.debug('Evaluating automation rules', {
+        authId: this.authId,
+        ruleCount: enabledRules.length,
+        torrentCount: torrents.length
+      });
+
       let executedCount = 0;
 
       for (const rule of enabledRules) {
@@ -165,6 +260,15 @@ class AutomationEngine {
             const timeSinceLastExecution = Date.now() - lastExecuted.getTime();
             
             if (timeSinceLastExecution < cooldownMs) {
+              const remainingCooldownMinutes = ((cooldownMs - timeSinceLastExecution) / (60 * 1000)).toFixed(1);
+              logger.debug('Rule skipped due to cooldown', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                cooldownMinutes: rule.cooldown_minutes,
+                remainingCooldownMinutes,
+                lastExecutedAt: rule.last_executed_at
+              });
               continue; // Still in cooldown
             }
           }
@@ -173,10 +277,22 @@ class AutomationEngine {
           const matchingTorrents = await this.ruleEvaluator.evaluateRule(rule, torrents);
 
           if (matchingTorrents.length === 0) {
+            logger.debug('Rule did not match any torrents', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              torrentCount: torrents.length
+            });
             continue;
           }
 
-          console.log(`[AutomationEngine ${this.authId}] Rule ${rule.name} matched ${matchingTorrents.length} torrents`);
+          logger.info('Rule matched torrents', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            matchedCount: matchingTorrents.length,
+            matchedIds: matchingTorrents.map(t => t.id)
+          });
 
           // Execute actions
           let successCount = 0;
@@ -184,19 +300,47 @@ class AutomationEngine {
 
           for (const torrent of matchingTorrents) {
             try {
+              logger.debug('Executing action on torrent', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                torrentId: torrent.id,
+                torrentName: torrent.name,
+                action: rule.action_config?.type,
+                torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent)
+              });
+              
               await this.ruleEvaluator.executeAction(rule.action_config, torrent);
               successCount++;
+              
+              logger.debug('Action successfully executed', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                torrentId: torrent.id,
+                torrentName: torrent.name,
+                action: rule.action_config?.type
+              });
             } catch (error) {
-              console.error(`[AutomationEngine ${this.authId}] Action failed for torrent ${torrent.id}:`, error);
+              logger.error('Action failed for torrent', error, {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                torrentId: torrent.id,
+                torrentName: torrent.name,
+                torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent),
+                action: rule.action_config?.type
+              });
               errorCount++;
             }
           }
 
-          // Update rule execution status
+          // Update rule execution status and set 5-minute cooldown
           this.userDb.prepare(`
             UPDATE automation_rules 
             SET last_executed_at = CURRENT_TIMESTAMP,
                 execution_count = execution_count + 1,
+                cooldown_minutes = 5,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `).run(rule.id);
@@ -213,14 +357,20 @@ class AutomationEngine {
 
           executedCount++;
         } catch (error) {
-          console.error(`[AutomationEngine ${this.authId}] Rule evaluation failed for ${rule.name}:`, error);
+          logger.error('Rule evaluation failed', error, {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+          });
           await this.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
         }
       }
 
       return { evaluated: enabledRules.length, executed: executedCount };
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to evaluate rules:`, error);
+      logger.error('Failed to evaluate rules', error, {
+        authId: this.authId,
+      });
       return { evaluated: 0, executed: 0, error: error.message };
     }
   }
@@ -245,18 +395,30 @@ class AutomationEngine {
     
     // Insert new rules
     for (const rule of rules) {
+      // Migrate rule to group structure if needed
+      const migratedRule = this.migrateRuleToGroups(rule);
+      
+      // Store groups structure in conditions field
+      // Format: { logicOperator: 'and'|'or', groups: [...] }
+      const conditionsToStore = migratedRule.groups && Array.isArray(migratedRule.groups)
+        ? {
+            logicOperator: migratedRule.logicOperator || 'and',
+            groups: migratedRule.groups,
+          }
+        : migratedRule.conditions || [];
+      
       const sql = `
         INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
       this.userDb.prepare(sql).run(
-        rule.name,
-        rule.enabled ? 1 : 0,
-        JSON.stringify(rule.trigger || rule.trigger_config),
-        JSON.stringify(rule.conditions),
-        JSON.stringify(rule.action || rule.action_config),
-        JSON.stringify(rule.metadata || {}),
-        rule.cooldown_minutes || 0
+        migratedRule.name,
+        migratedRule.enabled ? 1 : 0,
+        JSON.stringify(migratedRule.trigger || migratedRule.trigger_config),
+        JSON.stringify(conditionsToStore),
+        JSON.stringify(migratedRule.action || migratedRule.action_config),
+        JSON.stringify(migratedRule.metadata || {}),
+        migratedRule.cooldown_minutes || 0
       );
     }
 
@@ -315,7 +477,7 @@ class AutomationEngine {
 
   async reloadRules() {
     try {
-      console.log(`[AutomationEngine ${this.authId}] Reloading rules...`);
+      logger.info('Reloading rules', { authId: this.authId });
       
       // Stop all existing jobs
       this.runningJobs.clear();
@@ -330,9 +492,13 @@ class AutomationEngine {
         }
       }
       
-      console.log(`[AutomationEngine ${this.authId}] Reloaded ${rules.length} rules`);
+      logger.info('Rules reloaded', {
+        authId: this.authId,
+        totalRules: rules.length,
+        enabledRules: rules.filter(r => r.enabled).length,
+      });
     } catch (error) {
-      console.error(`[AutomationEngine ${this.authId}] Failed to reload rules:`, error);
+      logger.error('Failed to reload rules', error, { authId: this.authId });
     }
   }
 
@@ -345,7 +511,7 @@ class AutomationEngine {
   }
 
   shutdown() {
-    console.log(`[AutomationEngine ${this.authId}] Shutting down...`);
+    logger.info('AutomationEngine shutting down', { authId: this.authId });
     this.runningJobs.clear();
   }
 }

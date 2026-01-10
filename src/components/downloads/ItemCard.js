@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
   formatSize,
   formatSpeed,
@@ -13,7 +14,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
 
-export default function ItemCard({
+function ItemCard({
   item,
   index,
   selectedItems,
@@ -431,3 +432,5 @@ export default function ItemCard({
     </div>
   );
 }
+
+export default memo(ItemCard);

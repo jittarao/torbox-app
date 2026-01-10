@@ -1,9 +1,10 @@
+import { memo } from 'react';
 import { formatSize } from './utils/formatters';
 import Icons from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import { useTranslations } from 'next-intl';
 
-export default function FileList({
+function FileList({
   files,
   itemId,
   selectedItems,
@@ -134,3 +135,5 @@ export default function FileList({
     </div>
   );
 }
+
+export default memo(FileList);

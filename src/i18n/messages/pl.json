@@ -162,6 +162,13 @@
             "uploadStalledTime": "Czas zatrzymania wysyłania",
             "uploadStalledTimeDescription": "Czas od ostatniej aktywności wysyłania (w minutach)"
         },
+        "conditionGroups": {
+            "downloading": "Pobieranie",
+            "lifecycle": "Cykl życia",
+            "metadata": "Metadane",
+            "seeding": "Seedowanie",
+            "stalled": "Zawieszone"
+        },
         "delete": "Usuń",
         "details": "Szczegóły",
         "enabledAt": "włączone",
