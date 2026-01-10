@@ -429,7 +429,7 @@ docker run -d \
   --log-opt max-size=10m \
   --log-opt max-file=3 \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  containrrr/watchtower \
+  nickfedor/watchtower \
   --cleanup \
   --interval 3600
 ```
