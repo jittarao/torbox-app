@@ -24,25 +24,25 @@ export default function TagAssignmentModal({
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  // Load current tags for the first download (for preview)
+  // Reset selection when modal opens/closes
   useEffect(() => {
-    if (isOpen && downloadIds.length > 0) {
-      const firstDownloadId = downloadIds[0].toString();
-      const currentTags = getDownloadTags(firstDownloadId);
-      setSelectedTagIds(currentTags.map(tag => tag.id));
+    if (isOpen) {
+      // Start with empty selection - user selects tags to ADD
+      // Existing tags will be kept automatically (non-destructive)
+      setSelectedTagIds([]);
     } else {
       setSelectedTagIds([]);
     }
-  }, [isOpen, downloadIds, getDownloadTags]);
+  }, [isOpen]);
 
   const handleAssign = async () => {
     if (!downloadIds.length) return;
 
     setIsAssigning(true);
     try {
-      await assignTags(downloadIds, selectedTagIds, 'replace');
-      // Refresh tag mappings after assignment
-      await fetchDownloadTags();
+      // Use 'add' operation to non-destructively add tags while keeping existing ones
+      // Backend uses INSERT OR IGNORE which automatically handles deduplication
+      await assignTags(downloadIds, selectedTagIds, 'add');
       if (onSuccess) {
         onSuccess();
       }
@@ -107,8 +107,8 @@ export default function TagAssignmentModal({
         <div className="p-4">
           <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mb-4">
             {downloadIds.length === 1
-              ? 'Select tags for this download:'
-              : `Select tags for ${downloadIds.length} downloads:`}
+              ? 'Select tags to add to this download (existing tags will be kept):'
+              : `Select tags to add to ${downloadIds.length} downloads (existing tags will be kept):`}
           </p>
           
           <TagSelector

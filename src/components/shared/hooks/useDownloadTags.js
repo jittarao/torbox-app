@@ -1,60 +1,48 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
+import { useDownloadTagsStore } from '@/store/downloadTagsStore';
 
 /**
  * Hook for managing download-tag associations
- * Fetches all download-tag mappings in bulk and maintains in-memory map
+ * Uses Zustand store for app-level state management
  */
 export function useDownloadTags(apiKey) {
-  const [tagMappings, setTagMappings] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const {
+    tagMappings,
+    loading,
+    error,
+    fetchDownloadTags,
+    assignTags: assignTagsStore,
+    setApiKey,
+  } = useDownloadTagsStore();
+
+  // Update API key in store when it changes (this will reset mappings if changed)
+  useEffect(() => {
+    if (apiKey) {
+      setApiKey(apiKey);
+    }
+  }, [apiKey, setApiKey]);
 
   /**
    * Fetch all download-tag mappings
    * Returns a map: { downloadId: [{ id, name }] }
    */
-  const fetchDownloadTags = useCallback(async () => {
-    if (!apiKey) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const url = new URL('/api/downloads/tags', window.location.origin);
-
-      const response = await fetch(url.toString(), {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load download tags');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setTagMappings(data.mappings || {});
-        return data.mappings || {};
-      } else {
-        throw new Error(data.error || 'Failed to load download tags');
-      }
-    } catch (err) {
-      console.error('Error loading download tags:', err);
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
+  const fetchDownloadTagsWithKey = useCallback(async () => {
+    if (apiKey) {
+      await fetchDownloadTags(apiKey);
     }
-  }, [apiKey]);
+  }, [apiKey, fetchDownloadTags]);
 
   /**
    * Get tags for a specific download
    */
-  const getDownloadTags = useCallback((downloadId) => {
-    return tagMappings[downloadId] || [];
-  }, [tagMappings]);
+  const getDownloadTags = useCallback(
+    (downloadId) => {
+      return tagMappings[downloadId] || [];
+    },
+    [tagMappings],
+  );
 
   /**
    * Assign tags to downloads (bulk operation)
@@ -62,48 +50,15 @@ export function useDownloadTags(apiKey) {
    * @param {number[]} tagIds - Array of tag IDs to assign
    * @param {string} operation - 'add', 'remove', or 'replace'
    */
-  const assignTags = useCallback(async (downloadIds, tagIds, operation = 'add') => {
-    if (!apiKey) {
-      throw new Error('API key is required');
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/downloads/tags', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          download_ids: downloadIds,
-          tag_ids: tagIds,
-          operation,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to assign tags');
+  const assignTags = useCallback(
+    async (downloadIds, tagIds, operation = 'add') => {
+      if (!apiKey) {
+        throw new Error('API key is required');
       }
-
-      const data = await response.json();
-      if (data.success) {
-        // Refresh mappings after assignment
-        await fetchDownloadTags();
-        return true;
-      } else {
-        throw new Error(data.error || 'Failed to assign tags');
-      }
-    } catch (err) {
-      console.error('Error assigning tags:', err);
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [apiKey, fetchDownloadTags]);
+      return await assignTagsStore(apiKey, downloadIds, tagIds, operation);
+    },
+    [apiKey, assignTagsStore],
+  );
 
   /**
    * Map tags to download items
@@ -169,7 +124,7 @@ export function useDownloadTags(apiKey) {
     tagMappings,
     loading,
     error,
-    fetchDownloadTags,
+    fetchDownloadTags: fetchDownloadTagsWithKey,
     getDownloadTags,
     assignTags,
     mapTagsToDownloads,
