@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import ColumnManager from '../ColumnManager';
 import { COLUMNS } from '@/components/constants';
 import { getItemTypeName } from './utils/statusHelpers';
@@ -41,7 +41,6 @@ export default function ActionBar({
   sortField,
   sortDir,
   handleSort,
-  setSort,
   getTotalDownloadSize,
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
@@ -50,12 +49,15 @@ export default function ActionBar({
   expandAllFiles,
   collapseAllFiles,
   expandedItems,
-  columnFilters = [],
-  setColumnFilters,
+  scrollContainerRef,
 }) {
   const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
+  const [spacerHeight, setSpacerHeight] = useState(0);
   const stickyRef = useRef(null);
+  const initialTopRef = useRef(0);
+  const isStickyRef = useRef(false);
+  const scrollTimeoutRef = useRef(null);
 
   // Use filteredItems for status counts if available, otherwise use unfilteredItems
   const itemsForStatusCounts = filteredItems || unfilteredItems;
@@ -64,24 +66,105 @@ export default function ActionBar({
 
   const t = useTranslations('Columns');
 
+  // Measure height and track initial position
   useEffect(() => {
     const element = stickyRef.current;
-    const observer = new IntersectionObserver(
-      ([e]) => setIsSticky(!e.isIntersecting),
-      { threshold: [1], rootMargin: '-1px 0px 0px 0px' },
-    );
+    if (!element) return;
 
-    if (element) {
-      observer.observe(element);
-    }
+    const measureHeight = () => {
+      if (element) {
+        const height = element.offsetHeight;
+        setSpacerHeight((prev) => (prev !== height ? height : prev));
+      }
+    };
+
+    const updateInitialTop = () => {
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const scrollTop = isFullscreen && scrollContainerRef?.current
+          ? scrollContainerRef.current.scrollTop
+          : window.scrollY;
+        initialTopRef.current = rect.top + scrollTop;
+      }
+    };
+
+    // Measure initially
+    measureHeight();
+    updateInitialTop();
+
+    let resizeTimeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        measureHeight();
+        updateInitialTop();
+      }, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      if (element) {
-        observer.unobserve(element);
-      }
-      observer.disconnect();
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [isFullscreen, scrollContainerRef]);
+
+  // Scroll-based sticky detection - more reliable than IntersectionObserver
+  useEffect(() => {
+    const element = stickyRef.current;
+    if (!element) return;
+
+    const checkSticky = () => {
+      if (!element) return;
+
+      const scrollTop = isFullscreen && scrollContainerRef?.current
+        ? scrollContainerRef.current.scrollTop
+        : window.scrollY;
+
+      const shouldBeSticky = scrollTop > initialTopRef.current;
+
+      // Only update if state actually changed
+      if (shouldBeSticky !== isStickyRef.current) {
+        isStickyRef.current = shouldBeSticky;
+        setIsSticky(shouldBeSticky);
+
+        // Measure height when becoming sticky
+        if (shouldBeSticky) {
+          const height = element.offsetHeight;
+          setSpacerHeight((prev) => (prev !== height ? height : prev));
+        }
+      }
+    };
+
+    // Throttled scroll handler
+    const handleScroll = () => {
+      if (scrollTimeoutRef.current) {
+        return;
+      }
+
+      scrollTimeoutRef.current = requestAnimationFrame(() => {
+        checkSticky();
+        scrollTimeoutRef.current = null;
+      });
+    };
+
+    // Initial check
+    checkSticky();
+
+    // Attach scroll listener to appropriate element
+    const scrollElement = isFullscreen && scrollContainerRef?.current
+      ? scrollContainerRef.current
+      : window;
+
+    scrollElement.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      if (scrollTimeoutRef.current) {
+        cancelAnimationFrame(scrollTimeoutRef.current);
+      }
+      scrollElement.removeEventListener('scroll', handleScroll);
+    };
+  }, [isFullscreen, scrollContainerRef]);
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;
@@ -92,11 +175,16 @@ export default function ActionBar({
   }));
 
   return (
-    <div
-      ref={stickyRef}
-      className={`flex flex-col lg:flex-row gap-4 py-4 justify-between bg-surface dark:bg-surface-dark
-        ${isSticky ? 'border-b border-border dark:border-border-dark' : ''} ${isFullscreen ? 'px-4' : ''}`}
-    >
+    <Fragment>
+      {/* Spacer to prevent layout shift when ActionBar becomes fixed */}
+      {isSticky && spacerHeight > 0 && <div style={{ height: `${spacerHeight}px` }} />}
+      <div
+        ref={stickyRef}
+        className={`flex flex-col lg:flex-row gap-4 justify-between bg-surface dark:bg-surface-dark
+          ${isSticky ? 'fixed top-0 left-0 right-0 z-50 py-2 border-b border-border dark:border-border-dark shadow-lg' : 'py-4'} 
+          ${isFullscreen ? 'px-4' : isSticky ? 'px-4' : ''}
+          transition-all duration-200`}
+      >
       <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
         <StatusSection
           statusCounts={statusCounts}
@@ -195,6 +283,7 @@ export default function ActionBar({
           />
         </div>
       </div>
-    </div>
+      </div>
+    </Fragment>
   );
 }

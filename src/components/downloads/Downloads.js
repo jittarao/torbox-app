@@ -424,9 +424,8 @@ export default function Downloads({ apiKey }) {
               downloadLinks.length > 0 ? 'mb-12' : ''
             }`}
           >
-            {/* Wrap ActionBar in a sticky container */}
-            <div className="sticky top-0 z-20">
-              <ActionBar
+            {/* ActionBar - becomes fixed when scrolled past */}
+            <ActionBar
                 unfilteredItems={items}
                 filteredItems={filteredItems}
                 selectedItems={selectedItems}
@@ -458,7 +457,6 @@ export default function Downloads({ apiKey }) {
                 sortField={sortField}
                 sortDir={sortDirection}
                 handleSort={handleSort}
-                setSort={setSort}
                 getTotalDownloadSize={getTotalDownloadSize}
                 isDownloadPanelOpen={isDownloadPanelOpen}
                 setIsDownloadPanelOpen={setIsDownloadPanelOpen}
@@ -467,10 +465,8 @@ export default function Downloads({ apiKey }) {
                 expandAllFiles={expandAllFiles}
                 collapseAllFiles={collapseAllFiles}
                 expandedItems={expandedItems}
-                columnFilters={columnFilters}
-                setColumnFilters={setColumnFilters}
+                scrollContainerRef={scrollContainerRef}
               />
-            </div>
 
             {viewMode === 'table' ? (
               <ItemsTable
