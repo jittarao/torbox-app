@@ -40,6 +40,11 @@ class PollingScheduler {
         logger.error('Error polling due users', err);
       });
     }, this.pollCheckInterval);
+    
+    logger.info('Polling scheduler started', {
+      pollCheckInterval: `${this.pollCheckInterval / 1000}s`,
+      refreshInterval: `${this.refreshInterval / 1000}s`
+    });
 
     // Start periodic check for new users
     this.refreshIntervalId = setInterval(() => {
@@ -103,6 +108,7 @@ class PollingScheduler {
    */
   async pollDueUsers() {
     if (!this.isRunning) {
+      logger.debug('Polling scheduler not running, skipping poll check');
       return;
     }
 
@@ -111,10 +117,14 @@ class PollingScheduler {
       const dueUsers = this.masterDb.getUsersDueForPolling();
 
       if (dueUsers.length === 0) {
+        logger.debug('No users due for polling at this time');
         return; // No users due for polling
       }
 
-      logger.debug('Found users due for polling', { count: dueUsers.length });
+      logger.info('Found users due for polling', { 
+        count: dueUsers.length,
+        authIds: dueUsers.map(u => u.auth_id)
+      });
 
       // Poll each user
       for (const user of dueUsers) {
@@ -127,6 +137,15 @@ class PollingScheduler {
 
         // Skip if no active rules (will be updated by poller)
         if (!has_active_rules) {
+          // Get user registry info for debugging
+          const userInfo = this.masterDb.getUserRegistryInfo(auth_id);
+          logger.warn('User has no active rules flag set, skipping poll', {
+            authId: auth_id,
+            hasActiveRules: has_active_rules,
+            nextPollAt: userInfo?.next_poll_at,
+            status: userInfo?.status,
+            note: 'This flag should be updated when rules are created/enabled. Check if rules were saved correctly.'
+          });
           // Set next poll to 1 hour from now
           const nextPollAt = new Date(Date.now() + 60 * 60 * 1000);
           this.masterDb.updateNextPollAt(auth_id, nextPollAt, 0);
