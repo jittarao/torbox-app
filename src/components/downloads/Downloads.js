@@ -426,47 +426,47 @@ export default function Downloads({ apiKey }) {
           >
             {/* ActionBar - becomes fixed when scrolled past */}
             <ActionBar
-                unfilteredItems={items}
-                filteredItems={filteredItems}
-                selectedItems={selectedItems}
-                setSelectedItems={setSelectedItems}
-                hasSelectedFiles={hasSelectedFiles}
-                activeColumns={activeColumns}
-                onColumnChange={handleColumnChange}
-                search={search}
-                setSearch={setSearch}
-                statusFilter={statusFilter}
-                onStatusChange={setStatusFilter}
-                isDownloading={isDownloading}
-                onBulkDownload={() =>
-                  handleBulkDownload(selectedItems, sortedItems)
-                }
-                isDeleting={isDeleting}
-                onBulkDelete={(includeParentDownloads) =>
-                  deleteItems(selectedItems, includeParentDownloads, items)
-                }
-                isExporting={isExporting}
-                onBulkExport={handleBulkExport}
-                activeType={activeType}
-                isBlurred={isBlurred}
-                onBlurToggle={() => setIsBlurred(!isBlurred)}
-                isFullscreen={isFullscreen}
-                onFullscreenToggle={onFullscreenToggle}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                sortField={sortField}
-                sortDir={sortDirection}
-                handleSort={handleSort}
-                getTotalDownloadSize={getTotalDownloadSize}
-                isDownloadPanelOpen={isDownloadPanelOpen}
-                setIsDownloadPanelOpen={setIsDownloadPanelOpen}
-                apiKey={apiKey}
-                setToast={setToast}
-                expandAllFiles={expandAllFiles}
-                collapseAllFiles={collapseAllFiles}
-                expandedItems={expandedItems}
-                scrollContainerRef={scrollContainerRef}
-              />
+              unfilteredItems={items}
+              filteredItems={filteredItems}
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+              hasSelectedFiles={hasSelectedFiles}
+              activeColumns={activeColumns}
+              onColumnChange={handleColumnChange}
+              search={search}
+              setSearch={setSearch}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              isDownloading={isDownloading}
+              onBulkDownload={() =>
+                handleBulkDownload(selectedItems, sortedItems)
+              }
+              isDeleting={isDeleting}
+              onBulkDelete={(includeParentDownloads) =>
+                deleteItems(selectedItems, includeParentDownloads, items)
+              }
+              isExporting={isExporting}
+              onBulkExport={handleBulkExport}
+              activeType={activeType}
+              isBlurred={isBlurred}
+              onBlurToggle={() => setIsBlurred(!isBlurred)}
+              isFullscreen={isFullscreen}
+              onFullscreenToggle={onFullscreenToggle}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              sortField={sortField}
+              sortDir={sortDirection}
+              handleSort={handleSort}
+              getTotalDownloadSize={getTotalDownloadSize}
+              isDownloadPanelOpen={isDownloadPanelOpen}
+              setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+              apiKey={apiKey}
+              setToast={setToast}
+              expandAllFiles={expandAllFiles}
+              collapseAllFiles={collapseAllFiles}
+              expandedItems={expandedItems}
+              scrollContainerRef={scrollContainerRef}
+            />
 
             {viewMode === 'table' ? (
               <ItemsTable

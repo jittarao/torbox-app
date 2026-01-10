@@ -155,10 +155,17 @@ class AutomationEngine {
    */
   async updateMasterDbActiveRulesFlag(hasActiveRules) {
     if (!this.masterDb) {
+      logger.warn('Master DB not available, cannot update active rules flag', {
+        authId: this.authId
+      });
       return; // Master DB not available
     }
     try {
       this.masterDb.updateActiveRulesFlag(this.authId, hasActiveRules);
+      logger.info('Updated active rules flag in master DB', {
+        authId: this.authId,
+        hasActiveRules
+      });
     } catch (error) {
       logger.error('Failed to update active rules flag in master DB', error, {
         authId: this.authId,
@@ -172,6 +179,10 @@ class AutomationEngine {
    */
   async syncActiveRulesFlag() {
     const hasActive = this.hasActiveRules();
+    logger.debug('Syncing active rules flag to master DB', {
+      authId: this.authId,
+      hasActiveRules: hasActive
+    });
     await this.updateMasterDbActiveRulesFlag(hasActive);
   }
 

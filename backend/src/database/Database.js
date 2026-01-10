@@ -204,6 +204,20 @@ class Database {
       ORDER BY ur.next_poll_at ASC
     `);
   }
+
+  /**
+   * Get user registry info for a specific user
+   * @param {string} authId - User authentication ID
+   * @returns {Object|null} - User registry info or null if not found
+   */
+  getUserRegistryInfo(authId) {
+    return this.getQuery(`
+      SELECT ur.*, ak.encrypted_key, ak.key_name
+      FROM user_registry ur
+      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+      WHERE ur.auth_id = ?
+    `, [authId]);
+  }
 }
 
 export default Database;
