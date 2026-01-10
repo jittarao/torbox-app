@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useDeferredValue, useCallback, useEffect } from 'react';
+import { useRef, useState, useMemo, useDeferredValue, useCallback, useEffect, useLayoutEffect } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloads } from '../shared/hooks/useDownloads';
@@ -123,8 +123,11 @@ export default function CardList({
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
-  // Use the appropriate virtualizer based on mode
-  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
+  // Use the appropriate virtualizer based on mode - memoize to ensure stable reference
+  const virtualizer = useMemo(
+    () => isFullscreen ? containerVirtualizer : windowVirtualizer,
+    [isFullscreen, containerVirtualizer, windowVirtualizer]
+  );
 
   // Define isDisabled first so it can be used in handlers
   const isDisabled = useCallback((itemId) => {
@@ -260,8 +263,70 @@ export default function CardList({
     );
   };
 
-  const virtualRows = virtualizer.getVirtualItems();
-  const totalSize = virtualizer.getTotalSize();
+  // Track view mode changes to prevent flushSync errors
+  const prevViewModeRef = useRef(viewMode);
+  const isTransitioningRef = useRef(false);
+  const [virtualRows, setVirtualRows] = useState([]);
+  const [totalSize, setTotalSize] = useState(0);
+  
+  // Check for view mode change synchronously during render
+  if (prevViewModeRef.current !== viewMode) {
+    isTransitioningRef.current = true;
+    prevViewModeRef.current = viewMode;
+    // Clear virtual rows during transition
+    if (virtualRows.length > 0) {
+      setVirtualRows([]);
+      setTotalSize(0);
+    }
+  }
+  
+  // Update virtual rows after render completes to prevent flushSync errors
+  // This is critical when switching from Table to Card view
+  useLayoutEffect(() => {
+    const updateRows = () => {
+      try {
+        const rows = virtualizer.getVirtualItems();
+        const size = virtualizer.getTotalSize();
+        setVirtualRows(rows);
+        setTotalSize(size);
+        // Mark transition as complete after update
+        isTransitioningRef.current = false;
+      } catch (error) {
+        // Silently handle errors - will retry on next effect run
+        isTransitioningRef.current = false;
+      }
+    };
+    
+    // Use requestAnimationFrame to ensure we're outside the render phase
+    const rafId = requestAnimationFrame(updateRows);
+    return () => cancelAnimationFrame(rafId);
+  }, [virtualizer, viewMode, flattenedRows.length]);
+  
+  // Update virtual rows on scroll to keep them in sync
+  // This ensures scroll updates work even though we're using state
+  useEffect(() => {
+    // Skip during transitions
+    if (isTransitioningRef.current) return;
+    
+    const updateRows = () => {
+      try {
+        const rows = virtualizer.getVirtualItems();
+        const size = virtualizer.getTotalSize();
+        setVirtualRows(rows);
+        setTotalSize(size);
+      } catch (error) {
+        // Silently handle errors
+      }
+    };
+    
+    // Use an interval to update rows frequently for smooth scrolling
+    // This is more reliable than scroll events which might be throttled
+    const intervalId = setInterval(() => {
+      requestAnimationFrame(updateRows);
+    }, 16); // ~60fps
+    
+    return () => clearInterval(intervalId);
+  }, [virtualizer]);
 
   return (
     <div

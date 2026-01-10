@@ -301,14 +301,17 @@ export default function TableBody({
 
   // Track view mode changes to prevent flushSync errors
   const prevViewModeRef = useRef(viewMode);
+  const isTransitioningRef = useRef(false);
   const [virtualRows, setVirtualRows] = useState([]);
-  const [useDirectCall, setUseDirectCall] = useState(false);
   
-  // Check for view mode change - reset to use state
+  // Check for view mode change synchronously during render
   if (prevViewModeRef.current !== viewMode) {
+    isTransitioningRef.current = true;
     prevViewModeRef.current = viewMode;
-    setUseDirectCall(false);
-    setVirtualRows([]);
+    // Clear virtual rows during transition
+    if (virtualRows.length > 0) {
+      setVirtualRows([]);
+    }
   }
   
   // Update virtual rows after render completes to prevent flushSync errors
@@ -318,10 +321,11 @@ export default function TableBody({
       try {
         const rows = virtualizer.getVirtualItems();
         setVirtualRows(rows);
-        // After first successful update, allow direct calls for scroll updates
-        setUseDirectCall(true);
+        // Mark transition as complete after update
+        isTransitioningRef.current = false;
       } catch (error) {
         // Silently handle errors - will retry on next effect run
+        isTransitioningRef.current = false;
       }
     };
     
@@ -330,11 +334,33 @@ export default function TableBody({
     return () => cancelAnimationFrame(rafId);
   }, [virtualizer, viewMode, flattenedRows.length]);
   
-  // Get virtual rows - use direct call if ready, otherwise use state
-  // Direct call is needed for scroll updates to work properly
-  const currentVirtualRows = useDirectCall 
-    ? virtualizer.getVirtualItems() 
-    : virtualRows;
+  // Update virtual rows on scroll to keep them in sync
+  // This ensures scroll updates work even though we're using state
+  useEffect(() => {
+    // Skip during transitions
+    if (isTransitioningRef.current) return;
+    
+    const updateRows = () => {
+      try {
+        const rows = virtualizer.getVirtualItems();
+        setVirtualRows(rows);
+      } catch (error) {
+        // Silently handle errors
+      }
+    };
+    
+    // Use an interval to update rows frequently for smooth scrolling
+    // This is more reliable than scroll events which might be throttled
+    const intervalId = setInterval(() => {
+      requestAnimationFrame(updateRows);
+    }, 16); // ~60fps
+    
+    return () => clearInterval(intervalId);
+  }, [virtualizer]);
+  
+  // Get virtual rows - always use state to prevent flushSync errors
+  // State is updated in effects to keep it in sync with scroll
+  const currentVirtualRows = virtualRows;
   
   // Calculate startOffset - only show spacer for rows that are actually before the first visible
   // In fullscreen: use container scroll position

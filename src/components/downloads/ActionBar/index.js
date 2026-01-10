@@ -55,9 +55,9 @@ export default function ActionBar({
   const [isSticky, setIsSticky] = useState(false);
   const [spacerHeight, setSpacerHeight] = useState(0);
   const stickyRef = useRef(null);
-  const initialTopRef = useRef(0);
   const isStickyRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
+  const initialTopRef = useRef(0);
 
   // Use filteredItems for status counts if available, otherwise use unfilteredItems
   const itemsForStatusCounts = filteredItems || unfilteredItems;
@@ -66,7 +66,28 @@ export default function ActionBar({
 
   const t = useTranslations('Columns');
 
-  // Measure height and track initial position
+  // Reset sticky state when switching modes (fullscreen, view mode, etc.)
+  useEffect(() => {
+    // Reset sticky state when mode changes
+    setIsSticky(false);
+    isStickyRef.current = false;
+    
+    // Recalculate initial position after a brief delay to allow DOM to settle
+    const timer = setTimeout(() => {
+      const element = stickyRef.current;
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const scrollTop = isFullscreen && scrollContainerRef?.current
+          ? scrollContainerRef.current.scrollTop
+          : window.scrollY || document.documentElement.scrollTop;
+        initialTopRef.current = rect.top + scrollTop;
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [isFullscreen, scrollContainerRef, viewMode]);
+
+  // Measure height
   useEffect(() => {
     const element = stickyRef.current;
     if (!element) return;
@@ -78,27 +99,13 @@ export default function ActionBar({
       }
     };
 
-    const updateInitialTop = () => {
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        const scrollTop = isFullscreen && scrollContainerRef?.current
-          ? scrollContainerRef.current.scrollTop
-          : window.scrollY;
-        initialTopRef.current = rect.top + scrollTop;
-      }
-    };
-
     // Measure initially
     measureHeight();
-    updateInitialTop();
 
     let resizeTimeout;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        measureHeight();
-        updateInitialTop();
-      }, 100);
+      resizeTimeout = setTimeout(measureHeight, 100);
     };
 
     window.addEventListener('resize', handleResize);
@@ -107,21 +114,37 @@ export default function ActionBar({
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isFullscreen, scrollContainerRef]);
+  }, []);
 
-  // Scroll-based sticky detection - more reliable than IntersectionObserver
+  // Scroll-based sticky detection - compare scroll position to initial position
   useEffect(() => {
     const element = stickyRef.current;
     if (!element) return;
+
+    // Recalculate initial position when effect runs (mode changed)
+    const recalculateInitialTop = () => {
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const scrollTop = isFullscreen && scrollContainerRef?.current
+          ? scrollContainerRef.current.scrollTop
+          : window.scrollY || document.documentElement.scrollTop;
+        initialTopRef.current = rect.top + scrollTop;
+      }
+    };
+
+    // Recalculate after a brief delay to ensure DOM is ready
+    const initTimer = setTimeout(recalculateInitialTop, 100);
 
     const checkSticky = () => {
       if (!element) return;
 
       const scrollTop = isFullscreen && scrollContainerRef?.current
         ? scrollContainerRef.current.scrollTop
-        : window.scrollY;
+        : window.scrollY || document.documentElement.scrollTop;
 
-      const shouldBeSticky = scrollTop > initialTopRef.current;
+      // ActionBar should be sticky when we've scrolled past its initial position
+      // We use >= instead of > to account for the exact moment it reaches the top
+      const shouldBeSticky = scrollTop >= initialTopRef.current;
 
       // Only update if state actually changed
       if (shouldBeSticky !== isStickyRef.current) {
@@ -132,6 +155,13 @@ export default function ActionBar({
         if (shouldBeSticky) {
           const height = element.offsetHeight;
           setSpacerHeight((prev) => (prev !== height ? height : prev));
+        } else {
+          // When becoming unsticky, update initial position in case layout changed
+          requestAnimationFrame(() => {
+            if (element && !isStickyRef.current) {
+              recalculateInitialTop();
+            }
+          });
         }
       }
     };
@@ -148,8 +178,10 @@ export default function ActionBar({
       });
     };
 
-    // Initial check
-    checkSticky();
+    // Initial check after initial position is calculated
+    const checkTimer = setTimeout(() => {
+      checkSticky();
+    }, 150);
 
     // Attach scroll listener to appropriate element
     const scrollElement = isFullscreen && scrollContainerRef?.current
@@ -159,6 +191,8 @@ export default function ActionBar({
     scrollElement.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
+      clearTimeout(initTimer);
+      clearTimeout(checkTimer);
       if (scrollTimeoutRef.current) {
         cancelAnimationFrame(scrollTimeoutRef.current);
       }
