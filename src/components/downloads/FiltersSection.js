@@ -7,6 +7,8 @@ import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import CustomViews from './CustomViews';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
 import Select from '@/components/shared/Select';
+import TagManager from './Tags/TagManager';
+import { useTranslations } from 'next-intl';
 
 export default function FiltersSection({
   apiKey,
@@ -23,6 +25,8 @@ export default function FiltersSection({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { views, saveView, deleteView, updateView } = useCustomViews(apiKey);
+  const customViewsT = useTranslations('CustomViews');
+  const automationRulesT = useTranslations('AutomationRules');
 
   // When updating a view, set checkboxes based on existing view data
   useEffect(() => {
@@ -72,6 +76,7 @@ export default function FiltersSection({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveSort, setSaveSort] = useState(false);
   const [saveColumns, setSaveColumns] = useState(false);
+  const [showTagManager, setShowTagManager] = useState(false);
 
   const availableColumns = getFilterableColumns(activeType);
 
@@ -403,37 +408,65 @@ export default function FiltersSection({
             )}
           </button>
 
-          {/* View Selector - Show inline when not expanded */}
-          {apiKey && views.length > 0 && !isExpanded && (
-            <div className="flex items-center gap-1.5">
-              <CustomViews
-                views={views}
-                activeView={activeView}
-                onSelectView={onApplyView}
-                onClearView={onClearView}
-                onEditView={(view) => {
-                  // Load view into filters for editing
-                  if (view.filters) {
-                    if (view.filters.groups) {
-                      setColumnFilters(view.filters);
-                    } else if (Array.isArray(view.filters)) {
-                      setColumnFilters({
-                        logicOperator: LOGIC_OPERATORS.AND,
-                        groups: [
-                          {
-                            logicOperator: LOGIC_OPERATORS.AND,
-                            filters: view.filters,
-                          },
-                        ],
-                      });
+          <div className='flex justify-between items-center gap-2'>
+            {/* View Selector - Show inline when not expanded */}
+            {apiKey && views.length > 0 && !isExpanded && (
+              <div className="flex items-center gap-1.5">
+                <CustomViews
+                  views={views}
+                  activeView={activeView}
+                  onSelectView={onApplyView}
+                  onClearView={onClearView}
+                  onEditView={(view) => {
+                    // Load view into filters for editing
+                    if (view.filters) {
+                      if (view.filters.groups) {
+                        setColumnFilters(view.filters);
+                      } else if (Array.isArray(view.filters)) {
+                        setColumnFilters({
+                          logicOperator: LOGIC_OPERATORS.AND,
+                          groups: [
+                            {
+                              logicOperator: LOGIC_OPERATORS.AND,
+                              filters: view.filters,
+                            },
+                          ],
+                        });
+                      }
                     }
-                  }
-                  setIsExpanded(true);
-                }}
-                onDeleteView={handleDeleteView}
-              />
-            </div>
-          )}
+                    setIsExpanded(true);
+                  }}
+                  onDeleteView={handleDeleteView}
+                />
+              </div>
+            )}
+
+            {/* Manage Tags Button - Show when not expanded */}
+            {apiKey && !isExpanded && (
+              <button
+                type="button"
+                onClick={() => setShowTagManager(true)}
+                className="px-2 py-1 text-xs font-medium text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors flex items-center justify-center gap-1"
+                title="Manage tags"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Tags</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {isExpanded && (
@@ -467,6 +500,34 @@ export default function FiltersSection({
                   }}
                   onDeleteView={handleDeleteView}
                 />
+              </div>
+            )}
+
+            {/* Manage Tags Button */}
+            {apiKey && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTagManager(true)}
+                  className="px-2 py-1 text-xs font-medium text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors flex items-center justify-center gap-1"
+                  title="Manage tags"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                  <span className="hidden sm:inline">Manage Tags</span>
+                </button>
               </div>
             )}
 
@@ -511,14 +572,14 @@ export default function FiltersSection({
                 )}
                 {filterGroups.length > 1 && (
                   <div className="flex items-center gap-2 pl-2 border-l border-border dark:border-border-dark">
-                    <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">Between groups:</span>
+                    <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">{customViewsT('betweenGroups')}</span>
                     <Select
                       value={groupLogicOperator}
                       onChange={(e) => handleGroupLogicChange(e.target.value)}
                       className="min-w-[80px] text-xs"
                     >
-                      <option value={LOGIC_OPERATORS.AND}>AND</option>
-                      <option value={LOGIC_OPERATORS.OR}>OR</option>
+                      <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.and')}</option>
+                      <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.or')}</option>
                     </Select>
                   </div>
                 )}
@@ -527,7 +588,7 @@ export default function FiltersSection({
                   onClick={handleAddGroup}
                   className="px-3 py-1.5 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors whitespace-nowrap"
                 >
-                  + Add Group
+                  + {customViewsT('addGroup')}
                 </button>
               </div>
           </div>
@@ -541,7 +602,7 @@ export default function FiltersSection({
           {filterGroups.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 italic">
-                No filters. Click "+ Filter" in a group to create one.
+                {customViewsT('noFilters')}
               </p>
             </div>
           ) : (
@@ -551,7 +612,7 @@ export default function FiltersSection({
                   {groupIndex > 0 && (
                     <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
                       <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
-                        {groupLogicOperator}
+                        {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? automationRulesT('logicOperators.and') : automationRulesT('logicOperators.or')}
                       </div>
                     </div>
                   )}
@@ -565,6 +626,7 @@ export default function FiltersSection({
                     onUpdateFilter={handleUpdateFilter}
                     onRemoveFilter={handleRemoveFilter}
                     availableColumns={availableColumns}
+                    apiKey={apiKey}
                   />
                 </div>
               ))}
@@ -586,7 +648,7 @@ export default function FiltersSection({
                             onChange={(e) => setSaveSort(e.target.checked)}
                             className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark focus:ring-accent dark:focus:ring-accent-dark"
                           />
-                          <span className="whitespace-nowrap">Include sort</span>
+                          <span className="whitespace-nowrap">{customViewsT('includeSort')}</span>
                         </label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
@@ -595,7 +657,7 @@ export default function FiltersSection({
                             onChange={(e) => setSaveColumns(e.target.checked)}
                             className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark focus:ring-accent dark:focus:ring-accent-dark"
                           />
-                          <span className="whitespace-nowrap">Include columns</span>
+                          <span className="whitespace-nowrap">{customViewsT('includeColumns')}</span>
                         </label>
                       </div>
                     )}
@@ -607,7 +669,7 @@ export default function FiltersSection({
                           disabled={isSaving}
                           className="px-3 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex-1 sm:flex-initial"
                         >
-                          {isSaving ? 'Updating...' : 'Update View'}
+                          {isSaving ? customViewsT('updating') : customViewsT('updateView')}
                         </button>
                       )}
                       <button
@@ -615,7 +677,7 @@ export default function FiltersSection({
                         onClick={() => setShowSaveInput(true)}
                         className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-md border border-accent dark:border-accent-dark transition-colors flex-1 sm:flex-initial"
                       >
-                        Save as New
+                        {customViewsT('saveAsNew')}
                       </button>
                     </div>
                   </div>
@@ -626,7 +688,7 @@ export default function FiltersSection({
                         type="text"
                         value={saveViewName}
                         onChange={(e) => setSaveViewName(e.target.value)}
-                        placeholder="View name..."
+                        placeholder={customViewsT('viewNamePlaceholder')}
                         className="flex-1 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -652,7 +714,7 @@ export default function FiltersSection({
                         disabled={isSaving || !saveViewName.trim()}
                         className="px-3 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                       >
-                        {isSaving ? 'Saving...' : 'Save'}
+                        {isSaving ? customViewsT('saving') : customViewsT('save')}
                       </button>
                       <button
                         type="button"
@@ -670,7 +732,7 @@ export default function FiltersSection({
                         }}
                         className="px-3 py-1.5 text-xs font-medium text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors"
                       >
-                        Cancel
+                        {customViewsT('cancel')}
                       </button>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-4 text-xs text-primary-text dark:text-primary-text-dark flex-wrap">
@@ -681,7 +743,7 @@ export default function FiltersSection({
                           onChange={(e) => setSaveSort(e.target.checked)}
                           className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark focus:ring-accent dark:focus:ring-accent-dark"
                         />
-                        <span className="whitespace-nowrap">Include sort</span>
+                        <span className="whitespace-nowrap">{customViewsT('includeSort')}</span>
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -690,7 +752,7 @@ export default function FiltersSection({
                           onChange={(e) => setSaveColumns(e.target.checked)}
                           className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark focus:ring-accent dark:focus:ring-accent-dark"
                         />
-                        <span className="whitespace-nowrap">Include columns</span>
+                        <span className="whitespace-nowrap">{customViewsT('includeColumns')}</span>
                       </label>
                     </div>
                   </div>
@@ -700,6 +762,13 @@ export default function FiltersSection({
           )}
         </div>
       )}
+
+      {/* Tag Manager Modal */}
+      <TagManager
+        isOpen={showTagManager}
+        onClose={() => setShowTagManager(false)}
+        apiKey={apiKey}
+      />
     </div>
   );
 }

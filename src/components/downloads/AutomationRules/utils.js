@@ -5,6 +5,7 @@ import {
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
+  TAG_OPERATORS,
 } from './constants';
 
 // Helper to check if a condition type is time-based (relative duration)
@@ -171,6 +172,21 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
       } else {
         return `status is ${condition.value.join(', ')}`;
       }
+    } else if (condition.type === CONDITION_TYPES.TAGS) {
+      // TAGS value must be an array of tag IDs
+      if (!Array.isArray(condition.value)) {
+        return 'tags (invalid)';
+      }
+      if (condition.value.length === 0) {
+        return 'tags (none selected)';
+      }
+      const labels = {
+        [TAG_OPERATORS.IS_ANY_OF]: t('tagOperators.isAnyOf') + ' ',
+        [TAG_OPERATORS.IS_ALL_OF]: t('tagOperators.isAllOf') + ' ',
+        [TAG_OPERATORS.IS_NONE_OF]: t('tagOperators.isNoneOf') + ' ',
+      };
+      const operatorText = labels[condition.operator] || condition.operator;
+      return `tags ${operatorText} ${condition.value.length} tag${condition.value.length !== 1 ? 's' : ''}`;
     } else if (condition.type === CONDITION_TYPES.EXPIRES_AT) {
       if (operator === 'lt' || operator === 'lte') {
         return `expires within ${condition.value} hours`;
@@ -217,6 +233,7 @@ export const getConditionUnit = (conditionType) => {
              conditionType === CONDITION_TYPES.TOTAL_UPLOADED) {
     return 'GB';
   } else if (conditionType === CONDITION_TYPES.STATUS ||
+             conditionType === CONDITION_TYPES.TAGS ||
              conditionType === CONDITION_TYPES.NAME ||
              conditionType === CONDITION_TYPES.PRIVATE ||
              conditionType === CONDITION_TYPES.CACHED ||
@@ -257,7 +274,7 @@ export const getColumnKeyForCondition = (conditionType) => {
   return CONDITION_TO_COLUMN_MAP[conditionType] || null;
 };
 
-// Get condition type filter category (number, text, boolean, status, time, timestamp)
+// Get condition type filter category (number, text, boolean, status, tags, time, timestamp)
 export const getConditionTypeCategory = (conditionType) => {
   if (isBooleanCondition(conditionType)) {
     return 'boolean';
@@ -267,6 +284,9 @@ export const getConditionTypeCategory = (conditionType) => {
   }
   if (conditionType === CONDITION_TYPES.STATUS) {
     return 'status';
+  }
+  if (conditionType === CONDITION_TYPES.TAGS) {
+    return 'tags';
   }
   if (isTimeBasedCondition(conditionType)) {
     return 'time';
@@ -283,6 +303,9 @@ export const getOperatorsForConditionType = (conditionType) => {
   if (conditionType === CONDITION_TYPES.STATUS) {
     return Object.values(MULTI_SELECT_OPERATORS);
   }
+  if (conditionType === CONDITION_TYPES.TAGS) {
+    return Object.values(TAG_OPERATORS);
+  }
   if (isBooleanCondition(conditionType)) {
     return Object.values(BOOLEAN_OPERATORS);
   }
@@ -298,6 +321,9 @@ export const getDefaultOperatorForConditionType = (conditionType) => {
   if (conditionType === CONDITION_TYPES.STATUS) {
     return MULTI_SELECT_OPERATORS.IS_ANY_OF;
   }
+  if (conditionType === CONDITION_TYPES.TAGS) {
+    return TAG_OPERATORS.IS_ANY_OF;
+  }
   if (isBooleanCondition(conditionType)) {
     return BOOLEAN_OPERATORS.IS_TRUE;
   }
@@ -311,6 +337,9 @@ export const getDefaultOperatorForConditionType = (conditionType) => {
 // Get default value for a condition type
 export const getDefaultValueForConditionType = (conditionType) => {
   if (conditionType === CONDITION_TYPES.STATUS) {
+    return [];
+  }
+  if (conditionType === CONDITION_TYPES.TAGS) {
     return [];
   }
   if (isBooleanCondition(conditionType)) {
@@ -379,6 +408,7 @@ export const getConditionTypeOptions = (t) => {
         { value: CONDITION_TYPES.PRIVATE, label: t('conditions.private'), description: t('conditions.privateDescription') },
         { value: CONDITION_TYPES.CACHED, label: t('conditions.cached'), description: t('conditions.cachedDescription') },
         { value: CONDITION_TYPES.ALLOW_ZIP, label: t('conditions.allowZip'), description: t('conditions.allowZipDescription') },
+        { value: CONDITION_TYPES.TAGS, label: 'Tags', description: 'Filter by tags assigned to downloads' },
       ],
     },
   ];

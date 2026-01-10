@@ -82,6 +82,8 @@
             "stopSeedingDescription": "Zatrzymaj seedowanie bez usuwania torrentu"
         },
         "add": "Dodaj regułę",
+        "addCondition": "Dodaj warunek",
+        "addConditionToGroup": "Dodaj warunek do grupy",
         "addRule": "Dodaj regułę",
         "booleanOperators": {
             "isFalse": "Jest fałszem",
@@ -96,6 +98,13 @@
         "clearLogs": "Wyczyść logi",
         "close": "Zamknij",
         "condition": "Warunek",
+        "conditionGroups": {
+            "downloading": "Pobieranie",
+            "lifecycle": "Cykl życia",
+            "metadata": "Metadane",
+            "seeding": "Seedowanie",
+            "stalled": "Zawieszone"
+        },
         "conditions": {
             "age": "Wiek",
             "ageDescription": "Czas od dodania torrenta (w godzinach)",
@@ -152,6 +161,8 @@
             "status": "Status",
             "statusDescription": "Aktualny status torrenta (pobieranie, seedowanie, ukończone itd.)",
             "statusPlaceholder": "Wybierz statusy...",
+            "tags": "Tagi",
+            "tagsPlaceholder": "Wybierz tagi...",
             "totalUploaded": "Łącznie wysłano",
             "totalUploadedDescription": "Całkowita ilość wysłanych danych (w GB)",
             "tracker": "Tracker",
@@ -162,13 +173,6 @@
             "uploadStalledTime": "Czas zatrzymania wysyłania",
             "uploadStalledTimeDescription": "Czas od ostatniej aktywności wysyłania (w minutach)"
         },
-        "conditionGroups": {
-            "downloading": "Pobieranie",
-            "lifecycle": "Cykl życia",
-            "metadata": "Metadane",
-            "seeding": "Seedowanie",
-            "stalled": "Zawieszone"
-        },
         "delete": "Usuń",
         "details": "Szczegóły",
         "enabledAt": "włączone",
@@ -177,6 +181,12 @@
         "failed": "Nie powiodło się",
         "itemsAffected": "Dotknięte elementy",
         "lastTriggered": "ostatnio uruchomione",
+        "logicOperators": {
+            "and": "I",
+            "andGroups": "Wszystkie grupy (I)",
+            "or": "LUB",
+            "orGroups": "Jedna z grup (LUB)"
+        },
         "mobileTitle": "Reguły",
         "multiSelectOperators": {
             "isAnyOf": "Jest jednym z",
@@ -184,6 +194,7 @@
         },
         "neverExecuted": "nigdy nie wykonane",
         "neverTriggered": "nigdy nie uruchomione",
+        "noConditionsInGroup": "W tej grupie nie ma warunków. Kliknij '+ Warunek' aby dodać jeden.",
         "noLogs": "Brak dostępnych logów",
         "noRules": "Brak reguł automatyzacji",
         "operators": {
@@ -202,6 +213,8 @@
             "stopSeedingLowRatio": "Zatrzymaj seedowanie przy niskim współczynniku",
             "title": "Szybkie ustawienia"
         },
+        "removeCondition": "Usuń warunek",
+        "removeGroup": "Usuń grupę",
         "ruleLogs": "Logi reguł",
         "ruleName": "Nazwa reguły",
         "ruleNamePlaceholder": "Wprowadź nazwę reguły",
@@ -218,6 +231,11 @@
             "startsWith": "Zaczyna się od"
         },
         "success": "Sukces",
+        "tagOperators": {
+            "isAllOf": "Są wszystkimi",
+            "isAnyOf": "Jest jednym z",
+            "isNoneOf": "Nie jest żadnym z"
+        },
         "timeOperators": {
             "eq": "jest",
             "gt": "więcej niż",
@@ -330,6 +348,27 @@
             "unknown": "Nieznane",
             "y": "l"
         }
+    },
+    "CustomViews": {
+        "addFilter": "Dodaj filtr",
+        "addFilterToGroup": "Dodaj filtr do grupy",
+        "addGroup": "Dodaj grupę",
+        "betweenGroups": "Między grupami:",
+        "cancel": "Anuluj",
+        "enterValuePlaceholder": "Wprowadź wartość...",
+        "includeColumns": "Uwzględnij kolumny",
+        "includeSort": "Uwzględnij sortowanie",
+        "noFilters": "W tej grupie nie ma filtrów. Kliknij '+ Filtr' aby dodać jeden.",
+        "noFiltersInGroup": "W tej grupie nie ma filtrów. Kliknij '+ Filtr' aby dodać jeden.",
+        "removeGroup": "Usuń grupę",
+        "save": "Zapisz",
+        "saveAsNew": "Zapisz jako nowy",
+        "saving": "Zapisywanie...",
+        "selectPlaceholder": "Wybierz...",
+        "selectTagsPlaceholder": "Wybierz tagi...",
+        "updateView": "Aktualizuj widok",
+        "updating": "Aktualizacja...",
+        "viewNamePlaceholder": "Nazwa widoku..."
     },
     "DownloadPanel": {
         "actions": {

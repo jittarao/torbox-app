@@ -82,6 +82,8 @@
             "stopSeedingDescription": "Stop seeding the torrent but keep it in the download list"
         },
         "add": "Add Rule",
+        "addCondition": "Add condition",
+        "addConditionToGroup": "Add condition to group",
         "addRule": "Add Rule",
         "booleanOperators": {
             "isFalse": "Is false",
@@ -96,6 +98,13 @@
         "clearLogs": "Clear Logs",
         "close": "Close",
         "condition": "Condition",
+        "conditionGroups": {
+            "downloading": "Downloading",
+            "lifecycle": "Lifecycle",
+            "metadata": "Metadata",
+            "seeding": "Seeding",
+            "stalled": "Stalled"
+        },
         "conditions": {
             "age": "Age",
             "ageDescription": "Time since the torrent was added (in hours)",
@@ -152,6 +161,8 @@
             "status": "Status",
             "statusDescription": "Current status of the torrent (downloading, seeding, completed, etc.)",
             "statusPlaceholder": "Select statuses...",
+            "tags": "Tags",
+            "tagsPlaceholder": "Select tags...",
             "totalUploaded": "Total Uploaded",
             "totalUploadedDescription": "Total amount of data uploaded (in GB)",
             "tracker": "Tracker",
@@ -162,13 +173,6 @@
             "uploadStalledTime": "Upload Stalled Time",
             "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)"
         },
-        "conditionGroups": {
-            "downloading": "Downloading",
-            "lifecycle": "Lifecycle",
-            "metadata": "Metadata",
-            "seeding": "Seeding",
-            "stalled": "Stalled"
-        },
         "delete": "Delete",
         "details": "Details",
         "enabledAt": "enabled",
@@ -177,6 +181,12 @@
         "failed": "Failed",
         "itemsAffected": "Items Affected",
         "lastTriggered": "last triggered",
+        "logicOperators": {
+            "and": "AND",
+            "andGroups": "ALL groups (AND)",
+            "or": "OR",
+            "orGroups": "ANY group (OR)"
+        },
         "mobileTitle": "Rules",
         "multiSelectOperators": {
             "isAnyOf": "Is any of",
@@ -184,6 +194,7 @@
         },
         "neverExecuted": "never executed",
         "neverTriggered": "never triggered",
+        "noConditionsInGroup": "No conditions in this group. Click '+ Condition' to add one.",
         "noLogs": "No logs available",
         "noRules": "No automation rules",
         "operators": {
@@ -202,6 +213,8 @@
             "stopSeedingLowRatio": "Stop Seeding Low Ratio",
             "title": "Quick Presets"
         },
+        "removeCondition": "Remove condition",
+        "removeGroup": "Remove group",
         "ruleLogs": "Rule Logs",
         "ruleName": "Rule Name",
         "ruleNamePlaceholder": "Enter rule name",
@@ -218,6 +231,11 @@
             "startsWith": "Starts with"
         },
         "success": "Success",
+        "tagOperators": {
+            "isAllOf": "Is all of",
+            "isAnyOf": "Is any of",
+            "isNoneOf": "Is none of"
+        },
         "timeOperators": {
             "eq": "is",
             "gt": "more than",
@@ -330,6 +348,27 @@
             "unknown": "Unknown",
             "y": "y"
         }
+    },
+    "CustomViews": {
+        "addFilter": "Add filter",
+        "addFilterToGroup": "Add filter to group",
+        "addGroup": "Add group",
+        "betweenGroups": "Between groups:",
+        "cancel": "Cancel",
+        "enterValuePlaceholder": "Enter value...",
+        "includeColumns": "Include columns",
+        "includeSort": "Include sort",
+        "noFilters": "No filters. Click '+ Filter' in a group to create one.",
+        "noFiltersInGroup": "No filters in this group. Click '+ Filter' to add one.",
+        "removeGroup": "Remove group",
+        "save": "Save",
+        "saveAsNew": "Save as new",
+        "saving": "Saving...",
+        "selectPlaceholder": "Select...",
+        "selectTagsPlaceholder": "Select tags...",
+        "updateView": "Update view",
+        "updating": "Updating...",
+        "viewNamePlaceholder": "View name..."
     },
     "DownloadPanel": {
         "actions": {

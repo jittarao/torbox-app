@@ -82,6 +82,8 @@
             "stopSeedingDescription": "シーディングを停止しますが、ダウンロードリストには残します"
         },
         "add": "ルールを追加",
+        "addCondition": "条件を追加",
+        "addConditionToGroup": "条件をグループに追加",
         "addRule": "ルールを追加",
         "booleanOperators": {
             "isFalse": "偽である",
@@ -96,6 +98,13 @@
         "clearLogs": "ログをクリア",
         "close": "閉じる",
         "condition": "条件",
+        "conditionGroups": {
+            "downloading": "ダウンロード中",
+            "lifecycle": "ライフサイクル",
+            "metadata": "メタデータ",
+            "seeding": "シーディング中",
+            "stalled": "ブロック中"
+        },
         "conditions": {
             "age": "経過時間",
             "ageDescription": "トレントが追加されてからの時間（時間単位）",
@@ -152,6 +161,8 @@
             "status": "ステータス",
             "statusDescription": "トレントの現在の状態（ダウンロード中、シーディング中、完了など）",
             "statusPlaceholder": "ステータスを選択...",
+            "tags": "タグ",
+            "tagsPlaceholder": "タグを選択...",
             "totalUploaded": "総アップロード量",
             "totalUploadedDescription": "これまでにアップロードされたデータ量（GB単位）",
             "tracker": "トラッカー",
@@ -162,13 +173,6 @@
             "uploadStalledTime": "アップロード停止時間",
             "uploadStalledTimeDescription": "アップロード活動が停止してからの時間（分単位）"
         },
-        "conditionGroups": {
-            "downloading": "ダウンロード中",
-            "lifecycle": "ライフサイクル",
-            "metadata": "メタデータ",
-            "seeding": "シーディング中",
-            "stalled": "ブロック中"
-        },
         "delete": "ルールを削除",
         "details": "詳細",
         "enabledAt": "有効化日時",
@@ -177,6 +181,12 @@
         "failed": "失敗",
         "itemsAffected": "影響を受けたアイテム",
         "lastTriggered": "最後にトリガーされた",
+        "logicOperators": {
+            "and": "かつ",
+            "andGroups": "すべてのグループ (かつ)",
+            "or": "または",
+            "orGroups": "任意のグループ (または)"
+        },
         "mobileTitle": "ルール",
         "multiSelectOperators": {
             "isAnyOf": "いずれかである",
@@ -184,6 +194,7 @@
         },
         "neverExecuted": "一度も実行されなかった",
         "neverTriggered": "一度もトリガーされなかった",
+        "noConditionsInGroup": "このグループに条件がありません。 '条件を追加' をクリックして追加してください。",
         "noLogs": "ログがありません",
         "noRules": "自動化ルールがありません",
         "operators": {
@@ -202,6 +213,8 @@
             "stopSeedingLowRatio": "低比率でシーディングを停止",
             "title": "クイックプリセット"
         },
+        "removeCondition": "条件を削除",
+        "removeGroup": "グループを削除",
         "ruleLogs": "ルールログ",
         "ruleName": "ルール名",
         "ruleNamePlaceholder": "ルール名を入力",
@@ -218,6 +231,11 @@
             "startsWith": "で始まる"
         },
         "success": "成功",
+        "tagOperators": {
+            "isAllOf": "すべてである",
+            "isAnyOf": "いずれかである",
+            "isNoneOf": "いずれでもない"
+        },
         "timeOperators": {
             "eq": "は",
             "gt": "より大きい",
@@ -330,6 +348,27 @@
             "unknown": "不明",
             "y": "年"
         }
+    },
+    "CustomViews": {
+        "addFilter": "フィルタを追加",
+        "addFilterToGroup": "フィルタをグループに追加",
+        "addGroup": "グループを追加",
+        "betweenGroups": "グループ間:",
+        "cancel": "キャンセル",
+        "enterValuePlaceholder": "値を入力...",
+        "includeColumns": "列を含む",
+        "includeSort": "並べ替えを含む",
+        "noFilters": "フィルタがありません。 '+ フィルタ' をグループにクリックして作成してください。",
+        "noFiltersInGroup": "このグループにフィルタがありません。 '+ フィルタ' をクリックして追加してください。",
+        "removeGroup": "グループを削除",
+        "save": "保存",
+        "saveAsNew": "新しいビューとして保存",
+        "saving": "保存中...",
+        "selectPlaceholder": "選択...",
+        "selectTagsPlaceholder": "タグを選択...",
+        "updateView": "ビューを更新",
+        "updating": "更新中...",
+        "viewNamePlaceholder": "ビュー名..."
     },
     "DownloadPanel": {
         "actions": {

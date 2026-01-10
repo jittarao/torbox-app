@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ConditionFilterInput from './ConditionFilterInput';
 import { LOGIC_OPERATORS } from '../constants';
 import Select from '@/components/shared/Select';
+import { useTranslations } from 'next-intl';
 
 export default function ConditionFilterGroup({
   group,
@@ -15,8 +16,10 @@ export default function ConditionFilterGroup({
   onUpdateCondition,
   onRemoveCondition,
   t,
+  apiKey,
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const automationRulesT = useTranslations('AutomationRules');
 
   const handleLogicChange = (newLogic) => {
     onUpdateGroup(groupIndex, 'logicOperator', newLogic);
@@ -55,8 +58,8 @@ export default function ConditionFilterGroup({
               onChange={(e) => handleLogicChange(e.target.value)}
               className="min-w-[80px] text-xs"
             >
-              <option value={LOGIC_OPERATORS.AND}>AND</option>
-              <option value={LOGIC_OPERATORS.OR}>OR</option>
+              <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.and')}</option>
+              <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.or')}</option>
             </Select>
           )}
 
@@ -73,9 +76,9 @@ export default function ConditionFilterGroup({
               type="button"
               onClick={handleAddCondition}
               className="px-2 py-1 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface dark:hover:bg-surface-dark rounded transition-colors"
-              title="Add condition to group"
+              title={automationRulesT('addConditionToGroup')}
             >
-              + Condition
+              + {automationRulesT('addCondition')}
             </button>
           )}
 
@@ -84,7 +87,7 @@ export default function ConditionFilterGroup({
               type="button"
               onClick={() => onRemoveGroup(groupIndex)}
               className="px-2 py-1 text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded transition-colors"
-              title="Remove group"
+              title={automationRulesT('removeGroup')}
             >
               ×
             </button>
@@ -97,7 +100,7 @@ export default function ConditionFilterGroup({
         <div className="p-2 space-y-2">
           {!hasConditions ? (
             <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 italic py-2">
-              No conditions in this group. Click "+ Condition" to add one.
+              {automationRulesT('noConditionsInGroup')}
             </p>
           ) : (
             <>
@@ -108,7 +111,7 @@ export default function ConditionFilterGroup({
                   )}
                   {conditionIndex > 0 && (
                     <div className="absolute left-4 -top-2 text-xs text-primary-text/50 dark:text-primary-text-dark/50 bg-surface-alt dark:bg-surface-alt-dark px-1">
-                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? 'AND' : 'OR'}
+                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? automationRulesT('logicOperators.and') : automationRulesT('logicOperators.or')}
                     </div>
                   )}
                   <ConditionFilterInput
@@ -118,6 +121,7 @@ export default function ConditionFilterGroup({
                     onUpdate={(idx, field, val) => onUpdateCondition(groupIndex, idx, field, val)}
                     onRemove={(idx) => onRemoveCondition(groupIndex, idx)}
                     t={t}
+                    apiKey={apiKey}
                   />
                 </div>
               ))}

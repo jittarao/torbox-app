@@ -51,7 +51,15 @@ class TorBoxBackend {
     const limiter = rateLimit({
       windowMs: 15 * 60 * 1000,
       max: 100,
-      message: 'Too many requests from this IP, please try again later.'
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: (req, res) => {
+        res.status(429).json({
+          success: false,
+          error: 'Too many requests from this IP, please try again later.',
+          detail: 'Rate limit exceeded. Please wait before making more requests.'
+        });
+      }
     });
     this.app.use('/api/', limiter);
     
@@ -371,6 +379,32 @@ class TorBoxBackend {
         logger.error('Error fetching rule logs', error, {
           endpoint: `/api/automation/rules/${req.params.id}/logs`,
           method: 'GET',
+          ruleId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.delete('/api/automation/rules/:id/logs', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const ruleId = parseInt(req.params.id);
+        const engine = this.automationEngines.get(authId);
+        if (!engine) {
+          return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        engine.clearRuleExecutionHistory(ruleId);
+        res.json({ success: true, message: 'Rule logs cleared successfully' });
+      } catch (error) {
+        logger.error('Error clearing rule logs', error, {
+          endpoint: `/api/automation/rules/${req.params.id}/logs`,
+          method: 'DELETE',
           ruleId: req.params.id,
           authId: req.query.authId || req.headers['x-auth-id'],
         });
@@ -768,6 +802,418 @@ class TorBoxBackend {
           method: 'DELETE',
           viewId: req.params.id,
           authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // ===== Tags API =====
+    
+    // GET /api/tags - List all tags with usage counts
+    this.app.get('/api/tags', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        
+        const tags = userDb.db.prepare(`
+          SELECT 
+            t.id,
+            t.name,
+            t.created_at,
+            t.updated_at,
+            COUNT(dt.id) as usage_count
+          FROM tags t
+          LEFT JOIN download_tags dt ON t.id = dt.tag_id
+          GROUP BY t.id, t.name, t.created_at, t.updated_at
+          ORDER BY t.name ASC
+        `).all();
+
+        res.json({ success: true, tags });
+      } catch (error) {
+        logger.error('Error fetching tags', error, {
+          endpoint: '/api/tags',
+          method: 'GET',
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // POST /api/tags - Create tag
+    this.app.post('/api/tags', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const { name } = req.body;
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Tag name is required and must be a non-empty string' 
+          });
+        }
+
+        const trimmedName = name.trim();
+        if (trimmedName.length > 100) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Tag name must be 100 characters or less' 
+          });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        
+        // Check for case-insensitive duplicate
+        const existing = userDb.db.prepare(`
+          SELECT id FROM tags WHERE LOWER(name) = LOWER(?)
+        `).get(trimmedName);
+
+        if (existing) {
+          return res.status(409).json({ 
+            success: false, 
+            error: 'A tag with this name already exists' 
+          });
+        }
+
+        const result = userDb.db.prepare(`
+          INSERT INTO tags (name)
+          VALUES (?)
+        `).run(trimmedName);
+
+        const tag = userDb.db.prepare(`
+          SELECT id, name, created_at, updated_at
+          FROM tags
+          WHERE id = ?
+        `).get(result.lastInsertRowid);
+
+        res.json({ success: true, tag });
+      } catch (error) {
+        logger.error('Error creating tag', error, {
+          endpoint: '/api/tags',
+          method: 'POST',
+          authId: req.body.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // GET /api/tags/:id - Get single tag
+    this.app.get('/api/tags/:id', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const tagId = parseInt(req.params.id);
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        const tag = userDb.db.prepare(`
+          SELECT 
+            t.id,
+            t.name,
+            t.created_at,
+            t.updated_at,
+            COUNT(dt.id) as usage_count
+          FROM tags t
+          LEFT JOIN download_tags dt ON t.id = dt.tag_id
+          WHERE t.id = ?
+          GROUP BY t.id, t.name, t.created_at, t.updated_at
+        `).get(tagId);
+
+        if (!tag) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Tag not found' 
+          });
+        }
+
+        res.json({ success: true, tag });
+      } catch (error) {
+        logger.error('Error fetching tag', error, {
+          endpoint: `/api/tags/${req.params.id}`,
+          method: 'GET',
+          tagId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // PUT /api/tags/:id - Update tag
+    this.app.put('/api/tags/:id', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'] || req.query.authId;
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const tagId = parseInt(req.params.id);
+        const { name } = req.body;
+
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Tag name is required and must be a non-empty string' 
+          });
+        }
+
+        const trimmedName = name.trim();
+        if (trimmedName.length > 100) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Tag name must be 100 characters or less' 
+          });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db.prepare(`
+          SELECT id FROM tags WHERE id = ?
+        `).get(tagId);
+
+        if (!existing) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Tag not found' 
+          });
+        }
+
+        // Check for case-insensitive duplicate (excluding current tag)
+        const duplicate = userDb.db.prepare(`
+          SELECT id FROM tags WHERE LOWER(name) = LOWER(?) AND id != ?
+        `).get(trimmedName, tagId);
+
+        if (duplicate) {
+          return res.status(409).json({ 
+            success: false, 
+            error: 'A tag with this name already exists' 
+          });
+        }
+
+        userDb.db.prepare(`
+          UPDATE tags
+          SET name = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(trimmedName, tagId);
+
+        const tag = userDb.db.prepare(`
+          SELECT id, name, created_at, updated_at
+          FROM tags
+          WHERE id = ?
+        `).get(tagId);
+
+        res.json({ success: true, tag });
+      } catch (error) {
+        logger.error('Error updating tag', error, {
+          endpoint: `/api/tags/${req.params.id}`,
+          method: 'PUT',
+          tagId: req.params.id,
+          authId: req.body.authId || req.headers['x-auth-id'] || req.query.authId,
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // DELETE /api/tags/:id - Delete tag
+    this.app.delete('/api/tags/:id', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const tagId = parseInt(req.params.id);
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db.prepare(`
+          SELECT id FROM tags WHERE id = ?
+        `).get(tagId);
+
+        if (!existing) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Tag not found' 
+          });
+        }
+
+        // Delete (cascade will remove download_tags associations)
+        userDb.db.prepare(`
+          DELETE FROM tags WHERE id = ?
+        `).run(tagId);
+
+        res.json({ success: true, message: 'Tag deleted successfully' });
+      } catch (error) {
+        logger.error('Error deleting tag', error, {
+          endpoint: `/api/tags/${req.params.id}`,
+          method: 'DELETE',
+          tagId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // ===== Download Tags API =====
+
+    // GET /api/downloads/tags - Get all download-tag mappings (bulk)
+    this.app.get('/api/downloads/tags', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        
+        const query = `
+          SELECT 
+            dt.download_id,
+            t.id as tag_id,
+            t.name as tag_name
+          FROM download_tags dt
+          INNER JOIN tags t ON dt.tag_id = t.id
+          ORDER BY dt.download_id, t.name
+        `;
+
+        const mappings = userDb.db.prepare(query).all();
+
+        // Group by download_id
+        const result = {};
+        for (const mapping of mappings) {
+          const downloadId = mapping.download_id;
+          if (!result[downloadId]) {
+            result[downloadId] = [];
+          }
+          result[downloadId].push({
+            id: mapping.tag_id,
+            name: mapping.tag_name,
+          });
+        }
+
+        res.json({ success: true, mappings: result });
+      } catch (error) {
+        logger.error('Error fetching download tags', error, {
+          endpoint: '/api/downloads/tags',
+          method: 'GET',
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // POST /api/downloads/tags - Assign tags to downloads (bulk)
+    this.app.post('/api/downloads/tags', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const { download_ids, tag_ids, operation = 'add' } = req.body;
+
+        if (!Array.isArray(download_ids) || download_ids.length === 0) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'download_ids must be a non-empty array' 
+          });
+        }
+
+        if (!Array.isArray(tag_ids)) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'tag_ids must be an array' 
+          });
+        }
+
+        if (operation !== 'add' && operation !== 'remove' && operation !== 'replace') {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'operation must be one of: add, remove, replace' 
+          });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Validate all tag IDs exist
+        if (tag_ids.length > 0) {
+          const placeholders = tag_ids.map(() => '?').join(',');
+          const existingTags = userDb.db.prepare(`
+            SELECT id FROM tags WHERE id IN (${placeholders})
+          `).all(...tag_ids);
+
+          if (existingTags.length !== tag_ids.length) {
+            return res.status(400).json({ 
+              success: false, 
+              error: 'One or more tag IDs are invalid' 
+            });
+          }
+        }
+
+        // Use transaction for atomicity
+        const transaction = userDb.db.transaction(() => {
+          if (operation === 'replace') {
+            // Remove all existing tags for these downloads
+            const deletePlaceholders = download_ids.map(() => '?').join(',');
+            userDb.db.prepare(`
+              DELETE FROM download_tags 
+              WHERE download_id IN (${deletePlaceholders})
+            `).run(...download_ids);
+
+            // Add new tags
+            if (tag_ids.length > 0) {
+              const insertStmt = userDb.db.prepare(`
+                INSERT OR IGNORE INTO download_tags (tag_id, download_id)
+                VALUES (?, ?)
+              `);
+              for (const downloadId of download_ids) {
+                for (const tagId of tag_ids) {
+                  insertStmt.run(tagId, downloadId);
+                }
+              }
+            }
+          } else if (operation === 'add') {
+            // Add tags (ignore duplicates)
+            const insertStmt = userDb.db.prepare(`
+              INSERT OR IGNORE INTO download_tags (tag_id, download_id)
+              VALUES (?, ?)
+            `);
+            for (const downloadId of download_ids) {
+              for (const tagId of tag_ids) {
+                insertStmt.run(tagId, downloadId);
+              }
+            }
+          } else if (operation === 'remove') {
+            // Remove tags
+            const deletePlaceholders = download_ids.map(() => '?').join(',');
+            const tagPlaceholders = tag_ids.map(() => '?').join(',');
+            userDb.db.prepare(`
+              DELETE FROM download_tags 
+              WHERE download_id IN (${deletePlaceholders}) 
+                AND tag_id IN (${tagPlaceholders})
+            `).run(...download_ids, ...tag_ids);
+          }
+        });
+
+        transaction();
+
+        res.json({ 
+          success: true, 
+          message: `Tags ${operation === 'add' ? 'added' : operation === 'remove' ? 'removed' : 'replaced'} successfully` 
+        });
+      } catch (error) {
+        logger.error('Error assigning tags to downloads', error, {
+          endpoint: '/api/downloads/tags',
+          method: 'POST',
+          authId: req.body.authId || req.headers['x-auth-id'],
         });
         res.status(500).json({ success: false, error: error.message });
       }

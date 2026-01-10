@@ -4,6 +4,7 @@ import {
   API_VERSION,
   TORBOX_MANAGER_VERSION,
 } from '@/components/constants';
+import { safeJsonParse } from '@/utils/safeJsonParse';
 
 // Get all torrents
 export async function GET() {
@@ -108,7 +109,19 @@ export async function POST(request) {
       },
     );
 
-    const data = await response.json();
+    const data = await safeJsonParse(response);
+    
+    if (!response.ok) {
+      return Response.json(
+        {
+          success: false,
+          error: data.error || `API responded with status: ${response.status}`,
+          detail: data.detail
+        },
+        { status: response.status }
+      );
+    }
+    
     return Response.json(data);
   } catch (error) {
     return Response.json(
@@ -148,8 +161,8 @@ export async function DELETE(request) {
     ]);
 
     const [torrentsData, queuedData] = await Promise.all([
-      torrentsResponse.json(),
-      queuedResponse.json(),
+      safeJsonParse(torrentsResponse),
+      safeJsonParse(queuedResponse),
     ]);
 
     // Check if the torrent is in the queued list
@@ -181,7 +194,19 @@ export async function DELETE(request) {
       body,
     });
     
-    const data = await response.json();
+    const data = await safeJsonParse(response);
+    
+    if (!response.ok) {
+      return Response.json(
+        {
+          success: false,
+          error: data.error || `API responded with status: ${response.status}`,
+          detail: data.detail
+        },
+        { status: response.status }
+      );
+    }
+    
     return Response.json(data);
   } catch (error) {
     return Response.json(

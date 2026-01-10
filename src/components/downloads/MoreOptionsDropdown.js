@@ -6,6 +6,7 @@ import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
+import TagAssignmentModal from './Tags/TagAssignmentModal';
 
 export default function MoreOptionsDropdown({
   item,
@@ -19,6 +20,7 @@ export default function MoreOptionsDropdown({
   const [isExporting, setIsExporting] = useState(false);
   const [isReannouncing, setIsReannouncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showTagAssignment, setShowTagAssignment] = useState(false);
   // const [showCloudUpload, setShowCloudUpload] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
@@ -395,6 +397,24 @@ export default function MoreOptionsDropdown({
   const renderMenuItems = () => {
     const items = [];
 
+    // Tag assignment option
+    items.push(
+      <button
+        key="assign-tags"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowTagAssignment(true);
+          setIsMenuOpen(false);
+        }}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+        <span className="ml-2">Assign Tags</span>
+      </button>,
+    );
+
     // Common options for all types
     items.push(
       <button
@@ -572,6 +592,17 @@ export default function MoreOptionsDropdown({
           </div>,
           document.body,
         )}
+      
+      {/* Tag Assignment Modal */}
+      <TagAssignmentModal
+        isOpen={showTagAssignment}
+        onClose={() => setShowTagAssignment(false)}
+        downloadIds={[item.id]}
+        apiKey={apiKey}
+        onSuccess={() => {
+          // Tags will be refreshed automatically via useDownloadTags hook
+        }}
+      />
     </div>
   );
 }

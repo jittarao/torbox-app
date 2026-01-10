@@ -4,6 +4,7 @@ import { useState } from 'react';
 import FilterInput from './FilterInput';
 import { LOGIC_OPERATORS } from '../../AutomationRules/constants';
 import Select from '@/components/shared/Select';
+import { useTranslations } from 'next-intl';
 
 export default function FilterGroup({
   group,
@@ -15,8 +16,11 @@ export default function FilterGroup({
   onUpdateFilter,
   onRemoveFilter,
   availableColumns,
+  apiKey,
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const customViewsT = useTranslations('CustomViews');
+  const automationRulesT = useTranslations('AutomationRules');
 
   const handleLogicChange = (newLogic) => {
     onUpdateGroup(groupIndex, 'logicOperator', newLogic);
@@ -55,8 +59,8 @@ export default function FilterGroup({
               onChange={(e) => handleLogicChange(e.target.value)}
               className="min-w-[80px] text-xs"
             >
-              <option value={LOGIC_OPERATORS.AND}>AND</option>
-              <option value={LOGIC_OPERATORS.OR}>OR</option>
+              <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.and')}</option>
+              <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.or')}</option>
             </Select>
           )}
 
@@ -73,9 +77,9 @@ export default function FilterGroup({
               type="button"
               onClick={handleAddFilter}
               className="px-2 py-1 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface dark:hover:bg-surface-dark rounded transition-colors"
-              title="Add filter to group"
+              title={customViewsT('addFilterToGroup')}
             >
-              + Filter
+              + {customViewsT('addFilter')}
             </button>
           )}
 
@@ -84,7 +88,7 @@ export default function FilterGroup({
               type="button"
               onClick={() => onRemoveGroup(groupIndex)}
               className="px-2 py-1 text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded transition-colors"
-              title="Remove group"
+              title={customViewsT('removeGroup')}
             >
               ×
             </button>
@@ -97,7 +101,7 @@ export default function FilterGroup({
         <div className="p-2 space-y-2">
           {!hasFilters ? (
             <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 italic py-2">
-              No filters in this group. Click "+ Filter" to add one.
+              {customViewsT('noFiltersInGroup')}
             </p>
           ) : (
             <>
@@ -108,7 +112,7 @@ export default function FilterGroup({
                   )}
                   {filterIndex > 0 && (
                     <div className="absolute left-4 -top-2 text-xs text-primary-text/50 dark:text-primary-text-dark/50 bg-surface-alt dark:bg-surface-alt-dark px-1">
-                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? 'AND' : 'OR'}
+                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? automationRulesT('logicOperators.and') : automationRulesT('logicOperators.or')}
                     </div>
                   )}
                   <FilterInput
@@ -118,6 +122,7 @@ export default function FilterGroup({
                     onUpdate={(idx, field, val) => onUpdateFilter(groupIndex, idx, field, val)}
                     onRemove={(idx) => onRemoveFilter(groupIndex, idx)}
                     availableColumns={availableColumns}
+                    apiKey={apiKey}
                   />
                 </div>
               ))}

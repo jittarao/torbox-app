@@ -5,6 +5,7 @@ import {
   TORBOX_MANAGER_VERSION,
 } from '@/components/constants';
 import { NextResponse } from 'next/server';
+import { safeJsonParse } from '@/utils/safeJsonParse';
 
 // Get all usenet downloads
 export async function GET() {
@@ -126,7 +127,7 @@ export async function POST(request) {
       },
     );
 
-    const data = await response.json();
+    const data = await safeJsonParse(response);
 
     if (!response.ok || !data.success) {
       // Provide more specific error messages based on the response
@@ -237,7 +238,19 @@ export async function DELETE(request) {
       body,
     });
     
-    const data = await response.json();
+    const data = await safeJsonParse(response);
+    
+    if (!response.ok) {
+      return Response.json(
+        {
+          success: false,
+          error: data.error || `API responded with status: ${response.status}`,
+          detail: data.detail
+        },
+        { status: response.status }
+      );
+    }
+    
     return Response.json(data);
   } catch (error) {
     return Response.json(

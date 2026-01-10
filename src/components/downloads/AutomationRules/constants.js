@@ -41,6 +41,9 @@ export const CONDITION_TYPES = {
   PRIVATE: 'PRIVATE',
   CACHED: 'CACHED',
   ALLOW_ZIP: 'ALLOW_ZIP',
+  
+  // Tags
+  TAGS: 'TAGS',
 };
 
 export const COMPARISON_OPERATORS = {
@@ -53,6 +56,12 @@ export const COMPARISON_OPERATORS = {
 
 export const MULTI_SELECT_OPERATORS = {
   IS_ANY_OF: 'is_any_of',
+  IS_NONE_OF: 'is_none_of',
+};
+
+export const TAG_OPERATORS = {
+  IS_ANY_OF: 'is_any_of',
+  IS_ALL_OF: 'is_all_of',
   IS_NONE_OF: 'is_none_of',
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDelete } from '../shared/hooks/useDelete';
@@ -22,6 +22,7 @@ import CardList from './CardList';
 import AutomationRules from './AutomationRules';
 import FiltersSection from './FiltersSection';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
+import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { formatSize } from './utils/formatters';
 
 export default function Downloads({ apiKey }) {
@@ -55,7 +56,7 @@ export default function Downloads({ apiKey }) {
 
   // Function to expand all items with files
   const expandAllFiles = () => {
-    const itemsWithFiles = items.filter(item => item.files && item.files.length > 0);
+    const itemsWithFiles = itemsWithTags.filter(item => item.files && item.files.length > 0);
     const itemIds = itemsWithFiles.map(item => item.id);
     setExpandedItems(new Set(itemIds));
   };
@@ -70,6 +71,25 @@ export default function Downloads({ apiKey }) {
     activeType,
   );
 
+  // Fetch and map tags to downloads
+  const { fetchDownloadTags, mapTagsToDownloads, tagMappings } = useDownloadTags(apiKey);
+  
+  // Fetch tags when items change
+  useEffect(() => {
+    if (apiKey && items.length > 0) {
+      fetchDownloadTags()
+        .catch((error) => {
+          console.error('Error fetching download tags:', error);
+        });
+    }
+  }, [apiKey, items.length, fetchDownloadTags]);
+
+  // Map tags to items whenever items or tagMappings change
+  const itemsWithTags = useMemo(() => {
+    if (!items || items.length === 0) return items;
+    return mapTagsToDownloads(items);
+  }, [items, tagMappings, mapTagsToDownloads]);
+
   const {
     selectedItems,
     handleSelectAll,
@@ -77,7 +97,7 @@ export default function Downloads({ apiKey }) {
     hasSelectedFiles,
     handleRowSelect,
     setSelectedItems,
-  } = useSelection(items);
+  } = useSelection(itemsWithTags);
   const {
     downloadLinks,
     isDownloading,
@@ -117,7 +137,7 @@ export default function Downloads({ apiKey }) {
     ],
   });
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } =
-    useFilter(items, '', 'all', appliedFilters);
+    useFilter(itemsWithTags, '', 'all', appliedFilters);
 
   // Custom views
   const { views, activeView, applyView, clearView } = useCustomViews(apiKey);
@@ -145,7 +165,7 @@ export default function Downloads({ apiKey }) {
 
       // Export each selected torrent
       for (const itemId of selectedItemIds) {
-        const item = items.find(i => i.id === itemId);
+        const item = itemsWithTags.find(i => i.id === itemId);
         if (!item) continue;
 
         try {
@@ -241,7 +261,7 @@ export default function Downloads({ apiKey }) {
     // Calculate size of selected files
     const filesSize = Array.from(selectedItems.files.entries()).reduce(
       (acc, [itemId, fileIds]) => {
-        const item = items.find((i) => i.id === itemId);
+        const item = itemsWithTags.find((i) => i.id === itemId);
         if (!item) return acc;
 
         return (
@@ -257,12 +277,12 @@ export default function Downloads({ apiKey }) {
 
     // Calculate size of selected items
     const itemsSize = Array.from(selectedItems.items).reduce((acc, itemId) => {
-      const item = items.find((i) => i.id === itemId);
+      const item = itemsWithTags.find((i) => i.id === itemId);
       return acc + (item?.size || 0);
     }, 0);
 
     return formatSize(filesSize + itemsSize);
-  }, [items, selectedItems]);
+  }, [itemsWithTags, selectedItems]);
 
   return (
     <div>
@@ -426,7 +446,7 @@ export default function Downloads({ apiKey }) {
           >
             {/* ActionBar - becomes fixed when scrolled past */}
             <ActionBar
-              unfilteredItems={items}
+              unfilteredItems={itemsWithTags}
               filteredItems={filteredItems}
               selectedItems={selectedItems}
               setSelectedItems={setSelectedItems}
@@ -443,7 +463,7 @@ export default function Downloads({ apiKey }) {
               }
               isDeleting={isDeleting}
               onBulkDelete={(includeParentDownloads) =>
-                deleteItems(selectedItems, includeParentDownloads, items)
+                deleteItems(selectedItems, includeParentDownloads, itemsWithTags)
               }
               isExporting={isExporting}
               onBulkExport={handleBulkExport}

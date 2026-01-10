@@ -13,6 +13,7 @@ import Icons from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
+import TagDisplay from './Tags/TagDisplay';
 
 function ItemCard({
   item,
@@ -38,6 +39,7 @@ function ItemCard({
   viewMode,
   isCopying,
   isDownloading,
+  apiKey,
 }) {
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
@@ -321,6 +323,13 @@ function ItemCard({
             </h3>
           </div>
 
+          {/* Tags display */}
+          {item.tags && item.tags.length > 0 && (
+            <div className="mt-2">
+              <TagDisplay tags={item.tags} />
+            </div>
+          )}
+
           <div
             className={`flex items-center ${
               isMobile ? 'gap-2' : 'gap-4'
@@ -371,6 +380,7 @@ function ItemCard({
         <div className="flex flex-col items-end justify-between gap-2 flex-shrink-0">
           <ItemActions
             item={item}
+            apiKey={apiKey}
             onDelete={onDelete}
             toggleFiles={toggleFiles}
             expandedItems={expandedItems}

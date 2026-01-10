@@ -6,7 +6,9 @@ import {
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
+  TAG_OPERATORS,
 } from '../constants';
+import { useTags } from '@/components/shared/hooks/useTags';
 import { 
   isTimeBasedCondition, 
   isTimestampBasedCondition,
@@ -52,7 +54,9 @@ export default function ConditionFilterInput({
   onUpdate, 
   onRemove,
   t,
+  apiKey,
 }) {
+  const { tags } = useTags(apiKey);
   const handleFieldChange = (field, value) => {
     if (field === 'type') {
       // When changing condition type, update operator and value to appropriate defaults
@@ -75,6 +79,11 @@ export default function ConditionFilterInput({
       const boolValue = value === true || value === 'true' || value === 1;
       onUpdate(index, 'value', boolValue);
       onUpdate(index, 'operator', boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE);
+    } else if (field === 'type' && value === CONDITION_TYPES.TAGS) {
+      // When changing to TAGS type, set default operator and value
+      onUpdate(index, 'type', value);
+      onUpdate(index, 'operator', TAG_OPERATORS.IS_ANY_OF);
+      onUpdate(index, 'value', []);
     } else {
       onUpdate(index, field, value);
     }
@@ -86,6 +95,20 @@ export default function ConditionFilterInput({
     return Array.isArray(condition.value) ? condition.value : [];
   };
 
+  // For TAGS condition, ensure value is an array of tag IDs
+  const getTagsValue = () => {
+    if (condition.type !== CONDITION_TYPES.TAGS) return condition.value;
+    return Array.isArray(condition.value) ? condition.value : [];
+  };
+
+  // Get tag options for MultiSelect
+  const getTagOptions = () => {
+    return tags.map(tag => ({
+      label: tag.name,
+      value: tag.id,
+    }));
+  };
+
   const conditionTypeOptions = getFlatConditionTypeOptions(t);
 
   const operators = condition.type ? getOperatorsForConditionType(condition.type) : [];
@@ -93,15 +116,15 @@ export default function ConditionFilterInput({
     let label = op;
     const isTimeBased = isTimeBasedCondition(condition.type);
     const isTimestampBased = isTimestampBasedCondition(condition.type);
-    
-    if (isTimeBased || isTimestampBased || (!isBooleanCondition(condition.type) && !isStringCondition(condition.type) && condition.type !== CONDITION_TYPES.STATUS)) {
+
+    if (isTimeBased || isTimestampBased || (!isBooleanCondition(condition.type) && !isStringCondition(condition.type) && condition.type !== CONDITION_TYPES.STATUS && condition.type !== CONDITION_TYPES.TAGS)) {
       // Numeric/time comparison operators
       const labels = {
-        [COMPARISON_OPERATORS.GT]: '>',
-        [COMPARISON_OPERATORS.LT]: '<',
-        [COMPARISON_OPERATORS.GTE]: '≥',
-        [COMPARISON_OPERATORS.LTE]: '≤',
-        [COMPARISON_OPERATORS.EQ]: '=',
+        [COMPARISON_OPERATORS.GT]: t('operators.gt'),
+        [COMPARISON_OPERATORS.LT]: t('operators.lt'),
+        [COMPARISON_OPERATORS.GTE]: t('operators.gte'),
+        [COMPARISON_OPERATORS.LTE]: t('operators.lte'),
+        [COMPARISON_OPERATORS.EQ]: t('operators.eq'),
       };
       label = labels[op] || op;
     } else if (isStringCondition(condition.type)) {
@@ -124,6 +147,13 @@ export default function ConditionFilterInput({
       const labels = {
         [MULTI_SELECT_OPERATORS.IS_ANY_OF]: t('multiSelectOperators.isAnyOf'),
         [MULTI_SELECT_OPERATORS.IS_NONE_OF]: t('multiSelectOperators.isNoneOf'),
+      };
+      label = labels[op] || op;
+    } else if (condition.type === CONDITION_TYPES.TAGS) {
+      const labels = {
+        [TAG_OPERATORS.IS_ANY_OF]: t('tagOperators.isAnyOf'),
+        [TAG_OPERATORS.IS_ALL_OF]: t('tagOperators.isAllOf'),
+        [TAG_OPERATORS.IS_NONE_OF]: t('tagOperators.isNoneOf'),
       };
       label = labels[op] || op;
     }
@@ -182,6 +212,14 @@ export default function ConditionFilterInput({
               onChange={(values) => handleFieldChange('value', values)}
               options={getStatusOptions()}
               placeholder={t('conditions.statusPlaceholder')}
+              className="w-full sm:flex-1 sm:min-w-[150px]"
+            />
+          ) : condition.type === CONDITION_TYPES.TAGS ? (
+            <MultiSelect
+              value={getTagsValue()}
+              onChange={(values) => handleFieldChange('value', values)}
+              options={getTagOptions()}
+              placeholder={t('conditions.tagsPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
           ) : isBooleanCondition(condition.type) ? (

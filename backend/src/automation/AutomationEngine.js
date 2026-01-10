@@ -496,6 +496,19 @@ class AutomationEngine {
     return this.userDb.prepare(sql).all(...params);
   }
 
+  /**
+   * Clear rule execution history
+   */
+  clearRuleExecutionHistory(ruleId = null) {
+    if (ruleId) {
+      // Clear logs for a specific rule
+      this.userDb.prepare('DELETE FROM rule_execution_log WHERE rule_id = ?').run(ruleId);
+    } else {
+      // Clear all logs
+      this.userDb.prepare('DELETE FROM rule_execution_log').run();
+    }
+  }
+
   async reloadRules() {
     try {
       logger.info('Reloading rules', { authId: this.authId });
