@@ -23,7 +23,12 @@ import AutomationRules from './AutomationRules';
 import FiltersSection from './FiltersSection';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
+import { useTags } from '@/components/shared/hooks/useTags';
+import { useHealthStore } from '@/store/healthStore';
+import { useNotificationsStore } from '@/store/notificationsStore';
 import { formatSize } from './utils/formatters';
+
+const HEALTH_CHECK_INTERVAL = 60000; // 60 seconds
 
 export default function Downloads({ apiKey }) {
   const [toast, setToast] = useState(null);
@@ -71,18 +76,27 @@ export default function Downloads({ apiKey }) {
     activeType,
   );
 
-  // Fetch and map tags to downloads
-  const { fetchDownloadTags, mapTagsToDownloads, tagMappings } = useDownloadTags(apiKey);
-  
-  // Fetch tags when items change
+  // Load tags
+  const { loadTags, tags, loading: tagsLoading } = useTags(apiKey);
+
+  // Load tags once when component mounts
   useEffect(() => {
-    if (apiKey && items.length > 0) {
-      fetchDownloadTags()
-        .catch((error) => {
-          console.error('Error fetching download tags:', error);
-        });
+    if (apiKey && tags.length === 0 && !tagsLoading) {
+      loadTags();
     }
-  }, [apiKey, items.length, fetchDownloadTags]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
+
+  // Load download tags
+  const { fetchDownloadTags, mapTagsToDownloads, tagMappings, loading: downloadTagsLoading } = useDownloadTags(apiKey);
+
+  // Load download tags once when component mounts
+  useEffect(() => {
+    if (apiKey && Object.keys(tagMappings).length === 0 && !downloadTagsLoading) {
+      fetchDownloadTags();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
 
   // Map tags to items whenever items or tagMappings change
   const itemsWithTags = useMemo(() => {
@@ -139,8 +153,58 @@ export default function Downloads({ apiKey }) {
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } =
     useFilter(itemsWithTags, '', 'all', appliedFilters);
 
-  // Custom views
-  const { views, activeView, applyView, clearView } = useCustomViews(apiKey);
+  // Load custom views
+  const { views, activeView, applyView, clearView, loadViews, loading: viewsLoading } = useCustomViews(apiKey);
+
+  // Load custom views once when component mounts
+  useEffect(() => {
+    if (apiKey && views.length === 0 && !viewsLoading) {
+      loadViews();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
+
+  // Start health checks once when component mounts
+  const { performHealthCheck } = useHealthStore();
+  useEffect(() => {
+    if (apiKey) {
+      // Perform initial health check
+      performHealthCheck(apiKey);
+
+      // Set up periodic health checks
+      const interval = setInterval(() => {
+        performHealthCheck(apiKey);
+      }, HEALTH_CHECK_INTERVAL);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
+
+  // Start notifications polling once when component mounts
+  const { fetchNotifications: fetchNotificationsStore } = useNotificationsStore();
+  useEffect(() => {
+    if (apiKey) {
+      // Perform initial fetch
+      fetchNotificationsStore(apiKey);
+
+      // Set up periodic polling (every 2 minutes)
+      const interval = setInterval(() => {
+        // Read isPolling from store inside callback to get current value
+        const { isPolling } = useNotificationsStore.getState();
+        if (isPolling) {
+          fetchNotificationsStore(apiKey);
+        }
+      }, 120000); // 2 minutes
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
 
   const sortedItems = sortTorrents(filteredItems);
 

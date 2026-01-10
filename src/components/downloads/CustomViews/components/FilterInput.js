@@ -69,6 +69,7 @@ export default function FilterInput({
   const { tags } = useTags(apiKey);
   const customViewsT = useTranslations('CustomViews');
   const automationRulesT = useTranslations('AutomationRules');
+
   const handleFieldChange = (field, value) => {
     if (field === 'column') {
       // When changing column, update operator and value to appropriate defaults

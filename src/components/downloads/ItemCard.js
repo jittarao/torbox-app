@@ -323,13 +323,6 @@ function ItemCard({
             </h3>
           </div>
 
-          {/* Tags display */}
-          {item.tags && item.tags.length > 0 && (
-            <div className="mt-2">
-              <TagDisplay tags={item.tags} />
-            </div>
-          )}
-
           <div
             className={`flex items-center ${
               isMobile ? 'gap-2' : 'gap-4'
@@ -373,6 +366,13 @@ function ItemCard({
                 )}
                 <span>{timeAgo(item.created_at, commonT)}</span>
               </>
+            )}
+
+            {/* Tags display */}
+            {item.tags && item.tags.length > 0 && (
+              <div className="mt-2">
+                <TagDisplay tags={item.tags} />
+              </div>
             )}
           </div>
         </div>

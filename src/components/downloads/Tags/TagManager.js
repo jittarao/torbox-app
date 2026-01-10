@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTags } from '@/components/shared/hooks/useTags';
 
 /**
@@ -11,14 +11,8 @@ import { useTags } from '@/components/shared/hooks/useTags';
  * @param {string} props.apiKey - API key for authentication
  */
 export default function TagManager({ isOpen, onClose, apiKey }) {
-  const { tags, loading, createTag, updateTag, deleteTag, loadTags } = useTags(apiKey);
+  const { tags, loading, createTag, updateTag, deleteTag } = useTags(apiKey);
 
-  // Load tags when modal opens
-  useEffect(() => {
-    if (isOpen && apiKey) {
-      loadTags();
-    }
-  }, [isOpen, apiKey, loadTags]);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [newTagName, setNewTagName] = useState('');

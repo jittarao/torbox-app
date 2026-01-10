@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { API_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET() {
   const headersList = await headers();
