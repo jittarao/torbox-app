@@ -69,6 +69,7 @@ export const COLUMNS = {
   expires_at: { key: 'expires_at', sortable: true },
   asset_type: { key: 'asset_type', sortable: true, assetTypes: ['all'] },
   private: { key: 'private', sortable: true, assetTypes: ['torrents', 'all'] },
+  tags: { key: 'tags', sortable: false },
 };
 
 // Status options for the downloads page

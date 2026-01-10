@@ -13,6 +13,7 @@ import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
+import TagDisplay from './Tags/TagDisplay';
 
 function ItemRow({
   item,
@@ -350,6 +351,20 @@ function ItemRow({
             style={baseStyle}
           >
             {item.error || ''}
+          </td>
+        );
+      case 'tags':
+        return (
+          <td
+            key={columnId}
+            className="px-4 py-4 text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            style={baseStyle}
+          >
+            {item.tags && item.tags.length > 0 ? (
+              <TagDisplay tags={item.tags} />
+            ) : (
+              <span className="text-primary-text/40 dark:text-primary-text-dark/40">-</span>
+            )}
           </td>
         );
       default:

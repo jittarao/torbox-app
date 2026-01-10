@@ -307,6 +307,7 @@
         "ratio": "Ratio",
         "seeds": "Seeds",
         "size": "Size",
+        "tags": "Tags",
         "total_downloaded": "Total Downloaded",
         "total_uploaded": "Total Uploaded",
         "updated_at": "Last Updated",
