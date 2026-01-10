@@ -166,3 +166,4 @@ temp/
 
 # Scripts (ignore build scripts)
 /scripts/
+.cursorignore
