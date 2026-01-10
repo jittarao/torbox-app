@@ -338,72 +338,85 @@ export default function CardList({
       }}
     >
       {/* Virtualized rows - only ItemCards */}
-      {virtualRows.map((virtualRow) => {
-        const row = flattenedRows[virtualRow.index];
-
-        // Calculate item card position
-        // In fullscreen: virtualRow.start is relative to scroll container (no conversion needed)
-        // In normal mode: virtualRow.start is relative to document top, convert to container-relative
-        let cardTop = 0;
-        if (isFullscreen) {
-          // In fullscreen, virtualRow.start is already relative to the scroll container
-          cardTop = virtualRow.start;
-        } else if (containerOffsetTop > 0) {
-          // In normal mode, convert document-relative to container-relative
-          cardTop = virtualRow.start - containerOffsetTop;
-        } else {
-          // Fallback: if containerOffsetTop not calculated yet, use a simple sum
-          for (let i = 0; i < virtualRow.index; i++) {
-            cardTop += estimateSize();
+      {virtualRows
+        .filter((virtualRow) => {
+          // Filter out invalid indices (can happen during data updates when filtering changes item count)
+          return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
+        })
+        .map((virtualRow) => {
+          const row = flattenedRows[virtualRow.index];
+          
+          // Guard: Skip if row or row.item doesn't exist
+          // This provides extra safety in case of race conditions
+          if (!row || !row.item) {
+            return null;
           }
-        }
-        
-        const itemCardStyle = {
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          transform: `translateY(${cardTop}px)`,
-          marginBottom: '8px', // Add gap between cards
-          willChange: 'transform',
-        };
 
-        return (
-          <div
-            key={`item-${row.item.id}`}
-            data-index={virtualRow.index}
-            ref={virtualizer.measureElement}
-            style={itemCardStyle}
-          >
-            <ItemCard
-              item={row.item}
-              index={row.itemIndex}
-              selectedItems={selectedItems}
-              downloadHistory={downloadHistory}
-              setDownloadHistory={setDownloadHistory}
-              isItemDownloaded={isItemDownloaded}
-              isFileDownloaded={isFileDownloaded}
-              isBlurred={isBlurred}
-              isDisabled={isDisabled}
-              activeColumns={activeColumns}
-              onItemSelect={handleItemSelection}
-              onFileSelect={handleFileSelection}
-              onFileDownload={handleFileDownload}
-              onDelete={onDelete}
-              toggleFiles={toggleFiles}
-              expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
-              setItems={setItems}
-              setSelectedItems={setSelectedItems}
-              setToast={setToast}
-              activeType={activeType}
-              viewMode={viewMode}
-              isCopying={isCopying}
-              isDownloading={isDownloading}
-              apiKey={apiKey}
-            />
-          </div>
-        );
-      })}
+          // Calculate item card position
+          // In fullscreen: virtualRow.start is relative to scroll container (no conversion needed)
+          // In normal mode: virtualRow.start is relative to document top, convert to container-relative
+          let cardTop = 0;
+          if (isFullscreen) {
+            // In fullscreen, virtualRow.start is already relative to the scroll container
+            cardTop = virtualRow.start;
+          } else if (containerOffsetTop > 0) {
+            // In normal mode, convert document-relative to container-relative
+            cardTop = virtualRow.start - containerOffsetTop;
+          } else {
+            // Fallback: if containerOffsetTop not calculated yet, use a simple sum
+            for (let i = 0; i < virtualRow.index; i++) {
+              cardTop += estimateSize();
+            }
+          }
+          
+          const itemCardStyle = {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            transform: `translateY(${cardTop}px)`,
+            marginBottom: '8px', // Add gap between cards
+            willChange: 'transform',
+          };
+
+          return (
+            <div
+              key={`item-${row.item.id}`}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              style={itemCardStyle}
+            >
+              <ItemCard
+                item={row.item}
+                index={row.itemIndex}
+                selectedItems={selectedItems}
+                downloadHistory={downloadHistory}
+                setDownloadHistory={setDownloadHistory}
+                isItemDownloaded={isItemDownloaded}
+                isFileDownloaded={isFileDownloaded}
+                isBlurred={isBlurred}
+                isDisabled={isDisabled}
+                activeColumns={activeColumns}
+                onItemSelect={handleItemSelection}
+                onFileSelect={handleFileSelection}
+                onFileDownload={handleFileDownload}
+                onDelete={onDelete}
+                toggleFiles={toggleFiles}
+                expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
+                setItems={setItems}
+                setSelectedItems={setSelectedItems}
+                setToast={setToast}
+                activeType={activeType}
+                viewMode={viewMode}
+                isCopying={isCopying}
+                isDownloading={isDownloading}
+                apiKey={apiKey}
+              />
+            </div>
+          );
+        })
+        .filter(Boolean) // Remove null entries
+      }
       {/* Bottom spacer for cards after last visible */}
       {virtualRows.length > 0 && (() => {
         const lastVisibleRow = virtualRows[virtualRows.length - 1];
