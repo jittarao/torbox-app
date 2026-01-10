@@ -94,12 +94,25 @@ class UserPoller {
    */
   async poll() {
     if (this.isPolling) {
-      logger.warn('Skipping poll - previous poll still running', { authId: this.authId });
-      return;
+      logger.warn('Skipping poll - previous poll still running', { 
+        authId: this.authId,
+        lastPollAt: this.lastPollAt,
+        lastPollError: this.lastPollError
+      });
+      return {
+        success: false,
+        error: 'Previous poll still running',
+        skipped: true
+      };
     }
 
     // Check if user has active automation rules
-    if (!this.shouldPoll()) {
+    const hasActiveRules = this.shouldPoll();
+    if (!hasActiveRules) {
+      logger.debug('Poll skipped - no active automation rules', {
+        authId: this.authId,
+        hasAutomationEngine: !!this.automationEngine
+      });
       return {
         success: true,
         skipped: true,
@@ -108,80 +121,212 @@ class UserPoller {
     }
 
     this.isPolling = true;
-    const startTime = new Date();
+    const startTime = Date.now();
+    const pollStartTime = new Date();
 
     try {
-      logger.debug('Starting poll', { authId: this.authId });
+      logger.info('Starting poll cycle', { 
+        authId: this.authId,
+        timestamp: pollStartTime.toISOString(),
+        lastPollAt: this.lastPollAt,
+        hasAutomationEngine: !!this.automationEngine
+      });
       
       // Fetch torrents from API
-      const torrents = await this.apiClient.getTorrents(true); // bypass cache
+      const apiFetchStart = Date.now();
+      logger.debug('Fetching torrents from API', { authId: this.authId });
+      let torrents;
+      try {
+        torrents = await this.apiClient.getTorrents(true); // bypass cache
+        const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
+        logger.debug('Torrents fetched from API', {
+          authId: this.authId,
+          torrentCount: torrents.length,
+          apiFetchDuration: `${apiFetchDuration}s`
+        });
+      } catch (error) {
+        logger.error('Failed to fetch torrents from API', error, {
+          authId: this.authId,
+          errorMessage: error.message,
+          apiFetchDuration: `${((Date.now() - apiFetchStart) / 1000).toFixed(2)}s`
+        });
+        throw error;
+      }
       
       // Process snapshot and compute diffs
-      const changes = await this.stateDiffEngine.processSnapshot(torrents);
+      const diffStart = Date.now();
+      logger.debug('Processing state diff', { authId: this.authId });
+      let changes;
+      try {
+        changes = await this.stateDiffEngine.processSnapshot(torrents);
+        const diffDuration = ((Date.now() - diffStart) / 1000).toFixed(2);
+        logger.debug('State diff processed', {
+          authId: this.authId,
+          new: changes.new.length,
+          updated: changes.updated.length,
+          removed: changes.removed.length,
+          diffDuration: `${diffDuration}s`
+        });
+      } catch (error) {
+        logger.error('Failed to process state diff', error, {
+          authId: this.authId,
+          torrentCount: torrents.length,
+          errorMessage: error.message
+        });
+        throw error;
+      }
       
       // Update derived fields (use 5 minutes as default interval for calculation)
-      await this.derivedFieldsEngine.updateDerivedFields(
-        changes,
-        5 * 60 // 5 minutes in seconds
-      );
+      const derivedStart = Date.now();
+      logger.debug('Updating derived fields', { authId: this.authId });
+      try {
+        await this.derivedFieldsEngine.updateDerivedFields(
+          changes,
+          5 * 60 // 5 minutes in seconds
+        );
+        const derivedDuration = ((Date.now() - derivedStart) / 1000).toFixed(2);
+        logger.debug('Derived fields updated', {
+          authId: this.authId,
+          derivedDuration: `${derivedDuration}s`
+        });
+      } catch (error) {
+        logger.error('Failed to update derived fields', error, {
+          authId: this.authId,
+          errorMessage: error.message
+        });
+        throw error;
+      }
       
       // Record speed samples for updated torrents
       if (changes.updated.length > 0) {
-        await this.speedAggregator.processUpdates(changes.updated);
+        const speedStart = Date.now();
+        logger.debug('Processing speed updates', {
+          authId: this.authId,
+          updatedCount: changes.updated.length
+        });
+        try {
+          await this.speedAggregator.processUpdates(changes.updated);
+          const speedDuration = ((Date.now() - speedStart) / 1000).toFixed(2);
+          logger.debug('Speed updates processed', {
+            authId: this.authId,
+            speedDuration: `${speedDuration}s`
+          });
+        } catch (error) {
+          logger.error('Failed to process speed updates', error, {
+            authId: this.authId,
+            updatedCount: changes.updated.length,
+            errorMessage: error.message
+          });
+          // Don't throw - speed updates are not critical
+        }
       }
       
       // Evaluate automation rules
+      const rulesStart = Date.now();
       let ruleResults = { evaluated: 0, executed: 0 };
       if (this.automationEngine) {
-        ruleResults = await this.automationEngine.evaluateRules(torrents);
+        logger.debug('Evaluating automation rules', {
+          authId: this.authId,
+          torrentCount: torrents.length
+        });
+        try {
+          ruleResults = await this.automationEngine.evaluateRules(torrents);
+          const rulesDuration = ((Date.now() - rulesStart) / 1000).toFixed(2);
+          logger.debug('Automation rules evaluated', {
+            authId: this.authId,
+            evaluated: ruleResults.evaluated,
+            executed: ruleResults.executed,
+            rulesDuration: `${rulesDuration}s`
+          });
+        } catch (error) {
+          logger.error('Failed to evaluate automation rules', error, {
+            authId: this.authId,
+            torrentCount: torrents.length,
+            errorMessage: error.message
+          });
+          // Don't throw - rule evaluation errors are logged but don't fail the poll
+        }
+      } else {
+        logger.warn('No automation engine available for rule evaluation', {
+          authId: this.authId
+        });
       }
       
       // Count non-terminal torrents and update master DB
       const nonTerminalCount = this.countNonTerminalTorrents(torrents);
-      const hasActiveRules = this.automationEngine ? this.automationEngine.hasActiveRules() : false;
+      const hasActiveRulesFlag = this.automationEngine ? this.automationEngine.hasActiveRules() : false;
       
       // Calculate next poll time (stagger will be added by scheduler if available)
-      const nextPollAt = this.calculateNextPollAt(nonTerminalCount, hasActiveRules);
+      const nextPollAt = this.calculateNextPollAt(nonTerminalCount, hasActiveRulesFlag);
       
       // Update master DB with next poll time and torrent count
       if (this.masterDb) {
-        this.masterDb.updateNextPollAt(this.authId, nextPollAt, nonTerminalCount);
+        try {
+          this.masterDb.updateNextPollAt(this.authId, nextPollAt, nonTerminalCount);
+          logger.debug('Updated next poll time in master DB', {
+            authId: this.authId,
+            nextPollAt: nextPollAt.toISOString(),
+            nonTerminalCount
+          });
+        } catch (error) {
+          logger.error('Failed to update next poll time in master DB', error, {
+            authId: this.authId,
+            errorMessage: error.message
+          });
+          // Don't throw - DB update failure shouldn't fail the poll
+        }
       }
       
       this.lastPollAt = new Date();
       this.lastPollError = null;
       
-      const duration = (new Date() - startTime) / 1000;
-      logger.info('Poll completed', {
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      logger.info('Poll completed successfully', {
         authId: this.authId,
-        duration: `${duration.toFixed(2)}s`,
+        duration: `${duration}s`,
         new: changes.new.length,
         updated: changes.updated.length,
         removed: changes.removed.length,
         rulesEvaluated: ruleResults.evaluated,
         rulesExecuted: ruleResults.executed,
         nonTerminalCount,
+        hasActiveRules: hasActiveRulesFlag,
         nextPollAt: nextPollAt.toISOString(),
+        timestamp: new Date().toISOString()
       });
       
       return {
         success: true,
         changes,
         ruleResults,
-        duration,
+        duration: parseFloat(duration),
         nonTerminalCount,
         nextPollAt
       };
     } catch (error) {
       this.lastPollError = error.message;
-      logger.error('Poll failed', error, { authId: this.authId });
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      logger.error('Poll failed', error, { 
+        authId: this.authId,
+        duration: `${duration}s`,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        duration: parseFloat(duration)
       };
     } finally {
       this.isPolling = false;
+      const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
+      logger.debug('Poll cycle finished', {
+        authId: this.authId,
+        totalDuration: `${totalDuration}s`,
+        isPolling: this.isPolling
+      });
     }
   }
 
