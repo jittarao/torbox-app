@@ -370,9 +370,7 @@ function ItemCard({
 
             {/* Tags display */}
             {item.tags && item.tags.length > 0 && (
-              <div className="mt-2">
-                <TagDisplay tags={item.tags} />
-              </div>
+              <TagDisplay tags={item.tags} />
             )}
           </div>
         </div>

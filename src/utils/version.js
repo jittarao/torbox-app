@@ -4,13 +4,13 @@ export function getVersion() {
     // In production, we'll use the version from the build
     if (typeof window !== 'undefined' && window.__NEXT_DATA__?.buildId) {
       // This will be set during build time
-      return process.env.NEXT_PUBLIC_APP_VERSION || '0.1.33';
+      return process.env.NEXT_PUBLIC_APP_VERSION || '0.1.34';
     }
     
     // Fallback to package.json version
-    return '0.1.33';
+    return '0.1.34';
   } catch (error) {
     console.warn('Could not get version:', error);
-    return '0.1.33';
+    return '0.1.34';
   }
 }
