@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useDeferredValue, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, useDeferredValue, useCallback, useEffect, useLayoutEffect, startTransition } from 'react';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
@@ -143,6 +143,9 @@ export default function TableBody({
     return row?.type === 'item' ? 70 : 50;
   }, [flattenedRows, isMobile]);
 
+  // Memoize getScrollElement to ensure stable reference
+  const getScrollElement = useCallback(() => scrollElementRef.current, []);
+
   // Use different virtualizers based on fullscreen mode
   // In fullscreen: use useVirtualizer with scroll container
   // In normal mode: use useWindowVirtualizer for window scroll
@@ -157,15 +160,18 @@ export default function TableBody({
 
   const containerVirtualizer = useVirtualizer({
     count: flattenedRows.length,
-    getScrollElement: () => scrollElementRef.current,
+    getScrollElement,
     estimateSize,
     measureElement,
     overscan: 30,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
-  // Use the appropriate virtualizer based on mode
-  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
+  // Use the appropriate virtualizer based on mode - memoize to ensure stable reference
+  const virtualizer = useMemo(
+    () => isFullscreen ? containerVirtualizer : windowVirtualizer,
+    [isFullscreen, containerVirtualizer, windowVirtualizer]
+  );
 
   // Define isDisabled first so it can be used in handlers
   const isDisabled = useCallback((itemId) => {
@@ -293,13 +299,47 @@ export default function TableBody({
     willChange: 'transform',
   }), []);
 
-  const virtualRows = virtualizer.getVirtualItems();
-  const totalSize = virtualizer.getTotalSize();
+  // Track view mode changes to prevent flushSync errors
+  const prevViewModeRef = useRef(viewMode);
+  const [virtualRows, setVirtualRows] = useState([]);
+  const [useDirectCall, setUseDirectCall] = useState(false);
+  
+  // Check for view mode change - reset to use state
+  if (prevViewModeRef.current !== viewMode) {
+    prevViewModeRef.current = viewMode;
+    setUseDirectCall(false);
+    setVirtualRows([]);
+  }
+  
+  // Update virtual rows after render completes to prevent flushSync errors
+  // This is critical when switching from Card to Table view
+  useLayoutEffect(() => {
+    const updateRows = () => {
+      try {
+        const rows = virtualizer.getVirtualItems();
+        setVirtualRows(rows);
+        // After first successful update, allow direct calls for scroll updates
+        setUseDirectCall(true);
+      } catch (error) {
+        // Silently handle errors - will retry on next effect run
+      }
+    };
+    
+    // Use requestAnimationFrame to ensure we're outside the render phase
+    const rafId = requestAnimationFrame(updateRows);
+    return () => cancelAnimationFrame(rafId);
+  }, [virtualizer, viewMode, flattenedRows.length]);
+  
+  // Get virtual rows - use direct call if ready, otherwise use state
+  // Direct call is needed for scroll updates to work properly
+  const currentVirtualRows = useDirectCall 
+    ? virtualizer.getVirtualItems() 
+    : virtualRows;
   
   // Calculate startOffset - only show spacer for rows that are actually before the first visible
   // In fullscreen: use container scroll position
   // In normal mode: useWindowVirtualizer calculates from document top, but table starts at tableOffsetTop
-  const firstVisibleRow = virtualRows[0];
+  const firstVisibleRow = currentVirtualRows[0];
   let startOffset = 0;
   
   if (firstVisibleRow && firstVisibleRow.index > 0) {
@@ -361,7 +401,7 @@ export default function TableBody({
         </tr>
       )}
       {/* Virtualized rows */}
-      {virtualRows.map((virtualRow) => {
+      {currentVirtualRows.map((virtualRow) => {
         const row = flattenedRows[virtualRow.index];
 
         if (row.type === 'item') {
@@ -419,8 +459,8 @@ export default function TableBody({
         }
       })}
       {/* Bottom spacer */}
-      {virtualRows.length > 0 && (() => {
-        const lastVisibleRow = virtualRows[virtualRows.length - 1];
+      {currentVirtualRows.length > 0 && (() => {
+        const lastVisibleRow = currentVirtualRows[currentVirtualRows.length - 1];
         const lastVisibleIndex = lastVisibleRow?.index ?? 0;
         
         // Calculate height of rows after the last visible row
