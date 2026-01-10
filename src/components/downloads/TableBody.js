@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useMemo, useDeferredValue, useCallback } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useState, useRef, useMemo, useDeferredValue, useCallback, useEffect } from 'react';
+import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
 import { useDownloads } from '../shared/hooks/useDownloads';
@@ -28,6 +28,8 @@ export default function TableBody({
   isBlurred = false,
   viewMode = 'table',
   tableWidth,
+  isFullscreen,
+  scrollContainerRef,
 }) {
   const t = useTranslations('TableBody');
 
@@ -45,6 +47,41 @@ export default function TableBody({
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
   const scrollElementRef = useRef(null);
+  const tableOffsetTopRef = useRef(0);
+  const [tableOffsetTop, setTableOffsetTop] = useState(0);
+
+  // In fullscreen mode, use the provided scroll container ref
+  // In normal mode, track table position for window scroll
+  useEffect(() => {
+    if (isFullscreen) {
+      // Use the provided scroll container ref
+      if (scrollContainerRef?.current) {
+        scrollElementRef.current = scrollContainerRef.current;
+      }
+    } else {
+      // Track the table's position in the document for window scroll
+      const updateTableOffset = () => {
+        if (tbodyRef.current) {
+          const rect = tbodyRef.current.getBoundingClientRect();
+          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+          const offset = rect.top + scrollTop;
+          tableOffsetTopRef.current = offset;
+          setTableOffsetTop(offset);
+        }
+      };
+
+      // Calculate immediately and after DOM is ready
+      updateTableOffset();
+      requestAnimationFrame(updateTableOffset);
+      
+      // Only listen to resize, not scroll, to avoid constant updates
+      window.addEventListener('resize', updateTableOffset);
+
+      return () => {
+        window.removeEventListener('resize', updateTableOffset);
+      };
+    }
+  }, [isFullscreen, scrollContainerRef]);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -87,22 +124,6 @@ export default function TableBody({
     return rows;
   }, [deferredItems, expandedItemsArray]);
 
-  // Find scrollable parent container (the div with id="items-table")
-  // Cache the element in a ref to avoid repeated DOM queries during scroll
-  const getScrollElement = useCallback(() => {
-    if (scrollElementRef.current) {
-      return scrollElementRef.current;
-    }
-    if (typeof document !== 'undefined') {
-      const element = document.getElementById('items-table');
-      if (element) {
-        scrollElementRef.current = element;
-      }
-      return element;
-    }
-    return null;
-  }, []);
-
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
     // Measure the actual rendered height of the row
@@ -122,14 +143,29 @@ export default function TableBody({
     return row?.type === 'item' ? 70 : 50;
   }, [flattenedRows, isMobile]);
 
-  // Virtualizer setup
-  const virtualizer = useVirtualizer({
+  // Use different virtualizers based on fullscreen mode
+  // In fullscreen: use useVirtualizer with scroll container
+  // In normal mode: use useWindowVirtualizer for window scroll
+  const windowVirtualizer = useWindowVirtualizer({
     count: flattenedRows.length,
-    getScrollElement,
     estimateSize,
     measureElement,
-    overscan: 3, // Reduced from 5 to improve scroll performance
+    overscan: 10,
+    scrollMargin: tableOffsetTopRef.current || tableOffsetTop,
+    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
+
+  const containerVirtualizer = useVirtualizer({
+    count: flattenedRows.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize,
+    measureElement,
+    overscan: 10,
+    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
+  });
+
+  // Use the appropriate virtualizer based on mode
+  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
   const handleItemSelection = (
     itemId,
@@ -254,7 +290,40 @@ export default function TableBody({
 
   const virtualRows = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
-  const startOffset = virtualRows[0]?.start ?? 0;
+  
+  // Calculate startOffset - only show spacer for rows that are actually before the first visible
+  // In fullscreen: use container scroll position
+  // In normal mode: useWindowVirtualizer calculates from document top, but table starts at tableOffsetTop
+  const firstVisibleRow = virtualRows[0];
+  let startOffset = 0;
+  
+  if (firstVisibleRow && firstVisibleRow.index > 0) {
+    if (isFullscreen) {
+      // In fullscreen mode, calculate offset based on container scroll
+      // Sum estimated sizes of all rows before the first visible row
+      for (let i = 0; i < firstVisibleRow.index; i++) {
+        startOffset += estimateSize(i);
+      }
+    } else if (tableOffsetTop > 0) {
+      // In normal mode, use window scroll position
+      const currentScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+      
+      // Only show spacer if we've scrolled past where the table content starts
+      if (currentScrollY > tableOffsetTop) {
+        // Calculate the offset within the table by summing row sizes
+        // But limit it to a reasonable maximum based on scroll position
+        const scrollIntoTable = currentScrollY - tableOffsetTop;
+        
+        for (let i = 0; i < firstVisibleRow.index; i++) {
+          startOffset += estimateSize(i);
+        }
+        
+        // Don't show a spacer larger than how far we've scrolled into the table
+        // This prevents the huge spacer issue
+        startOffset = Math.min(startOffset, scrollIntoTable);
+      }
+    }
+  }
 
   // Show empty state when there are no items
   if (deferredItems.length === 0) {
@@ -343,17 +412,32 @@ export default function TableBody({
         }
       })}
       {/* Bottom spacer */}
-      {virtualRows.length > 0 && (
-        <tr>
-          <td
-            colSpan={activeColumns.length + 2}
-            style={{
-              height: totalSize - (virtualRows[virtualRows.length - 1]?.end ?? 0),
-              padding: 0,
-            }}
-          />
-        </tr>
-      )}
+      {virtualRows.length > 0 && (() => {
+        const lastVisibleRow = virtualRows[virtualRows.length - 1];
+        const lastVisibleIndex = lastVisibleRow?.index ?? 0;
+        
+        // Calculate height of rows after the last visible row
+        let bottomOffset = 0;
+        if (lastVisibleIndex < flattenedRows.length - 1) {
+          // Sum estimated sizes of all rows after the last visible row
+          for (let i = lastVisibleIndex + 1; i < flattenedRows.length; i++) {
+            bottomOffset += estimateSize(i);
+          }
+        }
+        
+        // Only show bottom spacer if there are rows after the last visible one
+        return bottomOffset > 0 ? (
+          <tr>
+            <td
+              colSpan={activeColumns.length + 2}
+              style={{
+                height: bottomOffset,
+                padding: 0,
+              }}
+            />
+          </tr>
+        ) : null;
+      })()}
     </tbody>
   );
 }

@@ -1,6 +1,6 @@
-import { useRef, useState, useMemo, useDeferredValue, useCallback } from 'react';
+import { useRef, useState, useMemo, useDeferredValue, useCallback, useEffect } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import ItemCard from './ItemCard';
 import { useTranslations } from 'next-intl';
@@ -23,6 +23,7 @@ export default function CardList({
   isBlurred,
   isFullscreen,
   viewMode = 'card',
+  scrollContainerRef,
 }) {
   const t = useTranslations('CardList');
   const lastClickedItemIndexRef = useRef(null);
@@ -38,6 +39,41 @@ export default function CardList({
   );
   const isMobile = useIsMobile();
   const scrollElementRef = useRef(null);
+  const containerOffsetTopRef = useRef(0);
+  const [containerOffsetTop, setContainerOffsetTop] = useState(0);
+
+  // In fullscreen mode, use the provided scroll container ref
+  // In normal mode, track container position for window scroll
+  useEffect(() => {
+    if (isFullscreen) {
+      // Use the provided scroll container ref
+      if (scrollContainerRef?.current) {
+        scrollElementRef.current = scrollContainerRef.current;
+      }
+    } else {
+      // Track the container's position in the document for window scroll
+      const updateContainerOffset = () => {
+        if (parentRef.current) {
+          const rect = parentRef.current.getBoundingClientRect();
+          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+          const offset = rect.top + scrollTop;
+          containerOffsetTopRef.current = offset;
+          setContainerOffsetTop(offset);
+        }
+      };
+
+      // Calculate immediately and after DOM is ready
+      updateContainerOffset();
+      requestAnimationFrame(updateContainerOffset);
+      
+      // Only listen to resize, not scroll, to avoid constant updates
+      window.addEventListener('resize', updateContainerOffset);
+
+      return () => {
+        window.removeEventListener('resize', updateContainerOffset);
+      };
+    }
+  }, [isFullscreen, scrollContainerRef]);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -49,35 +85,6 @@ export default function CardList({
       itemIndex,
     }));
   }, [deferredItems]);
-
-  // Find scrollable parent container
-  // Cache the element in a ref to avoid repeated DOM queries during scroll
-  const getScrollElement = useCallback(() => {
-    if (scrollElementRef.current) {
-      return scrollElementRef.current;
-    }
-    if (parentRef.current) {
-      // Find the nearest scrollable parent with a constrained height
-      let parent = parentRef.current.parentElement;
-      while (parent) {
-        const style = window.getComputedStyle(parent);
-        const hasOverflow = style.overflowY === 'auto' || style.overflowY === 'scroll';
-        const hasMaxHeight = style.maxHeight && style.maxHeight !== 'none';
-        const hasHeight = style.height && style.height !== 'auto';
-        const isScrollable = parent.scrollHeight > parent.clientHeight;
-        
-        // Check if parent has overflow and a height constraint (required for virtualization)
-        if (hasOverflow && (hasMaxHeight || hasHeight || isScrollable)) {
-          scrollElementRef.current = parent;
-          return parent;
-        }
-        parent = parent.parentElement;
-      }
-      // Fallback to window if no constrained parent found
-      return null;
-    }
-    return null;
-  }, []);
 
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
@@ -94,14 +101,30 @@ export default function CardList({
     return isMobile ? 170 : 82;
   }, [isMobile]);
 
-  // Virtualizer setup - use dynamic measurements for variable heights
-  const virtualizer = useVirtualizer({
+  // Use different virtualizers based on fullscreen mode
+  // In fullscreen: use useVirtualizer with scroll container
+  // In normal mode: use useWindowVirtualizer for window scroll
+  // Disabled useFlushSync to allow React to batch updates for better performance
+  const windowVirtualizer = useWindowVirtualizer({
     count: flattenedRows.length,
-    getScrollElement,
     estimateSize,
     measureElement,
-    overscan: 3, // Reduced from 5 to improve scroll performance
+    overscan: 10,
+    scrollMargin: containerOffsetTopRef.current || containerOffsetTop,
+    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
+
+  const containerVirtualizer = useVirtualizer({
+    count: flattenedRows.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize,
+    measureElement,
+    overscan: 10,
+    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
+  });
+
+  // Use the appropriate virtualizer based on mode
+  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
   const handleItemSelection = (
     itemId,
@@ -253,12 +276,28 @@ export default function CardList({
         const row = flattenedRows[virtualRow.index];
 
         // Calculate item card position
+        // In fullscreen: virtualRow.start is relative to scroll container (no conversion needed)
+        // In normal mode: virtualRow.start is relative to document top, convert to container-relative
+        let cardTop = 0;
+        if (isFullscreen) {
+          // In fullscreen, virtualRow.start is already relative to the scroll container
+          cardTop = virtualRow.start;
+        } else if (containerOffsetTop > 0) {
+          // In normal mode, convert document-relative to container-relative
+          cardTop = virtualRow.start - containerOffsetTop;
+        } else {
+          // Fallback: if containerOffsetTop not calculated yet, use a simple sum
+          for (let i = 0; i < virtualRow.index; i++) {
+            cardTop += estimateSize();
+          }
+        }
+        
         const itemCardStyle = {
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          transform: `translateY(${virtualRow.start}px)`,
+          transform: `translateY(${cardTop}px)`,
           marginBottom: '8px', // Add gap between cards
         };
 
@@ -297,6 +336,25 @@ export default function CardList({
           </div>
         );
       })}
+      {/* Bottom spacer for cards after last visible */}
+      {virtualRows.length > 0 && (() => {
+        const lastVisibleRow = virtualRows[virtualRows.length - 1];
+        const lastVisibleIndex = lastVisibleRow?.index ?? 0;
+        
+        // Calculate height of cards after the last visible card
+        let bottomOffset = 0;
+        if (lastVisibleIndex < flattenedRows.length - 1) {
+          // Sum estimated sizes of all cards after the last visible card
+          for (let i = lastVisibleIndex + 1; i < flattenedRows.length; i++) {
+            bottomOffset += estimateSize();
+          }
+        }
+        
+        // Only show bottom spacer if there are cards after the last visible one
+        return bottomOffset > 0 ? (
+          <div style={{ height: bottomOffset }} />
+        ) : null;
+      })()}
     </div>
   );
 }

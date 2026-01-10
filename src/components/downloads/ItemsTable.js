@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
@@ -30,10 +30,13 @@ export default function ItemsTable({
   expandedItems,
   toggleFiles,
   viewMode = 'table',
+  isFullscreen,
+  scrollContainerRef,
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [tableWidth, setTableWidth] = useState(0);
+  const tableContainerRef = useRef(null);
 
   // Load mobile notice dismissal preference from localStorage
   useEffect(() => {
@@ -56,9 +59,8 @@ export default function ItemsTable({
   }, []);
 
   const updateTableWidth = () => {
-    const table = document.getElementById('items-table');
-    if (table) {
-      const width = table.clientWidth;
+    if (tableContainerRef.current) {
+      const width = tableContainerRef.current.clientWidth;
       setTableWidth(width);
     }
   };
@@ -106,9 +108,9 @@ export default function ItemsTable({
       )}
 
       <div
+        ref={tableContainerRef}
         id="items-table"
-        className="overflow-x-auto overflow-y-auto rounded-lg border border-border dark:border-border-dark"
-        style={{ maxHeight: 'calc(100vh - 100px)' }}
+        className="overflow-x-auto rounded-lg border border-border dark:border-border-dark"
       >
         <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative">
           <TableHeader
@@ -142,6 +144,8 @@ export default function ItemsTable({
             expandedItems={expandedItems}
             toggleFiles={toggleFiles}
             tableWidth={tableWidth}
+            isFullscreen={isFullscreen}
+            scrollContainerRef={scrollContainerRef}
           />
         </table>
       </div>
