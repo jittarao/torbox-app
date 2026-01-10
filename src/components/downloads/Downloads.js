@@ -35,6 +35,7 @@ export default function Downloads({ apiKey }) {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
+  const scrollContainerRef = useRef(null);
   const isMobile = useIsMobile();
 
   // Ensure user database exists when API key is provided
@@ -418,9 +419,10 @@ export default function Downloads({ apiKey }) {
           <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
           <div
+            ref={scrollContainerRef}
             className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
               downloadLinks.length > 0 ? 'mb-12' : ''
-            } ${!isFullscreen && isMobile && viewMode === 'card' ? 'max-h-[calc(100vh-300px)]' : !isFullscreen && viewMode === 'card' ? 'max-h-[calc(100vh-250px)]' : ''}`}
+            }`}
           >
             {/* Wrap ActionBar in a sticky container */}
             <div className="sticky top-0 z-20">
@@ -492,6 +494,8 @@ export default function Downloads({ apiKey }) {
                 setToast={setToast}
                 expandedItems={expandedItems}
                 toggleFiles={toggleFiles}
+                isFullscreen={isFullscreen}
+                scrollContainerRef={scrollContainerRef}
               />
             ) : (
               <CardList
@@ -512,6 +516,7 @@ export default function Downloads({ apiKey }) {
                 isBlurred={isBlurred}
                 isFullscreen={isFullscreen}
                 viewMode={viewMode}
+                scrollContainerRef={scrollContainerRef}
               />
             )}
           </div>
