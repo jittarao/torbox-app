@@ -493,6 +493,14 @@ class RuleEvaluator {
    * Execute action on a torrent
    */
   async executeAction(action, torrent) {
+    if (!action) {
+      throw new Error('Action is required but was not provided');
+    }
+
+    if (!action.type) {
+      throw new Error(`Action type is required but was not provided. Action: ${JSON.stringify(action)}`);
+    }
+
     switch (action.type) {
       case 'stop_seeding':
         return await this.apiClient.controlTorrent(torrent.id, 'stop_seeding');
