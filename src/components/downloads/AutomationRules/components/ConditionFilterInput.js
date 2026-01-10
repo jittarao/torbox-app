@@ -57,6 +57,7 @@ export default function ConditionFilterInput({
   apiKey,
 }) {
   const { tags } = useTags(apiKey);
+
   const handleFieldChange = (field, value) => {
     if (field === 'type') {
       // When changing condition type, update operator and value to appropriate defaults

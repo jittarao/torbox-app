@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import MultiSelect from '@/components/shared/MultiSelect';
 import { useTags } from '@/components/shared/hooks/useTags';
 
@@ -22,17 +22,9 @@ export default function TagSelector({
   disabled = false,
   allowCreate = false,
 }) {
-  const { tags, loading, createTag, loadTags } = useTags(apiKey);
+  const { tags, loading, createTag } = useTags(apiKey);
   const [isCreating, setIsCreating] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-
-  // Load tags only if empty (safety check - tags should already be loaded by other components)
-  useEffect(() => {
-    if (apiKey && tags.length === 0 && !loading) {
-      loadTags();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]); // Only depend on apiKey - tags/loading changes shouldn't trigger re-fetch
 
   const tagOptions = tags.map(tag => ({
     label: tag.name,

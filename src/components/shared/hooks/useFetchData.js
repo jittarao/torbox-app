@@ -5,11 +5,11 @@ import { validateUserData } from '@/utils/monitoring';
 import { perfMonitor } from '@/utils/performance';
 
 // Rate limit constants
-const MAX_CALLS = 5;
+const MAX_CALLS = 5; // Maximum number of calls per WINDOW_SIZE
 const WINDOW_SIZE = 10000; // 10 seconds in ms
 const MIN_INTERVAL_BETWEEN_CALLS = 2000; // Minimum 2 seconds between calls
 const MIN_INTERVAL_MAPPING = { torrents: 2000, usenet: 2000, webdl: 2000 };
-const ACTIVE_POLLING_INTERVAL = 10000; // 10 seconds in ms
+const ACTIVE_POLLING_INTERVAL = 15000; // 15 seconds in ms
 const INACTIVE_POLLING_INTERVAL = 60000; // 1 minute in ms
 const AUTO_START_CHECK_INTERVAL = 30000; // 30 seconds in ms
 

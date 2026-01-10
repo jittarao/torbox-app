@@ -25,8 +25,17 @@ export const useDownloadTagsStore = create((set, get) => ({
       return;
     }
 
-    // Update API key in store (this will reset mappings if changed)
-    get().setApiKey(apiKey);
+    const { currentApiKey, loading } = get();
+
+    // Prevent duplicate concurrent calls: if already loading, skip
+    if (loading) {
+      return;
+    }
+
+    // If API key changed, reset mappings first
+    if (currentApiKey !== apiKey) {
+      get().setApiKey(apiKey);
+    }
 
     set({ loading: true, error: null });
     try {
