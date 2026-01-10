@@ -111,13 +111,21 @@ class StateDiffEngine {
    */
   getTorrentState(torrent) {
     const state = getTorrentStatus(torrent);
-    // Terminal states: 'completed' and 'failed' are not stored in shadow
-    // as torrents in these states are typically removed from the API
+    // Terminal states: 'completed', 'failed', 'inactive' are not stored in shadow
+    // as torrents in these states are do not change and are not tracked.
     return state;
   }
 
   /**
    * Check if a state is terminal (should not be stored in shadow)
+   * Terminal states are those where the torrent doesn't need tracking:
+   * - 'completed': Download finished, no longer active
+   * - 'failed': Download failed, no longer active
+   * - 'inactive': Not active and download not present - no telemetry or diff data needed
+   * 
+   * Note: Terminal states are still evaluated by automation rules since rules
+   * operate on live API data, not shadow state. Terminal states just don't need
+   * to be tracked in torrent_shadow or torrent_telemetry.
    * @param {string} state - Torrent state
    * @returns {boolean} - True if state is terminal
    */

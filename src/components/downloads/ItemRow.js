@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import {
   formatSize,
   formatSpeed,
@@ -13,7 +14,7 @@ import Tooltip from '@/components/shared/Tooltip';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
-export default function ItemRow({
+function ItemRow({
   item,
   activeColumns,
   selectedItems,
@@ -433,3 +434,5 @@ export default function ItemRow({
     </tr>
   );
 }
+
+export default memo(ItemRow);

@@ -162,6 +162,13 @@
             "uploadStalledTime": "Upload-Blockiert-Zeit",
             "uploadStalledTimeDescription": "Zeit seit der Upload-Aktivität gestoppt wurde (in Minuten)"
         },
+        "conditionGroups": {
+            "downloading": "Herunterladen",
+            "lifecycle": "Lebenszyklus",
+            "metadata": "Metadaten",
+            "seeding": "Seeden",
+            "stalled": "Blockiert"
+        },
         "delete": "Löschen",
         "details": "Details",
         "enabledAt": "aktiviert am",

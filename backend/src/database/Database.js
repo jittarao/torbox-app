@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import MigrationRunner from './MigrationRunner.js';
 import { encrypt, hashApiKey } from '../utils/crypto.js';
+import logger from '../utils/logger.js';
 
 /**
  * Master Database
@@ -42,9 +43,9 @@ class Database {
       // Run migrations
       await this.migrationRunner.runMigrations();
       
-      console.log(`Master database initialized at: ${this.dbPath}`);
+      logger.info('Master database initialized', { dbPath: this.dbPath });
     } catch (error) {
-      console.error('Master database initialization failed:', error);
+      logger.error('Master database initialization failed', error, { dbPath: this.dbPath });
       throw error;
     }
   }

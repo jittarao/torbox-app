@@ -15,6 +15,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 
 export default function ActionBar({
   unfilteredItems,
+  filteredItems,
   selectedItems,
   setSelectedItems,
   hasSelectedFiles,
@@ -40,6 +41,7 @@ export default function ActionBar({
   sortField,
   sortDir,
   handleSort,
+  setSort,
   getTotalDownloadSize,
   isDownloadPanelOpen,
   setIsDownloadPanelOpen,
@@ -48,13 +50,17 @@ export default function ActionBar({
   expandAllFiles,
   collapseAllFiles,
   expandedItems,
+  columnFilters = [],
+  setColumnFilters,
 }) {
   const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
   const stickyRef = useRef(null);
 
+  // Use filteredItems for status counts if available, otherwise use unfilteredItems
+  const itemsForStatusCounts = filteredItems || unfilteredItems;
   const { statusCounts, statusOptions, isStatusSelected } =
-    useStatusCounts(unfilteredItems);
+    useStatusCounts(itemsForStatusCounts);
 
   const t = useTranslations('Columns');
 
@@ -97,6 +103,7 @@ export default function ActionBar({
           statusOptions={statusOptions}
           isStatusSelected={isStatusSelected}
           unfilteredItems={unfilteredItems}
+          filteredItems={filteredItems}
           selectedItems={selectedItems}
           hasSelectedFiles={hasSelectedFiles}
           statusFilter={statusFilter}

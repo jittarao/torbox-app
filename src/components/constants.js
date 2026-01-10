@@ -3,6 +3,7 @@ export const API_SEARCH_BASE = 'https://search-api.torbox.app';
 export const API_VERSION = 'v1';
 export const TORBOX_MANAGER_VERSION = '1.0';
 
+// Non-retryable errors for the API
 export const NON_RETRYABLE_ERRORS = {
   DATABASE_ERROR: 'DATABASE_ERROR',
   NO_AUTH: 'NO_AUTH',
@@ -26,6 +27,7 @@ export const NON_RETRYABLE_ERRORS = {
   VENDOR_DISABLED: 'VENDOR_DISABLED',
 };
 
+// Columns for the downloads page
 export const COLUMNS = {
   id: { key: 'id', sortable: true },
   hash: { key: 'hash', sortable: true, assetTypes: ['torrents', 'all'] },
@@ -35,7 +37,7 @@ export const COLUMNS = {
   cached_at: { key: 'cached_at', sortable: true },
   updated_at: { key: 'updated_at', sortable: true },
   download_state: { key: 'download_state', sortable: true },
-  progress: { key: 'progress', sortable: true, displayName: 'Simple Progress' },
+  progress: { key: 'progress', sortable: true, displayName: 'Progress' },
   download_progress: { key: 'download_progress', sortable: true, displayName: 'Detailed Progress' },
   ratio: { key: 'ratio', sortable: true, assetTypes: ['torrents', 'all'] },
   file_count: { key: 'file_count', sortable: true },
@@ -63,11 +65,13 @@ export const COLUMNS = {
     sortable: true,
     assetTypes: ['webdl', 'usenet'],
   },
+  tracker: { key: 'tracker', sortable: true, assetTypes: ['torrents', 'all'], displayName: 'Tracker URL' },
   expires_at: { key: 'expires_at', sortable: true },
   asset_type: { key: 'asset_type', sortable: true, assetTypes: ['all'] },
   private: { key: 'private', sortable: true, assetTypes: ['torrents', 'all'] },
 };
 
+// Status options for the downloads page
 export const STATUS_OPTIONS = [
   { label: 'All', value: 'all', hidden: true },
   // Queued: Missing download state and other status fields

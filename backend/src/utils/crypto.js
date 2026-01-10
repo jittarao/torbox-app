@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import logger from './logger.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -13,7 +14,7 @@ function getEncryptionKey() {
       throw new Error('ENCRYPTION_KEY environment variable is required in production');
     }
     // Development fallback - DO NOT USE IN PRODUCTION
-    console.warn('⚠️  WARNING: Using default encryption key. Set ENCRYPTION_KEY in production!');
+    logger.warn('Using default encryption key. Set ENCRYPTION_KEY in production!');
     return crypto.scryptSync('default-dev-key-change-in-production', 'salt', 32);
   }
   
@@ -79,7 +80,7 @@ export function decrypt(encryptedText) {
     
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
+    logger.error('Decryption error', error);
     throw new Error('Failed to decrypt data');
   }
 }

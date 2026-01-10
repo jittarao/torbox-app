@@ -1,5 +1,6 @@
 import UserPoller from './UserPoller.js';
 import AutomationEngine from './AutomationEngine.js';
+import logger from '../utils/logger.js';
 
 /**
  * Polling Scheduler
@@ -23,11 +24,11 @@ class PollingScheduler {
    */
   async start() {
     if (this.isRunning) {
-      console.log('PollingScheduler already running');
+      logger.warn('PollingScheduler already running');
       return;
     }
 
-    console.log('Starting PollingScheduler (cron-like mode)...');
+    logger.info('Starting PollingScheduler (cron-like mode)');
     this.isRunning = true;
 
     // Initial load of active users
@@ -36,14 +37,14 @@ class PollingScheduler {
     // Start periodic check for users due for polling (cron-like)
     this.intervalId = setInterval(() => {
       this.pollDueUsers().catch(err => {
-        console.error('Error polling due users:', err);
+        logger.error('Error polling due users', err);
       });
     }, this.pollCheckInterval);
 
     // Start periodic check for new users
     this.refreshIntervalId = setInterval(() => {
       this.refreshPollers().catch(err => {
-        console.error('Error refreshing pollers:', err);
+        logger.error('Error refreshing pollers', err);
       });
     }, this.refreshInterval);
   }
@@ -56,7 +57,7 @@ class PollingScheduler {
       return;
     }
 
-    console.log('Stopping PollingScheduler...');
+    logger.info('Stopping PollingScheduler');
     this.isRunning = false;
 
     if (this.intervalId) {
@@ -113,14 +114,14 @@ class PollingScheduler {
         return; // No users due for polling
       }
 
-      console.log(`[PollingScheduler] Found ${dueUsers.length} users due for polling`);
+      logger.debug('Found users due for polling', { count: dueUsers.length });
 
       // Poll each user
       for (const user of dueUsers) {
         const { auth_id, encrypted_key, has_active_rules } = user;
 
         if (!encrypted_key) {
-          console.warn(`[PollingScheduler] User ${auth_id} has no API key, skipping`);
+          logger.warn('User has no API key, skipping', { authId: auth_id });
           continue;
         }
 
@@ -171,14 +172,14 @@ class PollingScheduler {
             this.masterDb.updateNextPollAt(auth_id, nextPollAt, result.nonTerminalCount || 0);
           }
         } catch (error) {
-          console.error(`[PollingScheduler] Error polling user ${auth_id}:`, error);
+          logger.error('Error polling user', error, { authId: auth_id });
           // Set next poll to 5 minutes from now on error
           const nextPollAt = new Date(Date.now() + 5 * 60 * 1000);
           this.masterDb.updateNextPollAt(auth_id, nextPollAt, 0);
         }
       }
     } catch (error) {
-      console.error('[PollingScheduler] Error in pollDueUsers:', error);
+      logger.error('Error in pollDueUsers', error);
     }
   }
 
@@ -194,7 +195,7 @@ class PollingScheduler {
       const { auth_id, encrypted_key } = user;
 
       if (!encrypted_key) {
-        console.warn(`[PollingScheduler] User ${auth_id} has no API key, skipping`);
+        logger.warn('User has no API key, skipping', { authId: auth_id });
         continue;
       }
 
@@ -218,9 +219,9 @@ class PollingScheduler {
           // Create poller (will be used when due for polling)
           const poller = new UserPoller(auth_id, encrypted_key, userDb.db, automationEngine, this.masterDb);
           this.pollers.set(auth_id, poller);
-          console.log(`[PollingScheduler] Added poller for user ${auth_id}`);
+          logger.info('Added poller for user', { authId: auth_id });
         } catch (error) {
-          console.error(`[PollingScheduler] Failed to create poller for user ${auth_id}:`, error);
+          logger.error('Failed to create poller for user', error, { authId: auth_id });
         }
       }
     }
@@ -230,7 +231,7 @@ class PollingScheduler {
       const stillActive = activeUsers.some(u => u.auth_id === authId);
       if (!stillActive) {
         this.pollers.delete(authId);
-        console.log(`[PollingScheduler] Removed poller for user ${authId}`);
+        logger.info('Removed poller for user', { authId });
       }
     }
   }
@@ -266,4 +267,3 @@ class PollingScheduler {
 }
 
 export default PollingScheduler;
-

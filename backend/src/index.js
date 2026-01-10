@@ -11,6 +11,7 @@ import PollingScheduler from './automation/PollingScheduler.js';
 import AutomationEngine from './automation/AutomationEngine.js';
 import ApiClient from './api/ApiClient.js';
 import { hashApiKey } from './utils/crypto.js';
+import logger from './utils/logger.js';
 import fs from 'fs';
 
 class TorBoxBackend {
@@ -57,6 +58,19 @@ class TorBoxBackend {
     // Body parsing
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+    // Request logging middleware
+    this.app.use((req, res, next) => {
+      const startTime = Date.now();
+      
+      // Log response when finished
+      res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        logger.http(req, res, duration);
+      });
+      
+      next();
+    });
   }
 
   setupRoutes() {
@@ -117,7 +131,10 @@ class TorBoxBackend {
 
         res.json({ success: true, message: 'API key registered successfully', authId });
       } catch (error) {
-        console.error('Error registering API key:', error);
+        logger.error('Error registering API key', error, {
+          endpoint: '/api/backend/api-key',
+          method: 'POST',
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -134,7 +151,10 @@ class TorBoxBackend {
           pollingScheduler: schedulerStatus
         });
       } catch (error) {
-        console.error('Error checking API key status:', error);
+        logger.error('Error checking API key status', error, {
+          endpoint: '/api/backend/api-key/status',
+          method: 'GET',
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -202,7 +222,10 @@ class TorBoxBackend {
           message: wasCreated ? 'User database created' : 'User database already exists'
         });
       } catch (error) {
-        console.error('Error ensuring user database:', error);
+        logger.error('Error ensuring user database', error, {
+          endpoint: '/api/backend/api-key/ensure-db',
+          method: 'POST',
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -221,22 +244,13 @@ class TorBoxBackend {
         }
 
         const rules = await engine.getAutomationRules();
-        const transformedRules = rules.map(rule => ({
-          id: rule.id,
-          name: rule.name,
-          enabled: rule.enabled,
-          trigger: rule.trigger_config,
-          conditions: rule.conditions,
-          logicOperator: 'and',
-          action: rule.action_config,
-          metadata: rule.metadata,
-          cooldown_minutes: rule.cooldown_minutes,
-          created_at: rule.created_at,
-          updated_at: rule.updated_at
-        }));
-        res.json({ success: true, rules: transformedRules });
+        res.json({ success: true, rules });
       } catch (error) {
-        console.error('Error fetching automation rules:', error);
+        logger.error('Error fetching automation rules', error, {
+          endpoint: '/api/automation/rules',
+          method: 'GET',
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -264,7 +278,11 @@ class TorBoxBackend {
         
         res.json({ success: true, message: 'Rules saved successfully' });
       } catch (error) {
-        console.error('Error saving automation rules:', error);
+        logger.error('Error saving automation rules', error, {
+          endpoint: '/api/automation/rules',
+          method: 'POST',
+          authId: req.body.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -292,7 +310,12 @@ class TorBoxBackend {
         
         res.json({ success: true, message: 'Rule updated successfully' });
       } catch (error) {
-        console.error('Error updating rule:', error);
+        logger.error('Error updating rule', error, {
+          endpoint: `/api/automation/rules/${req.params.id}`,
+          method: 'PUT',
+          ruleId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -319,7 +342,12 @@ class TorBoxBackend {
         
         res.json({ success: true, message: 'Rule deleted successfully' });
       } catch (error) {
-        console.error('Error deleting rule:', error);
+        logger.error('Error deleting rule', error, {
+          endpoint: `/api/automation/rules/${req.params.id}`,
+          method: 'DELETE',
+          ruleId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -340,7 +368,12 @@ class TorBoxBackend {
         const logs = engine.getRuleExecutionHistory(ruleId);
         res.json({ success: true, logs });
       } catch (error) {
-        console.error('Error fetching rule logs:', error);
+        logger.error('Error fetching rule logs', error, {
+          endpoint: `/api/automation/rules/${req.params.id}/logs`,
+          method: 'GET',
+          ruleId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -382,7 +415,11 @@ class TorBoxBackend {
           }
         });
       } catch (error) {
-        console.error('Error fetching archived downloads:', error);
+        logger.error('Error fetching archived downloads', error, {
+          endpoint: '/api/archived-downloads',
+          method: 'GET',
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -431,7 +468,11 @@ class TorBoxBackend {
 
         res.json({ success: true, data: archived });
       } catch (error) {
-        console.error('Error creating archived download:', error);
+        logger.error('Error creating archived download', error, {
+          endpoint: '/api/archived-downloads',
+          method: 'POST',
+          authId: req.body.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -465,14 +506,280 @@ class TorBoxBackend {
 
         res.json({ success: true, message: 'Archived download deleted successfully' });
       } catch (error) {
-        console.error('Error deleting archived download:', error);
+        logger.error('Error deleting archived download', error, {
+          endpoint: `/api/archived-downloads/${req.params.id}`,
+          method: 'DELETE',
+          archiveId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // Custom views endpoints (per-user)
+    this.app.get('/api/custom-views', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        const views = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          ORDER BY created_at DESC
+        `).all();
+
+        // Parse JSON fields for all views
+        const parsedViews = views.map(view => {
+          const parsed = { ...view };
+          if (parsed.filters) {
+            parsed.filters = JSON.parse(parsed.filters);
+          }
+          if (parsed.visible_columns) {
+            parsed.visible_columns = JSON.parse(parsed.visible_columns);
+          }
+          return parsed;
+        });
+
+        res.json({ success: true, views: parsedViews });
+      } catch (error) {
+        logger.error('Error fetching custom views', error, {
+          endpoint: '/api/custom-views',
+          method: 'GET',
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.post('/api/custom-views', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
+
+        if (!name || !filters) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'name and filters are required' 
+          });
+        }
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+        
+        const result = userDb.db.prepare(`
+          INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          name,
+          JSON.stringify(filters),
+          sort_field || null,
+          sort_direction || null,
+          visible_columns ? JSON.stringify(visible_columns) : null,
+          asset_type || null
+        );
+
+        const view = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          WHERE id = ?
+        `).get(result.lastInsertRowid);
+
+        // Parse JSON fields
+        view.filters = JSON.parse(view.filters);
+        if (view.visible_columns) {
+          view.visible_columns = JSON.parse(view.visible_columns);
+        }
+
+        res.json({ success: true, view });
+      } catch (error) {
+        logger.error('Error creating custom view', error, {
+          endpoint: '/api/custom-views',
+          method: 'POST',
+          authId: req.body.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.get('/api/custom-views/:id', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const viewId = parseInt(req.params.id);
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        const view = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          WHERE id = ?
+        `).get(viewId);
+
+        if (!view) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Custom view not found' 
+          });
+        }
+
+        // Parse JSON fields
+        view.filters = JSON.parse(view.filters);
+        if (view.visible_columns) {
+          view.visible_columns = JSON.parse(view.visible_columns);
+        }
+
+        res.json({ success: true, view });
+      } catch (error) {
+        logger.error('Error fetching custom view', error, {
+          endpoint: `/api/custom-views/${req.params.id}`,
+          method: 'GET',
+          viewId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.put('/api/custom-views/:id', async (req, res) => {
+      try {
+        const authId = req.body.authId || req.headers['x-auth-id'] || req.query.authId;
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const viewId = parseInt(req.params.id);
+        const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
+
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db.prepare(`
+          SELECT id FROM custom_views WHERE id = ?
+        `).get(viewId);
+
+        if (!existing) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Custom view not found' 
+          });
+        }
+
+        // Build update query dynamically
+        const updates = [];
+        const values = [];
+
+        if (name !== undefined) {
+          updates.push('name = ?');
+          values.push(name);
+        }
+        if (filters !== undefined) {
+          updates.push('filters = ?');
+          values.push(JSON.stringify(filters));
+        }
+        if (sort_field !== undefined) {
+          updates.push('sort_field = ?');
+          values.push(sort_field || null);
+        }
+        if (sort_direction !== undefined) {
+          updates.push('sort_direction = ?');
+          values.push(sort_direction || null);
+        }
+        if (visible_columns !== undefined) {
+          updates.push('visible_columns = ?');
+          values.push(visible_columns ? JSON.stringify(visible_columns) : null);
+        }
+        if (asset_type !== undefined) {
+          updates.push('asset_type = ?');
+          values.push(asset_type || null);
+        }
+
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(viewId);
+
+        userDb.db.prepare(`
+          UPDATE custom_views
+          SET ${updates.join(', ')}
+          WHERE id = ?
+        `).run(...values);
+
+        const view = userDb.db.prepare(`
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          FROM custom_views
+          WHERE id = ?
+        `).get(viewId);
+
+        // Parse JSON fields
+        view.filters = JSON.parse(view.filters);
+        if (view.visible_columns) {
+          view.visible_columns = JSON.parse(view.visible_columns);
+        }
+
+        res.json({ success: true, view });
+      } catch (error) {
+        logger.error('Error updating custom view', error, {
+          endpoint: `/api/custom-views/${req.params.id}`,
+          method: 'PUT',
+          viewId: req.params.id,
+          authId: req.body.authId || req.headers['x-auth-id'] || req.query.authId,
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.delete('/api/custom-views/:id', async (req, res) => {
+      try {
+        const authId = req.query.authId || req.headers['x-auth-id'];
+        if (!authId) {
+          return res.status(400).json({ success: false, error: 'authId required' });
+        }
+
+        const viewId = parseInt(req.params.id);
+        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db.prepare(`
+          SELECT id FROM custom_views WHERE id = ?
+        `).get(viewId);
+
+        if (!existing) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'Custom view not found' 
+          });
+        }
+
+        // Delete
+        userDb.db.prepare(`
+          DELETE FROM custom_views WHERE id = ?
+        `).run(viewId);
+
+        res.json({ success: true, message: 'Custom view deleted successfully' });
+      } catch (error) {
+        logger.error('Error deleting custom view', error, {
+          endpoint: `/api/custom-views/${req.params.id}`,
+          method: 'DELETE',
+          viewId: req.params.id,
+          authId: req.query.authId || req.headers['x-auth-id'],
+        });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // Error handling middleware
     this.app.use((error, req, res, next) => {
-      console.error('Unhandled error:', error);
+      logger.error('Unhandled error in request handler', error, {
+        endpoint: req.originalUrl || req.url,
+        method: req.method,
+        ip: req.ip || req.connection?.remoteAddress,
+      });
       res.status(500).json({ 
         success: false, 
         error: 'Internal server error',
@@ -494,12 +801,12 @@ class TorBoxBackend {
     try {
       // Initialize master database
       await this.masterDatabase.initialize();
-      console.log('Master database initialized');
+      logger.info('Master database initialized');
 
       // Initialize user database manager
       const userDbDir = process.env.USER_DB_DIR || '/app/data/users';
       this.userDatabaseManager = new UserDatabaseManager(this.masterDatabase.db, userDbDir);
-      console.log('User database manager initialized');
+      logger.info('User database manager initialized', { userDbDir });
 
       // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(
@@ -508,7 +815,7 @@ class TorBoxBackend {
         this.automationEngines
       );
       await this.pollingScheduler.start();
-      console.log('Polling scheduler started');
+      logger.info('Polling scheduler started');
 
       // Initialize automation engines for existing users
       const activeUsers = this.masterDatabase.getActiveUsers();
@@ -524,27 +831,34 @@ class TorBoxBackend {
           await automationEngine.initialize();
           this.automationEngines.set(user.auth_id, automationEngine);
         } catch (error) {
-          console.error(`Failed to initialize automation engine for user ${user.auth_id}:`, error);
+          logger.error(`Failed to initialize automation engine for user ${user.auth_id}`, error, {
+            authId: user.auth_id,
+          });
         }
       }
 
-      console.log(`TorBox Backend started successfully with ${activeUsers.length} active users`);
+      logger.info('TorBox Backend started successfully', {
+        activeUsers: activeUsers.length,
+        automationEngines: this.automationEngines.size,
+      });
     } catch (error) {
-      console.error('Failed to initialize services:', error);
+      logger.error('Failed to initialize services', error);
       process.exit(1);
     }
   }
 
   start() {
     this.app.listen(this.port, '0.0.0.0', () => {
-      console.log(`TorBox Backend running on port ${this.port}`);
-      console.log(`Health check: http://localhost:${this.port}/health`);
-      console.log(`Backend status: http://localhost:${this.port}/api/backend/status`);
+      logger.info('TorBox Backend server started', {
+        port: this.port,
+        healthCheck: `http://localhost:${this.port}/health`,
+        statusEndpoint: `http://localhost:${this.port}/api/backend/status`,
+      });
     });
   }
 
   async shutdown() {
-    console.log('Shutting down TorBox Backend...');
+    logger.info('Shutting down TorBox Backend...');
     
     if (this.pollingScheduler) {
       this.pollingScheduler.stop();
@@ -562,7 +876,7 @@ class TorBoxBackend {
       this.masterDatabase.close();
     }
 
-    console.log('Shutdown complete');
+    logger.info('Shutdown complete');
   }
 }
 
@@ -572,15 +886,28 @@ backend.start();
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
+  logger.info('SIGTERM received, shutting down gracefully');
   await backend.shutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
+  logger.info('SIGINT received, shutting down gracefully');
   await backend.shutdown();
   process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', error);
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled promise rejection', reason instanceof Error ? reason : new Error(String(reason)), {
+    promise: promise.toString(),
+  });
 });
 
 export default TorBoxBackend;

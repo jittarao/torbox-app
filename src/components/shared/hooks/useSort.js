@@ -120,10 +120,16 @@ export function useSort() {
     [sortField, sortDirection, comparators, fieldTypeMap],
   );
 
+  const setSort = useCallback((field, direction = 'asc') => {
+    setSortField(field);
+    setSortDirection(direction);
+  }, []);
+
   return {
     sortField,
     sortDirection,
     handleSort,
+    setSort,
     sortTorrents,
   };
 }

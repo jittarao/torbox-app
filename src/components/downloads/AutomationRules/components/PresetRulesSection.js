@@ -21,10 +21,12 @@ export default function PresetRulesSection({ onApplyPreset, t }) {
               {preset.name}
             </div>
             <div className="text-gray-600 dark:text-gray-400 text-[10px]">
-              {preset.conditions.length === 1 
-                ? `${preset.conditions[0].type} ${preset.conditions[0].operator} ${preset.conditions[0].value}`
-                : `${preset.conditions.length} conditions`
-              } → {preset.action.type}
+              {(() => {
+                const conditions = (preset.groups || []).flatMap(group => group.conditions || []);
+                return conditions.length === 1 
+                  ? `${conditions[0].type} ${conditions[0].operator} ${conditions[0].value}`
+                  : `${conditions.length} conditions`;
+              })()} → {preset.action.type}
             </div>
           </button>
         ))}

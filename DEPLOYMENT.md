@@ -124,7 +124,7 @@ openssl rand -base64 32
 
 3. Create a `.env` file in the root directory with the following variables:
 ```bash
-# Backend
+# Backend environment variables (used by the torbox-backend service)
 FRONTEND_URL=http://localhost:3000
 ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 ```
@@ -132,7 +132,8 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 **Important**: 
 - Replace `your_secure_encryption_key_here_minimum_32_characters` with the key generated in step 2
 - The encryption key must be at least 32 characters long and should be base64-encoded
-- The frontend environment variables (`BACKEND_URL` and `BACKEND_DISABLED`) are set in `docker-compose.yml` and use the Docker service name for internal communication
+- These environment variables are for the backend service (`torbox-backend`) - the `docker-compose.yml` file reads these from the root `.env` file
+- The frontend environment variables (`BACKEND_URL` and `BACKEND_DISABLED`) are hardcoded in `docker-compose.yml` and use the Docker service name (`http://torbox-backend:3001`) for internal communication
 
 4. Start both services (Docker will automatically pull the pre-built images):
 ```bash

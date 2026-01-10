@@ -162,6 +162,13 @@
             "uploadStalledTime": "Tiempo de bloqueo de carga",
             "uploadStalledTimeDescription": "Tiempo desde que la actividad de carga se detuvo (en minutos)"
         },
+        "conditionGroups": {
+            "downloading": "Descargando",
+            "lifecycle": "Ciclo de vida",
+            "metadata": "Metadatos",
+            "seeding": "Sembrando",
+            "stalled": "Bloqueado"
+        },
         "delete": "Eliminar",
         "details": "Detalles",
         "enabledAt": "habilitado a",

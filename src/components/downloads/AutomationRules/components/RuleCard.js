@@ -50,14 +50,14 @@ export default function RuleCard({
         </div>
       </div>
       <div className="mt-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-        Every {rule.trigger.value} {commonT('minutes')}, if{' '}
-        {getConditionText(
-          rule.conditions || [rule.condition], 
-          rule.logicOperator || LOGIC_OPERATORS.AND,
-          t,
-          commonT
-        )}, then{' '}
-        {rule.action.type.replace('_', ' ')}
+        Every {rule.trigger?.value ?? 30} {commonT('minutes')}, if{' '}
+        {(() => {
+          // Rules always have groups structure (migrated in backend)
+          const conditions = (rule.groups || []).flatMap(group => group.conditions || []);
+          const logicOperator = rule.logicOperator || LOGIC_OPERATORS.AND;
+          return getConditionText(conditions, logicOperator, t, commonT);
+        })()}, then{' '}
+        {rule.action?.type?.replace('_', ' ') || 'unknown'}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
+import logger from '../utils/logger.js';
 
 /**
  * Rule Evaluator
@@ -12,6 +13,7 @@ class RuleEvaluator {
 
   /**
    * Evaluate a rule against current torrents
+   * Supports both old flat structure and new group structure
    * @param {Object} rule - Rule configuration
    * @param {Array} torrents - Current torrents from API
    * @returns {Promise<Array>} - Matching torrents
@@ -32,23 +34,71 @@ class RuleEvaluator {
       }
     }
 
-    const conditions = rule.conditions || [];
-    const logicOperator = rule.logicOperator || 'and';
+    // Support both old flat structure and new group structure
+    const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
+    
+    if (hasGroups) {
+      // New group structure
+      const groupLogicOperator = rule.logicOperator || 'and';
+      
+      const matchingTorrents = torrents.filter(torrent => {
+        // Evaluate each group
+        const groupResults = rule.groups.map(group => {
+          const conditions = group.conditions || [];
+          const groupLogicOp = group.logicOperator || 'and';
+          
+          if (conditions.length === 0) {
+            return true; // Empty group matches everything
+          }
+          
+          // Evaluate conditions within the group
+          const conditionResults = conditions.map(condition => {
+            return this.evaluateCondition(condition, torrent);
+          });
+          
+          // Apply group logic operator
+          if (groupLogicOp === 'or') {
+            return conditionResults.some(result => result);
+          } else {
+            return conditionResults.every(result => result);
+          }
+        });
+        
+        // Apply logic operator between groups
+        if (groupResults.length === 0) {
+          return true; // No groups means match everything
+        } else if (groupLogicOperator === 'or') {
+          return groupResults.some(result => result);
+        } else {
+          return groupResults.every(result => result);
+        }
+      });
+      
+      return matchingTorrents;
+    } else {
+      // Old flat structure (backward compatibility)
+      const conditions = rule.conditions || [];
+      const logicOperator = rule.logicOperator || 'and';
 
-    const matchingTorrents = torrents.filter(torrent => {
-      const conditionResults = conditions.map(condition => {
-        return this.evaluateCondition(condition, torrent);
+      const matchingTorrents = torrents.filter(torrent => {
+        if (conditions.length === 0) {
+          return true; // No conditions means match everything
+        }
+        
+        const conditionResults = conditions.map(condition => {
+          return this.evaluateCondition(condition, torrent);
+        });
+
+        // Apply logic operator
+        if (logicOperator === 'or') {
+          return conditionResults.some(result => result);
+        } else {
+          return conditionResults.every(result => result);
+        }
       });
 
-      // Apply logic operator
-      if (logicOperator === 'or') {
-        return conditionResults.some(result => result);
-      } else {
-        return conditionResults.every(result => result);
-      }
-    });
-
-    return matchingTorrents;
+      return matchingTorrents;
+    }
   }
 
   /**
@@ -287,6 +337,10 @@ class RuleEvaluator {
         const torrentStatus = this.getTorrentStatus(torrent);
         // STATUS value must be an array
         if (!Array.isArray(condition.value)) {
+          logger.debug('STATUS condition has invalid value (not an array)', {
+            torrentId: torrent.id,
+            conditionValue: condition.value
+          });
           return false;
         }
         return condition.value.length > 0 && condition.value.includes(torrentStatus);
@@ -415,7 +469,7 @@ class RuleEvaluator {
       `).get(id);
 
       if (existing) {
-        console.log(`Download ${id} already archived, skipping`);
+        logger.debug('Download already archived, skipping', { torrentId: id });
         return { success: true, message: 'Already archived' };
       }
 
@@ -427,7 +481,10 @@ class RuleEvaluator {
 
       return { success: true, message: 'Download archived successfully' };
     } catch (error) {
-      console.error(`Error archiving download ${torrent.id}:`, error);
+      logger.error('Error archiving download', error, {
+        torrentId: torrent.id,
+        torrentName: torrent.name,
+      });
       throw error;
     }
   }
