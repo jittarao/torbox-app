@@ -179,11 +179,16 @@ class AutomationEngine {
    */
   async syncActiveRulesFlag() {
     const hasActive = this.hasActiveRules();
-    logger.debug('Syncing active rules flag to master DB', {
+    logger.info('Syncing active rules flag to master DB', {
+      authId: this.authId,
+      hasActiveRules: hasActive,
+      timestamp: new Date().toISOString()
+    });
+    await this.updateMasterDbActiveRulesFlag(hasActive);
+    logger.debug('Active rules flag synced successfully', {
       authId: this.authId,
       hasActiveRules: hasActive
     });
-    await this.updateMasterDbActiveRulesFlag(hasActive);
   }
 
   /**
@@ -246,21 +251,42 @@ class AutomationEngine {
    * @param {Array} torrents - Current torrents from API
    */
   async evaluateRules(torrents) {
+    const evaluationStartTime = Date.now();
     try {
+      logger.info('Starting rule evaluation', {
+        authId: this.authId,
+        torrentCount: torrents.length,
+        timestamp: new Date().toISOString()
+      });
+
       const rules = await this.getAutomationRules();
       const enabledRules = rules.filter(r => r.enabled);
 
+      logger.debug('Rules loaded', {
+        authId: this.authId,
+        totalRules: rules.length,
+        enabledRules: enabledRules.length,
+        disabledRules: rules.length - enabledRules.length
+      });
+
       if (enabledRules.length === 0) {
+        logger.debug('No enabled rules to evaluate', {
+          authId: this.authId,
+          totalRules: rules.length
+        });
         return { evaluated: 0, executed: 0 };
       }
 
-      logger.debug('Evaluating automation rules', {
+      logger.info('Evaluating automation rules', {
         authId: this.authId,
-        ruleCount: enabledRules.length,
-        torrentCount: torrents.length
+        enabledRuleCount: enabledRules.length,
+        torrentCount: torrents.length,
+        ruleNames: enabledRules.map(r => r.name)
       });
 
       let executedCount = 0;
+      let skippedCount = 0;
+      let errorCount = 0;
 
       for (const rule of enabledRules) {
         try {
@@ -278,8 +304,10 @@ class AutomationEngine {
                 ruleName: rule.name,
                 cooldownMinutes: rule.cooldown_minutes,
                 remainingCooldownMinutes,
-                lastExecutedAt: rule.last_executed_at
+                lastExecutedAt: rule.last_executed_at,
+                timeSinceLastExecution: `${(timeSinceLastExecution / 1000).toFixed(1)}s`
               });
+              skippedCount++;
               continue; // Still in cooldown
             }
           }
@@ -289,8 +317,11 @@ class AutomationEngine {
             logger.warn('Rule has no action configured, skipping execution', {
               authId: this.authId,
               ruleId: rule.id,
-              ruleName: rule.name
+              ruleName: rule.name,
+              hasAction: !!rule.action,
+              actionType: rule.action?.type || 'none'
             });
+            skippedCount++;
             continue;
           }
 
@@ -304,6 +335,7 @@ class AutomationEngine {
               ruleName: rule.name,
               torrentCount: torrents.length
             });
+            skippedCount++;
             continue;
           }
 
@@ -377,20 +409,55 @@ class AutomationEngine {
           );
 
           executedCount++;
+          
+          logger.info('Rule execution completed', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            matchedCount: matchingTorrents.length,
+            successCount,
+            errorCount,
+            totalActions: matchingTorrents.length
+          });
         } catch (error) {
+          errorCount++;
           logger.error('Rule evaluation failed', error, {
             authId: this.authId,
             ruleId: rule.id,
             ruleName: rule.name,
+            errorMessage: error.message,
+            errorStack: error.stack
           });
           await this.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
         }
       }
 
-      return { evaluated: enabledRules.length, executed: executedCount };
+      const evaluationDuration = ((Date.now() - evaluationStartTime) / 1000).toFixed(2);
+      logger.info('Rule evaluation cycle completed', {
+        authId: this.authId,
+        totalRules: enabledRules.length,
+        executedCount,
+        skippedCount,
+        errorCount,
+        evaluationDuration: `${evaluationDuration}s`,
+        averageRuleDuration: enabledRules.length > 0 
+          ? `${(evaluationDuration / enabledRules.length).toFixed(2)}s` 
+          : '0s'
+      });
+
+      return { 
+        evaluated: enabledRules.length, 
+        executed: executedCount,
+        skipped: skippedCount,
+        errors: errorCount
+      };
     } catch (error) {
+      const evaluationDuration = ((Date.now() - evaluationStartTime) / 1000).toFixed(2);
       logger.error('Failed to evaluate rules', error, {
         authId: this.authId,
+        evaluationDuration: `${evaluationDuration}s`,
+        errorMessage: error.message,
+        errorStack: error.stack
       });
       return { evaluated: 0, executed: 0, error: error.message };
     }
@@ -400,11 +467,43 @@ class AutomationEngine {
    * Log rule execution
    */
   async logRuleExecution(ruleId, ruleName, executionType, itemsProcessed = 0, success = true, errorMessage = null) {
-    const sql = `
-      INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    this.userDb.prepare(sql).run(ruleId, ruleName, executionType, itemsProcessed, success ? 1 : 0, errorMessage);
+    try {
+      // Validate required parameters
+      if (ruleId == null || ruleName == null || executionType == null) {
+        logger.warn('Invalid parameters for rule execution log', {
+          authId: this.authId,
+          ruleId,
+          ruleName,
+          executionType
+        });
+        return;
+      }
+
+      const sql = `
+        INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      this.userDb.prepare(sql).run(ruleId, ruleName, executionType, itemsProcessed, success ? 1 : 0, errorMessage);
+      logger.debug('Rule execution logged successfully', {
+        authId: this.authId,
+        ruleId,
+        ruleName,
+        executionType,
+        itemsProcessed,
+        success
+      });
+    } catch (error) {
+      // Log the error but don't throw - we don't want logging failures to break rule execution
+      logger.error('Failed to log rule execution', error, {
+        authId: this.authId,
+        ruleId,
+        ruleName,
+        executionType,
+        itemsProcessed,
+        success,
+        errorMessage
+      });
+    }
   }
 
   /**
