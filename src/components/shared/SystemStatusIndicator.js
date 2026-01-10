@@ -1,14 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useApiHealth } from './hooks/useApiHealth';
+import { useHealthStore } from '@/store/healthStore';
 import Icons from '@/components/icons';
+
+const HEALTH_CHECK_INTERVAL = 60000; // 60 seconds
 
 export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const t = useTranslations('SystemStatus');
   const [showTooltip, setShowTooltip] = useState(false);
   const { overallStatus, lastCheck, error, refreshHealth, isLoading } = useApiHealth(apiKey);
+  const { performHealthCheck } = useHealthStore();
+
+  // Start health checks once when component mounts
+  useEffect(() => {
+    if (apiKey) {
+      // Perform initial health check
+      performHealthCheck(apiKey);
+
+      // Set up periodic health checks
+      const interval = setInterval(() => {
+        performHealthCheck(apiKey);
+      }, HEALTH_CHECK_INTERVAL);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, performHealthCheck]);
 
   // Status configuration
   const statusConfig = {
