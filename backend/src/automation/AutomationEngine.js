@@ -449,7 +449,9 @@ class AutomationEngine {
         authId: this.authId,
         enabledRuleCount: enabledRules.length,
         torrentCount: torrents.length,
-        ruleNames: enabledRules.map(r => r.name)
+        ruleNames: enabledRules.map(r => r.name),
+        ruleIds: enabledRules.map(r => r.id),
+        ruleTriggers: enabledRules.map(r => ({ id: r.id, name: r.name, trigger: r.trigger }))
       });
 
       let executedCount = 0;
@@ -479,6 +481,17 @@ class AutomationEngine {
           }
 
           // Evaluate rule (this will check interval internally)
+          logger.debug('Starting rule evaluation', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            trigger: rule.trigger,
+            lastEvaluatedAt: rule.last_evaluated_at,
+            lastExecutedAt: rule.last_executed_at,
+            executionCount: rule.execution_count,
+            torrentCount: torrents.length
+          });
+          
           const ruleEvaluator = await this.getRuleEvaluator();
           const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
           
@@ -491,11 +504,14 @@ class AutomationEngine {
           `).run(rule.id);
 
           if (matchingTorrents.length === 0) {
-            logger.debug('Rule did not match any torrents', {
+            logger.info('Rule did not match any torrents', {
               authId: this.authId,
               ruleId: rule.id,
               ruleName: rule.name,
-              torrentCount: torrents.length
+              trigger: rule.trigger,
+              torrentCount: torrents.length,
+              lastEvaluatedAt: rule.last_evaluated_at,
+              reason: 'No torrents matched rule conditions'
             });
             skippedCount++;
             continue;
@@ -816,7 +832,7 @@ class AutomationEngine {
                   'PROGRESS', 'DOWNLOAD_SPEED', 'UPLOAD_SPEED', 'AVG_DOWNLOAD_SPEED', 'AVG_UPLOAD_SPEED', 'ETA',
                   'DOWNLOAD_STALLED_TIME', 'UPLOAD_STALLED_TIME',
                   'SEEDS', 'PEERS', 'RATIO', 'TOTAL_UPLOADED', 'TOTAL_DOWNLOADED',
-                  'FILE_SIZE', 'FILE_COUNT', 'NAME', 'PRIVATE', 'CACHED', 'AVAILABILITY', 'ALLOW_ZIP',
+                  'FILE_SIZE', 'FILE_COUNT', 'NAME', 'TRACKER', 'PRIVATE', 'CACHED', 'AVAILABILITY', 'ALLOW_ZIP',
                   'IS_ACTIVE', 'SEEDING_ENABLED', 'LONG_TERM_SEEDING', 'STATUS', 'EXPIRES_AT', 'TAGS'
                 ];
                 if (!validConditionTypes.includes(condition.type)) {
