@@ -33,11 +33,11 @@ class UserPoller {
   /**
    * Check if polling should be performed (user has active rules)
    */
-  shouldPoll() {
+  async shouldPoll() {
     if (!this.automationEngine) {
       return false;
     }
-    return this.automationEngine.hasActiveRules();
+    return await this.automationEngine.hasActiveRules();
   }
 
   /**
@@ -107,7 +107,7 @@ class UserPoller {
     }
 
     // Check if user has active automation rules
-    const hasActiveRules = this.shouldPoll();
+    const hasActiveRules = await this.shouldPoll();
     if (!hasActiveRules) {
       logger.debug('Poll skipped - no active automation rules', {
         authId: this.authId,
@@ -254,7 +254,7 @@ class UserPoller {
       
       // Count non-terminal torrents and update master DB
       const nonTerminalCount = this.countNonTerminalTorrents(torrents);
-      const hasActiveRulesFlag = this.automationEngine ? this.automationEngine.hasActiveRules() : false;
+      const hasActiveRulesFlag = this.automationEngine ? await this.automationEngine.hasActiveRules() : false;
       
       // Calculate next poll time (stagger will be added by scheduler if available)
       const nextPollAt = this.calculateNextPollAt(nonTerminalCount, hasActiveRulesFlag);
