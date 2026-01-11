@@ -9,7 +9,7 @@ import {
 export async function POST(request, { params }) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
-  const { id } = params;
+  const { id } = await params;
 
   if (!apiKey) {
     return Response.json(

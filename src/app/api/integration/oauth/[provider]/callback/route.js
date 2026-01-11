@@ -7,7 +7,7 @@ import {
 } from '@/components/constants';
 
 export async function GET(request, { params }) {
-  const { provider } = params;
+  const { provider } = await params;
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const state = searchParams.get('state');

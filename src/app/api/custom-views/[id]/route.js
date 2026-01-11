@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
     }
 
     const authId = hashApiKey(apiKey);
-    const { id } = params;
+    const { id } = await params;
     const url = new URL(`${BACKEND_URL}/api/custom-views/${id}`);
     url.searchParams.set('authId', authId);
     
@@ -81,7 +81,7 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     const authId = hashApiKey(apiKey);
-    const { id } = params;
+    const { id } = await params;
     
     // Add authId to the request body
     const requestBody = {
@@ -126,7 +126,7 @@ export async function DELETE(request, { params }) {
     }
 
     const authId = hashApiKey(apiKey);
-    const { id } = params;
+    const { id } = await params;
     const url = new URL(`${BACKEND_URL}/api/custom-views/${id}`);
     url.searchParams.set('authId', authId);
     

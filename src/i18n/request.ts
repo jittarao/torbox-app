@@ -1,15 +1,14 @@
 import { getRequestConfig } from 'next-intl/server';
+import { hasLocale } from 'next-intl';
 import { routing } from './routing';
 import deepmerge from 'deepmerge';
 
 export default getRequestConfig(async ({ requestLocale }) => {
-  // This typically corresponds to the `[locale]` segment
-  let locale = await requestLocale;
-
-  // Ensure that a valid locale is used
-  if (!locale || !routing.locales.includes(locale as any)) {
-    locale = routing.defaultLocale;
-  }
+  // Typically corresponds to the `[locale]` segment
+  const requested = await requestLocale;
+  const locale = hasLocale(routing.locales, requested)
+    ? requested
+    : routing.defaultLocale;
 
   const defaultMessages = (await import(`./messages/en.json`)).default;
 
