@@ -132,17 +132,23 @@ export default function AutomationRules() {
   const handleDeleteRule = async (ruleId) => {
     try {
       if (isBackendMode) {
-        // Use backend API for individual rule deletion
-        const response = await fetch(`/api/automation/rules/${ruleId}`, {
-          method: 'DELETE',
-          headers: {
-            'x-api-key': apiKey,
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to delete rule: ${response.status}`);
+        // Validate and convert ruleId to a positive integer
+        // Backend expects a positive integer ID
+        const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+        if (numericId && !isNaN(numericId) && numericId > 0) {
+          // Use backend API for individual rule deletion
+          const response = await fetch(`/api/automation/rules/${numericId}`, {
+            method: 'DELETE',
+            headers: {
+              'x-api-key': apiKey,
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to delete rule: ${response.status}`);
+          }
         }
+        // If ID is invalid, skip API call (likely a local-only rule)
       }
       
       // Update local state
@@ -164,19 +170,25 @@ export default function AutomationRules() {
       const newEnabled = !rule.enabled;
       
       if (isBackendMode) {
-        // Use backend API for individual rule update
-        const response = await fetch(`/api/automation/rules/${ruleId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-          },
-          body: JSON.stringify({ enabled: newEnabled }),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to update rule: ${response.status}`);
+        // Validate and convert ruleId to a positive integer
+        // Backend expects a positive integer ID
+        const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+        if (numericId && !isNaN(numericId) && numericId > 0) {
+          // Use backend API for individual rule update
+          const response = await fetch(`/api/automation/rules/${numericId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+            body: JSON.stringify({ enabled: newEnabled }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to update rule: ${response.status}`);
+          }
         }
+        // If ID is invalid, skip API call (likely a local-only rule)
       }
       
       // Update local state
@@ -232,8 +244,26 @@ export default function AutomationRules() {
         return;
       }
 
+      // Validate and convert ruleId to a positive integer
+      // Backend expects a positive integer ID
+      if (ruleId === null || ruleId === undefined || ruleId === '') {
+        // Invalid ID - likely a local-only rule, skip API call
+        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Convert to number if it's a string, otherwise use as-is
+      const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : Number(ruleId);
+      
+      // Validate it's a positive integer
+      if (isNaN(numericId) || !Number.isInteger(numericId) || numericId <= 0) {
+        // Invalid ID - likely a local-only rule, skip API call
+        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
       // Load logs from backend
-      const response = await fetch(`/api/automation/rules/${ruleId}/logs`, {
+      const response = await fetch(`/api/automation/rules/${numericId}/logs`, {
         headers: {
           'x-api-key': apiKey,
         },
@@ -244,7 +274,10 @@ export default function AutomationRules() {
         setRuleLogs(prev => ({ ...prev, [ruleId]: data.logs || [] }));
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Error loading rule logs:', errorData.error || `HTTP ${response.status}`);
+        // Only log error if it's not the expected "invalid id" error for local rules
+        if (!errorData.error || !errorData.error.includes('Invalid id')) {
+          console.error('Error loading rule logs:', errorData.error || `HTTP ${response.status}`);
+        }
         setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
       }
     } catch (error) {
@@ -261,8 +294,17 @@ export default function AutomationRules() {
         return;
       }
 
+      // Validate and convert ruleId to a positive integer
+      // Backend expects a positive integer ID
+      const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+      if (!numericId || isNaN(numericId) || numericId <= 0) {
+        // Invalid ID - likely a local-only rule, just clear local state
+        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
       // Clear logs in backend
-      const response = await fetch(`/api/automation/rules/${ruleId}/logs`, {
+      const response = await fetch(`/api/automation/rules/${numericId}/logs`, {
         method: 'DELETE',
         headers: {
           'x-api-key': apiKey,
