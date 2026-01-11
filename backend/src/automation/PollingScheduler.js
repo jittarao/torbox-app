@@ -22,6 +22,7 @@ class PollingScheduler {
     this.pollerCleanupIntervalHours = options.pollerCleanupIntervalHours || 24; // Default 24 hours
     this.lastCleanupAt = null; // Track when cleanup was last run
     this.flagUpdateLocks = new Map(); // Per-user locks for active rules flag updates
+    this.flagUpdateMutexes = new Map(); // Per-user mutexes for flag updates
   }
 
   /**
@@ -41,6 +42,57 @@ class PollingScheduler {
   }
 
   /**
+   * Get or create a mutex for a specific user
+   * @param {string} authId - User authentication ID
+   * @returns {Object} Mutex object with acquire() and release() methods
+   */
+  getMutex(authId) {
+    let mutex = this.flagUpdateMutexes.get(authId);
+    if (!mutex) {
+      // Create a new mutex for this user
+      let locked = false;
+      let queue = [];
+      
+      mutex = {
+        acquire: async () => {
+          // If not locked, acquire immediately
+          if (!locked) {
+            locked = true;
+            return;
+          }
+          
+          // Otherwise, wait in queue
+          // When woken up, we'll have the lock (release() ensures this)
+          return new Promise((resolve) => {
+            queue.push(() => {
+              locked = true;
+              resolve();
+            });
+          });
+        },
+        
+        release: () => {
+          if (queue.length > 0) {
+            // Wake up next waiter - they will set locked = true when their promise resolves
+            const next = queue.shift();
+            next();
+          } else {
+            // No waiters, release the lock
+            locked = false;
+            // Clean up mutex if no one is using it and no one is waiting
+            if (!locked && queue.length === 0) {
+              this.flagUpdateMutexes.delete(authId);
+            }
+          }
+        }
+      };
+      
+      this.flagUpdateMutexes.set(authId, mutex);
+    }
+    return mutex;
+  }
+
+  /**
    * Atomically acquire a per-user lock and chain an operation to it
    * This prevents race conditions where multiple concurrent operations
    * could see no lock and proceed simultaneously
@@ -49,37 +101,13 @@ class PollingScheduler {
    * @returns {Promise} - Promise that resolves when the operation completes
    */
   async acquireLockAndExecute(authId, operation) {
-    // Get current lock or create new resolved promise if none exists
-    // Set it immediately to prevent other concurrent operations from also creating one
-    let currentLock = this.flagUpdateLocks.get(authId);
-    if (!currentLock) {
-      currentLock = Promise.resolve();
-      this.flagUpdateLocks.set(authId, currentLock);
+    const mutex = this.getMutex(authId);
+    await mutex.acquire();
+    try {
+      return await operation();
+    } finally {
+      mutex.release();
     }
-    
-    // Re-check the lock right before chaining to ensure we have the absolute latest
-    // This handles the edge case where another operation updated the lock between
-    // our initial get and this point (though unlikely in single-threaded JS)
-    const latestLock = this.flagUpdateLocks.get(authId) || Promise.resolve();
-    
-    // Chain our operation to the latest lock
-    const newLockPromise = latestLock.then(operation).catch(error => {
-      logger.error('Error in lock-protected operation chain', error, { authId });
-      throw error;
-    }).finally(() => {
-      // Clean up: remove lock if this is still the current lock
-      // (no other operation has chained after us)
-      if (this.flagUpdateLocks.get(authId) === newLockPromise) {
-        this.flagUpdateLocks.delete(authId);
-      }
-    });
-    
-    // Atomically update the lock to the new promise
-    // Any concurrent operation that checks after this will chain to newLockPromise
-    this.flagUpdateLocks.set(authId, newLockPromise);
-    
-    // Wait for our operation to complete
-    return newLockPromise;
   }
 
   /**
