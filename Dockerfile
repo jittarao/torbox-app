@@ -31,6 +31,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Install build dependencies required for compiling native modules
 RUN apk add --no-cache libc6-compat
 
+# Enable strict error handling to catch build failures
+# This ensures the build fails immediately if any command returns non-zero
+SHELL ["/bin/sh", "-e", "-c"]
+
 # Copy package files first for better Docker layer caching
 COPY package.json ./
 
@@ -44,6 +48,15 @@ COPY . .
 # Build the Next.js application with production optimizations
 # This creates optimized static files and server bundles
 RUN bun run build
+
+# Verify that the standalone output was created
+# This prevents silent build failures from causing COPY errors later
+RUN if [ ! -d ".next/standalone" ]; then \
+      echo "ERROR: .next/standalone directory not found after build!"; \
+      echo "This usually means the Next.js build failed or standalone output is not configured."; \
+      (ls -la .next/ 2>/dev/null || echo ".next directory does not exist"); \
+      exit 1; \
+    fi
 
 # Stage 3: Runner - Production runtime image
 # Minimal image containing only what's needed to run the application
@@ -68,6 +81,7 @@ RUN chown -R nextjs:nodejs /app
 # Copy built application from builder stage
 # --chown: Set ownership to non-root user for security
 # .next/standalone: Contains the minimal server bundle (Next.js standalone output)
+# Note: The verification step in the builder stage ensures this directory exists
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 # .next/static: Contains static assets (JS, CSS, images)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
