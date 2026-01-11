@@ -58,7 +58,139 @@ class UserPoller {
   }
 
   /**
+   * Check if rules have executed recently (current poll or last hour)
+   * State transition: Determines if user is in active state
+   * @param {Object} ruleResults - Optional rule evaluation results with execution info
+   * @returns {Promise<boolean>} - True if rules executed recently
+   */
+  async checkRecentRuleExecutions(ruleResults = null) {
+    // Check if rules executed in the current poll cycle
+    if (ruleResults && ruleResults.executed > 0) {
+      logger.debug('Rules executed in current poll cycle, user in active mode', {
+        authId: this.authId,
+        executedCount: ruleResults.executed
+      });
+      return true;
+    }
+    
+    // If no executions in current poll, check database for executions in last hour
+    if (this.automationEngine) {
+      try {
+        const hasRecentExecutions = await this.automationEngine.hasRecentRuleExecutions(1); // Last hour
+        return hasRecentExecutions;
+      } catch (error) {
+        logger.error('Failed to check recent rule executions for adaptive polling', error, {
+          authId: this.authId
+        });
+        // Fall through to false on error (conservative: assume idle mode)
+        return false;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Safely get minimum rule interval from automation engine
+   * State transition: Used in active mode to determine optimal polling frequency
+   * @returns {Promise<number|null>} - Minimum rule interval in minutes, or null if unavailable
+   */
+  async getMinimumRuleIntervalSafe() {
+    if (!this.automationEngine) {
+      return null;
+    }
+    
+    try {
+      return await this.automationEngine.getMinimumRuleInterval();
+    } catch (error) {
+      logger.error('Failed to get minimum rule interval', error, {
+        authId: this.authId
+      });
+      // Return null to fall back to default logic
+      return null;
+    }
+  }
+
+  /**
+   * Calculate polling interval for idle mode
+   * State: User has active rules but no recent executions
+   * @param {number} nonTerminalCount - Count of non-terminal torrents
+   * @param {Object} ruleResults - Optional rule evaluation results
+   * @returns {number} - Polling interval in minutes (always 60 for idle mode)
+   */
+  calculateIdleModeInterval(nonTerminalCount, ruleResults = null) {
+    logger.debug('User in idle mode (no recent rule executions), polling every 60 minutes', {
+      authId: this.authId,
+      nonTerminalCount,
+      currentPollExecuted: ruleResults?.executed || 0
+    });
+    return 60;
+  }
+
+  /**
+   * Calculate polling interval for active mode
+   * State: User has active rules and recent executions
+   * @param {number|null} minRuleInterval - Minimum rule interval from automation engine
+   * @param {number} nonTerminalCount - Count of non-terminal torrents
+   * @param {Object} ruleResults - Optional rule evaluation results
+   * @returns {number} - Polling interval in minutes
+   */
+  calculateActiveModeInterval(minRuleInterval, nonTerminalCount, ruleResults = null) {
+    if (minRuleInterval !== null) {
+      // Use minimum interval from rules with interval triggers
+      logger.debug('User in active mode, using minimum rule interval', {
+        authId: this.authId,
+        minRuleInterval,
+        nonTerminalCount,
+        currentPollExecuted: ruleResults?.executed || 0
+      });
+      return minRuleInterval;
+    }
+    
+    // No interval triggers configured, fallback to existing logic
+    if (nonTerminalCount > 0) {
+      // Has active rules and non-terminal torrents: poll every 5 minutes
+      return 5;
+    } else {
+      // Has active rules but no non-terminal torrents: poll every 30 minutes
+      return 30;
+    }
+  }
+
+  /**
+   * Determine polling mode based on rule execution history
+   * State transition: Idle -> Active (when rules execute) or Active -> Idle (after 1 hour of inactivity)
+   * @param {boolean} hasActiveRules - Whether user has active rules
+   * @param {Object} ruleResults - Optional rule evaluation results
+   * @returns {Promise<'idle'|'active'|'no-rules'>} - Current polling mode
+   */
+  async determinePollingMode(hasActiveRules, ruleResults = null) {
+    if (!hasActiveRules) {
+      return 'no-rules';
+    }
+    
+    const hasRecentExecutions = await this.checkRecentRuleExecutions(ruleResults);
+    return hasRecentExecutions ? 'active' : 'idle';
+  }
+
+  /**
+   * Apply minimum interval constraint to prevent excessive API calls
+   * @param {number} intervalMinutes - Proposed interval in minutes
+   * @returns {number} - Enforced minimum interval in minutes
+   */
+  applyMinimumIntervalConstraint(intervalMinutes) {
+    const MIN_POLL_INTERVAL_MINUTES = 5;
+    return Math.max(MIN_POLL_INTERVAL_MINUTES, intervalMinutes);
+  }
+
+  /**
    * Calculate next poll timestamp based on state and adaptive polling logic
+   * 
+   * State Machine:
+   * - no-rules: User has no active rules -> poll every 60 minutes
+   * - idle: User has active rules but no recent executions -> poll every 60 minutes
+   * - active: User has active rules and recent executions -> poll based on rule intervals or fallback logic
+   * 
    * @param {number} nonTerminalCount - Count of non-terminal torrents
    * @param {boolean} hasActiveRules - Whether user has active rules
    * @param {Function} calculateStaggerOffset - Function to calculate stagger offset
@@ -69,89 +201,39 @@ class UserPoller {
     const now = Date.now();
     let baseIntervalMinutes;
 
-    if (!hasActiveRules) {
-      // No active rules: poll every hour
-      baseIntervalMinutes = 60;
-    } else {
-      // Check if rules have executed recently (adaptive polling)
-      let hasRecentExecutions = false;
-      let minRuleInterval = null;
-      
-      // Check if rules executed in the current poll cycle
-      if (ruleResults && ruleResults.executed > 0) {
-        hasRecentExecutions = true;
-        logger.debug('Rules executed in current poll cycle, user in active mode', {
-          authId: this.authId,
-          executedCount: ruleResults.executed
-        });
-      }
-      
-      // If no executions in current poll, check database for executions in last hour
-      if (!hasRecentExecutions && this.automationEngine) {
-        try {
-          hasRecentExecutions = await this.automationEngine.hasRecentRuleExecutions(1); // Last hour
-        } catch (error) {
-          logger.error('Failed to check recent rule executions for adaptive polling', error, {
-            authId: this.authId
-          });
-          // Fall through to default logic on error
-        }
-      }
-      
-      // Get minimum rule interval if we need it for active mode
-      if (hasRecentExecutions && this.automationEngine) {
-        try {
-          minRuleInterval = await this.automationEngine.getMinimumRuleInterval();
-        } catch (error) {
-          logger.error('Failed to get minimum rule interval', error, {
-            authId: this.authId
-          });
-          // Fall through to default logic on error
-        }
-      }
-      
-      if (!hasRecentExecutions) {
+    // Determine current polling mode
+    const pollingMode = await this.determinePollingMode(hasActiveRules, ruleResults);
+
+    // Calculate base interval based on mode
+    switch (pollingMode) {
+      case 'no-rules':
+        // No active rules: poll every hour
+        baseIntervalMinutes = 60;
+        break;
+
+      case 'idle':
         // Idle mode: No rules executed in current poll or last hour
         // Poll every 60 minutes regardless of rule intervals (performance optimization)
-        baseIntervalMinutes = 60;
-        logger.debug('User in idle mode (no recent rule executions), polling every 60 minutes', {
-          authId: this.authId,
-          hasActiveRules,
-          nonTerminalCount,
-          currentPollExecuted: ruleResults?.executed || 0
-        });
-      } else {
+        baseIntervalMinutes = this.calculateIdleModeInterval(nonTerminalCount, ruleResults);
+        break;
+
+      case 'active': {
         // Active mode: Rules executed recently (current poll or last hour)
-        if (minRuleInterval !== null) {
-          // Use minimum interval from rules with interval triggers
-          baseIntervalMinutes = minRuleInterval;
-          logger.debug('User in active mode, using minimum rule interval', {
-            authId: this.authId,
-            minRuleInterval,
-            hasActiveRules,
-            nonTerminalCount,
-            currentPollExecuted: ruleResults?.executed || 0
-          });
-        } else {
-          // No interval triggers configured, fallback to existing logic
-          if (nonTerminalCount > 0) {
-            // Has active rules and non-terminal torrents: poll every 5 minutes
-            baseIntervalMinutes = 5;
-          } else {
-            // Has active rules but no non-terminal torrents: poll every 30 minutes
-            baseIntervalMinutes = 30;
-          }
-        }
+        const minRuleInterval = await this.getMinimumRuleIntervalSafe();
+        baseIntervalMinutes = this.calculateActiveModeInterval(
+          minRuleInterval,
+          nonTerminalCount,
+          ruleResults
+        );
+        break;
       }
     }
 
-    // Enforce 5-minute minimum between polls to limit API calls
-    const MIN_POLL_INTERVAL_MINUTES = 5;
-    baseIntervalMinutes = Math.max(MIN_POLL_INTERVAL_MINUTES, baseIntervalMinutes);
+    // Enforce minimum interval constraint
+    baseIntervalMinutes = this.applyMinimumIntervalConstraint(baseIntervalMinutes);
 
+    // Convert to milliseconds and add stagger offset if provided
     const baseIntervalMs = baseIntervalMinutes * 60 * 1000;
-    
-    // Add stagger offset if provided
     let staggerOffset = 0;
     if (calculateStaggerOffset) {
       staggerOffset = calculateStaggerOffset(this.authId, baseIntervalMinutes);
