@@ -62,7 +62,8 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
     const isTimestampBased = isTimestampBasedCondition(condition.type);
     const timeOpT = isTimeBased ? t(`timeOperators.${operator}`) : null;
     const timestampOpT = isTimestampBased ? t(`timestampOperators.${operator}`) : null;
-    const numOpT = (!isTimeBased && !isTimestampBased) ? t(`operators.${operator}`) : null;
+    const textOpT = isStringCondition(condition.type) ? t(`stringOperators.${operator}`) : null;
+    const numOpT = (!isTimeBased && !isTimestampBased && !isStringCondition(condition.type)) ? t(`operators.${operator}`) : null;
 
     // Time / State
     if (condition.type === CONDITION_TYPES.SEEDING_TIME) {
@@ -137,7 +138,7 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
     } else if (condition.type === CONDITION_TYPES.FILE_COUNT) {
       return `file count ${numOpT} ${condition.value}`;
     } else if (condition.type === CONDITION_TYPES.NAME) {
-      return `name contains "${condition.value}"`;
+      return `name ${textOpT} "${condition.value}"`;
     } else if (condition.type === CONDITION_TYPES.PRIVATE) {
       const isPrivate = condition.value === true || condition.value === 1 || condition.value === 'true';
       return `is ${isPrivate ? 'private' : 'public'}`;
@@ -195,8 +196,10 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
       } else {
         return `expires in ${timestampOpT} ${condition.value} hours`;
       }
+    } else if (condition.type === CONDITION_TYPES.TRACKER) {
+      return `tracker ${textOpT} "${condition.value}"`;
     }
-    
+
     return '';
   });
 

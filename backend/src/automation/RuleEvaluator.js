@@ -542,25 +542,136 @@ class RuleEvaluator {
     }
 
     switch (action.type) {
+      // TorBox API Actions 
       case 'stop_seeding':
         return await this.apiClient.controlTorrent(torrent.id, 'stop_seeding');
-        
-      case 'archive':
-        await this.archiveDownload(torrent);
-        return await this.apiClient.deleteTorrent(torrent.id);
-        
+      
       case 'delete':
         return await this.apiClient.deleteTorrent(torrent.id);
         
-      case 'pause':
-        return await this.apiClient.controlTorrent(torrent.id, 'pause');
+      // Pause and Resume actions have been deprecated in TorBox API
+      // case 'pause':
+      //   return await this.apiClient.controlTorrent(torrent.id, 'pause');
         
-      case 'resume':
-        return await this.apiClient.controlTorrent(torrent.id, 'resume');
+      // case 'resume':
+      //   return await this.apiClient.controlTorrent(torrent.id, 'resume');
+        
+      // TBM Actions
+      case 'archive':
+        await this.archiveDownload(torrent);
+        return await this.apiClient.deleteTorrent(torrent.id);
+
+      case 'add_tag':
+        return await this.addTagsToDownload(action, torrent);
+        
+      case 'remove_tag':
+        return await this.removeTagsFromDownload(action, torrent);
         
       default:
         throw new Error(`Unknown action type: ${action.type}`);
     }
+  }
+
+  /**
+   * Add tags to a download
+   * @param {Object} action - Action object with type and tagIds
+   * @param {Object} torrent - Torrent object
+   */
+  async addTagsToDownload(action, torrent) {
+    // Validate tagIds
+    if (!Array.isArray(action.tagIds) || action.tagIds.length === 0) {
+      throw new Error('tagIds must be a non-empty array for add_tag action');
+    }
+
+    // Extract download ID (supporting multiple formats)
+    const downloadId = torrent.id?.toString() || torrent.torrent_id?.toString() || 
+                      torrent.usenet_id?.toString() || torrent.web_id?.toString();
+    
+    if (!downloadId) {
+      throw new Error('Download ID is required but could not be extracted from torrent');
+    }
+
+    // Validate all tag IDs exist
+    const placeholders = action.tagIds.map(() => '?').join(',');
+    const existingTags = this.db.prepare(`
+      SELECT id FROM tags WHERE id IN (${placeholders})
+    `).all(...action.tagIds);
+
+    if (existingTags.length !== action.tagIds.length) {
+      throw new Error('One or more tag IDs are invalid');
+    }
+
+    // Add tags using transaction
+    const transaction = this.db.transaction(() => {
+      const insertStmt = this.db.prepare(`
+        INSERT OR IGNORE INTO download_tags (tag_id, download_id)
+        VALUES (?, ?)
+      `);
+      
+      for (const tagId of action.tagIds) {
+        insertStmt.run(tagId, downloadId);
+      }
+    });
+
+    transaction();
+
+    logger.debug('Tags added to download', {
+      downloadId,
+      tagIds: action.tagIds,
+      tagCount: action.tagIds.length
+    });
+
+    return { success: true, message: `Added ${action.tagIds.length} tag(s) to download` };
+  }
+
+  /**
+   * Remove tags from a download
+   * @param {Object} action - Action object with type and tagIds
+   * @param {Object} torrent - Torrent object
+   */
+  async removeTagsFromDownload(action, torrent) {
+    // Validate tagIds
+    if (!Array.isArray(action.tagIds) || action.tagIds.length === 0) {
+      throw new Error('tagIds must be a non-empty array for remove_tag action');
+    }
+
+    // Extract download ID (supporting multiple formats)
+    const downloadId = torrent.id?.toString() || torrent.torrent_id?.toString() || 
+                      torrent.usenet_id?.toString() || torrent.web_id?.toString();
+    
+    if (!downloadId) {
+      throw new Error('Download ID is required but could not be extracted from torrent');
+    }
+
+    // Validate all tag IDs exist
+    const placeholders = action.tagIds.map(() => '?').join(',');
+    const existingTags = this.db.prepare(`
+      SELECT id FROM tags WHERE id IN (${placeholders})
+    `).all(...action.tagIds);
+
+    if (existingTags.length !== action.tagIds.length) {
+      throw new Error('One or more tag IDs are invalid');
+    }
+
+    // Remove tags using transaction
+    const transaction = this.db.transaction(() => {
+      const tagPlaceholders = action.tagIds.map(() => '?').join(',');
+      this.db.prepare(`
+        DELETE FROM download_tags 
+        WHERE download_id = ? 
+          AND tag_id IN (${tagPlaceholders})
+      `).run(downloadId, ...action.tagIds);
+    });
+
+    transaction();
+
+    logger.debug('Tags removed from download', {
+      downloadId,
+      tagIds: action.tagIds,
+      tagCount: action.tagIds.length
+    });
+
+    return { success: true, message: `Removed ${action.tagIds.length} tag(s) from download` };
   }
 }
 

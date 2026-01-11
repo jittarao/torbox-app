@@ -72,12 +72,17 @@
     "AutomationRules": {
         "action": "アクション",
         "actions": {
+            "addTag": "タグを追加",
+            "addTagDescription": "ダウンロードに1つ以上のタグを追加します",
             "archive": "アーカイブ",
             "archiveDescription": "ダウンロードをアーカイブフォルダーに移動しますが、ファイルは削除しません",
             "delete": "削除",
             "deleteDescription": "ダウンロードとそのファイルを完全に削除します",
             "forceStart": "強制開始",
             "forceStartDescription": "ダウンロードを強制的に開始します",
+            "removeTag": "タグを削除",
+            "removeTagDescription": "ダウンロードから1つ以上のタグを削除します",
+            "selectTags": "タグを選択",
             "stopSeeding": "シーディングを停止",
             "stopSeedingDescription": "シーディングを停止しますが、ダウンロードリストには残します"
         },
