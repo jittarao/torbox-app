@@ -34,6 +34,35 @@ class RuleEvaluator {
       }
     }
 
+    // Check trigger interval (if configured)
+    if (rule.trigger && rule.trigger.type === 'interval' && rule.trigger.value) {
+      const intervalMinutes = rule.trigger.value;
+      
+      // Enforce minimum interval of 1 minute
+      if (intervalMinutes < 1) {
+        logger.warn('Rule has invalid interval (less than 1 minute), using 1 minute minimum', {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          intervalMinutes
+        });
+        // Continue with evaluation - we'll use 1 minute as minimum
+      }
+      
+      // Check if interval has elapsed since last evaluation
+      if (rule.last_evaluated_at) {
+        const lastEvaluated = new Date(rule.last_evaluated_at);
+        const intervalMs = Math.max(intervalMinutes, 1) * 60 * 1000; // At least 1 minute
+        const timeSinceLastEvaluation = Date.now() - lastEvaluated.getTime();
+        
+        if (timeSinceLastEvaluation < intervalMs) {
+          // Interval hasn't elapsed yet, skip evaluation
+          return [];
+        }
+      }
+      // If last_evaluated_at is NULL, treat as "never evaluated" and evaluate immediately
+    }
+    // If no interval trigger configured, evaluate on every poll (backward compatible)
+
     // Support both old flat structure and new group structure
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
     
