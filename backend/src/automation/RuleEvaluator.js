@@ -45,8 +45,33 @@ class RuleEvaluator {
         
         if (timeSinceLastEvaluation < intervalMs) {
           // Interval hasn't elapsed yet, skip evaluation
+          const remainingMs = intervalMs - timeSinceLastEvaluation;
+          const remainingMinutes = (remainingMs / (60 * 1000)).toFixed(2);
+          logger.debug('Rule evaluation skipped - interval not elapsed', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            intervalMinutes,
+            lastEvaluatedAt: rule.last_evaluated_at,
+            timeSinceLastEvaluation: `${(timeSinceLastEvaluation / (60 * 1000)).toFixed(2)} minutes`,
+            remainingMinutes: `${remainingMinutes} minutes`,
+            nextEvaluationIn: `${remainingMinutes} minutes`
+          });
           return [];
         }
+        
+        logger.debug('Rule interval elapsed, proceeding with evaluation', {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          intervalMinutes,
+          lastEvaluatedAt: rule.last_evaluated_at,
+          timeSinceLastEvaluation: `${(timeSinceLastEvaluation / (60 * 1000)).toFixed(2)} minutes`
+        });
+      } else {
+        logger.debug('Rule has no last_evaluated_at, evaluating immediately', {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          intervalMinutes
+        });
       }
       // If last_evaluated_at is NULL, treat as "never evaluated" and evaluate immediately
     }
@@ -134,41 +159,102 @@ class RuleEvaluator {
     // Support both old flat structure and new group structure
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
     
+    logger.debug('Evaluating rule against torrents', {
+      ruleId: rule.id,
+      ruleName: rule.name,
+      hasGroups,
+      torrentCount: torrents.length,
+      groupCount: hasGroups ? rule.groups.length : 0
+    });
+    
     if (hasGroups) {
       // New group structure
       const groupLogicOperator = rule.logicOperator || 'and';
       
       const matchingTorrents = torrents.filter(torrent => {
         // Evaluate each group
-        const groupResults = rule.groups.map(group => {
+        const groupResults = rule.groups.map((group, groupIndex) => {
           const conditions = group.conditions || [];
           const groupLogicOp = group.logicOperator || 'and';
           
           if (conditions.length === 0) {
+            logger.debug('Empty group in rule, matches nothing', {
+              ruleId: rule.id,
+              ruleName: rule.name,
+              groupIndex,
+              torrentId: torrent.id
+            });
             return false; // Empty group matches nothing
           }
           
           // Evaluate conditions within the group
-          const conditionResults = conditions.map(condition => {
-            return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
+          const conditionResults = conditions.map((condition, condIndex) => {
+            const result = this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
+            logger.debug('Condition evaluated', {
+              ruleId: rule.id,
+              ruleName: rule.name,
+              groupIndex,
+              condIndex,
+              conditionType: condition.type,
+              conditionOperator: condition.operator,
+              conditionValue: condition.value,
+              torrentId: torrent.id,
+              torrentName: torrent.name,
+              matched: result
+            });
+            return result;
           });
           
           // Apply group logic operator
-          if (groupLogicOp === 'or') {
-            return conditionResults.some(result => result);
-          } else {
-            return conditionResults.every(result => result);
-          }
+          const groupResult = groupLogicOp === 'or' 
+            ? conditionResults.some(result => result)
+            : conditionResults.every(result => result);
+          
+          logger.debug('Group evaluation result', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            groupIndex,
+            groupLogicOp,
+            conditionResults,
+            groupResult
+          });
+          
+          return groupResult;
         });
         
         // Apply logic operator between groups
         if (groupResults.length === 0) {
+          logger.debug('No groups in rule, matches nothing', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id
+          });
           return false; // No groups means match nothing
-        } else if (groupLogicOperator === 'or') {
-          return groupResults.some(result => result);
-        } else {
-          return groupResults.every(result => result);
         }
+        
+        const finalResult = groupLogicOperator === 'or'
+          ? groupResults.some(result => result)
+          : groupResults.every(result => result);
+        
+        if (finalResult) {
+          logger.debug('Torrent matched rule', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            groupResults
+          });
+        }
+        
+        return finalResult;
+      });
+      
+      logger.info('Rule evaluation completed', {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        torrentCount: torrents.length,
+        matchedCount: matchingTorrents.length,
+        matchedIds: matchingTorrents.map(t => t.id)
       });
       
       return matchingTorrents;
@@ -179,19 +265,54 @@ class RuleEvaluator {
 
       const matchingTorrents = torrents.filter(torrent => {
         if (conditions.length === 0) {
+          logger.debug('Rule has no conditions, matches all torrents', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id
+          });
           return true; // No conditions means match everything
         }
         
-        const conditionResults = conditions.map(condition => {
-          return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
+        const conditionResults = conditions.map((condition, condIndex) => {
+          const result = this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
+          logger.debug('Condition evaluated (flat structure)', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            condIndex,
+            conditionType: condition.type,
+            conditionOperator: condition.operator,
+            conditionValue: condition.value,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            matched: result
+          });
+          return result;
         });
 
         // Apply logic operator
-        if (logicOperator === 'or') {
-          return conditionResults.some(result => result);
-        } else {
-          return conditionResults.every(result => result);
+        const finalResult = logicOperator === 'or'
+          ? conditionResults.some(result => result)
+          : conditionResults.every(result => result);
+        
+        if (finalResult) {
+          logger.debug('Torrent matched rule (flat structure)', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            conditionResults
+          });
         }
+        
+        return finalResult;
+      });
+
+      logger.info('Rule evaluation completed (flat structure)', {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        torrentCount: torrents.length,
+        matchedCount: matchingTorrents.length,
+        matchedIds: matchingTorrents.map(t => t.id)
       });
 
       return matchingTorrents;
@@ -444,8 +565,12 @@ class RuleEvaluator {
         break;
 
       case 'NAME':
-        const nameMatch = torrent.name && torrent.name.toLowerCase().includes(condition.value.toLowerCase());
-        return nameMatch;
+        // NAME condition: supports string operators (contains, equals, starts_with, ends_with, etc.)
+        return this.compareStringValues(torrent.name, condition.operator, condition.value);
+
+      case 'TRACKER':
+        // TRACKER condition: supports string operators (contains, equals, starts_with, ends_with, etc.)
+        return this.compareStringValues(torrent.tracker, condition.operator, condition.value);
 
       case 'PRIVATE':
         // Handle boolean comparison
@@ -585,6 +710,11 @@ class RuleEvaluator {
         }
 
       default:
+        logger.warn('Unknown condition type in rule evaluation', {
+          conditionType: condition.type,
+          condition: JSON.stringify(condition),
+          torrentId: torrent.id
+        });
         return false;
     }
 
@@ -689,6 +819,42 @@ class RuleEvaluator {
     }
 
     return maxSpeed;
+  }
+
+  /**
+   * Compare string values with string operators
+   * Supports: contains, not_contains, equals, not_equals, starts_with, ends_with
+   * @param {string} fieldValue - The field value to compare
+   * @param {string} operator - The string operator
+   * @param {string} conditionValue - The condition value to compare against
+   * @returns {boolean} - True if the condition matches
+   */
+  compareStringValues(fieldValue, operator, conditionValue) {
+    const normalizedField = (fieldValue || '').toLowerCase();
+    const normalizedCondition = (conditionValue || '').toLowerCase();
+    
+    switch (operator) {
+      case 'contains':
+        return normalizedField.includes(normalizedCondition);
+      case 'not_contains':
+        return !normalizedField.includes(normalizedCondition);
+      case 'equals':
+        return normalizedField === normalizedCondition;
+      case 'not_equals':
+        return normalizedField !== normalizedCondition;
+      case 'starts_with':
+        return normalizedField.startsWith(normalizedCondition);
+      case 'ends_with':
+        return normalizedField.endsWith(normalizedCondition);
+      default:
+        // Default to contains if operator not specified or unknown
+        logger.debug('String condition using default contains operator', {
+          operator,
+          fieldValue,
+          conditionValue
+        });
+        return normalizedField.includes(normalizedCondition);
+    }
   }
 
   /**
