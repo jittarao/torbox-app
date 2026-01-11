@@ -8,6 +8,10 @@ class ApiClient {
     this.apiVersion = process.env.TORBOX_API_VERSION || 'v1';
     this.userAgent = `TorBoxManager-Backend/${process.env.npm_package_version || '0.1.0'}`;
     
+    // Create axios client with versioned baseURL
+    // Structure: {{api_base}}/{{api_version}} + /endpoint
+    // Example: https://api.torbox.app/v1 + /torrents/controltorrent
+    // Result: https://api.torbox.app/v1/torrents/controltorrent
     this.client = axios.create({
       baseURL: `${this.baseURL}/${this.apiVersion}`,
       headers: {
@@ -28,10 +32,10 @@ class ApiClient {
   async getTorrents(bypassCache = false) {
     try {
       const [torrentsResponse, queuedResponse] = await Promise.all([
-        this.client.get('/api/torrents/mylist', {
+        this.client.get('/torrents/mylist', {
           params: { bypass_cache: bypassCache }
         }),
-        this.client.get('/api/queued/getqueued', {
+        this.client.get('/queued/getqueued', {
           params: { 
             type: 'torrent',
             bypass_cache: bypassCache 
@@ -45,7 +49,7 @@ class ApiClient {
       return [...torrents, ...queued];
     } catch (error) {
       logger.error('Error fetching torrents', error, {
-        endpoint: '/api/torrents/mylist',
+        endpoint: '/torrents/mylist',
         bypassCache,
       });
       throw error;
@@ -54,14 +58,14 @@ class ApiClient {
 
   async controlTorrent(torrentId, operation) {
     try {
-      const response = await this.client.post('/api/torrents/controltorrent', {
+      const response = await this.client.post('/torrents/controltorrent', {
         torrent_id: torrentId,
         operation: operation
       });
       return response.data;
     } catch (error) {
       logger.error('Error controlling torrent', error, {
-        endpoint: '/api/torrents/controltorrent',
+        endpoint: '/torrents/controltorrent',
         torrentId,
         operation,
       });
@@ -71,7 +75,7 @@ class ApiClient {
 
   async controlQueuedTorrent(queuedId, operation) {
     try {
-      const response = await this.client.post('/api/queued/controlqueued', {
+      const response = await this.client.post('/queued/controlqueued', {
         queued_id: queuedId,
         operation: operation,
         type: 'torrent'
@@ -79,7 +83,7 @@ class ApiClient {
       return response.data;
     } catch (error) {
       logger.error('Error controlling queued torrent', error, {
-        endpoint: '/api/queued/controlqueued',
+        endpoint: '/queued/controlqueued',
         queuedId,
         operation,
       });
@@ -108,13 +112,13 @@ class ApiClient {
 
   async getUsenetDownloads(bypassCache = false) {
     try {
-      const response = await this.client.get('/api/usenet/mylist', {
+      const response = await this.client.get('/usenet/mylist', {
         params: { bypass_cache: bypassCache }
       });
       return response.data.data || [];
     } catch (error) {
       logger.error('Error fetching usenet downloads', error, {
-        endpoint: '/api/usenet/mylist',
+        endpoint: '/usenet/mylist',
         bypassCache,
       });
       throw error;
@@ -123,13 +127,13 @@ class ApiClient {
 
   async getWebDownloads(bypassCache = false) {
     try {
-      const response = await this.client.get('/api/webdl/mylist', {
+      const response = await this.client.get('/webdl/mylist', {
         params: { bypass_cache: bypassCache }
       });
       return response.data.data || [];
     } catch (error) {
       logger.error('Error fetching web downloads', error, {
-        endpoint: '/api/webdl/mylist',
+        endpoint: '/webdl/mylist',
         bypassCache,
       });
       throw error;
@@ -138,11 +142,11 @@ class ApiClient {
 
   async getStats() {
     try {
-      const response = await this.client.get('/api/stats');
+      const response = await this.client.get('/stats');
       return response.data;
     } catch (error) {
       logger.error('Error fetching stats', error, {
-        endpoint: '/api/stats',
+        endpoint: '/stats',
       });
       throw error;
     }
@@ -150,11 +154,19 @@ class ApiClient {
 
   async testConnection() {
     try {
-      const response = await this.client.get('/api/health');
+      // Hit the root API endpoint for health check (Get Up Status)
+      const response = await axios.get(this.baseURL, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'User-Agent': this.userAgent,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      });
       return { success: true, data: response.data };
     } catch (error) {
       logger.error('TorBox API connection test failed', error, {
-        endpoint: '/api/health',
+        endpoint: this.baseURL,
       });
       return { success: false, error: error.message };
     }
