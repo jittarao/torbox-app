@@ -9,9 +9,9 @@ class ApiClient {
     this.userAgent = `TorBoxManager-Backend/${process.env.npm_package_version || '0.1.0'}`;
     
     // Create axios client with versioned baseURL
-    // Structure: {{api_base}}/{{api_version}} + /endpoint
-    // Example: https://api.torbox.app/v1 + /torrents/controltorrent
-    // Result: https://api.torbox.app/v1/torrents/controltorrent
+    // Structure: {{api_base}}/{{api_version}} + /api/endpoint
+    // Example: https://api.torbox.app/v1 + /api/torrents/controltorrent
+    // Result: https://api.torbox.app/v1/api/torrents/controltorrent
     this.client = axios.create({
       baseURL: `${this.baseURL}/${this.apiVersion}`,
       headers: {
@@ -32,10 +32,10 @@ class ApiClient {
   async getTorrents(bypassCache = false) {
     try {
       const [torrentsResponse, queuedResponse] = await Promise.all([
-        this.client.get('/torrents/mylist', {
+        this.client.get('/api/torrents/mylist', {
           params: { bypass_cache: bypassCache }
         }),
-        this.client.get('/queued/getqueued', {
+        this.client.get('/api/queued/getqueued', {
           params: { 
             type: 'torrent',
             bypass_cache: bypassCache 
@@ -49,7 +49,7 @@ class ApiClient {
       return [...torrents, ...queued];
     } catch (error) {
       logger.error('Error fetching torrents', error, {
-        endpoint: '/torrents/mylist',
+        endpoint: '/api/torrents/mylist',
         bypassCache,
       });
       throw error;
@@ -58,14 +58,14 @@ class ApiClient {
 
   async controlTorrent(torrentId, operation) {
     try {
-      const response = await this.client.post('/torrents/controltorrent', {
+      const response = await this.client.post('/api/torrents/controltorrent', {
         torrent_id: torrentId,
         operation: operation
       });
       return response.data;
     } catch (error) {
       logger.error('Error controlling torrent', error, {
-        endpoint: '/torrents/controltorrent',
+        endpoint: '/api/torrents/controltorrent',
         torrentId,
         operation,
       });
@@ -75,7 +75,7 @@ class ApiClient {
 
   async controlQueuedTorrent(queuedId, operation) {
     try {
-      const response = await this.client.post('/queued/controlqueued', {
+      const response = await this.client.post('/api/queued/controlqueued', {
         queued_id: queuedId,
         operation: operation,
         type: 'torrent'
@@ -83,7 +83,7 @@ class ApiClient {
       return response.data;
     } catch (error) {
       logger.error('Error controlling queued torrent', error, {
-        endpoint: '/queued/controlqueued',
+        endpoint: '/api/queued/controlqueued',
         queuedId,
         operation,
       });
@@ -112,13 +112,13 @@ class ApiClient {
 
   async getUsenetDownloads(bypassCache = false) {
     try {
-      const response = await this.client.get('/usenet/mylist', {
+      const response = await this.client.get('/api/usenet/mylist', {
         params: { bypass_cache: bypassCache }
       });
       return response.data.data || [];
     } catch (error) {
       logger.error('Error fetching usenet downloads', error, {
-        endpoint: '/usenet/mylist',
+        endpoint: '/api/usenet/mylist',
         bypassCache,
       });
       throw error;
@@ -127,13 +127,13 @@ class ApiClient {
 
   async getWebDownloads(bypassCache = false) {
     try {
-      const response = await this.client.get('/webdl/mylist', {
+      const response = await this.client.get('/api/webdl/mylist', {
         params: { bypass_cache: bypassCache }
       });
       return response.data.data || [];
     } catch (error) {
       logger.error('Error fetching web downloads', error, {
-        endpoint: '/webdl/mylist',
+        endpoint: '/api/webdl/mylist',
         bypassCache,
       });
       throw error;
@@ -142,11 +142,11 @@ class ApiClient {
 
   async getStats() {
     try {
-      const response = await this.client.get('/stats');
+      const response = await this.client.get('/api/stats');
       return response.data;
     } catch (error) {
       logger.error('Error fetching stats', error, {
-        endpoint: '/stats',
+        endpoint: '/api/stats',
       });
       throw error;
     }

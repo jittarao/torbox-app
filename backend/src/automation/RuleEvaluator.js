@@ -278,17 +278,17 @@ class RuleEvaluator {
         
         const conditionResults = conditions.map((condition, condIndex) => {
           const result = this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
-          logger.debug('Condition evaluated (flat structure)', {
-            ruleId: rule.id,
-            ruleName: rule.name,
-            condIndex,
-            conditionType: condition.type,
-            conditionOperator: condition.operator,
-            conditionValue: condition.value,
-            torrentId: torrent.id,
-            torrentName: torrent.name,
-            matched: result
-          });
+          // logger.debug('Condition evaluated (flat structure)', {
+          //   ruleId: rule.id,
+          //   ruleName: rule.name,
+          //   condIndex,
+          //   conditionType: condition.type,
+          //   conditionOperator: condition.operator,
+          //   conditionValue: condition.value,
+          //   torrentId: torrent.id,
+          //   torrentName: torrent.name,
+          //   matched: result
+          // });
           return result;
         });
 
