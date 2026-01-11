@@ -66,7 +66,7 @@ class RuleEvaluator {
           const groupLogicOp = group.logicOperator || 'and';
           
           if (conditions.length === 0) {
-            return true; // Empty group matches everything
+            return false; // Empty group matches nothing
           }
           
           // Evaluate conditions within the group
@@ -84,7 +84,7 @@ class RuleEvaluator {
         
         // Apply logic operator between groups
         if (groupResults.length === 0) {
-          return true; // No groups means match everything
+          return false; // No groups means match nothing
         } else if (groupLogicOperator === 'or') {
           return groupResults.some(result => result);
         } else {
