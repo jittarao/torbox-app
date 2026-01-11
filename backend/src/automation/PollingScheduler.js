@@ -326,12 +326,13 @@ class PollingScheduler {
           });
           
           // Poll the user (this will update next_poll_at in master DB)
+          // Pass cached hasActiveRules to avoid redundant DB call in poll()
           // Add stagger offset to next poll calculation
           // Wrap poll with timeout to prevent indefinite blocking
           let result;
           try {
             result = await this.withTimeout(
-              poller.poll(),
+              poller.poll(hasActiveRules),
               this.pollTimeoutMs,
               `Poll timeout after ${this.pollTimeoutMs / 1000}s`
             );
@@ -368,25 +369,24 @@ class PollingScheduler {
             }
             
             const updateFlag = async () => {
-              const actualHasActiveRules = await poller.automationEngine.hasActiveRules();
               const previousFlag = dbHasActiveRules;
               
               // Use database transaction for atomic update
               try {
-                this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
+                this.masterDb.updateActiveRulesFlag(auth_id, hasActiveRules);
                 
-                if (previousFlag !== (actualHasActiveRules ? 1 : 0)) {
+                if (previousFlag !== (hasActiveRules ? 1 : 0)) {
                   logger.info('Synced active rules flag in master DB', {
                     authId: auth_id,
                     previousFlag,
-                    newFlag: actualHasActiveRules ? 1 : 0,
-                    actualHasActiveRules
+                    newFlag: hasActiveRules ? 1 : 0,
+                    hasActiveRules
                   });
                 }
               } catch (error) {
                 logger.error('Failed to update active rules flag', error, {
                   authId: auth_id,
-                  actualHasActiveRules
+                  hasActiveRules
                 });
                 throw error;
               }
