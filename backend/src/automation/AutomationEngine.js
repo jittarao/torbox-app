@@ -136,6 +136,7 @@ class AutomationEngine {
         metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
         cooldown_minutes: rule.cooldown_minutes || 0,
         last_executed_at: rule.last_executed_at,
+        last_evaluated_at: rule.last_evaluated_at,
         execution_count: rule.execution_count || 0,
         created_at: rule.created_at,
         updated_at: rule.updated_at,
@@ -173,6 +174,48 @@ class AutomationEngine {
       WHERE enabled = 1
     `).get();
     return result && result.count > 0;
+  }
+
+  /**
+   * Check if any rules have executed recently (within specified hours)
+   * Used to determine if user is in "active" or "idle" mode for adaptive polling
+   * @param {number} hours - Number of hours to look back (default: 1)
+   * @returns {Promise<boolean>} - True if any enabled rule executed recently
+   */
+  async hasRecentRuleExecutions(hours = 1) {
+    const userDb = await this.getUserDb();
+    const hoursAgo = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    
+    const result = userDb.prepare(`
+      SELECT COUNT(*) as count 
+      FROM automation_rules 
+      WHERE enabled = 1 
+        AND last_executed_at IS NOT NULL
+        AND last_executed_at >= ?
+    `).get(hoursAgo);
+    
+    return result && result.count > 0;
+  }
+
+  /**
+   * Get minimum interval from all enabled rules with interval triggers
+   * @returns {Promise<number|null>} - Minimum interval in minutes, or null if no interval triggers
+   */
+  async getMinimumRuleInterval() {
+    const rules = await this.getAutomationRules();
+    const enabledRules = rules.filter(r => r.enabled);
+    
+    let minInterval = null;
+    for (const rule of enabledRules) {
+      if (rule.trigger && rule.trigger.type === 'interval' && rule.trigger.value) {
+        const interval = rule.trigger.value;
+        if (minInterval === null || interval < minInterval) {
+          minInterval = interval;
+        }
+      }
+    }
+    
+    return minInterval;
   }
 
 
@@ -316,6 +359,7 @@ class AutomationEngine {
       let errorCount = 0;
 
       for (const rule of enabledRules) {
+        const userDb = await this.getUserDb();
         try {
           // Check cooldown
           if (rule.cooldown_minutes && rule.last_executed_at) {
@@ -335,6 +379,12 @@ class AutomationEngine {
                 timeSinceLastExecution: `${(timeSinceLastExecution / 1000).toFixed(1)}s`
               });
               skippedCount++;
+              // Update last_evaluated_at even when skipped due to cooldown
+              userDb.prepare(`
+                UPDATE automation_rules 
+                SET last_evaluated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).run(rule.id);
               continue; // Still in cooldown
             }
           }
@@ -349,12 +399,26 @@ class AutomationEngine {
               actionType: rule.action?.type || 'none'
             });
             skippedCount++;
+            // Update last_evaluated_at even when skipped due to no action
+            userDb.prepare(`
+              UPDATE automation_rules 
+              SET last_evaluated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).run(rule.id);
             continue;
           }
 
-          // Evaluate rule
+          // Evaluate rule (this will check interval internally)
           const ruleEvaluator = await this.getRuleEvaluator();
           const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
+          
+          // Update last_evaluated_at after checking rule (even if no matches)
+          // This tracks when the rule was last checked, not just when it executed
+          userDb.prepare(`
+            UPDATE automation_rules 
+            SET last_evaluated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(rule.id);
 
           if (matchingTorrents.length === 0) {
             logger.debug('Rule did not match any torrents', {
@@ -418,7 +482,6 @@ class AutomationEngine {
           }
 
           // Update rule execution status and set 5-minute cooldown
-          const userDb = await this.getUserDb();
           userDb.prepare(`
             UPDATE automation_rules 
             SET last_executed_at = CURRENT_TIMESTAMP,
@@ -458,6 +521,20 @@ class AutomationEngine {
             errorMessage: error.message,
             errorStack: error.stack
           });
+          // Update last_evaluated_at even on error (we attempt to check it)
+          try {
+            const userDb = await this.getUserDb();
+            userDb.prepare(`
+              UPDATE automation_rules 
+              SET last_evaluated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).run(rule.id);
+          } catch (updateError) {
+            logger.error('Failed to update last_evaluated_at on error', updateError, {
+              authId: this.authId,
+              ruleId: rule.id
+            });
+          }
           await this.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
         }
       }
@@ -542,6 +619,22 @@ class AutomationEngine {
    */
   async saveAutomationRules(rules) {
     const userDb = await this.getUserDb();
+    
+    // Validate trigger intervals before saving
+    for (const rule of rules) {
+      const trigger = rule.trigger || rule.trigger_config;
+      if (trigger && trigger.type === 'interval' && trigger.value !== undefined) {
+        if (trigger.value < 1) {
+          logger.warn('Invalid trigger interval (less than 1 minute), rejecting rule', {
+            authId: this.authId,
+            ruleName: rule.name,
+            intervalMinutes: trigger.value
+          });
+          throw new Error(`Invalid trigger interval: ${trigger.value} minutes. Minimum is 1 minute.`);
+        }
+      }
+    }
+    
     // Clear existing rules
     userDb.prepare('DELETE FROM automation_rules').run();
     

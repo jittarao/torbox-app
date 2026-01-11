@@ -250,10 +250,11 @@ class PollingScheduler {
           
           // Recalculate next_poll_at with stagger if poll was successful
           if (result && result.success && !result.skipped) {
-            const nextPollAt = poller.calculateNextPollAt(
+            const nextPollAt = await poller.calculateNextPollAt(
               result.nonTerminalCount || 0,
               hasActiveRules,
-              (authId, baseIntervalMinutes) => this.calculateStaggerOffset(authId, baseIntervalMinutes)
+              (authId, baseIntervalMinutes) => this.calculateStaggerOffset(authId, baseIntervalMinutes),
+              result.ruleResults || null
             );
             this.masterDb.updateNextPollAt(auth_id, nextPollAt, result.nonTerminalCount || 0);
             
