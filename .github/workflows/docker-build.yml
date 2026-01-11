@@ -67,7 +67,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Set up Bun runtime for extracting version from package.json
       - name: Set up Bun
@@ -224,7 +224,7 @@ jobs:
       # Only comments on PRs from the same repository (not forks) to avoid permission issues
       - name: Comment on PR
         if: github.event_name == 'pull_request' && matrix.suffix == 'amd64'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         continue-on-error: true
         with:
           script: |
@@ -290,7 +290,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Set up Bun for version extraction
       - name: Set up Bun
