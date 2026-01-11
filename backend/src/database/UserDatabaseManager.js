@@ -288,10 +288,19 @@ class UserDatabaseManager {
     // Get user registry entry (uses cache if available)
     let user;
     try {
-      // Use getUserRegistryInfo which has caching built-in
-      user = this.masterDb.getUserRegistryInfo ? 
-        this.masterDb.getUserRegistryInfo(authId) :
-        this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId]);
+      // Check cache first
+      const cached = cache.getUserRegistry(authId);
+      if (cached && cached.db_path) {
+        user = cached;
+      } else {
+        // Query database using raw SQLite methods
+        user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+        
+        // Cache the result if found (even if minimal, it helps avoid repeated queries)
+        if (user) {
+          cache.setUserRegistry(authId, user);
+        }
+      }
     } catch (error) {
       logger.error('Failed to get user registry info', error, { authId });
       throw error;
@@ -301,7 +310,7 @@ class UserDatabaseManager {
       throw new Error(`User ${authId} not found in registry`);
     }
 
-    // Extract db_path (works for both getUserRegistryInfo result and direct query)
+    // Extract db_path
     const dbPath = user.db_path;
 
     // Ensure database file exists
