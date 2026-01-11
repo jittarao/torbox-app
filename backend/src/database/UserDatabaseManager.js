@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import MigrationRunner from './MigrationRunner.js';
 import { hashApiKey } from '../utils/crypto.js';
+import logger from '../utils/logger.js';
 
 /**
  * LRU Cache for database connections
@@ -95,7 +96,15 @@ class UserDatabaseManager {
     }
 
     // Get user registry entry
-    const user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+    let user;
+    try {
+      const stmt = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?');
+      user = stmt.get(authId);
+    } catch (error) {
+      logger.error('Failed to prepare or execute query for user registry', error, { authId });
+      throw error;
+    }
+    
     if (!user) {
       throw new Error(`User ${authId} not found in registry`);
     }

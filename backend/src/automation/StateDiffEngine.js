@@ -1,4 +1,5 @@
 import { getTorrentStatus } from '../utils/torrentStatus.js';
+import logger from '../utils/logger.js';
 
 /**
  * State Diff Engine
@@ -24,9 +25,15 @@ class StateDiffEngine {
     };
 
     // Get current shadow state
-    const shadowState = this.db.prepare(`
-      SELECT * FROM torrent_shadow
-    `).all();
+    let shadowState;
+    try {
+      shadowState = this.db.prepare(`
+        SELECT * FROM torrent_shadow
+      `).all();
+    } catch (error) {
+      logger.error('Failed to retrieve shadow state', error);
+      throw error; // Re-throw to caller
+    }
 
     const shadowMap = new Map(shadowState.map(s => [s.torrent_id, s]));
     const currentIds = new Set(torrents.map(t => t.id));
@@ -42,7 +49,12 @@ class StateDiffEngine {
         if (shadow) {
           changes.removed.push(shadow);
           // Remove from shadow since it's now terminal
-          this.db.prepare('DELETE FROM torrent_shadow WHERE torrent_id = ?').run(torrent.id);
+          try {
+            this.db.prepare('DELETE FROM torrent_shadow WHERE torrent_id = ?').run(torrent.id);
+          } catch (error) {
+            logger.error('Failed to delete terminal state from shadow', error, { torrentId: torrent.id });
+            throw error; // Re-throw to caller
+          }
         }
         continue;
       }
@@ -137,61 +149,76 @@ class StateDiffEngine {
    * Insert new shadow state (or replace if exists)
    */
   async insertShadowState(torrent, timestamp) {
-    const state = this.getTorrentState(torrent);
-    
-    // Don't store terminal states
-    if (this.isTerminalState(state)) {
-      return;
+    try {
+      const state = this.getTorrentState(torrent);
+      
+      // Don't store terminal states
+      if (this.isTerminalState(state)) {
+        return;
+      }
+      
+      this.db.prepare(`
+        INSERT OR REPLACE INTO torrent_shadow (
+          torrent_id,
+          last_total_downloaded, last_total_uploaded, last_state,
+          updated_at
+        ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(
+        torrent.id,
+        torrent.total_downloaded || 0,
+        torrent.total_uploaded || 0,
+        state
+      );
+    } catch (error) {
+      logger.error('Failed to insert shadow state', error, { torrentId: torrent.id });
+      throw error; // Re-throw to caller
     }
-    
-    this.db.prepare(`
-      INSERT OR REPLACE INTO torrent_shadow (
-        torrent_id,
-        last_total_downloaded, last_total_uploaded, last_state,
-        updated_at
-      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(
-      torrent.id,
-      torrent.total_downloaded || 0,
-      torrent.total_uploaded || 0,
-      state
-    );
   }
 
   /**
    * Update existing shadow state
    */
   async updateShadowState(torrent, timestamp) {
-    const state = this.getTorrentState(torrent);
-    
-    // If state became terminal, remove from shadow
-    if (this.isTerminalState(state)) {
-      this.db.prepare('DELETE FROM torrent_shadow WHERE torrent_id = ?').run(torrent.id);
-      return;
+    try {
+      const state = this.getTorrentState(torrent);
+      
+      // If state became terminal, remove from shadow
+      if (this.isTerminalState(state)) {
+        this.db.prepare('DELETE FROM torrent_shadow WHERE torrent_id = ?').run(torrent.id);
+        return;
+      }
+      
+      this.db.prepare(`
+        UPDATE torrent_shadow SET
+          last_total_downloaded = ?,
+          last_total_uploaded = ?,
+          last_state = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE torrent_id = ?
+      `).run(
+        torrent.total_downloaded || 0,
+        torrent.total_uploaded || 0,
+        state,
+        torrent.id
+      );
+    } catch (error) {
+      logger.error('Failed to update shadow state', error, { torrentId: torrent.id });
+      throw error; // Re-throw to caller
     }
-    
-    this.db.prepare(`
-      UPDATE torrent_shadow SET
-        last_total_downloaded = ?,
-        last_total_uploaded = ?,
-        last_state = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE torrent_id = ?
-    `).run(
-      torrent.total_downloaded || 0,
-      torrent.total_uploaded || 0,
-      state,
-      torrent.id
-    );
   }
 
   /**
    * Get shadow state for a torrent
    */
   getShadowState(torrentId) {
-    return this.db.prepare(`
-      SELECT * FROM torrent_shadow WHERE torrent_id = ?
-    `).get(torrentId);
+    try {
+      return this.db.prepare(`
+        SELECT * FROM torrent_shadow WHERE torrent_id = ?
+      `).get(torrentId);
+    } catch (error) {
+      logger.error('Failed to get shadow state', error, { torrentId });
+      throw error; // Re-throw to caller
+    }
   }
 }
 
