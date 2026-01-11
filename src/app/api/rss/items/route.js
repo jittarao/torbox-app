@@ -8,7 +8,19 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   try {
-    const headersList = await headers();
+    // Route handlers are dynamic by default with Cache Components
+    // headers() is only available at request time, not during prerender
+    let headersList;
+    try {
+      headersList = await headers();
+    } catch (error) {
+      // During prerender/build, headers() is not available
+      // Return an error response for build-time analysis
+      return NextResponse.json({ 
+        success: false,
+        error: 'Headers not available during build' 
+      }, { status: 400 });
+    }
     const apiKey = headersList.get('x-api-key');
     const { searchParams } = new URL(request.url);
     const feedId = searchParams.get('feed_id');
