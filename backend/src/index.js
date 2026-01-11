@@ -704,41 +704,43 @@ class TorBoxBackend {
           });
         }
 
-        // Build update query dynamically
-        const updates = [];
-        const values = [];
+        // Build update query dynamically with validated column names
+        const updates = {};
+        const allowedColumns = ['name', 'filters', 'sort_field', 'sort_direction', 'visible_columns', 'asset_type'];
 
         if (name !== undefined) {
-          updates.push('name = ?');
-          values.push(name);
+          updates.name = name;
         }
         if (filters !== undefined) {
-          updates.push('filters = ?');
-          values.push(JSON.stringify(filters));
+          updates.filters = JSON.stringify(filters);
         }
         if (sort_field !== undefined) {
-          updates.push('sort_field = ?');
-          values.push(sort_field || null);
+          updates.sort_field = sort_field || null;
         }
         if (sort_direction !== undefined) {
-          updates.push('sort_direction = ?');
-          values.push(sort_direction || null);
+          updates.sort_direction = sort_direction || null;
         }
         if (visible_columns !== undefined) {
-          updates.push('visible_columns = ?');
-          values.push(visible_columns ? JSON.stringify(visible_columns) : null);
+          updates.visible_columns = visible_columns ? JSON.stringify(visible_columns) : null;
         }
         if (asset_type !== undefined) {
-          updates.push('asset_type = ?');
-          values.push(asset_type || null);
+          updates.asset_type = asset_type || null;
         }
 
-        updates.push('updated_at = CURRENT_TIMESTAMP');
+        // Build SET clause with validated column names and parameterized values
+        const validKeys = Object.keys(updates).filter(key => allowedColumns.includes(key));
+        const setClause = validKeys.map(key => `${key} = ?`).join(', ');
+        const values = validKeys.map(key => updates[key]);
+        
+        // Add updated_at and viewId
+        const finalSetClause = setClause 
+          ? `${setClause}, updated_at = CURRENT_TIMESTAMP`
+          : 'updated_at = CURRENT_TIMESTAMP';
         values.push(viewId);
 
         userDb.db.prepare(`
           UPDATE custom_views
-          SET ${updates.join(', ')}
+          SET ${finalSetClause}
           WHERE id = ?
         `).run(...values);
 
