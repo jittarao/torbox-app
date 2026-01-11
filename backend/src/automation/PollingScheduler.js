@@ -41,6 +41,48 @@ class PollingScheduler {
   }
 
   /**
+   * Atomically acquire a per-user lock and chain an operation to it
+   * This prevents race conditions where multiple concurrent operations
+   * could see no lock and proceed simultaneously
+   * @param {string} authId - User authentication ID
+   * @param {Function} operation - Async function to execute after acquiring lock
+   * @returns {Promise} - Promise that resolves when the operation completes
+   */
+  async acquireLockAndExecute(authId, operation) {
+    // Get current lock or create new resolved promise if none exists
+    // Set it immediately to prevent other concurrent operations from also creating one
+    let currentLock = this.flagUpdateLocks.get(authId);
+    if (!currentLock) {
+      currentLock = Promise.resolve();
+      this.flagUpdateLocks.set(authId, currentLock);
+    }
+    
+    // Re-check the lock right before chaining to ensure we have the absolute latest
+    // This handles the edge case where another operation updated the lock between
+    // our initial get and this point (though unlikely in single-threaded JS)
+    const latestLock = this.flagUpdateLocks.get(authId) || Promise.resolve();
+    
+    // Chain our operation to the latest lock
+    const newLockPromise = latestLock.then(operation).catch(error => {
+      logger.error('Error in lock-protected operation chain', error, { authId });
+      throw error;
+    }).finally(() => {
+      // Clean up: remove lock if this is still the current lock
+      // (no other operation has chained after us)
+      if (this.flagUpdateLocks.get(authId) === newLockPromise) {
+        this.flagUpdateLocks.delete(authId);
+      }
+    });
+    
+    // Atomically update the lock to the new promise
+    // Any concurrent operation that checks after this will chain to newLockPromise
+    this.flagUpdateLocks.set(authId, newLockPromise);
+    
+    // Wait for our operation to complete
+    return newLockPromise;
+  }
+
+  /**
    * Start the scheduler (cron-like approach)
    */
   async start() {
@@ -362,13 +404,7 @@ class PollingScheduler {
           // Update has_active_rules flag in master DB based on actual state
           // Use per-user lock to prevent race conditions with concurrent polls
           if (poller.automationEngine) {
-            // Acquire lock for this user's flag update
-            let lockPromise = this.flagUpdateLocks.get(auth_id);
-            if (!lockPromise) {
-              lockPromise = Promise.resolve();
-            }
-            
-            const updateFlag = async () => {
+            await this.acquireLockAndExecute(auth_id, async () => {
               const previousFlag = dbHasActiveRules;
               
               // Use database transaction for atomic update
@@ -390,21 +426,7 @@ class PollingScheduler {
                 });
                 throw error;
               }
-            };
-            
-            // Chain the update after the previous one completes
-            const newLockPromise = lockPromise.then(updateFlag).catch(error => {
-              logger.error('Error in flag update chain', error, { authId: auth_id });
-              throw error;
-            }).finally(() => {
-              // Remove lock if this is the last operation in the chain
-              if (this.flagUpdateLocks.get(auth_id) === newLockPromise) {
-                this.flagUpdateLocks.delete(auth_id);
-              }
             });
-            
-            this.flagUpdateLocks.set(auth_id, newLockPromise);
-            await newLockPromise;
           }
           
           // Recalculate next_poll_at with stagger if poll was successful
