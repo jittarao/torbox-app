@@ -150,10 +150,25 @@ class DerivedFieldsEngine {
       updates.upload_stalled_since = null;
     }
 
-    // Apply updates
+    // Apply updates with validated column names
     if (Object.keys(updates).length > 0) {
-      const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-      const values = [...Object.values(updates), torrentId];
+      // Whitelist of allowed column names for security
+      const allowedColumns = [
+        'last_download_activity_at',
+        'stalled_since',
+        'last_stall_resumed_at',
+        'last_upload_activity_at',
+        'upload_stalled_since'
+      ];
+      
+      const setClause = Object.keys(updates)
+        .filter(key => allowedColumns.includes(key))
+        .map(key => `${key} = ?`)
+        .join(', ');
+      const values = Object.keys(updates)
+        .filter(key => allowedColumns.includes(key))
+        .map(key => updates[key]);
+      values.push(torrentId);
       
       this.db.prepare(`
         UPDATE torrent_telemetry 
