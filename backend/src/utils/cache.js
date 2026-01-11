@@ -1,4 +1,4 @@
-import TTLCache from '@isaacs/ttlcache';
+import { TTLCache } from '@isaacs/ttlcache';
 import logger from './logger.js';
 
 /**
