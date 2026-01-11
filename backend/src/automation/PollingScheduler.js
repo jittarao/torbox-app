@@ -194,7 +194,7 @@ class PollingScheduler {
               logger.debug('Using existing automation engine', { authId: auth_id });
             } else {
               logger.info('Creating new automation engine', { authId: auth_id });
-              automationEngine = new AutomationEngine(auth_id, encrypted_key, userDb.db, this.masterDb);
+              automationEngine = new AutomationEngine(auth_id, encrypted_key, this.userDatabaseManager, this.masterDb);
               await automationEngine.initialize();
               if (this.automationEnginesMap) {
                 this.automationEnginesMap.set(auth_id, automationEngine);
@@ -207,7 +207,7 @@ class PollingScheduler {
           }
 
           // Check actual active rules state (not just the flag)
-          const hasActiveRules = poller.automationEngine ? poller.automationEngine.hasActiveRules() : false;
+          const hasActiveRules = poller.automationEngine ? await poller.automationEngine.hasActiveRules() : false;
           
           // Log flag sync if there's a mismatch
           if (dbHasActiveRules !== (hasActiveRules ? 1 : 0)) {
@@ -234,7 +234,7 @@ class PollingScheduler {
           // Update has_active_rules flag in master DB based on actual state
           // This ensures the flag stays in sync even if it was incorrect before
           if (poller.automationEngine) {
-            const actualHasActiveRules = poller.automationEngine.hasActiveRules();
+            const actualHasActiveRules = await poller.automationEngine.hasActiveRules();
             const previousFlag = dbHasActiveRules;
             this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
             
@@ -376,7 +376,7 @@ class PollingScheduler {
               logger.debug('Using existing automation engine for new poller', { authId: auth_id });
             } else {
               logger.info('Creating new automation engine for user', { authId: auth_id });
-              automationEngine = new AutomationEngine(auth_id, encrypted_key, userDb.db, this.masterDb);
+              automationEngine = new AutomationEngine(auth_id, encrypted_key, this.userDatabaseManager, this.masterDb);
               await automationEngine.initialize();
               if (this.automationEnginesMap) {
                 this.automationEnginesMap.set(auth_id, automationEngine);
@@ -388,7 +388,7 @@ class PollingScheduler {
             this.pollers.set(auth_id, poller);
             logger.info('Poller added successfully', { 
               authId: auth_id,
-              hasActiveRules: automationEngine.hasActiveRules()
+              hasActiveRules: await automationEngine.hasActiveRules()
             });
             addedCount++;
           } catch (error) {

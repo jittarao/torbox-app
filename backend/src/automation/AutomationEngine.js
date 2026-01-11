@@ -8,21 +8,46 @@ import logger from '../utils/logger.js';
  * Evaluates and executes automation rules for a single user
  */
 class AutomationEngine {
-  constructor(authId, encryptedApiKey, userDb, masterDb = null) {
+  constructor(authId, encryptedApiKey, userDatabaseManager, masterDb = null) {
     this.authId = authId;
     this.encryptedApiKey = encryptedApiKey;
-    this.userDb = userDb;
+    this.userDatabaseManager = userDatabaseManager;
     this.masterDb = masterDb;
     this.apiKey = decrypt(encryptedApiKey);
     this.apiClient = new ApiClient(this.apiKey);
-    this.ruleEvaluator = new RuleEvaluator(userDb, this.apiClient);
+    // RuleEvaluator will get database from getUserDb() when needed
+    this.ruleEvaluator = null;
     this.runningJobs = new Map();
     this.isInitialized = false;
+  }
+
+  /**
+   * Get a fresh database connection from the manager
+   * This ensures we always have a valid connection even if the pool closed it
+   */
+  async getUserDb() {
+    const userDb = await this.userDatabaseManager.getUserDatabase(this.authId);
+    return userDb.db;
+  }
+
+  /**
+   * Get RuleEvaluator with a fresh database connection
+   * Always gets a fresh DB connection to avoid using closed databases
+   */
+  async getRuleEvaluator() {
+    // Always get a fresh database connection to avoid using closed databases
+    const userDb = await this.getUserDb();
+    // Create a new RuleEvaluator with the fresh connection
+    // We don't cache it because the database connection might get closed
+    return new RuleEvaluator(userDb, this.apiClient);
   }
 
   async initialize() {
     try {
       logger.info('AutomationEngine initializing', { authId: this.authId });
+      
+      // Initialize rule evaluator
+      await this.getRuleEvaluator();
       
       // Load existing rules from user database
       const rules = await this.getAutomationRules();
@@ -92,8 +117,9 @@ class AutomationEngine {
    * Always returns rules in the new group structure format
    */
   async getAutomationRules() {
+    const userDb = await this.getUserDb();
     const sql = 'SELECT * FROM automation_rules ORDER BY created_at DESC';
-    const rules = this.userDb.prepare(sql).all();
+    const rules = userDb.prepare(sql).all();
     return rules.map(rule => {
       const parsedConditions = JSON.parse(rule.conditions);
       
@@ -137,10 +163,11 @@ class AutomationEngine {
 
   /**
    * Check if user has any enabled automation rules
-   * @returns {boolean} - True if at least one rule is enabled
+   * @returns {Promise<boolean>} - True if at least one rule is enabled
    */
-  hasActiveRules() {
-    const result = this.userDb.prepare(`
+  async hasActiveRules() {
+    const userDb = await this.getUserDb();
+    const result = userDb.prepare(`
       SELECT COUNT(*) as count 
       FROM automation_rules 
       WHERE enabled = 1
@@ -178,7 +205,7 @@ class AutomationEngine {
    * Sync active rules flag to master database
    */
   async syncActiveRulesFlag() {
-    const hasActive = this.hasActiveRules();
+    const hasActive = await this.hasActiveRules();
     logger.info('Syncing active rules flag to master DB', {
       authId: this.authId,
       hasActiveRules: hasActive,
@@ -326,7 +353,8 @@ class AutomationEngine {
           }
 
           // Evaluate rule
-          const matchingTorrents = await this.ruleEvaluator.evaluateRule(rule, torrents);
+          const ruleEvaluator = await this.getRuleEvaluator();
+          const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
 
           if (matchingTorrents.length === 0) {
             logger.debug('Rule did not match any torrents', {
@@ -353,6 +381,7 @@ class AutomationEngine {
 
           for (const torrent of matchingTorrents) {
             try {
+              const ruleEvaluator = await this.getRuleEvaluator();
               logger.debug('Executing action on torrent', {
                 authId: this.authId,
                 ruleId: rule.id,
@@ -360,10 +389,10 @@ class AutomationEngine {
                 torrentId: torrent.id,
                 torrentName: torrent.name,
                 action: rule.action?.type,
-                torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent)
+                torrentStatus: ruleEvaluator.getTorrentStatus(torrent)
               });
               
-              await this.ruleEvaluator.executeAction(rule.action, torrent);
+              await ruleEvaluator.executeAction(rule.action, torrent);
               successCount++;
               
               logger.debug('Action successfully executed', {
@@ -389,7 +418,8 @@ class AutomationEngine {
           }
 
           // Update rule execution status and set 5-minute cooldown
-          this.userDb.prepare(`
+          const userDb = await this.getUserDb();
+          userDb.prepare(`
             UPDATE automation_rules 
             SET last_executed_at = CURRENT_TIMESTAMP,
                 execution_count = execution_count + 1,
@@ -479,11 +509,12 @@ class AutomationEngine {
         return;
       }
 
+      const userDb = await this.getUserDb();
       const sql = `
         INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      this.userDb.prepare(sql).run(ruleId, ruleName, executionType, itemsProcessed, success ? 1 : 0, errorMessage);
+      userDb.prepare(sql).run(ruleId, ruleName, executionType, itemsProcessed, success ? 1 : 0, errorMessage);
       logger.debug('Rule execution logged successfully', {
         authId: this.authId,
         ruleId,
@@ -510,8 +541,9 @@ class AutomationEngine {
    * Save automation rules
    */
   async saveAutomationRules(rules) {
+    const userDb = await this.getUserDb();
     // Clear existing rules
-    this.userDb.prepare('DELETE FROM automation_rules').run();
+    userDb.prepare('DELETE FROM automation_rules').run();
     
     // Insert new rules
     for (const rule of rules) {
@@ -531,7 +563,7 @@ class AutomationEngine {
         INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
-      this.userDb.prepare(sql).run(
+      userDb.prepare(sql).run(
         migratedRule.name,
         migratedRule.enabled ? 1 : 0,
         JSON.stringify(migratedRule.trigger || migratedRule.trigger_config),
@@ -554,7 +586,8 @@ class AutomationEngine {
    * Update rule status
    */
   async updateRuleStatus(ruleId, enabled) {
-    this.userDb.prepare(`
+    const userDb = await this.getUserDb();
+    userDb.prepare(`
       UPDATE automation_rules 
       SET enabled = ?, updated_at = CURRENT_TIMESTAMP 
       WHERE id = ?
@@ -571,7 +604,8 @@ class AutomationEngine {
    * Delete a rule
    */
   async deleteRule(ruleId) {
-    this.userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(ruleId);
+    const userDb = await this.getUserDb();
+    userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(ruleId);
 
     // Update master DB flag
     await this.syncActiveRulesFlag();
@@ -580,7 +614,8 @@ class AutomationEngine {
   /**
    * Get rule execution history
    */
-  getRuleExecutionHistory(ruleId = null, limit = 100) {
+  async getRuleExecutionHistory(ruleId = null, limit = 100) {
+    const userDb = await this.getUserDb();
     let sql = 'SELECT * FROM rule_execution_log';
     const params = [];
     
@@ -592,19 +627,20 @@ class AutomationEngine {
     sql += ' ORDER BY executed_at DESC LIMIT ?';
     params.push(limit);
     
-    return this.userDb.prepare(sql).all(...params);
+    return userDb.prepare(sql).all(...params);
   }
 
   /**
    * Clear rule execution history
    */
-  clearRuleExecutionHistory(ruleId = null) {
+  async clearRuleExecutionHistory(ruleId = null) {
+    const userDb = await this.getUserDb();
     if (ruleId) {
       // Clear logs for a specific rule
-      this.userDb.prepare('DELETE FROM rule_execution_log WHERE rule_id = ?').run(ruleId);
+      userDb.prepare('DELETE FROM rule_execution_log WHERE rule_id = ?').run(ruleId);
     } else {
       // Clear all logs
-      this.userDb.prepare('DELETE FROM rule_execution_log').run();
+      userDb.prepare('DELETE FROM rule_execution_log').run();
     }
   }
 

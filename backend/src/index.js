@@ -126,9 +126,8 @@ class TorBoxBackend {
         await this.userDatabaseManager.registerUser(apiKey, keyName);
 
         // Create automation engine for this user
-        const userDb = await this.userDatabaseManager.getUserDatabase(authId);
         const apiKeyData = this.masterDatabase.getApiKey(authId);
-        const automationEngine = new AutomationEngine(authId, apiKeyData.encrypted_key, userDb.db, this.masterDatabase);
+        const automationEngine = new AutomationEngine(authId, apiKeyData.encrypted_key, this.userDatabaseManager, this.masterDatabase);
         await automationEngine.initialize();
         this.automationEngines.set(authId, automationEngine);
 
@@ -207,9 +206,8 @@ class TorBoxBackend {
           await this.userDatabaseManager.registerUser(apiKey, keyName, pollInterval);
           
           // Create automation engine for this user
-          const userDb = await this.userDatabaseManager.getUserDatabase(authId);
           const apiKeyData = this.masterDatabase.getApiKey(authId);
-          const automationEngine = new AutomationEngine(authId, apiKeyData.encrypted_key, userDb.db, this.masterDatabase);
+          const automationEngine = new AutomationEngine(authId, apiKeyData.encrypted_key, this.userDatabaseManager, this.masterDatabase);
           await automationEngine.initialize();
           this.automationEngines.set(authId, automationEngine);
 
@@ -373,7 +371,7 @@ class TorBoxBackend {
           return res.status(404).json({ success: false, error: 'User not found' });
         }
 
-        const logs = engine.getRuleExecutionHistory(ruleId);
+        const logs = await engine.getRuleExecutionHistory(ruleId);
         res.json({ success: true, logs });
       } catch (error) {
         logger.error('Error fetching rule logs', error, {
@@ -399,7 +397,7 @@ class TorBoxBackend {
           return res.status(404).json({ success: false, error: 'User not found' });
         }
 
-        engine.clearRuleExecutionHistory(ruleId);
+        await engine.clearRuleExecutionHistory(ruleId);
         res.json({ success: true, message: 'Rule logs cleared successfully' });
       } catch (error) {
         logger.error('Error clearing rule logs', error, {
@@ -1267,11 +1265,10 @@ class TorBoxBackend {
       const activeUsers = this.masterDatabase.getActiveUsers();
       for (const user of activeUsers) {
         try {
-          const userDb = await this.userDatabaseManager.getUserDatabase(user.auth_id);
           const automationEngine = new AutomationEngine(
             user.auth_id,
             user.encrypted_key,
-            userDb.db,
+            this.userDatabaseManager,
             this.masterDatabase
           );
           await automationEngine.initialize();
