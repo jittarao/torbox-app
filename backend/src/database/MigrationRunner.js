@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -15,16 +16,18 @@ class MigrationRunner {
   /**
    * Get all migration files sorted by version
    */
-  getMigrationFiles() {
-    if (!fs.existsSync(this.migrationsDir)) {
+  async getMigrationFiles() {
+    try {
+      await fsPromises.access(this.migrationsDir);
+    } catch (error) {
+      // Directory doesn't exist
       return [];
     }
 
-    const files = fs.readdirSync(this.migrationsDir)
+    const files = await fsPromises.readdir(this.migrationsDir);
+    return files
       .filter(file => file.endsWith('.js'))
       .sort();
-
-    return files;
   }
 
   /**
@@ -85,7 +88,7 @@ class MigrationRunner {
     // First, ensure migrations table exists
     await this.ensureMigrationsTable();
 
-    const migrationFiles = this.getMigrationFiles();
+    const migrationFiles = await this.getMigrationFiles();
     const appliedMigrations = this.getAppliedMigrations();
 
     let migrationsRun = 0;
@@ -139,7 +142,7 @@ class MigrationRunner {
    * Rollback a specific migration (if down function exists)
    */
   async rollbackMigration(version) {
-    const migrationFiles = this.getMigrationFiles();
+    const migrationFiles = await this.getMigrationFiles();
     const migrationFile = migrationFiles.find(file => {
       const parsed = this.parseMigrationFile(file);
       return parsed.version === version;
@@ -207,8 +210,8 @@ class MigrationRunner {
   /**
    * Get migration status
    */
-  getMigrationStatus() {
-    const migrationFiles = this.getMigrationFiles();
+  async getMigrationStatus() {
+    const migrationFiles = await this.getMigrationFiles();
     const appliedMigrations = this.getAppliedMigrations();
 
     return migrationFiles.map(file => {
