@@ -1,6 +1,6 @@
 import { Database as SQLiteDatabase } from 'bun:sqlite';
 import path from 'path';
-import fs from 'fs';
+import { mkdir, unlink } from 'fs/promises';
 import MigrationRunner from './MigrationRunner.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
@@ -87,10 +87,16 @@ class UserDatabaseManager {
     this.userDbDir = userDbDir;
     // Increased pool size for better scalability with 1000+ users
     this.pool = new DatabasePool(parseInt(process.env.MAX_DB_CONNECTIONS || '200'));
-    
-    // Ensure user database directory exists
-    if (!fs.existsSync(this.userDbDir)) {
-      fs.mkdirSync(this.userDbDir, { recursive: true });
+  }
+
+  /**
+   * Ensure user database directory exists (async)
+   */
+  async ensureUserDbDir() {
+    try {
+      await mkdir(this.userDbDir, { recursive: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
     }
   }
 
@@ -103,6 +109,9 @@ class UserDatabaseManager {
     if (!authId) {
       throw new Error('authId is required');
     }
+
+    // Ensure user database directory exists
+    await this.ensureUserDbDir();
 
     // Check pool first
     const cached = this.pool.get(authId);
@@ -136,15 +145,20 @@ class UserDatabaseManager {
     const dbPath = user.db_path;
 
     // Ensure database file exists
-    if (!fs.existsSync(dbPath)) {
+    try {
       // Create parent directory if needed
       const dbDir = path.dirname(dbPath);
-      if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
+      try {
+        await mkdir(dbDir, { recursive: true });
+      } catch (error) {
+        if (error.code !== 'EEXIST') throw error;
       }
       
-      // Create empty database file
-      fs.writeFileSync(dbPath, '');
+      // Create empty database file if it doesn't exist
+      // We'll let SQLite create it, but ensure parent directory exists
+    } catch (error) {
+      logger.error('Failed to ensure database directory exists', error, { dbPath });
+      throw error;
     }
 
     // Open database connection
@@ -224,8 +238,13 @@ class UserDatabaseManager {
       this.pool.delete(authId);
       
       // Delete database file
-      if (fs.existsSync(user.db_path)) {
-        fs.unlinkSync(user.db_path);
+      try {
+        await unlink(user.db_path);
+      } catch (error) {
+        if (error.code !== 'ENOENT') {
+          logger.warn('Failed to delete user database file', { authId, dbPath: user.db_path, error: error.message });
+        }
+        // Continue even if file doesn't exist
       }
     }
 
