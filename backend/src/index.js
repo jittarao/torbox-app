@@ -1273,6 +1273,43 @@ class TorBoxBackend {
           });
         }
 
+        // Validate maximum array sizes to prevent DoS
+        const MAX_DOWNLOAD_IDS = 1000;
+        const MAX_TAG_IDS = 100;
+        
+        if (download_ids.length > MAX_DOWNLOAD_IDS) {
+          return res.status(400).json({ 
+            success: false, 
+            error: `Maximum ${MAX_DOWNLOAD_IDS} download IDs allowed per request` 
+          });
+        }
+
+        if (tag_ids.length > MAX_TAG_IDS) {
+          return res.status(400).json({ 
+            success: false, 
+            error: `Maximum ${MAX_TAG_IDS} tag IDs allowed per request` 
+          });
+        }
+
+        // Validate no duplicate IDs in arrays
+        const uniqueDownloadIds = new Set(download_ids);
+        if (uniqueDownloadIds.size !== download_ids.length) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'download_ids array contains duplicate IDs' 
+          });
+        }
+
+        if (tag_ids.length > 0) {
+          const uniqueTagIds = new Set(tag_ids);
+          if (uniqueTagIds.size !== tag_ids.length) {
+            return res.status(400).json({ 
+              success: false, 
+              error: 'tag_ids array contains duplicate IDs' 
+            });
+          }
+        }
+
         if (operation !== 'add' && operation !== 'remove' && operation !== 'replace') {
           return res.status(400).json({ 
             success: false, 
