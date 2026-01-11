@@ -27,10 +27,20 @@ class ApiClient {
       headers['If-None-Match'] = etag;
     }
 
-    const config = { ...options, headers };
+    // Add timeout to prevent indefinite waiting
+    const timeout = options.timeout || 30000; // Default 30 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    const config = { 
+      ...options, 
+      headers,
+      signal: options.signal || controller.signal,
+    };
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       
       // Store ETag for future requests
       const responseETag = response.headers.get('ETag');
@@ -68,6 +78,13 @@ class ApiClient {
           throw new Error(`AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`);
         }
         
+        // Handle 408 timeout errors
+        if (response.status === 408) {
+          const timeoutError = new Error(data.detail || data.error || data.message || 'Request timeout');
+          timeoutError.isTimeout = true;
+          throw timeoutError;
+        }
+        
         // Handle different error formats
         const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
         throw new Error(errorMessage);
@@ -75,6 +92,22 @@ class ApiClient {
 
       return data;
     } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Handle AbortError (timeout)
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        const timeoutError = new Error('Request timeout - connection to TorBox API failed');
+        timeoutError.isTimeout = true;
+        throw timeoutError;
+      }
+      
+      // Handle network errors
+      if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || error.message?.includes('timeout')) {
+        const timeoutError = new Error('Connection timeout - TorBox API is unreachable');
+        timeoutError.isTimeout = true;
+        throw timeoutError;
+      }
+      
       console.error(`API request failed for ${endpoint}:`, error);
       throw error;
     }
