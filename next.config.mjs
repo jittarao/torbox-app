@@ -7,6 +7,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig = {
   output: 'standalone',
   
+  // Cache Components (Next.js 16.1.1+)
+  cacheComponents: true,
+  
   // Optimize bundle size
   experimental: {
     optimizePackageImports: ['lodash', 'date-fns', 'chart.js'],

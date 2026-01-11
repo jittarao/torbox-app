@@ -3,7 +3,20 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const headersList = await headers();
+    // Route handlers are dynamic by default with Cache Components
+    // headers() is only available at request time, not during prerender
+    let headersList;
+    try {
+      headersList = await headers();
+    } catch (error) {
+      // During prerender/build, headers() is not available
+      // Return a default response for build-time analysis
+      return NextResponse.json({
+        success: false,
+        ip: 'unknown',
+        error: 'Headers not available during build'
+      });
+    }
     
     // Try to get IP from various headers (common in proxy setups)
     const forwardedFor = headersList.get('x-forwarded-for');

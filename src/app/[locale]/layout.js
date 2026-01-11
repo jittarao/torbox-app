@@ -2,11 +2,13 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { FileHandler } from '@/components/shared/FileHandler';
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { Suspense } from 'react';
 
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { locales } from '@/i18n/settings';
 
 import '@/app/globals.css';
 
@@ -59,14 +61,27 @@ export const viewport = {
   themeColor: '#000000',
 };
 
+// Generate static params for all locales
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+// Messages loader component - dynamic (uses headers() internally via getMessages)
+async function MessagesLoader({ locale, children }) {
+  const messages = await getMessages();
+  return (
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      {children}
+    </NextIntlClientProvider>
+  );
+}
+
 export default async function LocaleLayout({ children, params }) {
   // Ensure that the incoming `locale` is valid
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
-
-  const messages = await getMessages();
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -84,12 +99,14 @@ export default async function LocaleLayout({ children, params }) {
         className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
       >
         <ThemeProvider>
-          <NextIntlClientProvider locale={locale} messages={messages}>
-            <PostHogProvider>
-              <FileHandler />
-              {children}
-            </PostHogProvider>
-          </NextIntlClientProvider>
+          <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>}>
+            <MessagesLoader locale={locale}>
+              <PostHogProvider>
+                <FileHandler />
+                {children}
+              </PostHogProvider>
+            </MessagesLoader>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>
