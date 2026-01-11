@@ -72,12 +72,17 @@
     "AutomationRules": {
         "action": "Aktion",
         "actions": {
+            "addTag": "Tag hinzufügen",
+            "addTagDescription": "Ein oder mehrere Tags zum Download hinzufügen",
             "archive": "Download archivieren",
             "archiveDescription": "Download in die Archiv-Downloads verschieben, ohne Dateien zu löschen",
             "delete": "Download löschen",
             "deleteDescription": "Download und Dateien endgültig löschen",
             "forceStart": "Download erzwingen",
             "forceStartDescription": "Download erzwingen",
+            "removeTag": "Tag entfernen",
+            "removeTagDescription": "Ein oder mehrere Tags vom Download entfernen",
+            "selectTags": "Tags auswählen",
             "stopSeeding": "Seeding stoppen",
             "stopSeedingDescription": "Seeding stoppen"
         },

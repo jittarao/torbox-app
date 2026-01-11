@@ -72,12 +72,17 @@
     "AutomationRules": {
         "action": "Akcja",
         "actions": {
+            "addTag": "Dodaj tag",
+            "addTagDescription": "Dodaj jeden lub więcej tagów do pobierania",
             "archive": "Zarchiwizuj pobieranie",
             "archiveDescription": "Przenieś pobieranie do archiwum bez usuwania plików",
             "delete": "Usuń pobieranie",
             "deleteDescription": "Usuń pobieranie i jego pliki",
             "forceStart": "Wymuś rozpoczęcie pobierania",
             "forceStartDescription": "Wymuś rozpoczęcie pobierania",
+            "removeTag": "Usuń tag",
+            "removeTagDescription": "Usuń jeden lub więcej tagów z pobierania",
+            "selectTags": "Wybierz tagi",
             "stopSeeding": "Zatrzymaj seedowanie",
             "stopSeedingDescription": "Zatrzymaj seedowanie bez usuwania torrentu"
         },

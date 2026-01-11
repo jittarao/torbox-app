@@ -72,12 +72,17 @@
     "AutomationRules": {
         "action": "Acción",
         "actions": {
+            "addTag": "Añadir etiqueta",
+            "addTagDescription": "Añadir una o más etiquetas a la descarga",
             "archive": "Archivar descarga",
             "archiveDescription": "Archivar descarga sin eliminar archivos",
             "delete": "Eliminar descarga",
             "deleteDescription": "Eliminar descarga y archivos",
             "forceStart": "Forzar inicio de descarga",
             "forceStartDescription": "Forzar inicio de descarga",
+            "removeTag": "Eliminar etiqueta",
+            "removeTagDescription": "Eliminar una o más etiquetas de la descarga",
+            "selectTags": "Seleccionar etiquetas",
             "stopSeeding": "Detener siembra",
             "stopSeedingDescription": "Detener siembra sin eliminar la descarga"
         },

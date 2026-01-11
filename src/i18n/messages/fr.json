@@ -72,12 +72,17 @@
     "AutomationRules": {
         "action": "Action",
         "actions": {
+            "addTag": "Ajouter un tag",
+            "addTagDescription": "Ajouter un ou plusieurs tags au téléchargement",
             "archive": "Archiver le téléchargement",
             "archiveDescription": "Déplacer le téléchargement dans les téléchargements archivés sans supprimer les fichiers",
             "delete": "Supprimer le téléchargement",
             "deleteDescription": "Supprimer le téléchargement et ses fichiers",
             "forceStart": "Forcer le démarrage du téléchargement",
             "forceStartDescription": "Forcer le démarrage du téléchargement",
+            "removeTag": "Supprimer un tag",
+            "removeTagDescription": "Supprimer un ou plusieurs tags du téléchargement",
+            "selectTags": "Sélectionner les tags",
             "stopSeeding": "Arrêter la semence",
             "stopSeedingDescription": "Arrêter la semence sans supprimer le torrent"
         },

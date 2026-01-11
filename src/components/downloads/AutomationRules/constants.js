@@ -89,5 +89,7 @@ export const ACTION_TYPES = {
   ARCHIVE: 'archive',
   DELETE: 'delete',
   FORCE_START: 'force_start',
+  ADD_TAG: 'add_tag',
+  REMOVE_TAG: 'remove_tag',
 };
 

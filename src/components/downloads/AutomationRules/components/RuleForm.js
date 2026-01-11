@@ -6,6 +6,7 @@ import {
 } from '../constants';
 import ConditionFilterGroup from './ConditionFilterGroup';
 import Select from '@/components/shared/Select';
+import TagSelector from '@/components/downloads/Tags/TagSelector';
 import { useTranslations } from 'next-intl';
 
 export default function RuleForm({ 
@@ -149,12 +150,29 @@ export default function RuleForm({
           <div className="w-48">
             <Select
               value={rule.action.type}
-              onChange={(e) =>
+              onChange={(e) => {
+                const newActionType = e.target.value;
+                // Preserve tagIds when switching between add_tag and remove_tag
+                // Initialize as empty array when switching to tag actions from non-tag actions
+                let tagIds;
+                if (newActionType === ACTION_TYPES.ADD_TAG || newActionType === ACTION_TYPES.REMOVE_TAG) {
+                  if (rule.action.type === ACTION_TYPES.ADD_TAG || rule.action.type === ACTION_TYPES.REMOVE_TAG) {
+                    // Preserve existing tagIds when switching between tag actions
+                    tagIds = rule.action.tagIds || [];
+                  } else {
+                    // Initialize empty array when switching from non-tag to tag action
+                    tagIds = [];
+                  }
+                }
+                
                 onRuleChange({
                   ...rule,
-                  action: { type: e.target.value },
-                })
-              }
+                  action: {
+                    type: newActionType,
+                    ...(tagIds !== undefined && { tagIds }),
+                  },
+                });
+              }}
             >
               <option value={ACTION_TYPES.STOP_SEEDING} title={t('actions.stopSeedingDescription')}>
                 {t('actions.stopSeeding')}
@@ -168,8 +186,36 @@ export default function RuleForm({
               <option value={ACTION_TYPES.FORCE_START} title={t('actions.forceStartDescription')}>
                 {t('actions.forceStart')}
               </option>
+              <option value={ACTION_TYPES.ADD_TAG} title={t('actions.addTagDescription')}>
+                {t('actions.addTag')}
+              </option>
+              <option value={ACTION_TYPES.REMOVE_TAG} title={t('actions.removeTagDescription')}>
+                {t('actions.removeTag')}
+              </option>
             </Select>
           </div>
+          {/* Tag Selector for add_tag and remove_tag actions */}
+          {(rule.action.type === ACTION_TYPES.ADD_TAG || rule.action.type === ACTION_TYPES.REMOVE_TAG) && (
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+                {t('actions.selectTags')}
+              </label>
+              <TagSelector
+                value={rule.action.tagIds || []}
+                onChange={(tagIds) =>
+                  onRuleChange({
+                    ...rule,
+                    action: {
+                      ...rule.action,
+                      tagIds: tagIds,
+                    },
+                  })
+                }
+                apiKey={apiKey}
+                className="w-full"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 mt-4">

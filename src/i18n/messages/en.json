@@ -72,12 +72,17 @@
     "AutomationRules": {
         "action": "Action",
         "actions": {
+            "addTag": "Add Tag",
+            "addTagDescription": "Add one or more tags to the download",
             "archive": "Archive Download",
             "archiveDescription": "Move the download to archived downloads without deleting files",
             "delete": "Delete Download",
             "deleteDescription": "Permanently delete the download and its files",
             "forceStart": "Force Start Download",
             "forceStartDescription": "Force the download to start",
+            "removeTag": "Remove Tag",
+            "removeTagDescription": "Remove one or more tags from the download",
+            "selectTags": "Select Tags",
             "stopSeeding": "Stop Seeding",
             "stopSeedingDescription": "Stop seeding the torrent but keep it in the download list"
         },
