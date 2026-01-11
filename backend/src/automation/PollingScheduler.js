@@ -137,6 +137,10 @@ class PollingScheduler {
           errorMessage: err.message,
           errorStack: err.stack
         });
+        // Add additional safety: don't let interval errors crash the process
+      }).catch(() => {
+        // Ultimate fallback - log to console if logger fails
+        console.error('Critical: Failed to log interval error');
       });
     }, this.pollCheckInterval);
     
@@ -154,6 +158,10 @@ class PollingScheduler {
           errorMessage: err.message,
           errorStack: err.stack
         });
+        // Add additional safety: don't let interval errors crash the process
+      }).catch(() => {
+        // Ultimate fallback - log to console if logger fails
+        console.error('Critical: Failed to log interval error');
       });
     }, this.refreshInterval);
   }
