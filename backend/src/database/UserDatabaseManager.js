@@ -34,7 +34,12 @@ class DatabasePool {
       const firstKey = this.cache.keys().next().value;
       const firstValue = this.cache.get(firstKey);
       if (firstValue && firstValue.db) {
-        firstValue.db.close();
+        try {
+          firstValue.db.close();
+        } catch (error) {
+          // Log but don't throw - we still want to remove from cache
+          logger.warn('Error closing database connection during pool eviction', { error: error.message });
+        }
       }
       this.cache.delete(firstKey);
     }
@@ -44,7 +49,12 @@ class DatabasePool {
   delete(key) {
     const value = this.cache.get(key);
     if (value && value.db) {
-      value.db.close();
+      try {
+        value.db.close();
+      } catch (error) {
+        // Log but don't throw - we still want to remove from cache
+        logger.warn('Error closing database connection during deletion', { error: error.message });
+      }
     }
     this.cache.delete(key);
   }
@@ -52,7 +62,12 @@ class DatabasePool {
   clear() {
     for (const [key, value] of this.cache) {
       if (value && value.db) {
-        value.db.close();
+        try {
+          value.db.close();
+        } catch (error) {
+          // Log but don't throw - continue cleaning up other connections
+          logger.warn('Error closing database connection during pool clear', { error: error.message });
+        }
       }
     }
     this.cache.clear();
@@ -92,7 +107,16 @@ class UserDatabaseManager {
     // Check pool first
     const cached = this.pool.get(authId);
     if (cached) {
-      return cached;
+      // Validate connection is still alive
+      try {
+        cached.db.prepare('SELECT 1').get();
+        return cached;
+      } catch (error) {
+        // Connection is dead, remove from pool
+        logger.warn('Cached database connection is stale, removing from pool', { authId, error: error.message });
+        this.pool.delete(authId);
+        // Continue to create a new connection below
+      }
     }
 
     // Get user registry entry
