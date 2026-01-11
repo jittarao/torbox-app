@@ -145,34 +145,34 @@ describe('RuleEvaluator', () => {
         const now = Date.now();
         const thirtyMinutesAgo = new Date(now - 30 * 60 * 1000).toISOString();
         
-        mockUserDb._mockGet.mockReturnValueOnce({
-          last_download_activity_at: thirtyMinutesAgo
-        });
+        const telemetryMap = new Map([
+          ['1', { torrent_id: '1', last_download_activity_at: thirtyMinutesAgo }]
+        ]);
 
         const condition = { type: 'LAST_DOWNLOAD_ACTIVITY_AT', operator: 'gte', value: 20 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true);
       });
 
       it('should handle LAST_DOWNLOAD_ACTIVITY_AT with no activity (gt operator)', () => {
-        mockUserDb._mockGet.mockReturnValueOnce(null);
+        const telemetryMap = new Map(); // Empty map = no telemetry
 
         const condition = { type: 'LAST_DOWNLOAD_ACTIVITY_AT', operator: 'gt', value: 100 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true); // Infinity > 100
       });
 
       it('should handle LAST_DOWNLOAD_ACTIVITY_AT with no activity (lt operator)', () => {
-        mockUserDb._mockGet.mockReturnValueOnce(null);
+        const telemetryMap = new Map(); // Empty map = no telemetry
 
         const condition = { type: 'LAST_DOWNLOAD_ACTIVITY_AT', operator: 'lt', value: 100 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(false); // Infinity is not < 100
       });
 
@@ -180,14 +180,14 @@ describe('RuleEvaluator', () => {
         const now = Date.now();
         const fifteenMinutesAgo = new Date(now - 15 * 60 * 1000).toISOString();
         
-        mockUserDb._mockGet.mockReturnValueOnce({
-          last_upload_activity_at: fifteenMinutesAgo
-        });
+        const telemetryMap = new Map([
+          ['1', { torrent_id: '1', last_upload_activity_at: fifteenMinutesAgo }]
+        ]);
 
         const condition = { type: 'LAST_UPLOAD_ACTIVITY_AT', operator: 'lte', value: 20 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true);
       });
     });
@@ -254,24 +254,24 @@ describe('RuleEvaluator', () => {
         const now = Date.now();
         const tenMinutesAgo = new Date(now - 10 * 60 * 1000).toISOString();
         
-        mockUserDb._mockGet.mockReturnValueOnce({
-          stalled_since: tenMinutesAgo
-        });
+        const telemetryMap = new Map([
+          ['1', { torrent_id: '1', stalled_since: tenMinutesAgo }]
+        ]);
 
         const condition = { type: 'DOWNLOAD_STALLED_TIME', operator: 'gte', value: 5 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true);
       });
 
       it('should return false for DOWNLOAD_STALLED_TIME when telemetry is missing', () => {
-        mockUserDb._mockGet.mockReturnValueOnce(null);
+        const telemetryMap = new Map(); // Empty map = no telemetry
 
         const condition = { type: 'DOWNLOAD_STALLED_TIME', operator: 'gte', value: 5 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(false);
       });
 
@@ -279,14 +279,14 @@ describe('RuleEvaluator', () => {
         const now = Date.now();
         const twentyMinutesAgo = new Date(now - 20 * 60 * 1000).toISOString();
         
-        mockUserDb._mockGet.mockReturnValueOnce({
-          upload_stalled_since: twentyMinutesAgo
-        });
+        const telemetryMap = new Map([
+          ['1', { torrent_id: '1', upload_stalled_since: twentyMinutesAgo }]
+        ]);
 
         const condition = { type: 'UPLOAD_STALLED_TIME', operator: 'gte', value: 15 };
         const torrent = { id: '1' };
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true);
       });
     });

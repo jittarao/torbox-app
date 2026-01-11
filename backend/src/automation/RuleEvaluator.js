@@ -52,6 +52,21 @@ class RuleEvaluator {
     }
     // If no interval trigger configured, evaluate on every poll (backward compatible)
 
+    // Batch load all telemetry data to avoid N+1 queries
+    const torrentIds = torrents.map(t => t.id).filter(id => id != null);
+    let telemetryMap = new Map();
+    
+    if (torrentIds.length > 0) {
+      const placeholders = torrentIds.map(() => '?').join(',');
+      const allTelemetry = this.db.prepare(`
+        SELECT * FROM torrent_telemetry 
+        WHERE torrent_id IN (${placeholders})
+      `).all(...torrentIds);
+      
+      // Normalize keys to strings to ensure consistent lookups
+      telemetryMap = new Map(allTelemetry.map(t => [String(t.torrent_id), t]));
+    }
+
     // Support both old flat structure and new group structure
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
     
@@ -71,7 +86,7 @@ class RuleEvaluator {
           
           // Evaluate conditions within the group
           const conditionResults = conditions.map(condition => {
-            return this.evaluateCondition(condition, torrent);
+            return this.evaluateCondition(condition, torrent, telemetryMap);
           });
           
           // Apply group logic operator
@@ -104,7 +119,7 @@ class RuleEvaluator {
         }
         
         const conditionResults = conditions.map(condition => {
-          return this.evaluateCondition(condition, torrent);
+          return this.evaluateCondition(condition, torrent, telemetryMap);
         });
 
         // Apply logic operator
@@ -121,15 +136,17 @@ class RuleEvaluator {
 
   /**
    * Evaluate a single condition
+   * @param {Object} condition - Condition to evaluate
+   * @param {Object} torrent - Torrent object
+   * @param {Map} telemetryMap - Map of torrent_id -> telemetry data (pre-loaded to avoid N+1 queries)
    */
-  evaluateCondition(condition, torrent) {
+  evaluateCondition(condition, torrent, telemetryMap = new Map()) {
     const now = Date.now();
     let conditionValue = 0;
 
-    // Get telemetry for derived fields
-    const telemetry = this.db.prepare(`
-      SELECT * FROM torrent_telemetry WHERE torrent_id = ?
-    `).get(torrent.id);
+    // Get telemetry for derived fields from pre-loaded map
+    // Normalize torrent.id to string for consistent lookup
+    const telemetry = telemetryMap.get(String(torrent.id));
 
     switch (condition.type) {
       // ===== Time / State (Derived) =====
