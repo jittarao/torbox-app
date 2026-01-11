@@ -14,6 +14,86 @@ import { hashApiKey } from './utils/crypto.js';
 import logger from './utils/logger.js';
 import fs from 'fs';
 
+/**
+ * Validation utilities
+ */
+function validateAuthId(authId) {
+  if (!authId || typeof authId !== 'string') return false;
+  // authId should be a hex string (SHA-256 hash = 64 chars)
+  return /^[a-f0-9]{64}$/.test(authId);
+}
+
+function validateNumericId(id) {
+  const numId = parseInt(id, 10);
+  return !isNaN(numId) && numId > 0;
+}
+
+/**
+ * Middleware to validate authId from query, body, or headers
+ */
+function validateAuthIdMiddleware(req, res, next) {
+  const authId = req.query.authId || req.body.authId || req.headers['x-auth-id'];
+  if (!authId) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'authId required' 
+    });
+  }
+  if (!validateAuthId(authId)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Invalid authId format. authId must be a 64-character hexadecimal string.' 
+    });
+  }
+  // Attach validated authId to request for use in route handlers
+  req.validatedAuthId = authId;
+  next();
+}
+
+/**
+ * Middleware to validate numeric ID from route parameters
+ */
+function validateNumericIdMiddleware(paramName = 'id') {
+  return (req, res, next) => {
+    const id = req.params[paramName];
+    if (!id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `${paramName} is required` 
+      });
+    }
+    if (!validateNumericId(id)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invalid ${paramName}. Must be a positive integer.` 
+      });
+    }
+    // Attach validated ID to request
+    req.validatedIds = req.validatedIds || {};
+    req.validatedIds[paramName] = parseInt(id, 10);
+    next();
+  };
+}
+
+/**
+ * Middleware to validate JSON payload size
+ */
+function validateJsonPayloadSize(maxSizeBytes = 10 * 1024 * 1024) {
+  return (req, res, next) => {
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+      const contentLength = parseInt(req.headers['content-length'], 10);
+      if (!isNaN(contentLength) && contentLength > maxSizeBytes) {
+        return res.status(413).json({
+          success: false,
+          error: 'Payload too large',
+          detail: `Request body exceeds maximum size of ${maxSizeBytes / 1024 / 1024}MB`
+        });
+      }
+    }
+    next();
+  };
+}
+
 class TorBoxBackend {
   constructor() {
     this.app = express();
@@ -47,8 +127,8 @@ class TorBoxBackend {
     // Compression
     this.app.use(compression());
     
-    // Rate limiting
-    const limiter = rateLimit({
+    // IP-based rate limiting (global)
+    const ipLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
       max: 100,
       standardHeaders: true,
@@ -61,7 +141,29 @@ class TorBoxBackend {
         });
       }
     });
-    this.app.use('/api/', limiter);
+    this.app.use('/api/', ipLimiter);
+    
+    // Per-user rate limiting (applied after authId validation)
+    this.userRateLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: parseInt(process.env.USER_RATE_LIMIT_MAX || '200', 10),
+      standardHeaders: true,
+      legacyHeaders: false,
+      keyGenerator: (req) => {
+        // Use validated authId if available, otherwise fall back to IP
+        return req.validatedAuthId || req.ip;
+      },
+      handler: (req, res) => {
+        res.status(429).json({
+          success: false,
+          error: 'Too many requests, please try again later.',
+          detail: 'User rate limit exceeded. Please wait before making more requests.'
+        });
+      }
+    });
+    
+    // JSON payload size validation
+    this.app.use(validateJsonPayloadSize(10 * 1024 * 1024)); // 10MB
     
     // Body parsing
     this.app.use(express.json({ limit: '10mb' }));
@@ -237,12 +339,9 @@ class TorBoxBackend {
     });
 
     // Automation rules endpoints (per-user)
-    this.app.get('/api/automation/rules', async (req, res) => {
+    this.app.get('/api/automation/rules', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const engine = this.automationEngines.get(authId);
         if (!engine) {
@@ -255,18 +354,15 @@ class TorBoxBackend {
         logger.error('Error fetching automation rules', error, {
           endpoint: '/api/automation/rules',
           method: 'GET',
-          authId: req.query.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.post('/api/automation/rules', async (req, res) => {
+    this.app.post('/api/automation/rules', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const { rules } = req.body;
         const engine = this.automationEngines.get(authId);
@@ -287,20 +383,16 @@ class TorBoxBackend {
         logger.error('Error saving automation rules', error, {
           endpoint: '/api/automation/rules',
           method: 'POST',
-          authId: req.body.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.put('/api/automation/rules/:id', async (req, res) => {
+    this.app.put('/api/automation/rules/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const ruleId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const ruleId = req.validatedIds.id;
         const { enabled } = req.body;
         const engine = this.automationEngines.get(authId);
         if (!engine) {
@@ -319,21 +411,17 @@ class TorBoxBackend {
         logger.error('Error updating rule', error, {
           endpoint: `/api/automation/rules/${req.params.id}`,
           method: 'PUT',
-          ruleId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          ruleId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.delete('/api/automation/rules/:id', async (req, res) => {
+    this.app.delete('/api/automation/rules/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const ruleId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const ruleId = req.validatedIds.id;
         const engine = this.automationEngines.get(authId);
         if (!engine) {
           return res.status(404).json({ success: false, error: 'User not found' });
@@ -351,21 +439,17 @@ class TorBoxBackend {
         logger.error('Error deleting rule', error, {
           endpoint: `/api/automation/rules/${req.params.id}`,
           method: 'DELETE',
-          ruleId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          ruleId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.get('/api/automation/rules/:id/logs', async (req, res) => {
+    this.app.get('/api/automation/rules/:id/logs', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const ruleId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const ruleId = req.validatedIds.id;
         const engine = this.automationEngines.get(authId);
         if (!engine) {
           return res.status(404).json({ success: false, error: 'User not found' });
@@ -377,21 +461,17 @@ class TorBoxBackend {
         logger.error('Error fetching rule logs', error, {
           endpoint: `/api/automation/rules/${req.params.id}/logs`,
           method: 'GET',
-          ruleId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          ruleId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.delete('/api/automation/rules/:id/logs', async (req, res) => {
+    this.app.delete('/api/automation/rules/:id/logs', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const ruleId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const ruleId = req.validatedIds.id;
         const engine = this.automationEngines.get(authId);
         if (!engine) {
           return res.status(404).json({ success: false, error: 'User not found' });
@@ -403,24 +483,28 @@ class TorBoxBackend {
         logger.error('Error clearing rule logs', error, {
           endpoint: `/api/automation/rules/${req.params.id}/logs`,
           method: 'DELETE',
-          ruleId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          ruleId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // Archived downloads endpoints (per-user)
-    this.app.get('/api/archived-downloads', async (req, res) => {
+    this.app.get('/api/archived-downloads', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 50;
+        // Validate pagination parameters
+        if (page < 1 || limit < 1 || limit > 1000) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Invalid pagination parameters. page must be >= 1, limit must be between 1 and 1000.' 
+          });
+        }
         const offset = (page - 1) * limit;
 
         // Get total count
@@ -450,18 +534,15 @@ class TorBoxBackend {
         logger.error('Error fetching archived downloads', error, {
           endpoint: '/api/archived-downloads',
           method: 'GET',
-          authId: req.query.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.post('/api/archived-downloads', async (req, res) => {
+    this.app.post('/api/archived-downloads', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const { torrent_id, hash, tracker, name } = req.body;
         
@@ -503,20 +584,16 @@ class TorBoxBackend {
         logger.error('Error creating archived download', error, {
           endpoint: '/api/archived-downloads',
           method: 'POST',
-          authId: req.body.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.delete('/api/archived-downloads/:id', async (req, res) => {
+    this.app.delete('/api/archived-downloads/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const archiveId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const archiveId = req.validatedIds.id;
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
@@ -541,20 +618,17 @@ class TorBoxBackend {
         logger.error('Error deleting archived download', error, {
           endpoint: `/api/archived-downloads/${req.params.id}`,
           method: 'DELETE',
-          archiveId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          archiveId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // Custom views endpoints (per-user)
-    this.app.get('/api/custom-views', async (req, res) => {
+    this.app.get('/api/custom-views', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
         const views = userDb.db.prepare(`
@@ -580,18 +654,15 @@ class TorBoxBackend {
         logger.error('Error fetching custom views', error, {
           endpoint: '/api/custom-views',
           method: 'GET',
-          authId: req.query.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.post('/api/custom-views', async (req, res) => {
+    this.app.post('/api/custom-views', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
 
@@ -633,20 +704,16 @@ class TorBoxBackend {
         logger.error('Error creating custom view', error, {
           endpoint: '/api/custom-views',
           method: 'POST',
-          authId: req.body.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.get('/api/custom-views/:id', async (req, res) => {
+    this.app.get('/api/custom-views/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const viewId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const viewId = req.validatedIds.id;
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
 
         const view = userDb.db.prepare(`
@@ -673,21 +740,17 @@ class TorBoxBackend {
         logger.error('Error fetching custom view', error, {
           endpoint: `/api/custom-views/${req.params.id}`,
           method: 'GET',
-          viewId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          viewId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.put('/api/custom-views/:id', async (req, res) => {
+    this.app.put('/api/custom-views/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'] || req.query.authId;
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const viewId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const viewId = req.validatedIds.id;
         const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
 
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
@@ -761,21 +824,17 @@ class TorBoxBackend {
         logger.error('Error updating custom view', error, {
           endpoint: `/api/custom-views/${req.params.id}`,
           method: 'PUT',
-          viewId: req.params.id,
-          authId: req.body.authId || req.headers['x-auth-id'] || req.query.authId,
+          viewId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    this.app.delete('/api/custom-views/:id', async (req, res) => {
+    this.app.delete('/api/custom-views/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const viewId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const viewId = req.validatedIds.id;
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
@@ -800,8 +859,8 @@ class TorBoxBackend {
         logger.error('Error deleting custom view', error, {
           endpoint: `/api/custom-views/${req.params.id}`,
           method: 'DELETE',
-          viewId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          viewId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
@@ -810,12 +869,9 @@ class TorBoxBackend {
     // ===== Tags API =====
     
     // GET /api/tags - List all tags with usage counts
-    this.app.get('/api/tags', async (req, res) => {
+    this.app.get('/api/tags', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
         
@@ -837,19 +893,16 @@ class TorBoxBackend {
         logger.error('Error fetching tags', error, {
           endpoint: '/api/tags',
           method: 'GET',
-          authId: req.query.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // POST /api/tags - Create tag
-    this.app.post('/api/tags', async (req, res) => {
+    this.app.post('/api/tags', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const { name } = req.body;
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -897,21 +950,17 @@ class TorBoxBackend {
         logger.error('Error creating tag', error, {
           endpoint: '/api/tags',
           method: 'POST',
-          authId: req.body.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // GET /api/tags/:id - Get single tag
-    this.app.get('/api/tags/:id', async (req, res) => {
+    this.app.get('/api/tags/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const tagId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const tagId = req.validatedIds.id;
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
 
         const tag = userDb.db.prepare(`
@@ -939,22 +988,18 @@ class TorBoxBackend {
         logger.error('Error fetching tag', error, {
           endpoint: `/api/tags/${req.params.id}`,
           method: 'GET',
-          tagId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          tagId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // PUT /api/tags/:id - Update tag
-    this.app.put('/api/tags/:id', async (req, res) => {
+    this.app.put('/api/tags/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'] || req.query.authId;
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const tagId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const tagId = req.validatedIds.id;
         const { name } = req.body;
 
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -1015,22 +1060,18 @@ class TorBoxBackend {
         logger.error('Error updating tag', error, {
           endpoint: `/api/tags/${req.params.id}`,
           method: 'PUT',
-          tagId: req.params.id,
-          authId: req.body.authId || req.headers['x-auth-id'] || req.query.authId,
+          tagId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // DELETE /api/tags/:id - Delete tag
-    this.app.delete('/api/tags/:id', async (req, res) => {
+    this.app.delete('/api/tags/:id', validateAuthIdMiddleware, validateNumericIdMiddleware('id'), this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
-
-        const tagId = parseInt(req.params.id);
+        const authId = req.validatedAuthId;
+        const tagId = req.validatedIds.id;
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
@@ -1055,8 +1096,8 @@ class TorBoxBackend {
         logger.error('Error deleting tag', error, {
           endpoint: `/api/tags/${req.params.id}`,
           method: 'DELETE',
-          tagId: req.params.id,
-          authId: req.query.authId || req.headers['x-auth-id'],
+          tagId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
@@ -1065,12 +1106,9 @@ class TorBoxBackend {
     // ===== Download Tags API =====
 
     // GET /api/downloads/tags - Get all download-tag mappings (bulk)
-    this.app.get('/api/downloads/tags', async (req, res) => {
+    this.app.get('/api/downloads/tags', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.query.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
         
@@ -1104,21 +1142,40 @@ class TorBoxBackend {
         logger.error('Error fetching download tags', error, {
           endpoint: '/api/downloads/tags',
           method: 'GET',
-          authId: req.query.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
     });
 
     // POST /api/downloads/tags - Assign tags to downloads (bulk)
-    this.app.post('/api/downloads/tags', async (req, res) => {
+    this.app.post('/api/downloads/tags', validateAuthIdMiddleware, this.userRateLimiter, async (req, res) => {
       try {
-        const authId = req.body.authId || req.headers['x-auth-id'];
-        if (!authId) {
-          return res.status(400).json({ success: false, error: 'authId required' });
-        }
+        const authId = req.validatedAuthId;
 
         const { download_ids, tag_ids, operation = 'add' } = req.body;
+        
+        // Validate tag_ids are all valid integers
+        if (Array.isArray(tag_ids) && tag_ids.length > 0) {
+          const invalidTagIds = tag_ids.filter(id => !validateNumericId(id));
+          if (invalidTagIds.length > 0) {
+            return res.status(400).json({ 
+              success: false, 
+              error: 'Invalid tag_ids. All tag IDs must be positive integers.' 
+            });
+          }
+        }
+        
+        // Validate download_ids are all valid integers
+        if (Array.isArray(download_ids) && download_ids.length > 0) {
+          const invalidDownloadIds = download_ids.filter(id => !validateNumericId(id));
+          if (invalidDownloadIds.length > 0) {
+            return res.status(400).json({ 
+              success: false, 
+              error: 'Invalid download_ids. All download IDs must be positive integers.' 
+            });
+          }
+        }
 
         if (!Array.isArray(download_ids) || download_ids.length === 0) {
           return res.status(400).json({ 
@@ -1213,7 +1270,7 @@ class TorBoxBackend {
         logger.error('Error assigning tags to downloads', error, {
           endpoint: '/api/downloads/tags',
           method: 'POST',
-          authId: req.body.authId || req.headers['x-auth-id'],
+          authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
       }
