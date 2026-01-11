@@ -679,10 +679,20 @@ class TorBoxBackend {
         const parsedViews = views.map(view => {
           const parsed = { ...view };
           if (parsed.filters) {
-            parsed.filters = JSON.parse(parsed.filters);
+            try {
+              parsed.filters = JSON.parse(parsed.filters);
+            } catch (error) {
+              logger.error('Failed to parse filters JSON', error, { viewId: view.id });
+              parsed.filters = {}; // Default to empty object
+            }
           }
           if (parsed.visible_columns) {
-            parsed.visible_columns = JSON.parse(parsed.visible_columns);
+            try {
+              parsed.visible_columns = JSON.parse(parsed.visible_columns);
+            } catch (error) {
+              logger.error('Failed to parse visible_columns JSON', error, { viewId: view.id });
+              parsed.visible_columns = []; // Default to empty array
+            }
           }
           return parsed;
         });
@@ -732,9 +742,19 @@ class TorBoxBackend {
         `).get(result.lastInsertRowid);
 
         // Parse JSON fields
-        view.filters = JSON.parse(view.filters);
+        try {
+          view.filters = JSON.parse(view.filters);
+        } catch (error) {
+          logger.error('Failed to parse filters JSON', error, { viewId: view.id });
+          view.filters = {}; // Default to empty object
+        }
         if (view.visible_columns) {
-          view.visible_columns = JSON.parse(view.visible_columns);
+          try {
+            view.visible_columns = JSON.parse(view.visible_columns);
+          } catch (error) {
+            logger.error('Failed to parse visible_columns JSON', error, { viewId: view.id });
+            view.visible_columns = []; // Default to empty array
+          }
         }
 
         res.json({ success: true, view });
@@ -768,9 +788,19 @@ class TorBoxBackend {
         }
 
         // Parse JSON fields
-        view.filters = JSON.parse(view.filters);
+        try {
+          view.filters = JSON.parse(view.filters);
+        } catch (error) {
+          logger.error('Failed to parse filters JSON', error, { viewId: view.id });
+          view.filters = {}; // Default to empty object
+        }
         if (view.visible_columns) {
-          view.visible_columns = JSON.parse(view.visible_columns);
+          try {
+            view.visible_columns = JSON.parse(view.visible_columns);
+          } catch (error) {
+            logger.error('Failed to parse visible_columns JSON', error, { viewId: view.id });
+            view.visible_columns = []; // Default to empty array
+          }
         }
 
         res.json({ success: true, view });
@@ -852,9 +882,19 @@ class TorBoxBackend {
         `).get(viewId);
 
         // Parse JSON fields
-        view.filters = JSON.parse(view.filters);
+        try {
+          view.filters = JSON.parse(view.filters);
+        } catch (error) {
+          logger.error('Failed to parse filters JSON', error, { viewId: view.id });
+          view.filters = {}; // Default to empty object
+        }
         if (view.visible_columns) {
-          view.visible_columns = JSON.parse(view.visible_columns);
+          try {
+            view.visible_columns = JSON.parse(view.visible_columns);
+          } catch (error) {
+            logger.error('Failed to parse visible_columns JSON', error, { viewId: view.id });
+            view.visible_columns = []; // Default to empty array
+          }
         }
 
         res.json({ success: true, view });
