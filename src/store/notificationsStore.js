@@ -139,7 +139,11 @@ export const useNotificationsStore = create((set, get) => ({
 
       // Check if it's a connection timeout or network error
       const isConnectionError =
+        error.isTimeout ||
+        error.message?.includes('timeout') ||
         error.message?.includes('Connect Timeout Error') ||
+        error.message?.includes('Request timeout') ||
+        error.message?.includes('Connection timeout') ||
         error.message?.includes('fetch failed') ||
         error.message?.includes('NetworkError') ||
         error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT';
