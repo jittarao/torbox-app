@@ -67,6 +67,43 @@ class RuleEvaluator {
       telemetryMap = new Map(allTelemetry.map(t => [String(t.torrent_id), t]));
     }
 
+    // Check if any condition uses TAGS type to determine if we need to pre-load tags
+    const hasTagsCondition = this.hasTagsCondition(rule);
+    
+    // Batch load all download tags to avoid N+1 queries
+    let tagsByDownloadId = new Map();
+    if (hasTagsCondition && torrents.length > 0) {
+      // Collect all possible download IDs (supporting multiple formats)
+      const allDownloadIds = new Set();
+      for (const torrent of torrents) {
+        const downloadId = torrent.id?.toString() || torrent.torrent_id?.toString() || 
+                          torrent.usenet_id?.toString() || torrent.web_id?.toString();
+        if (downloadId) {
+          allDownloadIds.add(downloadId);
+        }
+      }
+      
+      if (allDownloadIds.size > 0) {
+        const downloadIdArray = Array.from(allDownloadIds);
+        const placeholders = downloadIdArray.map(() => '?').join(',');
+        const allDownloadTags = this.db.prepare(`
+          SELECT dt.download_id, t.id, t.name
+          FROM download_tags dt
+          INNER JOIN tags t ON dt.tag_id = t.id
+          WHERE dt.download_id IN (${placeholders})
+        `).all(...downloadIdArray);
+        
+        // Group tags by download_id
+        for (const row of allDownloadTags) {
+          const downloadId = String(row.download_id);
+          if (!tagsByDownloadId.has(downloadId)) {
+            tagsByDownloadId.set(downloadId, []);
+          }
+          tagsByDownloadId.get(downloadId).push({ id: row.id, name: row.name });
+        }
+      }
+    }
+
     // Support both old flat structure and new group structure
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
     
@@ -86,7 +123,7 @@ class RuleEvaluator {
           
           // Evaluate conditions within the group
           const conditionResults = conditions.map(condition => {
-            return this.evaluateCondition(condition, torrent, telemetryMap);
+            return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId);
           });
           
           // Apply group logic operator
@@ -119,7 +156,7 @@ class RuleEvaluator {
         }
         
         const conditionResults = conditions.map(condition => {
-          return this.evaluateCondition(condition, torrent, telemetryMap);
+          return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId);
         });
 
         // Apply logic operator
@@ -135,12 +172,34 @@ class RuleEvaluator {
   }
 
   /**
+   * Check if rule has any TAGS conditions (to determine if we need to pre-load tags)
+   * @param {Object} rule - Rule configuration
+   * @returns {boolean} - True if rule has at least one TAGS condition
+   */
+  hasTagsCondition(rule) {
+    // Check new group structure
+    if (rule.groups && Array.isArray(rule.groups)) {
+      for (const group of rule.groups) {
+        const conditions = group.conditions || [];
+        if (conditions.some(condition => condition.type === 'TAGS')) {
+          return true;
+        }
+      }
+    }
+    
+    // Check old flat structure
+    const conditions = rule.conditions || [];
+    return conditions.some(condition => condition.type === 'TAGS');
+  }
+
+  /**
    * Evaluate a single condition
    * @param {Object} condition - Condition to evaluate
    * @param {Object} torrent - Torrent object
    * @param {Map} telemetryMap - Map of torrent_id -> telemetry data (pre-loaded to avoid N+1 queries)
+   * @param {Map} tagsByDownloadId - Map of download_id -> array of tags (pre-loaded to avoid N+1 queries)
    */
-  evaluateCondition(condition, torrent, telemetryMap = new Map()) {
+  evaluateCondition(condition, torrent, telemetryMap = new Map(), tagsByDownloadId = new Map()) {
     const now = Date.now();
     let conditionValue = 0;
 
@@ -403,14 +462,8 @@ class RuleEvaluator {
           return false;
         }
 
-        // Fetch tags for this download
-        const downloadTags = this.db.prepare(`
-          SELECT t.id, t.name
-          FROM download_tags dt
-          INNER JOIN tags t ON dt.tag_id = t.id
-          WHERE dt.download_id = ?
-        `).all(downloadId);
-
+        // Use pre-loaded tags from map (avoid N+1 queries)
+        const downloadTags = tagsByDownloadId.get(downloadId) || [];
         const downloadTagIds = downloadTags.map(tag => tag.id);
         const conditionTagIds = Array.isArray(condition.value) 
           ? condition.value.map(v => typeof v === 'number' ? v : parseInt(v, 10)).filter(id => !isNaN(id))
