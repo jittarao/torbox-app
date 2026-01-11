@@ -1,6 +1,6 @@
 import { Database as SQLiteDatabase } from 'bun:sqlite';
 import path from 'path';
-import fs from 'fs';
+import { mkdir } from 'fs/promises';
 import MigrationRunner from './MigrationRunner.js';
 import { encrypt, hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
@@ -26,8 +26,10 @@ class Database {
     try {
       // Ensure data directory exists
       const dataDir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
+      try {
+        await mkdir(dataDir, { recursive: true });
+      } catch (error) {
+        if (error.code !== 'EEXIST') throw error;
       }
 
       // Initialize database connection
