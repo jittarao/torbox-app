@@ -425,7 +425,7 @@ class AutomationEngine {
       if (enabledRules.length === 0) {
         logger.debug('No enabled rules to evaluate', {
           authId: this.authId,
-          totalRules: rules.length
+          totalRules: allRules.length
         });
         return { evaluated: 0, executed: 0 };
       }
