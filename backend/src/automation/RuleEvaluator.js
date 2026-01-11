@@ -23,17 +23,6 @@ class RuleEvaluator {
       return [];
     }
 
-    // Check cooldown
-    if (rule.cooldown_minutes && rule.last_executed_at) {
-      const lastExecuted = new Date(rule.last_executed_at);
-      const cooldownMs = rule.cooldown_minutes * 60 * 1000;
-      const timeSinceLastExecution = Date.now() - lastExecuted.getTime();
-      
-      if (timeSinceLastExecution < cooldownMs) {
-        return []; // Still in cooldown
-      }
-    }
-
     // Check trigger interval (if configured)
     if (rule.trigger && rule.trigger.type === 'interval' && rule.trigger.value) {
       const intervalMinutes = rule.trigger.value;

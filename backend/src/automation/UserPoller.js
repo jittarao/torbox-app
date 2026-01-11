@@ -144,6 +144,10 @@ class UserPoller {
       }
     }
 
+    // Enforce 5-minute minimum between polls to limit API calls
+    const MIN_POLL_INTERVAL_MINUTES = 5;
+    baseIntervalMinutes = Math.max(MIN_POLL_INTERVAL_MINUTES, baseIntervalMinutes);
+
     const baseIntervalMs = baseIntervalMinutes * 60 * 1000;
     
     // Add stagger offset if provided
