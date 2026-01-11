@@ -17,6 +17,7 @@ class UserPoller {
     this.masterDb = masterDb;
     this.isPolling = false;
     this.lastPollAt = null;
+    this.lastPolledAt = null; // Track when poller was last used (for cleanup)
     this.lastPollError = null;
     
     // Decrypt API key
@@ -354,6 +355,7 @@ class UserPoller {
       }
       
       this.lastPollAt = new Date();
+      this.lastPolledAt = new Date(); // Update last polled timestamp
       this.lastPollError = null;
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);

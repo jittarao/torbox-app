@@ -17,29 +17,98 @@ class AutomationEngine {
     this.apiClient = new ApiClient(this.apiKey);
     // RuleEvaluator will get database from getUserDb() when needed
     this.ruleEvaluator = null;
+    this._ruleEvaluatorCache = null; // Cached RuleEvaluator instance
+    this._ruleEvaluatorDbConnection = null; // Track the DB connection used by cached evaluator
     this.runningJobs = new Map();
     this.isInitialized = false;
   }
 
   /**
+   * Retry a function with exponential backoff
+   * @param {Function} fn - Function to retry
+   * @param {number} maxRetries - Maximum number of retries (default: 3)
+   * @param {number} initialDelayMs - Initial delay in milliseconds (default: 100)
+   * @returns {Promise} - Result of the function
+   */
+  async retryWithBackoff(fn, maxRetries = 3, initialDelayMs = 100) {
+    let lastError;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        
+        // Check if error is transient (SQLite busy, connection errors)
+        const isTransient = error.message?.includes('SQLITE_BUSY') ||
+                           error.message?.includes('database is locked') ||
+                           error.message?.includes('connection') ||
+                           error.code === 'SQLITE_BUSY' ||
+                           error.code === 'SQLITE_LOCKED';
+        
+        if (!isTransient || attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Exponential backoff: 100ms, 200ms, 400ms
+        const delayMs = initialDelayMs * Math.pow(2, attempt);
+        logger.warn('Database operation failed, retrying', {
+          authId: this.authId,
+          attempt: attempt + 1,
+          maxRetries,
+          delayMs,
+          errorMessage: error.message
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    throw lastError;
+  }
+
+  /**
    * Get a fresh database connection from the manager
    * This ensures we always have a valid connection even if the pool closed it
+   * Includes retry logic for transient database errors
    */
   async getUserDb() {
-    const userDb = await this.userDatabaseManager.getUserDatabase(this.authId);
-    return userDb.db;
+    return await this.retryWithBackoff(async () => {
+      const userDb = await this.userDatabaseManager.getUserDatabase(this.authId);
+      return userDb.db;
+    });
+  }
+
+  /**
+   * Invalidate cached RuleEvaluator (e.g., after database errors)
+   */
+  invalidateRuleEvaluatorCache() {
+    this._ruleEvaluatorCache = null;
+    this._ruleEvaluatorDbConnection = null;
+    logger.debug('RuleEvaluator cache invalidated', { authId: this.authId });
   }
 
   /**
    * Get RuleEvaluator with a fresh database connection
-   * Always gets a fresh DB connection to avoid using closed databases
+   * Caches the instance but refreshes DB connection when needed
    */
   async getRuleEvaluator() {
-    // Always get a fresh database connection to avoid using closed databases
+    // Get a fresh database connection
     const userDb = await this.getUserDb();
-    // Create a new RuleEvaluator with the fresh connection
-    // We don't cache it because the database connection might get closed
-    return new RuleEvaluator(userDb, this.apiClient);
+    
+    // Check if we have a cached evaluator and if the DB connection is still valid
+    if (this._ruleEvaluatorCache && this._ruleEvaluatorDbConnection === userDb) {
+      // Same DB connection, reuse cached evaluator
+      return this._ruleEvaluatorCache;
+    }
+    
+    // Create new evaluator with fresh connection
+    const evaluator = new RuleEvaluator(userDb, this.apiClient);
+    
+    // Cache the evaluator and track the DB connection
+    this._ruleEvaluatorCache = evaluator;
+    this._ruleEvaluatorDbConnection = userDb;
+    
+    logger.debug('RuleEvaluator created/cached', { authId: this.authId });
+    return evaluator;
   }
 
   async initialize() {
@@ -491,6 +560,12 @@ class AutomationEngine {
             errorMessage: error.message,
             errorStack: error.stack
           });
+          
+          // Invalidate cache on database errors
+          if (error.message?.includes('SQLITE') || error.message?.includes('database')) {
+            this.invalidateRuleEvaluatorCache();
+          }
+          
           // Update last_evaluated_at even on error (we attempt to check it)
           try {
             const userDb = await this.getUserDb();
@@ -504,6 +579,10 @@ class AutomationEngine {
               authId: this.authId,
               ruleId: rule.id
             });
+            // Invalidate cache on database errors
+            if (updateError.message?.includes('SQLITE') || updateError.message?.includes('database')) {
+              this.invalidateRuleEvaluatorCache();
+            }
           }
           await this.logRuleExecution(rule.id, rule.name, 'execution', 0, false, error.message);
         }
@@ -585,23 +664,208 @@ class AutomationEngine {
   }
 
   /**
+   * Validate a single rule configuration
+   * @param {Object} rule - Rule to validate
+   * @returns {Object} - { valid: boolean, errors: string[] }
+   */
+  validateRule(rule) {
+    const errors = [];
+
+    // Validate rule name
+    if (!rule.name || typeof rule.name !== 'string' || rule.name.trim().length === 0) {
+      errors.push('Rule name is required and must be a non-empty string');
+    }
+
+    // Validate enabled flag
+    if (rule.enabled !== undefined && typeof rule.enabled !== 'boolean') {
+      errors.push('Rule enabled flag must be a boolean');
+    }
+
+    // Validate trigger configuration
+    const trigger = rule.trigger || rule.trigger_config;
+    if (trigger) {
+      if (typeof trigger !== 'object') {
+        errors.push('Trigger must be an object');
+      } else {
+        if (trigger.type && typeof trigger.type !== 'string') {
+          errors.push('Trigger type must be a string');
+        }
+        if (trigger.type === 'interval') {
+          if (trigger.value === undefined || trigger.value === null) {
+            errors.push('Interval trigger must have a value');
+          } else if (typeof trigger.value !== 'number' || trigger.value < 1) {
+            errors.push('Interval trigger value must be a number >= 1 (minutes)');
+          }
+        }
+      }
+    }
+
+    // Validate action configuration
+    const action = rule.action || rule.action_config;
+    if (!action) {
+      errors.push('Rule must have an action configuration');
+    } else if (typeof action !== 'object') {
+      errors.push('Action must be an object');
+    } else {
+      if (!action.type || typeof action.type !== 'string') {
+        errors.push('Action type is required and must be a string');
+      } else {
+        const validActionTypes = ['stop_seeding', 'delete', 'archive', 'add_tag', 'remove_tag'];
+        if (!validActionTypes.includes(action.type)) {
+          errors.push(`Invalid action type: ${action.type}. Valid types: ${validActionTypes.join(', ')}`);
+        }
+
+        // Validate action-specific fields
+        if (action.type === 'add_tag' || action.type === 'remove_tag') {
+          if (!Array.isArray(action.tagIds) || action.tagIds.length === 0) {
+            errors.push(`${action.type} action requires tagIds to be a non-empty array`);
+          } else {
+            const invalidTagIds = action.tagIds.filter(id => typeof id !== 'number' || id <= 0 || !Number.isInteger(id));
+            if (invalidTagIds.length > 0) {
+              errors.push(`${action.type} action tagIds must be positive integers`);
+            }
+          }
+        }
+      }
+    }
+
+    // Validate conditions/groups structure
+    const migratedRule = this.migrateRuleToGroups(rule);
+    const hasGroups = migratedRule.groups && Array.isArray(migratedRule.groups) && migratedRule.groups.length > 0;
+
+    if (hasGroups) {
+      // Validate logic operator
+      const logicOperator = migratedRule.logicOperator || 'and';
+      if (logicOperator !== 'and' && logicOperator !== 'or') {
+        errors.push(`Logic operator must be 'and' or 'or', got: ${logicOperator}`);
+      }
+
+      // Validate groups structure
+      if (!Array.isArray(migratedRule.groups)) {
+        errors.push('Groups must be an array');
+      } else {
+        migratedRule.groups.forEach((group, groupIndex) => {
+          if (typeof group !== 'object' || group === null) {
+            errors.push(`Group ${groupIndex} must be an object`);
+            return;
+          }
+
+          // Validate group logic operator
+          const groupLogicOp = group.logicOperator || 'and';
+          if (groupLogicOp !== 'and' && groupLogicOp !== 'or') {
+            errors.push(`Group ${groupIndex} logic operator must be 'and' or 'or', got: ${groupLogicOp}`);
+          }
+
+          // Validate conditions array
+          const conditions = group.conditions || [];
+          if (!Array.isArray(conditions)) {
+            errors.push(`Group ${groupIndex} conditions must be an array`);
+          } else {
+            // Warn about empty groups (but don't error - they match nothing)
+            if (conditions.length === 0) {
+              logger.warn('Empty group detected in rule - will match nothing', {
+                authId: this.authId,
+                ruleName: rule.name,
+                groupIndex
+              });
+            }
+
+            // Validate each condition
+            conditions.forEach((condition, condIndex) => {
+              if (typeof condition !== 'object' || condition === null) {
+                errors.push(`Group ${groupIndex}, condition ${condIndex} must be an object`);
+                return;
+              }
+
+              // Validate condition type
+              if (!condition.type || typeof condition.type !== 'string') {
+                errors.push(`Group ${groupIndex}, condition ${condIndex} must have a type string`);
+              } else {
+                const validConditionTypes = [
+                  'SEEDING_TIME', 'AGE', 'LAST_DOWNLOAD_ACTIVITY_AT', 'LAST_UPLOAD_ACTIVITY_AT',
+                  'PROGRESS', 'DOWNLOAD_SPEED', 'UPLOAD_SPEED', 'AVG_DOWNLOAD_SPEED', 'AVG_UPLOAD_SPEED', 'ETA',
+                  'DOWNLOAD_STALLED_TIME', 'UPLOAD_STALLED_TIME',
+                  'SEEDS', 'PEERS', 'RATIO', 'TOTAL_UPLOADED', 'TOTAL_DOWNLOADED',
+                  'FILE_SIZE', 'FILE_COUNT', 'NAME', 'PRIVATE', 'CACHED', 'AVAILABILITY', 'ALLOW_ZIP',
+                  'IS_ACTIVE', 'SEEDING_ENABLED', 'LONG_TERM_SEEDING', 'STATUS', 'EXPIRES_AT', 'TAGS'
+                ];
+                if (!validConditionTypes.includes(condition.type)) {
+                  errors.push(`Group ${groupIndex}, condition ${condIndex} has invalid type: ${condition.type}`);
+                }
+              }
+
+              // Validate operator (required for most conditions, optional for some)
+              if (condition.operator !== undefined) {
+                const validOperators = ['gt', 'lt', 'gte', 'lte', 'eq', 'has_any', 'has_all', 'has_none'];
+                if (!validOperators.includes(condition.operator)) {
+                  errors.push(`Group ${groupIndex}, condition ${condIndex} has invalid operator: ${condition.operator}`);
+                }
+              }
+
+              // Validate value (required for most conditions)
+              if (condition.value === undefined && condition.type !== 'NAME') {
+                // NAME condition doesn't require operator, but needs value
+                if (condition.type === 'NAME' && !condition.value) {
+                  errors.push(`Group ${groupIndex}, condition ${condIndex} (NAME) must have a value`);
+                } else if (condition.type !== 'NAME') {
+                  errors.push(`Group ${groupIndex}, condition ${condIndex} must have a value`);
+                }
+              }
+
+              // Type-specific validations
+              if (condition.type === 'STATUS' && !Array.isArray(condition.value)) {
+                errors.push(`Group ${groupIndex}, condition ${condIndex} (STATUS) value must be an array`);
+              }
+              if (condition.type === 'TAGS' && !Array.isArray(condition.value)) {
+                errors.push(`Group ${groupIndex}, condition ${condIndex} (TAGS) value must be an array`);
+              }
+              if ((condition.type === 'AVG_DOWNLOAD_SPEED' || condition.type === 'AVG_UPLOAD_SPEED') && 
+                  condition.hours !== undefined && (typeof condition.hours !== 'number' || condition.hours <= 0)) {
+                errors.push(`Group ${groupIndex}, condition ${condIndex} (${condition.type}) hours must be a positive number`);
+              }
+            });
+          }
+        });
+      }
+    } else {
+      // Old flat structure - validate conditions array
+      const conditions = rule.conditions || [];
+      if (!Array.isArray(conditions)) {
+        errors.push('Conditions must be an array (or use groups structure)');
+      } else {
+        const logicOperator = rule.logicOperator || 'and';
+        if (logicOperator !== 'and' && logicOperator !== 'or') {
+          errors.push(`Logic operator must be 'and' or 'or', got: ${logicOperator}`);
+        }
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
    * Save automation rules
    */
   async saveAutomationRules(rules) {
     const userDb = await this.getUserDb();
     
-    // Validate trigger intervals before saving
-    for (const rule of rules) {
-      const trigger = rule.trigger || rule.trigger_config;
-      if (trigger && trigger.type === 'interval' && trigger.value !== undefined) {
-        if (trigger.value < 1) {
-          logger.warn('Invalid trigger interval (less than 1 minute), rejecting rule', {
-            authId: this.authId,
-            ruleName: rule.name,
-            intervalMinutes: trigger.value
-          });
-          throw new Error(`Invalid trigger interval: ${trigger.value} minutes. Minimum is 1 minute.`);
-        }
+    // Validate all rules before saving
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i];
+      const validation = this.validateRule(rule);
+      
+      if (!validation.valid) {
+        const errorMessage = `Rule ${i + 1}${rule.name ? ` (${rule.name})` : ''} validation failed: ${validation.errors.join('; ')}`;
+        logger.warn('Rule validation failed', {
+          authId: this.authId,
+          ruleIndex: i,
+          ruleName: rule.name,
+          errors: validation.errors
+        });
+        throw new Error(errorMessage);
       }
     }
     

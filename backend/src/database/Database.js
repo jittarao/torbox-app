@@ -168,11 +168,15 @@ class Database {
    * @param {boolean} hasActiveRules - Whether user has active automation rules
    */
   updateActiveRulesFlag(authId, hasActiveRules) {
-    this.runQuery(`
-      UPDATE user_registry 
-      SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE auth_id = ?
-    `, [hasActiveRules ? 1 : 0, authId]);
+    // Use transaction for atomic update to prevent race conditions
+    const transaction = this.db.transaction(() => {
+      this.runQuery(`
+        UPDATE user_registry 
+        SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE auth_id = ?
+      `, [hasActiveRules ? 1 : 0, authId]);
+    });
+    transaction();
   }
 
   /**

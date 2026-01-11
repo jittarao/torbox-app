@@ -1256,7 +1256,12 @@ class TorBoxBackend {
       this.pollingScheduler = new PollingScheduler(
         this.userDatabaseManager, 
         this.masterDatabase,
-        this.automationEngines
+        this.automationEngines,
+        {
+          maxConcurrentPolls: parseInt(process.env.MAX_CONCURRENT_POLLS || '7', 10),
+          pollTimeoutMs: parseInt(process.env.POLL_TIMEOUT_MS || '300000', 10),
+          pollerCleanupIntervalHours: parseInt(process.env.POLLER_CLEANUP_INTERVAL_HOURS || '24', 10)
+        }
       );
       await this.pollingScheduler.start();
       logger.info('Polling scheduler started');
