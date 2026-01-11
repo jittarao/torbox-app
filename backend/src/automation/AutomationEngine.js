@@ -131,6 +131,91 @@ class AutomationEngine {
       // Sync active rules flag to master DB
       await this.syncActiveRulesFlag();
       
+      // If user has enabled rules but next_poll_at is NULL/empty/0, set initial poll time
+      // This ensures users with active rules get polled on startup
+      if (enabledRules.length > 0 && this.masterDb) {
+        try {
+          // Invalidate cache to get fresh data
+          cache.invalidateUserRegistry(this.authId);
+          const userInfo = this.masterDb.getUserRegistryInfo(this.authId);
+          
+          logger.info('Checking next_poll_at during initialization', {
+            authId: this.authId,
+            hasUserInfo: !!userInfo,
+            nextPollAt: userInfo?.next_poll_at,
+            enabledRulesCount: enabledRules.length,
+            hasActiveRules: userInfo?.has_active_rules
+          });
+          
+          if (userInfo) {
+            // Check if next_poll_at is NULL, empty, '0', or invalid datetime
+            const nextPollAt = userInfo.next_poll_at;
+            
+            // Helper to check if a date string is valid
+            const isValidDate = (dateStr) => {
+              if (!dateStr || dateStr === '' || dateStr === '0' || dateStr === '0000-00-00 00:00:00') {
+                return false;
+              }
+              const date = new Date(dateStr);
+              return !isNaN(date.getTime()) && date.getTime() > 0;
+            };
+            
+            const isInvalidPollAt = !isValidDate(nextPollAt);
+            
+            logger.info('next_poll_at validation result', {
+              authId: this.authId,
+              nextPollAt,
+              isInvalidPollAt,
+              isValidDateResult: isValidDate(nextPollAt)
+            });
+            
+            if (isInvalidPollAt) {
+              // Set initial poll time to 5 minutes from now (adjusted in dev)
+              logger.info('Resetting next_poll_at - invalid value detected', {
+                authId: this.authId,
+                invalidValue: nextPollAt
+              });
+              
+              await this.resetNextPollAt();
+              
+              // Invalidate cache and verify it was set
+              cache.invalidateUserRegistry(this.authId);
+              const updatedUserInfo = this.masterDb.getUserRegistryInfo(this.authId);
+              
+              logger.info('Set initial next_poll_at for user with active rules', {
+                authId: this.authId,
+                enabledRulesCount: enabledRules.length,
+                previousNextPollAt: nextPollAt,
+                newNextPollAt: updatedUserInfo?.next_poll_at,
+                verificationSuccess: !!updatedUserInfo?.next_poll_at
+              });
+            } else {
+              logger.info('next_poll_at is already valid, skipping reset', {
+                authId: this.authId,
+                nextPollAt
+              });
+            }
+          } else {
+            logger.warn('User info not found when checking next_poll_at', {
+              authId: this.authId
+            });
+          }
+        } catch (error) {
+          logger.error('Failed to set initial next_poll_at', error, {
+            authId: this.authId,
+            errorMessage: error.message,
+            errorStack: error.stack
+          });
+          // Don't throw - this is not critical for initialization
+        }
+      } else {
+        logger.info('Skipping next_poll_at initialization check', {
+          authId: this.authId,
+          hasEnabledRules: enabledRules.length > 0,
+          hasMasterDb: !!this.masterDb
+        });
+      }
+      
       // Get total rule count for logging
       const allRules = await this.getAutomationRules();
       
@@ -364,6 +449,9 @@ class AutomationEngine {
    */
   async resetNextPollAt() {
     if (!this.masterDb) {
+      logger.warn('Cannot reset next_poll_at - master DB not available', {
+        authId: this.authId
+      });
       return; // Master DB not available
     }
     try {
@@ -371,17 +459,20 @@ class AutomationEngine {
       const adjustedIntervalMinutes = applyIntervalMultiplier(baseIntervalMinutes);
       const nextPollAt = new Date(Date.now() + adjustedIntervalMinutes * 60 * 1000);
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
-      if (adjustedIntervalMinutes !== baseIntervalMinutes) {
-        logger.debug('Reset next poll with dev interval multiplier', {
-          authId: this.authId,
-          baseInterval: `${baseIntervalMinutes}min`,
-          adjustedInterval: `${adjustedIntervalMinutes.toFixed(2)}min`
-        });
-      }
+      
+      logger.info('Reset next_poll_at', {
+        authId: this.authId,
+        baseInterval: `${baseIntervalMinutes}min`,
+        adjustedInterval: adjustedIntervalMinutes !== baseIntervalMinutes ? `${adjustedIntervalMinutes.toFixed(2)}min` : undefined,
+        nextPollAt: nextPollAt.toISOString()
+      });
     } catch (error) {
       logger.error('Failed to reset next poll timestamp', error, {
         authId: this.authId,
+        errorMessage: error.message,
+        errorStack: error.stack
       });
+      throw error; // Re-throw so caller knows it failed
     }
   }
 
@@ -483,11 +574,20 @@ class AutomationEngine {
             });
             skippedCount++;
             // Update last_evaluated_at even when skipped due to no action
-            userDb.prepare(`
-              UPDATE automation_rules 
-              SET last_evaluated_at = CURRENT_TIMESTAMP
-              WHERE id = ?
-            `).run(rule.id);
+            try {
+              userDb.prepare(`
+                UPDATE automation_rules 
+                SET last_evaluated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).run(rule.id);
+            } catch (error) {
+              // Log but don't fail - column should exist via migration
+              logger.debug('Failed to update last_evaluated_at (non-critical)', {
+                authId: this.authId,
+                ruleId: rule.id,
+                errorMessage: error.message
+              });
+            }
             continue;
           }
 
@@ -539,11 +639,20 @@ class AutomationEngine {
             
             // Update last_evaluated_at after checking rule (only if actually evaluated)
             // This tracks when the rule was last checked, not just when it executed
-            userDb.prepare(`
-              UPDATE automation_rules 
-              SET last_evaluated_at = CURRENT_TIMESTAMP
-              WHERE id = ?
-            `).run(rule.id);
+            try {
+              userDb.prepare(`
+                UPDATE automation_rules 
+                SET last_evaluated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).run(rule.id);
+            } catch (error) {
+              // Log but don't fail - column should exist via migration
+              logger.debug('Failed to update last_evaluated_at (non-critical)', {
+                authId: this.authId,
+                ruleId: rule.id,
+                errorMessage: error.message
+              });
+            }
           } else {
             // Rule was skipped due to interval - don't update last_evaluated_at
             skippedCount++;
@@ -572,11 +681,97 @@ class AutomationEngine {
             matchedIds: matchingTorrents.map(t => t.id)
           });
 
+          // Filter torrents for add_tag action - skip torrents that already have all the tags
+          let torrentsToProcess = matchingTorrents;
+          if (rule.action?.type === 'add_tag' && rule.action.tagIds && rule.action.tagIds.length > 0) {
+            const userDb = await this.getUserDb();
+            
+            // Collect all download IDs
+            const allDownloadIds = matchingTorrents
+              .map(t => t.id?.toString() || t.torrent_id?.toString() || t.usenet_id?.toString() || t.web_id?.toString())
+              .filter(id => id);
+            
+            if (allDownloadIds.length > 0) {
+              // Batch load tags for all matching torrents
+              const placeholders = allDownloadIds.map(() => '?').join(',');
+              const allDownloadTags = userDb.prepare(`
+                SELECT dt.download_id, dt.tag_id
+                FROM download_tags dt
+                WHERE dt.download_id IN (${placeholders})
+              `).all(...allDownloadIds);
+              
+              // Group tag IDs by download_id
+              const tagsByDownloadId = new Map();
+              for (const row of allDownloadTags) {
+                const downloadId = String(row.download_id);
+                if (!tagsByDownloadId.has(downloadId)) {
+                  tagsByDownloadId.set(downloadId, new Set());
+                }
+                tagsByDownloadId.get(downloadId).add(row.tag_id);
+              }
+              
+              // Filter out torrents that already have all the tags
+              const targetTagIds = new Set(rule.action.tagIds);
+              torrentsToProcess = matchingTorrents.filter(torrent => {
+                const downloadId = torrent.id?.toString() || torrent.torrent_id?.toString() || 
+                                  torrent.usenet_id?.toString() || torrent.web_id?.toString();
+                if (!downloadId) {
+                  return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
+                }
+                
+                const existingTagIds = tagsByDownloadId.get(downloadId) || new Set();
+                
+                // Check if torrent already has all the tags
+                const hasAllTags = Array.from(targetTagIds).every(tagId => existingTagIds.has(tagId));
+                
+                if (hasAllTags) {
+                  logger.debug('Skipping torrent - already has all tags', {
+                    authId: this.authId,
+                    ruleId: rule.id,
+                    ruleName: rule.name,
+                    torrentId: torrent.id,
+                    torrentName: torrent.name,
+                    existingTagIds: Array.from(existingTagIds),
+                    targetTagIds: Array.from(targetTagIds)
+                  });
+                  return false;
+                }
+                
+                return true;
+              });
+              
+              const skippedCount = matchingTorrents.length - torrentsToProcess.length;
+              if (skippedCount > 0) {
+                logger.info('Filtered torrents that already have all tags', {
+                  authId: this.authId,
+                  ruleId: rule.id,
+                  ruleName: rule.name,
+                  originalCount: matchingTorrents.length,
+                  filteredCount: torrentsToProcess.length,
+                  skippedCount
+                });
+              }
+            }
+          }
+
+          // Skip execution if no torrents to process after filtering
+          if (torrentsToProcess.length === 0) {
+            logger.info('No torrents to process after filtering (all already have tags)', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              matchedCount: matchingTorrents.length,
+              actionType: rule.action?.type
+            });
+            skippedCount++;
+            continue;
+          }
+
           // Execute actions
           let successCount = 0;
           let errorCount = 0;
 
-          for (const torrent of matchingTorrents) {
+          for (const torrent of torrentsToProcess) {
             try {
               const ruleEvaluator = await this.getRuleEvaluator();
               logger.debug('Executing action on torrent', {
@@ -628,7 +823,7 @@ class AutomationEngine {
             rule.id,
             rule.name,
             'execution',
-            matchingTorrents.length,
+            torrentsToProcess.length,
             errorCount === 0,
             errorCount > 0 ? `${errorCount} actions failed` : null
           );
@@ -640,9 +835,11 @@ class AutomationEngine {
             ruleId: rule.id,
             ruleName: rule.name,
             matchedCount: matchingTorrents.length,
+            processedCount: torrentsToProcess.length,
+            skippedCount: matchingTorrents.length - torrentsToProcess.length,
             successCount,
             errorCount,
-            totalActions: matchingTorrents.length
+            totalActions: torrentsToProcess.length
           });
         } catch (error) {
           errorCount++;
@@ -668,9 +865,11 @@ class AutomationEngine {
               WHERE id = ?
             `).run(rule.id);
           } catch (updateError) {
-            logger.error('Failed to update last_evaluated_at on error', updateError, {
+            // Log but don't fail - column should exist via migration
+            logger.debug('Failed to update last_evaluated_at on error (non-critical)', {
               authId: this.authId,
-              ruleId: rule.id
+              ruleId: rule.id,
+              errorMessage: updateError.message
             });
             // Invalidate cache on database errors
             if (updateError.message?.includes('SQLITE') || updateError.message?.includes('database')) {

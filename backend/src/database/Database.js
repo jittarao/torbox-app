@@ -235,18 +235,73 @@ class Database {
 
   /**
    * Get users due for polling (cron-like query)
-   * @returns {Array} - Array of users where next_poll_at <= NOW() AND status = 'active'
+   * @returns {Array} - Array of users where next_poll_at <= NOW() OR (next_poll_at IS NULL/empty/0 AND has_active_rules = 1) AND status = 'active'
    */
   getUsersDueForPolling() {
-    return this.allQuery(`
+    // First, let's check all active users with active rules to see their next_poll_at status
+    const allActiveUsersWithRules = this.allQuery(`
+      SELECT ur.auth_id, ur.next_poll_at, ur.has_active_rules, ur.status
+      FROM user_registry ur
+      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+      WHERE ur.status = 'active' 
+        AND (ak.is_active = 1 OR ak.is_active IS NULL)
+        AND ur.has_active_rules = 1
+    `);
+    
+    logger.info('Active users with rules status', {
+      count: allActiveUsersWithRules.length,
+      users: allActiveUsersWithRules.map(u => ({
+        authId: u.auth_id,
+        nextPollAt: u.next_poll_at,
+        hasActiveRules: u.has_active_rules
+      }))
+    });
+    
+    // Convert ISO format (2026-01-11T13:04:23.860Z) to SQLite datetime format (2026-01-11 13:04:23)
+    // for proper datetime comparison. Handle both ISO and SQLite formats.
+    // Strategy: Replace T with space, remove Z, then extract first 19 chars (YYYY-MM-DD HH:MM:SS)
+    const result = this.allQuery(`
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
-      WHERE ur.next_poll_at <= datetime('now') 
-        AND ur.status = 'active' 
+      WHERE ur.status = 'active' 
         AND (ak.is_active = 1 OR ak.is_active IS NULL)
-      ORDER BY ur.next_poll_at ASC
+        AND (
+          (
+            ur.next_poll_at IS NOT NULL 
+            AND ur.next_poll_at != '' 
+            AND ur.next_poll_at != '0'
+            AND ur.next_poll_at != '0000-00-00 00:00:00'
+            AND datetime(
+              substr(
+                replace(replace(ur.next_poll_at, 'T', ' '), 'Z', ''),
+                1,
+                19
+              )
+            ) <= datetime('now')
+          )
+          OR (
+            (ur.next_poll_at IS NULL 
+             OR ur.next_poll_at = '' 
+             OR ur.next_poll_at = '0'
+             OR ur.next_poll_at = '0000-00-00 00:00:00')
+            AND ur.has_active_rules = 1
+          )
+        )
+      ORDER BY COALESCE(
+        NULLIF(NULLIF(NULLIF(ur.next_poll_at, ''), '0'), '0000-00-00 00:00:00'),
+        '9999-12-31 23:59:59'
+      ) ASC
     `);
+    
+    // Log for debugging
+    logger.info('Users due for polling query result', {
+      foundCount: result.length,
+      authIds: result.map(u => u.auth_id),
+      nextPollAts: result.map(u => ({ authId: u.auth_id, nextPollAt: u.next_poll_at, hasActiveRules: u.has_active_rules }))
+    });
+    
+    return result;
   }
 
   /**
