@@ -496,15 +496,9 @@ class TorBoxBackend {
         const authId = req.validatedAuthId;
 
         const userDb = await this.userDatabaseManager.getUserDatabase(authId);
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 50;
-        // Validate pagination parameters
-        if (page < 1 || limit < 1 || limit > 1000) {
-          return res.status(400).json({ 
-            success: false, 
-            error: 'Invalid pagination parameters. page must be >= 1, limit must be between 1 and 1000.' 
-          });
-        }
+        // Enforce maximum limits to prevent memory issues
+        const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 50, 1000)); // Max 1000, min 1
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1); // Min 1
         const offset = (page - 1) * limit;
 
         // Get total count
