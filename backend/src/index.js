@@ -219,19 +219,23 @@ class TorBoxBackend {
             userDatabaseManager: this.userDatabaseManager ? 'initialized' : 'not initialized',
             pollingScheduler: this.pollingScheduler ? 'running' : 'not running',
             automationEngines: this.automationEngines ? this.automationEngines.size : 0
-          }
+          },
+          connectionPool: this.userDatabaseManager ? this.userDatabaseManager.getPoolStats() : null
         };
 
         // Determine overall status
         const hasErrors = 
           health.database.status !== 'healthy' ||
-          (health.api && health.api.status === 'unhealthy');
+          (health.api && health.api.status === 'unhealthy') ||
+          (health.connectionPool && ['critical', 'emergency'].includes(health.connectionPool.status));
 
         if (hasErrors) {
           health.status = 'degraded';
         } else if (health.api && health.api.status === 'not_configured') {
           // If API is not configured but everything else is healthy, status is still healthy
           // (not_configured is not an error, just informational)
+        } else if (health.connectionPool && health.connectionPool.status === 'warning') {
+          // Pool warning doesn't degrade overall health, but indicates potential issue
         }
 
         res.json(health);
