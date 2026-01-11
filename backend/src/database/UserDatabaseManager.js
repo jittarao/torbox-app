@@ -4,6 +4,7 @@ import { mkdir, unlink } from 'fs/promises';
 import MigrationRunner from './MigrationRunner.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import cache from '../utils/cache.js';
 
 /**
  * LRU Cache for database connections with metrics and monitoring
@@ -284,13 +285,15 @@ class UserDatabaseManager {
       }
     }
 
-    // Get user registry entry
+    // Get user registry entry (uses cache if available)
     let user;
     try {
-      const stmt = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?');
-      user = stmt.get(authId);
+      // Use getUserRegistryInfo which has caching built-in
+      user = this.masterDb.getUserRegistryInfo ? 
+        this.masterDb.getUserRegistryInfo(authId) :
+        this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId]);
     } catch (error) {
-      logger.error('Failed to prepare or execute query for user registry', error, { authId });
+      logger.error('Failed to get user registry info', error, { authId });
       throw error;
     }
     
@@ -298,6 +301,7 @@ class UserDatabaseManager {
       throw new Error(`User ${authId} not found in registry`);
     }
 
+    // Extract db_path (works for both getUserRegistryInfo result and direct query)
     const dbPath = user.db_path;
 
     // Ensure database file exists
@@ -360,6 +364,10 @@ class UserDatabaseManager {
       VALUES (?, ?)
     `).run(authId, dbPath);
 
+    // Invalidate cache since user registry changed
+    cache.invalidateUserRegistry(authId);
+    cache.invalidateActiveUsers();
+
     // Initialize the user database
     await this.getUserDatabase(authId);
 
@@ -371,13 +379,28 @@ class UserDatabaseManager {
    * @returns {Array} - Array of user registry entries
    */
   getActiveUsers() {
-    return this.masterDb.prepare(`
+    // Note: This method has a slightly different query than Database.getActiveUsers()
+    // (includes OR ak.is_active IS NULL), so we use a different cache variant
+    const variant = 'withNullKeys';
+    
+    // Check cache first
+    const cached = cache.getActiveUsers(variant);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Query database if not cached
+    const users = this.masterDb.prepare(`
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
       WHERE ur.status = 'active' AND (ak.is_active = 1 OR ak.is_active IS NULL)
       ORDER BY ur.created_at ASC
     `).all();
+    
+    // Cache the result with variant
+    cache.setActiveUsers(users, variant);
+    return users;
   }
 
 
@@ -406,6 +429,11 @@ class UserDatabaseManager {
 
     // Delete from registry (cascade will delete API keys)
     this.masterDb.prepare('DELETE FROM user_registry WHERE auth_id = ?').run(authId);
+    
+    // Invalidate cache since user was deleted
+    cache.invalidateUserRegistry(authId);
+    cache.invalidateActiveUsers();
+    cache.invalidateActiveRules(authId);
   }
 
   /**
