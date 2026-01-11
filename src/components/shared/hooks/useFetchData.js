@@ -117,6 +117,62 @@ export function useFetchData(apiKey, type = 'torrents') {
     [apiKey, type],
   );
 
+  // Helper function to generate user-friendly error messages
+  const getErrorMessage = useCallback((statusCode, activeType) => {
+    const status = typeof statusCode === 'number' ? statusCode : null;
+    const message = typeof statusCode === 'string' ? statusCode : null;
+
+    if (status === 502) {
+      return `TorBox servers are temporarily unavailable. ${activeType} data may not be up to date.`;
+    } else if (status === 503) {
+      return `TorBox servers are temporarily overloaded. ${activeType} data may not be up to date.`;
+    } else if (status === 504) {
+      return `TorBox servers are taking too long to respond. ${activeType} data may not be up to date.`;
+    } else if (status === 401) {
+      return 'Authentication failed. Please check your API key.';
+    } else if (status === 403) {
+      return 'Access denied. Please check your API key and account status.';
+    } else if (status === 429) {
+      return 'Too many requests to TorBox servers. Please wait a moment.';
+    } else if (message && (message.includes('NetworkError') || message.includes('Failed to fetch'))) {
+      return `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
+    }
+    return `Failed to fetch ${activeType} data`;
+  }, []);
+
+  // Helper function to handle errors consistently
+  const handleFetchError = useCallback((
+    error,
+    activeType,
+    currentFetchId,
+    rateData,
+    skipLoading,
+    responseStatus = null
+  ) => {
+    perfMonitor.endTimer(`fetch-${activeType}`);
+    
+    const statusCode = responseStatus || (error?.message?.match(/\d{3}/)?.[0] ? parseInt(error.message.match(/\d{3}/)[0]) : null);
+    const errorMessage = error?.error || error?.message || `Error fetching ${activeType} data${statusCode ? `: ${statusCode}` : ''}`;
+    
+    // Log as warning for server errors (5xx), not as error
+    if (statusCode && statusCode >= 500) {
+      console.warn(`Backend error fetching ${activeType} data (${statusCode}):`, errorMessage);
+    } else {
+      console.warn(`Error fetching ${activeType} data${statusCode ? ` (${statusCode})` : ''}:`, errorMessage);
+    }
+
+    // Only set error state if this is the latest fetch and current type
+    if (currentFetchId === rateData.latestFetchId && activeType === type) {
+      const userMessage = getErrorMessage(statusCode || error?.message, activeType);
+      setError(userMessage);
+    }
+
+    if (!skipLoading) {
+      setLoading(false);
+    }
+    return [];
+  }, [type, getErrorMessage, setError, setLoading]);
+
   const fetchLocalItems = useCallback(
     async (bypassCache = false, customType = null, retryCount = 0, skipLoading = false) => {
       const activeType = customType || type;
@@ -222,20 +278,47 @@ export function useFetchData(apiKey, type = 'torrents') {
           },
         });
 
+        // Handle non-OK responses gracefully
         if (!response.ok) {
-          throw new Error(
-            `Error fetching ${activeType} data: ${response.status}`,
+          // Try to parse error response body for more details
+          let errorData = {};
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              errorData = await response.json();
+            }
+          } catch (parseError) {
+            // If parsing fails, use empty object
+          }
+
+          return handleFetchError(
+            errorData,
+            activeType,
+            currentFetchId,
+            rateData,
+            skipLoading,
+            response.status
           );
         }
 
-        const data = await response.json();
+        // Parse response JSON
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          return handleFetchError(
+            { message: `Failed to parse JSON: ${jsonError.message}` },
+            activeType,
+            currentFetchId,
+            rateData,
+            skipLoading
+          );
+        }
+
         perfMonitor.endTimer(`fetch-${activeType}`);
 
-        if (
-          data.success &&
-          data.data &&
-          Array.isArray(data.data)
-        ) {
+        // Handle valid response format
+        if (data.success && data.data && Array.isArray(data.data)) {
           // Validate user data to prevent cross-user contamination
           if (!validateUserData(data.data, apiKey)) {
             console.warn(`Invalid user data detected (attempt ${retryCount + 1}/2), retrying with cache bypass`);
@@ -275,56 +358,40 @@ export function useFetchData(apiKey, type = 'torrents') {
             setLoading(false);
           }
 
-          // Return the fetched data
           return sortedItems;
+        }
+
+        // Handle empty or invalid data formats gracefully
+        if (data.success && data.data && Array.isArray(data.data) && data.data.length === 0) {
+          // Empty data is valid, just return empty array
+          if (!skipLoading) {
+            setLoading(false);
+          }
+          return [];
+        }
+
+        // Invalid data format - log as warning and return empty array
+        if (Object.keys(data).length === 0) {
+          console.warn(`Backend returned empty response for ${activeType} data`);
         } else {
-          if (data.success && data.data && Array.isArray(data.data) && data.data.length === 0) {
-            // Empty data is valid, just return empty array
-            if (!skipLoading) {
-              setLoading(false);
-            }
-            return [];
-          } else {
-            console.error(`Invalid ${activeType} data format:`, data);
-            if (!skipLoading) {
-              setLoading(false);
-            }
-            return [];
-          }
+          console.warn(`Invalid ${activeType} data format:`, data);
         }
-      } catch (err) {
-        console.error(`Error fetching ${activeType} data:`, err);
-        // Only set error state if this is the latest fetch and current type
-        if (currentFetchId === rateData.latestFetchId && activeType === type) {
-          // Provide more user-friendly error messages
-          let userMessage = `Failed to fetch ${activeType} data`;
-          
-          if (err.message.includes('502')) {
-            userMessage = `TorBox servers are temporarily unavailable. ${activeType} data may not be up to date.`;
-          } else if (err.message.includes('503')) {
-            userMessage = `TorBox servers are temporarily overloaded. ${activeType} data may not be up to date.`;
-          } else if (err.message.includes('504')) {
-            userMessage = `TorBox servers are taking too long to respond. ${activeType} data may not be up to date.`;
-          } else if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
-            userMessage = `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
-          } else if (err.message.includes('401')) {
-            userMessage = 'Authentication failed. Please check your API key.';
-          } else if (err.message.includes('403')) {
-            userMessage = 'Access denied. Please check your API key and account status.';
-          } else if (err.message.includes('429')) {
-            userMessage = 'Too many requests to TorBox servers. Please wait a moment.';
-          }
-          
-          setError(userMessage);
-        }
+
         if (!skipLoading) {
           setLoading(false);
         }
-        // Return empty array to prevent undefined state
         return [];
+      } catch (err) {
+        return handleFetchError(
+          err,
+          activeType,
+          currentFetchId,
+          rateData,
+          skipLoading
+        );
       }
     },
-    [apiKey, checkAndAutoStartTorrents, isRateLimited, type],
+    [apiKey, checkAndAutoStartTorrents, isRateLimited, type, handleFetchError],
   );
 
    // Active data based on the current type
