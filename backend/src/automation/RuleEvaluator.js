@@ -104,6 +104,33 @@ class RuleEvaluator {
       }
     }
 
+    // Check if any condition uses AVG_SPEED type to determine if we need to pre-load speed history
+    const hasAvgSpeedCondition = this.hasAvgSpeedCondition(rule);
+    
+    // Batch load all speed history data to avoid N+1 queries
+    let speedHistoryMap = new Map();
+    if (hasAvgSpeedCondition && torrentIds.length > 0) {
+      const maxHours = this.getMaxHoursForAvgSpeed(rule);
+      const now = new Date();
+      const hoursAgo = new Date(now - maxHours * 60 * 60 * 1000);
+      
+      const placeholders = torrentIds.map(() => '?').join(',');
+      const allSpeedHistory = this.db.prepare(`
+        SELECT * FROM speed_history
+        WHERE torrent_id IN (${placeholders}) AND timestamp >= ?
+        ORDER BY torrent_id, timestamp ASC
+      `).all(...torrentIds, hoursAgo.toISOString());
+      
+      // Group samples by torrent_id
+      for (const sample of allSpeedHistory) {
+        const torrentId = String(sample.torrent_id);
+        if (!speedHistoryMap.has(torrentId)) {
+          speedHistoryMap.set(torrentId, []);
+        }
+        speedHistoryMap.get(torrentId).push(sample);
+      }
+    }
+
     // Support both old flat structure and new group structure
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
     
@@ -123,7 +150,7 @@ class RuleEvaluator {
           
           // Evaluate conditions within the group
           const conditionResults = conditions.map(condition => {
-            return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId);
+            return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
           });
           
           // Apply group logic operator
@@ -156,7 +183,7 @@ class RuleEvaluator {
         }
         
         const conditionResults = conditions.map(condition => {
-          return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId);
+          return this.evaluateCondition(condition, torrent, telemetryMap, tagsByDownloadId, speedHistoryMap);
         });
 
         // Apply logic operator
@@ -193,13 +220,73 @@ class RuleEvaluator {
   }
 
   /**
+   * Check if rule has any AVG_SPEED conditions (to determine if we need to pre-load speed history)
+   * @param {Object} rule - Rule configuration
+   * @returns {boolean} - True if rule has at least one AVG_DOWNLOAD_SPEED or AVG_UPLOAD_SPEED condition
+   */
+  hasAvgSpeedCondition(rule) {
+    // Check new group structure
+    if (rule.groups && Array.isArray(rule.groups)) {
+      for (const group of rule.groups) {
+        const conditions = group.conditions || [];
+        if (conditions.some(condition => 
+          condition.type === 'AVG_DOWNLOAD_SPEED' || condition.type === 'AVG_UPLOAD_SPEED'
+        )) {
+          return true;
+        }
+      }
+    }
+    
+    // Check old flat structure
+    const conditions = rule.conditions || [];
+    return conditions.some(condition => 
+      condition.type === 'AVG_DOWNLOAD_SPEED' || condition.type === 'AVG_UPLOAD_SPEED'
+    );
+  }
+
+  /**
+   * Get maximum hours needed from all AVG_SPEED conditions in a rule
+   * @param {Object} rule - Rule configuration
+   * @returns {number} - Maximum hours value (defaults to 24 if no conditions found)
+   */
+  getMaxHoursForAvgSpeed(rule) {
+    let maxHours = 1; // Default minimum
+    
+    // Check new group structure
+    if (rule.groups && Array.isArray(rule.groups)) {
+      for (const group of rule.groups) {
+        const conditions = group.conditions || [];
+        for (const condition of conditions) {
+          if (condition.type === 'AVG_DOWNLOAD_SPEED' || condition.type === 'AVG_UPLOAD_SPEED') {
+            const hours = condition.hours || 1;
+            maxHours = Math.max(maxHours, hours);
+          }
+        }
+      }
+    }
+    
+    // Check old flat structure
+    const conditions = rule.conditions || [];
+    for (const condition of conditions) {
+      if (condition.type === 'AVG_DOWNLOAD_SPEED' || condition.type === 'AVG_UPLOAD_SPEED') {
+        const hours = condition.hours || 1;
+        maxHours = Math.max(maxHours, hours);
+      }
+    }
+    
+    // Add some buffer (50% more) to ensure we have enough data
+    return Math.ceil(maxHours * 1.5);
+  }
+
+  /**
    * Evaluate a single condition
    * @param {Object} condition - Condition to evaluate
    * @param {Object} torrent - Torrent object
    * @param {Map} telemetryMap - Map of torrent_id -> telemetry data (pre-loaded to avoid N+1 queries)
    * @param {Map} tagsByDownloadId - Map of download_id -> array of tags (pre-loaded to avoid N+1 queries)
+   * @param {Map} speedHistoryMap - Map of torrent_id -> array of speed history samples (pre-loaded to avoid N+1 queries)
    */
-  evaluateCondition(condition, torrent, telemetryMap = new Map(), tagsByDownloadId = new Map()) {
+  evaluateCondition(condition, torrent, telemetryMap = new Map(), tagsByDownloadId = new Map(), speedHistoryMap = new Map()) {
     const now = Date.now();
     let conditionValue = 0;
 
@@ -271,8 +358,13 @@ class RuleEvaluator {
       case 'AVG_DOWNLOAD_SPEED':
         // Get hours parameter (default to 1 hour if not specified)
         const downloadHours = condition.hours || 1;
-        // Get average speed using SpeedAggregator
-        const avgDownloadSpeed = this.getAverageSpeed(torrent.id, downloadHours, 'download');
+        // Get average speed using pre-loaded speed history if available
+        const avgDownloadSpeed = this.getAverageSpeedFromMap(
+          torrent.id, 
+          downloadHours, 
+          'download', 
+          speedHistoryMap
+        );
         // Convert from bytes/s to MB/s
         conditionValue = (avgDownloadSpeed || 0) / (1024 * 1024);
         break;
@@ -280,8 +372,13 @@ class RuleEvaluator {
       case 'AVG_UPLOAD_SPEED':
         // Get hours parameter (default to 1 hour if not specified)
         const uploadHours = condition.hours || 1;
-        // Get average speed using SpeedAggregator
-        const avgUploadSpeed = this.getAverageSpeed(torrent.id, uploadHours, 'upload');
+        // Get average speed using pre-loaded speed history if available
+        const avgUploadSpeed = this.getAverageSpeedFromMap(
+          torrent.id, 
+          uploadHours, 
+          'upload', 
+          speedHistoryMap
+        );
         // Convert from bytes/s to MB/s
         conditionValue = (avgUploadSpeed || 0) / (1024 * 1024);
         break;
@@ -496,23 +593,52 @@ class RuleEvaluator {
 
   /**
    * Get average speed for a torrent over a specified number of hours
+   * Uses pre-loaded speed history map if available, otherwise queries database
    * @param {string} torrentId - Torrent ID
    * @param {number} hours - Number of hours to calculate average over
    * @param {string} type - 'download' or 'upload'
+   * @param {Map} speedHistoryMap - Optional pre-loaded speed history map (torrent_id -> array of samples)
    * @returns {number} - Average speed in bytes per second
    */
-  getAverageSpeed(torrentId, hours, type = 'download') {
-    const now = new Date();
-    const hoursAgo = new Date(now - hours * 60 * 60 * 1000);
+  getAverageSpeed(torrentId, hours, type = 'download', speedHistoryMap = null) {
+    let samples;
+    
+    // Use pre-loaded data if available
+    if (speedHistoryMap && speedHistoryMap.has(String(torrentId))) {
+      const allSamples = speedHistoryMap.get(String(torrentId));
+      const now = new Date();
+      const hoursAgo = new Date(now - hours * 60 * 60 * 1000);
+      
+      // Filter samples within the time window
+      samples = allSamples.filter(sample => 
+        new Date(sample.timestamp) >= hoursAgo
+      );
+    } else {
+      // Fallback to database query (for backward compatibility)
+      const now = new Date();
+      const hoursAgo = new Date(now - hours * 60 * 60 * 1000);
 
-    const samples = this.db.prepare(`
-      SELECT * FROM speed_history
-      WHERE torrent_id = ? AND timestamp >= ?
-      ORDER BY timestamp ASC
-    `).all(torrentId, hoursAgo.toISOString());
+      samples = this.db.prepare(`
+        SELECT * FROM speed_history
+        WHERE torrent_id = ? AND timestamp >= ?
+        ORDER BY timestamp ASC
+      `).all(torrentId, hoursAgo.toISOString());
+    }
 
     const field = type === 'download' ? 'total_downloaded' : 'total_uploaded';
     return this.calculateAverageSpeed(samples, field);
+  }
+
+  /**
+   * Get average speed from pre-loaded speed history map
+   * @param {string} torrentId - Torrent ID
+   * @param {number} hours - Number of hours to calculate average over
+   * @param {string} type - 'download' or 'upload'
+   * @param {Map} speedHistoryMap - Pre-loaded speed history map (torrent_id -> array of samples)
+   * @returns {number} - Average speed in bytes per second
+   */
+  getAverageSpeedFromMap(torrentId, hours, type = 'download', speedHistoryMap = new Map()) {
+    return this.getAverageSpeed(torrentId, hours, type, speedHistoryMap);
   }
 
   /**
