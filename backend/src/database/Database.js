@@ -55,11 +55,11 @@ class Database {
   /**
    * Get migration status (for debugging/admin purposes)
    */
-  getMigrationStatus() {
+  async getMigrationStatus() {
     if (!this.migrationRunner) {
       throw new Error('Database not initialized. Call initialize() first.');
     }
-    return this.migrationRunner.getMigrationStatus();
+    return await this.migrationRunner.getMigrationStatus();
   }
 
   /**
