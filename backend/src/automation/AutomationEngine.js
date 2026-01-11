@@ -3,6 +3,7 @@ import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
+import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
 
 /**
  * Per-user Automation Engine
@@ -359,14 +360,24 @@ class AutomationEngine {
 
   /**
    * Reset next poll timestamp to 5 minutes from now (when rules change)
+   * In development, uses reduced interval based on DEV_INTERVAL_MULTIPLIER
    */
   async resetNextPollAt() {
     if (!this.masterDb) {
       return; // Master DB not available
     }
     try {
-      const nextPollAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+      const baseIntervalMinutes = 5;
+      const adjustedIntervalMinutes = applyIntervalMultiplier(baseIntervalMinutes);
+      const nextPollAt = new Date(Date.now() + adjustedIntervalMinutes * 60 * 1000);
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
+      if (adjustedIntervalMinutes !== baseIntervalMinutes) {
+        logger.debug('Reset next poll with dev interval multiplier', {
+          authId: this.authId,
+          baseInterval: `${baseIntervalMinutes}min`,
+          adjustedInterval: `${adjustedIntervalMinutes.toFixed(2)}min`
+        });
+      }
     } catch (error) {
       logger.error('Failed to reset next poll timestamp', error, {
         authId: this.authId,
@@ -493,15 +504,51 @@ class AutomationEngine {
           });
           
           const ruleEvaluator = await this.getRuleEvaluator();
-          const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
           
-          // Update last_evaluated_at after checking rule (even if no matches)
-          // This tracks when the rule was last checked, not just when it executed
-          userDb.prepare(`
-            UPDATE automation_rules 
-            SET last_evaluated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `).run(rule.id);
+          // Check if rule should be evaluated based on interval BEFORE calling evaluateRule
+          // This way we can avoid updating last_evaluated_at if skipped
+          let shouldEvaluate = true;
+          if (rule.trigger && rule.trigger.type === 'interval' && rule.trigger.value && rule.last_evaluated_at) {
+            const intervalMinutes = rule.trigger.value;
+            // Apply development multiplier to reduce intervals for testing
+            const adjustedIntervalMinutes = applyIntervalMultiplier(Math.max(intervalMinutes, 1));
+            const lastEvaluated = new Date(rule.last_evaluated_at);
+            const intervalMs = adjustedIntervalMinutes * 60 * 1000;
+            const timeSinceLastEvaluation = Date.now() - lastEvaluated.getTime();
+            
+            if (timeSinceLastEvaluation < intervalMs) {
+              shouldEvaluate = false;
+              const remainingMs = intervalMs - timeSinceLastEvaluation;
+              const remainingMinutes = (remainingMs / (60 * 1000)).toFixed(2);
+              logger.debug('Rule evaluation skipped - interval not elapsed', {
+                authId: this.authId,
+                ruleId: rule.id,
+                ruleName: rule.name,
+                intervalMinutes,
+                adjustedIntervalMinutes: adjustedIntervalMinutes !== intervalMinutes ? adjustedIntervalMinutes.toFixed(3) : undefined,
+                lastEvaluatedAt: rule.last_evaluated_at,
+                timeSinceLastEvaluation: `${(timeSinceLastEvaluation / (60 * 1000)).toFixed(2)} minutes`,
+                remainingMinutes: `${remainingMinutes} minutes`
+              });
+            }
+          }
+          
+          let matchingTorrents = [];
+          if (shouldEvaluate) {
+            matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
+            
+            // Update last_evaluated_at after checking rule (only if actually evaluated)
+            // This tracks when the rule was last checked, not just when it executed
+            userDb.prepare(`
+              UPDATE automation_rules 
+              SET last_evaluated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).run(rule.id);
+          } else {
+            // Rule was skipped due to interval - don't update last_evaluated_at
+            skippedCount++;
+            continue;
+          }
 
           if (matchingTorrents.length === 0) {
             logger.info('Rule did not match any torrents', {

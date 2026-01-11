@@ -4,6 +4,7 @@ import DerivedFieldsEngine from './DerivedFieldsEngine.js';
 import SpeedAggregator from './SpeedAggregator.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
 
 /**
  * Per-user poller
@@ -116,15 +117,18 @@ class UserPoller {
    * State: User has active rules but no recent executions
    * @param {number} nonTerminalCount - Count of non-terminal torrents
    * @param {Object} ruleResults - Optional rule evaluation results
-   * @returns {number} - Polling interval in minutes (always 60 for idle mode)
+   * @returns {number} - Polling interval in minutes (always 60 for idle mode, adjusted in dev)
    */
   calculateIdleModeInterval(nonTerminalCount, ruleResults = null) {
+    const baseInterval = 60;
+    const adjustedInterval = applyIntervalMultiplier(baseInterval);
     logger.debug('User in idle mode (no recent rule executions), polling every 60 minutes', {
       authId: this.authId,
       nonTerminalCount,
-      currentPollExecuted: ruleResults?.executed || 0
+      currentPollExecuted: ruleResults?.executed || 0,
+      adjustedInterval: adjustedInterval !== baseInterval ? `${adjustedInterval.toFixed(2)}min (dev)` : undefined
     });
-    return 60;
+    return adjustedInterval;
   }
 
   /**
@@ -137,23 +141,25 @@ class UserPoller {
    */
   calculateActiveModeInterval(minRuleInterval, nonTerminalCount, ruleResults = null) {
     if (minRuleInterval !== null) {
-      // Use minimum interval from rules with interval triggers
+      // Use minimum interval from rules with interval triggers (adjusted in dev)
+      const adjustedInterval = applyIntervalMultiplier(minRuleInterval);
       logger.debug('User in active mode, using minimum rule interval', {
         authId: this.authId,
         minRuleInterval,
+        adjustedInterval: adjustedInterval !== minRuleInterval ? `${adjustedInterval.toFixed(2)}min (dev)` : undefined,
         nonTerminalCount,
         currentPollExecuted: ruleResults?.executed || 0
       });
-      return minRuleInterval;
+      return adjustedInterval;
     }
     
     // No interval triggers configured, fallback to existing logic
     if (nonTerminalCount > 0) {
-      // Has active rules and non-terminal torrents: poll every 5 minutes
-      return 5;
+      // Has active rules and non-terminal torrents: poll every 5 minutes (adjusted in dev)
+      return applyIntervalMultiplier(5);
     } else {
-      // Has active rules but no non-terminal torrents: poll every 30 minutes
-      return 30;
+      // Has active rules but no non-terminal torrents: poll every 30 minutes (adjusted in dev)
+      return applyIntervalMultiplier(30);
     }
   }
 
@@ -179,7 +185,10 @@ class UserPoller {
    * @returns {number} - Enforced minimum interval in minutes
    */
   applyMinimumIntervalConstraint(intervalMinutes) {
-    const MIN_POLL_INTERVAL_MINUTES = 5;
+    // Apply multiplier to minimum interval in dev, but ensure it's at least 0.1 minutes (6 seconds) in dev
+    const MIN_POLL_INTERVAL_MINUTES = process.env.NODE_ENV === 'development' 
+      ? Math.max(0.1, applyIntervalMultiplier(5))
+      : 5;
     return Math.max(MIN_POLL_INTERVAL_MINUTES, intervalMinutes);
   }
 
@@ -207,8 +216,8 @@ class UserPoller {
     // Calculate base interval based on mode
     switch (pollingMode) {
       case 'no-rules':
-        // No active rules: poll every hour
-        baseIntervalMinutes = 60;
+        // No active rules: poll every hour (adjusted in dev)
+        baseIntervalMinutes = applyIntervalMultiplier(60);
         break;
 
       case 'idle':

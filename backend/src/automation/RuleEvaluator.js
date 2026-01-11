@@ -1,5 +1,6 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
 import logger from '../utils/logger.js';
+import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
 
 /**
  * Rule Evaluator
@@ -40,7 +41,9 @@ class RuleEvaluator {
       // Check if interval has elapsed since last evaluation
       if (rule.last_evaluated_at) {
         const lastEvaluated = new Date(rule.last_evaluated_at);
-        const intervalMs = Math.max(intervalMinutes, 1) * 60 * 1000; // At least 1 minute
+        // Apply development multiplier to reduce intervals for testing
+        const adjustedIntervalMinutes = applyIntervalMultiplier(Math.max(intervalMinutes, 1));
+        const intervalMs = adjustedIntervalMinutes * 60 * 1000; // At least 1 minute (or adjusted minimum)
         const timeSinceLastEvaluation = Date.now() - lastEvaluated.getTime();
         
         if (timeSinceLastEvaluation < intervalMs) {
