@@ -72,9 +72,14 @@ class Database {
 
   runQuery(sql, params = []) {
     try {
-      const result = this.db.prepare(sql).run(params);
+      const stmt = this.db.prepare(sql);
+      const result = stmt.run(params);
       return { id: result.lastInsertRowid, changes: result.changes };
     } catch (error) {
+      logger.error('Database query execution failed', error, { 
+        sql: sql.substring(0, 100), // Log first 100 chars of SQL for debugging
+        paramsCount: params.length 
+      });
       throw error;
     }
   }
@@ -176,7 +181,13 @@ class Database {
         WHERE auth_id = ?
       `, [hasActiveRules ? 1 : 0, authId]);
     });
-    transaction();
+    
+    try {
+      transaction();
+    } catch (error) {
+      logger.error('Transaction failed in updateActiveRulesFlag', error, { authId, hasActiveRules });
+      throw error;
+    }
   }
 
   /**
