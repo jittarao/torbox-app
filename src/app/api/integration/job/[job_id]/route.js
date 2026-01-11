@@ -7,7 +7,7 @@ import {
 } from '@/components/constants';
 
 export async function DELETE(request, { params }) {
-  const { job_id } = params;
+  const { job_id } = await params;
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
 

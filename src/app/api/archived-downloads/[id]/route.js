@@ -28,7 +28,7 @@ export async function DELETE(request, { params }) {
     }
 
     const authId = hashApiKey(apiKey);
-    const archiveId = params.id;
+    const { id: archiveId } = await params;
     
     const url = new URL(`${BACKEND_URL}/api/archived-downloads/${archiveId}`);
     url.searchParams.set('authId', authId);

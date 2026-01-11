@@ -7,7 +7,7 @@ import {
 } from '@/components/constants';
 
 export async function GET(request, { params }) {
-  const { hash } = params;
+  const { hash } = await params;
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
 

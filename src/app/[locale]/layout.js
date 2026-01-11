@@ -3,7 +3,7 @@ import { FileHandler } from '@/components/shared/FileHandler';
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
@@ -62,7 +62,7 @@ export const viewport = {
 export default async function LocaleLayout({ children, params }) {
   // Ensure that the incoming `locale` is valid
   const { locale } = await params;
-  if (!routing.locales.includes(locale)) {
+  if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 

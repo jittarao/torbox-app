@@ -27,7 +27,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const authId = hashApiKey(apiKey);
     const url = new URL(`${BACKEND_URL}/api/automation/rules/${id}`);
@@ -91,7 +91,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const authId = hashApiKey(apiKey);
     const url = new URL(`${BACKEND_URL}/api/automation/rules/${id}`);
     url.searchParams.set('authId', authId);

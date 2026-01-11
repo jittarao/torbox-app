@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET(request, { params }) {
   try {
-    const { key } = params;
+    const { key } = await params;
     
     // Validate key to prevent path traversal
     if (!key || key.includes('..') || key.includes('/') || key.includes('\\')) {
@@ -28,7 +28,8 @@ export async function GET(request, { params }) {
       throw new Error(`Backend responded with status: ${response.status}`);
     }
   } catch (error) {
-    console.error(`Error fetching storage value for key ${params.key}:`, error);
+    const { key: errorKey } = await params;
+    console.error(`Error fetching storage value for key ${errorKey}:`, error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -38,7 +39,7 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const { key } = params;
+    const { key } = await params;
     
     // Validate key to prevent path traversal
     if (!key || key.includes('..') || key.includes('/') || key.includes('\\')) {
@@ -65,7 +66,8 @@ export async function POST(request, { params }) {
       throw new Error(`Backend responded with status: ${response.status}`);
     }
   } catch (error) {
-    console.error(`Error saving storage value for key ${params.key}:`, error);
+    const { key: errorKey } = await params;
+    console.error(`Error saving storage value for key ${errorKey}:`, error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

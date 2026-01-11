@@ -7,7 +7,7 @@ import {
 } from '@/components/constants';
 
 export async function GET(request, { params }) {
-  const { provider } = params;
+  const { provider } = await params;
   const { searchParams } = new URL(request.url);
   const headersList = await headers();
   const apiKey = searchParams.get('apiKey') || headersList.get('x-api-key');
