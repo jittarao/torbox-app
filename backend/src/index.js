@@ -1354,10 +1354,15 @@ process.on('uncaughtException', (error) => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', async (reason, promise) => {
   logger.error('Unhandled promise rejection', reason instanceof Error ? reason : new Error(String(reason)), {
     promise: promise.toString(),
   });
+  // In production, consider graceful shutdown
+  if (process.env.NODE_ENV === 'production') {
+    await backend.shutdown();
+    process.exit(1);
+  }
 });
 
 export default TorBoxBackend;
