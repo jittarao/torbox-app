@@ -11,14 +11,15 @@
     "test": "bun test"
   },
   "dependencies": {
-    "express": "^4.21.2",
+    "@isaacs/ttlcache": "^2.1.4",
+    "axios": "^1.7.9",
+    "compression": "^1.7.4",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "node-cron": "^3.0.3",
-    "axios": "^1.7.9",
-    "dotenv": "^16.4.7",
-    "express-rate-limit": "^7.4.1",
-    "compression": "^1.7.4",
     "winston": "^3.15.0"
   },
   "devDependencies": {

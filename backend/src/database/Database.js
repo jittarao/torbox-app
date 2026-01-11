@@ -4,6 +4,7 @@ import { mkdir } from 'fs/promises';
 import MigrationRunner from './MigrationRunner.js';
 import { encrypt, hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import cache from '../utils/cache.js';
 
 /**
  * Master Database
@@ -138,6 +139,10 @@ class Database {
       `, [authId, encryptedKey, keyName]);
     }
 
+    // Invalidate cache since user registry changed
+    cache.invalidateUserRegistry(authId);
+    cache.invalidateActiveUsers();
+
     return authId;
   }
 
@@ -154,19 +159,34 @@ class Database {
   deactivateApiKey(authId) {
     this.runQuery('UPDATE api_keys SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?', [authId]);
     this.runQuery('UPDATE user_registry SET status = "inactive", updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?', [authId]);
+    
+    // Invalidate cache since user registry changed
+    cache.invalidateUserRegistry(authId);
+    cache.invalidateActiveUsers();
   }
 
   /**
    * Get all active users
    */
   getActiveUsers() {
-    return this.allQuery(`
+    // Check cache first
+    const cached = cache.getActiveUsers();
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Query database if not cached
+    const users = this.allQuery(`
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
       WHERE ur.status = 'active' AND ak.is_active = 1
       ORDER BY ur.created_at ASC
     `);
+    
+    // Cache the result
+    cache.setActiveUsers(users);
+    return users;
   }
 
   /**
@@ -186,6 +206,10 @@ class Database {
     
     try {
       transaction();
+      
+      // Invalidate cache since user registry changed
+      cache.invalidateUserRegistry(authId);
+      cache.invalidateActiveUsers();
     } catch (error) {
       logger.error('Transaction failed in updateActiveRulesFlag', error, { authId, hasActiveRules });
       throw error;
@@ -204,6 +228,9 @@ class Database {
       SET next_poll_at = ?, non_terminal_torrent_count = ?, updated_at = CURRENT_TIMESTAMP
       WHERE auth_id = ?
     `, [nextPollAt.toISOString(), nonTerminalCount, authId]);
+    
+    // Invalidate cache since user registry changed
+    cache.invalidateUserRegistry(authId);
   }
 
   /**
@@ -228,12 +255,23 @@ class Database {
    * @returns {Object|null} - User registry info or null if not found
    */
   getUserRegistryInfo(authId) {
-    return this.getQuery(`
+    // Check cache first
+    const cached = cache.getUserRegistry(authId);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Query database if not cached
+    const userInfo = this.getQuery(`
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
       WHERE ur.auth_id = ?
     `, [authId]);
+    
+    // Cache the result (even if null)
+    cache.setUserRegistry(authId, userInfo);
+    return userInfo;
   }
 }
 

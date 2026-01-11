@@ -2,6 +2,7 @@ import RuleEvaluator from './RuleEvaluator.js';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import cache from '../utils/cache.js';
 
 /**
  * Per-user Automation Engine
@@ -249,13 +250,24 @@ class AutomationEngine {
    * @returns {Promise<boolean>} - True if at least one rule is enabled
    */
   async hasActiveRules() {
+    // Check cache first
+    const cached = cache.getActiveRules(this.authId);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Query database if not cached
     const userDb = await this.getUserDb();
     const result = userDb.prepare(`
       SELECT COUNT(*) as count 
       FROM automation_rules 
       WHERE enabled = 1
     `).get();
-    return result && result.count > 0;
+    const hasActive = result && result.count > 0;
+    
+    // Cache the result
+    cache.setActiveRules(this.authId, hasActive);
+    return hasActive;
   }
 
   /**
@@ -329,6 +341,9 @@ class AutomationEngine {
    * Sync active rules flag to master database
    */
   async syncActiveRulesFlag() {
+    // Invalidate cache to ensure we get fresh data
+    cache.invalidateActiveRules(this.authId);
+    
     const hasActive = await this.hasActiveRules();
     logger.info('Syncing active rules flag to master DB', {
       authId: this.authId,
@@ -919,6 +934,10 @@ class AutomationEngine {
     // Update master DB flag and reset polling
     const hasActive = rules.some(r => r.enabled);
     await this.updateMasterDbActiveRulesFlag(hasActive);
+    
+    // Invalidate cache since rules changed
+    cache.invalidateActiveRules(this.authId);
+    
     if (hasActive) {
       await this.resetNextPollAt();
     }
@@ -935,6 +954,9 @@ class AutomationEngine {
       WHERE id = ?
     `).run(enabled ? 1 : 0, ruleId);
 
+    // Invalidate cache since rule status changed
+    cache.invalidateActiveRules(this.authId);
+    
     // Update master DB flag and reset polling if enabling
     await this.syncActiveRulesFlag();
     if (enabled) {
@@ -949,6 +971,9 @@ class AutomationEngine {
     const userDb = await this.getUserDb();
     userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(ruleId);
 
+    // Invalidate cache since rule was deleted
+    cache.invalidateActiveRules(this.authId);
+    
     // Update master DB flag
     await this.syncActiveRulesFlag();
   }
