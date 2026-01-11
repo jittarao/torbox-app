@@ -244,8 +244,9 @@ class UserPoller {
 
   /**
    * Execute a single poll cycle
+   * @param {boolean} [cachedHasActiveRules] - Optional cached hasActiveRules value to avoid redundant DB calls
    */
-  async poll() {
+  async poll(cachedHasActiveRules = null) {
     if (this.isPolling) {
       logger.warn('Skipping poll - previous poll still running', { 
         authId: this.authId,
@@ -259,8 +260,10 @@ class UserPoller {
       };
     }
 
-    // Check if user has active automation rules
-    const hasActiveRules = await this.shouldPoll();
+    // Check if user has active automation rules (use cached value if provided)
+    const hasActiveRules = cachedHasActiveRules !== null 
+      ? cachedHasActiveRules 
+      : await this.shouldPoll();
     if (!hasActiveRules) {
       logger.debug('Poll skipped - no active automation rules', {
         authId: this.authId,
@@ -407,13 +410,12 @@ class UserPoller {
       
       // Count non-terminal torrents and update master DB
       const nonTerminalCount = this.countNonTerminalTorrents(torrents);
-      const hasActiveRulesFlag = this.automationEngine ? await this.automationEngine.hasActiveRules() : false;
       
       // Calculate next poll time (stagger will be added by scheduler if available)
       // Pass ruleResults for adaptive polling logic
       const nextPollAt = await this.calculateNextPollAt(
         nonTerminalCount, 
-        hasActiveRulesFlag, 
+        hasActiveRules, 
         null, // calculateStaggerOffset will be provided by scheduler
         ruleResults
       );
@@ -450,7 +452,7 @@ class UserPoller {
         rulesEvaluated: ruleResults.evaluated,
         rulesExecuted: ruleResults.executed,
         nonTerminalCount,
-        hasActiveRules: hasActiveRulesFlag,
+        hasActiveRules: hasActiveRules,
         nextPollAt: nextPollAt.toISOString(),
         timestamp: new Date().toISOString()
       });

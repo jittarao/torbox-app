@@ -118,24 +118,25 @@ class AutomationEngine {
       // Initialize rule evaluator
       await this.getRuleEvaluator();
       
-      // Load existing rules from user database
-      const rules = await this.getAutomationRules();
+      // Load enabled rules from user database
+      const enabledRules = await this.getAutomationRules({ enabled: true });
       
       // Start all enabled rules
-      for (const rule of rules) {
-        if (rule.enabled) {
-          await this.startRule(rule);
-        }
+      for (const rule of enabledRules) {
+        await this.startRule(rule);
       }
       
       // Sync active rules flag to master DB
       await this.syncActiveRulesFlag();
       
+      // Get total rule count for logging
+      const allRules = await this.getAutomationRules();
+      
       this.isInitialized = true;
       logger.info('AutomationEngine initialized', {
         authId: this.authId,
-        totalRules: rules.length,
-        enabledRules: rules.filter(r => r.enabled).length,
+        totalRules: allRules.length,
+        enabledRules: enabledRules.length,
       });
     } catch (error) {
       logger.error('AutomationEngine failed to initialize', error, { authId: this.authId });
@@ -184,11 +185,24 @@ class AutomationEngine {
   /**
    * Get automation rules from user database
    * Always returns rules in the new group structure format
+   * @param {Object} options - Optional filter options
+   * @param {boolean} options.enabled - If true, only fetch enabled rules. If false, only fetch disabled rules. If undefined, fetch all rules.
+   * @returns {Promise<Array>} - Array of automation rules
    */
-  async getAutomationRules() {
+  async getAutomationRules(options = {}) {
     const userDb = await this.getUserDb();
-    const sql = 'SELECT * FROM automation_rules ORDER BY created_at DESC';
-    const rules = userDb.prepare(sql).all();
+    let sql = 'SELECT * FROM automation_rules';
+    const params = [];
+    
+    // Add WHERE clause for enabled filter if specified
+    if (options.enabled === true) {
+      sql += ' WHERE enabled = 1';
+    } else if (options.enabled === false) {
+      sql += ' WHERE enabled = 0';
+    }
+    
+    sql += ' ORDER BY created_at DESC';
+    const rules = userDb.prepare(sql).all(...params);
     return rules.map(rule => {
       const parsedConditions = JSON.parse(rule.conditions);
       
@@ -270,8 +284,7 @@ class AutomationEngine {
    * @returns {Promise<number|null>} - Minimum interval in minutes, or null if no interval triggers
    */
   async getMinimumRuleInterval() {
-    const rules = await this.getAutomationRules();
-    const enabledRules = rules.filter(r => r.enabled);
+    const enabledRules = await this.getAutomationRules({ enabled: true });
     
     let minInterval = null;
     for (const rule of enabledRules) {
@@ -397,14 +410,16 @@ class AutomationEngine {
         timestamp: new Date().toISOString()
       });
 
-      const rules = await this.getAutomationRules();
-      const enabledRules = rules.filter(r => r.enabled);
+      const enabledRules = await this.getAutomationRules({ enabled: true });
+      
+      // Get total rule count for logging
+      const allRules = await this.getAutomationRules();
 
       logger.debug('Rules loaded', {
         authId: this.authId,
-        totalRules: rules.length,
+        totalRules: allRules.length,
         enabledRules: enabledRules.length,
-        disabledRules: rules.length - enabledRules.length
+        disabledRules: allRules.length - enabledRules.length
       });
 
       if (enabledRules.length === 0) {
@@ -978,20 +993,21 @@ class AutomationEngine {
       // Stop all existing jobs
       this.runningJobs.clear();
       
-      // Reload rules from database
-      const rules = await this.getAutomationRules();
+      // Reload enabled rules from database
+      const enabledRules = await this.getAutomationRules({ enabled: true });
       
       // Start enabled rules
-      for (const rule of rules) {
-        if (rule.enabled) {
-          await this.startRule(rule);
-        }
+      for (const rule of enabledRules) {
+        await this.startRule(rule);
       }
+      
+      // Get total rule count for logging
+      const allRules = await this.getAutomationRules();
       
       logger.info('Rules reloaded', {
         authId: this.authId,
-        totalRules: rules.length,
-        enabledRules: rules.filter(r => r.enabled).length,
+        totalRules: allRules.length,
+        enabledRules: enabledRules.length,
       });
     } catch (error) {
       logger.error('Failed to reload rules', error, { authId: this.authId });
