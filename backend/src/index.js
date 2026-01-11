@@ -24,8 +24,23 @@ function validateAuthId(authId) {
 }
 
 function validateNumericId(id) {
-  const numId = parseInt(id, 10);
-  return !isNaN(numId) && numId > 0;
+  // Handle null, undefined, or empty string
+  if (id === null || id === undefined || id === '') {
+    return false;
+  }
+  
+  // Convert to string first to handle both string and number inputs
+  const idStr = String(id).trim();
+  if (idStr === '') {
+    return false;
+  }
+  
+  // Parse as integer (base 10)
+  const numId = parseInt(idStr, 10);
+  
+  // Check if it's a valid positive integer
+  // Use Number.isInteger to ensure it's not a float
+  return !isNaN(numId) && Number.isInteger(numId) && numId > 0;
 }
 
 /**
