@@ -49,36 +49,6 @@ describe('RuleEvaluator', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return empty array when rule is in cooldown', async () => {
-      const rule = {
-        enabled: true,
-        cooldown_minutes: 60,
-        last_executed_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-        conditions: []
-      };
-      const torrents = [{ id: '1', name: 'test' }];
-
-      const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toEqual([]);
-    });
-
-    it('should evaluate rules when cooldown has passed', async () => {
-      const rule = {
-        enabled: true,
-        cooldown_minutes: 60,
-        last_executed_at: new Date(Date.now() - 61 * 60 * 1000).toISOString(), // 61 minutes ago
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 100 }
-        ],
-        logicOperator: 'and'
-      };
-      const torrents = [
-        { id: '1', name: 'test', progress: 100 }
-      ];
-
-      const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result.length).toBeGreaterThan(0);
-    });
 
     it('should evaluate rules with AND logic operator', async () => {
       const rule = {

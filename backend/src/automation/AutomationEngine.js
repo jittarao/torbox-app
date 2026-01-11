@@ -134,7 +134,6 @@ class AutomationEngine {
         trigger: JSON.parse(rule.trigger_config),
         action: rule.action_config ? JSON.parse(rule.action_config) : null,
         metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
-        cooldown_minutes: rule.cooldown_minutes || 0,
         last_executed_at: rule.last_executed_at,
         last_evaluated_at: rule.last_evaluated_at,
         execution_count: rule.execution_count || 0,
@@ -361,34 +360,6 @@ class AutomationEngine {
       for (const rule of enabledRules) {
         const userDb = await this.getUserDb();
         try {
-          // Check cooldown
-          if (rule.cooldown_minutes && rule.last_executed_at) {
-            const lastExecuted = new Date(rule.last_executed_at);
-            const cooldownMs = rule.cooldown_minutes * 60 * 1000;
-            const timeSinceLastExecution = Date.now() - lastExecuted.getTime();
-            
-            if (timeSinceLastExecution < cooldownMs) {
-              const remainingCooldownMinutes = ((cooldownMs - timeSinceLastExecution) / (60 * 1000)).toFixed(1);
-              logger.debug('Rule skipped due to cooldown', {
-                authId: this.authId,
-                ruleId: rule.id,
-                ruleName: rule.name,
-                cooldownMinutes: rule.cooldown_minutes,
-                remainingCooldownMinutes,
-                lastExecutedAt: rule.last_executed_at,
-                timeSinceLastExecution: `${(timeSinceLastExecution / 1000).toFixed(1)}s`
-              });
-              skippedCount++;
-              // Update last_evaluated_at even when skipped due to cooldown
-              userDb.prepare(`
-                UPDATE automation_rules 
-                SET last_evaluated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `).run(rule.id);
-              continue; // Still in cooldown
-            }
-          }
-
           // Check if rule has an action configured
           if (!rule.action || !rule.action.type) {
             logger.warn('Rule has no action configured, skipping execution', {
@@ -481,12 +452,11 @@ class AutomationEngine {
             }
           }
 
-          // Update rule execution status and set 5-minute cooldown
+          // Update rule execution status
           userDb.prepare(`
             UPDATE automation_rules 
             SET last_executed_at = CURRENT_TIMESTAMP,
                 execution_count = execution_count + 1,
-                cooldown_minutes = 5,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `).run(rule.id);
@@ -663,7 +633,7 @@ class AutomationEngine {
         JSON.stringify(conditionsToStore),
         JSON.stringify(migratedRule.action || migratedRule.action_config),
         JSON.stringify(migratedRule.metadata || {}),
-        migratedRule.cooldown_minutes || 0
+        0 // cooldown_minutes is deprecated - cooldown is now handled at user-level polling
       );
     }
 
