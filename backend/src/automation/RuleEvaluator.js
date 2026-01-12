@@ -421,6 +421,9 @@ class RuleEvaluator {
     switch (condition.type) {
       // ===== Time / State (Derived) =====
       case 'SEEDING_TIME':
+        if (!this.validateNumericCondition(condition, 'SEEDING_TIME')) {
+          return false;
+        }
         if (!torrent.cached_at) {
           return false;
         }
@@ -429,12 +432,20 @@ class RuleEvaluator {
         break;
 
       case 'AGE':
-        if (torrent.created_at) {
-          conditionValue = (now - new Date(torrent.created_at).getTime()) / (1000 * 60 * 60); // hours
+        if (!this.validateNumericCondition(condition, 'AGE')) {
+          return false;
         }
+        if (!torrent.created_at) {
+          // If no created_at, cannot determine age - return false
+          return false;
+        }
+        conditionValue = (now - new Date(torrent.created_at).getTime()) / (1000 * 60 * 60); // hours
         break;
 
       case 'LAST_DOWNLOAD_ACTIVITY_AT':
+        if (!this.validateNumericCondition(condition, 'LAST_DOWNLOAD_ACTIVITY_AT')) {
+          return false;
+        }
         if (!telemetry || !telemetry.last_download_activity_at) {
           // If no activity recorded, treat as "infinite" time ago
           // Only match if operator is 'gt' (more than X minutes ago)
@@ -445,11 +456,14 @@ class RuleEvaluator {
           }
         } else {
           const lastDownloadActivity = new Date(telemetry.last_download_activity_at);
-          conditionValue = (now - lastDownloadActivity.getTime()) / (1000 * 60); // minutes
+          conditionValue = (now - lastDownloadActivity.getTime()) / (1000 * 60); // minutes ago
         }
         break;
 
       case 'LAST_UPLOAD_ACTIVITY_AT':
+        if (!this.validateNumericCondition(condition, 'LAST_UPLOAD_ACTIVITY_AT')) {
+          return false;
+        }
         if (!telemetry || !telemetry.last_upload_activity_at) {
           // If no activity recorded, treat as "infinite" time ago
           // Only match if operator is 'gt' (more than X minutes ago)
@@ -460,26 +474,38 @@ class RuleEvaluator {
           }
         } else {
           const lastUploadActivity = new Date(telemetry.last_upload_activity_at);
-          conditionValue = (now - lastUploadActivity.getTime()) / (1000 * 60); // minutes
+          conditionValue = (now - lastUploadActivity.getTime()) / (1000 * 60); // minutes ago
         }
         break;
 
       // ===== Progress & Performance (Direct from API) =====
       case 'PROGRESS':
+        if (!this.validateNumericCondition(condition, 'PROGRESS')) {
+          return false;
+        }
         conditionValue = torrent.progress || 0;
         break;
 
       case 'DOWNLOAD_SPEED':
+        if (!this.validateNumericCondition(condition, 'DOWNLOAD_SPEED')) {
+          return false;
+        }
         // Convert from bytes/s to MB/s
         conditionValue = (torrent.download_speed || 0) / (1024 * 1024);
         break;
 
       case 'UPLOAD_SPEED':
+        if (!this.validateNumericCondition(condition, 'UPLOAD_SPEED')) {
+          return false;
+        }
         // Convert from bytes/s to MB/s
         conditionValue = (torrent.upload_speed || 0) / (1024 * 1024);
         break;
 
       case 'AVG_DOWNLOAD_SPEED':
+        if (!this.validateNumericCondition(condition, 'AVG_DOWNLOAD_SPEED')) {
+          return false;
+        }
         // Get hours parameter (default to 1 hour if not specified)
         const downloadHours = condition.hours || 1;
         // Get average speed using pre-loaded speed history if available
@@ -494,6 +520,9 @@ class RuleEvaluator {
         break;
 
       case 'AVG_UPLOAD_SPEED':
+        if (!this.validateNumericCondition(condition, 'AVG_UPLOAD_SPEED')) {
+          return false;
+        }
         // Get hours parameter (default to 1 hour if not specified)
         const uploadHours = condition.hours || 1;
         // Get average speed using pre-loaded speed history if available
@@ -508,13 +537,19 @@ class RuleEvaluator {
         break;
 
       case 'ETA':
-        conditionValue = torrent.eta || 0; // ETA from API is in seconds
-        // Convert condition.value from minutes to seconds for comparison
-        const etaConditionValueInSeconds = (condition.value || 0) * 60;
-        return this.compareValues(conditionValue, condition.operator, etaConditionValueInSeconds);
+        if (!this.validateNumericCondition(condition, 'ETA')) {
+          return false;
+        }
+        // ETA from API is in seconds, convert to minutes for comparison
+        conditionValue = (torrent.eta || 0) / 60; // Convert seconds to minutes
+        const etaConditionValueInMinutes = (condition.value || 0);
+        return this.compareValues(conditionValue, condition.operator, etaConditionValueInMinutes);
 
       // ===== Stall & Inactivity (Derived) =====
       case 'DOWNLOAD_STALLED_TIME':
+        if (!this.validateNumericCondition(condition, 'DOWNLOAD_STALLED_TIME')) {
+          return false;
+        }
         if (!telemetry || !telemetry.stalled_since) {
           return false;
         }
@@ -523,6 +558,9 @@ class RuleEvaluator {
         break;
 
       case 'UPLOAD_STALLED_TIME':
+        if (!this.validateNumericCondition(condition, 'UPLOAD_STALLED_TIME')) {
+          return false;
+        }
         if (!telemetry || !telemetry.upload_stalled_since) {
           return false;
         }
@@ -532,14 +570,23 @@ class RuleEvaluator {
 
       // ===== Swarm & Ratio (Direct from API) =====
       case 'SEEDS':
+        if (!this.validateNumericCondition(condition, 'SEEDS')) {
+          return false;
+        }
         conditionValue = torrent.seeds || 0;
         break;
 
       case 'PEERS':
+        if (!this.validateNumericCondition(condition, 'PEERS')) {
+          return false;
+        }
         conditionValue = torrent.peers || 0;
         break;
 
       case 'RATIO':
+        if (!this.validateNumericCondition(condition, 'RATIO')) {
+          return false;
+        }
         // Try ratio field first, fallback to calculation
         if (torrent.ratio !== undefined && torrent.ratio !== null) {
           conditionValue = torrent.ratio;
@@ -551,106 +598,80 @@ class RuleEvaluator {
         break;
 
       case 'TOTAL_UPLOADED':
+        if (!this.validateNumericCondition(condition, 'TOTAL_UPLOADED')) {
+          return false;
+        }
         conditionValue = (torrent.total_uploaded || 0) / (1024 * 1024); // MB
         break;
 
       case 'TOTAL_DOWNLOADED':
+        if (!this.validateNumericCondition(condition, 'TOTAL_DOWNLOADED')) {
+          return false;
+        }
         conditionValue = (torrent.total_downloaded || 0) / (1024 * 1024); // MB
         break;
 
       // ===== Content & Metadata (Direct from API) =====
       case 'FILE_SIZE':
+        if (!this.validateNumericCondition(condition, 'FILE_SIZE')) {
+          return false;
+        }
         conditionValue = (torrent.size || 0) / (1024 * 1024); // MB
         break;
 
       case 'FILE_COUNT':
+        if (!this.validateNumericCondition(condition, 'FILE_COUNT')) {
+          return false;
+        }
         conditionValue = torrent.files?.length || 0;
         break;
 
       case 'NAME':
         // NAME condition: supports string operators (contains, equals, starts_with, ends_with, etc.)
+        if (!this.validateStringCondition(condition, 'NAME')) {
+          return false;
+        }
         return this.compareStringValues(torrent.name, condition.operator, condition.value);
 
       case 'TRACKER':
         // TRACKER condition: supports string operators (contains, equals, starts_with, ends_with, etc.)
+        if (!this.validateStringCondition(condition, 'TRACKER')) {
+          return false;
+        }
         return this.compareStringValues(torrent.tracker, condition.operator, condition.value);
 
       case 'PRIVATE':
-        // Handle boolean comparison
-        const isPrivate = torrent.private === true || torrent.private === 1 || torrent.private === 'true';
-        if (condition.operator) {
-          // If operator is provided, treat as numeric comparison (0/1)
-          conditionValue = isPrivate ? 1 : 0;
-        } else {
-          // Direct boolean match
-          return isPrivate === (condition.value === true || condition.value === 1 || condition.value === 'true');
-        }
-        break;
+        const isPrivate = this.normalizeBooleanValue(torrent.private);
+        return this.evaluateBooleanCondition(isPrivate, condition);
 
       case 'CACHED':
-        // Handle boolean comparison
-        const isCached = torrent.cached === true || torrent.cached === 1 || torrent.cached === 'true';
-        if (condition.operator) {
-          // If operator is provided, treat as numeric comparison (0/1)
-          conditionValue = isCached ? 1 : 0;
-        } else {
-          // Direct boolean match
-          return isCached === (condition.value === true || condition.value === 1 || condition.value === 'true');
-        }
-        break;
+        const isCached = this.normalizeBooleanValue(torrent.cached);
+        return this.evaluateBooleanCondition(isCached, condition);
 
       case 'AVAILABILITY':
+        if (!this.validateNumericCondition(condition, 'AVAILABILITY')) {
+          return false;
+        }
         conditionValue = torrent.availability || 0;
         break;
 
       case 'ALLOW_ZIP':
-        // Handle boolean comparison
-        const allowZip = torrent.allow_zipped === true || torrent.allow_zipped === 1 || torrent.allow_zipped === 'true';
-        if (condition.operator) {
-          // If operator is provided, treat as numeric comparison (0/1)
-          conditionValue = allowZip ? 1 : 0;
-        } else {
-          // Direct boolean match
-          return allowZip === (condition.value === true || condition.value === 1 || condition.value === 'true');
-        }
-        break;
+        const allowZip = this.normalizeBooleanValue(torrent.allow_zipped);
+        return this.evaluateBooleanCondition(allowZip, condition);
 
       // ===== Lifecycle (Derived or Direct) =====
       case 'IS_ACTIVE':
-        // Handle boolean comparison
-        const isActive = torrent.active === true || torrent.active === 1 || torrent.active === 'true';
-        if (condition.operator) {
-          // If operator is provided, treat as numeric comparison (0/1)
-          conditionValue = isActive ? 1 : 0;
-        } else {
-          // Direct boolean match
-          return isActive === (condition.value === true || condition.value === 1 || condition.value === 'true');
-        }
-        break;
+        const isActive = this.normalizeBooleanValue(torrent.active);
+        return this.evaluateBooleanCondition(isActive, condition);
 
       case 'SEEDING_ENABLED':
-        // Handle boolean comparison (maps to seed_torrent)
-        const seedingEnabled = torrent.seed_torrent === true || torrent.seed_torrent === 1 || torrent.seed_torrent === 'true';
-        if (condition.operator) {
-          // If operator is provided, treat as numeric comparison (0/1)
-          conditionValue = seedingEnabled ? 1 : 0;
-        } else {
-          // Direct boolean match
-          return seedingEnabled === (condition.value === true || condition.value === 1 || condition.value === 'true');
-        }
-        break;
+        // Maps to seed_torrent field
+        const seedingEnabled = this.normalizeBooleanValue(torrent.seed_torrent);
+        return this.evaluateBooleanCondition(seedingEnabled, condition);
 
       case 'LONG_TERM_SEEDING':
-        // Handle boolean comparison
-        const longTermSeeding = torrent.long_term_seeding === true || torrent.long_term_seeding === 1 || torrent.long_term_seeding === 'true';
-        if (condition.operator) {
-          // If operator is provided, treat as numeric comparison (0/1)
-          conditionValue = longTermSeeding ? 1 : 0;
-        } else {
-          // Direct boolean match
-          return longTermSeeding === (condition.value === true || condition.value === 1 || condition.value === 'true');
-        }
-        break;
+        const longTermSeeding = this.normalizeBooleanValue(torrent.long_term_seeding);
+        return this.evaluateBooleanCondition(longTermSeeding, condition);
 
       case 'STATUS':
         const torrentStatus = this.getTorrentStatus(torrent);
@@ -662,9 +683,25 @@ class RuleEvaluator {
           });
           return false;
         }
-        return condition.value.length > 0 && condition.value.includes(torrentStatus);
+        
+        // Support both frontend operators (is_any_of, is_none_of) and implicit behavior
+        const operator = condition.operator || 'is_any_of'; // Default to is_any_of for backward compatibility
+        const statusMatches = condition.value.length > 0 && condition.value.includes(torrentStatus);
+        
+        switch (operator) {
+          case 'is_any_of':
+            return statusMatches;
+          case 'is_none_of':
+            return !statusMatches;
+          default:
+            // For backward compatibility, default to is_any_of behavior
+            return statusMatches;
+        }
 
       case 'EXPIRES_AT':
+        if (!this.validateNumericCondition(condition, 'EXPIRES_AT')) {
+          return false;
+        }
         if (!torrent.expires_at) {
           return false;
         }
@@ -679,6 +716,24 @@ class RuleEvaluator {
         break;
 
       case 'TAGS':
+        // Validate value is an array
+        if (!Array.isArray(condition.value)) {
+          logger.debug('TAGS condition has invalid value (not an array)', {
+            torrentId: torrent.id,
+            conditionValue: condition.value
+          });
+          return false;
+        }
+
+        // Validate operator exists
+        if (!condition.operator) {
+          logger.debug('TAGS condition missing operator', {
+            torrentId: torrent.id,
+            condition: JSON.stringify(condition)
+          });
+          return false;
+        }
+
         // Get tags for this download
         const downloadId = torrent.id?.toString() || torrent.torrent_id?.toString() || 
                           torrent.usenet_id?.toString() || torrent.web_id?.toString();
@@ -690,25 +745,32 @@ class RuleEvaluator {
         // Use pre-loaded tags from map (avoid N+1 queries)
         const downloadTags = tagsByDownloadId.get(downloadId) || [];
         const downloadTagIds = downloadTags.map(tag => tag.id);
-        const conditionTagIds = Array.isArray(condition.value) 
-          ? condition.value.map(v => typeof v === 'number' ? v : parseInt(v, 10)).filter(id => !isNaN(id))
-          : [];
+        const conditionTagIds = condition.value.map(v => typeof v === 'number' ? v : parseInt(v, 10)).filter(id => !isNaN(id));
 
         if (conditionTagIds.length === 0) {
           return true; // No tags specified means match all
         }
 
+        // Support both frontend operators (is_any_of, is_all_of, is_none_of) and backend operators (has_any, has_all, has_none)
         switch (condition.operator) {
           case 'has_any':
+          case 'is_any_of':
             // Download must have at least one of the specified tags
             return conditionTagIds.some(tagId => downloadTagIds.includes(tagId));
           case 'has_all':
+          case 'is_all_of':
             // Download must have all of the specified tags
             return conditionTagIds.every(tagId => downloadTagIds.includes(tagId));
           case 'has_none':
+          case 'is_none_of':
             // Download must have none of the specified tags
             return !conditionTagIds.some(tagId => downloadTagIds.includes(tagId));
           default:
+            logger.debug('TAGS condition has invalid operator', {
+              torrentId: torrent.id,
+              operator: condition.operator,
+              condition: JSON.stringify(condition)
+            });
             return false;
         }
 
@@ -825,6 +887,97 @@ class RuleEvaluator {
   }
 
   /**
+   * Validate that a condition has required operator and value for numeric comparisons
+   * @param {Object} condition - Condition object to validate
+   * @param {string} conditionType - Type of condition for logging
+   * @returns {boolean} - True if condition has valid operator and value
+   */
+  validateNumericCondition(condition, conditionType = '') {
+    if (!condition.operator) {
+      logger.debug('Numeric condition missing operator', {
+        conditionType,
+        condition: JSON.stringify(condition)
+      });
+      return false;
+    }
+    
+    if (condition.value === undefined || condition.value === null) {
+      logger.debug('Numeric condition missing value', {
+        conditionType,
+        operator: condition.operator,
+        condition: JSON.stringify(condition)
+      });
+      return false;
+    }
+    
+    if (!this.isValidNumericOperator(condition.operator)) {
+      logger.debug('Numeric condition has invalid operator', {
+        conditionType,
+        operator: condition.operator,
+        condition: JSON.stringify(condition)
+      });
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Validate that a condition has required value for string comparisons
+   * @param {Object} condition - Condition object to validate
+   * @param {string} conditionType - Type of condition for logging
+   * @returns {boolean} - True if condition has valid value
+   */
+  validateStringCondition(condition, conditionType = '') {
+    if (condition.value === undefined || condition.value === null || condition.value === '') {
+      logger.debug('String condition missing value', {
+        conditionType,
+        operator: condition.operator,
+        condition: JSON.stringify(condition)
+      });
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Normalize a boolean value from various formats (true, 1, 'true', etc.)
+   * @param {any} value - Value to normalize
+   * @returns {boolean} - Normalized boolean value
+   */
+  normalizeBooleanValue(value) {
+    return value === true || value === 1 || value === 'true';
+  }
+
+  /**
+   * Evaluate a boolean condition
+   * Handles is_true, is_false operators and numeric/boolean value comparisons
+   * @param {boolean} fieldValue - The boolean field value
+   * @param {Object} condition - Condition object with operator and value
+   * @returns {boolean} - True if the condition matches
+   */
+  evaluateBooleanCondition(fieldValue, condition) {
+    // Handle boolean operators (is_true, is_false) - these don't need a value
+    if (condition.operator === 'is_true') {
+      return fieldValue;
+    }
+    if (condition.operator === 'is_false') {
+      return !fieldValue;
+    }
+    
+    // If operator is provided, treat as numeric comparison (0/1)
+    if (condition.operator) {
+      const numericValue = fieldValue ? 1 : 0;
+      return this.compareValues(numericValue, condition.operator, condition.value);
+    }
+    
+    // Direct boolean match (backward compatibility)
+    const expectedValue = this.normalizeBooleanValue(condition.value);
+    return fieldValue === expectedValue;
+  }
+
+  /**
    * Compare string values with string operators
    * Supports: contains, not_contains, equals, not_equals, starts_with, ends_with
    * @param {string} fieldValue - The field value to compare
@@ -861,9 +1014,33 @@ class RuleEvaluator {
   }
 
   /**
+   * Check if operator is valid for numeric comparisons
+   * @param {string} operator - Operator to validate
+   * @returns {boolean} - True if operator is valid for numeric comparisons
+   */
+  isValidNumericOperator(operator) {
+    const validOperators = ['gt', 'lt', 'gte', 'lte', 'eq'];
+    return validOperators.includes(operator);
+  }
+
+  /**
    * Compare values with operator
+   * @param {number} value1 - First value to compare
+   * @param {string} operator - Comparison operator (gt, lt, gte, lte, eq)
+   * @param {number} value2 - Second value to compare
+   * @returns {boolean} - True if the condition matches
    */
   compareValues(value1, operator, value2) {
+    // Validate operator before comparison
+    if (!this.isValidNumericOperator(operator)) {
+      logger.debug('Invalid numeric operator, defaulting to false', {
+        operator,
+        value1,
+        value2
+      });
+      return false;
+    }
+
     switch (operator) {
       case 'gt': return value1 > value2;
       case 'lt': return value1 < value2;
@@ -941,7 +1118,11 @@ class RuleEvaluator {
         
       // TBM Actions
       case 'archive':
-        await this.archiveDownload(torrent);
+        const archiveResult = await this.archiveDownload(torrent);
+        // If already archived, don't delete the torrent
+        if (archiveResult.message === 'Already archived') {
+          return archiveResult;
+        }
         return await this.apiClient.deleteTorrent(torrent.id);
 
       case 'add_tag':

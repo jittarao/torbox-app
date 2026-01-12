@@ -1088,7 +1088,28 @@ class AutomationEngine {
 
               // Validate operator (required for most conditions, optional for some)
               if (condition.operator !== undefined) {
-                const validOperators = ['gt', 'lt', 'gte', 'lte', 'eq', 'has_any', 'has_all', 'has_none'];
+                // Numeric/comparison operators
+                const comparisonOperators = ['gt', 'lt', 'gte', 'lte', 'eq'];
+                // Tag operators (backend format)
+                const tagOperators = ['has_any', 'has_all', 'has_none'];
+                // Tag operators (frontend format - will be mapped in RuleEvaluator)
+                const tagOperatorsFrontend = ['is_any_of', 'is_all_of', 'is_none_of'];
+                // Multi-select operators (for STATUS)
+                const multiSelectOperators = ['is_any_of', 'is_none_of'];
+                // String operators (for NAME, TRACKER)
+                const stringOperators = ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with'];
+                // Boolean operators
+                const booleanOperators = ['is_true', 'is_false'];
+                
+                const validOperators = [
+                  ...comparisonOperators,
+                  ...tagOperators,
+                  ...tagOperatorsFrontend,
+                  ...multiSelectOperators,
+                  ...stringOperators,
+                  ...booleanOperators
+                ];
+                
                 if (!validOperators.includes(condition.operator)) {
                   errors.push(`Group ${groupIndex}, condition ${condIndex} has invalid operator: ${condition.operator}`);
                 }
