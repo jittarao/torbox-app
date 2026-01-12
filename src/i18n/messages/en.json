@@ -982,5 +982,49 @@
         "hideSensitive": "Hide sensitive content",
         "showSensitive": "Show sensitive content",
         "tableView": "Table View"
+    },
+    "Admin": {
+        "login": {
+            "title": "Admin Login",
+            "subtitle": "Enter your admin API key to access the admin panel",
+            "placeholder": "Admin API Key",
+            "authenticating": "Authenticating...",
+            "signIn": "Sign in"
+        },
+        "dashboard": {
+            "title": "Dashboard",
+            "autoRefresh": "Auto-refresh (30s)",
+            "loadingMetrics": "Loading metrics...",
+            "failedToLoad": "Failed to load metrics"
+        },
+        "users": {
+            "title": "User Management",
+            "loading": "Loading users...",
+            "noUsers": "No users found",
+            "back": "Back",
+            "userDetails": "User Details"
+        },
+        "system": {
+            "title": "System Health",
+            "loading": "Loading system metrics..."
+        },
+        "databases": {
+            "title": "Database Management",
+            "loading": "Loading databases..."
+        },
+        "automation": {
+            "title": "Automation Monitoring",
+            "loading": "Loading automation data..."
+        },
+        "logs": {
+            "title": "Logs",
+            "notImplemented": "Log retrieval is not implemented. Logs are output to console/stdout.",
+            "note": "For production, consider using a log aggregation service or file-based logging."
+        },
+        "settings": {
+            "title": "System Configuration",
+            "loading": "Loading configuration...",
+            "note": "Configuration updates require environment variable changes and server restart."
+        }
     }
 }

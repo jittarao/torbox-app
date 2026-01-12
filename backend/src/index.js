@@ -12,6 +12,8 @@ import AutomationEngine from './automation/AutomationEngine.js';
 import ApiClient from './api/ApiClient.js';
 import { hashApiKey } from './utils/crypto.js';
 import logger from './utils/logger.js';
+import { createAdminRateLimiter } from './middleware/adminAuth.js';
+import { setupAdminRoutes } from './routes/admin.js';
 import fs from 'fs';
 
 /**
@@ -176,6 +178,9 @@ class TorBoxBackend {
         });
       }
     });
+
+    // Admin rate limiting (stricter than user limits)
+    this.adminRateLimiter = createAdminRateLimiter(rateLimit);
     
     // JSON payload size validation
     this.app.use(validateJsonPayloadSize(10 * 1024 * 1024)); // 10MB
@@ -1409,6 +1414,9 @@ class TorBoxBackend {
         res.status(500).json({ success: false, error: error.message });
       }
     });
+
+    // Setup admin routes
+    setupAdminRoutes(this.app, this);
 
     // Error handling middleware
     this.app.use((error, req, res, next) => {
