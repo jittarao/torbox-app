@@ -361,6 +361,13 @@
         "addGroup": "グループを追加",
         "betweenGroups": "グループ間:",
         "cancel": "キャンセル",
+        "columnGroups": {
+            "downloading": "ダウンロード",
+            "lifecycle": "ライフサイクル",
+            "metadata": "メタデータ",
+            "seeding": "シーディング",
+            "timestamps": "時間"
+        },
         "enterValuePlaceholder": "値を入力...",
         "includeColumns": "列を含む",
         "includeSort": "並べ替えを含む",

@@ -18,6 +18,7 @@ import {
   getDefaultOperator,
   getDefaultValue,
   getColumnUnit,
+  getGroupedFilterableColumns,
 } from '../utils';
 import { useTags } from '@/components/shared/hooks/useTags';
 import Select from '@/components/shared/Select';
@@ -65,10 +66,12 @@ export default function FilterInput({
   onRemove,
   availableColumns,
   apiKey,
+  activeType = 'all',
 }) {
   const { tags } = useTags(apiKey);
   const customViewsT = useTranslations('CustomViews');
   const automationRulesT = useTranslations('AutomationRules');
+  const columnT = useTranslations('Columns');
 
   const handleFieldChange = (field, value) => {
     if (field === 'column') {
@@ -111,10 +114,7 @@ export default function FilterInput({
     }));
   };
 
-  const columnOptions = availableColumns.map(col => ({
-    value: col.key,
-    label: col.label,
-  }));
+  const columnGroups = getGroupedFilterableColumns(activeType, columnT, customViewsT);
 
   const operators = filter.column ? getOperatorsForColumn(filter.column) : [];
   const operatorOptions = operators.map(op => {
@@ -174,11 +174,17 @@ export default function FilterInput({
         }}
         className="w-full sm:min-w-[120px] sm:flex-1"
       >
-        <option value="">{customViewsT('selectPlaceholder')}</option>
-        {columnOptions.map(opt => (
-          <option key={opt.value} value={String(opt.value)}>
-            {opt.label}
-          </option>
+        {columnGroups.map((group, groupIdx) => (
+          <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
+            {group.options.map((opt, optIdx) => (
+              <option 
+                key={`col-${groupIdx}-${optIdx}-${opt.value}`} 
+                value={String(opt.value)}
+              >
+                {opt.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </Select>
 
@@ -189,8 +195,8 @@ export default function FilterInput({
           onChange={(e) => handleFieldChange('operator', e.target.value)}
           className="w-full sm:min-w-[100px] sm:w-auto"
         >
-          {operatorOptions.map(opt => (
-            <option key={opt.value} value={opt.value}>
+          {operatorOptions.map((opt, idx) => (
+            <option key={`op-${idx}-${opt.value}`} value={opt.value}>
               {opt.label}
             </option>
           ))}

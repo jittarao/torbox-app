@@ -199,11 +199,11 @@ export default function Select({
     let optionIndex = 0;
 
     // Add standalone options first
-    options.forEach((opt) => {
+    options.forEach((opt, idx) => {
       const isSelected = String(opt.value) === String(value);
         items.push(
         <button
-          key={`opt-${opt.value}`}
+          key={`opt-standalone-${idx}-${opt.value}`}
           ref={(el) => {
             if (el) optionsRef.current[optionIndex] = el;
           }}
@@ -227,20 +227,20 @@ export default function Select({
     });
 
     // Add optgroups
-    optgroups.forEach((group) => {
+    optgroups.forEach((group, groupIdx) => {
       items.push(
-        <div key={`group-${group.label}`} className="sticky top-0 z-10">
+        <div key={`group-${groupIdx}-${group.label}`} className="sticky top-0 z-10">
           <div className="px-3 py-1.5 text-xs font-semibold text-primary-text/60 dark:text-primary-text-dark/60 bg-surface/50 dark:bg-surface-dark/50 border-b border-border dark:border-border-dark">
             {group.label}
           </div>
         </div>,
       );
 
-      group.options.forEach((opt) => {
+      group.options.forEach((opt, optIdx) => {
         const isSelected = String(opt.value) === String(value);
         items.push(
           <button
-            key={`opt-${opt.value}`}
+            key={`opt-group-${groupIdx}-${optIdx}-${opt.value}`}
             ref={(el) => {
               if (el) optionsRef.current[optionIndex] = el;
             }}

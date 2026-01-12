@@ -627,6 +627,7 @@ export default function FiltersSection({
                     onRemoveFilter={handleRemoveFilter}
                     availableColumns={availableColumns}
                     apiKey={apiKey}
+                    activeType={activeType}
                   />
                 </div>
               ))}

@@ -361,6 +361,13 @@
         "addGroup": "Ajouter un groupe",
         "betweenGroups": "Entre groupes:",
         "cancel": "Annuler",
+        "columnGroups": {
+            "downloading": "Téléchargement",
+            "lifecycle": "Cycle de vie",
+            "metadata": "Métadonnées",
+            "seeding": "Sembrage",
+            "timestamps": "Temps"
+        },
         "enterValuePlaceholder": "Entrer la valeur...",
         "includeColumns": "Inclure les colonnes",
         "includeSort": "Inclure le tri",

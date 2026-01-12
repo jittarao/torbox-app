@@ -19,7 +19,7 @@ import {
   getOperatorsForConditionType,
   getDefaultOperatorForConditionType,
   getDefaultValueForConditionType,
-  getFlatConditionTypeOptions,
+  getConditionTypeOptions,
 } from '../utils';
 import Select from '@/components/shared/Select';
 import MultiSelect from '@/components/shared/MultiSelect';
@@ -110,7 +110,7 @@ export default function ConditionFilterInput({
     }));
   };
 
-  const conditionTypeOptions = getFlatConditionTypeOptions(t);
+  const conditionTypeOptions = getConditionTypeOptions(t);
 
   const operators = condition.type ? getOperatorsForConditionType(condition.type) : [];
   const operatorOptions = operators.map(op => {
@@ -174,11 +174,18 @@ export default function ConditionFilterInput({
         }}
         className="w-full sm:min-w-[140px] sm:flex-1"
       >
-        <option value="">Select...</option>
-        {conditionTypeOptions.map(opt => (
-          <option key={opt.value} value={String(opt.value)} title={opt.description}>
-            {opt.label}
-          </option>
+        {conditionTypeOptions.map((group, groupIdx) => (
+          <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
+            {group.options.map((opt, optIdx) => (
+              <option 
+                key={`opt-${groupIdx}-${optIdx}-${opt.value}`} 
+                value={String(opt.value)} 
+                title={opt.description}
+              >
+                {opt.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </Select>
 
