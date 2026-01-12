@@ -1002,7 +1002,7 @@ class AutomationEngine {
       if (!action.type || typeof action.type !== 'string') {
         errors.push('Action type is required and must be a string');
       } else {
-        const validActionTypes = ['stop_seeding', 'delete', 'archive', 'add_tag', 'remove_tag'];
+        const validActionTypes = ['stop_seeding', 'delete', 'archive', 'force_start', 'add_tag', 'remove_tag'];
         if (!validActionTypes.includes(action.type)) {
           errors.push(`Invalid action type: ${action.type}. Valid types: ${validActionTypes.join(', ')}`);
         }

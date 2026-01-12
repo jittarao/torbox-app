@@ -1448,6 +1448,15 @@ describe('RuleEvaluator', () => {
       expect(mockApiClient.controlTorrent).toHaveBeenCalledWith('torrent-1', 'stop_seeding');
     });
 
+    it('should execute force_start action', async () => {
+      const action = { type: 'force_start' };
+      const torrent = { id: 'torrent-1' };
+
+      await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.controlTorrent).toHaveBeenCalledWith('torrent-1', 'force_start');
+    });
+
     it('should execute archive action', async () => {
       const action = { type: 'archive' };
       const torrent = { id: 'torrent-1', hash: 'abc123', name: 'test', tracker: 'http://tracker.example.com' };

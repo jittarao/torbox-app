@@ -1106,6 +1106,9 @@ class RuleEvaluator {
       case 'stop_seeding':
         return await this.apiClient.controlTorrent(torrent.id, 'stop_seeding');
       
+      case 'force_start':
+        return await this.apiClient.controlTorrent(torrent.id, 'force_start');
+      
       case 'delete':
         return await this.apiClient.deleteTorrent(torrent.id);
         
