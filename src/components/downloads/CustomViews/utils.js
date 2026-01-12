@@ -1,11 +1,11 @@
 import { COLUMNS } from '@/components/constants';
-import { useTranslations } from 'next-intl';
 import { 
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
 } from '../AutomationRules/constants';
+import { useTranslations } from 'next-intl';
 
 // Map column keys to filter types
 export const COLUMN_FILTER_TYPES = {
@@ -21,6 +21,7 @@ export const COLUMN_FILTER_TYPES = {
   peers: 'number',
   total_uploaded: 'number',
   total_downloaded: 'number',
+  availability: 'number',
   
   // Text columns
   name: 'text',
@@ -35,7 +36,10 @@ export const COLUMN_FILTER_TYPES = {
   expires_at: 'timestamp',
   
   // Boolean columns
+  cached: 'boolean',
+  allow_zip: 'boolean',
   private: 'boolean',
+  seed_torrent: 'boolean',
   
   // Status/Multi-select columns
   download_state: 'status',
@@ -173,6 +177,115 @@ export const getFilterableColumns = (activeType = 'all') => {
   return baseColumns;
 };
 
+// Get grouped column options for filtering
+// Accepts translation functions as parameters (similar to getConditionTypeOptions)
+export const getGroupedFilterableColumns = (activeType = 'all', columnT, customViewsT) => {
+  // Columns to exclude from filtering
+  const columnKeysToExclude = ['id', 'hash', 'download_progress'];
+
+  // Helper to get column label
+  const getColumnLabel = (key, column) => {
+    if (key === 'tags') return 'Tags';
+    return column.displayName ? column.displayName : (columnT ? columnT(key) : key);
+  };
+
+  // Build base columns from COLUMNS
+  const allColumns = Object.entries(COLUMNS)
+    .filter(([key, column]) => !columnKeysToExclude.includes(key))
+    .map(([key, column]) => ({
+      key,
+      label: getColumnLabel(key, column),
+      ...column,
+    }));
+
+  // Add additional filters not in the COLUMNS object
+  allColumns.push({
+    key: 'availability',
+    label: 'Availability',
+  });
+  allColumns.push({
+    key: 'cached',
+    label: 'Cached',
+  });
+  allColumns.push({
+    key: 'allow_zip',
+    label: 'Allow Zip',
+  });
+  allColumns.push({
+    key: 'seed_torrent',
+    label: 'Seeding Enabled',
+  });
+
+  // Create a map for quick column lookup
+  const columnMap = new Map(allColumns.map(col => [col.key, col]));
+
+  // Helper to get column option by key
+  const getColumnOption = (key) => {
+    const col = columnMap.get(key);
+    if (!col) return null;
+    return { value: col.key, label: col.label };
+  };
+
+  // Helper to get ordered options for a group
+  const getOrderedOptions = (orderedKeys) => {
+    return orderedKeys
+      .map(key => getColumnOption(key))
+      .filter(opt => opt !== null); // Filter out any keys that don't exist
+  };
+
+  // Helper to get group label with fallback
+  const getGroupLabel = (key) => {
+    if (customViewsT) {
+      try {
+        return customViewsT(`columnGroups.${key}`);
+      } catch (e) {
+        // Translation key doesn't exist, use fallback
+      }
+    }
+    // Fallback labels
+    const fallbacks = {
+      lifecycle: 'Lifecycle',
+      seeding: 'Seeding',
+      downloading: 'Downloading',
+      timestamps: 'Timestamps',
+      metadata: 'Metadata',
+    };
+    return fallbacks[key] || key;
+  };
+
+  // Group columns by category with explicit ordering
+  const groups = [
+    {
+      label: getGroupLabel('lifecycle'),
+      // Order: download_state, asset_type
+      options: getOrderedOptions(['download_state', 'asset_type']),
+    },
+    {
+      label: getGroupLabel('seeding'),
+      // Order: ratio, seeds, peers, upload_speed, total_uploaded, seeding_enabled
+      options: getOrderedOptions(['ratio', 'seed_torrent','seeds', 'peers', 'upload_speed', 'total_uploaded']),
+    },
+    {
+      label: getGroupLabel('downloading'),
+      // Order: progress, download_speed, eta, total_downloaded
+      options: getOrderedOptions(['eta', 'progress', 'download_speed', 'total_downloaded']),
+    },
+    {
+      label: getGroupLabel('metadata'),
+      // Order: name, size, file_count, tags, tracker, availability, private, cached, allow_zip
+      options: getOrderedOptions(['tracker', 'availability', 'size', 'file_count', 'name', 'private', 'cached', 'allow_zip', 'tags']),
+    },
+    {
+      label: getGroupLabel('timestamps'),
+      // Order: created_at, updated_at, cached_at, expires_at
+      options: getOrderedOptions(['created_at', 'updated_at', 'cached_at', 'expires_at']),
+    },
+  ];
+
+  // Filter out empty groups
+  return groups.filter(group => group.options.length > 0);
+};
+
 // Get unit for a column (for display)
 export const getColumnUnit = (columnKey) => {
   const units = {
@@ -186,10 +299,10 @@ export const getColumnUnit = (columnKey) => {
     peers: '',
     total_uploaded: 'MB',
     total_downloaded: 'MB',
-    created_at: 'ago',
-    cached_at: 'ago',
-    updated_at: 'ago',
-    expires_at: 'until',
+    created_at: 'days ago',
+    cached_at: 'days ago',
+    updated_at: 'days ago',
+    expires_at: 'hours until expiration',
   };
   return units[columnKey] || '';
 };

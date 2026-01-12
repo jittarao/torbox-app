@@ -17,6 +17,7 @@ export default function FilterGroup({
   onRemoveFilter,
   availableColumns,
   apiKey,
+  activeType = 'all',
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const customViewsT = useTranslations('CustomViews');
@@ -123,6 +124,7 @@ export default function FilterGroup({
                     onRemove={(idx) => onRemoveFilter(groupIndex, idx)}
                     availableColumns={availableColumns}
                     apiKey={apiKey}
+                    activeType={activeType}
                   />
                 </div>
               ))}
