@@ -1,6 +1,6 @@
 // Only load Sentry if explicitly enabled
 export async function register() {
-  if (process.env.SENTRY_ENABLED === 'true') {
+  if (process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
       await import('../sentry.server.config');
     }
@@ -31,7 +31,7 @@ export async function onRequestError(
     renderType: 'dynamic' | 'dynamic-resume';
   }
 ) {
-  if (process.env.SENTRY_ENABLED === 'true') {
+  if (process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
     const Sentry = await import('@sentry/nextjs');
     Sentry.captureRequestError(error, request, context);
   }

@@ -10,7 +10,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     // Only capture exception if Sentry is enabled
-    if (process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
+    if (process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(error);
       });

@@ -14,6 +14,7 @@ import { hashApiKey } from './utils/crypto.js';
 import logger from './utils/logger.js';
 import { createAdminRateLimiter } from './middleware/adminAuth.js';
 import { setupAdminRoutes } from './routes/admin.js';
+import { initSentry, getSentry } from './utils/sentry.js';
 import fs from 'fs';
 
 /**
@@ -126,6 +127,15 @@ class TorBoxBackend {
   }
 
   setupMiddleware() {
+    // Initialize Sentry Express middleware if Sentry is enabled
+    const Sentry = getSentry();
+    if (Sentry) {
+      // Request handler must be the first middleware
+      this.app.use(Sentry.Handlers.requestHandler());
+      // Tracing handler creates a trace for every incoming request
+      this.app.use(Sentry.Handlers.tracingHandler());
+    }
+    
     // Security middleware
     this.app.use(helmet({
       contentSecurityPolicy: false,
@@ -1418,13 +1428,27 @@ class TorBoxBackend {
     // Setup admin routes
     setupAdminRoutes(this.app, this);
 
+    // Sentry error handler must be before other error handlers
+    const Sentry = getSentry();
+    if (Sentry) {
+      this.app.use(Sentry.Handlers.errorHandler());
+    }
+    
     // Error handling middleware
     this.app.use((error, req, res, next) => {
-      logger.error('Unhandled error in request handler', error, {
+      const context = {
         endpoint: req.originalUrl || req.url,
         method: req.method,
         ip: req.ip || req.connection?.remoteAddress,
-      });
+      };
+      
+      // Add authId if available
+      if (req.validatedAuthId) {
+        context.authId = req.validatedAuthId;
+      }
+      
+      logger.error('Unhandled error in request handler', error, context);
+      
       res.status(500).json({ 
         success: false, 
         error: 'Internal server error',
@@ -1692,37 +1716,90 @@ class TorBoxBackend {
   }
 }
 
-// Start the server
-const backend = new TorBoxBackend();
-backend.start();
+// Initialize Sentry before starting the server
+let backend;
+(async () => {
+  await initSentry();
+  
+  // Start the server
+  backend = new TorBoxBackend();
+  global.torboxBackend = backend; // Store globally for shutdown handlers
+  backend.start();
+})();
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  await backend.shutdown();
+  const backend = global.torboxBackend;
+  if (backend) {
+    await backend.shutdown();
+  }
+  
+  // Flush Sentry before exit
+  const Sentry = getSentry();
+  if (Sentry) {
+    await Sentry.flush(2000);
+  }
+  
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
-  await backend.shutdown();
+  const backend = global.torboxBackend;
+  if (backend) {
+    await backend.shutdown();
+  }
+  
+  // Flush Sentry before exit
+  const Sentry = getSentry();
+  if (Sentry) {
+    await Sentry.flush(2000);
+  }
+  
   process.exit(0);
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', async (error) => {
   logger.error('Uncaught exception', error);
+  
+  // Send to Sentry
+  const Sentry = getSentry();
+  if (Sentry) {
+    Sentry.captureException(error);
+    await Sentry.flush(2000);
+  }
+  
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', async (reason, promise) => {
-  logger.error('Unhandled promise rejection', reason instanceof Error ? reason : new Error(String(reason)), {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  logger.error('Unhandled promise rejection', error, {
     promise: promise.toString(),
   });
+  
+  // Send to Sentry
+  const Sentry = getSentry();
+  if (Sentry) {
+    Sentry.captureException(error, {
+      contexts: {
+        promise: {
+          promise: promise.toString(),
+        },
+      },
+    });
+    await Sentry.flush(2000);
+  }
+  
   // In production, consider graceful shutdown
   if (process.env.NODE_ENV === 'production') {
-    await backend.shutdown();
+    const backend = global.torboxBackend;
+    if (backend) {
+      await backend.shutdown();
+    }
     process.exit(1);
   }
 });
