@@ -11,11 +11,12 @@ import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
  * Handles polling and state updates for a single user
  */
 class UserPoller {
-  constructor(authId, encryptedApiKey, userDb, automationEngine = null, masterDb = null) {
+  constructor(authId, encryptedApiKey, userDb, automationEngine = null, masterDb = null, userDatabaseManager = null) {
     this.authId = authId;
     this.encryptedApiKey = encryptedApiKey;
     this.userDb = userDb;
     this.masterDb = masterDb;
+    this.userDatabaseManager = userDatabaseManager; // Store reference to refresh connections
     this.isPolling = false;
     this.lastPollAt = null;
     this.lastPolledAt = null; // Track when poller was last used (for cleanup)
@@ -252,6 +253,55 @@ class UserPoller {
   }
 
   /**
+   * Check if database connection is closed and refresh if needed
+   * @returns {Promise<void>}
+   */
+  async ensureDatabaseConnection() {
+    // Check if database is still valid by attempting a simple query
+    try {
+      this.userDb.prepare('SELECT 1').get();
+      // Connection is valid, no need to refresh
+      return;
+    } catch (error) {
+      // Database is closed or invalid, need to refresh
+      // Check for various forms of "closed database" error
+      const isClosedError = error.name === 'RangeError' || 
+                           (error.message && (
+                             error.message.includes('closed database') ||
+                             error.message.includes('Cannot use a closed database')
+                           ));
+      
+      if (isClosedError) {
+        logger.warn('Database connection is closed, refreshing connection', {
+          authId: this.authId,
+          errorName: error.name,
+          errorMessage: error.message
+        });
+        
+        if (!this.userDatabaseManager) {
+          throw new Error('Cannot refresh database connection: userDatabaseManager not available');
+        }
+        
+        // Re-acquire database connection
+        const dbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
+        this.userDb = dbConnection.db;
+        
+        // Update all engines with the new connection
+        this.stateDiffEngine = new StateDiffEngine(this.userDb);
+        this.derivedFieldsEngine = new DerivedFieldsEngine(this.userDb);
+        this.speedAggregator = new SpeedAggregator(this.userDb);
+        
+        logger.info('Database connection refreshed successfully', {
+          authId: this.authId
+        });
+      } else {
+        // Some other error, re-throw it
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Execute a single poll cycle
    * @param {boolean} [cachedHasActiveRules] - Optional cached hasActiveRules value to avoid redundant DB calls
    */
@@ -266,6 +316,21 @@ class UserPoller {
         success: false,
         error: 'Previous poll still running',
         skipped: true
+      };
+    }
+
+    // Ensure database connection is valid before starting poll
+    try {
+      await this.ensureDatabaseConnection();
+    } catch (error) {
+      logger.error('Failed to ensure database connection', error, {
+        authId: this.authId,
+        errorMessage: error.message
+      });
+      return {
+        success: false,
+        error: `Database connection error: ${error.message}`,
+        skipped: false
       };
     }
 
