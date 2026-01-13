@@ -361,6 +361,58 @@ class TorBoxBackend {
     });
   }
 
+  /**
+   * Get memory usage information
+   */
+  getMemoryUsage() {
+    const usage = process.memoryUsage();
+    return {
+      rss: `${(usage.rss / 1024 / 1024).toFixed(2)} MB`,
+      heapTotal: `${(usage.heapTotal / 1024 / 1024).toFixed(2)} MB`,
+      heapUsed: `${(usage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+      external: `${(usage.external / 1024 / 1024).toFixed(2)} MB`,
+      arrayBuffers: `${(usage.arrayBuffers / 1024 / 1024).toFixed(2)} MB`,
+    };
+  }
+
+  /**
+   * Get system information
+   */
+  getSystemInfo() {
+    return {
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      pid: process.pid,
+      uptime: `${Math.floor(process.uptime())}s`,
+      uptimeFormatted: this.formatUptime(process.uptime()),
+      cpuUsage: process.cpuUsage
+        ? {
+            user: `${(process.cpuUsage().user / 1000).toFixed(2)}ms`,
+            system: `${(process.cpuUsage().system / 1000).toFixed(2)}ms`,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * Format uptime in human-readable format
+   */
+  formatUptime(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+
+    return parts.join(' ');
+  }
+
   async shutdown() {
     logger.info('Shutting down TorBox Backend...');
 
