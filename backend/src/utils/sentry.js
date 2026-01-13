@@ -20,7 +20,6 @@ export async function initSentry() {
     const sentryModule = await import('@sentry/node');
     
     // Use the module namespace directly - it contains all named exports
-    // In @sentry/node v10, all exports (init, Handlers, etc.) are on the module object
     Sentry = sentryModule;
     
     const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -82,23 +81,23 @@ export async function initSentry() {
       },
     });
 
-    // Verify Handlers is available after initialization
-    if (!Sentry.Handlers) {
-      // Try one more time to find Handlers in the module
-      if (sentryModule.Handlers) {
-        Sentry.Handlers = sentryModule.Handlers;
-      } else {
-        console.error('Sentry.Handlers is not available after initialization.');
-        console.error('Available exports on Sentry:', Object.keys(Sentry).filter(k => !k.startsWith('_')));
-        console.error('Available exports on module:', Object.keys(sentryModule).filter(k => !k.startsWith('_')));
-        // Don't return null - let it continue but warn that middleware won't work
-        console.warn('Sentry will be initialized but Express middleware (requestHandler, tracingHandler) will not be available.');
-      }
-    }
+    // Verify these are available
+    const hasRequestHandler = typeof Sentry.requestHandler === 'function';
+    const hasErrorHandler = typeof Sentry.errorHandler === 'function';
+    const hasTracingHandler = typeof Sentry.tracingHandler === 'function';
 
     console.log('Sentry initialized successfully');
-    if (Sentry.Handlers) {
-      console.log('Sentry Handlers available for Express middleware');
+    if (hasRequestHandler && hasErrorHandler) {
+      console.log('Sentry Express middleware handlers available (requestHandler, errorHandler)');
+      if (hasTracingHandler) {
+        console.log('Sentry tracing handler available');
+      }
+    } else {
+      console.warn('Some Sentry Express middleware handlers are not available:', {
+        requestHandler: hasRequestHandler,
+        errorHandler: hasErrorHandler,
+        tracingHandler: hasTracingHandler
+      });
     }
     return Sentry;
   } catch (error) {
