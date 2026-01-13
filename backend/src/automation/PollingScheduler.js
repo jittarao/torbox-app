@@ -33,12 +33,60 @@ class PollingScheduler {
    * @returns {Promise} - Promise that rejects on timeout
    */
   async withTimeout(promise, timeoutMs, errorMessage) {
+    let timeoutId;
+    let timeoutOccurred = false;
+    
+    // Create timeout promise
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(errorMessage));
+      timeoutId = setTimeout(() => {
+        timeoutOccurred = true;
+        const timeoutError = new Error(errorMessage);
+        timeoutError.name = 'TimeoutError';
+        timeoutError.isTimeout = true;
+        reject(timeoutError);
       }, timeoutMs);
     });
-    return Promise.race([promise, timeoutPromise]);
+    
+    // Wrap original promise to handle cleanup
+    const wrappedPromise = promise
+      .then((result) => {
+        // Clear timeout if promise resolves before timeout
+        if (timeoutId && !timeoutOccurred) {
+          clearTimeout(timeoutId);
+        }
+        return result;
+      })
+      .catch((error) => {
+        // Clear timeout if promise rejects before timeout
+        if (timeoutId && !timeoutOccurred) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+        // Timeout already occurred - rethrow to let Promise.race handle it
+        // but this shouldn't happen since timeout already won the race
+        throw error;
+      });
+    
+    // Attach a catch handler to the original promise to prevent unhandled rejections
+    // if it rejects after the timeout has already been thrown
+    promise.catch((error) => {
+      if (timeoutOccurred) {
+        logger.debug('Late promise rejection after timeout (suppressed to prevent unhandled rejection)', {
+          error: error.message,
+          timeoutMessage: errorMessage
+        });
+      }
+    });
+    
+    try {
+      return await Promise.race([wrappedPromise, timeoutPromise]);
+    } catch (error) {
+      // Ensure timeout is cleared
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -415,7 +463,7 @@ class PollingScheduler {
               `Poll timeout after ${this.pollTimeoutMs / 1000}s`
             );
           } catch (error) {
-            if (error.message.includes('timeout')) {
+            if (error.isTimeout || error.name === 'TimeoutError' || error.message.includes('timeout')) {
               logger.error('Poll timeout exceeded', error, {
                 authId: auth_id,
                 timeoutMs: this.pollTimeoutMs,
@@ -708,7 +756,7 @@ class PollingScheduler {
       });
       return result;
     } catch (error) {
-      if (error.message.includes('timeout')) {
+      if (error.isTimeout || error.name === 'TimeoutError' || error.message.includes('timeout')) {
         logger.error('Manual poll timeout exceeded', error, {
           authId,
           timeoutMs: this.pollTimeoutMs
