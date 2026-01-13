@@ -566,10 +566,13 @@ class PollingScheduler {
 
     try {
       const activeUsers = this.userDatabaseManager.getActiveUsers();
+      // Filter to only users with active rules
+      const usersWithActiveRules = activeUsers.filter(user => user.has_active_rules === 1);
       const currentAuthIds = new Set(this.pollers.keys());
       
       logger.debug('Active users found', {
         activeUserCount: activeUsers.length,
+        usersWithActiveRulesCount: usersWithActiveRules.length,
         currentPollerCount: this.pollers.size
       });
 
@@ -577,7 +580,8 @@ class PollingScheduler {
       let removedCount = 0;
       let errorCount = 0;
 
-      for (const user of activeUsers) {
+      // Only create pollers for users with active rules
+      for (const user of usersWithActiveRules) {
         const { auth_id, encrypted_key } = user;
 
         if (!encrypted_key) {
@@ -589,7 +593,7 @@ class PollingScheduler {
         if (!this.pollers.has(auth_id)) {
           // Create new poller if needed (will be used when user is due for polling)
           try {
-            logger.info('Creating poller for new user', { authId: auth_id });
+            logger.info('Creating poller for new user with active rules', { authId: auth_id });
             const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
             
             // Get or create automation engine for this user
@@ -625,12 +629,12 @@ class PollingScheduler {
         }
       }
 
-      // Remove pollers for users that are no longer active
+      // Remove pollers for users that are no longer active OR no longer have active rules
       for (const authId of currentAuthIds) {
-        const stillActive = activeUsers.some(u => u.auth_id === authId);
-        if (!stillActive) {
+        const userStillHasActiveRules = usersWithActiveRules.some(u => u.auth_id === authId);
+        if (!userStillHasActiveRules) {
           this.pollers.delete(authId);
-          logger.info('Removed poller for inactive user', { authId });
+          logger.info('Removed poller for user without active rules', { authId });
           removedCount++;
         }
       }
