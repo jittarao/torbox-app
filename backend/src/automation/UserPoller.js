@@ -253,6 +253,19 @@ class UserPoller {
   }
 
   /**
+   * Check if an error is a closed database error
+   * @param {Error} error - Error to check
+   * @returns {boolean} - True if error indicates closed database
+   */
+  isClosedDatabaseError(error) {
+    return error.name === 'RangeError' || 
+           (error.message && (
+             error.message.includes('closed database') ||
+             error.message.includes('Cannot use a closed database')
+           ));
+  }
+
+  /**
    * Check if database connection is closed and refresh if needed
    * @returns {Promise<void>}
    */
@@ -264,14 +277,7 @@ class UserPoller {
       return;
     } catch (error) {
       // Database is closed or invalid, need to refresh
-      // Check for various forms of "closed database" error
-      const isClosedError = error.name === 'RangeError' || 
-                           (error.message && (
-                             error.message.includes('closed database') ||
-                             error.message.includes('Cannot use a closed database')
-                           ));
-      
-      if (isClosedError) {
+      if (this.isClosedDatabaseError(error)) {
         logger.warn('Database connection is closed, refreshing connection', {
           authId: this.authId,
           errorName: error.name,
@@ -296,6 +302,34 @@ class UserPoller {
         });
       } else {
         // Some other error, re-throw it
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Execute a database operation with automatic retry on closed database error
+   * @param {Function} operation - Async function to execute
+   * @param {string} operationName - Name of operation for logging
+   * @returns {Promise<any>} - Result of the operation
+   */
+  async executeWithRetry(operation, operationName) {
+    try {
+      return await operation();
+    } catch (error) {
+      // Check if this is a closed database error and retry with fresh connection
+      if (this.isClosedDatabaseError(error) && this.userDatabaseManager) {
+        logger.warn(`Database connection closed during ${operationName}, refreshing and retrying`, {
+          authId: this.authId,
+          errorName: error.name,
+          errorMessage: error.message
+        });
+        
+        // Refresh connection and retry
+        await this.ensureDatabaseConnection();
+        return await operation();
+      } else {
+        // Re-throw if not a closed database error or can't retry
         throw error;
       }
     }
@@ -388,7 +422,10 @@ class UserPoller {
       logger.debug('Processing state diff', { authId: this.authId });
       let changes;
       try {
-        changes = await this.stateDiffEngine.processSnapshot(torrents);
+        changes = await this.executeWithRetry(
+          () => this.stateDiffEngine.processSnapshot(torrents),
+          'processSnapshot'
+        );
         const diffDuration = ((Date.now() - diffStart) / 1000).toFixed(2);
         logger.debug('State diff processed', {
           authId: this.authId,
@@ -410,9 +447,9 @@ class UserPoller {
       const derivedStart = Date.now();
       logger.debug('Updating derived fields', { authId: this.authId });
       try {
-        await this.derivedFieldsEngine.updateDerivedFields(
-          changes,
-          5 * 60 // 5 minutes in seconds
+        await this.executeWithRetry(
+          () => this.derivedFieldsEngine.updateDerivedFields(changes, 5 * 60),
+          'updateDerivedFields'
         );
         const derivedDuration = ((Date.now() - derivedStart) / 1000).toFixed(2);
         logger.debug('Derived fields updated', {
@@ -435,7 +472,10 @@ class UserPoller {
           updatedCount: changes.updated.length
         });
         try {
-          await this.speedAggregator.processUpdates(changes.updated);
+          await this.executeWithRetry(
+            () => this.speedAggregator.processUpdates(changes.updated),
+            'processUpdates'
+          );
           const speedDuration = ((Date.now() - speedStart) / 1000).toFixed(2);
           logger.debug('Speed updates processed', {
             authId: this.authId,
