@@ -5,16 +5,20 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  
+  // Only use standalone output in production
+  ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
+
   // Cache Components (Next.js 16.1.1+)
-  cacheComponents: true,
-  
+  cacheComponents: process.env.NODE_ENV === 'production',
+
+  // React Strict Mode
+  reactStrictMode: process.env.NODE_ENV === 'development',
+
   // Optimize bundle size
   experimental: {
     optimizePackageImports: ['lodash', 'date-fns', 'chart.js'],
   },
-  
+
   // Turbopack configuration
   turbopack: {
     rules: {
@@ -24,16 +28,16 @@ const nextConfig = {
       },
     },
   },
-  
-  // Compress static assets
-  compress: true,
-  
+
+  // Compress static assets (only in production)
+  compress: process.env.NODE_ENV === 'production',
+
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
   },
-  
+
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
     // Bundle analyzer
@@ -47,8 +51,8 @@ const nextConfig = {
         })
       );
     }
-    
-    // Optimize bundle splitting
+
+    // Optimize bundle splitting (only in production)
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -66,7 +70,7 @@ const nextConfig = {
           },
         },
       };
-      
+
       // Optimize cache performance
       config.cache = {
         type: 'filesystem',
@@ -74,7 +78,7 @@ const nextConfig = {
         maxAge: 172800000, // 2 days
       };
     }
-    
+
     return config;
   },
 };
@@ -92,7 +96,8 @@ const withPWAConfig = withPWA({
 let config = withNextIntl(withPWAConfig);
 
 // Check both SENTRY_ENABLED and NEXT_PUBLIC_SENTRY_ENABLED for consistency
-const isSentryEnabled = process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true';
+const isSentryEnabled =
+  process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true';
 
 if (isSentryEnabled) {
   const { withSentryConfig } = require('@sentry/nextjs');
