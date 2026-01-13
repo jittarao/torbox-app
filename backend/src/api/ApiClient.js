@@ -162,7 +162,7 @@ class ApiClient {
         throw authError;
       }
       
-      // Check for connection/server errors and provide better context
+      // Check for connection/server errors and handle gracefully instead of throwing
       if (this.isConnectionError(error)) {
         const errorDetails = {
           endpoint: '/api/torrents/controltorrent',
@@ -175,18 +175,23 @@ class ApiClient {
           serverMessage: error.response?.data?.data || error.response?.data?.detail,
         };
         
-        logger.error('Connection/server error controlling torrent', error, errorDetails);
+        logger.warn('TorBox API connection error - handling gracefully', {
+          ...errorDetails,
+          message: 'TorBox API is down or not responding. Operation skipped.',
+        });
         
-        // Create a more descriptive error
-        const connectionError = new Error(
-          error.response?.data?.data || 
-          error.response?.data?.detail || 
-          `Server error: ${error.response?.status || error.code || 'Connection failed'}`
-        );
-        connectionError.name = 'ConnectionError';
-        connectionError.isConnectionError = true;
-        connectionError.originalError = error;
-        throw connectionError;
+        // Return a failure result instead of throwing
+        // This allows the automation to continue without crashing
+        return {
+          success: false,
+          error: 'CONNECTION_ERROR',
+          message: error.response?.data?.data || 
+                   error.response?.data?.detail || 
+                   `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
+          isConnectionError: true,
+          torrentId,
+          operation,
+        };
       }
       
       logger.error('Error controlling torrent', error, {
@@ -220,6 +225,38 @@ class ApiClient {
         });
         throw authError;
       }
+      
+      // Check for connection/server errors and handle gracefully instead of throwing
+      if (this.isConnectionError(error)) {
+        const errorDetails = {
+          endpoint: '/api/queued/controlqueued',
+          queuedId,
+          operation,
+          errorCode: error.code,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          serverError: error.response?.data?.error,
+          serverMessage: error.response?.data?.data || error.response?.data?.detail,
+        };
+        
+        logger.warn('TorBox API connection error controlling queued torrent - handling gracefully', {
+          ...errorDetails,
+          message: 'TorBox API is down or not responding. Operation skipped.',
+        });
+        
+        // Return a failure result instead of throwing
+        return {
+          success: false,
+          error: 'CONNECTION_ERROR',
+          message: error.response?.data?.data || 
+                   error.response?.data?.detail || 
+                   `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
+          isConnectionError: true,
+          queuedId,
+          operation,
+        };
+      }
+      
       logger.error('Error controlling queued torrent', error, {
         endpoint: '/api/queued/controlqueued',
         queuedId,
@@ -241,7 +278,7 @@ class ApiClient {
         return await this.controlTorrent(torrentId, 'delete');
       }
     } catch (error) {
-      // Check for connection/server errors and provide better context
+      // Check for connection/server errors and handle gracefully instead of throwing
       if (this.isConnectionError(error)) {
         const errorDetails = {
           torrentId,
@@ -251,18 +288,22 @@ class ApiClient {
           serverMessage: error.response?.data?.data || error.response?.data?.detail,
         };
         
-        logger.error('Connection/server error deleting torrent', error, errorDetails);
+        logger.warn('TorBox API connection error deleting torrent - handling gracefully', {
+          ...errorDetails,
+          message: 'TorBox API is down or not responding. Delete operation skipped.',
+        });
         
-        // Create a more descriptive error
-        const connectionError = new Error(
-          error.response?.data?.data || 
-          error.response?.data?.detail || 
-          `Server error: ${error.response?.status || error.code || 'Connection failed'}`
-        );
-        connectionError.name = 'ConnectionError';
-        connectionError.isConnectionError = true;
-        connectionError.originalError = error;
-        throw connectionError;
+        // Return a failure result instead of throwing
+        // This allows the automation to continue without crashing
+        return {
+          success: false,
+          error: 'CONNECTION_ERROR',
+          message: error.response?.data?.data || 
+                   error.response?.data?.detail || 
+                   `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
+          isConnectionError: true,
+          torrentId,
+        };
       }
       
       logger.error('Error deleting torrent', error, {
