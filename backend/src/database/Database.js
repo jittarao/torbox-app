@@ -73,12 +73,146 @@ class Database {
     return await this.migrationRunner.rollbackMigration(version);
   }
 
+  /**
+   * Check if an error is a closed database error
+   * @param {Error} error - Error to check
+   * @returns {boolean} - True if error indicates closed database
+   */
+  isClosedDatabaseError(error) {
+    return error.name === 'RangeError' || 
+           (error.message && (
+             error.message.includes('closed database') ||
+             error.message.includes('Cannot use a closed database')
+           ));
+  }
+
+  /**
+   * Check if database connection is valid and refresh if needed
+   * @returns {Promise<void>}
+   */
+  async ensureConnection() {
+    if (!this.db) {
+      throw new Error('Database not initialized. Call initialize() first.');
+    }
+
+    // Check if database is still valid by attempting a simple query
+    try {
+      this.db.prepare('SELECT 1').get();
+      // Connection is valid, no need to refresh
+      return;
+    } catch (error) {
+      // Database is closed or invalid, need to refresh
+      if (this.isClosedDatabaseError(error)) {
+        logger.warn('Database connection is closed, refreshing connection', {
+          errorName: error.name,
+          errorMessage: error.message
+        });
+        
+        // Reopen the database connection
+        this.db = new SQLiteDatabase(this.dbPath);
+        
+        // Re-enable WAL mode and busy timeout
+        this.db.prepare('PRAGMA journal_mode = WAL').run();
+        this.db.prepare('PRAGMA busy_timeout = 5000').run();
+        
+        // Re-initialize migration runner with new connection
+        this.migrationRunner = new MigrationRunner(this.db, 'master');
+        
+        logger.info('Database connection refreshed successfully');
+      } else {
+        // Some other error, re-throw it
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Execute a database operation with automatic retry on closed database error
+   * @param {Function} operation - Function to execute
+   * @param {string} operationName - Name of operation for logging
+   * @returns {Promise<any>} - Result of the operation
+   */
+  async executeWithRetry(operation, operationName) {
+    try {
+      // Ensure connection is valid before executing
+      await this.ensureConnection();
+      return operation();
+    } catch (error) {
+      // Check if this is a closed database error and retry with fresh connection
+      if (this.isClosedDatabaseError(error)) {
+        logger.warn(`Database connection closed during ${operationName}, refreshing and retrying`, {
+          errorName: error.name,
+          errorMessage: error.message
+        });
+        
+        // Refresh connection and retry
+        await this.ensureConnection();
+        return operation();
+      } else {
+        // Re-throw if not a closed database error
+        throw error;
+      }
+    }
+  }
+
   runQuery(sql, params = []) {
     try {
+      // Ensure connection is valid before executing
+      if (!this.db) {
+        throw new Error('Database not initialized. Call initialize() first.');
+      }
+      
+      // Check connection by attempting a simple query
+      try {
+        this.db.prepare('SELECT 1').get();
+      } catch (checkError) {
+        if (this.isClosedDatabaseError(checkError)) {
+          // Connection is closed, refresh it synchronously (for sync methods)
+          logger.warn('Database connection is closed in runQuery, refreshing connection', {
+            errorName: checkError.name,
+            errorMessage: checkError.message
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          logger.info('Database connection refreshed successfully in runQuery');
+        } else {
+          throw checkError;
+        }
+      }
+      
       const stmt = this.db.prepare(sql);
       const result = stmt.run(params);
       return { id: result.lastInsertRowid, changes: result.changes };
     } catch (error) {
+      // If it's a closed database error, try to refresh and retry once
+      if (this.isClosedDatabaseError(error)) {
+        try {
+          logger.warn('Database connection closed during runQuery, refreshing and retrying', {
+            errorName: error.name,
+            errorMessage: error.message
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          const stmt = this.db.prepare(sql);
+          const result = stmt.run(params);
+          return { id: result.lastInsertRowid, changes: result.changes };
+        } catch (retryError) {
+          logger.error('Database query execution failed after retry', retryError, { 
+            sql: sql.substring(0, 100),
+            paramsCount: params.length 
+          });
+          throw retryError;
+        }
+      }
+      
       logger.error('Database query execution failed', error, { 
         sql: sql.substring(0, 100), // Log first 100 chars of SQL for debugging
         paramsCount: params.length 
@@ -89,16 +223,104 @@ class Database {
 
   getQuery(sql, params = []) {
     try {
+      // Ensure connection is valid before executing
+      if (!this.db) {
+        throw new Error('Database not initialized. Call initialize() first.');
+      }
+      
+      // Check connection by attempting a simple query
+      try {
+        this.db.prepare('SELECT 1').get();
+      } catch (checkError) {
+        if (this.isClosedDatabaseError(checkError)) {
+          logger.warn('Database connection is closed in getQuery, refreshing connection', {
+            errorName: checkError.name,
+            errorMessage: checkError.message
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          logger.info('Database connection refreshed successfully in getQuery');
+        } else {
+          throw checkError;
+        }
+      }
+      
       return this.db.prepare(sql).get(params);
     } catch (error) {
+      // If it's a closed database error, try to refresh and retry once
+      if (this.isClosedDatabaseError(error)) {
+        try {
+          logger.warn('Database connection closed during getQuery, refreshing and retrying', {
+            errorName: error.name,
+            errorMessage: error.message
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          return this.db.prepare(sql).get(params);
+        } catch (retryError) {
+          throw retryError;
+        }
+      }
       throw error;
     }
   }
 
   allQuery(sql, params = []) {
     try {
+      // Ensure connection is valid before executing
+      if (!this.db) {
+        throw new Error('Database not initialized. Call initialize() first.');
+      }
+      
+      // Check connection by attempting a simple query
+      try {
+        this.db.prepare('SELECT 1').get();
+      } catch (checkError) {
+        if (this.isClosedDatabaseError(checkError)) {
+          logger.warn('Database connection is closed in allQuery, refreshing connection', {
+            errorName: checkError.name,
+            errorMessage: checkError.message
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          logger.info('Database connection refreshed successfully in allQuery');
+        } else {
+          throw checkError;
+        }
+      }
+      
       return this.db.prepare(sql).all(params);
     } catch (error) {
+      // If it's a closed database error, try to refresh and retry once
+      if (this.isClosedDatabaseError(error)) {
+        try {
+          logger.warn('Database connection closed during allQuery, refreshing and retrying', {
+            errorName: error.name,
+            errorMessage: error.message
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          return this.db.prepare(sql).all(params);
+        } catch (retryError) {
+          throw retryError;
+        }
+      }
       throw error;
     }
   }
@@ -208,24 +430,85 @@ class Database {
    * @param {boolean} hasActiveRules - Whether user has active automation rules
    */
   updateActiveRulesFlag(authId, hasActiveRules) {
-    // Use transaction for atomic update to prevent race conditions
-    const transaction = this.db.transaction(() => {
-      this.runQuery(`
-        UPDATE user_registry 
-        SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE auth_id = ?
-      `, [hasActiveRules ? 1 : 0, authId]);
-    });
-    
     try {
+      // Ensure connection is valid before executing
+      if (!this.db) {
+        throw new Error('Database not initialized. Call initialize() first.');
+      }
+      
+      // Check connection by attempting a simple query
+      try {
+        this.db.prepare('SELECT 1').get();
+      } catch (checkError) {
+        if (this.isClosedDatabaseError(checkError)) {
+          logger.warn('Database connection is closed in updateActiveRulesFlag, refreshing connection', {
+            errorName: checkError.name,
+            errorMessage: checkError.message,
+            authId
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          logger.info('Database connection refreshed successfully in updateActiveRulesFlag');
+        } else {
+          throw checkError;
+        }
+      }
+      
+      // Use transaction for atomic update to prevent race conditions
+      const transaction = this.db.transaction(() => {
+        this.runQuery(`
+          UPDATE user_registry 
+          SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE auth_id = ?
+        `, [hasActiveRules ? 1 : 0, authId]);
+      });
+      
       transaction();
       
       // Invalidate cache since user registry changed
       cache.invalidateUserRegistry(authId);
       cache.invalidateActiveUsers();
     } catch (error) {
-      logger.error('Transaction failed in updateActiveRulesFlag', error, { authId, hasActiveRules });
-      throw error;
+      // If it's a closed database error, try to refresh and retry once
+      if (this.isClosedDatabaseError(error)) {
+        try {
+          logger.warn('Database connection closed during updateActiveRulesFlag, refreshing and retrying', {
+            errorName: error.name,
+            errorMessage: error.message,
+            authId
+          });
+          
+          this.db = new SQLiteDatabase(this.dbPath);
+          this.db.prepare('PRAGMA journal_mode = WAL').run();
+          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          
+          // Retry the transaction
+          const transaction = this.db.transaction(() => {
+            this.runQuery(`
+              UPDATE user_registry 
+              SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE auth_id = ?
+            `, [hasActiveRules ? 1 : 0, authId]);
+          });
+          
+          transaction();
+          
+          // Invalidate cache since user registry changed
+          cache.invalidateUserRegistry(authId);
+          cache.invalidateActiveUsers();
+        } catch (retryError) {
+          logger.error('Transaction failed in updateActiveRulesFlag after retry', retryError, { authId, hasActiveRules });
+          throw retryError;
+        }
+      } else {
+        logger.error('Transaction failed in updateActiveRulesFlag', error, { authId, hasActiveRules });
+        throw error;
+      }
     }
   }
 
