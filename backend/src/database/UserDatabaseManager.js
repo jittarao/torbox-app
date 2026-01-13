@@ -240,7 +240,11 @@ class DatabasePool {
  */
 class UserDatabaseManager {
   constructor(masterDb, userDbDir = '/app/data/users') {
+    // masterDb can be either a Database instance or raw SQLite connection
+    // If it has getQuery/allQuery/runQuery methods, it's a Database instance
+    // Otherwise, it's a raw connection (for backward compatibility)
     this.masterDb = masterDb;
+    this.masterDbIsInstance = typeof masterDb.getQuery === 'function';
     this.userDbDir = userDbDir;
     // Increased pool size for better scalability with 1000+ users
     this.pool = new DatabasePool(parseInt(process.env.MAX_DB_CONNECTIONS || '200'));
@@ -293,8 +297,12 @@ class UserDatabaseManager {
       if (cached && cached.db_path) {
         user = cached;
       } else {
-        // Query database using raw SQLite methods
-        user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+        // Query database using Database class methods or raw SQLite methods
+        if (this.masterDbIsInstance) {
+          user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId]);
+        } else {
+          user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+        }
         
         // Cache the result if found (even if minimal, it helps avoid repeated queries)
         if (user) {
@@ -362,16 +370,28 @@ class UserDatabaseManager {
     const dbPath = path.join(this.userDbDir, `user_${authId}.sqlite`);
 
     // Check if user already exists
-    const existing = this.masterDb.prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?').get(authId);
+    let existing;
+    if (this.masterDbIsInstance) {
+      existing = this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId]);
+    } else {
+      existing = this.masterDb.prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?').get(authId);
+    }
     if (existing) {
       return authId;
     }
 
     // Insert into user registry
-    this.masterDb.prepare(`
-      INSERT INTO user_registry (auth_id, db_path)
-      VALUES (?, ?)
-    `).run(authId, dbPath);
+    if (this.masterDbIsInstance) {
+      this.masterDb.runQuery(`
+        INSERT INTO user_registry (auth_id, db_path)
+        VALUES (?, ?)
+      `, [authId, dbPath]);
+    } else {
+      this.masterDb.prepare(`
+        INSERT INTO user_registry (auth_id, db_path)
+        VALUES (?, ?)
+      `).run(authId, dbPath);
+    }
 
     // Invalidate cache since user registry changed
     cache.invalidateUserRegistry(authId);
@@ -399,13 +419,24 @@ class UserDatabaseManager {
     }
 
     // Query database if not cached
-    const users = this.masterDb.prepare(`
-      SELECT ur.*, ak.encrypted_key, ak.key_name
-      FROM user_registry ur
-      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
-      WHERE ur.status = 'active' AND (ak.is_active = 1 OR ak.is_active IS NULL)
-      ORDER BY ur.created_at ASC
-    `).all();
+    let users;
+    if (this.masterDbIsInstance) {
+      users = this.masterDb.allQuery(`
+        SELECT ur.*, ak.encrypted_key, ak.key_name
+        FROM user_registry ur
+        LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+        WHERE ur.status = 'active' AND (ak.is_active = 1 OR ak.is_active IS NULL)
+        ORDER BY ur.created_at ASC
+      `);
+    } else {
+      users = this.masterDb.prepare(`
+        SELECT ur.*, ak.encrypted_key, ak.key_name
+        FROM user_registry ur
+        LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+        WHERE ur.status = 'active' AND (ak.is_active = 1 OR ak.is_active IS NULL)
+        ORDER BY ur.created_at ASC
+      `).all();
+    }
     
     // Cache the result with variant
     cache.setActiveUsers(users, variant);
@@ -419,7 +450,12 @@ class UserDatabaseManager {
    */
   async deleteUser(authId) {
     // Get database path
-    const user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+    let user;
+    if (this.masterDbIsInstance) {
+      user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId]);
+    } else {
+      user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+    }
     
     if (user) {
       // Close and remove from pool
@@ -437,7 +473,11 @@ class UserDatabaseManager {
     }
 
     // Delete from registry (cascade will delete API keys)
-    this.masterDb.prepare('DELETE FROM user_registry WHERE auth_id = ?').run(authId);
+    if (this.masterDbIsInstance) {
+      this.masterDb.runQuery('DELETE FROM user_registry WHERE auth_id = ?', [authId]);
+    } else {
+      this.masterDb.prepare('DELETE FROM user_registry WHERE auth_id = ?').run(authId);
+    }
     
     // Invalidate cache since user was deleted
     cache.invalidateUserRegistry(authId);

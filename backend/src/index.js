@@ -1450,7 +1450,7 @@ class TorBoxBackend {
 
       // Initialize user database manager
       const userDbDir = process.env.USER_DB_DIR || '/app/data/users';
-      this.userDatabaseManager = new UserDatabaseManager(this.masterDatabase.db, userDbDir);
+      this.userDatabaseManager = new UserDatabaseManager(this.masterDatabase, userDbDir);
       logger.info('User database manager initialized', { userDbDir });
 
       // Initialize polling scheduler (pass automation engines map for sharing)
