@@ -36,7 +36,7 @@ function parseViewJsonFields(view) {
  * Custom views routes
  */
 export function setupCustomViewsRoutes(app, backend) {
-  const { userRateLimiter, userDatabaseManager } = backend;
+  const { userRateLimiter } = backend;
 
   // GET /api/custom-views - List all custom views
   app.get(
@@ -47,7 +47,14 @@ export function setupCustomViewsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
         const views = userDb.db
           .prepare(
             `
@@ -82,6 +89,13 @@ export function setupCustomViewsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
 
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
         const { name, filters, sort_field, sort_direction, visible_columns, asset_type } =
           req.body;
 
@@ -92,7 +106,7 @@ export function setupCustomViewsRoutes(app, backend) {
           });
         }
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         const result = userDb.db
           .prepare(
@@ -143,7 +157,15 @@ export function setupCustomViewsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const viewId = req.validatedIds.id;
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         const view = userDb.db
           .prepare(
@@ -189,7 +211,14 @@ export function setupCustomViewsRoutes(app, backend) {
         const { name, filters, sort_field, sort_direction, visible_columns, asset_type } =
           req.body;
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
         const existing = userDb.db
@@ -292,7 +321,15 @@ export function setupCustomViewsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const viewId = req.validatedIds.id;
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
         const existing = userDb.db

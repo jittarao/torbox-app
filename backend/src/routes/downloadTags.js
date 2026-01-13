@@ -5,7 +5,7 @@ import logger from '../utils/logger.js';
  * Download tags routes
  */
 export function setupDownloadTagsRoutes(app, backend) {
-  const { userRateLimiter, userDatabaseManager } = backend;
+  const { userRateLimiter } = backend;
 
   // GET /api/downloads/tags - Get all download-tag mappings (bulk)
   app.get(
@@ -16,7 +16,14 @@ export function setupDownloadTagsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         const query = `
           SELECT 
@@ -63,6 +70,13 @@ export function setupDownloadTagsRoutes(app, backend) {
     async (req, res) => {
       try {
         const authId = req.validatedAuthId;
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
 
         const { download_ids, tag_ids, operation = 'add' } = req.body;
 
@@ -146,7 +160,7 @@ export function setupDownloadTagsRoutes(app, backend) {
           });
         }
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Validate all tag IDs exist
         if (tag_ids.length > 0) {
