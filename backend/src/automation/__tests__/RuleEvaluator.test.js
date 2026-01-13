@@ -16,17 +16,17 @@ describe('RuleEvaluator', () => {
       const transactionFn = () => fn();
       return transactionFn;
     });
-    
+
     // Mock database
     mockUserDb = {
       prepare: mock((query) => {
         return {
           get: mockGet,
           all: mockAll,
-          run: mockRun
+          run: mockRun,
         };
       }),
-      transaction: mockTransaction
+      transaction: mockTransaction,
     };
 
     // Store references for test access
@@ -38,7 +38,7 @@ describe('RuleEvaluator', () => {
     // Mock API client
     mockApiClient = {
       controlTorrent: mock(() => Promise.resolve({ success: true })),
-      deleteTorrent: mock(() => Promise.resolve({ success: true }))
+      deleteTorrent: mock(() => Promise.resolve({ success: true })),
     };
 
     ruleEvaluator = new RuleEvaluator(mockUserDb, mockApiClient);
@@ -48,7 +48,7 @@ describe('RuleEvaluator', () => {
     it('should return empty array for disabled rules', async () => {
       const rule = {
         enabled: false,
-        conditions: []
+        conditions: [],
       };
       const torrents = [{ id: '1', name: 'test' }];
 
@@ -59,14 +59,12 @@ describe('RuleEvaluator', () => {
     it('should skip evaluation when interval has not elapsed', async () => {
       const now = Date.now();
       const oneMinuteAgo = new Date(now - 1 * 60 * 1000).toISOString();
-      
+
       const rule = {
         enabled: true,
         trigger: { type: 'interval', value: 10 }, // 10 minutes
         last_evaluated_at: oneMinuteAgo,
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 0 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 0 }],
       };
       const torrents = [{ id: '1', name: 'test', progress: 100 }];
 
@@ -77,18 +75,16 @@ describe('RuleEvaluator', () => {
     it('should evaluate when interval has elapsed', async () => {
       const now = Date.now();
       const fifteenMinutesAgo = new Date(now - 15 * 60 * 1000).toISOString();
-      
+
       const rule = {
         enabled: true,
         trigger: { type: 'interval', value: 10 }, // 10 minutes
         last_evaluated_at: fifteenMinutesAgo,
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 50 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
       };
       const torrents = [
         { id: '1', name: 'test', progress: 75 },
-        { id: '2', name: 'test2', progress: 30 }
+        { id: '2', name: 'test2', progress: 30 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -101,13 +97,11 @@ describe('RuleEvaluator', () => {
         enabled: true,
         trigger: { type: 'interval', value: 10 },
         last_evaluated_at: null,
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 50 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
       };
       const torrents = [
         { id: '1', name: 'test', progress: 75 },
-        { id: '2', name: 'test2', progress: 30 }
+        { id: '2', name: 'test2', progress: 30 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -117,18 +111,14 @@ describe('RuleEvaluator', () => {
     it('should handle invalid interval (less than 1 minute) and still evaluate', async () => {
       const now = Date.now();
       const twoMinutesAgo = new Date(now - 2 * 60 * 1000).toISOString();
-      
+
       const rule = {
         enabled: true,
         trigger: { type: 'interval', value: 0.5 }, // Less than 1 minute
         last_evaluated_at: twoMinutesAgo,
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 50 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
       };
-      const torrents = [
-        { id: '1', name: 'test', progress: 75 }
-      ];
+      const torrents = [{ id: '1', name: 'test', progress: 75 }];
 
       // Should still evaluate (uses minimum of 1 minute)
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -139,13 +129,11 @@ describe('RuleEvaluator', () => {
       const rule = {
         enabled: true,
         // No trigger configured
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 50 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
       };
       const torrents = [
         { id: '1', name: 'test', progress: 75 },
-        { id: '2', name: 'test2', progress: 30 }
+        { id: '2', name: 'test2', progress: 30 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -157,13 +145,13 @@ describe('RuleEvaluator', () => {
         enabled: true,
         conditions: [
           { type: 'PROGRESS', operator: 'gte', value: 50 },
-          { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 0 }
+          { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 0 },
         ],
-        logicOperator: 'and'
+        logicOperator: 'and',
       };
       const torrents = [
         { id: '1', name: 'test', progress: 75, download_speed: 1024 * 1024 }, // 1 MB/s
-        { id: '2', name: 'test2', progress: 30, download_speed: 0 }
+        { id: '2', name: 'test2', progress: 30, download_speed: 0 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -176,20 +164,20 @@ describe('RuleEvaluator', () => {
         enabled: true,
         conditions: [
           { type: 'PROGRESS', operator: 'gte', value: 100 },
-          { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 5 }
+          { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 5 },
         ],
-        logicOperator: 'or'
+        logicOperator: 'or',
       };
       const torrents = [
         { id: '1', name: 'test', progress: 100, download_speed: 0 },
         { id: '2', name: 'test2', progress: 50, download_speed: 6 * 1024 * 1024 }, // 6 MB/s
-        { id: '3', name: 'test3', progress: 50, download_speed: 0 }
+        { id: '3', name: 'test3', progress: 50, download_speed: 0 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
       expect(result).toHaveLength(2);
-      expect(result.map(t => t.id)).toContain('1');
-      expect(result.map(t => t.id)).toContain('2');
+      expect(result.map((t) => t.id)).toContain('1');
+      expect(result.map((t) => t.id)).toContain('2');
     });
 
     it('should use AND as default logic operator', async () => {
@@ -197,13 +185,13 @@ describe('RuleEvaluator', () => {
         enabled: true,
         conditions: [
           { type: 'PROGRESS', operator: 'gte', value: 50 },
-          { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 0 }
-        ]
+          { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 0 },
+        ],
         // No logicOperator specified
       };
       const torrents = [
         { id: '1', name: 'test', progress: 75, download_speed: 1024 * 1024 },
-        { id: '2', name: 'test2', progress: 30, download_speed: 0 }
+        { id: '2', name: 'test2', progress: 30, download_speed: 0 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -215,24 +203,20 @@ describe('RuleEvaluator', () => {
         enabled: true,
         groups: [
           {
-            conditions: [
-              { type: 'PROGRESS', operator: 'gte', value: 50 }
-            ],
-            logicOperator: 'and'
+            conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
+            logicOperator: 'and',
           },
           {
-            conditions: [
-              { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 0 }
-            ],
-            logicOperator: 'and'
-          }
+            conditions: [{ type: 'DOWNLOAD_SPEED', operator: 'gt', value: 0 }],
+            logicOperator: 'and',
+          },
         ],
-        logicOperator: 'and'
+        logicOperator: 'and',
       };
       const torrents = [
         { id: '1', name: 'test', progress: 75, download_speed: 1024 * 1024 },
         { id: '2', name: 'test2', progress: 30, download_speed: 0 },
-        { id: '3', name: 'test3', progress: 75, download_speed: 0 }
+        { id: '3', name: 'test3', progress: 75, download_speed: 0 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -245,30 +229,26 @@ describe('RuleEvaluator', () => {
         enabled: true,
         groups: [
           {
-            conditions: [
-              { type: 'PROGRESS', operator: 'gte', value: 100 }
-            ],
-            logicOperator: 'and'
+            conditions: [{ type: 'PROGRESS', operator: 'gte', value: 100 }],
+            logicOperator: 'and',
           },
           {
-            conditions: [
-              { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 5 }
-            ],
-            logicOperator: 'and'
-          }
+            conditions: [{ type: 'DOWNLOAD_SPEED', operator: 'gt', value: 5 }],
+            logicOperator: 'and',
+          },
         ],
-        logicOperator: 'or'
+        logicOperator: 'or',
       };
       const torrents = [
         { id: '1', name: 'test', progress: 100, download_speed: 0 },
         { id: '2', name: 'test2', progress: 50, download_speed: 6 * 1024 * 1024 },
-        { id: '3', name: 'test3', progress: 50, download_speed: 0 }
+        { id: '3', name: 'test3', progress: 50, download_speed: 0 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
       expect(result).toHaveLength(2);
-      expect(result.map(t => t.id)).toContain('1');
-      expect(result.map(t => t.id)).toContain('2');
+      expect(result.map((t) => t.id)).toContain('1');
+      expect(result.map((t) => t.id)).toContain('2');
     });
 
     it('should evaluate rules with group structure (OR within group)', async () => {
@@ -278,23 +258,23 @@ describe('RuleEvaluator', () => {
           {
             conditions: [
               { type: 'PROGRESS', operator: 'gte', value: 100 },
-              { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 5 }
+              { type: 'DOWNLOAD_SPEED', operator: 'gt', value: 5 },
             ],
-            logicOperator: 'or'
-          }
+            logicOperator: 'or',
+          },
         ],
-        logicOperator: 'and'
+        logicOperator: 'and',
       };
       const torrents = [
         { id: '1', name: 'test', progress: 100, download_speed: 0 },
         { id: '2', name: 'test2', progress: 50, download_speed: 6 * 1024 * 1024 },
-        { id: '3', name: 'test3', progress: 50, download_speed: 0 }
+        { id: '3', name: 'test3', progress: 50, download_speed: 0 },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
       expect(result).toHaveLength(2);
-      expect(result.map(t => t.id)).toContain('1');
-      expect(result.map(t => t.id)).toContain('2');
+      expect(result.map((t) => t.id)).toContain('1');
+      expect(result.map((t) => t.id)).toContain('2');
     });
 
     it('should return empty array for empty group', async () => {
@@ -303,10 +283,10 @@ describe('RuleEvaluator', () => {
         groups: [
           {
             conditions: [],
-            logicOperator: 'and'
-          }
+            logicOperator: 'and',
+          },
         ],
-        logicOperator: 'and'
+        logicOperator: 'and',
       };
       const torrents = [{ id: '1', name: 'test', progress: 100 }];
 
@@ -317,11 +297,11 @@ describe('RuleEvaluator', () => {
     it('should match all torrents when rule has no conditions (flat structure)', async () => {
       const rule = {
         enabled: true,
-        conditions: []
+        conditions: [],
       };
       const torrents = [
         { id: '1', name: 'test1' },
-        { id: '2', name: 'test2' }
+        { id: '2', name: 'test2' },
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
@@ -372,9 +352,9 @@ describe('RuleEvaluator', () => {
       it('should evaluate LAST_DOWNLOAD_ACTIVITY_AT condition', () => {
         const now = Date.now();
         const thirtyMinutesAgo = new Date(now - 30 * 60 * 1000).toISOString();
-        
+
         const telemetryMap = new Map([
-          ['1', { torrent_id: '1', last_download_activity_at: thirtyMinutesAgo }]
+          ['1', { torrent_id: '1', last_download_activity_at: thirtyMinutesAgo }],
         ]);
 
         const condition = { type: 'LAST_DOWNLOAD_ACTIVITY_AT', operator: 'gte', value: 20 };
@@ -407,9 +387,9 @@ describe('RuleEvaluator', () => {
       it('should evaluate LAST_UPLOAD_ACTIVITY_AT condition', () => {
         const now = Date.now();
         const fifteenMinutesAgo = new Date(now - 15 * 60 * 1000).toISOString();
-        
+
         const telemetryMap = new Map([
-          ['1', { torrent_id: '1', last_upload_activity_at: fifteenMinutesAgo }]
+          ['1', { torrent_id: '1', last_upload_activity_at: fifteenMinutesAgo }],
         ]);
 
         const condition = { type: 'LAST_UPLOAD_ACTIVITY_AT', operator: 'lte', value: 20 };
@@ -481,10 +461,8 @@ describe('RuleEvaluator', () => {
       it('should evaluate DOWNLOAD_STALLED_TIME condition', () => {
         const now = Date.now();
         const tenMinutesAgo = new Date(now - 10 * 60 * 1000).toISOString();
-        
-        const telemetryMap = new Map([
-          ['1', { torrent_id: '1', stalled_since: tenMinutesAgo }]
-        ]);
+
+        const telemetryMap = new Map([['1', { torrent_id: '1', stalled_since: tenMinutesAgo }]]);
 
         const condition = { type: 'DOWNLOAD_STALLED_TIME', operator: 'gte', value: 5 };
         const torrent = { id: '1' };
@@ -506,9 +484,9 @@ describe('RuleEvaluator', () => {
       it('should evaluate UPLOAD_STALLED_TIME condition', () => {
         const now = Date.now();
         const twentyMinutesAgo = new Date(now - 20 * 60 * 1000).toISOString();
-        
+
         const telemetryMap = new Map([
-          ['1', { torrent_id: '1', upload_stalled_since: twentyMinutesAgo }]
+          ['1', { torrent_id: '1', upload_stalled_since: twentyMinutesAgo }],
         ]);
 
         const condition = { type: 'UPLOAD_STALLED_TIME', operator: 'gte', value: 15 };
@@ -549,7 +527,7 @@ describe('RuleEvaluator', () => {
         const torrent = {
           id: '1',
           total_uploaded: 2 * 1024 * 1024, // 2 MB
-          total_downloaded: 1024 * 1024 // 1 MB
+          total_downloaded: 1024 * 1024, // 1 MB
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -561,7 +539,7 @@ describe('RuleEvaluator', () => {
         const torrent = {
           id: '1',
           total_uploaded: 1024 * 1024,
-          total_downloaded: 0
+          total_downloaded: 0,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -675,7 +653,11 @@ describe('RuleEvaluator', () => {
       });
 
       it('should evaluate TRACKER condition with equals operator', () => {
-        const condition = { type: 'TRACKER', operator: 'equals', value: 'https://tracker.example.com' };
+        const condition = {
+          type: 'TRACKER',
+          operator: 'equals',
+          value: 'https://tracker.example.com',
+        };
         const torrent = { id: '1', tracker: 'https://tracker.example.com' };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -786,7 +768,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_state: null,
           download_finished: false,
-          active: false
+          active: false,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -799,7 +781,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           active: true,
           download_finished: false,
-          download_present: false
+          download_present: false,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -812,7 +794,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -825,7 +807,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: false
+          active: false,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -836,7 +818,7 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'STATUS', value: ['failed'] };
         const torrent = {
           id: '1',
-          download_state: 'failed - some error'
+          download_state: 'failed - some error',
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -847,7 +829,7 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'STATUS', value: ['stalled'] };
         const torrent = {
           id: '1',
-          download_state: 'stalled - no peers'
+          download_state: 'stalled - no peers',
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -860,7 +842,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -873,7 +855,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -881,12 +863,16 @@ describe('RuleEvaluator', () => {
       });
 
       it('should evaluate STATUS condition with is_any_of operator', () => {
-        const condition = { type: 'STATUS', operator: 'is_any_of', value: ['downloading', 'seeding'] };
+        const condition = {
+          type: 'STATUS',
+          operator: 'is_any_of',
+          value: ['downloading', 'seeding'],
+        };
         const torrent = {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -894,12 +880,16 @@ describe('RuleEvaluator', () => {
       });
 
       it('should evaluate STATUS condition with is_none_of operator', () => {
-        const condition = { type: 'STATUS', operator: 'is_none_of', value: ['downloading', 'completed'] };
+        const condition = {
+          type: 'STATUS',
+          operator: 'is_none_of',
+          value: ['downloading', 'completed'],
+        };
         const torrent = {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -907,12 +897,16 @@ describe('RuleEvaluator', () => {
       });
 
       it('should evaluate STATUS condition with is_none_of operator (match excluded)', () => {
-        const condition = { type: 'STATUS', operator: 'is_none_of', value: ['seeding', 'completed'] };
+        const condition = {
+          type: 'STATUS',
+          operator: 'is_none_of',
+          value: ['seeding', 'completed'],
+        };
         const torrent = {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -925,7 +919,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_finished: true,
           download_present: true,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -938,7 +932,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_state: null,
           download_finished: false,
-          active: false
+          active: false,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -951,7 +945,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           download_finished: true,
           download_present: false,
-          active: true
+          active: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -964,7 +958,7 @@ describe('RuleEvaluator', () => {
           id: '1',
           active: false,
           download_present: false,
-          download_finished: true
+          download_finished: true,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -1085,21 +1079,35 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'TAGS', operator: 'has_any', value: [1, 2, 3] };
         const torrent = { id: '1' };
         const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }, { id: 2, name: 'tag2' }]]
+          [
+            '1',
+            [
+              { id: 1, name: 'tag1' },
+              { id: 2, name: 'tag2' },
+            ],
+          ],
         ]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
 
       it('should evaluate TAGS condition with is_any_of operator (frontend alias)', () => {
         const condition = { type: 'TAGS', operator: 'is_any_of', value: [1, 2, 3] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }]]
-        ]);
+        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
 
@@ -1107,10 +1115,21 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'TAGS', operator: 'has_all', value: [1, 2] };
         const torrent = { id: '1' };
         const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }, { id: 2, name: 'tag2' }]]
+          [
+            '1',
+            [
+              { id: 1, name: 'tag1' },
+              { id: 2, name: 'tag2' },
+            ],
+          ],
         ]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
 
@@ -1118,10 +1137,21 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'TAGS', operator: 'is_all_of', value: [1, 2] };
         const torrent = { id: '1' };
         const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }, { id: 2, name: 'tag2' }]]
+          [
+            '1',
+            [
+              { id: 1, name: 'tag1' },
+              { id: 2, name: 'tag2' },
+            ],
+          ],
         ]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
 
@@ -1129,54 +1159,77 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'TAGS', operator: 'has_all', value: [1, 2, 3] };
         const torrent = { id: '1' };
         const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }, { id: 2, name: 'tag2' }]]
+          [
+            '1',
+            [
+              { id: 1, name: 'tag1' },
+              { id: 2, name: 'tag2' },
+            ],
+          ],
         ]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(false);
       });
 
       it('should evaluate TAGS condition with has_none operator', () => {
         const condition = { type: 'TAGS', operator: 'has_none', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          ['1', [{ id: 3, name: 'tag3' }]]
-        ]);
+        const tagsByDownloadId = new Map([['1', [{ id: 3, name: 'tag3' }]]]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
 
       it('should evaluate TAGS condition with is_none_of operator (frontend alias)', () => {
         const condition = { type: 'TAGS', operator: 'is_none_of', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          ['1', [{ id: 3, name: 'tag3' }]]
-        ]);
+        const tagsByDownloadId = new Map([['1', [{ id: 3, name: 'tag3' }]]]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
 
       it('should evaluate TAGS condition with has_none operator (has excluded tag)', () => {
         const condition = { type: 'TAGS', operator: 'has_none', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }]]
-        ]);
+        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(false);
       });
 
       it('should return true for TAGS condition with empty value array', () => {
         const condition = { type: 'TAGS', operator: 'has_any', value: [] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }]]
-        ]);
+        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true); // No tags specified means match all
       });
 
@@ -1185,7 +1238,12 @@ describe('RuleEvaluator', () => {
         const torrent = { id: '1' };
         const tagsByDownloadId = new Map(); // No tags
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(false);
       });
 
@@ -1216,11 +1274,14 @@ describe('RuleEvaluator', () => {
       it('should handle TAGS condition with string tag IDs', () => {
         const condition = { type: 'TAGS', operator: 'has_any', value: ['1', '2'] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          ['1', [{ id: 1, name: 'tag1' }]]
-        ]);
+        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
 
-        const result = ruleEvaluator.evaluateCondition(condition, torrent, new Map(), tagsByDownloadId);
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
         expect(result).toBe(true);
       });
     });
@@ -1241,7 +1302,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         download_state: null,
         download_finished: false,
-        active: false
+        active: false,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1250,7 +1311,7 @@ describe('RuleEvaluator', () => {
 
     it('should return failed status', () => {
       const torrent = {
-        download_state: 'failed - connection error'
+        download_state: 'failed - connection error',
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1259,7 +1320,7 @@ describe('RuleEvaluator', () => {
 
     it('should return stalled status', () => {
       const torrent = {
-        download_state: 'stalled - no peers available'
+        download_state: 'stalled - no peers available',
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1268,7 +1329,7 @@ describe('RuleEvaluator', () => {
 
     it('should return metadl status', () => {
       const torrent = {
-        download_state: 'metadl - downloading metadata'
+        download_state: 'metadl - downloading metadata',
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1277,7 +1338,7 @@ describe('RuleEvaluator', () => {
 
     it('should return checking_resume_data status', () => {
       const torrent = {
-        download_state: 'checkingresumedata - verifying files'
+        download_state: 'checkingresumedata - verifying files',
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1288,7 +1349,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         download_finished: true,
         download_present: true,
-        active: false
+        active: false,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1299,7 +1360,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         active: true,
         download_finished: false,
-        download_present: false
+        download_present: false,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1310,7 +1371,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         download_finished: true,
         download_present: true,
-        active: true
+        active: true,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1321,7 +1382,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         download_finished: true,
         download_present: false,
-        active: true
+        active: true,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1332,7 +1393,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         active: false,
         download_present: false,
-        download_finished: true // Must have finished to not be queued
+        download_finished: true, // Must have finished to not be queued
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1343,7 +1404,7 @@ describe('RuleEvaluator', () => {
       const torrent = {
         active: true,
         download_finished: false,
-        download_present: true
+        download_present: true,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
@@ -1355,7 +1416,7 @@ describe('RuleEvaluator', () => {
     it('should calculate average speed correctly', () => {
       const samples = [
         { timestamp: new Date(Date.now() - 3600 * 1000).toISOString(), total_downloaded: 0 },
-        { timestamp: new Date().toISOString(), total_downloaded: 1024 * 1024 * 3600 } // 1 MB/s over 1 hour
+        { timestamp: new Date().toISOString(), total_downloaded: 1024 * 1024 * 3600 }, // 1 MB/s over 1 hour
       ];
 
       const speed = ruleEvaluator.calculateAverageSpeed(samples, 'total_downloaded');
@@ -1366,7 +1427,10 @@ describe('RuleEvaluator', () => {
       const speed1 = ruleEvaluator.calculateAverageSpeed([], 'total_downloaded');
       expect(speed1).toBe(0);
 
-      const speed2 = ruleEvaluator.calculateAverageSpeed([{ timestamp: new Date().toISOString() }], 'total_downloaded');
+      const speed2 = ruleEvaluator.calculateAverageSpeed(
+        [{ timestamp: new Date().toISOString() }],
+        'total_downloaded'
+      );
       expect(speed2).toBe(0);
     });
 
@@ -1374,7 +1438,7 @@ describe('RuleEvaluator', () => {
       const now = new Date().toISOString();
       const samples = [
         { timestamp: now, total_downloaded: 0 },
-        { timestamp: now, total_downloaded: 1000 }
+        { timestamp: now, total_downloaded: 1000 },
       ];
 
       const speed = ruleEvaluator.calculateAverageSpeed(samples, 'total_downloaded');
@@ -1389,7 +1453,7 @@ describe('RuleEvaluator', () => {
         { timestamp: new Date(now - 3000).toISOString(), total_downloaded: 0 },
         { timestamp: new Date(now - 2000).toISOString(), total_downloaded: 5 * 1024 * 1024 }, // 5 MB/s
         { timestamp: new Date(now - 1000).toISOString(), total_downloaded: 8 * 1024 * 1024 }, // 3 MB/s
-        { timestamp: new Date(now).toISOString(), total_downloaded: 10 * 1024 * 1024 } // 2 MB/s
+        { timestamp: new Date(now).toISOString(), total_downloaded: 10 * 1024 * 1024 }, // 2 MB/s
       ];
 
       const maxSpeed = ruleEvaluator.calculateMaxSpeed(samples, 'total_downloaded');
@@ -1400,7 +1464,10 @@ describe('RuleEvaluator', () => {
       const speed1 = ruleEvaluator.calculateMaxSpeed([], 'total_downloaded');
       expect(speed1).toBe(0);
 
-      const speed2 = ruleEvaluator.calculateMaxSpeed([{ timestamp: new Date().toISOString() }], 'total_downloaded');
+      const speed2 = ruleEvaluator.calculateMaxSpeed(
+        [{ timestamp: new Date().toISOString() }],
+        'total_downloaded'
+      );
       expect(speed2).toBe(0);
     });
   });
@@ -1459,7 +1526,12 @@ describe('RuleEvaluator', () => {
 
     it('should execute archive action', async () => {
       const action = { type: 'archive' };
-      const torrent = { id: 'torrent-1', hash: 'abc123', name: 'test', tracker: 'http://tracker.example.com' };
+      const torrent = {
+        id: 'torrent-1',
+        hash: 'abc123',
+        name: 'test',
+        tracker: 'http://tracker.example.com',
+      };
 
       await ruleEvaluator.executeAction(action, torrent);
 
@@ -1468,20 +1540,30 @@ describe('RuleEvaluator', () => {
         expect.stringContaining('SELECT id FROM archived_downloads WHERE torrent_id = ?')
       );
       expect(mockUserDb._mockGet).toHaveBeenCalledWith('torrent-1');
-      
+
       // Verify database insert was called
       expect(mockUserDb.prepare).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO archived_downloads')
       );
-      expect(mockUserDb._mockRun).toHaveBeenCalledWith('torrent-1', 'abc123', 'http://tracker.example.com', 'test');
-      
+      expect(mockUserDb._mockRun).toHaveBeenCalledWith(
+        'torrent-1',
+        'abc123',
+        'http://tracker.example.com',
+        'test'
+      );
+
       // Verify torrent was deleted after archiving
       expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1');
     });
 
     it('should skip archive if already archived', async () => {
       const action = { type: 'archive' };
-      const torrent = { id: 'torrent-1', hash: 'abc123', name: 'test', tracker: 'http://tracker.example.com' };
+      const torrent = {
+        id: 'torrent-1',
+        hash: 'abc123',
+        name: 'test',
+        tracker: 'http://tracker.example.com',
+      };
 
       // Mock existing archive - modify the mock implementation to return an existing archive
       // The default mockGet returns null, so we override it for this test
@@ -1503,7 +1585,9 @@ describe('RuleEvaluator', () => {
       const action = { type: 'archive' };
       const torrent = { id: 'torrent-1' }; // Missing hash
 
-      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow('torrent id and hash are required');
+      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow(
+        'torrent id and hash are required'
+      );
     });
 
     it('should execute delete action', async () => {
@@ -1516,19 +1600,25 @@ describe('RuleEvaluator', () => {
     });
 
     it('should throw error when action is missing', async () => {
-      await expect(ruleEvaluator.executeAction(null, { id: 'torrent-1' })).rejects.toThrow('Action is required');
+      await expect(ruleEvaluator.executeAction(null, { id: 'torrent-1' })).rejects.toThrow(
+        'Action is required'
+      );
     });
 
     it('should throw error when action type is missing', async () => {
       const action = {};
-      await expect(ruleEvaluator.executeAction(action, { id: 'torrent-1' })).rejects.toThrow('Action type is required');
+      await expect(ruleEvaluator.executeAction(action, { id: 'torrent-1' })).rejects.toThrow(
+        'Action type is required'
+      );
     });
 
     it('should throw error for unknown action type', async () => {
       const action = { type: 'unknown_action' };
       const torrent = { id: 'torrent-1' };
 
-      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow('Unknown action type: unknown_action');
+      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow(
+        'Unknown action type: unknown_action'
+      );
     });
 
     it('should execute add_tag action', async () => {
@@ -1551,7 +1641,9 @@ describe('RuleEvaluator', () => {
       const action = { type: 'add_tag', tagIds: [] };
       const torrent = { id: 'torrent-1' };
 
-      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow('tagIds must be a non-empty array');
+      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow(
+        'tagIds must be a non-empty array'
+      );
     });
 
     it('should throw error for add_tag with non-existent tags', async () => {
@@ -1561,7 +1653,9 @@ describe('RuleEvaluator', () => {
       // Mock tag validation - only one tag exists
       mockUserDb._mockAll.mockReturnValueOnce([{ id: 1 }]);
 
-      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow('One or more tag IDs are invalid');
+      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow(
+        'One or more tag IDs are invalid'
+      );
     });
 
     it('should execute remove_tag action', async () => {
@@ -1584,7 +1678,9 @@ describe('RuleEvaluator', () => {
       const action = { type: 'remove_tag', tagIds: [] };
       const torrent = { id: 'torrent-1' };
 
-      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow('tagIds must be a non-empty array');
+      await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow(
+        'tagIds must be a non-empty array'
+      );
     });
   });
 
@@ -1593,8 +1689,8 @@ describe('RuleEvaluator', () => {
       const rule = {
         conditions: [
           { type: 'PROGRESS', operator: 'gte', value: 50 },
-          { type: 'TAGS', operator: 'has_any', value: [1, 2] }
-        ]
+          { type: 'TAGS', operator: 'has_any', value: [1, 2] },
+        ],
       };
 
       const result = ruleEvaluator.hasTagsCondition(rule);
@@ -1603,9 +1699,7 @@ describe('RuleEvaluator', () => {
 
     it('should return false for flat structure without TAGS condition', () => {
       const rule = {
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 50 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
       };
 
       const result = ruleEvaluator.hasTagsCondition(rule);
@@ -1616,11 +1710,9 @@ describe('RuleEvaluator', () => {
       const rule = {
         groups: [
           {
-            conditions: [
-              { type: 'TAGS', operator: 'has_any', value: [1, 2] }
-            ]
-          }
-        ]
+            conditions: [{ type: 'TAGS', operator: 'has_any', value: [1, 2] }],
+          },
+        ],
       };
 
       const result = ruleEvaluator.hasTagsCondition(rule);
@@ -1631,11 +1723,9 @@ describe('RuleEvaluator', () => {
       const rule = {
         groups: [
           {
-            conditions: [
-              { type: 'PROGRESS', operator: 'gte', value: 50 }
-            ]
-          }
-        ]
+            conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
+          },
+        ],
       };
 
       const result = ruleEvaluator.hasTagsCondition(rule);
@@ -1646,9 +1736,7 @@ describe('RuleEvaluator', () => {
   describe('hasAvgSpeedCondition', () => {
     it('should return true for flat structure with AVG_DOWNLOAD_SPEED condition', () => {
       const rule = {
-        conditions: [
-          { type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 1 }
-        ]
+        conditions: [{ type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 1 }],
       };
 
       const result = ruleEvaluator.hasAvgSpeedCondition(rule);
@@ -1657,9 +1745,7 @@ describe('RuleEvaluator', () => {
 
     it('should return true for flat structure with AVG_UPLOAD_SPEED condition', () => {
       const rule = {
-        conditions: [
-          { type: 'AVG_UPLOAD_SPEED', operator: 'gt', value: 1, hours: 1 }
-        ]
+        conditions: [{ type: 'AVG_UPLOAD_SPEED', operator: 'gt', value: 1, hours: 1 }],
       };
 
       const result = ruleEvaluator.hasAvgSpeedCondition(rule);
@@ -1668,9 +1754,7 @@ describe('RuleEvaluator', () => {
 
     it('should return false for flat structure without AVG_SPEED condition', () => {
       const rule = {
-        conditions: [
-          { type: 'PROGRESS', operator: 'gte', value: 50 }
-        ]
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
       };
 
       const result = ruleEvaluator.hasAvgSpeedCondition(rule);
@@ -1681,11 +1765,9 @@ describe('RuleEvaluator', () => {
       const rule = {
         groups: [
           {
-            conditions: [
-              { type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 1 }
-            ]
-          }
-        ]
+            conditions: [{ type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 1 }],
+          },
+        ],
       };
 
       const result = ruleEvaluator.hasAvgSpeedCondition(rule);
@@ -1698,8 +1780,8 @@ describe('RuleEvaluator', () => {
       const rule = {
         conditions: [
           { type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 2 },
-          { type: 'AVG_UPLOAD_SPEED', operator: 'gt', value: 1, hours: 5 }
-        ]
+          { type: 'AVG_UPLOAD_SPEED', operator: 'gt', value: 1, hours: 5 },
+        ],
       };
 
       const result = ruleEvaluator.getMaxHoursForAvgSpeed(rule);
@@ -1711,16 +1793,12 @@ describe('RuleEvaluator', () => {
       const rule = {
         groups: [
           {
-            conditions: [
-              { type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 3 }
-            ]
+            conditions: [{ type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1, hours: 3 }],
           },
           {
-            conditions: [
-              { type: 'AVG_UPLOAD_SPEED', operator: 'gt', value: 1, hours: 6 }
-            ]
-          }
-        ]
+            conditions: [{ type: 'AVG_UPLOAD_SPEED', operator: 'gt', value: 1, hours: 6 }],
+          },
+        ],
       };
 
       const result = ruleEvaluator.getMaxHoursForAvgSpeed(rule);
@@ -1730,9 +1808,7 @@ describe('RuleEvaluator', () => {
 
     it('should default to 1 hour when no hours specified', () => {
       const rule = {
-        conditions: [
-          { type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1 }
-        ]
+        conditions: [{ type: 'AVG_DOWNLOAD_SPEED', operator: 'gt', value: 1 }],
       };
 
       const result = ruleEvaluator.getMaxHoursForAvgSpeed(rule);
@@ -1746,10 +1822,13 @@ describe('RuleEvaluator', () => {
       const now = Date.now();
       const oneHourAgo = new Date(now - 60 * 60 * 1000);
       const speedHistoryMap = new Map([
-        ['1', [
-          { timestamp: oneHourAgo.toISOString(), total_downloaded: 0 },
-          { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 } // 1 MB/s over 1 hour
-        ]]
+        [
+          '1',
+          [
+            { timestamp: oneHourAgo.toISOString(), total_downloaded: 0 },
+            { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 }, // 1 MB/s over 1 hour
+          ],
+        ],
       ]);
 
       const speed = ruleEvaluator.getAverageSpeed('1', 1, 'download', speedHistoryMap);
@@ -1759,11 +1838,11 @@ describe('RuleEvaluator', () => {
     it('should fallback to database query when map not provided', () => {
       const now = Date.now();
       const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
-      
+
       // Mock database query
       mockUserDb._mockAll.mockReturnValueOnce([
         { timestamp: oneHourAgo, total_downloaded: 0 },
-        { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 }
+        { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 },
       ]);
 
       const speed = ruleEvaluator.getAverageSpeed('1', 1, 'download', null);
@@ -1776,10 +1855,13 @@ describe('RuleEvaluator', () => {
       const now = Date.now();
       const oneHourAgo = new Date(now - 60 * 60 * 1000);
       const speedHistoryMap = new Map([
-        ['1', [
-          { timestamp: oneHourAgo.toISOString(), total_downloaded: 0 },
-          { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 }
-        ]]
+        [
+          '1',
+          [
+            { timestamp: oneHourAgo.toISOString(), total_downloaded: 0 },
+            { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 },
+          ],
+        ],
       ]);
 
       const speed = ruleEvaluator.getAverageSpeedFromMap('1', 1, 'download', speedHistoryMap);
@@ -1887,13 +1969,17 @@ describe('RuleEvaluator', () => {
     });
 
     it('should compare with equals operator', () => {
-      expect(ruleEvaluator.compareStringValues('Test Torrent', 'equals', 'test torrent')).toBe(true);
+      expect(ruleEvaluator.compareStringValues('Test Torrent', 'equals', 'test torrent')).toBe(
+        true
+      );
       expect(ruleEvaluator.compareStringValues('Test Torrent', 'equals', 'other')).toBe(false);
     });
 
     it('should compare with not_equals operator', () => {
       expect(ruleEvaluator.compareStringValues('Test Torrent', 'not_equals', 'other')).toBe(true);
-      expect(ruleEvaluator.compareStringValues('Test Torrent', 'not_equals', 'test torrent')).toBe(false);
+      expect(ruleEvaluator.compareStringValues('Test Torrent', 'not_equals', 'test torrent')).toBe(
+        false
+      );
     });
 
     it('should compare with starts_with operator', () => {
@@ -1926,4 +2012,3 @@ describe('RuleEvaluator', () => {
     });
   });
 });
-

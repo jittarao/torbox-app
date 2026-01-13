@@ -90,7 +90,7 @@ class Logger {
           data: error.response.data,
         };
       }
-      
+
       // Send to Sentry with full context and trace
       captureException(error, {
         ...context,
@@ -102,7 +102,7 @@ class Logger {
       });
     } else if (error && typeof error === 'object') {
       logData.error = error;
-      
+
       // Send error message to Sentry if it's a significant error
       if (error.severity !== 'low') {
         captureMessage(message, 'error', {
@@ -130,7 +130,7 @@ class Logger {
       level: 'warning',
       data: context,
     });
-    
+
     this.logger.warn(message, context);
   }
 
@@ -148,7 +148,7 @@ class Logger {
         data: context,
       });
     }
-    
+
     this.logger.info(message, context);
   }
 

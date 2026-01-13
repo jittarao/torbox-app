@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "version:patch": "bun run scripts/update-version.js patch",
     "version:minor": "bun run scripts/update-version.js minor",
     "version:major": "bun run scripts/update-version.js major"

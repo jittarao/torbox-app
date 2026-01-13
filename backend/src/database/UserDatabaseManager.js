@@ -13,21 +13,21 @@ class DatabasePool {
   constructor(maxSize = 200) {
     this.maxSize = maxSize;
     this.cache = new Map();
-    
+
     // Metrics tracking
     this.metrics = {
       hits: 0,
       misses: 0,
       evictions: 0,
       lastEvictionAt: null,
-      lastWarningAt: null
+      lastWarningAt: null,
     };
-    
+
     // Warning thresholds (percentage of maxSize)
     this.warningThresholds = {
-      warning: 0.80,  // 80% - log warning
-      critical: 0.90, // 90% - log critical warning
-      emergency: 0.95 // 95% - log emergency warning
+      warning: 0.8, // 80% - log warning
+      critical: 0.9, // 90% - log critical warning
+      emergency: 0.95, // 95% - log emergency warning
     };
   }
 
@@ -57,7 +57,7 @@ class DatabasePool {
   set(key, value) {
     const wasFull = this.cache.size >= this.maxSize;
     const previousSize = this.cache.size;
-    
+
     if (this.cache.has(key)) {
       // Update existing
       this.cache.delete(key);
@@ -70,27 +70,29 @@ class DatabasePool {
           firstValue.db.close();
         } catch (error) {
           // Log but don't throw - we still want to remove from cache
-          logger.warn('Error closing database connection during pool eviction', { error: error.message });
+          logger.warn('Error closing database connection during pool eviction', {
+            error: error.message,
+          });
         }
       }
       this.cache.delete(firstKey);
       this.metrics.evictions++;
       this.metrics.lastEvictionAt = new Date().toISOString();
-      
+
       logger.warn('Database pool eviction occurred - pool is at capacity', {
         poolSize: this.cache.size,
         maxSize: this.maxSize,
         evictedKey: firstKey,
-        totalEvictions: this.metrics.evictions
+        totalEvictions: this.metrics.evictions,
       });
     }
-    
+
     this.cache.set(key, value);
-    
+
     // Check and log capacity warnings
     this._checkCapacityWarnings(previousSize);
   }
-  
+
   /**
    * Check pool capacity and log warnings at thresholds
    * @param {number} previousSize - Previous pool size before this operation
@@ -100,16 +102,21 @@ class DatabasePool {
     const currentSize = this.cache.size;
     const usagePercent = currentSize / this.maxSize;
     const previousPercent = previousSize / this.maxSize;
-    
+
     // Only log if we crossed a threshold (to avoid spam)
     const now = Date.now();
-    const lastWarningTime = this.metrics.lastWarningAt ? new Date(this.metrics.lastWarningAt).getTime() : 0;
+    const lastWarningTime = this.metrics.lastWarningAt
+      ? new Date(this.metrics.lastWarningAt).getTime()
+      : 0;
     const timeSinceLastWarning = now - lastWarningTime;
-    
+
     // Throttle warnings to at most once per minute
     const WARNING_THROTTLE_MS = 60000;
-    
-    if (usagePercent >= this.warningThresholds.emergency && previousPercent < this.warningThresholds.emergency) {
+
+    if (
+      usagePercent >= this.warningThresholds.emergency &&
+      previousPercent < this.warningThresholds.emergency
+    ) {
       if (timeSinceLastWarning >= WARNING_THROTTLE_MS) {
         logger.error('Database pool at EMERGENCY capacity - immediate action required', {
           poolSize: currentSize,
@@ -117,11 +124,14 @@ class DatabasePool {
           usagePercent: (usagePercent * 100).toFixed(1) + '%',
           evictions: this.metrics.evictions,
           hits: this.metrics.hits,
-          misses: this.metrics.misses
+          misses: this.metrics.misses,
         });
         this.metrics.lastWarningAt = new Date().toISOString();
       }
-    } else if (usagePercent >= this.warningThresholds.critical && previousPercent < this.warningThresholds.critical) {
+    } else if (
+      usagePercent >= this.warningThresholds.critical &&
+      previousPercent < this.warningThresholds.critical
+    ) {
       if (timeSinceLastWarning >= WARNING_THROTTLE_MS) {
         logger.error('Database pool at CRITICAL capacity - pool exhaustion imminent', {
           poolSize: currentSize,
@@ -129,17 +139,20 @@ class DatabasePool {
           usagePercent: (usagePercent * 100).toFixed(1) + '%',
           evictions: this.metrics.evictions,
           hits: this.metrics.hits,
-          misses: this.metrics.misses
+          misses: this.metrics.misses,
         });
         this.metrics.lastWarningAt = new Date().toISOString();
       }
-    } else if (usagePercent >= this.warningThresholds.warning && previousPercent < this.warningThresholds.warning) {
+    } else if (
+      usagePercent >= this.warningThresholds.warning &&
+      previousPercent < this.warningThresholds.warning
+    ) {
       if (timeSinceLastWarning >= WARNING_THROTTLE_MS) {
         logger.warn('Database pool approaching capacity - consider increasing MAX_DB_CONNECTIONS', {
           poolSize: currentSize,
           maxSize: this.maxSize,
           usagePercent: (usagePercent * 100).toFixed(1) + '%',
-          evictions: this.metrics.evictions
+          evictions: this.metrics.evictions,
         });
         this.metrics.lastWarningAt = new Date().toISOString();
       }
@@ -166,7 +179,9 @@ class DatabasePool {
           value.db.close();
         } catch (error) {
           // Log but don't throw - continue cleaning up other connections
-          logger.warn('Error closing database connection during pool clear', { error: error.message });
+          logger.warn('Error closing database connection during pool clear', {
+            error: error.message,
+          });
         }
       }
     }
@@ -186,7 +201,7 @@ class DatabasePool {
     const usagePercent = (currentSize / this.maxSize) * 100;
     const totalRequests = this.metrics.hits + this.metrics.misses;
     const hitRate = totalRequests > 0 ? (this.metrics.hits / totalRequests) * 100 : 0;
-    
+
     return {
       size: currentSize,
       maxSize: this.maxSize,
@@ -198,12 +213,12 @@ class DatabasePool {
         evictions: this.metrics.evictions,
         hitRate: parseFloat(hitRate.toFixed(2)),
         lastEvictionAt: this.metrics.lastEvictionAt,
-        lastWarningAt: this.metrics.lastWarningAt
+        lastWarningAt: this.metrics.lastWarningAt,
       },
-      status: this._getStatus(usagePercent)
+      status: this._getStatus(usagePercent),
     };
   }
-  
+
   /**
    * Get status based on usage percentage
    * @param {number} usagePercent - Current usage percentage
@@ -220,7 +235,7 @@ class DatabasePool {
     }
     return 'healthy';
   }
-  
+
   /**
    * Reset metrics (useful for testing or periodic resets)
    */
@@ -230,7 +245,7 @@ class DatabasePool {
       misses: 0,
       evictions: 0,
       lastEvictionAt: null,
-      lastWarningAt: null
+      lastWarningAt: null,
     };
   }
 }
@@ -283,7 +298,10 @@ class UserDatabaseManager {
         return cached;
       } catch (error) {
         // Connection is dead, remove from pool
-        logger.warn('Cached database connection is stale, removing from pool', { authId, error: error.message });
+        logger.warn('Cached database connection is stale, removing from pool', {
+          authId,
+          error: error.message,
+        });
         this.pool.delete(authId);
         // Continue to create a new connection below
       }
@@ -299,11 +317,15 @@ class UserDatabaseManager {
       } else {
         // Query database using Database class methods or raw SQLite methods
         if (this.masterDbIsInstance) {
-          user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId]);
+          user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [
+            authId,
+          ]);
         } else {
-          user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+          user = this.masterDb
+            .prepare('SELECT db_path FROM user_registry WHERE auth_id = ?')
+            .get(authId);
         }
-        
+
         // Cache the result if found (even if minimal, it helps avoid repeated queries)
         if (user) {
           cache.setUserRegistry(authId, user);
@@ -313,7 +335,7 @@ class UserDatabaseManager {
       logger.error('Failed to get user registry info', error, { authId });
       throw error;
     }
-    
+
     if (!user) {
       throw new Error(`User ${authId} not found in registry`);
     }
@@ -330,7 +352,7 @@ class UserDatabaseManager {
       } catch (error) {
         if (error.code !== 'EEXIST') throw error;
       }
-      
+
       // Create empty database file if it doesn't exist
       // We'll let SQLite create it, but ensure parent directory exists
     } catch (error) {
@@ -340,19 +362,19 @@ class UserDatabaseManager {
 
     // Open database connection
     const db = new SQLiteDatabase(dbPath);
-    
+
     // Enable WAL mode for better concurrency
     db.prepare('PRAGMA journal_mode = WAL').run();
-    
+
     // Set busy timeout
     db.prepare('PRAGMA busy_timeout = 5000').run();
-    
+
     // Initialize migration runner for user database
     const migrationRunner = new MigrationRunner(db, 'user');
     await migrationRunner.runMigrations();
 
     const dbConnection = { db, migrationRunner, authId, dbPath };
-    
+
     // Cache the connection
     this.pool.set(authId, dbConnection);
 
@@ -372,9 +394,13 @@ class UserDatabaseManager {
     // Check if user already exists
     let existing;
     if (this.masterDbIsInstance) {
-      existing = this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId]);
+      existing = this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [
+        authId,
+      ]);
     } else {
-      existing = this.masterDb.prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?').get(authId);
+      existing = this.masterDb
+        .prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?')
+        .get(authId);
     }
     if (existing) {
       return authId;
@@ -382,15 +408,22 @@ class UserDatabaseManager {
 
     // Insert into user registry
     if (this.masterDbIsInstance) {
-      this.masterDb.runQuery(`
+      this.masterDb.runQuery(
+        `
         INSERT INTO user_registry (auth_id, db_path)
         VALUES (?, ?)
-      `, [authId, dbPath]);
+      `,
+        [authId, dbPath]
+      );
     } else {
-      this.masterDb.prepare(`
+      this.masterDb
+        .prepare(
+          `
         INSERT INTO user_registry (auth_id, db_path)
         VALUES (?, ?)
-      `).run(authId, dbPath);
+      `
+        )
+        .run(authId, dbPath);
     }
 
     // Invalidate cache since user registry changed
@@ -411,7 +444,7 @@ class UserDatabaseManager {
     // Note: This method has a slightly different query than Database.getActiveUsers()
     // (includes OR ak.is_active IS NULL), so we use a different cache variant
     const variant = 'withNullKeys';
-    
+
     // Check cache first
     const cached = cache.getActiveUsers(variant);
     if (cached !== undefined) {
@@ -429,20 +462,23 @@ class UserDatabaseManager {
         ORDER BY ur.created_at ASC
       `);
     } else {
-      users = this.masterDb.prepare(`
+      users = this.masterDb
+        .prepare(
+          `
         SELECT ur.*, ak.encrypted_key, ak.key_name
         FROM user_registry ur
         LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
         WHERE ur.status = 'active' AND (ak.is_active = 1 OR ak.is_active IS NULL)
         ORDER BY ur.created_at ASC
-      `).all();
+      `
+        )
+        .all();
     }
-    
+
     // Cache the result with variant
     cache.setActiveUsers(users, variant);
     return users;
   }
-
 
   /**
    * Delete a user and their database
@@ -452,21 +488,29 @@ class UserDatabaseManager {
     // Get database path
     let user;
     if (this.masterDbIsInstance) {
-      user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId]);
+      user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [
+        authId,
+      ]);
     } else {
-      user = this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+      user = this.masterDb
+        .prepare('SELECT db_path FROM user_registry WHERE auth_id = ?')
+        .get(authId);
     }
-    
+
     if (user) {
       // Close and remove from pool
       this.pool.delete(authId);
-      
+
       // Delete database file
       try {
         await unlink(user.db_path);
       } catch (error) {
         if (error.code !== 'ENOENT') {
-          logger.warn('Failed to delete user database file', { authId, dbPath: user.db_path, error: error.message });
+          logger.warn('Failed to delete user database file', {
+            authId,
+            dbPath: user.db_path,
+            error: error.message,
+          });
         }
         // Continue even if file doesn't exist
       }
@@ -478,7 +522,7 @@ class UserDatabaseManager {
     } else {
       this.masterDb.prepare('DELETE FROM user_registry WHERE auth_id = ?').run(authId);
     }
-    
+
     // Invalidate cache since user was deleted
     cache.invalidateUserRegistry(authId);
     cache.invalidateActiveUsers();
@@ -502,4 +546,3 @@ class UserDatabaseManager {
 }
 
 export default UserDatabaseManager;
-

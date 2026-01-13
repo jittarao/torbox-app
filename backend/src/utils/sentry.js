@@ -18,10 +18,10 @@ export async function initSentry() {
     // @sentry/node uses named exports
     // Dynamic import returns a module namespace object with all exports
     const sentryModule = await import('@sentry/node');
-    
+
     // Use the module namespace directly - it contains all named exports
     Sentry = sentryModule;
-    
+
     const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
     if (!dsn) {
       console.warn('Sentry is enabled but SENTRY_DSN is not set. Sentry will not be initialized.');
@@ -38,29 +38,30 @@ export async function initSentry() {
     Sentry.init({
       dsn,
       environment: process.env.NODE_ENV || 'development',
-      
+
       // Performance monitoring
-      tracesSampleRate: process.env.NODE_ENV === 'production' 
-        ? parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1') 
-        : 1.0,
-      
+      tracesSampleRate:
+        process.env.NODE_ENV === 'production'
+          ? parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1')
+          : 1.0,
+
       // Release tracking
       release: process.env.npm_package_version || undefined,
-      
+
       // Additional options
       debug: process.env.SENTRY_DEBUG === 'true',
-      
+
       // Stack trace configuration - ensure full stack traces are captured
       attachStacktrace: true,
       maxBreadcrumbs: 100, // Increase breadcrumb limit for better trace context
-      
+
       // Filter out health check endpoints and other noise
       beforeSend(event, hint) {
         // Filter out certain errors if needed
         if (event.request?.url?.includes('/health')) {
           return null; // Don't send health check errors
         }
-        
+
         // Ensure stack traces are included
         if (event.exception) {
           event.exception.values?.forEach((exception) => {
@@ -70,10 +71,10 @@ export async function initSentry() {
             }
           });
         }
-        
+
         return event;
       },
-      
+
       // Enhance event with additional context before sending
       beforeSendTransaction(event) {
         // Include transaction context for performance traces
@@ -81,10 +82,10 @@ export async function initSentry() {
       },
     });
 
-    // Verify these are available
-    const hasRequestHandler = typeof Sentry.requestHandler === 'function';
-    const hasErrorHandler = typeof Sentry.errorHandler === 'function';
-    const hasTracingHandler = typeof Sentry.tracingHandler === 'function';
+    // Verify these are available (in @sentry/node v8+, handlers are under Sentry.Handlers)
+    const hasRequestHandler = typeof Sentry.Handlers?.requestHandler === 'function';
+    const hasErrorHandler = typeof Sentry.Handlers?.errorHandler === 'function';
+    const hasTracingHandler = typeof Sentry.Handlers?.tracingHandler === 'function';
 
     console.log('Sentry initialized successfully');
     if (hasRequestHandler && hasErrorHandler) {
@@ -96,7 +97,7 @@ export async function initSentry() {
       console.warn('Some Sentry Express middleware handlers are not available:', {
         requestHandler: hasRequestHandler,
         errorHandler: hasErrorHandler,
-        tracingHandler: hasTracingHandler
+        tracingHandler: hasTracingHandler,
       });
     }
     return Sentry;
@@ -120,13 +121,13 @@ export function getSentry() {
  */
 export function captureException(error, context = {}) {
   if (!Sentry) return;
-  
+
   Sentry.withScope((scope) => {
     // Set user context if authId is provided
     if (context.authId) {
       scope.setUser({ id: context.authId });
     }
-    
+
     // Add tags for filtering
     if (context.requestId) {
       scope.setTag('requestId', context.requestId);
@@ -137,21 +138,21 @@ export function captureException(error, context = {}) {
     if (context.method) {
       scope.setTag('method', context.method);
     }
-    
+
     // Extract error details for context
     const errorContext = {
       message: error.message,
       name: error.name,
       stack: error.stack,
     };
-    
+
     // Include any additional error properties
     if (error.code) errorContext.code = error.code;
     if (error.statusCode) errorContext.statusCode = error.statusCode;
     if (error.errno) errorContext.errno = error.errno;
     if (error.syscall) errorContext.syscall = error.syscall;
     if (error.path) errorContext.path = error.path;
-    
+
     // Include HTTP response data if available
     if (error.response) {
       errorContext.response = {
@@ -161,7 +162,7 @@ export function captureException(error, context = {}) {
         data: error.response.data,
       };
     }
-    
+
     // Include request data if available
     if (error.request) {
       errorContext.request = {
@@ -170,17 +171,17 @@ export function captureException(error, context = {}) {
         headers: error.request.headers,
       };
     }
-    
+
     // Add error details as context
     scope.setContext('error', errorContext);
-    
+
     // Add log message if provided
     if (context.logMessage) {
       scope.setContext('log', {
         message: context.logMessage,
       });
     }
-    
+
     // Add additional context (excluding special fields)
     const specialFields = ['authId', 'requestId', 'endpoint', 'method', 'logMessage'];
     const additionalContext = {};
@@ -189,19 +190,19 @@ export function captureException(error, context = {}) {
         additionalContext[key] = context[key];
       }
     });
-    
+
     if (Object.keys(additionalContext).length > 0) {
       scope.setContext('additional', additionalContext);
     }
-    
+
     // Set fingerprint for better grouping (optional - can help group similar errors)
     if (context.fingerprint) {
       scope.setFingerprint(context.fingerprint);
     }
-    
+
     // Set level
     scope.setLevel(context.level || 'error');
-    
+
     // Capture the exception with full stack trace
     Sentry.captureException(error);
   });
@@ -215,7 +216,7 @@ export function captureException(error, context = {}) {
  */
 export function captureMessage(message, level = 'info', context = {}) {
   if (!Sentry) return;
-  
+
   Sentry.withScope((scope) => {
     if (context.authId) {
       scope.setUser({ id: context.authId });
@@ -223,13 +224,13 @@ export function captureMessage(message, level = 'info', context = {}) {
     if (context.requestId) {
       scope.setTag('requestId', context.requestId);
     }
-    
+
     Object.keys(context).forEach((key) => {
       if (key !== 'authId' && key !== 'requestId') {
         scope.setContext(key, context[key]);
       }
     });
-    
+
     Sentry.captureMessage(message, level);
   });
 }
