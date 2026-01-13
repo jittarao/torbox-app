@@ -16,9 +16,10 @@ async function proxyRequest(request, pathSegments) {
       );
     }
 
-    // Reconstruct the path
-    const path = pathSegments.join('/');
-    const url = new URL(`${BACKEND_URL}/api/admin/${path}`);
+    // Reconstruct the path - handle both array and undefined cases
+    const pathSegmentsArray = Array.isArray(pathSegments) ? pathSegments : (pathSegments ? [pathSegments] : []);
+    const path = pathSegmentsArray.length > 0 ? pathSegmentsArray.join('/') : '';
+    const url = new URL(`${BACKEND_URL}/api/admin${path ? `/${path}` : ''}`);
     
     // Forward query parameters
     const searchParams = new URL(request.url).searchParams;
@@ -108,21 +109,26 @@ async function proxyRequest(request, pathSegments) {
 }
 
 export async function GET(request, { params }) {
-  return proxyRequest(request, params.path);
+  const resolvedParams = await params;
+  return proxyRequest(request, resolvedParams.path || []);
 }
 
 export async function POST(request, { params }) {
-  return proxyRequest(request, params.path);
+  const resolvedParams = await params;
+  return proxyRequest(request, resolvedParams.path || []);
 }
 
 export async function PUT(request, { params }) {
-  return proxyRequest(request, params.path);
+  const resolvedParams = await params;
+  return proxyRequest(request, resolvedParams.path || []);
 }
 
 export async function DELETE(request, { params }) {
-  return proxyRequest(request, params.path);
+  const resolvedParams = await params;
+  return proxyRequest(request, resolvedParams.path || []);
 }
 
 export async function PATCH(request, { params }) {
-  return proxyRequest(request, params.path);
+  const resolvedParams = await params;
+  return proxyRequest(request, resolvedParams.path || []);
 }
