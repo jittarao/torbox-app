@@ -574,25 +574,6 @@ class Database {
    * @returns {Array} - Array of users where has_active_rules = 1 AND (next_poll_at <= NOW() OR next_poll_at IS NULL/empty/0) AND status = 'active'
    */
   getUsersDueForPolling() {
-    // First, let's check all active users with active rules to see their next_poll_at status
-    const allActiveUsersWithRules = this.allQuery(`
-      SELECT ur.auth_id, ur.next_poll_at, ur.has_active_rules, ur.status
-      FROM user_registry ur
-      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
-      WHERE ur.status = 'active' 
-        AND (ak.is_active = 1 OR ak.is_active IS NULL)
-        AND ur.has_active_rules = 1
-    `);
-
-    logger.info('Active users with rules status', {
-      count: allActiveUsersWithRules.length,
-      users: allActiveUsersWithRules.map((u) => ({
-        authId: u.auth_id,
-        nextPollAt: u.next_poll_at,
-        hasActiveRules: u.has_active_rules,
-      })),
-    });
-
     // Convert ISO format (2026-01-11T13:04:23.860Z) to SQLite datetime format (2026-01-11 13:04:23)
     // for proper datetime comparison. Handle both ISO and SQLite formats.
     // Strategy: Replace T with space, remove Z, then extract first 19 chars (YYYY-MM-DD HH:MM:SS)
@@ -631,8 +612,8 @@ class Database {
       ) ASC
     `);
 
-    // Log for debugging
-    logger.info('Users due for polling query result', {
+    // Log at debug level since this runs frequently (every 30 seconds)
+    logger.debug('Users due for polling', {
       foundCount: result.length,
       authIds: result.map((u) => u.auth_id),
       nextPollAts: result.map((u) => ({
