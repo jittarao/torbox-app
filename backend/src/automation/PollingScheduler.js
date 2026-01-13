@@ -1,6 +1,7 @@
 import UserPoller from './UserPoller.js';
 import AutomationEngine from './AutomationEngine.js';
 import logger from '../utils/logger.js';
+import cache from '../utils/cache.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
@@ -728,6 +729,7 @@ class PollingScheduler {
   /**
    * Refresh pollers based on active users
    * Ensures pollers exist for users with active rules
+   * First syncs the has_active_rules flag for all active users to ensure accuracy
    */
   async refreshPollers() {
     const refreshStartTime = Date.now();
@@ -738,18 +740,94 @@ class PollingScheduler {
 
     try {
       const activeUsers = this.userDatabaseManager.getActiveUsers();
-      const usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
       const currentAuthIds = new Set(this.pollers.keys());
 
       logger.debug('Active users found', {
         activeUserCount: activeUsers.length,
-        usersWithActiveRulesCount: usersWithActiveRules.length,
         currentPollerCount: this.pollers.size,
+      });
+
+      // Step 1: Sync has_active_rules flag for all active users
+      // This ensures the flag accurately reflects the actual state in user databases
+      // Optimized: Directly query user databases instead of creating engines
+      const syncStats = { synced: 0, errors: 0, skipped: 0 };
+      for (const user of activeUsers) {
+        const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
+
+        if (!encrypted_key) {
+          continue; // Skip users without API keys
+        }
+
+        try {
+          // Optimization: Use existing engine if available, otherwise query DB directly
+          let actualHasActiveRules = false;
+          let automationEngine = null;
+
+          if (this.automationEnginesMap && this.automationEnginesMap.has(auth_id)) {
+            // Engine already exists - use it (fast path)
+            automationEngine = this.automationEnginesMap.get(auth_id);
+            actualHasActiveRules = await automationEngine.hasActiveRules();
+          } else {
+            // Engine doesn't exist - query database directly (avoids expensive initialization)
+            const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+            if (userDb && userDb.db) {
+              const result = userDb.db
+                .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+                .get();
+              actualHasActiveRules = result && result.count > 0;
+            } else {
+              // Database doesn't exist or can't be accessed - skip
+              syncStats.skipped++;
+              continue;
+            }
+          }
+
+          const actualFlag = actualHasActiveRules ? 1 : 0;
+
+          // Sync flag if it's out of sync
+          if (dbFlag !== actualFlag) {
+            logger.info('Syncing active rules flag during poller refresh', {
+              authId: auth_id,
+              previousFlag: dbFlag,
+              actualFlag,
+              actualHasActiveRules,
+            });
+
+            // Use existing engine if available, otherwise create one just for syncing
+            if (!automationEngine) {
+              automationEngine = await this.getOrCreateAutomationEngine(auth_id, encrypted_key);
+            }
+            await automationEngine.syncActiveRulesFlag();
+            syncStats.synced++;
+          }
+        } catch (error) {
+          logger.warn('Failed to sync active rules flag for user', {
+            authId: auth_id,
+            errorMessage: error.message,
+          });
+          syncStats.errors++;
+        }
+      }
+
+      // Step 2: Refresh active users list after syncing flags (to get updated flags)
+      // Invalidate cache to ensure we get fresh data
+      cache.invalidateActiveUsers();
+      const refreshedActiveUsers = this.userDatabaseManager.getActiveUsers();
+      const usersWithActiveRules = refreshedActiveUsers.filter(
+        (user) => user.has_active_rules === 1
+      );
+
+      logger.debug('Active users after flag sync', {
+        activeUserCount: refreshedActiveUsers.length,
+        usersWithActiveRulesCount: usersWithActiveRules.length,
+        flagsSynced: syncStats.synced,
+        syncErrors: syncStats.errors,
+        skipped: syncStats.skipped,
       });
 
       const stats = { added: 0, removed: 0, error: 0 };
 
-      // Create pollers for users with active rules
+      // Step 3: Create pollers for users with active rules
       for (const user of usersWithActiveRules) {
         const { auth_id, encrypted_key } = user;
 
@@ -781,7 +859,7 @@ class PollingScheduler {
         }
       }
 
-      // Remove pollers for users without active rules
+      // Step 4: Remove pollers for users without active rules
       for (const authId of currentAuthIds) {
         const userStillHasActiveRules = usersWithActiveRules.some((u) => u.auth_id === authId);
         if (!userStillHasActiveRules) {

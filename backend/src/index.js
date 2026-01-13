@@ -9,6 +9,7 @@ import UserDatabaseManager from './database/UserDatabaseManager.js';
 import PollingScheduler from './automation/PollingScheduler.js';
 import AutomationEngine from './automation/AutomationEngine.js';
 import logger from './utils/logger.js';
+import cache from './utils/cache.js';
 import { createAdminRateLimiter } from './middleware/adminAuth.js';
 import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
@@ -207,31 +208,143 @@ class TorBoxBackend {
       await this.pollingScheduler.start();
       logger.info('Polling scheduler started');
 
-      // Initialize automation engines only for users with active rules
+      // Initialize automation engines for all active users
+      // This ensures has_active_rules flags are synced on startup
+      // (even if flags are out of sync, initialization will correct them)
+      // Uses parallel initialization with concurrency control for scalability (1000+ users)
       const activeUsers = this.masterDatabase.getActiveUsers();
-      const usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
-      for (const user of usersWithActiveRules) {
+      const syncStats = { initialized: 0, errors: 0, flagsSynced: 0 };
+      const initStartTime = Date.now();
+
+      // Concurrency limit for parallel initialization (configurable via env)
+      const maxConcurrentInit = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
+      logger.info('Starting parallel automation engine initialization', {
+        totalUsers: activeUsers.length,
+        maxConcurrent: maxConcurrentInit,
+      });
+
+      // Semaphore for concurrency control
+      class InitSemaphore {
+        constructor(maxConcurrent) {
+          this.maxConcurrent = maxConcurrent;
+          this.running = 0;
+          this.queue = [];
+        }
+
+        async acquire() {
+          return new Promise((resolve) => {
+            if (this.running < this.maxConcurrent) {
+              this.running++;
+              resolve();
+            } else {
+              this.queue.push(resolve);
+            }
+          });
+        }
+
+        release() {
+          this.running--;
+          if (this.queue.length > 0) {
+            this.running++;
+            const next = this.queue.shift();
+            next();
+          }
+        }
+      }
+
+      const semaphore = new InitSemaphore(maxConcurrentInit);
+      const usersToInit = activeUsers.filter((user) => user.encrypted_key);
+
+      // Initialize users in parallel with concurrency control
+      const initPromises = usersToInit.map(async (user) => {
+        const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
+
+        await semaphore.acquire();
         try {
           const automationEngine = new AutomationEngine(
-            user.auth_id,
-            user.encrypted_key,
+            auth_id,
+            encrypted_key,
             this.userDatabaseManager,
             this.masterDatabase
           );
           await automationEngine.initialize();
-          this.automationEngines.set(user.auth_id, automationEngine);
-        } catch (error) {
-          logger.error(`Failed to initialize automation engine for user ${user.auth_id}`, error, {
-            authId: user.auth_id,
-          });
-        }
-      }
 
-      logger.info('TorBox Backend started successfully', {
-        activeUsers: activeUsers.length,
-        usersWithActiveRules: usersWithActiveRules.length,
-        automationEngines: this.automationEngines.size,
+          // Check if flag was out of sync (initialize() calls syncActiveRulesFlag())
+          const actualHasActiveRules = await automationEngine.hasActiveRules();
+          const actualFlag = actualHasActiveRules ? 1 : 0;
+
+          if (dbFlag !== actualFlag) {
+            logger.info('Active rules flag synced during startup', {
+              authId: auth_id,
+              previousFlag: dbFlag,
+              actualFlag,
+            });
+            syncStats.flagsSynced++;
+          }
+
+          this.automationEngines.set(auth_id, automationEngine);
+          syncStats.initialized++;
+
+          // Log progress for large user counts
+          if (usersToInit.length > 50 && syncStats.initialized % 50 === 0) {
+            const progress = ((syncStats.initialized / usersToInit.length) * 100).toFixed(1);
+            logger.info('Initialization progress', {
+              initialized: syncStats.initialized,
+              total: usersToInit.length,
+              progress: `${progress}%`,
+              errors: syncStats.errors,
+            });
+          }
+        } catch (error) {
+          logger.error(`Failed to initialize automation engine for user ${auth_id}`, error, {
+            authId: auth_id,
+          });
+          syncStats.errors++;
+        } finally {
+          semaphore.release();
+        }
       });
+
+      // Wait for all initializations to complete
+      await Promise.all(initPromises);
+
+      const initDuration = ((Date.now() - initStartTime) / 1000).toFixed(2);
+      logger.info('Automation engine initialization completed', {
+        totalUsers: usersToInit.length,
+        initialized: syncStats.initialized,
+        errors: syncStats.errors,
+        flagsSynced: syncStats.flagsSynced,
+        duration: `${initDuration}s`,
+        averageTime:
+          usersToInit.length > 0 ? `${(initDuration / usersToInit.length).toFixed(3)}s` : '0s',
+      });
+
+      // Refresh active users list after syncing flags to get accurate counts
+      if (syncStats.flagsSynced > 0) {
+        cache.invalidateActiveUsers();
+        const refreshedActiveUsers = this.masterDatabase.getActiveUsers();
+        const usersWithActiveRules = refreshedActiveUsers.filter(
+          (user) => user.has_active_rules === 1
+        );
+
+        logger.info('TorBox Backend started successfully', {
+          activeUsers: refreshedActiveUsers.length,
+          usersWithActiveRules: usersWithActiveRules.length,
+          automationEngines: this.automationEngines.size,
+          flagsSyncedOnStartup: syncStats.flagsSynced,
+          initializationErrors: syncStats.errors,
+        });
+      } else {
+        const usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
+
+        logger.info('TorBox Backend started successfully', {
+          activeUsers: activeUsers.length,
+          usersWithActiveRules: usersWithActiveRules.length,
+          automationEngines: this.automationEngines.size,
+          flagsSyncedOnStartup: syncStats.flagsSynced,
+          initializationErrors: syncStats.errors,
+        });
+      }
     } catch (error) {
       logger.error('Failed to initialize services', error);
       process.exit(1);
