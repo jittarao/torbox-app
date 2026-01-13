@@ -15,7 +15,13 @@ export async function initSentry() {
   }
 
   try {
-    Sentry = await import('@sentry/node');
+    // @sentry/node uses named exports
+    // Dynamic import returns a module namespace object with all exports
+    const sentryModule = await import('@sentry/node');
+    
+    // Use the module namespace directly - it contains all named exports
+    // In @sentry/node v10, all exports (init, Handlers, etc.) are on the module object
+    Sentry = sentryModule;
     
     const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
     if (!dsn) {
@@ -23,6 +29,13 @@ export async function initSentry() {
       return null;
     }
 
+    // Verify essential exports are available
+    if (typeof Sentry.init !== 'function') {
+      console.error('Sentry.init is not available. Module structure:', Object.keys(sentryModule));
+      return null;
+    }
+
+    // Initialize Sentry first
     Sentry.init({
       dsn,
       environment: process.env.NODE_ENV || 'development',
@@ -69,7 +82,24 @@ export async function initSentry() {
       },
     });
 
+    // Verify Handlers is available after initialization
+    if (!Sentry.Handlers) {
+      // Try one more time to find Handlers in the module
+      if (sentryModule.Handlers) {
+        Sentry.Handlers = sentryModule.Handlers;
+      } else {
+        console.error('Sentry.Handlers is not available after initialization.');
+        console.error('Available exports on Sentry:', Object.keys(Sentry).filter(k => !k.startsWith('_')));
+        console.error('Available exports on module:', Object.keys(sentryModule).filter(k => !k.startsWith('_')));
+        // Don't return null - let it continue but warn that middleware won't work
+        console.warn('Sentry will be initialized but Express middleware (requestHandler, tracingHandler) will not be available.');
+      }
+    }
+
     console.log('Sentry initialized successfully');
+    if (Sentry.Handlers) {
+      console.log('Sentry Handlers available for Express middleware');
+    }
     return Sentry;
   } catch (error) {
     console.error('Failed to initialize Sentry:', error);

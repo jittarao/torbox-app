@@ -129,11 +129,13 @@ class TorBoxBackend {
   setupMiddleware() {
     // Initialize Sentry Express middleware if Sentry is enabled
     const Sentry = getSentry();
-    if (Sentry) {
+    if (Sentry && Sentry.Handlers) {
       // Request handler must be the first middleware
       this.app.use(Sentry.Handlers.requestHandler());
       // Tracing handler creates a trace for every incoming request
       this.app.use(Sentry.Handlers.tracingHandler());
+    } else if (Sentry && !Sentry.Handlers) {
+      logger.warn('Sentry is initialized but Handlers is not available. Sentry middleware will not be applied.');
     }
     
     // Security middleware
