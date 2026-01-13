@@ -146,12 +146,12 @@ ehthumbs.db
 Thumbs.db
 
 # Logs
-logs
+/logs
 *.log
 
 # Project specific
-data/
-logs/
+/data
+/logs
 .next/cache/
 
 # Temporary files
