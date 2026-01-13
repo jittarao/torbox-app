@@ -570,7 +570,8 @@ class Database {
 
   /**
    * Get users due for polling (cron-like query)
-   * @returns {Array} - Array of users where next_poll_at <= NOW() OR (next_poll_at IS NULL/empty/0 AND has_active_rules = 1) AND status = 'active'
+   * Only returns users with has_active_rules = 1
+   * @returns {Array} - Array of users where has_active_rules = 1 AND (next_poll_at <= NOW() OR next_poll_at IS NULL/empty/0) AND status = 'active'
    */
   getUsersDueForPolling() {
     // First, let's check all active users with active rules to see their next_poll_at status
@@ -595,12 +596,14 @@ class Database {
     // Convert ISO format (2026-01-11T13:04:23.860Z) to SQLite datetime format (2026-01-11 13:04:23)
     // for proper datetime comparison. Handle both ISO and SQLite formats.
     // Strategy: Replace T with space, remove Z, then extract first 19 chars (YYYY-MM-DD HH:MM:SS)
+    // Only poll users with active rules (has_active_rules = 1)
     const result = this.allQuery(`
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
       WHERE ur.status = 'active' 
         AND (ak.is_active = 1 OR ak.is_active IS NULL)
+        AND ur.has_active_rules = 1
         AND (
           (
             ur.next_poll_at IS NOT NULL 
@@ -616,11 +619,10 @@ class Database {
             ) <= datetime('now')
           )
           OR (
-            (ur.next_poll_at IS NULL 
-             OR ur.next_poll_at = '' 
-             OR ur.next_poll_at = '0'
-             OR ur.next_poll_at = '0000-00-00 00:00:00')
-            AND ur.has_active_rules = 1
+            ur.next_poll_at IS NULL 
+            OR ur.next_poll_at = '' 
+            OR ur.next_poll_at = '0'
+            OR ur.next_poll_at = '0000-00-00 00:00:00'
           )
         )
       ORDER BY COALESCE(
