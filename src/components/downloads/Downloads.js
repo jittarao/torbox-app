@@ -19,24 +19,46 @@ import Spinner from '../shared/Spinner';
 import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
+import VideoPlayerModal from './VideoPlayerModal';
 import AutomationRules from './AutomationRules';
 import FiltersSection from './FiltersSection';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useNotificationsStore } from '@/store/notificationsStore';
+import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { formatSize } from './utils/formatters';
+import { fetchUserProfile, hasProPlan } from '@/utils/userProfile';
 
 export default function Downloads({ apiKey }) {
+  const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
+  // Subscribe to pause reasons to trigger re-render when pause state changes
+  const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
+  const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
   const [downloadHistory, setDownloadHistory] = useState([]);
+  const [videoPlayerState, setVideoPlayerState] = useState({
+    isOpen: false,
+    streamUrl: null,
+    fileName: null,
+    subtitles: [],
+    audios: [],
+    metadata: {},
+    itemId: null,
+    fileId: null,
+    streamType: 'torrent',
+    introInformation: null,
+    initialAudioIndex: 0,
+    initialSubtitleIndex: null,
+  });
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
+  const [hasProPlanAccess, setHasProPlanAccess] = useState(false);
   const hasExpandedRef = useRef(false);
   const scrollContainerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -53,6 +75,24 @@ export default function Downloads({ apiKey }) {
           console.error('Error ensuring user database:', error);
         });
       });
+    }
+  }, [apiKey]);
+
+  // Fetch user profile to check for Pro plan access
+  useEffect(() => {
+    if (apiKey && apiKey.length >= 20) {
+      fetchUserProfile(apiKey).then((userData) => {
+        if (userData) {
+          setHasProPlanAccess(hasProPlan(userData));
+        } else {
+          setHasProPlanAccess(false);
+        }
+      }).catch((error) => {
+        console.error('Error checking user plan:', error);
+        setHasProPlanAccess(false);
+      });
+    } else {
+      setHasProPlanAccess(false);
     }
   }, [apiKey]);
 
@@ -161,6 +201,11 @@ export default function Downloads({ apiKey }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
 
+  // Update pause reason when video player opens/closes
+  useEffect(() => {
+    setPauseReason('videoPlayer', videoPlayerState.isOpen);
+  }, [videoPlayerState.isOpen, setPauseReason]);
+
   // Start notifications polling once when component mounts
   const { fetchNotifications: fetchNotificationsStore } = useNotificationsStore();
   useEffect(() => {
@@ -170,6 +215,10 @@ export default function Downloads({ apiKey }) {
 
       // Set up periodic polling (every 2 minutes)
       const interval = setInterval(() => {
+        // Check if polling is paused (e.g., video player is open)
+        if (isPollingPaused()) {
+          return;
+        }
         // Read isPolling from store inside callback to get current value
         const { isPolling } = useNotificationsStore.getState();
         if (isPolling) {
@@ -182,7 +231,7 @@ export default function Downloads({ apiKey }) {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]);
+  }, [apiKey, pauseReasons]);
 
   const sortedItems = sortTorrents(filteredItems);
 
@@ -554,6 +603,23 @@ export default function Downloads({ apiKey }) {
                 toggleFiles={toggleFiles}
                 isFullscreen={isFullscreen}
                 scrollContainerRef={scrollContainerRef}
+                hasProPlan={hasProPlanAccess}
+                onOpenVideoPlayer={(streamUrl, fileName, subtitles, audios, metadata, itemId, fileId, streamType, introInformation, initialAudioIndex, initialSubtitleIndex) => {
+                  setVideoPlayerState({
+                    isOpen: true,
+                    streamUrl,
+                    fileName,
+                    subtitles,
+                    audios,
+                    metadata: metadata || {},
+                    itemId,
+                    fileId,
+                    streamType,
+                    introInformation: introInformation || null,
+                    initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
+                    initialSubtitleIndex: initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
+                  });
+                }}
               />
             ) : (
               <CardList
@@ -575,9 +641,43 @@ export default function Downloads({ apiKey }) {
                 isFullscreen={isFullscreen}
                 viewMode={viewMode}
                 scrollContainerRef={scrollContainerRef}
+                hasProPlan={hasProPlanAccess}
+                onOpenVideoPlayer={(streamUrl, fileName, subtitles, audios, metadata, itemId, fileId, streamType, introInformation, initialAudioIndex, initialSubtitleIndex) => {
+                  setVideoPlayerState({
+                    isOpen: true,
+                    streamUrl,
+                    fileName,
+                    subtitles,
+                    audios,
+                    metadata: metadata || {},
+                    itemId,
+                    fileId,
+                    streamType,
+                    introInformation: introInformation || null,
+                    initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
+                    initialSubtitleIndex: initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
+                  });
+                }}
               />
             )}
           </div>
+          <VideoPlayerModal
+            isOpen={videoPlayerState.isOpen}
+            onClose={() => setVideoPlayerState({ isOpen: false, streamUrl: null, fileName: null, subtitles: [], audios: [], metadata: {}, itemId: null, fileId: null, streamType: 'torrent', introInformation: null, initialAudioIndex: 0, initialSubtitleIndex: null })}
+            streamUrl={videoPlayerState.streamUrl}
+            fileName={videoPlayerState.fileName}
+            subtitles={videoPlayerState.subtitles}
+            audios={videoPlayerState.audios}
+            metadata={videoPlayerState.metadata}
+            apiKey={apiKey}
+            itemId={videoPlayerState.itemId}
+            fileId={videoPlayerState.fileId}
+            streamType={videoPlayerState.streamType}
+            introInformation={videoPlayerState.introInformation}
+            initialAudioIndex={videoPlayerState.initialAudioIndex}
+            initialSubtitleIndex={videoPlayerState.initialSubtitleIndex}
+            onStreamUrlChange={(newUrl) => setVideoPlayerState(prev => ({ ...prev, streamUrl: newUrl }))}
+          />
         </>
       )}
 

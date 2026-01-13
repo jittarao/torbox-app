@@ -3,6 +3,7 @@ import { isQueuedItem, getAutoStartOptions, sortItems } from '@/utils/utility';
 import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
 import { perfMonitor } from '@/utils/performance';
+import { usePollingPauseStore } from '@/store/pollingPauseStore';
 
 // Rate limit constants
 const MAX_CALLS = 5; // Maximum number of calls per WINDOW_SIZE
@@ -19,6 +20,9 @@ const AUTO_START_CHECK_INTERVAL = 30000; // 30 seconds in ms
 // 3. ✅ No polling when browser is not focused AND (auto-start is disabled OR no queued torrents)
 
 export function useFetchData(apiKey, type = 'torrents') {
+  // Subscribe to pause reasons to trigger re-render when pause state changes
+  const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
+  const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   // Separate state for each data type - ensure they're always arrays
   const [torrents, setTorrents] = useState([]);
   const [usenetItems, setUsenetItems] = useState([]);
@@ -527,6 +531,10 @@ export function useFetchData(apiKey, type = 'torrents') {
     }, WINDOW_SIZE);
 
     const shouldKeepFastPolling = () => {
+      // If polling is paused (e.g., video player is open), never poll
+      if (isPollingPaused()) {
+        return false;
+      }
       // Keep fast polling for torrents with auto-start enabled and queued items
       if (type === 'torrents') {
         const options = getAutoStartOptions();
@@ -537,18 +545,34 @@ export function useFetchData(apiKey, type = 'torrents') {
       return false;
     };
 
+    // Check if we should treat the tab as inactive (either actually inactive or polling is paused)
+    const isEffectivelyInactive = () => {
+      // If polling is paused (e.g., video player is open), treat as inactive
+      if (isPollingPaused()) {
+        return true;
+      }
+      // Otherwise, use actual visibility state
+      return !isVisible;
+    };
+
     const startPolling = () => {
       stopPolling(); // Clear any existing interval first
 
+      // If polling is paused, completely stop polling
+      if (isPollingPaused()) {
+        return;
+      }
+
       // Determine polling interval based on visibility and auto-start conditions
-      if (isVisible) {
+      const effectivelyInactive = isEffectivelyInactive();
+      if (!effectivelyInactive) {
         currentPollingInterval = ACTIVE_POLLING_INTERVAL;
       } else if (shouldKeepFastPolling()) {
         currentPollingInterval = INACTIVE_POLLING_INTERVAL;
       }
 
-      // Only start polling if visible or should keep fast polling
-      if (isVisible || shouldKeepFastPolling()) {
+      // Only start polling if not effectively inactive or should keep fast polling
+      if (!effectivelyInactive || shouldKeepFastPolling()) {
         interval = setInterval(() => {
           // Check rate limiting for current type
           if (!isRateLimited()) {
@@ -568,6 +592,13 @@ export function useFetchData(apiKey, type = 'torrents') {
     const handleVisibilityChange = () => {
       isVisible = document.visibilityState === 'visible';
 
+      // Only handle visibility changes if polling is not paused
+      // When polling is paused (e.g., video player is open), we ignore visibility changes and stop polling
+      if (isPollingPaused()) {
+        stopPolling();
+        return;
+      }
+
       if (isVisible) {
         const inactiveDuration = lastInactiveTime
           ? Date.now() - lastInactiveTime
@@ -581,8 +612,9 @@ export function useFetchData(apiKey, type = 'torrents') {
         lastInactiveTime = Date.now();
       }
 
-      // Start or stop polling based on visibility
-      if (isVisible || shouldKeepFastPolling()) {
+      // Start or stop polling based on effective visibility (considering video player state)
+      const effectivelyInactive = isEffectivelyInactive();
+      if (!effectivelyInactive || shouldKeepFastPolling()) {
         startPolling();
       } else {
         stopPolling();
@@ -599,7 +631,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       if (cleanupInterval) clearInterval(cleanupInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchLocalItems, isRateLimited, type]);
+  }, [fetchLocalItems, isRateLimited, type, pauseReasons]);
 
   // Return all data types and their setters
   return {

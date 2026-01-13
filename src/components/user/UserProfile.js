@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
+import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
 
 export default function UserProfile({ apiKey, setToast }) {
   const t = useTranslations('User');
@@ -24,22 +25,13 @@ export default function UserProfile({ apiKey, setToast }) {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/me', {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUserData(data.data);
+      const { fetchUserProfile: fetchProfile } = await import('@/utils/userProfile');
+      const profileData = await fetchProfile(apiKey);
+      
+      if (profileData) {
+        setUserData(profileData);
       } else {
-        const errorMessage = data.error || data.detail || 'Failed to fetch user profile';
+        const errorMessage = 'Failed to fetch user profile';
         setError(errorMessage);
         if (setToast) {
           setToast({
@@ -126,13 +118,7 @@ export default function UserProfile({ apiKey, setToast }) {
   };
 
   const getPlanName = (planId) => {
-    switch (planId) {
-      case 0: return t('plans.free');
-      case 1: return t('plans.essential');
-      case 2: return t('plans.pro');
-      case 3: return t('plans.standard');
-      default: return t('plans.unknown');
-    }
+    return getPlanNameUtil(planId, t);
   };
 
   const getStatusDisplay = (userData) => {

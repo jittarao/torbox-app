@@ -29,6 +29,7 @@ function ItemCard({
   onItemSelect,
   onFileSelect,
   onFileDownload,
+  onFileStream,
   onDelete,
   toggleFiles,
   expandedItems,
@@ -39,7 +40,9 @@ function ItemCard({
   viewMode,
   isCopying,
   isDownloading,
+  isStreaming,
   apiKey,
+  hasProPlan = false,
 }) {
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
@@ -421,9 +424,12 @@ function ItemCard({
           isBlurred={isBlurred}
           onFileSelect={onFileSelect}
           onFileDownload={onFileDownload}
+          onFileStream={onFileStream}
           isCopying={isCopying}
           isDownloading={isDownloading}
+          isStreaming={isStreaming}
           isMobile={isMobile}
+          hasProPlan={hasProPlan}
         />
       )}
 

@@ -3,6 +3,7 @@ import { formatSize } from './utils/formatters';
 import Icons from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import { useTranslations } from 'next-intl';
+import { isVideoFile } from './utils/videoDetection';
 
 function FileList({
   files,
@@ -11,10 +12,13 @@ function FileList({
   isBlurred,
   onFileSelect,
   onFileDownload,
+  onFileStream,
   isCopying,
   isDownloading,
+  isStreaming,
   isMobile,
   isFileDownloaded,
+  hasProPlan = false,
 }) {
   const t = useTranslations('FileActions');
   return (
@@ -48,6 +52,7 @@ function FileList({
               }}
             >
               <div className="flex items-center justify-between gap-4">
+                {/* Checkbox */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <input
                     type="checkbox"
@@ -67,7 +72,7 @@ function FileList({
                     className="accent-accent dark:accent-accent-dark"
                   />
 
-                  {/* Meta Data */}
+                  {/* File Name and Size */}
                   <div
                     className={`grid items-center gap-3 min-w-0 flex-1 ${
                       isMobile
@@ -94,7 +99,7 @@ function FileList({
                   </div>
                 </div>
 
-                {/* Actions */}
+                {/* File Actions */}
                 <div className="flex items-center gap-1">
                   <button
                     onClick={(e) => {
@@ -126,6 +131,24 @@ function FileList({
                       <Icons.Download />
                     )}
                   </button>
+                  {/* Play button - only show for video files and Pro plan users */}
+                  {isVideoFile(file) && onFileStream && hasProPlan && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFileStream(itemId, file);
+                      }}
+                      disabled={isStreaming?.[assetKey]}
+                      className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                      title={t('play')}
+                    >
+                      {isStreaming?.[assetKey] ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <Icons.Play />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

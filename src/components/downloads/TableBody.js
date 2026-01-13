@@ -5,6 +5,7 @@ import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
 import { useDownloads } from '../shared/hooks/useDownloads';
+import { useStream } from '../shared/hooks/useStream';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 
@@ -30,6 +31,9 @@ export default function TableBody({
   tableWidth,
   isFullscreen,
   scrollContainerRef,
+  hasProPlan = false,
+  onOpenVideoPlayer,
+  onFileStreamInit,
 }) {
   const t = useTranslations('TableBody');
 
@@ -38,6 +42,7 @@ export default function TableBody({
   const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
+  const [isStreaming, setIsStreaming] = useState({});
   const { downloadSingle } = useDownloads(
     apiKey,
     activeType,
@@ -295,6 +300,27 @@ export default function TableBody({
       });
   }, [assetKey, activeType, items, downloadSingle, setToast, t]);
 
+
+  const handleFileStream = useCallback(async (itemId, file) => {
+    const key = assetKey(itemId, file.id);
+    setIsStreaming((prev) => ({ ...prev, [key]: true }));
+
+    try {
+      // Call the parent's handler to get metadata and show track selection modal
+      if (onFileStreamInit) {
+        await onFileStreamInit(itemId, file);
+      }
+    } catch (error) {
+      console.error('Error initiating stream:', error);
+      setToast({
+        message: error.message || 'Failed to initiate stream',
+        type: 'error',
+      });
+    } finally {
+      setIsStreaming((prev) => ({ ...prev, [key]: false }));
+    }
+  }, [assetKey, onFileStreamInit, setToast]);
+
   const rowStyle = useMemo(() => ({
     willChange: 'transform',
   }), []);
@@ -420,102 +446,105 @@ export default function TableBody({
       ref={tbodyRef}
       className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark"
     >
-      {/* Top spacer */}
-      {startOffset > 0 && (
-        <tr>
-          <td colSpan={activeColumns.length + 2} style={{ height: startOffset, padding: 0 }} />
-        </tr>
-      )}
-      {/* Virtualized rows */}
-      {currentVirtualRows
-        .filter((virtualRow) => {
-          // Filter out invalid indices (can happen during data updates)
-          return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
-        })
-        .map((virtualRow) => {
-          const row = flattenedRows[virtualRow.index];
-
-          if (row.type === 'item') {
-          return (
-            <ItemRow
-              key={`item-${row.item.id}`}
-              item={row.item}
-              activeColumns={activeColumns}
-              columnWidths={columnWidths}
-              selectedItems={selectedItems}
-              setItems={setItems}
-              setSelectedItems={setSelectedItems}
-              downloadHistory={downloadHistory}
-              setDownloadHistory={setDownloadHistory}
-              onRowSelect={onRowSelect}
-              expandedItems={expandedItems}
-              toggleFiles={toggleFiles}
-              apiKey={apiKey}
-              onDelete={onDelete}
-              rowIndex={row.itemIndex}
-              handleItemSelection={handleItemSelection}
-              setToast={setToast}
-              activeType={activeType}
-              isMobile={isMobile}
-              isBlurred={isBlurred}
-              viewMode={viewMode}
-              tableWidth={tableWidth}
-              measureRef={virtualizer.measureElement}
-              dataIndex={virtualRow.index}
-              style={rowStyle}
-            />
-          );
-        } else {
-          // File row - use FileRow component to render the specific file
-          return (
-            <FileRow
-              key={`file-${row.item.id}-${row.file.id}`}
-              item={row.item}
-              selectedItems={selectedItems}
-              handleFileSelection={handleFileSelection}
-              handleFileDownload={handleFileDownload}
-              activeColumns={activeColumns}
-              downloadHistory={downloadHistory}
-              isCopying={isCopying}
-              isDownloading={isDownloading}
-              isMobile={isMobile}
-              isBlurred={isBlurred}
-              tableWidth={tableWidth}
-              fileIndex={row.fileIndex}
-              measureRef={virtualizer.measureElement}
-              dataIndex={virtualRow.index}
-              style={rowStyle}
-            />
-          );
-        }
-      })}
-      {/* Bottom spacer */}
-      {currentVirtualRows.length > 0 && (() => {
-        const lastVisibleRow = currentVirtualRows[currentVirtualRows.length - 1];
-        const lastVisibleIndex = lastVisibleRow?.index ?? 0;
-        
-        // Calculate height of rows after the last visible row
-        let bottomOffset = 0;
-        if (lastVisibleIndex < flattenedRows.length - 1) {
-          // Sum estimated sizes of all rows after the last visible row
-          for (let i = lastVisibleIndex + 1; i < flattenedRows.length; i++) {
-            bottomOffset += estimateSize(i);
-          }
-        }
-        
-        // Only show bottom spacer if there are rows after the last visible one
-        return bottomOffset > 0 ? (
+        {/* Top spacer */}
+        {startOffset > 0 && (
           <tr>
-            <td
-              colSpan={activeColumns.length + 2}
-              style={{
-                height: bottomOffset,
-                padding: 0,
-              }}
-            />
+            <td colSpan={activeColumns.length + 2} style={{ height: startOffset, padding: 0 }} />
           </tr>
-        ) : null;
-      })()}
+        )}
+        {/* Virtualized rows */}
+        {currentVirtualRows
+          .filter((virtualRow) => {
+            // Filter out invalid indices (can happen during data updates)
+            return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
+          })
+          .map((virtualRow) => {
+            const row = flattenedRows[virtualRow.index];
+
+            if (row.type === 'item') {
+            return (
+              <ItemRow
+                key={`item-${row.item.id}`}
+                item={row.item}
+                activeColumns={activeColumns}
+                columnWidths={columnWidths}
+                selectedItems={selectedItems}
+                setItems={setItems}
+                setSelectedItems={setSelectedItems}
+                downloadHistory={downloadHistory}
+                setDownloadHistory={setDownloadHistory}
+                onRowSelect={onRowSelect}
+                expandedItems={expandedItems}
+                toggleFiles={toggleFiles}
+                apiKey={apiKey}
+                onDelete={onDelete}
+                rowIndex={row.itemIndex}
+                handleItemSelection={handleItemSelection}
+                setToast={setToast}
+                activeType={activeType}
+                isMobile={isMobile}
+                isBlurred={isBlurred}
+                viewMode={viewMode}
+                tableWidth={tableWidth}
+                measureRef={virtualizer.measureElement}
+                dataIndex={virtualRow.index}
+                style={rowStyle}
+              />
+            );
+          } else {
+            // File row - use FileRow component to render the specific file
+            return (
+              <FileRow
+                key={`file-${row.item.id}-${row.file.id}`}
+                item={row.item}
+                selectedItems={selectedItems}
+                handleFileSelection={handleFileSelection}
+                handleFileDownload={handleFileDownload}
+                handleFileStream={handleFileStream}
+                activeColumns={activeColumns}
+                downloadHistory={downloadHistory}
+                isCopying={isCopying}
+                isDownloading={isDownloading}
+                isStreaming={isStreaming}
+                isMobile={isMobile}
+                isBlurred={isBlurred}
+                tableWidth={tableWidth}
+                fileIndex={row.fileIndex}
+                measureRef={virtualizer.measureElement}
+                dataIndex={virtualRow.index}
+                style={rowStyle}
+                hasProPlan={hasProPlan}
+              />
+            );
+          }
+        })}
+        {/* Bottom spacer */}
+        {currentVirtualRows.length > 0 && (() => {
+          const lastVisibleRow = currentVirtualRows[currentVirtualRows.length - 1];
+          const lastVisibleIndex = lastVisibleRow?.index ?? 0;
+          
+          // Calculate height of rows after the last visible row
+          let bottomOffset = 0;
+          if (lastVisibleIndex < flattenedRows.length - 1) {
+            // Sum estimated sizes of all rows after the last visible row
+            for (let i = lastVisibleIndex + 1; i < flattenedRows.length; i++) {
+              bottomOffset += estimateSize(i);
+            }
+          }
+          
+          // Only show bottom spacer if there are rows after the last visible one
+          return bottomOffset > 0 ? (
+            <tr>
+              <td
+                colSpan={activeColumns.length + 2}
+                style={{
+                  height: bottomOffset,
+                  padding: 0,
+                }}
+              />
+            </tr>
+          ) : null;
+        })()}
     </tbody>
   );
 }

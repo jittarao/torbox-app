@@ -6,6 +6,7 @@ import { formatSize } from './utils/formatters';
 import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
+import { isVideoFile } from './utils/videoDetection';
 
 const ACTIONS_COLUMN_WIDTH = 210;
 const CHECKBOX_COLUMN_WIDTH = 60;
@@ -16,16 +17,19 @@ function FileRow({
   selectedItems,
   handleFileSelection,
   handleFileDownload,
+  handleFileStream,
   activeColumns,
   downloadHistory,
   isCopying,
   isDownloading,
+  isStreaming,
   isMobile = false,
   isBlurred = false,
   tableWidth,
   fileIndex = null, // If provided, render only this specific file
   measureRef,
   dataIndex,
+  hasProPlan = false,
 }) {
   const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) =>
@@ -75,6 +79,7 @@ function FileRow({
               handleFileSelection(item.id, actualIndex, file, !isChecked, e.shiftKey);
             }}
           >
+            {/* Checkbox */}
             <td className="px-3 md:px-4 py-2 text-center whitespace-nowrap">
               <input
                 type="checkbox"
@@ -94,6 +99,7 @@ function FileRow({
               />
             </td>
 
+            {/* File Name and Size */}
             <td
               className="pl-3 md:pl-6 py-2"
               colSpan={isMobile ? 1 : activeColumns.length}
@@ -138,6 +144,7 @@ function FileRow({
               </div>
             </td>
 
+            {/* File Actions */}
             <td className="px-3 md:px-4 pt-2 pb-[8.5] whitespace-nowrap text-right sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
               {/* Copy link button */}
               <button
@@ -174,6 +181,26 @@ function FileRow({
                   <Icons.Download />
                 )}
               </button>
+
+              {/* Play button - only show for video files and Pro plan users */}
+              {isVideoFile(file) && handleFileStream && hasProPlan && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFileStream(item.id, file);
+                  }}
+                  disabled={isStreaming?.[assetKey(item.id, file.id)]}
+                  className="p-1.5 rounded-full text-accent dark:text-accent-dark 
+                    hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                  title={t('play')}
+                >
+                  {isStreaming?.[assetKey(item.id, file.id)] ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Icons.Play />
+                  )}
+                </button>
+              )}
             </td>
           </tr>
         );

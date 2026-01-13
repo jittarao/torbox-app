@@ -32,6 +32,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.3",
     "react-dropzone": "^14.3.8",
+    "shaka-player": "^4.16.13",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
