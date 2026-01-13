@@ -409,6 +409,38 @@ class UserPoller {
           apiFetchDuration: `${apiFetchDuration}s`
         });
       } catch (error) {
+        // Check if this is an authentication error
+        if (error.isAuthError || error.name === 'AuthenticationError') {
+          logger.error('API authentication failed - API key may be invalid or expired', error, {
+            authId: this.authId,
+            errorMessage: error.message,
+            status: error.status,
+            errorCode: error.responseData?.error,
+            detail: error.responseData?.detail,
+            apiFetchDuration: `${((Date.now() - apiFetchStart) / 1000).toFixed(2)}s`
+          });
+          
+          // Mark user status as inactive if masterDb is available to prevent further polling
+          if (this.masterDb && this.masterDb.updateUserStatus) {
+            try {
+              this.masterDb.updateUserStatus(this.authId, 'inactive');
+              logger.warn('Marked user as inactive due to authentication error', {
+                authId: this.authId
+              });
+            } catch (dbError) {
+              logger.error('Failed to update user status', dbError, {
+                authId: this.authId
+              });
+            }
+          }
+          
+          // Throw a more descriptive error
+          const authError = new Error(`API authentication failed: ${error.message || 'Invalid or expired API key'}`);
+          authError.name = 'AuthenticationError';
+          authError.isAuthError = true;
+          throw authError;
+        }
+        
         logger.error('Failed to fetch torrents from API', error, {
           authId: this.authId,
           errorMessage: error.message,

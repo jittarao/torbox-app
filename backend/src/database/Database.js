@@ -166,6 +166,19 @@ class Database {
   }
 
   /**
+   * Update user status
+   * @param {string} authId - User authentication ID
+   * @param {string} status - New status ('active', 'inactive', etc.)
+   */
+  updateUserStatus(authId, status) {
+    this.runQuery('UPDATE user_registry SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?', [status, authId]);
+    
+    // Invalidate cache since user registry changed
+    cache.invalidateUserRegistry(authId);
+    cache.invalidateActiveUsers();
+  }
+
+  /**
    * Get all active users
    */
   getActiveUsers() {
