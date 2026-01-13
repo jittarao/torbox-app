@@ -29,6 +29,46 @@ class ApiClient {
     this.client.defaults.headers['Authorization'] = `Bearer ${newApiKey}`;
   }
 
+  /**
+   * Check if an error is an authentication error
+   * @param {Error} error - Axios error to check
+   * @returns {boolean} - True if error is an authentication error
+   */
+  isAuthError(error) {
+    if (!error.response) {
+      return false;
+    }
+    
+    const status = error.response.status;
+    const data = error.response.data;
+    
+    // Check for 403 status with AUTH_ERROR
+    if (status === 403 && data && (data.error === 'AUTH_ERROR' || data.error === 'NO_AUTH' || data.error === 'BAD_TOKEN')) {
+      return true;
+    }
+    
+    // Check for 401 status (unauthorized)
+    if (status === 401) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Create a custom authentication error
+   * @param {Error} originalError - Original axios error
+   * @returns {Error} - Custom authentication error
+   */
+  createAuthError(originalError) {
+    const error = new Error(originalError.response?.data?.detail || originalError.response?.data?.error || 'Authentication failed');
+    error.name = 'AuthenticationError';
+    error.status = originalError.response?.status || 403;
+    error.responseData = originalError.response?.data;
+    error.isAuthError = true;
+    return error;
+  }
+
   async getTorrents(bypassCache = false) {
     try {
       const [torrentsResponse, queuedResponse] = await Promise.all([
@@ -48,6 +88,18 @@ class ApiClient {
       
       return [...torrents, ...queued];
     } catch (error) {
+      // Check if this is an authentication error
+      if (this.isAuthError(error)) {
+        const authError = this.createAuthError(error);
+        logger.error('Authentication error fetching torrents', authError, {
+          endpoint: '/api/torrents/mylist',
+          bypassCache,
+          status: authError.status,
+          errorCode: error.response?.data?.error,
+        });
+        throw authError;
+      }
+      
       logger.error('Error fetching torrents', error, {
         endpoint: '/api/torrents/mylist',
         bypassCache,
@@ -64,6 +116,17 @@ class ApiClient {
       });
       return response.data;
     } catch (error) {
+      if (this.isAuthError(error)) {
+        const authError = this.createAuthError(error);
+        logger.error('Authentication error controlling torrent', authError, {
+          endpoint: '/api/torrents/controltorrent',
+          torrentId,
+          operation,
+          status: authError.status,
+          errorCode: error.response?.data?.error,
+        });
+        throw authError;
+      }
       logger.error('Error controlling torrent', error, {
         endpoint: '/api/torrents/controltorrent',
         torrentId,
@@ -82,6 +145,17 @@ class ApiClient {
       });
       return response.data;
     } catch (error) {
+      if (this.isAuthError(error)) {
+        const authError = this.createAuthError(error);
+        logger.error('Authentication error controlling queued torrent', authError, {
+          endpoint: '/api/queued/controlqueued',
+          queuedId,
+          operation,
+          status: authError.status,
+          errorCode: error.response?.data?.error,
+        });
+        throw authError;
+      }
       logger.error('Error controlling queued torrent', error, {
         endpoint: '/api/queued/controlqueued',
         queuedId,
@@ -117,6 +191,16 @@ class ApiClient {
       });
       return response.data.data || [];
     } catch (error) {
+      if (this.isAuthError(error)) {
+        const authError = this.createAuthError(error);
+        logger.error('Authentication error fetching usenet downloads', authError, {
+          endpoint: '/api/usenet/mylist',
+          bypassCache,
+          status: authError.status,
+          errorCode: error.response?.data?.error,
+        });
+        throw authError;
+      }
       logger.error('Error fetching usenet downloads', error, {
         endpoint: '/api/usenet/mylist',
         bypassCache,
@@ -132,6 +216,16 @@ class ApiClient {
       });
       return response.data.data || [];
     } catch (error) {
+      if (this.isAuthError(error)) {
+        const authError = this.createAuthError(error);
+        logger.error('Authentication error fetching web downloads', authError, {
+          endpoint: '/api/webdl/mylist',
+          bypassCache,
+          status: authError.status,
+          errorCode: error.response?.data?.error,
+        });
+        throw authError;
+      }
       logger.error('Error fetching web downloads', error, {
         endpoint: '/api/webdl/mylist',
         bypassCache,
@@ -145,6 +239,15 @@ class ApiClient {
       const response = await this.client.get('/api/stats');
       return response.data;
     } catch (error) {
+      if (this.isAuthError(error)) {
+        const authError = this.createAuthError(error);
+        logger.error('Authentication error fetching stats', authError, {
+          endpoint: '/api/stats',
+          status: authError.status,
+          errorCode: error.response?.data?.error,
+        });
+        throw authError;
+      }
       logger.error('Error fetching stats', error, {
         endpoint: '/api/stats',
       });
