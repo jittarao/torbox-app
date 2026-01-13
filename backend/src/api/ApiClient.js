@@ -56,6 +56,40 @@ class ApiClient {
   }
 
   /**
+   * Check if an error is a connection/server error
+   * @param {Error} error - Axios error to check
+   * @returns {boolean} - True if error indicates connection/server issues
+   */
+  isConnectionError(error) {
+    // Check for network errors (no response)
+    if (!error.response) {
+      return error.code === 'ECONNRESET' || 
+             error.code === 'ECONNREFUSED' || 
+             error.code === 'ETIMEDOUT' ||
+             error.code === 'ENOTFOUND' ||
+             error.message?.includes('Network Error') ||
+             error.message?.includes('timeout');
+    }
+    
+    // Check for server errors (5xx)
+    if (error.response.status >= 500) {
+      const data = error.response.data;
+      // Check for specific server error messages
+      if (data && (
+        data.data === 'Server disconnected' ||
+        data.error === 'UNKNOWN_ERROR' ||
+        data.detail?.includes('disconnected') ||
+        data.detail?.includes('connection')
+      )) {
+        return true;
+      }
+      return true; // All 5xx errors are considered server errors
+    }
+    
+    return false;
+  }
+
+  /**
    * Create a custom authentication error
    * @param {Error} originalError - Original axios error
    * @returns {Error} - Custom authentication error
@@ -127,10 +161,40 @@ class ApiClient {
         });
         throw authError;
       }
+      
+      // Check for connection/server errors and provide better context
+      if (this.isConnectionError(error)) {
+        const errorDetails = {
+          endpoint: '/api/torrents/controltorrent',
+          torrentId,
+          operation,
+          errorCode: error.code,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          serverError: error.response?.data?.error,
+          serverMessage: error.response?.data?.data || error.response?.data?.detail,
+        };
+        
+        logger.error('Connection/server error controlling torrent', error, errorDetails);
+        
+        // Create a more descriptive error
+        const connectionError = new Error(
+          error.response?.data?.data || 
+          error.response?.data?.detail || 
+          `Server error: ${error.response?.status || error.code || 'Connection failed'}`
+        );
+        connectionError.name = 'ConnectionError';
+        connectionError.isConnectionError = true;
+        connectionError.originalError = error;
+        throw connectionError;
+      }
+      
       logger.error('Error controlling torrent', error, {
         endpoint: '/api/torrents/controltorrent',
         torrentId,
         operation,
+        status: error.response?.status,
+        errorCode: error.response?.data?.error,
       });
       throw error;
     }
@@ -177,8 +241,34 @@ class ApiClient {
         return await this.controlTorrent(torrentId, 'delete');
       }
     } catch (error) {
+      // Check for connection/server errors and provide better context
+      if (this.isConnectionError(error)) {
+        const errorDetails = {
+          torrentId,
+          errorCode: error.code,
+          status: error.response?.status,
+          serverError: error.response?.data?.error,
+          serverMessage: error.response?.data?.data || error.response?.data?.detail,
+        };
+        
+        logger.error('Connection/server error deleting torrent', error, errorDetails);
+        
+        // Create a more descriptive error
+        const connectionError = new Error(
+          error.response?.data?.data || 
+          error.response?.data?.detail || 
+          `Server error: ${error.response?.status || error.code || 'Connection failed'}`
+        );
+        connectionError.name = 'ConnectionError';
+        connectionError.isConnectionError = true;
+        connectionError.originalError = error;
+        throw connectionError;
+      }
+      
       logger.error('Error deleting torrent', error, {
         torrentId,
+        status: error.response?.status,
+        errorCode: error.response?.data?.error,
       });
       throw error;
     }

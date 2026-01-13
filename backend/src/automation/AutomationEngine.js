@@ -772,8 +772,9 @@ class AutomationEngine {
           let errorCount = 0;
 
           for (const torrent of torrentsToProcess) {
+            let ruleEvaluator = null;
             try {
-              const ruleEvaluator = await this.getRuleEvaluator();
+              ruleEvaluator = await this.getRuleEvaluator();
               logger.debug('Executing action on torrent', {
                 authId: this.authId,
                 ruleId: rule.id,
@@ -796,13 +797,29 @@ class AutomationEngine {
                 action: rule.action?.type
               });
             } catch (error) {
+              // Safely get torrent status for logging, handle errors gracefully
+              let torrentStatus = 'unknown';
+              try {
+                if (!ruleEvaluator) {
+                  ruleEvaluator = await this.getRuleEvaluator();
+                }
+                torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
+              } catch (statusError) {
+                // If we can't get status, just log without it
+                logger.debug('Could not get torrent status for error logging', {
+                  authId: this.authId,
+                  torrentId: torrent.id,
+                  statusError: statusError.message
+                });
+              }
+              
               logger.error('Action failed for torrent', error, {
                 authId: this.authId,
                 ruleId: rule.id,
                 ruleName: rule.name,
                 torrentId: torrent.id,
                 torrentName: torrent.name,
-                torrentStatus: this.ruleEvaluator.getTorrentStatus(torrent),
+                torrentStatus: torrentStatus,
                 action: rule.action?.type
               });
               errorCount++;
