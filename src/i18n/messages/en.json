@@ -408,7 +408,9 @@
     },
     "FileActions": {
         "copyLink": "Copy Link",
-        "download": "Download File"
+        "download": "Download File",
+        "play": "Play",
+        "streaming": "Streaming..."
     },
     "Header": {
         "logo": "TorBox Manager Logo",
@@ -979,6 +981,13 @@
             "free": "Free"
         },
         "title": "User Profile"
+    },
+    "VideoPlayer": {
+        "title": "Video Player",
+        "loading": "Loading stream...",
+        "error": "Failed to load stream",
+        "playbackSpeed": "Playback Speed",
+        "playbackSpeedNormal": "Normal"
     },
     "ViewControls": {
         "cardView": "Card View",

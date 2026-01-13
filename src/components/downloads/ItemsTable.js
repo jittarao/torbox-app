@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
+import TrackSelectionModal from './TrackSelectionModal';
+import { useStream } from '../shared/hooks/useStream';
 
 // Local storage key for mobile notice dismissal
 const MOBILE_NOTICE_DISMISSED_KEY = 'mobile-notice-dismissed';
@@ -32,11 +34,143 @@ export default function ItemsTable({
   viewMode = 'table',
   isFullscreen,
   scrollContainerRef,
+  hasProPlan = false,
+  onOpenVideoPlayer,
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [tableWidth, setTableWidth] = useState(0);
   const tableContainerRef = useRef(null);
+  const [trackSelectionModal, setTrackSelectionModal] = useState({
+    isOpen: false,
+    metadata: null,
+    introInformation: null,
+    fileName: null,
+    itemId: null,
+    fileId: null,
+    file: null,
+  });
+  const { createStream, getStreamData } = useStream(apiKey);
+  
+  // Map activeType to stream type
+  const getStreamType = useCallback(() => {
+    switch (activeType) {
+      case 'usenet':
+        return 'usenet';
+      case 'webdl':
+        return 'webdownload';
+      default:
+        return 'torrent';
+    }
+  }, [activeType]);
+  
+  // Handle file stream - get metadata and show track selection modal
+  const handleFileStreamInit = useCallback(async (itemId, file) => {
+    try {
+      const streamType = getStreamType();
+      
+      // Get stream metadata first using createStream with itemId, fileId, and type
+      const streamData = await createStream(itemId, file.id, streamType);
+      
+      // Extract metadata - API returns data nested in 'data' property
+      const data = streamData.data || streamData;
+      const metadata = data.metadata || streamData.metadata || {};
+      const introInformation = data.intro_information || streamData.intro_information || null;
+      
+      // Include search_metadata in the metadata object if it exists
+      const fullMetadata = {
+        ...metadata,
+        search_metadata: data.search_metadata || streamData.search_metadata || null,
+      };
+
+      // Show track selection modal
+      setTrackSelectionModal({
+        isOpen: true,
+        metadata: fullMetadata,
+        introInformation: introInformation,
+        fileName: file.name || file.short_name || 'Video',
+        itemId: itemId,
+        fileId: file.id,
+        file: file,
+      });
+    } catch (error) {
+      console.error('Error getting stream metadata:', error);
+      // You might want to pass setToast here or handle error differently
+    }
+  }, [getStreamType, getStreamData]);
+  
+  // Handle track selection and open video player
+  const handleTrackSelection = useCallback(async (selectedStreamData) => {
+    const { itemId, fileId, file, metadata: fullMetadata, introInformation } = trackSelectionModal;
+    const streamType = getStreamType();
+    
+    setTrackSelectionModal(prev => ({ ...prev, isOpen: false }));
+
+    try {
+      // Create stream with selected tracks
+      const streamMetadata = await createStream(
+        itemId,
+        fileId,
+        streamType,
+        selectedStreamData.subtitle_track_idx,
+        selectedStreamData.audio_track_idx
+      );
+      
+      // Extract stream URL
+      const data = streamMetadata.data || streamMetadata;
+      const presignedToken = data.presigned_token || streamMetadata.presigned_token;
+      const userToken = data.user_token || data.token || streamMetadata.user_token || streamMetadata.token;
+      
+      // Check if hls_url is already provided in the response
+      let streamUrl = data.hls_url || streamMetadata.hls_url;
+      
+      // If hls_url not provided, get it via getStreamData
+      if (!streamUrl && presignedToken && userToken) {
+        const streamData = await createStream(
+          itemId,
+          fileId,
+          streamType,
+          selectedStreamData.subtitle_track_idx,
+          selectedStreamData.audio_track_idx
+        );
+        streamUrl = streamData.data.hls_url;
+      }
+
+      if (!streamUrl) {
+        throw new Error('Failed to get stream URL');
+      }
+
+      // Extract updated metadata and subtitles/audios
+      const updatedMetadata = data.metadata || streamMetadata.metadata || fullMetadata;
+      const subtitles = updatedMetadata.subtitles || [];
+      const audios = updatedMetadata.audios || [];
+      
+      const finalMetadata = {
+        ...updatedMetadata,
+        search_metadata: data.search_metadata || streamMetadata.search_metadata || fullMetadata?.search_metadata || null,
+      };
+
+      // Open video player modal via callback
+      if (onOpenVideoPlayer) {
+        onOpenVideoPlayer(
+          streamUrl,
+          file.name || file.short_name || 'Video',
+          subtitles,
+          audios,
+          finalMetadata,
+          itemId,
+          fileId,
+          streamType,
+          introInformation, // Pass intro information
+          selectedStreamData.audio_track_idx, // Pass initial audio track index
+          selectedStreamData.subtitle_track_idx, // Pass initial subtitle track index
+        );
+      }
+    } catch (error) {
+      console.error('Error creating stream with selected tracks:', error);
+      // You might want to pass setToast here or handle error differently
+    }
+  }, [trackSelectionModal, getStreamType, createStream, getStreamData, onOpenVideoPlayer]);
 
   // Load mobile notice dismissal preference from localStorage
   useEffect(() => {
@@ -146,9 +280,20 @@ export default function ItemsTable({
             tableWidth={tableWidth}
             isFullscreen={isFullscreen}
             scrollContainerRef={scrollContainerRef}
+            hasProPlan={hasProPlan}
+            onOpenVideoPlayer={onOpenVideoPlayer}
+            onFileStreamInit={handleFileStreamInit}
           />
         </table>
       </div>
+      <TrackSelectionModal
+        isOpen={trackSelectionModal.isOpen}
+        onClose={() => setTrackSelectionModal(prev => ({ ...prev, isOpen: false }))}
+        onPlay={handleTrackSelection}
+        metadata={trackSelectionModal.metadata}
+        introInformation={trackSelectionModal.introInformation}
+        fileName={trackSelectionModal.fileName}
+      />
     </>
   );
 }

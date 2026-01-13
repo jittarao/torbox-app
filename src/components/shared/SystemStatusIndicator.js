@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useApiHealth } from './hooks/useApiHealth';
 import { useHealthStore } from '@/store/healthStore';
+import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import Icons from '@/components/icons';
 
 const HEALTH_CHECK_INTERVAL = 60000; // 60 seconds
@@ -13,6 +14,9 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const { overallStatus, lastCheck, error, refreshHealth, isLoading } = useApiHealth(apiKey);
   const { performHealthCheck } = useHealthStore();
+  // Subscribe to pause reasons to trigger re-render when pause state changes
+  const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
+  const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
 
   // Start health checks once when component mounts
   useEffect(() => {
@@ -22,6 +26,10 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
 
       // Set up periodic health checks
       const interval = setInterval(() => {
+        // Check if polling is paused (e.g., video player is open)
+        if (isPollingPaused()) {
+          return;
+        }
         performHealthCheck(apiKey);
       }, HEALTH_CHECK_INTERVAL);
 
@@ -30,7 +38,7 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, performHealthCheck]);
+  }, [apiKey, performHealthCheck, pauseReasons]);
 
   // Status configuration
   const statusConfig = {
