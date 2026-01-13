@@ -8,7 +8,7 @@ import logger from '../utils/logger.js';
  * Archived downloads routes
  */
 export function setupArchivedDownloadsRoutes(app, backend) {
-  const { userRateLimiter, userDatabaseManager } = backend;
+  const { userRateLimiter } = backend;
 
   // GET /api/archived-downloads - List archived downloads
   app.get(
@@ -19,7 +19,14 @@ export function setupArchivedDownloadsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
         // Enforce maximum limits to prevent memory issues
         const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 50, 1000)); // Max 1000, min 1
         const page = Math.max(1, parseInt(req.query.page, 10) || 1); // Min 1
@@ -76,6 +83,13 @@ export function setupArchivedDownloadsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
 
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
         const { torrent_id, hash, tracker, name } = req.body;
 
         if (!torrent_id || !hash) {
@@ -85,7 +99,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           });
         }
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Check if already archived
         const existing = userDb.db
@@ -145,7 +159,15 @@ export function setupArchivedDownloadsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const archiveId = req.validatedIds.id;
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
         const existing = userDb.db

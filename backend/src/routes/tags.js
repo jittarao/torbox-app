@@ -1,21 +1,25 @@
-import {
-  validateAuthIdMiddleware,
-  validateNumericIdMiddleware,
-} from '../middleware/validation.js';
+import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 
 /**
  * Tags routes
  */
 export function setupTagsRoutes(app, backend) {
-  const { userRateLimiter, userDatabaseManager } = backend;
+  const { userRateLimiter } = backend;
 
   // GET /api/tags - List all tags with usage counts
   app.get('/api/tags', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
-      const userDb = await userDatabaseManager.getUserDatabase(authId);
+      if (!backend.userDatabaseManager) {
+        return res.status(503).json({
+          success: false,
+          error: 'Service is initializing, please try again in a moment',
+        });
+      }
+
+      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
       const tags = userDb.db
         .prepare(
@@ -50,6 +54,13 @@ export function setupTagsRoutes(app, backend) {
     try {
       const authId = req.validatedAuthId;
 
+      if (!backend.userDatabaseManager) {
+        return res.status(503).json({
+          success: false,
+          error: 'Service is initializing, please try again in a moment',
+        });
+      }
+
       const { name } = req.body;
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return res.status(400).json({
@@ -66,7 +77,7 @@ export function setupTagsRoutes(app, backend) {
         });
       }
 
-      const userDb = await userDatabaseManager.getUserDatabase(authId);
+      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
       // Check for case-insensitive duplicate
       const existing = userDb.db
@@ -124,7 +135,15 @@ export function setupTagsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const tagId = req.validatedIds.id;
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         const tag = userDb.db
           .prepare(
@@ -175,6 +194,13 @@ export function setupTagsRoutes(app, backend) {
         const tagId = req.validatedIds.id;
         const { name } = req.body;
 
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
           return res.status(400).json({
             success: false,
@@ -190,7 +216,7 @@ export function setupTagsRoutes(app, backend) {
           });
         }
 
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
         const existing = userDb.db
@@ -267,7 +293,15 @@ export function setupTagsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const tagId = req.validatedIds.id;
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
         // Check if exists
         const existing = userDb.db
