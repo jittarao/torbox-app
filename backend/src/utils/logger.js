@@ -1,8 +1,10 @@
 import winston from 'winston';
+import { captureException, captureMessage, addBreadcrumb } from './sentry.js';
 
 /**
  * Logger utility for TorBox Backend
  * Outputs structured JSON logs that are Docker-friendly
+ * Integrates with Sentry for error tracking
  */
 class Logger {
   constructor() {
@@ -88,8 +90,29 @@ class Logger {
           data: error.response.data,
         };
       }
+      
+      // Send to Sentry with full context and trace
+      captureException(error, {
+        ...context,
+        logMessage: message,
+        // Include error details in context
+        errorCode: error.code,
+        errorStatusCode: error.statusCode,
+        errorName: error.name,
+      });
     } else if (error && typeof error === 'object') {
       logData.error = error;
+      
+      // Send error message to Sentry if it's a significant error
+      if (error.severity !== 'low') {
+        captureMessage(message, 'error', {
+          ...context,
+          error: error,
+        });
+      }
+    } else {
+      // Just a message, send to Sentry as error level
+      captureMessage(message, 'error', context);
     }
 
     this.logger.error(message, logData);
@@ -101,6 +124,13 @@ class Logger {
    * @param {Object} context - Additional context
    */
   warn(message, context = {}) {
+    // Add breadcrumb to Sentry for warnings
+    addBreadcrumb({
+      message,
+      level: 'warning',
+      data: context,
+    });
+    
     this.logger.warn(message, context);
   }
 
@@ -110,6 +140,15 @@ class Logger {
    * @param {Object} context - Additional context
    */
   info(message, context = {}) {
+    // Add breadcrumb to Sentry for important info messages
+    if (context.important || context.critical) {
+      addBreadcrumb({
+        message,
+        level: 'info',
+        data: context,
+      });
+    }
+    
     this.logger.info(message, context);
   }
 

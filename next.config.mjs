@@ -91,7 +91,10 @@ const withPWAConfig = withPWA({
 // Only wrap with Sentry if explicitly enabled via environment variable
 let config = withNextIntl(withPWAConfig);
 
-if (process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
+// Check both SENTRY_ENABLED and NEXT_PUBLIC_SENTRY_ENABLED for consistency
+const isSentryEnabled = process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true';
+
+if (isSentryEnabled) {
   const { withSentryConfig } = require('@sentry/nextjs');
   config = withSentryConfig(config, {
     // For all available options, see:

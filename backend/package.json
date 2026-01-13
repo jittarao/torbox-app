@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@isaacs/ttlcache": "^2.1.4",
+    "@sentry/node": "^10.33.0",
     "axios": "^1.7.9",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
