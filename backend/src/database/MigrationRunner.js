@@ -25,9 +25,7 @@ class MigrationRunner {
     }
 
     const files = await fsPromises.readdir(this.migrationsDir);
-    return files
-      .filter(file => file.endsWith('.js'))
-      .sort();
+    return files.filter((file) => file.endsWith('.js')).sort();
   }
 
   /**
@@ -35,10 +33,10 @@ class MigrationRunner {
    */
   getAppliedMigrations() {
     try {
-      const result = this.db.prepare(
-        'SELECT version FROM schema_migrations ORDER BY version'
-      ).all();
-      return result.map(row => row.version);
+      const result = this.db
+        .prepare('SELECT version FROM schema_migrations ORDER BY version')
+        .all();
+      return result.map((row) => row.version);
     } catch (error) {
       // If migrations table doesn't exist, return empty array
       return [];
@@ -49,19 +47,23 @@ class MigrationRunner {
    * Mark a migration as applied
    */
   markMigrationApplied(version, name) {
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       INSERT OR IGNORE INTO schema_migrations (version, name, applied_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
-    `).run(version, name);
+    `
+      )
+      .run(version, name);
   }
 
   /**
    * Check if migration is applied
    */
   isMigrationApplied(version) {
-    const result = this.db.prepare(
-      'SELECT version FROM schema_migrations WHERE version = ?'
-    ).get(version);
+    const result = this.db
+      .prepare('SELECT version FROM schema_migrations WHERE version = ?')
+      .get(version);
     return !!result;
   }
 
@@ -75,7 +77,7 @@ class MigrationRunner {
     }
     return {
       version: match[1],
-      name: match[2]
+      name: match[2],
     };
   }
 
@@ -103,11 +105,11 @@ class MigrationRunner {
 
       try {
         console.log(`Running migration ${version}_${name}...`);
-        
+
         const migrationPath = path.join(this.migrationsDir, file);
         // Convert path to file:// URL (works cross-platform)
         const migrationUrl = pathToFileURL(migrationPath).href;
-        
+
         const migration = await import(migrationUrl);
 
         if (!migration.up || typeof migration.up !== 'function') {
@@ -121,7 +123,7 @@ class MigrationRunner {
         // Mark as applied
         this.markMigrationApplied(version, name);
         migrationsRun++;
-        
+
         console.log(`✓ Migration ${version}_${name} applied successfully`);
       } catch (error) {
         console.error(`✗ Migration ${version}_${name} failed:`, error);
@@ -143,7 +145,7 @@ class MigrationRunner {
    */
   async rollbackMigration(version) {
     const migrationFiles = await this.getMigrationFiles();
-    const migrationFile = migrationFiles.find(file => {
+    const migrationFile = migrationFiles.find((file) => {
       const parsed = this.parseMigrationFile(file);
       return parsed.version === version;
     });
@@ -157,11 +159,11 @@ class MigrationRunner {
     }
 
     try {
-        const migrationPath = path.join(this.migrationsDir, migrationFile);
-        // Convert path to file:// URL (works cross-platform)
-        const migrationUrl = pathToFileURL(migrationPath).href;
-        
-        const migration = await import(migrationUrl);
+      const migrationPath = path.join(this.migrationsDir, migrationFile);
+      // Convert path to file:// URL (works cross-platform)
+      const migrationUrl = pathToFileURL(migrationPath).href;
+
+      const migration = await import(migrationUrl);
 
       if (!migration.down || typeof migration.down !== 'function') {
         throw new Error(`Migration ${migrationFile} does not export a 'down' function`);
@@ -172,7 +174,7 @@ class MigrationRunner {
 
       // Remove from applied migrations
       this.db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(version);
-      
+
       console.log(`✓ Migration ${version} rolled back successfully`);
     } catch (error) {
       console.error(`✗ Rollback of migration ${version} failed:`, error);
@@ -186,17 +188,21 @@ class MigrationRunner {
   async ensureMigrationsTable() {
     try {
       // Check if migrations table exists
-      const result = this.db.prepare(`
+      const result = this.db
+        .prepare(
+          `
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name='schema_migrations'
-      `).get();
+      `
+        )
+        .get();
 
       if (!result) {
         // Import and run the migrations table creation
         const migrationsTablePath = path.join(this.migrationsDir, '000_migrations_table.js');
         // Convert path to file:// URL (works cross-platform)
         const migrationUrl = pathToFileURL(migrationsTablePath).href;
-        
+
         const migrationsTable = await import(migrationUrl);
         migrationsTable.up(this.db);
         console.log(`Created schema_migrations table for ${this.dbType} database`);
@@ -214,17 +220,16 @@ class MigrationRunner {
     const migrationFiles = await this.getMigrationFiles();
     const appliedMigrations = this.getAppliedMigrations();
 
-    return migrationFiles.map(file => {
+    return migrationFiles.map((file) => {
       const { version, name } = this.parseMigrationFile(file);
       return {
         version,
         name,
         applied: appliedMigrations.includes(version),
-        filename: file
+        filename: file,
       };
     });
   }
 }
 
 export default MigrationRunner;
-

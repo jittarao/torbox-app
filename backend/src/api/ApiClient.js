@@ -1,12 +1,23 @@
 import axios from 'axios';
 import logger from '../utils/logger.js';
 
+// Constants
+const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_BASE_URL = 'https://api.torbox.app';
+const DEFAULT_API_VERSION = 'v1';
+const DEFAULT_PACKAGE_VERSION = '0.1.0';
+
+const AUTH_ERROR_CODES = ['AUTH_ERROR', 'NO_AUTH', 'BAD_TOKEN'];
+const CONNECTION_ERROR_CODES = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'];
+const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
+const SERVER_ERROR_MESSAGES = ['disconnected', 'connection'];
+
 class ApiClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseURL = process.env.TORBOX_API_BASE || 'https://api.torbox.app';
-    this.apiVersion = process.env.TORBOX_API_VERSION || 'v1';
-    this.userAgent = `TorBoxManager-Backend/${process.env.npm_package_version || '0.1.0'}`;
+    this.baseURL = process.env.TORBOX_API_BASE || DEFAULT_BASE_URL;
+    this.apiVersion = process.env.TORBOX_API_VERSION || DEFAULT_API_VERSION;
+    this.userAgent = `TorBoxManager-Backend/${process.env.npm_package_version || DEFAULT_PACKAGE_VERSION}`;
     
     // Create axios client with versioned baseURL
     // Structure: {{api_base}}/{{api_version}} + /api/endpoint
@@ -19,15 +30,26 @@ class ApiClient {
         'User-Agent': this.userAgent,
         'Content-Type': 'application/json'
       },
-      timeout: 30000 // 30 second timeout
+      timeout: DEFAULT_TIMEOUT
     });
   }
 
-  // Method to update API key dynamically
+  // ============================================================================
+  // Configuration Methods
+  // ============================================================================
+
+  /**
+   * Update API key dynamically
+   * @param {string} newApiKey - New API key to use
+   */
   updateApiKey(newApiKey) {
     this.apiKey = newApiKey;
     this.client.defaults.headers['Authorization'] = `Bearer ${newApiKey}`;
   }
+
+  // ============================================================================
+  // Error Detection Methods
+  // ============================================================================
 
   /**
    * Check if an error is an authentication error
@@ -42,17 +64,13 @@ class ApiClient {
     const status = error.response.status;
     const data = error.response.data;
     
-    // Check for 403 status with AUTH_ERROR
-    if (status === 403 && data && (data.error === 'AUTH_ERROR' || data.error === 'NO_AUTH' || data.error === 'BAD_TOKEN')) {
+    // Check for 403 status with AUTH_ERROR codes
+    if (status === 403 && data?.error && AUTH_ERROR_CODES.includes(data.error)) {
       return true;
     }
     
     // Check for 401 status (unauthorized)
-    if (status === 401) {
-      return true;
-    }
-    
-    return false;
+    return status === 401;
   }
 
   /**
@@ -63,12 +81,8 @@ class ApiClient {
   isConnectionError(error) {
     // Check for network errors (no response)
     if (!error.response) {
-      return error.code === 'ECONNRESET' || 
-             error.code === 'ECONNREFUSED' || 
-             error.code === 'ETIMEDOUT' ||
-             error.code === 'ENOTFOUND' ||
-             error.message?.includes('Network Error') ||
-             error.message?.includes('timeout');
+      return CONNECTION_ERROR_CODES.includes(error.code) ||
+             CONNECTION_ERROR_MESSAGES.some(msg => error.message?.includes(msg));
     }
     
     // Check for server errors (5xx)
@@ -78,8 +92,7 @@ class ApiClient {
       if (data && (
         data.data === 'Server disconnected' ||
         data.error === 'UNKNOWN_ERROR' ||
-        data.detail?.includes('disconnected') ||
-        data.detail?.includes('connection')
+        SERVER_ERROR_MESSAGES.some(msg => data.detail?.includes(msg))
       )) {
         return true;
       }
@@ -89,13 +102,21 @@ class ApiClient {
     return false;
   }
 
+  // ============================================================================
+  // Error Creation Methods
+  // ============================================================================
+
   /**
    * Create a custom authentication error
    * @param {Error} originalError - Original axios error
    * @returns {Error} - Custom authentication error
    */
   createAuthError(originalError) {
-    const error = new Error(originalError.response?.data?.detail || originalError.response?.data?.error || 'Authentication failed');
+    const error = new Error(
+      originalError.response?.data?.detail || 
+      originalError.response?.data?.error || 
+      'Authentication failed'
+    );
     error.name = 'AuthenticationError';
     error.status = originalError.response?.status || 403;
     error.responseData = originalError.response?.data;
@@ -103,288 +124,264 @@ class ApiClient {
     return error;
   }
 
-  async getTorrents(bypassCache = false) {
-    try {
-      const [torrentsResponse, queuedResponse] = await Promise.all([
-        this.client.get('/api/torrents/mylist', {
-          params: { bypass_cache: bypassCache }
-        }),
-        this.client.get('/api/queued/getqueued', {
-          params: { 
-            type: 'torrent',
-            bypass_cache: bypassCache 
-          }
-        })
-      ]);
+  /**
+   * Build error details object for logging
+   * @param {Error} error - Axios error
+   * @param {Object} context - Additional context information
+   * @returns {Object} - Error details object
+   */
+  buildErrorDetails(error, context = {}) {
+    return {
+      ...context,
+      errorCode: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      serverError: error.response?.data?.error,
+      serverMessage: error.response?.data?.data || error.response?.data?.detail,
+    };
+  }
 
-      const torrents = torrentsResponse.data.data || [];
-      const queued = queuedResponse.data.data || [];
-      
-      return [...torrents, ...queued];
+  /**
+   * Build connection error response
+   * @param {Error} error - Axios error
+   * @param {Object} context - Additional context to include in response
+   * @returns {Object} - Connection error response object
+   */
+  buildConnectionErrorResponse(error, context = {}) {
+    return {
+      success: false,
+      error: 'CONNECTION_ERROR',
+      message: error.response?.data?.data || 
+               error.response?.data?.detail || 
+               `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
+      isConnectionError: true,
+      ...context,
+    };
+  }
+
+  // ============================================================================
+  // Error Handling Wrapper
+  // ============================================================================
+
+  /**
+   * Wrapper method to handle errors consistently across all API calls
+   * @param {Function} apiCall - Async function that makes the API call
+   * @param {Object} options - Error handling options
+   * @param {string} options.endpoint - Endpoint name for logging
+   * @param {string} options.operation - Operation name for logging
+   * @param {Function|*} options.connectionErrorFallback - Function(error) or value to return on connection errors (default: throws)
+   * @param {Object} options.context - Additional context for error logging
+   * @returns {Promise<*>} - Result of the API call or fallback value
+   */
+  async handleApiCall(apiCall, options = {}) {
+    const {
+      endpoint,
+      operation,
+      connectionErrorFallback = null,
+      context = {}
+    } = options;
+
+    try {
+      return await apiCall();
     } catch (error) {
-      // Check if this is an authentication error
+      // Handle authentication errors
       if (this.isAuthError(error)) {
         const authError = this.createAuthError(error);
-        logger.error('Authentication error fetching torrents', authError, {
-          endpoint: '/api/torrents/mylist',
-          bypassCache,
+        logger.error(`Authentication error ${operation || 'in API call'}`, authError, {
+          endpoint,
+          ...context,
           status: authError.status,
           errorCode: error.response?.data?.error,
         });
         throw authError;
       }
       
-      logger.error('Error fetching torrents', error, {
-        endpoint: '/api/torrents/mylist',
-        bypassCache,
+      // Handle connection/server errors
+      if (this.isConnectionError(error)) {
+        const errorDetails = this.buildErrorDetails(error, { endpoint, ...context });
+        const logMessage = connectionErrorFallback !== null
+          ? `TorBox API connection error ${operation || 'in API call'} - handling gracefully`
+          : `TorBox API connection error ${operation || 'in API call'}`;
+        
+        logger.warn(logMessage, {
+          ...errorDetails,
+          message: connectionErrorFallback !== null
+            ? 'TorBox API is down or not responding. Operation skipped.'
+            : 'TorBox API connection failed.',
+        });
+        
+        // Return fallback value if provided (function or value)
+        if (connectionErrorFallback !== null) {
+          return typeof connectionErrorFallback === 'function'
+            ? connectionErrorFallback(error)
+            : connectionErrorFallback;
+        }
+        
+        throw error;
+      }
+      
+      // Handle other errors
+      logger.error(`Error ${operation || 'in API call'}`, error, {
+        endpoint,
+        ...context,
+        status: error.response?.status,
+        errorCode: error.response?.data?.error,
       });
       throw error;
     }
+  }
+
+  // ============================================================================
+  // Torrent Methods
+  // ============================================================================
+
+  async getTorrents(bypassCache = false) {
+    return this.handleApiCall(
+      async () => {
+        const [torrentsResponse, queuedResponse] = await Promise.all([
+          this.client.get('/api/torrents/mylist', {
+            params: { bypass_cache: bypassCache }
+          }),
+          this.client.get('/api/queued/getqueued', {
+            params: { 
+              type: 'torrent',
+              bypass_cache: bypassCache 
+            }
+          })
+        ]);
+
+        const torrents = torrentsResponse.data.data || [];
+        const queued = queuedResponse.data.data || [];
+        
+        return [...torrents, ...queued];
+      },
+      {
+        endpoint: '/api/torrents/mylist',
+        operation: 'fetching torrents',
+        connectionErrorFallback: [],
+        context: { bypassCache }
+      }
+    );
   }
 
   async controlTorrent(torrentId, operation) {
-    try {
-      const response = await this.client.post('/api/torrents/controltorrent', {
-        torrent_id: torrentId,
-        operation: operation
-      });
-      return response.data;
-    } catch (error) {
-      if (this.isAuthError(error)) {
-        const authError = this.createAuthError(error);
-        logger.error('Authentication error controlling torrent', authError, {
-          endpoint: '/api/torrents/controltorrent',
-          torrentId,
-          operation,
-          status: authError.status,
-          errorCode: error.response?.data?.error,
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.post('/api/torrents/controltorrent', {
+          torrent_id: torrentId,
+          operation: operation
         });
-        throw authError;
-      }
-      
-      // Check for connection/server errors and handle gracefully instead of throwing
-      if (this.isConnectionError(error)) {
-        const errorDetails = {
-          endpoint: '/api/torrents/controltorrent',
-          torrentId,
-          operation,
-          errorCode: error.code,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          serverError: error.response?.data?.error,
-          serverMessage: error.response?.data?.data || error.response?.data?.detail,
-        };
-        
-        logger.warn('TorBox API connection error - handling gracefully', {
-          ...errorDetails,
-          message: 'TorBox API is down or not responding. Operation skipped.',
-        });
-        
-        // Return a failure result instead of throwing
-        // This allows the automation to continue without crashing
-        return {
-          success: false,
-          error: 'CONNECTION_ERROR',
-          message: error.response?.data?.data || 
-                   error.response?.data?.detail || 
-                   `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
-          isConnectionError: true,
-          torrentId,
-          operation,
-        };
-      }
-      
-      logger.error('Error controlling torrent', error, {
+        return response.data;
+      },
+      {
         endpoint: '/api/torrents/controltorrent',
-        torrentId,
-        operation,
-        status: error.response?.status,
-        errorCode: error.response?.data?.error,
-      });
-      throw error;
-    }
+        operation: 'controlling torrent',
+        connectionErrorFallback: (error) => this.buildConnectionErrorResponse(error, { torrentId, operation }),
+        context: { torrentId, operation }
+      }
+    );
   }
 
   async controlQueuedTorrent(queuedId, operation) {
-    try {
-      const response = await this.client.post('/api/queued/controlqueued', {
-        queued_id: queuedId,
-        operation: operation,
-        type: 'torrent'
-      });
-      return response.data;
-    } catch (error) {
-      if (this.isAuthError(error)) {
-        const authError = this.createAuthError(error);
-        logger.error('Authentication error controlling queued torrent', authError, {
-          endpoint: '/api/queued/controlqueued',
-          queuedId,
-          operation,
-          status: authError.status,
-          errorCode: error.response?.data?.error,
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.post('/api/queued/controlqueued', {
+          queued_id: queuedId,
+          operation: operation,
+          type: 'torrent'
         });
-        throw authError;
-      }
-      
-      // Check for connection/server errors and handle gracefully instead of throwing
-      if (this.isConnectionError(error)) {
-        const errorDetails = {
-          endpoint: '/api/queued/controlqueued',
-          queuedId,
-          operation,
-          errorCode: error.code,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          serverError: error.response?.data?.error,
-          serverMessage: error.response?.data?.data || error.response?.data?.detail,
-        };
-        
-        logger.warn('TorBox API connection error controlling queued torrent - handling gracefully', {
-          ...errorDetails,
-          message: 'TorBox API is down or not responding. Operation skipped.',
-        });
-        
-        // Return a failure result instead of throwing
-        return {
-          success: false,
-          error: 'CONNECTION_ERROR',
-          message: error.response?.data?.data || 
-                   error.response?.data?.detail || 
-                   `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
-          isConnectionError: true,
-          queuedId,
-          operation,
-        };
-      }
-      
-      logger.error('Error controlling queued torrent', error, {
+        return response.data;
+      },
+      {
         endpoint: '/api/queued/controlqueued',
-        queuedId,
-        operation,
-      });
-      throw error;
-    }
+        operation: 'controlling queued torrent',
+        connectionErrorFallback: (error) => this.buildConnectionErrorResponse(error, { queuedId, operation }),
+        context: { queuedId, operation }
+      }
+    );
   }
 
   async deleteTorrent(torrentId) {
-    try {
-      // First check if it's queued or active
-      const torrents = await this.getTorrents();
-      const isQueued = torrents.some(t => t.id === torrentId && !t.download_state);
-      
-      if (isQueued) {
-        return await this.controlQueuedTorrent(torrentId, 'delete');
-      } else {
-        return await this.controlTorrent(torrentId, 'delete');
-      }
-    } catch (error) {
-      // Check for connection/server errors and handle gracefully instead of throwing
-      if (this.isConnectionError(error)) {
-        const errorDetails = {
-          torrentId,
-          errorCode: error.code,
-          status: error.response?.status,
-          serverError: error.response?.data?.error,
-          serverMessage: error.response?.data?.data || error.response?.data?.detail,
-        };
+    return this.handleApiCall(
+      async () => {
+        // First check if it's queued or active
+        const torrents = await this.getTorrents();
+        const isQueued = torrents.some(t => t.id === torrentId && !t.download_state);
         
-        logger.warn('TorBox API connection error deleting torrent - handling gracefully', {
-          ...errorDetails,
-          message: 'TorBox API is down or not responding. Delete operation skipped.',
-        });
-        
-        // Return a failure result instead of throwing
-        // This allows the automation to continue without crashing
-        return {
-          success: false,
-          error: 'CONNECTION_ERROR',
-          message: error.response?.data?.data || 
-                   error.response?.data?.detail || 
-                   `TorBox API connection failed: ${error.response?.status || error.code || 'Connection failed'}`,
-          isConnectionError: true,
-          torrentId,
-        };
+        if (isQueued) {
+          return await this.controlQueuedTorrent(torrentId, 'delete');
+        } else {
+          return await this.controlTorrent(torrentId, 'delete');
+        }
+      },
+      {
+        endpoint: '/api/torrents/delete',
+        operation: 'deleting torrent',
+        connectionErrorFallback: (error) => this.buildConnectionErrorResponse(error, { torrentId }),
+        context: { torrentId }
       }
-      
-      logger.error('Error deleting torrent', error, {
-        torrentId,
-        status: error.response?.status,
-        errorCode: error.response?.data?.error,
-      });
-      throw error;
-    }
+    );
   }
 
+  // ============================================================================
+  // Download Methods
+  // ============================================================================
+
   async getUsenetDownloads(bypassCache = false) {
-    try {
-      const response = await this.client.get('/api/usenet/mylist', {
-        params: { bypass_cache: bypassCache }
-      });
-      return response.data.data || [];
-    } catch (error) {
-      if (this.isAuthError(error)) {
-        const authError = this.createAuthError(error);
-        logger.error('Authentication error fetching usenet downloads', authError, {
-          endpoint: '/api/usenet/mylist',
-          bypassCache,
-          status: authError.status,
-          errorCode: error.response?.data?.error,
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.get('/api/usenet/mylist', {
+          params: { bypass_cache: bypassCache }
         });
-        throw authError;
-      }
-      logger.error('Error fetching usenet downloads', error, {
+        return response.data.data || [];
+      },
+      {
         endpoint: '/api/usenet/mylist',
-        bypassCache,
-      });
-      throw error;
-    }
+        operation: 'fetching usenet downloads',
+        connectionErrorFallback: [],
+        context: { bypassCache }
+      }
+    );
   }
 
   async getWebDownloads(bypassCache = false) {
-    try {
-      const response = await this.client.get('/api/webdl/mylist', {
-        params: { bypass_cache: bypassCache }
-      });
-      return response.data.data || [];
-    } catch (error) {
-      if (this.isAuthError(error)) {
-        const authError = this.createAuthError(error);
-        logger.error('Authentication error fetching web downloads', authError, {
-          endpoint: '/api/webdl/mylist',
-          bypassCache,
-          status: authError.status,
-          errorCode: error.response?.data?.error,
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.get('/api/webdl/mylist', {
+          params: { bypass_cache: bypassCache }
         });
-        throw authError;
-      }
-      logger.error('Error fetching web downloads', error, {
+        return response.data.data || [];
+      },
+      {
         endpoint: '/api/webdl/mylist',
-        bypassCache,
-      });
-      throw error;
-    }
+        operation: 'fetching web downloads',
+        connectionErrorFallback: [],
+        context: { bypassCache }
+      }
+    );
   }
 
+  // ============================================================================
+  // Stats Methods
+  // ============================================================================
+
   async getStats() {
-    try {
-      const response = await this.client.get('/api/stats');
-      return response.data;
-    } catch (error) {
-      if (this.isAuthError(error)) {
-        const authError = this.createAuthError(error);
-        logger.error('Authentication error fetching stats', authError, {
-          endpoint: '/api/stats',
-          status: authError.status,
-          errorCode: error.response?.data?.error,
-        });
-        throw authError;
-      }
-      logger.error('Error fetching stats', error, {
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.get('/api/stats');
+        return response.data;
+      },
+      {
         endpoint: '/api/stats',
-      });
-      throw error;
-    }
+        operation: 'fetching stats',
+        connectionErrorFallback: (error) => this.buildConnectionErrorResponse(error)
+      }
+    );
   }
+
+  // ============================================================================
+  // Health Check Methods
+  // ============================================================================
 
   async testConnection() {
     try {
@@ -395,7 +392,7 @@ class ApiClient {
           'User-Agent': this.userAgent,
           'Content-Type': 'application/json'
         },
-        timeout: 30000
+        timeout: DEFAULT_TIMEOUT
       });
       return { success: true, data: response.data };
     } catch (error) {
@@ -406,7 +403,6 @@ class ApiClient {
     }
   }
 
-  // Health check method
   async healthCheck() {
     try {
       await this.testConnection();

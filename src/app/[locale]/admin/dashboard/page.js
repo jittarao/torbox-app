@@ -8,7 +8,8 @@ import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
 
 export default function AdminDashboard() {
-  const { overviewMetrics, overviewLoading, fetchOverviewMetrics } = useAdminStore();
+  const { overviewMetrics, overviewLoading, fetchOverviewMetrics } =
+    useAdminStore();
   const [toast, setToast] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
@@ -30,7 +31,9 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Dashboard
+          </h2>
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"
@@ -45,7 +48,9 @@ export default function AdminDashboard() {
         {overviewLoading && !overviewMetrics ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading metrics...</p>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Loading metrics...
+            </p>
           </div>
         ) : overviewMetrics ? (
           <>
@@ -71,7 +76,9 @@ export default function AdminDashboard() {
               />
               <MetricCard
                 title="Total DB Size"
-                value={overviewMetrics.databases?.total_user_size_formatted || '0 MB'}
+                value={
+                  overviewMetrics.databases?.total_user_size_formatted || '0 MB'
+                }
                 subtitle={`${overviewMetrics.databases?.user_db_count || 0} databases`}
                 icon="💾"
               />
@@ -82,7 +89,9 @@ export default function AdminDashboard() {
           </>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">Failed to load metrics</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Failed to load metrics
+            </p>
           </div>
         )}
       </div>

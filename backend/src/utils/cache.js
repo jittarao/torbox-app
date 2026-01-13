@@ -104,7 +104,10 @@ class Cache {
    */
   setActiveUsers(users, variant = 'default') {
     this.activeUsersCache.set(`activeUsers:${variant}`, users);
-    logger.debug('Cached active users list', { count: users?.length || 0, variant });
+    logger.debug('Cached active users list', {
+      count: users?.length || 0,
+      variant,
+    });
   }
 
   /**
