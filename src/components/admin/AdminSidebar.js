@@ -9,7 +9,6 @@ const menuItems = [
   { path: '/admin/system', label: 'System', icon: '⚙️' },
   { path: '/admin/databases', label: 'Databases', icon: '💾' },
   { path: '/admin/automation', label: 'Automation', icon: '🤖' },
-  { path: '/admin/logs', label: 'Logs', icon: '📋' },
   { path: '/admin/settings', label: 'Settings', icon: '🔧' },
 ];
 

@@ -373,7 +373,7 @@ class PollingScheduler {
               }
             }
             
-            poller = new UserPoller(auth_id, encrypted_key, userDb.db, automationEngine, this.masterDb);
+            poller = new UserPoller(auth_id, encrypted_key, userDb.db, automationEngine, this.masterDb, this.userDatabaseManager);
             poller.lastPolledAt = new Date(); // Initialize lastPolledAt
             this.pollers.set(auth_id, poller);
             logger.info('Poller created successfully', { authId: auth_id, wasNewPoller: true });
@@ -607,7 +607,7 @@ class PollingScheduler {
             }
             
             // Create poller (will be used when due for polling)
-            const poller = new UserPoller(auth_id, encrypted_key, userDb.db, automationEngine, this.masterDb);
+            const poller = new UserPoller(auth_id, encrypted_key, userDb.db, automationEngine, this.masterDb, this.userDatabaseManager);
             this.pollers.set(auth_id, poller);
             logger.info('Poller added successfully', { 
               authId: auth_id,
