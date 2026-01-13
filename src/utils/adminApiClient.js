@@ -1,27 +1,13 @@
 /**
  * Admin API Client
- * Handles all admin API requests to the backend
+ * Handles all admin API requests through Next.js API routes
+ * Next.js routes proxy to the backend server
  */
-
-// Get backend URL - try environment variable first, then detect from window location
-const getBackendUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Client-side: try to detect backend from current location
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    }
-    // In production/Docker, backend might be on same host
-    return process.env.NEXT_PUBLIC_BACKEND_URL || `http://${hostname}:3001`;
-  }
-  return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-};
-
-const BACKEND_URL = getBackendUrl();
 
 class AdminApiClient {
   constructor() {
-    this.baseUrl = `${BACKEND_URL}/api/admin`;
+    // Use Next.js API routes instead of direct backend calls
+    this.baseUrl = '/api/admin';
     this.adminKey = null;
   }
 
@@ -187,20 +173,7 @@ class AdminApiClient {
       throw new Error('Admin key not set');
     }
 
-    // Get backend URL
-    const getBackendUrl = () => {
-      if (typeof window !== 'undefined') {
-        const hostname = window.location.hostname;
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-          return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-        }
-        return process.env.NEXT_PUBLIC_BACKEND_URL || `http://${hostname}:3001`;
-      }
-      return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    };
-
-    const backendUrl = getBackendUrl();
-    const downloadUrl = `${backendUrl}/api/admin/databases/${authId}/backup/${filename}?adminKey=${encodeURIComponent(adminKey)}`;
+    const downloadUrl = `/api/admin/databases/${authId}/backup/${filename}?adminKey=${encodeURIComponent(adminKey)}`;
 
     // Return URL for download
     return downloadUrl;
