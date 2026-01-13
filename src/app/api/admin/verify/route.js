@@ -32,10 +32,15 @@ export async function GET(request) {
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
           try {
-            const jsonData = JSON.parse(data);
+            const jsonData = data.trim() ? JSON.parse(data) : {};
             resolve({ ok: res.statusCode === 200, status: res.statusCode, data: jsonData });
           } catch (parseError) {
-            reject(parseError);
+            // If parsing fails, return the raw data or an error
+            resolve({ 
+              ok: false, 
+              status: res.statusCode || 500, 
+              data: { success: false, error: 'Invalid response from backend', raw: data } 
+            });
           }
         });
       });

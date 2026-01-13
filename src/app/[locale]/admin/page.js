@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import useAdminStore from '@/store/adminStore';
-import Toast from '@/components/shared/Toast';
 
 export default function AdminLoginPage() {
   const [adminKey, setAdminKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
-  const t = useTranslations('Admin');
   const { authenticate, isAuthenticated, verifyAuth } = useAdminStore();
 
   useEffect(() => {
