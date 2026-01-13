@@ -130,8 +130,12 @@ jobs:
 
       # Build and push frontend Docker image
       # Uses GitHub Actions cache for faster subsequent builds
+      # Note: cache-to removed to avoid 502 errors from GitHub's cache service
+      # Inline cache (BUILDKIT_INLINE_CACHE=1) still provides layer caching via image metadata
       - name: Build and push Docker image (frontend)
+        id: build-frontend
         uses: docker/build-push-action@v6
+        continue-on-error: false
         with:
           context: .                    # Build context (root directory)
           file: ./Dockerfile            # Dockerfile location
@@ -140,8 +144,10 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.tags.outputs.tags }}
           # Use GitHub Actions cache for build layers (speeds up builds)
+          # cache-from: Read from GHA cache if available (non-fatal if cache doesn't exist)
+          # Note: Removed cache-to to avoid 502 errors from GitHub's cache service
+          # Inline cache (BUILDKIT_INLINE_CACHE=1) still provides caching via image layers
           cache-from: type=gha,scope=frontend-${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUN_VERSION=latest
@@ -158,9 +164,13 @@ jobs:
 
       # Build and push backend Docker image
       # Only builds for non-PR events (PRs don't need backend images)
+      # Note: cache-to removed to avoid 502 errors from GitHub's cache service
+      # Inline cache (BUILDKIT_INLINE_CACHE=1) still provides layer caching via image metadata
       - name: Build and push Docker image (backend)
+        id: build-backend
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
+        continue-on-error: false
         with:
           context: ./backend             # Build context (backend directory)
           file: ./backend/Dockerfile    # Backend Dockerfile location
@@ -168,8 +178,10 @@ jobs:
           push: true                    # Always push backend images (only runs for non-PRs)
           tags: ${{ steps.tags.outputs.backend-tags }}
           # Use GitHub Actions cache for build layers
+          # cache-from: Read from GHA cache if available (non-fatal if cache doesn't exist)
+          # Note: Removed cache-to to avoid 502 errors from GitHub's cache service
+          # Inline cache (BUILDKIT_INLINE_CACHE=1) still provides caching via image layers
           cache-from: type=gha,scope=backend-${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=backend-${{ matrix.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUN_VERSION=latest
