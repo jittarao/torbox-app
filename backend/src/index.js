@@ -1491,9 +1491,10 @@ class TorBoxBackend {
       await this.pollingScheduler.start();
       logger.info('Polling scheduler started');
 
-      // Initialize automation engines for existing users
+      // Initialize automation engines only for users with active rules
       const activeUsers = this.masterDatabase.getActiveUsers();
-      for (const user of activeUsers) {
+      const usersWithActiveRules = activeUsers.filter(user => user.has_active_rules === 1);
+      for (const user of usersWithActiveRules) {
         try {
           const automationEngine = new AutomationEngine(
             user.auth_id,
@@ -1512,6 +1513,7 @@ class TorBoxBackend {
 
       logger.info('TorBox Backend started successfully', {
         activeUsers: activeUsers.length,
+        usersWithActiveRules: usersWithActiveRules.length,
         automationEngines: this.automationEngines.size,
       });
     } catch (error) {
