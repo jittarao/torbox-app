@@ -344,8 +344,8 @@ class Database {
     const authId = hashApiKey(apiKey);
     const encryptedKey = encrypt(apiKey);
 
-    // Check if user already exists
-    const existing = this.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId]);
+    // Check if API key already exists in api_keys table
+    const existing = this.getQuery('SELECT auth_id FROM api_keys WHERE auth_id = ?', [authId]);
 
     if (existing) {
       // Update existing
