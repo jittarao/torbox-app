@@ -123,7 +123,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Create link item from link
   const createLinkItem = async (link) => {
     let name = link.substring(0, 60) + '...';
-    
+
     // For usenet links, try to extract a better filename
     if (assetType === 'usenet') {
       try {
@@ -131,10 +131,11 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         if (link.includes('api') && (link.includes('nzb') || link.includes('usenet'))) {
           // Try to extract filename from URL parameters first
           const url = new URL(link);
-          const filenameParam = url.searchParams.get('filename') || 
-                               url.searchParams.get('name') || 
-                               url.searchParams.get('title');
-          
+          const filenameParam =
+            url.searchParams.get('filename') ||
+            url.searchParams.get('name') ||
+            url.searchParams.get('title');
+
           if (filenameParam) {
             name = decodeURIComponent(filenameParam);
           } else {
@@ -157,7 +158,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         // Fall back to default name generation
       }
     }
-    
+
     return {
       ...createBaseItem(link, assetType === 'torrents' ? 'magnet' : assetType),
       name,
@@ -168,9 +169,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   const validateFiles = (files) => {
     return files.filter((file) => {
       const fileName =
-        file instanceof URL || typeof file === 'string'
-          ? file.toString()
-          : file.name;
+        file instanceof URL || typeof file === 'string' ? file.toString() : file.name;
 
       switch (assetType) {
         case 'usenet':
@@ -273,18 +272,14 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Calculate rate limit wait time
   const calculateWaitTime = (uploadsInLastMinute, uploadsInLastHour) => {
     const now = Date.now();
-    
+
     // Ensure arrays are defined (default to empty arrays)
     const safeMinute = Array.isArray(uploadsInLastMinute) ? uploadsInLastMinute : [];
     const safeHour = Array.isArray(uploadsInLastHour) ? uploadsInLastHour : [];
-    
+
     // Clean old entries
-    const recentMinute = safeMinute.filter(
-      (time) => now - time < MINUTE_MS
-    );
-    const recentHour = safeHour.filter(
-      (time) => now - time < HOUR_MS
-    );
+    const recentMinute = safeMinute.filter((time) => now - time < MINUTE_MS);
+    const recentHour = safeHour.filter((time) => now - time < HOUR_MS);
 
     let waitTime = 0;
 
@@ -311,17 +306,13 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Get available rate limit capacity
   const getAvailableCapacity = (uploadsInLastMinute, uploadsInLastHour) => {
     const now = Date.now();
-    
+
     // Ensure arrays are defined (default to empty arrays)
     const safeMinute = Array.isArray(uploadsInLastMinute) ? uploadsInLastMinute : [];
     const safeHour = Array.isArray(uploadsInLastHour) ? uploadsInLastHour : [];
-    
-    const recentMinute = safeMinute.filter(
-      (time) => now - time < MINUTE_MS
-    );
-    const recentHour = safeHour.filter(
-      (time) => now - time < HOUR_MS
-    );
+
+    const recentMinute = safeMinute.filter((time) => now - time < MINUTE_MS);
+    const recentHour = safeHour.filter((time) => now - time < HOUR_MS);
 
     const availablePerMinute = Math.max(0, RATE_LIMIT_PER_MINUTE - recentMinute.length);
     const availablePerHour = Math.max(0, RATE_LIMIT_PER_HOUR - recentHour.length);
@@ -332,13 +323,26 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Wait for rate limit if needed
   const waitForRateLimit = async (uploadsInLastMinute, uploadsInLastHour) => {
     const rateLimit = calculateWaitTime(uploadsInLastMinute, uploadsInLastHour);
-    
+
     if (rateLimit.waitTimeMs > 0) {
       setRateLimitInfo({
         ...rateLimit,
         estimatedCompletionTime: null, // Will be calculated in uploadItems
       });
       await new Promise((resolve) => setTimeout(resolve, rateLimit.waitTimeMs));
+
+      // Re-filter arrays after waiting since time has passed
+      const now = Date.now();
+      const recentMinute = rateLimit.uploadsInLastMinute.filter((time) => now - time < MINUTE_MS);
+      const recentHour = rateLimit.uploadsInLastHour.filter((time) => now - time < HOUR_MS);
+
+      return {
+        ...rateLimit,
+        uploadsInLastMinute: recentMinute,
+        uploadsInLastHour: recentHour,
+        waitTimeMs: 0,
+        isRateLimited: false,
+      };
     }
 
     return rateLimit;
@@ -349,13 +353,13 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     // Use rateLimitInfo state if arrays are not provided (for external calls)
     const minuteArray = uploadsInLastMinute ?? rateLimitInfo.uploadsInLastMinute ?? [];
     const hourArray = uploadsInLastHour ?? rateLimitInfo.uploadsInLastHour ?? [];
-    
+
     // Ensure arrays are valid
     if (!Array.isArray(minuteArray) || !Array.isArray(hourArray)) {
       console.error('[uploadItem] Invalid rate limit arrays:', { minuteArray, hourArray });
       throw new Error('Invalid rate limit tracking arrays');
     }
-    
+
     // Wait for rate limit before uploading
     const rateLimit = await waitForRateLimit(minuteArray, hourArray);
     let currentMinute = rateLimit.uploadsInLastMinute;
@@ -408,13 +412,16 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         permanent: [
           (data) =>
             Object.values(NON_RETRYABLE_ERRORS).some(
-              (err) => data.error?.includes(err) || data.detail?.includes(err),
+              (err) => data.error?.includes(err) || data.detail?.includes(err)
             ),
         ],
       });
 
       // If we get a 429 error, wait longer and retry
-      if (!result.success && (result.error?.includes('429') || result.error?.includes('Too many requests'))) {
+      if (
+        !result.success &&
+        (result.error?.includes('429') || result.error?.includes('Too many requests'))
+      ) {
         retryCount++;
         if (retryCount < maxRetries) {
           // Exponential backoff: 30s, 60s, 120s
@@ -437,7 +444,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       const now = Date.now();
       currentMinute = [...currentMinute, now];
       currentHour = [...currentHour, now];
-      
+
       setRateLimitInfo((prev) => ({
         uploadsInLastMinute: currentMinute,
         uploadsInLastHour: currentHour,
@@ -447,10 +454,10 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       }));
     }
 
-    return { 
-      ...result, 
-      uploadsInLastMinute: currentMinute, 
-      uploadsInLastHour: currentHour 
+    return {
+      ...result,
+      uploadsInLastMinute: currentMinute,
+      uploadsInLastHour: currentHour,
     };
   };
 
@@ -468,7 +475,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     // Calculate estimated completion time
     const calculateEstimatedTime = (remaining, uploadsInMinute, uploadsInHour) => {
       if (remaining === 0) return null;
-      
+
       const now = Date.now();
       let currentTime = now;
       let tempMinute = [...uploadsInMinute];
@@ -500,7 +507,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         // Clean old entries based on current simulation time
         tempMinute = tempMinute.filter((time) => currentTime - time < MINUTE_MS);
         tempHour = tempHour.filter((time) => currentTime - time < HOUR_MS);
-        
+
         // Check if we need to wait due to rate limits
         const waitTime = calculateWaitTimeAt(currentTime, tempMinute, tempHour);
         if (waitTime > 0) {
@@ -509,11 +516,11 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
           tempMinute = tempMinute.filter((time) => currentTime - time < MINUTE_MS);
           tempHour = tempHour.filter((time) => currentTime - time < HOUR_MS);
         }
-        
+
         // Simulate adding upload timestamp
         tempMinute.push(currentTime);
         tempHour.push(currentTime);
-        
+
         // Add minimum delay between uploads (only if not the last item)
         if (i < remaining - 1) {
           currentTime += MIN_UPLOAD_DELAY_MS;
@@ -541,11 +548,11 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
       // Check available capacity before each upload
       const availableCapacity = getAvailableCapacity(currentUploadsInMinute, currentUploadsInHour);
-      
+
       // If we're at the limit, wait before proceeding
       if (availableCapacity <= 0) {
         const rateLimit = calculateWaitTime(currentUploadsInMinute, currentUploadsInHour);
-        
+
         if (rateLimit.waitTimeMs > 0) {
           setRateLimitInfo((prev) => ({
             ...prev,
@@ -553,17 +560,13 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
             isRateLimited: true,
             estimatedCompletionTime: prev.estimatedCompletionTime,
           }));
-          
+
           await new Promise((resolve) => setTimeout(resolve, rateLimit.waitTimeMs));
-          
+
           // Clean old entries after waiting
           const now = Date.now();
-          currentUploadsInMinute = currentUploadsInMinute.filter(
-            (time) => now - time < MINUTE_MS
-          );
-          currentUploadsInHour = currentUploadsInHour.filter(
-            (time) => now - time < HOUR_MS
-          );
+          currentUploadsInMinute = currentUploadsInMinute.filter((time) => now - time < MINUTE_MS);
+          currentUploadsInHour = currentUploadsInHour.filter((time) => now - time < HOUR_MS);
         }
       }
 
@@ -586,7 +589,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
           current: processedCount,
           total: pendingItems.length,
         });
-        
+
         // Clear any previous errors on success
         setError(null);
       } else {
@@ -598,10 +601,11 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       // Update rate limit info after each upload
       const rateLimit = calculateWaitTime(currentUploadsInMinute, currentUploadsInHour);
       const remaining = pendingItems.length - processedCount;
-      const newEstimated = remaining > 0 
-        ? calculateEstimatedTime(remaining, currentUploadsInMinute, currentUploadsInHour) 
-        : null;
-      
+      const newEstimated =
+        remaining > 0
+          ? calculateEstimatedTime(remaining, currentUploadsInMinute, currentUploadsInHour)
+          : null;
+
       setRateLimitInfo({
         uploadsInLastMinute: currentUploadsInMinute,
         uploadsInLastHour: currentUploadsInHour,
@@ -613,13 +617,16 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       // Add minimum delay between uploads (except for the last one)
       if (i < pendingItems.length - 1) {
         // Check if we need to wait due to rate limits
-        const nextAvailableCapacity = getAvailableCapacity(currentUploadsInMinute, currentUploadsInHour);
-        
+        const nextAvailableCapacity = getAvailableCapacity(
+          currentUploadsInMinute,
+          currentUploadsInHour
+        );
+
         if (nextAvailableCapacity <= 0) {
           // Will wait in next iteration's rate limit check
           continue;
         }
-        
+
         // Otherwise, wait the minimum delay
         await new Promise((resolve) => setTimeout(resolve, MIN_UPLOAD_DELAY_MS));
       }
@@ -640,10 +647,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       const newOptions = { ...prev, ...options };
 
       // Ensure autoStartLimit has a valid value
-      if (
-        typeof newOptions.autoStartLimit !== 'number' ||
-        isNaN(newOptions.autoStartLimit)
-      ) {
+      if (typeof newOptions.autoStartLimit !== 'number' || isNaN(newOptions.autoStartLimit)) {
         newOptions.autoStartLimit = 3;
       }
 
@@ -651,11 +655,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     });
 
     // Apply to all queued items
-    setItems(
-      items.map((item) =>
-        item.status === 'queued' ? { ...item, ...options } : item,
-      ),
-    );
+    setItems(items.map((item) => (item.status === 'queued' ? { ...item, ...options } : item)));
   };
 
   // Control queued items. Operation can be start
@@ -674,7 +674,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       permanent: [
         (data) =>
           Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err),
+            (err) => data.error?.includes(err) || data.detail?.includes(err)
           ),
       ],
     });
@@ -697,7 +697,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       permanent: [
         (data) =>
           Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err),
+            (err) => data.error?.includes(err) || data.detail?.includes(err)
           ),
       ],
     });
@@ -736,8 +736,6 @@ const isNonRetryableError = (data) => {
   return (
     !data.success &&
     (Object.values(NON_RETRYABLE_ERRORS).includes(data.error) ||
-      Object.values(NON_RETRYABLE_ERRORS).some((err) =>
-        data.detail?.includes(err),
-      ))
+      Object.values(NON_RETRYABLE_ERRORS).some((err) => data.detail?.includes(err)))
   );
 };

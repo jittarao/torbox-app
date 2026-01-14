@@ -1,8 +1,5 @@
 import { create } from 'zustand';
 
-// Maximum number of files to upload
-const MAX_FILES = 50;
-
 export const useUploaderStore = create((set, get) => ({
   items: [],
   error: '',
@@ -12,16 +9,6 @@ export const useUploaderStore = create((set, get) => ({
   // Actions
   setItems: (items) => set({ items }),
   addItems: (newItems) => {
-    const queuedCount = get().items.reduce(
-      (count, item) => (item.status === 'queued' ? count + 1 : count),
-      0,
-    );
-
-    if (queuedCount + newItems.length > MAX_FILES) {
-      set({ error: `Maximum ${MAX_FILES} items allowed` });
-      return;
-    }
-
     set((state) => ({
       items: [...state.items, ...newItems],
       error: '',
