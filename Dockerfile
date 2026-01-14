@@ -25,11 +25,14 @@ RUN bun install --production --frozen-lockfile --no-cache
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
+# Set production environment for build
+ENV NODE_ENV=production
 # Disable Next.js telemetry to prevent data collection during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install build dependencies required for compiling native modules
-RUN apk add --no-cache libc6-compat
+# Also install nodejs to ensure compatibility with Next.js standalone output
+RUN apk add --no-cache libc6-compat nodejs npm
 
 # Enable strict error handling to catch build failures
 # This ensures the build fails immediately if any command returns non-zero
@@ -47,7 +50,8 @@ COPY . .
 
 # Build the Next.js application with production optimizations
 # This creates optimized static files and server bundles
-RUN bun run build
+# Use node explicitly for the build to ensure compatibility with standalone output
+RUN NODE_ENV=production node node_modules/.bin/next build
 
 # Verify that the standalone output was created
 # This prevents silent build failures from causing COPY errors later
@@ -57,6 +61,31 @@ RUN if [ ! -d ".next/standalone" ]; then \
       (ls -la .next/ 2>/dev/null || echo ".next directory does not exist"); \
       exit 1; \
     fi
+
+# Verify that server.js exists in standalone output
+RUN if [ ! -f ".next/standalone/server.js" ]; then \
+      echo "ERROR: server.js not found in .next/standalone!"; \
+      echo "Standalone directory contents:"; \
+      ls -la .next/standalone/ || echo "Standalone directory is empty or doesn't exist"; \
+      exit 1; \
+    fi
+
+# Verify that Next.js is present in standalone node_modules
+RUN if [ ! -d ".next/standalone/node_modules/next" ]; then \
+      echo "ERROR: Next.js not found in standalone node_modules!"; \
+      echo "This indicates the standalone build is incomplete."; \
+      echo "Standalone node_modules contents:"; \
+      ls -la .next/standalone/node_modules/ 2>/dev/null || echo "node_modules directory doesn't exist"; \
+      exit 1; \
+    fi
+
+# Debug: Show the structure of the standalone output
+RUN echo "=== Standalone output structure ===" && \
+    ls -la .next/standalone/ && \
+    echo "=== Checking for Next.js ===" && \
+    ls -la .next/standalone/node_modules/next/ 2>/dev/null | head -10 || echo "Next.js directory not found" && \
+    echo "=== Checking server.js ===" && \
+    head -20 .next/standalone/server.js || echo "server.js not found"
 
 # Stage 3: Runner - Production runtime image
 # Minimal image containing only what's needed to run the application
@@ -87,6 +116,21 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # public: Contains public static files
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Verify that required files exist in the runner stage
+# This catches issues before the container starts
+RUN if [ ! -f "server.js" ]; then \
+      echo "ERROR: server.js not found in runner stage!"; \
+      ls -la /app/ || echo "Cannot list /app directory"; \
+      exit 1; \
+    fi && \
+    if [ ! -d "node_modules/next" ]; then \
+      echo "ERROR: Next.js not found in node_modules!"; \
+      echo "node_modules contents:"; \
+      ls -la node_modules/ 2>/dev/null | head -20 || echo "node_modules directory doesn't exist or is empty"; \
+      exit 1; \
+    fi && \
+    echo "✓ Standalone build verification passed"
 
 # Create necessary runtime directories with proper permissions
 # .next/cache: Next.js build cache
