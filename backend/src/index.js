@@ -33,7 +33,6 @@ class TorBoxBackend {
 
     this.setupMiddleware();
     this.setupRoutes();
-    this.initializeServices();
   }
 
   setupMiddleware() {
@@ -352,12 +351,28 @@ class TorBoxBackend {
   }
 
   start() {
-    this.app.listen(this.port, '0.0.0.0', () => {
+    const server = this.app.listen(this.port, '0.0.0.0', () => {
       logger.info('TorBox Backend server started', {
         port: this.port,
         healthCheck: `http://localhost:${this.port}/health`,
         statusEndpoint: `http://localhost:${this.port}/api/backend/status`,
       });
+    });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error('Failed to start server. Port is already in use.', {
+          port: this.port,
+          error: error.message,
+          suggestion: `Port ${this.port} is already in use. Please either:
+1. Stop the process using port ${this.port} (check with: netstat -ano | findstr :${this.port})
+2. Set a different port using the PORT environment variable (e.g., PORT=3002)`,
+        });
+        throw new Error(`Failed to start server. Is port ${this.port} in use?`);
+      } else {
+        logger.error('Failed to start server', { error: error.message, code: error.code });
+        throw error;
+      }
     });
   }
 
@@ -439,12 +454,29 @@ class TorBoxBackend {
 // Initialize Sentry before starting the server
 let backend;
 (async () => {
-  await initSentry();
+  try {
+    await initSentry();
 
-  // Start the server
-  backend = new TorBoxBackend();
-  global.torboxBackend = backend; // Store globally for shutdown handlers
-  backend.start();
+    // Create the backend instance
+    backend = new TorBoxBackend();
+    global.torboxBackend = backend; // Store globally for shutdown handlers
+
+    // Initialize services before starting the server
+    await backend.initializeServices();
+
+    // Start the server only after initialization completes
+    backend.start();
+  } catch (error) {
+    logger.error('Failed to start TorBox Backend', error);
+
+    // Flush Sentry before exit
+    const Sentry = getSentry();
+    if (Sentry) {
+      await Sentry.flush(2000);
+    }
+
+    process.exit(1);
+  }
 })();
 
 // Graceful shutdown
