@@ -5,8 +5,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Only use standalone output in production
-  ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
+  // Standalone output for Docker deployments
+  // Always enabled since this config is used for production builds
+  output: 'standalone',
 
   // Cache Components (Next.js 16.1.1+)
   cacheComponents: process.env.NODE_ENV === 'production',
