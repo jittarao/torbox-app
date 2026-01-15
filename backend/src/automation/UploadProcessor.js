@@ -993,6 +993,7 @@ class UploadProcessor {
              queue_order, last_processed_at, completed_at, created_at, updated_at, next_attempt_at
       FROM uploads
       WHERE status = 'queued'
+        AND (file_deleted IS NULL OR file_deleted = false)
         AND (next_attempt_at IS NULL OR datetime(next_attempt_at) <= datetime('now'))
     `;
 
