@@ -11,6 +11,38 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 
 /**
+ * Validate file extension for upload type
+ * @param {string} type - Upload type (torrent, usenet, webdl)
+ * @param {string} upload_type - Upload method (file, magnet, link)
+ * @param {string} filePathOrName - File path or filename to validate
+ * @returns {string|null} Error message if validation fails, null if valid
+ */
+function validateFileExtension(type, upload_type, filePathOrName) {
+  // Only validate if upload_type is 'file'
+  if (upload_type !== 'file' || !filePathOrName) {
+    return null;
+  }
+
+  // WebDL does not support file uploads
+  if (type === 'webdl') {
+    return 'WebDL type does not support file uploads. Use link upload_type instead.';
+  }
+
+  // Validate file extension matches the type
+  const fileExtension = path.extname(filePathOrName).toLowerCase();
+
+  if (type === 'torrent' && fileExtension !== '.torrent') {
+    return 'Invalid file extension. Torrent type requires .torrent file extension';
+  }
+
+  if (type === 'usenet' && fileExtension !== '.nzb') {
+    return 'Invalid file extension. Usenet type requires .nzb file extension';
+  }
+
+  return null;
+}
+
+/**
  * Middleware to extract authId from API key if authId not provided
  */
 function extractAuthIdMiddleware(req, res, next) {
@@ -88,6 +120,15 @@ export function setupUploadsRoutes(app, backend) {
         return res.status(400).json({
           success: false,
           error: 'Invalid type. Must be torrent, usenet, or webdl',
+        });
+      }
+
+      // Validate file extension matches the type to prevent unauthorized file uploads
+      const extensionError = validateFileExtension(type, 'file', filename);
+      if (extensionError) {
+        return res.status(400).json({
+          success: false,
+          error: extensionError,
         });
       }
 
@@ -243,6 +284,16 @@ export function setupUploadsRoutes(app, backend) {
             continue;
           }
 
+          // Validate file extension when upload_type is 'file' to prevent unauthorized file types
+          const extensionError = validateFileExtension(type, upload_type, file_path);
+          if (extensionError) {
+            errors.push({
+              upload,
+              error: extensionError,
+            });
+            continue;
+          }
+
           if ((upload_type === 'magnet' || upload_type === 'link') && !url) {
             errors.push({ upload, error: 'url is required for magnet/link uploads' });
             continue;
@@ -347,6 +398,15 @@ export function setupUploadsRoutes(app, backend) {
         return res.status(400).json({
           success: false,
           error: 'file_path is required for file uploads',
+        });
+      }
+
+      // Validate file extension when upload_type is 'file' to prevent unauthorized file types
+      const extensionError = validateFileExtension(type, upload_type, file_path);
+      if (extensionError) {
+        return res.status(400).json({
+          success: false,
+          error: extensionError,
         });
       }
 
