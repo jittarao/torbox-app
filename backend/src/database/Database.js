@@ -589,24 +589,10 @@ class Database {
   async updateUploadCounters(authId, userDb) {
     try {
       // Query actual counts from user DB
-      // Count uploads that are ready to process (next_attempt_at is NULL or in the past)
+      // Count ALL queued uploads (including deferred ones)
+      // The next_upload_attempt_at field in user_registry handles timing logic,
+      // so we don't need to exclude deferred uploads from the counter
       const queuedCount = userDb.db
-        .prepare(
-          `
-          SELECT COUNT(*) as count
-          FROM uploads
-          WHERE status = 'queued'
-            AND (
-              next_attempt_at IS NULL 
-              OR next_attempt_at = ''
-              OR COALESCE(datetime(next_attempt_at), '1970-01-01 00:00:00') <= datetime('now')
-            )
-        `
-        )
-        .get();
-
-      // Also get total queued count for debugging
-      const totalQueuedCount = userDb.db
         .prepare(
           `
           SELECT COUNT(*) as count
@@ -617,33 +603,6 @@ class Database {
         .get();
 
       const queuedUploadsCount = queuedCount?.count || 0;
-      const totalQueued = totalQueuedCount?.count || 0;
-
-      // Log if there's a discrepancy (total queued > ready to process)
-      if (totalQueued !== queuedUploadsCount) {
-        logger.debug('Queued uploads count discrepancy', {
-          authId,
-          totalQueued,
-          readyToProcess: queuedUploadsCount,
-        });
-
-        // Debug: Get sample of queued uploads to see their next_attempt_at values
-        const sampleUploads = userDb.db
-          .prepare(
-            `
-            SELECT id, status, next_attempt_at
-            FROM uploads
-            WHERE status = 'queued'
-            LIMIT 5
-          `
-          )
-          .all();
-
-        logger.debug('Sample queued uploads', {
-          authId,
-          sampleUploads,
-        });
-      }
 
       // Get next attempt time for uploads that are deferred (have future next_attempt_at)
       const nextAttemptResult = userDb.db
@@ -673,12 +632,11 @@ class Database {
         [queuedUploadsCount, nextUploadAttemptAt, authId]
       );
 
-      // Log the update for debugging (only if count > 0 or there was a discrepancy)
-      if (queuedUploadsCount > 0 || totalQueued !== queuedUploadsCount) {
+      // Log the update for debugging (only if count > 0)
+      if (queuedUploadsCount > 0) {
         logger.debug('Updated upload counters', {
           authId,
           queuedUploadsCount,
-          totalQueued,
           nextUploadAttemptAt,
         });
       }
