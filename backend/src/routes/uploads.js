@@ -83,6 +83,14 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
+      // Validate type against allowed values to prevent path traversal
+      if (!['torrent', 'usenet', 'webdl'].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid type. Must be torrent, usenet, or webdl',
+        });
+      }
+
       // Convert base64 to buffer
       const fileBuffer = Buffer.from(file_data, 'base64');
 
