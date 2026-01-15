@@ -61,8 +61,7 @@ export default function ActionBar({
 
   // Use filteredItems for status counts if available, otherwise use unfilteredItems
   const itemsForStatusCounts = filteredItems || unfilteredItems;
-  const { statusCounts, statusOptions, isStatusSelected } =
-    useStatusCounts(itemsForStatusCounts);
+  const { statusCounts, statusOptions, isStatusSelected } = useStatusCounts(itemsForStatusCounts);
 
   const t = useTranslations('Columns');
 
@@ -71,15 +70,16 @@ export default function ActionBar({
     // Reset sticky state when mode changes
     setIsSticky(false);
     isStickyRef.current = false;
-    
+
     // Recalculate initial position after a brief delay to allow DOM to settle
     const timer = setTimeout(() => {
       const element = stickyRef.current;
       if (element) {
         const rect = element.getBoundingClientRect();
-        const scrollTop = isFullscreen && scrollContainerRef?.current
-          ? scrollContainerRef.current.scrollTop
-          : window.scrollY || document.documentElement.scrollTop;
+        const scrollTop =
+          isFullscreen && scrollContainerRef?.current
+            ? scrollContainerRef.current.scrollTop
+            : window.scrollY || document.documentElement.scrollTop;
         initialTopRef.current = rect.top + scrollTop;
       }
     }, 50);
@@ -125,9 +125,10 @@ export default function ActionBar({
     const recalculateInitialTop = () => {
       if (element) {
         const rect = element.getBoundingClientRect();
-        const scrollTop = isFullscreen && scrollContainerRef?.current
-          ? scrollContainerRef.current.scrollTop
-          : window.scrollY || document.documentElement.scrollTop;
+        const scrollTop =
+          isFullscreen && scrollContainerRef?.current
+            ? scrollContainerRef.current.scrollTop
+            : window.scrollY || document.documentElement.scrollTop;
         initialTopRef.current = rect.top + scrollTop;
       }
     };
@@ -138,9 +139,10 @@ export default function ActionBar({
     const checkSticky = () => {
       if (!element) return;
 
-      const scrollTop = isFullscreen && scrollContainerRef?.current
-        ? scrollContainerRef.current.scrollTop
-        : window.scrollY || document.documentElement.scrollTop;
+      const scrollTop =
+        isFullscreen && scrollContainerRef?.current
+          ? scrollContainerRef.current.scrollTop
+          : window.scrollY || document.documentElement.scrollTop;
 
       // ActionBar should be sticky when we've scrolled past its initial position
       // We use >= instead of > to account for the exact moment it reaches the top
@@ -184,9 +186,8 @@ export default function ActionBar({
     }, 150);
 
     // Attach scroll listener to appropriate element
-    const scrollElement = isFullscreen && scrollContainerRef?.current
-      ? scrollContainerRef.current
-      : window;
+    const scrollElement =
+      isFullscreen && scrollContainerRef?.current ? scrollContainerRef.current : window;
 
     scrollElement.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -215,108 +216,105 @@ export default function ActionBar({
       <div
         ref={stickyRef}
         className={`flex flex-col lg:flex-row gap-4 justify-between bg-surface dark:bg-surface-dark
-          ${isSticky ? 'fixed top-0 left-0 right-0 z-50 py-2 border-b border-border dark:border-border-dark shadow-lg' : 'py-4'} 
+          ${isSticky ? 'fixed top-0 left-0 right-0 z-50 py-2 border-b border-border dark:border-border-dark shadow-lg' : 'pb-4'} 
           ${isFullscreen ? 'px-4' : isSticky ? 'px-4' : ''}
           transition-all duration-200`}
       >
-      <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
-        <StatusSection
-          statusCounts={statusCounts}
-          statusOptions={statusOptions}
-          isStatusSelected={isStatusSelected}
-          unfilteredItems={unfilteredItems}
-          filteredItems={filteredItems}
-          selectedItems={selectedItems}
-          hasSelectedFiles={hasSelectedFiles}
-          statusFilter={statusFilter}
-          onStatusChange={onStatusChange}
-          itemTypeName={itemTypeName}
-          itemTypePlural={itemTypePlural}
-          getTotalDownloadSize={getTotalDownloadSize}
-        />
-
-        {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
-          <ActionButtons
+        <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
+          <StatusSection
+            statusCounts={statusCounts}
+            statusOptions={statusOptions}
+            isStatusSelected={isStatusSelected}
+            unfilteredItems={unfilteredItems}
+            filteredItems={filteredItems}
             selectedItems={selectedItems}
-            setSelectedItems={setSelectedItems}
             hasSelectedFiles={hasSelectedFiles}
-            isDownloading={isDownloading}
-            isDeleting={isDeleting}
-            isExporting={isExporting}
-            onBulkDownload={onBulkDownload}
-            onBulkDelete={onBulkDelete}
-            onBulkExport={onBulkExport}
+            statusFilter={statusFilter}
+            onStatusChange={onStatusChange}
             itemTypeName={itemTypeName}
             itemTypePlural={itemTypePlural}
-            isDownloadPanelOpen={isDownloadPanelOpen}
-            setIsDownloadPanelOpen={setIsDownloadPanelOpen}
-            activeType={activeType}
-            apiKey={apiKey}
-            setToast={setToast}
+            getTotalDownloadSize={getTotalDownloadSize}
           />
-        )}
-      </div>
 
-      <div className="flex gap-3 items-center flex-wrap">
-        {/* Search bar */}
-        <SearchBar
-          search={search}
-          onSearchChange={setSearch}
-          itemTypePlural={itemTypePlural}
-        />
+          {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
+            <ActionButtons
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+              hasSelectedFiles={hasSelectedFiles}
+              isDownloading={isDownloading}
+              isDeleting={isDeleting}
+              isExporting={isExporting}
+              onBulkDownload={onBulkDownload}
+              onBulkDelete={onBulkDelete}
+              onBulkExport={onBulkExport}
+              itemTypeName={itemTypeName}
+              itemTypePlural={itemTypePlural}
+              isDownloadPanelOpen={isDownloadPanelOpen}
+              setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+              activeType={activeType}
+              apiKey={apiKey}
+              setToast={setToast}
+            />
+          )}
+        </div>
 
-        {/* Filter by status */}
-        {/* <StatusFilterDropdown
+        <div className="flex gap-3 items-center flex-wrap">
+          {/* Search bar */}
+          <SearchBar search={search} onSearchChange={setSearch} itemTypePlural={itemTypePlural} />
+
+          {/* Filter by status */}
+          {/* <StatusFilterDropdown
           options={statusOptions}
           value={statusFilter}
           onChange={(value) => onStatusChange(value)}
           className="min-w-[150px]"
         /> */}
 
-        {/* Sort downloads list */}
-        {viewMode === 'card' || (isMobile && viewMode === 'table') && (
-          <div className="flex items-center gap-1">
-            <Dropdown
-              options={sortOptions}
-              value={sortField}
-              onChange={(value) => handleSort(value)}
-              className="min-w-[150px]"
-              sortDir={sortDir}
-            />
-            <button
-              onClick={() => handleSort(sortField)}
-              className="px-1 py-2 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
-            >
-              {sortDir === 'desc' ? '↓' : '↑'}
-            </button>
-          </div>
-        )}
+          {/* Sort downloads list */}
+          {viewMode === 'card' ||
+            (isMobile && viewMode === 'table' && (
+              <div className="flex items-center gap-1">
+                <Dropdown
+                  options={sortOptions}
+                  value={sortField}
+                  onChange={(value) => handleSort(value)}
+                  className="min-w-[150px]"
+                  sortDir={sortDir}
+                />
+                <button
+                  onClick={() => handleSort(sortField)}
+                  className="px-1 py-2 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
+                >
+                  {sortDir === 'desc' ? '↓' : '↑'}
+                </button>
+              </div>
+            ))}
 
-        {/* View controls such as blur, fullscreen, and view mode */}
-        <ViewControls
-          isMobile={isMobile}
-          isBlurred={isBlurred}
-          onBlurToggle={onBlurToggle}
-          isFullscreen={isFullscreen}
-          onFullscreenToggle={onFullscreenToggle}
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
-          expandAllFiles={expandAllFiles}
-          collapseAllFiles={collapseAllFiles}
-          expandedItems={expandedItems}
-          unfilteredItems={unfilteredItems}
-        />
-
-        {/* Column manager */}
-        <div className="hidden lg:block">
-          <ColumnManager
-            columns={COLUMNS}
-            activeColumns={activeColumns}
-            onColumnChange={onColumnChange}
-            activeType={activeType}
+          {/* View controls such as blur, fullscreen, and view mode */}
+          <ViewControls
+            isMobile={isMobile}
+            isBlurred={isBlurred}
+            onBlurToggle={onBlurToggle}
+            isFullscreen={isFullscreen}
+            onFullscreenToggle={onFullscreenToggle}
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
+            expandAllFiles={expandAllFiles}
+            collapseAllFiles={collapseAllFiles}
+            expandedItems={expandedItems}
+            unfilteredItems={unfilteredItems}
           />
+
+          {/* Column manager */}
+          <div className="hidden lg:block">
+            <ColumnManager
+              columns={COLUMNS}
+              activeColumns={activeColumns}
+              onColumnChange={onColumnChange}
+              activeType={activeType}
+            />
+          </div>
         </div>
-      </div>
       </div>
     </Fragment>
   );

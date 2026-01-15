@@ -14,6 +14,7 @@ class Database {
   constructor() {
     this.db = null;
     this.migrationRunner = null;
+    this.initialized = false;
     // Master database path
     const masterDbPath = process.env.MASTER_DB_PATH || '/app/data/master.db';
     this.dbPath = masterDbPath.startsWith('sqlite://')
@@ -24,6 +25,14 @@ class Database {
   }
 
   async initialize() {
+    // Prevent double initialization
+    if (this.initialized) {
+      logger.warn('Database already initialized, skipping initialization', {
+        dbPath: this.dbPath,
+      });
+      return;
+    }
+
     try {
       // Ensure data directory exists
       const dataDir = path.dirname(this.dbPath);
@@ -45,6 +54,9 @@ class Database {
 
       // Run migrations
       await this.migrationRunner.runMigrations();
+
+      // Mark as initialized
+      this.initialized = true;
 
       logger.info('Master database initialized', { dbPath: this.dbPath });
     } catch (error) {
@@ -566,6 +578,302 @@ class Database {
 
     // Invalidate cache since user registry changed
     cache.invalidateUserRegistry(authId);
+  }
+
+  /**
+   * Update upload counters for a user
+   * Should be called after upload insert/update/delete operations
+   * @param {string} authId - User authentication ID
+   * @param {Object} userDb - User database instance (to query uploads)
+   */
+  async updateUploadCounters(authId, userDb) {
+    try {
+      // Query actual counts from user DB
+      // Count ALL pending uploads (queued + processing, including deferred ones, but excluding deleted files)
+      // Both 'queued' and 'processing' are pending uploads that haven't completed yet
+      // The next_upload_attempt_at field in user_registry handles timing logic,
+      // so we don't need to exclude deferred uploads from the counter
+      // However, we must exclude deleted files (file_deleted = true) as they cannot be processed
+      const queuedCount = userDb.db
+        .prepare(
+          `
+          SELECT COUNT(*) as count
+          FROM uploads
+          WHERE status IN ('queued', 'processing')
+            AND (file_deleted IS NULL OR file_deleted = false)
+        `
+        )
+        .get();
+
+      const queuedUploadsCount = queuedCount?.count || 0;
+
+      // Check if there are any uploads ready to process immediately (next_attempt_at IS NULL)
+      // Include both 'queued' uploads that are ready AND 'processing' uploads (which are already active)
+      // If any uploads are ready, we should set next_upload_attempt_at to NULL
+      // so that getUsersWithQueuedUploads includes this user for processing
+      // Exclude deleted files (file_deleted = true) as they cannot be processed
+      const readyUploadsCount = userDb.db
+        .prepare(
+          `
+          SELECT COUNT(*) as count
+          FROM uploads
+          WHERE status IN ('queued', 'processing')
+            AND (file_deleted IS NULL OR file_deleted = false)
+            AND (
+              status = 'processing'
+              OR next_attempt_at IS NULL 
+              OR next_attempt_at = ''
+              OR datetime(next_attempt_at) <= datetime('now')
+            )
+        `
+        )
+        .get();
+
+      const hasReadyUploads = (readyUploadsCount?.count || 0) > 0;
+
+      let nextUploadAttemptAt = null;
+
+      if (hasReadyUploads) {
+        // If there are uploads ready to process immediately, set next_upload_attempt_at to NULL
+        // This ensures getUsersWithQueuedUploads will include this user
+        nextUploadAttemptAt = null;
+      } else if (queuedUploadsCount > 0) {
+        // If all uploads are deferred, get the minimum deferred time
+        // Only check 'queued' uploads for next_attempt_at (processing uploads are already active)
+        // Exclude deleted files (file_deleted = true) as they cannot be processed
+        const nextAttemptResult = userDb.db
+          .prepare(
+            `
+            SELECT MIN(next_attempt_at) as min_next_attempt_at
+            FROM uploads
+            WHERE status = 'queued'
+              AND (file_deleted IS NULL OR file_deleted = false)
+              AND next_attempt_at IS NOT NULL
+              AND next_attempt_at != ''
+              AND COALESCE(datetime(next_attempt_at), '9999-12-31 23:59:59') > datetime('now')
+          `
+          )
+          .get();
+
+        nextUploadAttemptAt = nextAttemptResult?.min_next_attempt_at || null;
+      }
+      // If queuedUploadsCount is 0, nextUploadAttemptAt remains null
+
+      // Update master DB
+      this.runQuery(
+        `
+        UPDATE user_registry 
+        SET queued_uploads_count = ?, 
+            next_upload_attempt_at = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE auth_id = ?
+      `,
+        [queuedUploadsCount, nextUploadAttemptAt, authId]
+      );
+
+      // Log the update for debugging (only if count > 0)
+      if (queuedUploadsCount > 0) {
+        logger.debug('Updated upload counters', {
+          authId,
+          queuedUploadsCount,
+          nextUploadAttemptAt,
+        });
+      }
+
+      // Invalidate cache
+      cache.invalidateUserRegistry(authId);
+      cache.invalidateActiveUsers();
+    } catch (error) {
+      logger.error('Failed to update upload counters', error, {
+        authId,
+        errorMessage: error.message,
+        errorStack: error.stack,
+      });
+      // Don't throw - counter updates shouldn't break upload operations
+    }
+  }
+
+  /**
+   * Increment upload counter (optimized for single insert)
+   * @param {string} authId - User authentication ID
+   * @param {string|null} nextAttemptAt - Next attempt timestamp (ISO string or null)
+   */
+  incrementUploadCounter(authId, nextAttemptAt = null) {
+    try {
+      // Use transaction for atomic update
+      const transaction = this.db.transaction(() => {
+        // Get current values
+        const current = this.getQuery(
+          `
+          SELECT queued_uploads_count, next_upload_attempt_at
+          FROM user_registry
+          WHERE auth_id = ?
+        `,
+          [authId]
+        );
+
+        const newCount = (current?.queued_uploads_count || 0) + 1;
+        let newNextAttemptAt = nextAttemptAt;
+
+        // If the new upload is ready immediately (nextAttemptAt is null),
+        // set next_upload_attempt_at to null so the user is included in getUsersWithQueuedUploads
+        if (!nextAttemptAt) {
+          newNextAttemptAt = null;
+        } else if (current?.next_upload_attempt_at) {
+          // If both new and current are deferred, take the minimum
+          const currentDate = new Date(current.next_upload_attempt_at);
+          const newDate = new Date(nextAttemptAt);
+          newNextAttemptAt = newDate < currentDate ? nextAttemptAt : current.next_upload_attempt_at;
+        }
+
+        this.runQuery(
+          `
+          UPDATE user_registry 
+          SET queued_uploads_count = ?,
+              next_upload_attempt_at = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE auth_id = ?
+        `,
+          [newCount, newNextAttemptAt, authId]
+        );
+      });
+
+      transaction();
+
+      // Invalidate cache
+      cache.invalidateUserRegistry(authId);
+      cache.invalidateActiveUsers();
+    } catch (error) {
+      logger.error('Failed to increment upload counter', error, {
+        authId,
+      });
+      // Don't throw - counter updates shouldn't break upload operations
+    }
+  }
+
+  /**
+   * Decrement upload counter (optimized for single status change)
+   * @param {string} authId - User authentication ID
+   */
+  decrementUploadCounter(authId) {
+    try {
+      // Use transaction for atomic update
+      const transaction = this.db.transaction(() => {
+        // Get current count first, then update (SQLite doesn't have GREATEST/MAX in UPDATE)
+        const current = this.getQuery(
+          `
+          SELECT queued_uploads_count
+          FROM user_registry
+          WHERE auth_id = ?
+        `,
+          [authId]
+        );
+
+        const newCount = Math.max(0, (current?.queued_uploads_count || 0) - 1);
+
+        this.runQuery(
+          `
+          UPDATE user_registry 
+          SET queued_uploads_count = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE auth_id = ?
+        `,
+          [newCount, authId]
+        );
+      });
+
+      transaction();
+
+      // Invalidate cache
+      cache.invalidateUserRegistry(authId);
+      cache.invalidateActiveUsers();
+    } catch (error) {
+      logger.error('Failed to decrement upload counter', error, {
+        authId,
+      });
+      // Don't throw - counter updates shouldn't break upload operations
+    }
+  }
+
+  /**
+   * Get users with queued uploads ready for processing
+   * Optimized query that filters at master DB level before opening user DBs
+   * @returns {Array} - Array of users with queued uploads ready to process
+   */
+  getUsersWithQueuedUploads() {
+    // SQLite stores booleans as INTEGER (0 or 1), so we need to handle type coercion
+    // Also handle potential NULL values in queued_uploads_count
+    const result = this.allQuery(`
+      SELECT ur.*, ak.encrypted_key, ak.key_name, ak.is_active as api_key_active
+      FROM user_registry ur
+      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+      WHERE ur.status = 'active' 
+        AND (CAST(ak.is_active AS INTEGER) = 1 OR ak.is_active IS NULL)
+        AND COALESCE(ur.queued_uploads_count, 0) > 0
+        AND (
+          ur.next_upload_attempt_at IS NULL 
+          OR ur.next_upload_attempt_at = ''
+          OR ur.next_upload_attempt_at = '0'
+          OR ur.next_upload_attempt_at = '0000-00-00 00:00:00'
+          OR datetime(
+            substr(
+              replace(replace(ur.next_upload_attempt_at, 'T', ' '), 'Z', ''),
+              1,
+              19
+            )
+          ) <= datetime('now')
+        )
+      ORDER BY COALESCE(
+        NULLIF(NULLIF(NULLIF(ur.next_upload_attempt_at, ''), '0'), '0000-00-00 00:00:00'),
+        '1970-01-01 00:00:00'
+      ) ASC
+    `);
+
+    logger.debug('Users with queued uploads', {
+      foundCount: result.length,
+      authIds: result.map((u) => u.auth_id),
+    });
+
+    return result;
+  }
+
+  /**
+   * Sync upload counters for all users (safety net to fix drift)
+   * Should be called periodically or on startup
+   * @param {Object} userDatabaseManager - User database manager instance
+   */
+  async syncUploadCountersForAllUsers(userDatabaseManager) {
+    if (!userDatabaseManager) {
+      logger.warn('UserDatabaseManager not available, skipping upload counter sync');
+      return;
+    }
+
+    try {
+      const activeUsers = this.getActiveUsers();
+      let synced = 0;
+      let errors = 0;
+
+      for (const user of activeUsers) {
+        try {
+          const userDb = await userDatabaseManager.getUserDatabase(user.auth_id);
+          await this.updateUploadCounters(user.auth_id, userDb);
+          synced++;
+        } catch (error) {
+          logger.error('Failed to sync upload counters for user', error, {
+            authId: user.auth_id,
+          });
+          errors++;
+        }
+      }
+
+      logger.info('Upload counter sync completed', {
+        total: activeUsers.length,
+        synced,
+        errors,
+      });
+    } catch (error) {
+      logger.error('Failed to sync upload counters', error);
+    }
   }
 
   /**

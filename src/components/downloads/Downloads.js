@@ -67,13 +67,15 @@ export default function Downloads({ apiKey }) {
   useEffect(() => {
     if (apiKey && apiKey.length >= 20) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey).then((result) => {
-          if (result.success && result.wasCreated) {
-            console.log('User database created for API key in Downloads component');
-          }
-        }).catch((error) => {
-          console.error('Error ensuring user database:', error);
-        });
+        ensureUserDb(apiKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for API key in Downloads component');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database:', error);
+          });
       });
     }
   }, [apiKey]);
@@ -81,16 +83,18 @@ export default function Downloads({ apiKey }) {
   // Fetch user profile to check for Pro plan access
   useEffect(() => {
     if (apiKey && apiKey.length >= 20) {
-      fetchUserProfile(apiKey).then((userData) => {
-        if (userData) {
-          setHasProPlanAccess(hasProPlan(userData));
-        } else {
+      fetchUserProfile(apiKey)
+        .then((userData) => {
+          if (userData) {
+            setHasProPlanAccess(hasProPlan(userData));
+          } else {
+            setHasProPlanAccess(false);
+          }
+        })
+        .catch((error) => {
+          console.error('Error checking user plan:', error);
           setHasProPlanAccess(false);
-        }
-      }).catch((error) => {
-        console.error('Error checking user plan:', error);
-        setHasProPlanAccess(false);
-      });
+        });
     } else {
       setHasProPlanAccess(false);
     }
@@ -98,8 +102,8 @@ export default function Downloads({ apiKey }) {
 
   // Function to expand all items with files
   const expandAllFiles = () => {
-    const itemsWithFiles = itemsWithTags.filter(item => item.files && item.files.length > 0);
-    const itemIds = itemsWithFiles.map(item => item.id);
+    const itemsWithFiles = itemsWithTags.filter((item) => item.files && item.files.length > 0);
+    const itemIds = itemsWithFiles.map((item) => item.id);
     setExpandedItems(new Set(itemIds));
   };
 
@@ -108,10 +112,7 @@ export default function Downloads({ apiKey }) {
     setExpandedItems(new Set());
   };
 
-  const { loading, items, setItems, fetchItems } = useFetchData(
-    apiKey,
-    activeType,
-  );
+  const { loading, items, setItems, fetchItems } = useFetchData(apiKey, activeType);
 
   // Load tags
   const { loadTags, tags, loading: tagsLoading } = useTags(apiKey);
@@ -125,7 +126,12 @@ export default function Downloads({ apiKey }) {
   }, [apiKey]);
 
   // Load download tags
-  const { fetchDownloadTags, mapTagsToDownloads, tagMappings, loading: downloadTagsLoading } = useDownloadTags(apiKey);
+  const {
+    fetchDownloadTags,
+    mapTagsToDownloads,
+    tagMappings,
+    loading: downloadTagsLoading,
+  } = useDownloadTags(apiKey);
 
   // Load download tags once when component mounts
   useEffect(() => {
@@ -149,13 +155,8 @@ export default function Downloads({ apiKey }) {
     handleRowSelect,
     setSelectedItems,
   } = useSelection(itemsWithTags);
-  const {
-    downloadLinks,
-    isDownloading,
-    downloadProgress,
-    handleBulkDownload,
-    setDownloadLinks,
-  } = useDownloads(apiKey, activeType, downloadHistory, setDownloadHistory);
+  const { downloadLinks, isDownloading, downloadProgress, handleBulkDownload, setDownloadLinks } =
+    useDownloads(apiKey, activeType, downloadHistory, setDownloadHistory);
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
@@ -163,7 +164,7 @@ export default function Downloads({ apiKey }) {
     setSelectedItems,
     setToast,
     fetchItems,
-    activeType,
+    activeType
   );
 
   const { activeColumns, handleColumnChange } = useColumnManager(activeType);
@@ -187,11 +188,22 @@ export default function Downloads({ apiKey }) {
       },
     ],
   });
-  const { search, setSearch, statusFilter, setStatusFilter, filteredItems } =
-    useFilter(itemsWithTags, '', 'all', appliedFilters);
+  const { search, setSearch, statusFilter, setStatusFilter, filteredItems } = useFilter(
+    itemsWithTags,
+    '',
+    'all',
+    appliedFilters
+  );
 
   // Load custom views
-  const { views, activeView, applyView, clearView, loadViews, loading: viewsLoading } = useCustomViews(apiKey);
+  const {
+    views,
+    activeView,
+    applyView,
+    clearView,
+    loadViews,
+    loading: viewsLoading,
+  } = useCustomViews(apiKey);
 
   // Load custom views once when component mounts
   useEffect(() => {
@@ -256,18 +268,15 @@ export default function Downloads({ apiKey }) {
 
       // Export each selected torrent
       for (const itemId of selectedItemIds) {
-        const item = itemsWithTags.find(i => i.id === itemId);
+        const item = itemsWithTags.find((i) => i.id === itemId);
         if (!item) continue;
 
         try {
-          const response = await fetch(
-            `/api/torrents/export?torrent_id=${itemId}&type=torrent`,
-            {
-              headers: {
-                'x-api-key': apiKey,
-              },
+          const response = await fetch(`/api/torrents/export?torrent_id=${itemId}&type=torrent`, {
+            headers: {
+              'x-api-key': apiKey,
             },
-          );
+          });
 
           if (response.ok) {
             const blob = await response.blob();
@@ -350,21 +359,18 @@ export default function Downloads({ apiKey }) {
   // Get the total size of all selected items and files
   const getTotalDownloadSize = useCallback(() => {
     // Calculate size of selected files
-    const filesSize = Array.from(selectedItems.files.entries()).reduce(
-      (acc, [itemId, fileIds]) => {
-        const item = itemsWithTags.find((i) => i.id === itemId);
-        if (!item) return acc;
+    const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [itemId, fileIds]) => {
+      const item = itemsWithTags.find((i) => i.id === itemId);
+      if (!item) return acc;
 
-        return (
-          acc +
-          Array.from(fileIds).reduce((sum, fileId) => {
-            const file = item.files.find((f) => f.id === fileId);
-            return sum + (file?.size || 0);
-          }, 0)
-        );
-      },
-      0,
-    );
+      return (
+        acc +
+        Array.from(fileIds).reduce((sum, fileId) => {
+          const file = item.files.find((f) => f.id === fileId);
+          return sum + (file?.size || 0);
+        }, 0)
+      );
+    }, 0);
 
     // Calculate size of selected items
     const itemsSize = Array.from(selectedItems.items).reduce((acc, itemId) => {
@@ -375,8 +381,113 @@ export default function Downloads({ apiKey }) {
     return formatSize(filesSize + itemsSize);
   }, [itemsWithTags, selectedItems]);
 
+  // Render uploaders based on active type
+  const renderUploaders = () => {
+    if (activeType === 'all') {
+      return (
+        <div className="space-y-2">
+          <ItemUploader apiKey={apiKey} activeType="torrents" />
+          <ItemUploader apiKey={apiKey} activeType="usenet" />
+          <ItemUploader apiKey={apiKey} activeType="webdl" />
+        </div>
+      );
+    }
+    return <ItemUploader apiKey={apiKey} activeType={activeType} />;
+  };
+
+  // Handle view application with proper filter normalization
+  const handleApplyView = (view) => {
+    applyView(view);
+
+    // Reset status filter to 'all' when applying a view
+    setStatusFilter('all');
+
+    // Parse filters if they're stored as JSON string (defensive)
+    let filters = view.filters;
+    if (typeof filters === 'string') {
+      try {
+        filters = JSON.parse(filters);
+      } catch (e) {
+        console.error('Error parsing view filters:', e);
+        filters = null;
+      }
+    }
+
+    // Normalize filters structure
+    let normalizedFilters = {
+      logicOperator: 'and',
+      groups: [
+        {
+          logicOperator: 'and',
+          filters: [],
+        },
+      ],
+    };
+
+    if (filters) {
+      if (filters.groups && Array.isArray(filters.groups)) {
+        // New group structure - deep copy to ensure React detects change
+        normalizedFilters = JSON.parse(JSON.stringify(filters));
+      } else if (Array.isArray(filters)) {
+        // Old flat structure - convert to groups
+        normalizedFilters = {
+          logicOperator: 'and',
+          groups: [
+            {
+              logicOperator: 'and',
+              filters: filters,
+            },
+          ],
+        };
+      }
+    }
+
+    // Apply filters - set both draft and applied
+    setColumnFilters(normalizedFilters);
+    setAppliedFilters(normalizedFilters);
+
+    // Apply sort if specified
+    if (view.sort_field) {
+      setSort(view.sort_field, view.sort_direction || 'desc');
+    }
+
+    // Apply visible columns if specified
+    let visibleColumns = view.visible_columns;
+    if (visibleColumns) {
+      // Parse visible_columns if it's a JSON string (defensive)
+      if (typeof visibleColumns === 'string') {
+        try {
+          visibleColumns = JSON.parse(visibleColumns);
+        } catch (e) {
+          console.error('Error parsing visible columns:', e);
+          visibleColumns = null;
+        }
+      }
+      if (Array.isArray(visibleColumns) && visibleColumns.length > 0) {
+        handleColumnChange(visibleColumns);
+      }
+    }
+  };
+
+  // Handle clearing view
+  const handleClearView = () => {
+    clearView();
+    const emptyFilters = {
+      logicOperator: 'and',
+      groups: [
+        {
+          logicOperator: 'and',
+          filters: [],
+        },
+      ],
+    };
+    setColumnFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
+  };
+
   return (
-    <div>
+    <div className="space-y-3">
+      {/* Asset Type Tabs */}
       <AssetTypeTabs
         activeType={activeType}
         onTypeChange={(type) => {
@@ -385,35 +496,23 @@ export default function Downloads({ apiKey }) {
         }}
       />
 
-      {activeType !== 'all' && <ItemUploader apiKey={apiKey} activeType={activeType} />}
-
-      {/* Collapsible sections for "all" view */}
-      {activeType === 'all' && (
-        <div className="mb-4">
-          {/* Torrents Upload Section */}
-          <ItemUploader apiKey={apiKey} activeType="torrents" />
-
-          {/* Usenet Upload Section */}
-          <ItemUploader apiKey={apiKey} activeType="usenet" />
-
-          {/* Web Downloads Upload Section */}
-          <ItemUploader apiKey={apiKey} activeType="webdl" />
-        </div>
-      )}
-
-      {(activeType === 'torrents' || activeType === 'all') && <AutomationRules />}
-
+      {/* Loading State */}
       {loading ? (
-        <div className="flex justify-center items-center">
-          <Spinner
-            size="sm"
-            className="text-primary-text dark:text-primary-text-dark"
-          />
+        <div className="flex justify-center items-center py-12">
+          <Spinner size="sm" className="text-primary-text dark:text-primary-text-dark" />
         </div>
       ) : (
         <>
+          {/* Upload & Automation Section - Compact Grouping */}
+          <div className="space-y-2">
+            {renderUploaders()}
+            {(activeType === 'torrents' || activeType === 'all') && <AutomationRules />}
+          </div>
+
+          {/* Speed Chart - Collapsible by default */}
           <SpeedChart items={items} />
 
+          {/* Download Panel */}
           <DownloadPanel
             downloadLinks={downloadLinks}
             isDownloading={isDownloading}
@@ -434,92 +533,8 @@ export default function Downloads({ apiKey }) {
             sortField={sortField}
             sortDirection={sortDirection}
             activeColumns={activeColumns}
-            onApplyView={(view) => {
-              applyView(view);
-              
-              // Reset status filter to 'all' when applying a view
-              setStatusFilter('all');
-              
-              // Parse filters if they're stored as JSON string (defensive)
-              let filters = view.filters;
-              if (typeof filters === 'string') {
-                try {
-                  filters = JSON.parse(filters);
-                } catch (e) {
-                  console.error('Error parsing view filters:', e);
-                  filters = null;
-                }
-              }
-              
-              // Normalize filters structure
-              let normalizedFilters = {
-                logicOperator: 'and',
-                groups: [
-                  {
-                    logicOperator: 'and',
-                    filters: [],
-                  },
-                ],
-              };
-              
-              if (filters) {
-                if (filters.groups && Array.isArray(filters.groups)) {
-                  // New group structure - deep copy to ensure React detects change
-                  normalizedFilters = JSON.parse(JSON.stringify(filters));
-                } else if (Array.isArray(filters)) {
-                  // Old flat structure - convert to groups
-                  normalizedFilters = {
-                    logicOperator: 'and',
-                    groups: [
-                      {
-                        logicOperator: 'and',
-                        filters: filters,
-                      },
-                    ],
-                  };
-                }
-              }
-              
-              // Apply filters - set both draft and applied
-              setColumnFilters(normalizedFilters);
-              setAppliedFilters(normalizedFilters);
-              
-              // Apply sort if specified
-              if (view.sort_field) {
-                setSort(view.sort_field, view.sort_direction || 'desc');
-              }
-              
-              // Apply visible columns if specified
-              let visibleColumns = view.visible_columns;
-              if (visibleColumns) {
-                // Parse visible_columns if it's a JSON string (defensive)
-                if (typeof visibleColumns === 'string') {
-                  try {
-                    visibleColumns = JSON.parse(visibleColumns);
-                  } catch (e) {
-                    console.error('Error parsing visible columns:', e);
-                    visibleColumns = null;
-                  }
-                }
-                if (Array.isArray(visibleColumns) && visibleColumns.length > 0) {
-                  handleColumnChange(visibleColumns);
-                }
-              }
-            }}
-            onClearView={() => {
-              clearView();
-              const emptyFilters = {
-                logicOperator: 'and',
-                groups: [
-                  {
-                    logicOperator: 'and',
-                    filters: [],
-                  },
-                ],
-              };
-              setColumnFilters(emptyFilters);
-              setAppliedFilters(emptyFilters);
-            }}
+            onApplyView={handleApplyView}
+            onClearView={handleClearView}
             onFiltersChange={(filters) => {
               // Apply the filters to the table
               setAppliedFilters(filters);
@@ -549,9 +564,7 @@ export default function Downloads({ apiKey }) {
               statusFilter={statusFilter}
               onStatusChange={setStatusFilter}
               isDownloading={isDownloading}
-              onBulkDownload={() =>
-                handleBulkDownload(selectedItems, sortedItems)
-              }
+              onBulkDownload={() => handleBulkDownload(selectedItems, sortedItems)}
               isDeleting={isDeleting}
               onBulkDelete={(includeParentDownloads) =>
                 deleteItems(selectedItems, includeParentDownloads, itemsWithTags)
@@ -604,7 +617,19 @@ export default function Downloads({ apiKey }) {
                 isFullscreen={isFullscreen}
                 scrollContainerRef={scrollContainerRef}
                 hasProPlan={hasProPlanAccess}
-                onOpenVideoPlayer={(streamUrl, fileName, subtitles, audios, metadata, itemId, fileId, streamType, introInformation, initialAudioIndex, initialSubtitleIndex) => {
+                onOpenVideoPlayer={(
+                  streamUrl,
+                  fileName,
+                  subtitles,
+                  audios,
+                  metadata,
+                  itemId,
+                  fileId,
+                  streamType,
+                  introInformation,
+                  initialAudioIndex,
+                  initialSubtitleIndex
+                ) => {
                   setVideoPlayerState({
                     isOpen: true,
                     streamUrl,
@@ -617,7 +642,8 @@ export default function Downloads({ apiKey }) {
                     streamType,
                     introInformation: introInformation || null,
                     initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
-                    initialSubtitleIndex: initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
+                    initialSubtitleIndex:
+                      initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
                   });
                 }}
               />
@@ -642,7 +668,19 @@ export default function Downloads({ apiKey }) {
                 viewMode={viewMode}
                 scrollContainerRef={scrollContainerRef}
                 hasProPlan={hasProPlanAccess}
-                onOpenVideoPlayer={(streamUrl, fileName, subtitles, audios, metadata, itemId, fileId, streamType, introInformation, initialAudioIndex, initialSubtitleIndex) => {
+                onOpenVideoPlayer={(
+                  streamUrl,
+                  fileName,
+                  subtitles,
+                  audios,
+                  metadata,
+                  itemId,
+                  fileId,
+                  streamType,
+                  introInformation,
+                  initialAudioIndex,
+                  initialSubtitleIndex
+                ) => {
                   setVideoPlayerState({
                     isOpen: true,
                     streamUrl,
@@ -655,7 +693,8 @@ export default function Downloads({ apiKey }) {
                     streamType,
                     introInformation: introInformation || null,
                     initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
-                    initialSubtitleIndex: initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
+                    initialSubtitleIndex:
+                      initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
                   });
                 }}
               />
@@ -663,7 +702,22 @@ export default function Downloads({ apiKey }) {
           </div>
           <VideoPlayerModal
             isOpen={videoPlayerState.isOpen}
-            onClose={() => setVideoPlayerState({ isOpen: false, streamUrl: null, fileName: null, subtitles: [], audios: [], metadata: {}, itemId: null, fileId: null, streamType: 'torrent', introInformation: null, initialAudioIndex: 0, initialSubtitleIndex: null })}
+            onClose={() =>
+              setVideoPlayerState({
+                isOpen: false,
+                streamUrl: null,
+                fileName: null,
+                subtitles: [],
+                audios: [],
+                metadata: {},
+                itemId: null,
+                fileId: null,
+                streamType: 'torrent',
+                introInformation: null,
+                initialAudioIndex: 0,
+                initialSubtitleIndex: null,
+              })
+            }
             streamUrl={videoPlayerState.streamUrl}
             fileName={videoPlayerState.fileName}
             subtitles={videoPlayerState.subtitles}
@@ -676,18 +730,14 @@ export default function Downloads({ apiKey }) {
             introInformation={videoPlayerState.introInformation}
             initialAudioIndex={videoPlayerState.initialAudioIndex}
             initialSubtitleIndex={videoPlayerState.initialSubtitleIndex}
-            onStreamUrlChange={(newUrl) => setVideoPlayerState(prev => ({ ...prev, streamUrl: newUrl }))}
+            onStreamUrlChange={(newUrl) =>
+              setVideoPlayerState((prev) => ({ ...prev, streamUrl: newUrl }))
+            }
           />
         </>
       )}
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

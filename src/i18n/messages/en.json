@@ -1,1046 +1,1047 @@
 {
-    "ActionButtons": {
-        "bulkUploadFailed": "Failed to upload items",
-        "bulkUploadPartial": "Uploaded {success} items, {failed} failed",
-        "bulkUploadSuccess": "Successfully uploaded {count} items to {provider}",
-        "clear": "Clear",
-        "delete": "Delete",
-        "deleteConfirm": {
-            "cancel": "Cancel",
-            "confirm": "Delete",
-            "deleting": "Deleting...",
-            "includeParentDownloads": "Delete parent downloads",
-            "includeParentDownloadsTooltip": "When files within downloads are selected, checking this option will delete the entire download.",
-            "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
-            "title": "Confirm Delete"
-        },
-        "downloadLinks": "Get Download Links",
-        "downloadLinksMobile": "Get Links",
-        "exporting": "Exporting...",
-        "exportSelected": "Export Selected",
-        "fetchingLinks": "Fetching Links...",
-        "uploading": "Uploading...",
-        "uploadToCloud": "Upload to Cloud"
+  "ActionButtons": {
+    "bulkUploadFailed": "Failed to upload items",
+    "bulkUploadPartial": "Uploaded {success} items, {failed} failed",
+    "bulkUploadSuccess": "Successfully uploaded {count} items to {provider}",
+    "clear": "Clear",
+    "delete": "Delete",
+    "deleteConfirm": {
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting...",
+      "includeParentDownloads": "Delete parent downloads",
+      "includeParentDownloadsTooltip": "When files within downloads are selected, checking this option will delete the entire download.",
+      "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
+      "title": "Confirm Delete"
     },
-    "ApiKeyInput": {
-        "hide": "Hide API key",
-        "manageKeys": "Manage Keys",
-        "placeholder": "Enter TorBox API Key",
-        "show": "Show API key"
+    "downloadLinks": "Get Download Links",
+    "downloadLinksMobile": "Get Links",
+    "exporting": "Exporting...",
+    "exportSelected": "Export Selected",
+    "fetchingLinks": "Fetching Links...",
+    "uploading": "Uploading...",
+    "uploadToCloud": "Upload to Cloud"
+  },
+  "ApiKeyInput": {
+    "hide": "Hide API key",
+    "manageKeys": "Manage Keys",
+    "placeholder": "Enter TorBox API Key",
+    "show": "Show API key"
+  },
+  "ApiKeyManager": {
+    "add": "Add",
+    "addKey": "Add Key",
+    "addNewKey": "Add New API Key",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Enter your API key",
+    "cancel": "Cancel",
+    "close": "Close",
+    "deleteKey": "Delete Key",
+    "keyLabel": "Key Label",
+    "keyLabelPlaceholder": "e.g. Personal, Family",
+    "noKeys": "No saved keys",
+    "savedKeys": "Saved API Keys",
+    "toggleOpen": "Toggle Open"
+  },
+  "ArchivedDownloads": {
+    "actions": {
+      "addToTorBox": "Add to TorBox",
+      "copyMagnet": "Copy Magnet",
+      "remove": "Remove"
     },
-    "ApiKeyManager": {
-        "add": "Add",
-        "addKey": "Add Key",
-        "addNewKey": "Add New API Key",
-        "apiKey": "API Key",
-        "apiKeyPlaceholder": "Enter your API key",
-        "cancel": "Cancel",
-        "close": "Close",
-        "deleteKey": "Delete Key",
-        "keyLabel": "Key Label",
-        "keyLabelPlaceholder": "e.g. Personal, Family",
-        "noKeys": "No saved keys",
-        "savedKeys": "Saved API Keys",
-        "toggleOpen": "Toggle Open"
+    "columns": {
+      "actions": "Actions",
+      "archivedAt": "Archived At",
+      "itemId": "Item ID",
+      "itemName": "Item Name",
+      "itemType": "Item Type"
     },
-    "ArchivedDownloads": {
-        "actions": {
-            "addToTorBox": "Add to TorBox",
-            "copyMagnet": "Copy Magnet",
-            "remove": "Remove"
-        },
-        "columns": {
-            "actions": "Actions",
-            "archivedAt": "Archived At",
-            "itemId": "Item ID",
-            "itemName": "Item Name",
-            "itemType": "Item Type"
-        },
-        "emptyState": {
-            "description": "Set up an automation rule to archive downloads automatically. When a download gets archived, you'll find it here to restore, copy, or delete.",
-            "howItWorks": "How it works:",
-            "step1": "Add a rule with \"Archive Download\" action",
-            "step2": "When the rule triggers, matching downloads are archived",
-            "step3": "They show up here so you can restore, copy, or delete",
-            "title": "No Archived Downloads"
-        },
-        "title": "Archived Downloads",
-        "toast": {
-            "magnetCopied": "Magnet link copied to clipboard"
-        }
+    "emptyState": {
+      "description": "Set up an automation rule to archive downloads automatically. When a download gets archived, you'll find it here to restore, copy, or delete.",
+      "howItWorks": "How it works:",
+      "step1": "Add a rule with \"Archive Download\" action",
+      "step2": "When the rule triggers, matching downloads are archived",
+      "step3": "They show up here so you can restore, copy, or delete",
+      "title": "No Archived Downloads"
     },
-    "AutomationRules": {
-        "action": "Action",
-        "actions": {
-            "addTag": "Add Tag",
-            "addTagDescription": "Add one or more tags to the download",
-            "archive": "Archive Download",
-            "archiveDescription": "Move the download to archived downloads without deleting files",
-            "delete": "Delete Download",
-            "deleteDescription": "Permanently delete the download and its files",
-            "forceStart": "Force Start Download",
-            "forceStartDescription": "Force the download to start",
-            "removeTag": "Remove Tag",
-            "removeTagDescription": "Remove one or more tags from the download",
-            "selectTags": "Select Tags",
-            "stopSeeding": "Stop Seeding",
-            "stopSeedingDescription": "Stop seeding the torrent but keep it in the download list"
-        },
-        "add": "Add Rule",
-        "addCondition": "Add condition",
-        "addConditionToGroup": "Add condition to group",
-        "addRule": "Add Rule",
-        "booleanOperators": {
-            "isFalse": "Is false",
-            "isTrue": "Is true"
-        },
-        "booleanValues": {
-            "false": "False",
-            "true": "True"
-        },
-        "cancel": "Cancel",
-        "checkEvery": "Check Every",
-        "clearLogs": "Clear Logs",
-        "close": "Close",
-        "condition": "Condition",
-        "conditionGroups": {
-            "downloading": "Downloading",
-            "lifecycle": "Lifecycle",
-            "metadata": "Metadata",
-            "seeding": "Seeding",
-            "stalled": "Stalled"
-        },
-        "conditions": {
-            "age": "Age",
-            "ageDescription": "Time since the torrent was added (in hours)",
-            "allowZip": "Allow Zip",
-            "allowZipDescription": "Whether the torrent allows ZIP file extraction",
-            "availability": "Availability",
-            "availabilityDescription": "Ratio of available pieces to total pieces (0.0-1.0)",
-            "avgDownloadSpeed": "Average Download Speed",
-            "avgDownloadSpeedDescription": "Average download speed over a specified time period",
-            "avgUploadSpeed": "Average Upload Speed",
-            "avgUploadSpeedDescription": "Average upload speed over a specified time period",
-            "cached": "Cached",
-            "cachedDescription": "Whether the torrent is cached on the server",
-            "calculatedOver": "calculated over",
-            "downloadSpeed": "Current Download Speed",
-            "downloadSpeedDescription": "Current instantaneous download speed",
-            "downloadStalledTime": "Download Stalled Time",
-            "downloadStalledTimeDescription": "Time since download activity stopped (in minutes)",
-            "eta": "ETA",
-            "etaDescription": "Estimated time until download completion (in minutes)",
-            "expiresAt": "Expires At",
-            "expiresAtDescription": "Timestamp when the torrent expires",
-            "fileCount": "File Count",
-            "fileCountDescription": "Number of files in the torrent",
-            "fileSize": "File Size",
-            "fileSizeDescription": "Total size of all files in the torrent (in bytes)",
-            "hours": "Hours",
-            "isActive": "Is Active",
-            "isActiveDescription": "Whether the torrent is currently active (downloading or seeding)",
-            "lastDownloadActivity": "Last Download Activity",
-            "lastDownloadActivityDescription": "Timestamp of the last download activity",
-            "lastUploadActivity": "Last Upload Activity",
-            "lastUploadActivityDescription": "Timestamp of the last upload activity",
-            "longTermSeeding": "Long Term Seeding",
-            "longTermSeedingDescription": "Whether the torrent has been seeding for an extended period",
-            "name": "Name",
-            "nameDescription": "Torrent name (supports text search)",
-            "namePlaceholder": "Enter text to search...",
-            "peers": "Peers",
-            "peersDescription": "Number of peers currently connected",
-            "private": "Private",
-            "privateDescription": "Whether the torrent is from a private tracker",
-            "progress": "Progress",
-            "progressDescription": "Download progress percentage (0-100)",
-            "seedingEnabled": "Seeding Enabled",
-            "seedingEnabledDescription": "Whether seeding is enabled for this torrent",
-            "seedingRatio": "Seeding Ratio",
-            "seedingRatioDescription": "Ratio of uploaded data to downloaded data",
-            "seedingTime": "Seeding Time",
-            "seedingTimeDescription": "Total time spent seeding (in hours)",
-            "seeds": "Seeds",
-            "seedsDescription": "Number of seeders currently available",
-            "stalledTime": "Stalled Time",
-            "status": "Status",
-            "statusDescription": "Current status of the torrent (downloading, seeding, completed, etc.)",
-            "statusPlaceholder": "Select statuses...",
-            "tags": "Tags",
-            "tagsPlaceholder": "Select tags...",
-            "totalUploaded": "Total Uploaded",
-            "totalUploadedDescription": "Total amount of data uploaded (in GB)",
-            "tracker": "Tracker",
-            "trackerDescription": "Tracker URL or name (supports text search)",
-            "trackerPlaceholder": "Enter tracker URL or name...",
-            "uploadSpeed": "Current Upload Speed",
-            "uploadSpeedDescription": "Current instantaneous upload speed",
-            "uploadStalledTime": "Upload Stalled Time",
-            "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)"
-        },
-        "delete": "Delete",
-        "details": "Details",
-        "enabledAt": "enabled",
-        "error": "Error",
-        "executions": "executions",
-        "failed": "Failed",
-        "itemsAffected": "Items Affected",
-        "lastTriggered": "last triggered",
-        "logicOperators": {
-            "and": "AND",
-            "andGroups": "ALL groups (AND)",
-            "or": "OR",
-            "orGroups": "ANY group (OR)"
-        },
-        "mobileTitle": "Rules",
-        "multiSelectOperators": {
-            "isAnyOf": "Is any of",
-            "isNoneOf": "Is none of"
-        },
-        "neverExecuted": "never executed",
-        "neverTriggered": "never triggered",
-        "noConditionsInGroup": "No conditions in this group. Click '+ Condition' to add one.",
-        "noLogs": "No logs available",
-        "noRules": "No automation rules",
-        "operators": {
-            "eq": "is equal to",
-            "gt": "is greater than",
-            "gte": "is greater than or equal to",
-            "lt": "is less than",
-            "lte": "is less than or equal to"
-        },
-        "presets": {
-            "deleteInactive": "Delete Inactive Downloads",
-            "deleteIncomplete": "Delete Incomplete Torrents",
-            "deleteQueued": "Delete Queued Downloads (6+ hours)",
-            "deleteStalled": "Delete Stalled Downloads (1+ hours)",
-            "deleteUnavailable": "Delete Unavailable Torrents",
-            "stopSeedingLowRatio": "Stop Seeding Low Ratio",
-            "title": "Quick Presets"
-        },
-        "removeCondition": "Remove condition",
-        "removeGroup": "Remove group",
-        "ruleLogs": "Rule Logs",
-        "ruleName": "Rule Name",
-        "ruleNamePlaceholder": "Enter rule name",
-        "section": {
-            "hide": "Hide rules",
-            "show": "Show rules"
-        },
-        "stringOperators": {
-            "contains": "Contains",
-            "endsWith": "Ends with",
-            "equals": "Equals",
-            "notContains": "Not contains",
-            "notEquals": "Not equals",
-            "startsWith": "Starts with"
-        },
-        "success": "Success",
-        "tagOperators": {
-            "isAllOf": "Is all of",
-            "isAnyOf": "Is any of",
-            "isNoneOf": "Is none of"
-        },
-        "timeOperators": {
-            "eq": "is",
-            "gt": "more than",
-            "gte": "at least",
-            "lt": "less than",
-            "lte": "at most"
-        },
-        "timestampOperators": {
-            "eq": "exactly",
-            "gt": "more than",
-            "gte": "at least",
-            "lt": "less than",
-            "lte": "at most"
-        },
-        "title": "Automation Rules",
-        "triggers": "triggers",
-        "update": "Update Rule",
-        "viewLogs": "View Logs"
-    },
-    "CardList": {
-        "toast": {
-            "copyLink": "Link copied to clipboard",
-            "copyLinkFailed": "Failed to copy link"
-        }
-    },
-    "CloudUpload": {
-        "activeJobs": "Active Jobs",
-        "cancel": "Cancel",
-        "complete": "Complete",
-        "connect": "Connect",
-        "connected": "Connected",
-        "connectedProviders": "Connected Providers",
-        "disconnect": "Disconnect",
-        "manageConnections": "Manage Connections",
-        "noActiveJobs": "No active jobs",
-        "notConnected": "Not Connected",
-        "title": "Cloud Storage Manager",
-        "toast": {
-            "connectionError": "Failed to connect to provider",
-            "connectionSuccess": "Successfully connected to provider",
-            "disconnectionError": "Failed to disconnect from provider",
-            "disconnectionSuccess": "Successfully disconnected from provider",
-            "jobCancelError": "Failed to cancel job",
-            "jobCancelled": "Job cancelled successfully"
-        }
-    },
-    "ColumnManager": {
-        "manageColumns": "Manage columns",
-        "reorderColumns": "Reorder columns"
-    },
-    "Columns": {
-        "actions": "Actions",
-        "asset_type": "Type",
-        "cached_at": "Cached Date",
-        "created_at": "Added Date",
-        "download_progress": "Progress",
-        "download_speed": "Download Speed",
-        "download_state": "Status",
-        "eta": "ETA",
-        "expires_at": "Expires At",
-        "file_count": "File Count",
-        "hash": "Hash",
-        "id": "ID",
-        "name": "Name",
-        "original_url": "Source URL",
-        "peers": "Peers",
-        "private": "Is Private Tracker",
-        "progress": "Progress",
-        "ratio": "Ratio",
-        "seeds": "Seeds",
-        "size": "Size",
-        "tags": "Tags",
-        "total_downloaded": "Total Downloaded",
-        "total_uploaded": "Total Uploaded",
-        "updated_at": "Last Updated",
-        "upload_speed": "Upload Speed"
-    },
-    "Common": {
-        "hours": "hours",
-        "itemTypes": {
-            "all": "all",
-            "All": "All",
-            "file": "file",
-            "File": "File",
-            "files": "files",
-            "Files": "Files",
-            "torrent": "torrent",
-            "Torrent": "Torrent",
-            "torrents": "torrents",
-            "Torrents": "Torrents",
-            "usenet": "usenet",
-            "Usenet": "Usenet",
-            "usenets": "usenets",
-            "Usenets": "Usenets",
-            "web": "web",
-            "Web": "Web",
-            "webdl": "webdl",
-            "Webdl": "Webdl"
-        },
-        "loading": "Loading...",
-        "minutes": "minutes",
-        "time": {
-            "ago": " ago",
-            "complete": "Complete",
-            "d": "d",
-            "h": "h",
-            "in": "in ",
-            "m": "m",
-            "mo": "mo",
-            "s": "s",
-            "unknown": "Unknown",
-            "y": "y"
-        }
-    },
-    "CustomViews": {
-        "addFilter": "Add filter",
-        "addFilterToGroup": "Add filter to group",
-        "addGroup": "Add group",
-        "betweenGroups": "Between groups:",
-        "cancel": "Cancel",
-        "columnGroups": {
-            "downloading": "Downloading",
-            "lifecycle": "Lifecycle",
-            "metadata": "Metadata",
-            "seeding": "Seeding",
-            "timestamps": "Time"
-        },
-        "enterValuePlaceholder": "Enter value...",
-        "includeColumns": "Include columns",
-        "includeSort": "Include sort",
-        "noFilters": "No filters. Click '+ Filter' in a group to create one.",
-        "noFiltersInGroup": "No filters in this group. Click '+ Filter' to add one.",
-        "removeGroup": "Remove group",
-        "save": "Save",
-        "saveAsNew": "Save as new",
-        "saving": "Saving...",
-        "selectPlaceholder": "Select...",
-        "selectTagsPlaceholder": "Select tags...",
-        "updateView": "Update view",
-        "updating": "Updating...",
-        "viewNamePlaceholder": "View name..."
-    },
-    "DownloadPanel": {
-        "actions": {
-            "clearAll": "Clear All",
-            "copyAll": "Copy All Links",
-            "copyLink": "Copy Link",
-            "downloadFile": "Download File"
-        },
-        "status": {
-            "fetching": "Fetching {current} of {total}",
-            "generating": "Generating links...",
-            "generatingMore": "Generating more links..."
-        },
-        "title": {
-            "multiple": "Download Links",
-            "single": "Download Link"
-        },
-        "toast": {
-            "copyAllFailed": "Failed to copy links",
-            "copyFailed": "Failed to copy link",
-            "linkCopied": "Link copied to clipboard!",
-            "linksCopied": "Links copied to clipboard!"
-        }
-    },
-    "FileActions": {
-        "copyLink": "Copy Link",
-        "download": "Download File",
-        "play": "Play",
-        "streaming": "Streaming..."
-    },
-    "Header": {
-        "logo": "TorBox Manager Logo",
-        "menu": {
-            "archived": "Archived",
-            "downloads": "Downloads",
-            "language": "Language",
-            "linkHistory": "Link History",
-            "more": "More",
-            "notifications": "Notifications",
-            "referrals": "Referrals",
-            "rss": "RSS Feeds",
-            "search": "Search",
-            "systemStatus": "System Status",
-            "toggle": "Toggle menu",
-            "user": "User"
-        },
-        "theme": {
-            "toggleDark": "Toggle dark mode",
-            "toggleLight": "Toggle light mode"
-        },
-        "title": "TorBox Manager"
-    },
-    "Index": {
-        "description": "Torrent and Debrid Manager",
-        "search": "Search",
-        "searchPlaceholder": "Search torrents...",
-        "title": "TorBox Manager"
-    },
-    "ItemActionButtons": {
-        "delete": {
-            "label": "Delete",
-            "title": "Delete"
-        },
-        "download": {
-            "label": "Download",
-            "title": "Download"
-        },
-        "export": {
-            "label": "Export",
-            "title": "Export Torrent"
-        },
-        "files": {
-            "hide": "Hide Files",
-            "label": "Files",
-            "show": "Show Files"
-        },
-        "start": {
-            "label": "Start",
-            "title": "Force Start"
-        },
-        "stop": {
-            "label": "Stop",
-            "title": "Stop seeding"
-        }
-    },
-    "ItemActions": {
-        "toast": {
-            "deleteAllFailed": "Failed to delete items",
-            "deleteAllSuccess": "All items successfully deleted",
-            "deleteError": "Error deleting: {error}",
-            "deletePartialSuccess": "Deleted {count} of {total} items",
-            "deleteSuccess": "Successfully deleted",
-            "downloadFailed": "Download start failed",
-            "downloadStarted": "Download started successfully",
-            "exportTorrentFailed": "Failed to export torrent file",
-            "exportTorrentSuccess": "Torrent file exported successfully",
-            "noFiles": "No files available to download",
-            "seedingStopFailed": "Torrent stop seeding failed",
-            "seedingStopped": "Torrent stopped seeding successfully"
-        }
-    },
-    "ItemUploader": {
-        "button": {
-            "torrents": "Upload Torrent",
-            "usenet": "Upload NZB",
-            "webdl": "Upload Download"
-        },
-        "dropzone": {
-            "torrents": "Drop torrent files here",
-            "usenet": "Drop NZB files here"
-        },
-        "errors": {
-            "accessDenied": "Access denied. Please check your API key and account status.",
-            "activeLimit": "You have reached your maximum active downloads limit. Please wait for some to complete.",
-            "authFailed": "Authentication failed. Please check your API key.",
-            "downloadTooLarge": "The download is too large for your current plan. Please upgrade your account.",
-            "invalidNzb": "The provided NZB file or link is invalid. Please check the file and try again.",
-            "monthlyLimit": "You have reached your monthly download limit. Please upgrade your account.",
-            "networkError": "Unable to connect to TorBox servers. Please check your internet connection and try again.",
-            "serverOverloaded": "TorBox servers are temporarily overloaded. Please try again in a few minutes.",
-            "serverTimeout": "TorBox servers are taking too long to respond. Please try again in a few minutes.",
-            "serverUnavailable": "TorBox servers are temporarily unavailable. Please try again in a few minutes.",
-            "temporaryIssue": "This is likely a temporary issue with TorBox servers. Please try again in a few minutes.",
-            "tooManyRequests": "Too many requests to TorBox servers. Please wait a moment and try again.",
-            "uploadFailed": "Upload Failed"
-        },
-        "help": {
-            "checkApiKey": "Check that your API key is correct and has sufficient permissions",
-            "downloadSlots": "Ensure your account has available download slots",
-            "nzbTips": "NZB Upload Tips",
-            "serverErrors": "If you see server errors, wait a few minutes and try again",
-            "uploadLimit": "Upload no more than 10 NZB files at once to avoid server errors",
-            "validLinks": "Make sure your NZB links are valid and accessible"
-        },
-        "options": {
-            "hide": "Hide Options",
-            "show": "Options"
-        },
-        "placeholder": {
-            "torrents": "Paste magnet links here (one per line)",
-            "usenet": "Paste NZB links here (one per line)",
-            "webdl": "Paste download links here (one per line)",
-            "webdlPassword": "Password (if required)"
-        },
-        "rateLimit": {
-            "details": "You have {count} items queued. TorBox limits uploads to {perMinute} per minute and {perHour} per hour. Large batches will be processed automatically with appropriate delays.",
-            "info": "Rate Limit Notice"
-        },
-        "section": {
-            "hide": "Hide",
-            "show": "Show"
-        },
-        "status": {
-            "allCompleted": "All {count} items completed successfully",
-            "clearItems": "Clear Items",
-            "completed": "Completed {count} of {total} items",
-            "processing": "Processing {count} of {total} items..."
-        },
-        "title": {
-            "default": "Upload",
-            "torrents": "Upload Torrents",
-            "usenet": "Upload NZB Files",
-            "webdl": "Add Web Downloads"
-        }
-    },
-    "LandingPage": {
-        "apiKeyInput": {
-            "description": "Find your API key at",
-            "link": "torbox.app/settings",
-            "title": "Enter TorBox API Key"
-        },
-        "features": {
-            "batchUpload": {
-                "description": "Upload multiple torrents with a single click",
-                "title": "Batch Upload"
-            },
-            "debrid": {
-                "description": "Seamless integration with debrid services",
-                "title": "Debrid Integration"
-            },
-            "search": {
-                "description": "Search across multiple torrent sites",
-                "title": "Smart Search"
-            }
-        },
-        "footer": {
-            "description": "We don't store any of your information. This app is fully open source on",
-            "github": "GitHub"
-        },
-        "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",
-        "title": "TorBox Manager"
-    },
-    "LinkHistory": {
-        "actions": {
-            "copy": "Copy",
-            "download": "Download",
-            "remove": "Remove"
-        },
-        "columns": {
-            "actions": "Actions",
-            "expiresAt": "Expires At",
-            "fileName": "File Name",
-            "itemId": "Item ID",
-            "itemName": "Item Name"
-        },
-        "emptyState": {
-            "description": "When you generate a download link for any torrent, usenet, or web download, it will appear here.",
-            "important": "Important:",
-            "step1": "Generate download links from the main downloads page",
-            "step2": "You can copy, redownload, or remove links from your history",
-            "step3": "All download links expire in 4 hours",
-            "title": "No Download Links"
-        },
-        "expired": "Expired",
-        "title": "Link History"
-    },
-    "MoreOptionsDropdown": {
-        "copyFullMagnet": "Copy Full Magnet",
-        "copyHash": "Copy Hash",
-        "copyId": "Copy ID",
-        "copyShortMagnet": "Copy Short Magnet",
-        "copySourceUrl": "Copy Source URL",
-        "exportTorrent": "Export .torrent",
-        "label": "More",
-        "reannounce": "Reannounce",
-        "title": "More Options",
-        "toast": {
-            "clipboardError": "Failed to copy to clipboard",
-            "exportMagnetFailed": "Failed to export magnet link",
-            "exportMagnetSuccess": "Magnet link exported successfully",
-            "exportTorrentFailed": "Failed to export torrent file",
-            "exportTorrentSuccess": "Torrent file exported successfully",
-            "fullMagnetCopied": "Full magnet link copied to clipboard",
-            "hashCopied": "Hash copied to clipboard",
-            "hashNotAvailable": "Hash not available",
-            "idCopied": "ID copied to clipboard",
-            "magnetError": "Failed to get magnet link",
-            "reannounceFailed": "Failed to reannounce torrent",
-            "reannounceSuccess": "Torrent reannounced successfully",
-            "shortMagnetCopied": "Short magnet link copied to clipboard",
-            "sourceUrlCopied": "Source URL copied to clipboard",
-            "sourceUrlNotAvailable": "Source URL not available",
-            "uploadFailed": "Failed to start upload",
-            "uploadStarted": "Upload started successfully"
-        },
-        "uploadToCloud": "Upload to Cloud"
-    },
-    "Navigation": {
-        "home": "Home",
-        "search": "Search",
-        "settings": "Settings"
-    },
-    "Notifications": {
-        "clear": "Clear",
-        "clearAll": "Clear all",
-        "loading": "Loading notifications...",
-        "markAllAsRead": "Mark all as read",
-        "markAsRead": "Mark as read",
-        "noNotifications": "No notifications",
-        "notifications": "Notifications",
-        "testNotification": "Test notification"
-    },
-    "Referral": {
-        "copied": "Copied!",
-        "copyAll": "Copy All",
-        "copyCode": "Copy code",
-        "copyLink": "Copy link",
-        "description": "Use the code below to get extra 7 days for each month purchased.",
-        "developerNote": "This is the developer's referral code.",
-        "error": "Error copying to clipboard",
-        "landingDescription": "Need a TorBox account? Use our referral link to sign up and get started!",
-        "referral": "Referral",
-        "referralCode": "Referral Code",
-        "referralLink": "Referral Link",
-        "signUp": "Sign Up for TorBox",
-        "title": "Get Free Premium Time",
-        "visitLink": "Visit Link"
-    },
-    "RssFeeds": {
-        "actions": "Actions",
-        "active": "Active",
-        "addError": "Failed to add RSS feed",
-        "addFeed": "Add RSS Feed",
-        "addSuccess": "RSS feed added successfully",
-        "cancel": "Cancel",
-        "checkingSubscription": "Checking subscription...",
-        "confirmDelete": {
-            "cancel": "Cancel",
-            "confirm": "Delete",
-            "message": "Are you sure you want to delete this RSS feed? This action cannot be undone.",
-            "title": "Delete RSS Feed"
-        },
-        "delete": "Delete",
-        "deleteError": "Failed to delete RSS feed",
-        "deleteSuccess": "RSS feed deleted successfully",
-        "disable": "Disable",
-        "disabled": "Disabled",
-        "disableError": "Failed to disable RSS feed",
-        "disableSuccess": "RSS feed disabled successfully",
-        "dontOlderThan": "Ignore Older Than (days)",
-        "dontOlderThanPlaceholder": "Ignore items older than X days",
-        "dontRegex": "Ignore Regex (Optional)",
-        "dontRegexPlaceholder": "Ignore items matching this regex",
-        "doRegex": "Download Regex (Optional)",
-        "doRegexPlaceholder": "Download items matching this regex",
-        "downloadType": "Download Type",
-        "downloadTypePlaceholder": "Select download type",
-        "editError": "Failed to update RSS feed",
-        "editFeed": "Edit RSS Feed",
-        "editSuccess": "RSS feed updated successfully",
-        "enable": "Enable",
-        "enabled": "Enabled",
-        "enableError": "Failed to enable RSS feed",
-        "enableSuccess": "RSS feed enabled successfully",
-        "error": "Error loading RSS feeds",
-        "feedName": "Feed Name",
-        "feedNamePlaceholder": "Enter feed name",
-        "feedUrl": "Feed URL",
-        "feedUrlPlaceholder": "Enter RSS feed URL",
-        "inactive": "Inactive",
-        "itemCount": "Items",
-        "items": "Items",
-        "lastCheck": "Last Check",
-        "loading": "Loading RSS feeds...",
-        "never": "Never",
-        "noFeeds": "No RSS feeds configured",
-        "options": {
-            "auto": "Auto",
-            "dontSeed": "Don't Seed",
-            "seed": "Seed",
-            "torrent": "Torrent",
-            "usenet": "Usenet",
-            "webdl": "Web Download"
-        },
-        "pageDescription": "Manage RSS feeds and browse items",
-        "pageTitle": "RSS Management",
-        "passCheck": "Pass Check",
-        "passCheckDescription": "Skip cache checking for this feed",
-        "proSubscriptionRequired": "Pro Subscription Required",
-        "proUserRequired": "You need to be a Pro user to use RSS Feeds.",
-        "save": "Save",
-        "scanInterval": "Scan Interval (minutes)",
-        "scanIntervalPlaceholder": "How often to scan this feed",
-        "status": "Status",
-        "tabs": {
-            "feeds": "Feed Management",
-            "items": "Items Management"
-        },
-        "title": "RSS Feeds",
-        "torrentSeeding": "Torrent Seeding",
-        "torrentSeedingPlaceholder": "Select seeding preference",
-        "validation": {
-            "nameRequired": "Feed name is required",
-            "urlInvalid": "Please enter a valid RSS feed URL",
-            "urlRequired": "Feed URL is required"
-        }
-    },
-    "RssItems": {
-        "allTypes": "All Types",
-        "category": "Category",
-        "date": "Date",
-        "download": "Download",
-        "error": "Error loading items",
-        "loading": "Loading items...",
-        "newestFirst": "Newest First",
-        "noDescription": "No description available",
-        "noItems": "No items found",
-        "noMatchingItems": "No items match your search criteria",
-        "oldestFirst": "Oldest First",
-        "published": "Published",
-        "refresh": "Refresh",
-        "search": "Search",
-        "searchPlaceholder": "Search items...",
-        "selectFeed": "Select RSS Feed",
-        "selectFeedPlaceholder": "Choose a feed to view items",
-        "size": "Size",
-        "sortBy": "Sort By",
-        "sortOrder": "Sort Order",
-        "title": "RSS Items",
-        "toast": {
-            "downloadFailed": "Failed to start download",
-            "downloadStarted": "Download started successfully",
-            "noLink": "No download link available"
-        },
-        "torrent": "Torrent",
-        "type": "Type",
-        "unknown": "Unknown",
-        "usenet": "Usenet",
-        "webdl": "Web Download"
-    },
-    "SearchBar": {
-        "clearFilters": "Clear Filters",
-        "clearHistory": "Clear",
-        "clearSearch": "Clear search",
-        "customEngines": "Custom Engines",
-        "episode": "Episode",
-        "episodePlaceholder": "E01",
-        "hideAdvanced": "Hide Advanced",
-        "minSeeders": "Min Seeders",
-        "minSize": "Min Size (GB)",
-        "placeholderDownloads": "Search {itemType}...",
-        "placeholderSearch": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
-        "quality": "Quality",
-        "qualityAll": "All Qualities",
-        "recentSearches": "Recent Searches",
-        "search": "Search",
-        "searchExamples": "Search Examples",
-        "season": "Season",
-        "seasonPlaceholder": "S01",
-        "showAdvanced": "Show Advanced",
-        "year": "Year",
-        "yearPlaceholder": "2024"
-    },
-    "SearchResults": {
-        "actions": {
-            "added": "Added",
-            "adding": "Adding...",
-            "addToTorBox": "Add to TorBox",
-            "copyLink": "Copy Link",
-            "copyMagnet": "Copy Magnet"
-        },
-        "cachedOnly": "Cached Only",
-        "hideTorBoxIndexers": "Hide TorBox Indexers",
-        "metadata": {
-            "cached": "Cached",
-            "days": "days"
-        },
-        "noResults": "No results found",
-        "results": "{count} results",
-        "sort": {
-            "age": "Most Recent",
-            "seeders": "Most Seeders",
-            "size": "Largest Size"
-        },
-        "toast": {
-            "magnetCopied": "Magnet link copied to clipboard",
-            "nzbAdded": "NZB added to TorBox successfully",
-            "nzbAddFailed": "Failed to add NZB: {error}",
-            "nzbCopied": "NZB link copied to clipboard",
-            "torrentAdded": "Torrent added to TorBox successfully",
-            "torrentAddFailed": "Failed to add torrent: {error}",
-            "uploadSuccess": "Successfully uploaded {count} {type}",
-            "uploadSuccessPlural": "Successfully uploaded {count} {type}s"
-        }
-    },
-    "SpeedChart": {
-        "chart": {
-            "hide": "Hide chart",
-            "show": "Show chart"
-        },
-        "labels": {
-            "download": "Download",
-            "upload": "Upload"
-        },
-        "scale": {
-            "linear": "Linear",
-            "logarithmic": "Log"
-        },
-        "timeRanges": {
-            "10m": "Last 10m",
-            "1h": "Last 1h",
-            "1m": "Last 1m",
-            "3h": "Last 3h",
-            "6h": "Last 6h",
-            "all": "All"
-        },
-        "title": {
-            "default": "Network",
-            "full": "Network Activity"
-        }
-    },
-    "Statuses": {
-        "checking_resume_data": "Checking Resume Data",
-        "completed": "Completed",
-        "downloading": "Downloading",
-        "failed": "Failed",
-        "inactive": "Inactive",
-        "meta_dl": "Meta DL",
-        "queued": "Queued",
-        "seeding": "Seeding",
-        "stalled": "Stalled",
-        "unknown": "Unknown",
-        "uploading": "Uploading"
-    },
-    "StatusSection": {
-        "selectedFiles": "{fileCount} files selected ({size})",
-        "selectedItems": "{itemCount} {type} selected ({size})",
-        "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
-        "total": "{count} {type}"
-    },
-    "SystemStatus": {
-        "error": "Error",
-        "hoursAgo": "{hours} hours ago",
-        "justNow": "Just now",
-        "lastCheck": "Last check",
-        "minutesAgo": "{minutes} minutes ago",
-        "never": "Never",
-        "refreshStatus": "Refresh system status",
-        "status": {
-            "apiUnhealthy": "API Connection Issue",
-            "apiUnhealthyDescription": "TorBox API is not responding properly",
-            "healthy": "System Healthy",
-            "healthyDescription": "All systems are operating normally",
-            "noApiKey": "No API Key",
-            "noApiKeyDescription": "API key is required to check TorBox connectivity",
-            "unhealthy": "System Unhealthy",
-            "unhealthyDescription": "Local application is experiencing issues",
-            "unknown": "Status Unknown",
-            "unknownDescription": "Unable to determine system status"
-        }
-    },
-    "TableBody": {
-        "noDownloads": "No downloads",
-        "toast": {
-            "copyLink": "Link copied to clipboard",
-            "copyLinkFailed": "Failed to copy link"
-        }
-    },
-    "TorrentOptions": {
-        "allowZip": {
-            "description": "For torrents with 100+ files",
-            "label": "Allow Zip"
-        },
-        "autoStart": {
-            "label": "Enable Auto Start",
-            "limit": "Active torrents limit:",
-            "title": "Process Queued Torrents",
-            "tooltip": "Automatically start downloading torrents up to the specified limit"
-        },
-        "instantQueue": {
-            "description": "Skip waiting queue",
-            "label": "Instant Queue"
-        },
-        "seedingPreference": {
-            "always": "Always Seed",
-            "auto": "Auto (Default)",
-            "label": "Seeding Preference",
-            "never": "Never Seed"
-        },
-        "title": "Global Upload Options"
-    },
-    "UploadProgress": {
-        "approachingRateLimit": "Approaching rate limit:",
-        "approachingRateLimitDetails": "{perMinute}/10 per minute, {perHour}/60 per hour",
-        "estimatedCompletion": "Estimated completion:",
-        "pleaseWait": "Please wait...",
-        "preparingUploads": "Preparing uploads...",
-        "rateLimit": "Rate limit:",
-        "rateLimitActive": "Rate limit active:",
-        "remaining": "({remaining} remaining)",
-        "uploading": "Uploading {current} of {total}",
-        "waitingBeforeNext": "Waiting {time} before next upload"
-    },
-    "User": {
-        "copyLink": "Copy Link",
-        "copyLinkFailed": "Failed to copy link",
-        "description": "Manage your account and view your statistics",
-        "errors": {
-            "reloadPage": "Reload Page",
-            "renderError": "An error occurred while rendering the profile"
-        },
-        "noData": "No data available",
-        "plans": {
-            "essential": "Essential",
-            "free": "Free",
-            "pro": "Pro",
-            "standard": "Standard",
-            "unknown": "Unknown"
-        },
-        "profile": {
-            "accountStatus": "Account Status",
-            "basicInfo": "Basic Information",
-            "createdAt": "Created At",
-            "downloadBreakdown": "Download Breakdown",
-            "email": "Email",
-            "lastLogin": "Last Updated",
-            "plan": "Plan",
-            "planExpiry": "Plan Expiry",
-            "ratio": "Ratio",
-            "referralCode": "Referral Code",
-            "status": "Status",
-            "title": "User Profile",
-            "torrentDownloads": "Torrent Downloads",
-            "totalDownloads": "Total Downloads",
-            "totalSize": "Total Downloaded",
-            "totalUploaded": "Total Uploaded",
-            "usage": "Usage Statistics",
-            "usenetDownloads": "Usenet Downloads",
-            "userId": "User ID",
-            "webDownloads": "Web Downloads"
-        },
-        "referralLink": "Referral Link",
-        "retry": "Retry",
-        "status": {
-            "active": "Active",
-            "expired": "Expired",
-            "free": "Free"
-        },
-        "title": "User Profile"
-    },
-    "VideoPlayer": {
-        "title": "Video Player",
-        "loading": "Loading stream...",
-        "error": "Failed to load stream",
-        "playbackSpeed": "Playback Speed",
-        "playbackSpeedNormal": "Normal"
-    },
-    "ViewControls": {
-        "cardView": "Card View",
-        "collapseAllFiles": "Collapse all files",
-        "enterFullscreen": "Enter fullscreen",
-        "exitFullscreen": "Exit fullscreen",
-        "expandAllFiles": "Expand all files",
-        "hideSensitive": "Hide sensitive content",
-        "showSensitive": "Show sensitive content",
-        "tableView": "Table View"
-    },
-    "Admin": {
-        "login": {
-            "title": "Admin Login",
-            "subtitle": "Enter your admin API key to access the admin panel",
-            "placeholder": "Admin API Key",
-            "authenticating": "Authenticating...",
-            "signIn": "Sign in"
-        },
-        "dashboard": {
-            "title": "Dashboard",
-            "autoRefresh": "Auto-refresh (30s)",
-            "loadingMetrics": "Loading metrics...",
-            "failedToLoad": "Failed to load metrics"
-        },
-        "users": {
-            "title": "User Management",
-            "loading": "Loading users...",
-            "noUsers": "No users found",
-            "back": "Back",
-            "userDetails": "User Details"
-        },
-        "system": {
-            "title": "System Health",
-            "loading": "Loading system metrics..."
-        },
-        "databases": {
-            "title": "Database Management",
-            "loading": "Loading databases..."
-        },
-        "automation": {
-            "title": "Automation Monitoring",
-            "loading": "Loading automation data..."
-        },
-        "logs": {
-            "title": "Logs",
-            "notImplemented": "Log retrieval is not implemented. Logs are output to console/stdout.",
-            "note": "For production, consider using a log aggregation service or file-based logging."
-        },
-        "settings": {
-            "title": "System Configuration",
-            "loading": "Loading configuration...",
-            "note": "Configuration updates require environment variable changes and server restart."
-        }
+    "title": "Archived Downloads",
+    "toast": {
+      "magnetCopied": "Magnet link copied to clipboard"
     }
+  },
+  "AutomationRules": {
+    "action": "Action",
+    "actions": {
+      "addTag": "Add Tag",
+      "addTagDescription": "Add one or more tags to the download",
+      "archive": "Archive Download",
+      "archiveDescription": "Move the download to archived downloads without deleting files",
+      "delete": "Delete Download",
+      "deleteDescription": "Permanently delete the download and its files",
+      "forceStart": "Force Start Download",
+      "forceStartDescription": "Force the download to start",
+      "removeTag": "Remove Tag",
+      "removeTagDescription": "Remove one or more tags from the download",
+      "selectTags": "Select Tags",
+      "stopSeeding": "Stop Seeding",
+      "stopSeedingDescription": "Stop seeding the torrent but keep it in the download list"
+    },
+    "add": "Add Rule",
+    "addCondition": "Add condition",
+    "addConditionToGroup": "Add condition to group",
+    "addRule": "Add Rule",
+    "booleanOperators": {
+      "isFalse": "Is false",
+      "isTrue": "Is true"
+    },
+    "booleanValues": {
+      "false": "False",
+      "true": "True"
+    },
+    "cancel": "Cancel",
+    "checkEvery": "Check Every",
+    "clearLogs": "Clear Logs",
+    "close": "Close",
+    "condition": "Condition",
+    "conditionGroups": {
+      "downloading": "Downloading",
+      "lifecycle": "Lifecycle",
+      "metadata": "Metadata",
+      "seeding": "Seeding",
+      "stalled": "Stalled"
+    },
+    "conditions": {
+      "age": "Age",
+      "ageDescription": "Time since the torrent was added (in hours)",
+      "allowZip": "Allow Zip",
+      "allowZipDescription": "Whether the torrent allows ZIP file extraction",
+      "availability": "Availability",
+      "availabilityDescription": "Ratio of available pieces to total pieces (0.0-1.0)",
+      "avgDownloadSpeed": "Average Download Speed",
+      "avgDownloadSpeedDescription": "Average download speed over a specified time period",
+      "avgUploadSpeed": "Average Upload Speed",
+      "avgUploadSpeedDescription": "Average upload speed over a specified time period",
+      "cached": "Cached",
+      "cachedDescription": "Whether the torrent is cached on the server",
+      "calculatedOver": "calculated over",
+      "downloadSpeed": "Current Download Speed",
+      "downloadSpeedDescription": "Current instantaneous download speed",
+      "downloadStalledTime": "Download Stalled Time",
+      "downloadStalledTimeDescription": "Time since download activity stopped (in minutes)",
+      "eta": "ETA",
+      "etaDescription": "Estimated time until download completion (in minutes)",
+      "expiresAt": "Expires At",
+      "expiresAtDescription": "Timestamp when the torrent expires",
+      "fileCount": "File Count",
+      "fileCountDescription": "Number of files in the torrent",
+      "fileSize": "File Size",
+      "fileSizeDescription": "Total size of all files in the torrent (in bytes)",
+      "hours": "Hours",
+      "isActive": "Is Active",
+      "isActiveDescription": "Whether the torrent is currently active (downloading or seeding)",
+      "lastDownloadActivity": "Last Download Activity",
+      "lastDownloadActivityDescription": "Timestamp of the last download activity",
+      "lastUploadActivity": "Last Upload Activity",
+      "lastUploadActivityDescription": "Timestamp of the last upload activity",
+      "longTermSeeding": "Long Term Seeding",
+      "longTermSeedingDescription": "Whether the torrent has been seeding for an extended period",
+      "name": "Name",
+      "nameDescription": "Torrent name (supports text search)",
+      "namePlaceholder": "Enter text to search...",
+      "peers": "Peers",
+      "peersDescription": "Number of peers currently connected",
+      "private": "Private",
+      "privateDescription": "Whether the torrent is from a private tracker",
+      "progress": "Progress",
+      "progressDescription": "Download progress percentage (0-100)",
+      "seedingEnabled": "Seeding Enabled",
+      "seedingEnabledDescription": "Whether seeding is enabled for this torrent",
+      "seedingRatio": "Seeding Ratio",
+      "seedingRatioDescription": "Ratio of uploaded data to downloaded data",
+      "seedingTime": "Seeding Time",
+      "seedingTimeDescription": "Total time spent seeding (in hours)",
+      "seeds": "Seeds",
+      "seedsDescription": "Number of seeders currently available",
+      "stalledTime": "Stalled Time",
+      "status": "Status",
+      "statusDescription": "Current status of the torrent (downloading, seeding, completed, etc.)",
+      "statusPlaceholder": "Select statuses...",
+      "tags": "Tags",
+      "tagsPlaceholder": "Select tags...",
+      "totalUploaded": "Total Uploaded",
+      "totalUploadedDescription": "Total amount of data uploaded (in GB)",
+      "tracker": "Tracker",
+      "trackerDescription": "Tracker URL or name (supports text search)",
+      "trackerPlaceholder": "Enter tracker URL or name...",
+      "uploadSpeed": "Current Upload Speed",
+      "uploadSpeedDescription": "Current instantaneous upload speed",
+      "uploadStalledTime": "Upload Stalled Time",
+      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)"
+    },
+    "delete": "Delete",
+    "details": "Details",
+    "enabledAt": "enabled",
+    "error": "Error",
+    "executions": "executions",
+    "failed": "Failed",
+    "itemsAffected": "Items Affected",
+    "lastTriggered": "last triggered",
+    "logicOperators": {
+      "and": "AND",
+      "andGroups": "ALL groups (AND)",
+      "or": "OR",
+      "orGroups": "ANY group (OR)"
+    },
+    "mobileTitle": "Rules",
+    "multiSelectOperators": {
+      "isAnyOf": "Is any of",
+      "isNoneOf": "Is none of"
+    },
+    "neverExecuted": "never executed",
+    "neverTriggered": "never triggered",
+    "noConditionsInGroup": "No conditions in this group. Click '+ Condition' to add one.",
+    "noLogs": "No logs available",
+    "noRules": "No automation rules",
+    "operators": {
+      "eq": "is equal to",
+      "gt": "is greater than",
+      "gte": "is greater than or equal to",
+      "lt": "is less than",
+      "lte": "is less than or equal to"
+    },
+    "presets": {
+      "deleteInactive": "Delete Inactive Downloads",
+      "deleteIncomplete": "Delete Incomplete Torrents",
+      "deleteQueued": "Delete Queued Downloads (6+ hours)",
+      "deleteStalled": "Delete Stalled Downloads (1+ hours)",
+      "deleteUnavailable": "Delete Unavailable Torrents",
+      "stopSeedingLowRatio": "Stop Seeding Low Ratio",
+      "title": "Quick Presets"
+    },
+    "removeCondition": "Remove condition",
+    "removeGroup": "Remove group",
+    "ruleLogs": "Rule Logs",
+    "ruleName": "Rule Name",
+    "ruleNamePlaceholder": "Enter rule name",
+    "section": {
+      "hide": "Hide rules",
+      "show": "Show rules"
+    },
+    "stringOperators": {
+      "contains": "Contains",
+      "endsWith": "Ends with",
+      "equals": "Equals",
+      "notContains": "Not contains",
+      "notEquals": "Not equals",
+      "startsWith": "Starts with"
+    },
+    "success": "Success",
+    "tagOperators": {
+      "isAllOf": "Is all of",
+      "isAnyOf": "Is any of",
+      "isNoneOf": "Is none of"
+    },
+    "timeOperators": {
+      "eq": "is",
+      "gt": "more than",
+      "gte": "at least",
+      "lt": "less than",
+      "lte": "at most"
+    },
+    "timestampOperators": {
+      "eq": "exactly",
+      "gt": "more than",
+      "gte": "at least",
+      "lt": "less than",
+      "lte": "at most"
+    },
+    "title": "Automation Rules",
+    "triggers": "triggers",
+    "update": "Update Rule",
+    "viewLogs": "View Logs"
+  },
+  "CardList": {
+    "toast": {
+      "copyLink": "Link copied to clipboard",
+      "copyLinkFailed": "Failed to copy link"
+    }
+  },
+  "CloudUpload": {
+    "activeJobs": "Active Jobs",
+    "cancel": "Cancel",
+    "complete": "Complete",
+    "connect": "Connect",
+    "connected": "Connected",
+    "connectedProviders": "Connected Providers",
+    "disconnect": "Disconnect",
+    "manageConnections": "Manage Connections",
+    "noActiveJobs": "No active jobs",
+    "notConnected": "Not Connected",
+    "title": "Cloud Storage Manager",
+    "toast": {
+      "connectionError": "Failed to connect to provider",
+      "connectionSuccess": "Successfully connected to provider",
+      "disconnectionError": "Failed to disconnect from provider",
+      "disconnectionSuccess": "Successfully disconnected from provider",
+      "jobCancelError": "Failed to cancel job",
+      "jobCancelled": "Job cancelled successfully"
+    }
+  },
+  "ColumnManager": {
+    "manageColumns": "Manage columns",
+    "reorderColumns": "Reorder columns"
+  },
+  "Columns": {
+    "actions": "Actions",
+    "asset_type": "Type",
+    "cached_at": "Cached Date",
+    "created_at": "Added Date",
+    "download_progress": "Progress",
+    "download_speed": "Download Speed",
+    "download_state": "Status",
+    "eta": "ETA",
+    "expires_at": "Expires At",
+    "file_count": "File Count",
+    "hash": "Hash",
+    "id": "ID",
+    "name": "Name",
+    "original_url": "Source URL",
+    "peers": "Peers",
+    "private": "Is Private Tracker",
+    "progress": "Progress",
+    "ratio": "Ratio",
+    "seeds": "Seeds",
+    "size": "Size",
+    "tags": "Tags",
+    "total_downloaded": "Total Downloaded",
+    "total_uploaded": "Total Uploaded",
+    "updated_at": "Last Updated",
+    "upload_speed": "Upload Speed"
+  },
+  "Common": {
+    "hours": "hours",
+    "itemTypes": {
+      "all": "all",
+      "All": "All",
+      "file": "file",
+      "File": "File",
+      "files": "files",
+      "Files": "Files",
+      "torrent": "torrent",
+      "Torrent": "Torrent",
+      "torrents": "torrents",
+      "Torrents": "Torrents",
+      "usenet": "usenet",
+      "Usenet": "Usenet",
+      "usenets": "usenets",
+      "Usenets": "Usenets",
+      "web": "web",
+      "Web": "Web",
+      "webdl": "webdl",
+      "Webdl": "Webdl"
+    },
+    "loading": "Loading...",
+    "minutes": "minutes",
+    "time": {
+      "ago": " ago",
+      "complete": "Complete",
+      "d": "d",
+      "h": "h",
+      "in": "in ",
+      "m": "m",
+      "mo": "mo",
+      "s": "s",
+      "unknown": "Unknown",
+      "y": "y"
+    }
+  },
+  "CustomViews": {
+    "addFilter": "Add filter",
+    "addFilterToGroup": "Add filter to group",
+    "addGroup": "Add group",
+    "betweenGroups": "Between groups:",
+    "cancel": "Cancel",
+    "columnGroups": {
+      "downloading": "Downloading",
+      "lifecycle": "Lifecycle",
+      "metadata": "Metadata",
+      "seeding": "Seeding",
+      "timestamps": "Time"
+    },
+    "enterValuePlaceholder": "Enter value...",
+    "includeColumns": "Include columns",
+    "includeSort": "Include sort",
+    "noFilters": "No filters. Click '+ Filter' in a group to create one.",
+    "noFiltersInGroup": "No filters in this group. Click '+ Filter' to add one.",
+    "removeGroup": "Remove group",
+    "save": "Save",
+    "saveAsNew": "Save as new",
+    "saving": "Saving...",
+    "selectPlaceholder": "Select...",
+    "selectTagsPlaceholder": "Select tags...",
+    "updateView": "Update view",
+    "updating": "Updating...",
+    "viewNamePlaceholder": "View name..."
+  },
+  "DownloadPanel": {
+    "actions": {
+      "clearAll": "Clear All",
+      "copyAll": "Copy All Links",
+      "copyLink": "Copy Link",
+      "downloadFile": "Download File"
+    },
+    "status": {
+      "fetching": "Fetching {current} of {total}",
+      "generating": "Generating links...",
+      "generatingMore": "Generating more links..."
+    },
+    "title": {
+      "multiple": "Download Links",
+      "single": "Download Link"
+    },
+    "toast": {
+      "copyAllFailed": "Failed to copy links",
+      "copyFailed": "Failed to copy link",
+      "linkCopied": "Link copied to clipboard!",
+      "linksCopied": "Links copied to clipboard!"
+    }
+  },
+  "FileActions": {
+    "copyLink": "Copy Link",
+    "download": "Download File",
+    "play": "Play",
+    "streaming": "Streaming..."
+  },
+  "Header": {
+    "logo": "TorBox Manager Logo",
+    "menu": {
+      "archived": "Archived",
+      "downloads": "Downloads",
+      "language": "Language",
+      "linkHistory": "Link History",
+      "more": "More",
+      "notifications": "Notifications",
+      "referrals": "Referrals",
+      "rss": "RSS Feeds",
+      "search": "Search",
+      "systemStatus": "System Status",
+      "toggle": "Toggle menu",
+      "uploads": "Uploads",
+      "user": "User"
+    },
+    "theme": {
+      "toggleDark": "Toggle dark mode",
+      "toggleLight": "Toggle light mode"
+    },
+    "title": "TorBox Manager"
+  },
+  "Index": {
+    "description": "Torrent and Debrid Manager",
+    "search": "Search",
+    "searchPlaceholder": "Search torrents...",
+    "title": "TorBox Manager"
+  },
+  "ItemActionButtons": {
+    "delete": {
+      "label": "Delete",
+      "title": "Delete"
+    },
+    "download": {
+      "label": "Download",
+      "title": "Download"
+    },
+    "export": {
+      "label": "Export",
+      "title": "Export Torrent"
+    },
+    "files": {
+      "hide": "Hide Files",
+      "label": "Files",
+      "show": "Show Files"
+    },
+    "start": {
+      "label": "Start",
+      "title": "Force Start"
+    },
+    "stop": {
+      "label": "Stop",
+      "title": "Stop seeding"
+    }
+  },
+  "ItemActions": {
+    "toast": {
+      "deleteAllFailed": "Failed to delete items",
+      "deleteAllSuccess": "All items successfully deleted",
+      "deleteError": "Error deleting: {error}",
+      "deletePartialSuccess": "Deleted {count} of {total} items",
+      "deleteSuccess": "Successfully deleted",
+      "downloadFailed": "Download start failed",
+      "downloadStarted": "Download started successfully",
+      "exportTorrentFailed": "Failed to export torrent file",
+      "exportTorrentSuccess": "Torrent file exported successfully",
+      "noFiles": "No files available to download",
+      "seedingStopFailed": "Torrent stop seeding failed",
+      "seedingStopped": "Torrent stopped seeding successfully"
+    }
+  },
+  "ItemUploader": {
+    "button": {
+      "torrents": "Upload Torrent",
+      "usenet": "Upload NZB",
+      "webdl": "Upload Download"
+    },
+    "dropzone": {
+      "torrents": "Drop torrent files here",
+      "usenet": "Drop NZB files here"
+    },
+    "errors": {
+      "accessDenied": "Access denied. Please check your API key and account status.",
+      "activeLimit": "You have reached your maximum active downloads limit. Please wait for some to complete.",
+      "authFailed": "Authentication failed. Please check your API key.",
+      "downloadTooLarge": "The download is too large for your current plan. Please upgrade your account.",
+      "invalidNzb": "The provided NZB file or link is invalid. Please check the file and try again.",
+      "monthlyLimit": "You have reached your monthly download limit. Please upgrade your account.",
+      "networkError": "Unable to connect to TorBox servers. Please check your internet connection and try again.",
+      "serverOverloaded": "TorBox servers are temporarily overloaded. Please try again in a few minutes.",
+      "serverTimeout": "TorBox servers are taking too long to respond. Please try again in a few minutes.",
+      "serverUnavailable": "TorBox servers are temporarily unavailable. Please try again in a few minutes.",
+      "temporaryIssue": "This is likely a temporary issue with TorBox servers. Please try again in a few minutes.",
+      "tooManyRequests": "Too many requests to TorBox servers. Please wait a moment and try again.",
+      "uploadFailed": "Upload Failed"
+    },
+    "help": {
+      "checkApiKey": "Check that your API key is correct and has sufficient permissions",
+      "downloadSlots": "Ensure your account has available download slots",
+      "nzbTips": "NZB Upload Tips",
+      "serverErrors": "If you see server errors, wait a few minutes and try again",
+      "uploadLimit": "Upload no more than 10 NZB files at once to avoid server errors",
+      "validLinks": "Make sure your NZB links are valid and accessible"
+    },
+    "options": {
+      "hide": "Hide Options",
+      "show": "Options"
+    },
+    "placeholder": {
+      "torrents": "Paste magnet links here (one per line)",
+      "usenet": "Paste NZB links here (one per line)",
+      "webdl": "Paste download links here (one per line)",
+      "webdlPassword": "Password (if required)"
+    },
+    "rateLimit": {
+      "details": "You have {count} items queued. TorBox limits uploads to {perMinute} per minute and {perHour} per hour. Large batches will be processed automatically with appropriate delays.",
+      "info": "Rate Limit Notice"
+    },
+    "section": {
+      "hide": "Hide",
+      "show": "Show"
+    },
+    "status": {
+      "allCompleted": "All {count} items completed successfully",
+      "clearItems": "Clear Items",
+      "completed": "Completed {count} of {total} items",
+      "processing": "Processing {count} of {total} items..."
+    },
+    "title": {
+      "default": "Upload",
+      "torrents": "Upload Torrents",
+      "usenet": "Upload NZB Files",
+      "webdl": "Add Web Downloads"
+    }
+  },
+  "LandingPage": {
+    "apiKeyInput": {
+      "description": "Find your API key at",
+      "link": "torbox.app/settings",
+      "title": "Enter TorBox API Key"
+    },
+    "features": {
+      "batchUpload": {
+        "description": "Upload multiple torrents with a single click",
+        "title": "Batch Upload"
+      },
+      "debrid": {
+        "description": "Seamless integration with debrid services",
+        "title": "Debrid Integration"
+      },
+      "search": {
+        "description": "Search across multiple torrent sites",
+        "title": "Smart Search"
+      }
+    },
+    "footer": {
+      "description": "We don't store any of your information. This app is fully open source on",
+      "github": "GitHub"
+    },
+    "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",
+    "title": "TorBox Manager"
+  },
+  "LinkHistory": {
+    "actions": {
+      "copy": "Copy",
+      "download": "Download",
+      "remove": "Remove"
+    },
+    "columns": {
+      "actions": "Actions",
+      "expiresAt": "Expires At",
+      "fileName": "File Name",
+      "itemId": "Item ID",
+      "itemName": "Item Name"
+    },
+    "emptyState": {
+      "description": "When you generate a download link for any torrent, usenet, or web download, it will appear here.",
+      "important": "Important:",
+      "step1": "Generate download links from the main downloads page",
+      "step2": "You can copy, redownload, or remove links from your history",
+      "step3": "All download links expire in 4 hours",
+      "title": "No Download Links"
+    },
+    "expired": "Expired",
+    "title": "Link History"
+  },
+  "MoreOptionsDropdown": {
+    "copyFullMagnet": "Copy Full Magnet",
+    "copyHash": "Copy Hash",
+    "copyId": "Copy ID",
+    "copyShortMagnet": "Copy Short Magnet",
+    "copySourceUrl": "Copy Source URL",
+    "exportTorrent": "Export .torrent",
+    "label": "More",
+    "reannounce": "Reannounce",
+    "title": "More Options",
+    "toast": {
+      "clipboardError": "Failed to copy to clipboard",
+      "exportMagnetFailed": "Failed to export magnet link",
+      "exportMagnetSuccess": "Magnet link exported successfully",
+      "exportTorrentFailed": "Failed to export torrent file",
+      "exportTorrentSuccess": "Torrent file exported successfully",
+      "fullMagnetCopied": "Full magnet link copied to clipboard",
+      "hashCopied": "Hash copied to clipboard",
+      "hashNotAvailable": "Hash not available",
+      "idCopied": "ID copied to clipboard",
+      "magnetError": "Failed to get magnet link",
+      "reannounceFailed": "Failed to reannounce torrent",
+      "reannounceSuccess": "Torrent reannounced successfully",
+      "shortMagnetCopied": "Short magnet link copied to clipboard",
+      "sourceUrlCopied": "Source URL copied to clipboard",
+      "sourceUrlNotAvailable": "Source URL not available",
+      "uploadFailed": "Failed to start upload",
+      "uploadStarted": "Upload started successfully"
+    },
+    "uploadToCloud": "Upload to Cloud"
+  },
+  "Navigation": {
+    "home": "Home",
+    "search": "Search",
+    "settings": "Settings"
+  },
+  "Notifications": {
+    "clear": "Clear",
+    "clearAll": "Clear all",
+    "loading": "Loading notifications...",
+    "markAllAsRead": "Mark all as read",
+    "markAsRead": "Mark as read",
+    "noNotifications": "No notifications",
+    "notifications": "Notifications",
+    "testNotification": "Test notification"
+  },
+  "Referral": {
+    "copied": "Copied!",
+    "copyAll": "Copy All",
+    "copyCode": "Copy code",
+    "copyLink": "Copy link",
+    "description": "Use the code below to get extra 7 days for each month purchased.",
+    "developerNote": "This is the developer's referral code.",
+    "error": "Error copying to clipboard",
+    "landingDescription": "Need a TorBox account? Use our referral link to sign up and get started!",
+    "referral": "Referral",
+    "referralCode": "Referral Code",
+    "referralLink": "Referral Link",
+    "signUp": "Sign Up for TorBox",
+    "title": "Get Free Premium Time",
+    "visitLink": "Visit Link"
+  },
+  "RssFeeds": {
+    "actions": "Actions",
+    "active": "Active",
+    "addError": "Failed to add RSS feed",
+    "addFeed": "Add RSS Feed",
+    "addSuccess": "RSS feed added successfully",
+    "cancel": "Cancel",
+    "checkingSubscription": "Checking subscription...",
+    "confirmDelete": {
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "message": "Are you sure you want to delete this RSS feed? This action cannot be undone.",
+      "title": "Delete RSS Feed"
+    },
+    "delete": "Delete",
+    "deleteError": "Failed to delete RSS feed",
+    "deleteSuccess": "RSS feed deleted successfully",
+    "disable": "Disable",
+    "disabled": "Disabled",
+    "disableError": "Failed to disable RSS feed",
+    "disableSuccess": "RSS feed disabled successfully",
+    "dontOlderThan": "Ignore Older Than (days)",
+    "dontOlderThanPlaceholder": "Ignore items older than X days",
+    "dontRegex": "Ignore Regex (Optional)",
+    "dontRegexPlaceholder": "Ignore items matching this regex",
+    "doRegex": "Download Regex (Optional)",
+    "doRegexPlaceholder": "Download items matching this regex",
+    "downloadType": "Download Type",
+    "downloadTypePlaceholder": "Select download type",
+    "editError": "Failed to update RSS feed",
+    "editFeed": "Edit RSS Feed",
+    "editSuccess": "RSS feed updated successfully",
+    "enable": "Enable",
+    "enabled": "Enabled",
+    "enableError": "Failed to enable RSS feed",
+    "enableSuccess": "RSS feed enabled successfully",
+    "error": "Error loading RSS feeds",
+    "feedName": "Feed Name",
+    "feedNamePlaceholder": "Enter feed name",
+    "feedUrl": "Feed URL",
+    "feedUrlPlaceholder": "Enter RSS feed URL",
+    "inactive": "Inactive",
+    "itemCount": "Items",
+    "items": "Items",
+    "lastCheck": "Last Check",
+    "loading": "Loading RSS feeds...",
+    "never": "Never",
+    "noFeeds": "No RSS feeds configured",
+    "options": {
+      "auto": "Auto",
+      "dontSeed": "Don't Seed",
+      "seed": "Seed",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
+      "webdl": "Web Download"
+    },
+    "pageDescription": "Manage RSS feeds and browse items",
+    "pageTitle": "RSS Management",
+    "passCheck": "Pass Check",
+    "passCheckDescription": "Skip cache checking for this feed",
+    "proSubscriptionRequired": "Pro Subscription Required",
+    "proUserRequired": "You need to be a Pro user to use RSS Feeds.",
+    "save": "Save",
+    "scanInterval": "Scan Interval (minutes)",
+    "scanIntervalPlaceholder": "How often to scan this feed",
+    "status": "Status",
+    "tabs": {
+      "feeds": "Feed Management",
+      "items": "Items Management"
+    },
+    "title": "RSS Feeds",
+    "torrentSeeding": "Torrent Seeding",
+    "torrentSeedingPlaceholder": "Select seeding preference",
+    "validation": {
+      "nameRequired": "Feed name is required",
+      "urlInvalid": "Please enter a valid RSS feed URL",
+      "urlRequired": "Feed URL is required"
+    }
+  },
+  "RssItems": {
+    "allTypes": "All Types",
+    "category": "Category",
+    "date": "Date",
+    "download": "Download",
+    "error": "Error loading items",
+    "loading": "Loading items...",
+    "newestFirst": "Newest First",
+    "noDescription": "No description available",
+    "noItems": "No items found",
+    "noMatchingItems": "No items match your search criteria",
+    "oldestFirst": "Oldest First",
+    "published": "Published",
+    "refresh": "Refresh",
+    "search": "Search",
+    "searchPlaceholder": "Search items...",
+    "selectFeed": "Select RSS Feed",
+    "selectFeedPlaceholder": "Choose a feed to view items",
+    "size": "Size",
+    "sortBy": "Sort By",
+    "sortOrder": "Sort Order",
+    "title": "RSS Items",
+    "toast": {
+      "downloadFailed": "Failed to start download",
+      "downloadStarted": "Download started successfully",
+      "noLink": "No download link available"
+    },
+    "torrent": "Torrent",
+    "type": "Type",
+    "unknown": "Unknown",
+    "usenet": "Usenet",
+    "webdl": "Web Download"
+  },
+  "SearchBar": {
+    "clearFilters": "Clear Filters",
+    "clearHistory": "Clear",
+    "clearSearch": "Clear search",
+    "customEngines": "Custom Engines",
+    "episode": "Episode",
+    "episodePlaceholder": "E01",
+    "hideAdvanced": "Hide Advanced",
+    "minSeeders": "Min Seeders",
+    "minSize": "Min Size (GB)",
+    "placeholderDownloads": "Search {itemType}...",
+    "placeholderSearch": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
+    "quality": "Quality",
+    "qualityAll": "All Qualities",
+    "recentSearches": "Recent Searches",
+    "search": "Search",
+    "searchExamples": "Search Examples",
+    "season": "Season",
+    "seasonPlaceholder": "S01",
+    "showAdvanced": "Show Advanced",
+    "year": "Year",
+    "yearPlaceholder": "2024"
+  },
+  "SearchResults": {
+    "actions": {
+      "added": "Added",
+      "adding": "Adding...",
+      "addToTorBox": "Add to TorBox",
+      "copyLink": "Copy Link",
+      "copyMagnet": "Copy Magnet"
+    },
+    "cachedOnly": "Cached Only",
+    "hideTorBoxIndexers": "Hide TorBox Indexers",
+    "metadata": {
+      "cached": "Cached",
+      "days": "days"
+    },
+    "noResults": "No results found",
+    "results": "{count} results",
+    "sort": {
+      "age": "Most Recent",
+      "seeders": "Most Seeders",
+      "size": "Largest Size"
+    },
+    "toast": {
+      "magnetCopied": "Magnet link copied to clipboard",
+      "nzbAdded": "NZB added to TorBox successfully",
+      "nzbAddFailed": "Failed to add NZB: {error}",
+      "nzbCopied": "NZB link copied to clipboard",
+      "torrentAdded": "Torrent added to TorBox successfully",
+      "torrentAddFailed": "Failed to add torrent: {error}",
+      "uploadSuccess": "Successfully uploaded {count} {type}",
+      "uploadSuccessPlural": "Successfully uploaded {count} {type}s"
+    }
+  },
+  "SpeedChart": {
+    "chart": {
+      "hide": "Hide chart",
+      "show": "Show chart"
+    },
+    "labels": {
+      "download": "Download",
+      "upload": "Upload"
+    },
+    "scale": {
+      "linear": "Linear",
+      "logarithmic": "Log"
+    },
+    "timeRanges": {
+      "10m": "Last 10m",
+      "1h": "Last 1h",
+      "1m": "Last 1m",
+      "3h": "Last 3h",
+      "6h": "Last 6h",
+      "all": "All"
+    },
+    "title": {
+      "default": "Network",
+      "full": "Network Activity"
+    }
+  },
+  "Statuses": {
+    "checking_resume_data": "Checking Resume Data",
+    "completed": "Completed",
+    "downloading": "Downloading",
+    "failed": "Failed",
+    "inactive": "Inactive",
+    "meta_dl": "Meta DL",
+    "queued": "Queued",
+    "seeding": "Seeding",
+    "stalled": "Stalled",
+    "unknown": "Unknown",
+    "uploading": "Uploading"
+  },
+  "StatusSection": {
+    "selectedFiles": "{fileCount} files selected ({size})",
+    "selectedItems": "{itemCount} {type} selected ({size})",
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
+    "total": "{count} {type}"
+  },
+  "SystemStatus": {
+    "error": "Error",
+    "hoursAgo": "{hours} hours ago",
+    "justNow": "Just now",
+    "lastCheck": "Last check",
+    "minutesAgo": "{minutes} minutes ago",
+    "never": "Never",
+    "refreshStatus": "Refresh system status",
+    "status": {
+      "apiUnhealthy": "API Connection Issue",
+      "apiUnhealthyDescription": "TorBox API is not responding properly",
+      "healthy": "System Healthy",
+      "healthyDescription": "All systems are operating normally",
+      "noApiKey": "No API Key",
+      "noApiKeyDescription": "API key is required to check TorBox connectivity",
+      "unhealthy": "System Unhealthy",
+      "unhealthyDescription": "Local application is experiencing issues",
+      "unknown": "Status Unknown",
+      "unknownDescription": "Unable to determine system status"
+    }
+  },
+  "TableBody": {
+    "noDownloads": "No downloads",
+    "toast": {
+      "copyLink": "Link copied to clipboard",
+      "copyLinkFailed": "Failed to copy link"
+    }
+  },
+  "TorrentOptions": {
+    "allowZip": {
+      "description": "For torrents with 100+ files",
+      "label": "Allow Zip"
+    },
+    "autoStart": {
+      "label": "Enable Auto Start",
+      "limit": "Active torrents limit:",
+      "title": "Process Queued Torrents",
+      "tooltip": "Automatically start downloading torrents up to the specified limit"
+    },
+    "instantQueue": {
+      "description": "Skip waiting queue",
+      "label": "Instant Queue"
+    },
+    "seedingPreference": {
+      "always": "Always Seed",
+      "auto": "Auto (Default)",
+      "label": "Seeding Preference",
+      "never": "Never Seed"
+    },
+    "title": "Global Upload Options"
+  },
+  "UploadProgress": {
+    "approachingRateLimit": "Approaching rate limit:",
+    "approachingRateLimitDetails": "{perMinute}/10 per minute, {perHour}/60 per hour",
+    "estimatedCompletion": "Estimated completion:",
+    "pleaseWait": "Please wait...",
+    "preparingUploads": "Preparing uploads...",
+    "rateLimit": "Rate limit:",
+    "rateLimitActive": "Rate limit active:",
+    "remaining": "({remaining} remaining)",
+    "uploading": "Uploading {current} of {total}",
+    "waitingBeforeNext": "Waiting {time} before next upload"
+  },
+  "User": {
+    "copyLink": "Copy Link",
+    "copyLinkFailed": "Failed to copy link",
+    "description": "Manage your account and view your statistics",
+    "errors": {
+      "reloadPage": "Reload Page",
+      "renderError": "An error occurred while rendering the profile"
+    },
+    "noData": "No data available",
+    "plans": {
+      "essential": "Essential",
+      "free": "Free",
+      "pro": "Pro",
+      "standard": "Standard",
+      "unknown": "Unknown"
+    },
+    "profile": {
+      "accountStatus": "Account Status",
+      "basicInfo": "Basic Information",
+      "createdAt": "Created At",
+      "downloadBreakdown": "Download Breakdown",
+      "email": "Email",
+      "lastLogin": "Last Updated",
+      "plan": "Plan",
+      "planExpiry": "Plan Expiry",
+      "ratio": "Ratio",
+      "referralCode": "Referral Code",
+      "status": "Status",
+      "title": "User Profile",
+      "torrentDownloads": "Torrent Downloads",
+      "totalDownloads": "Total Downloads",
+      "totalSize": "Total Downloaded",
+      "totalUploaded": "Total Uploaded",
+      "usage": "Usage Statistics",
+      "usenetDownloads": "Usenet Downloads",
+      "userId": "User ID",
+      "webDownloads": "Web Downloads"
+    },
+    "referralLink": "Referral Link",
+    "retry": "Retry",
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "free": "Free"
+    },
+    "title": "User Profile"
+  },
+  "VideoPlayer": {
+    "title": "Video Player",
+    "loading": "Loading stream...",
+    "error": "Failed to load stream",
+    "playbackSpeed": "Playback Speed",
+    "playbackSpeedNormal": "Normal"
+  },
+  "ViewControls": {
+    "cardView": "Card View",
+    "collapseAllFiles": "Collapse all files",
+    "enterFullscreen": "Enter fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "expandAllFiles": "Expand all files",
+    "hideSensitive": "Hide sensitive content",
+    "showSensitive": "Show sensitive content",
+    "tableView": "Table View"
+  },
+  "Admin": {
+    "login": {
+      "title": "Admin Login",
+      "subtitle": "Enter your admin API key to access the admin panel",
+      "placeholder": "Admin API Key",
+      "authenticating": "Authenticating...",
+      "signIn": "Sign in"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "autoRefresh": "Auto-refresh (30s)",
+      "loadingMetrics": "Loading metrics...",
+      "failedToLoad": "Failed to load metrics"
+    },
+    "users": {
+      "title": "User Management",
+      "loading": "Loading users...",
+      "noUsers": "No users found",
+      "back": "Back",
+      "userDetails": "User Details"
+    },
+    "system": {
+      "title": "System Health",
+      "loading": "Loading system metrics..."
+    },
+    "databases": {
+      "title": "Database Management",
+      "loading": "Loading databases..."
+    },
+    "automation": {
+      "title": "Automation Monitoring",
+      "loading": "Loading automation data..."
+    },
+    "logs": {
+      "title": "Logs",
+      "notImplemented": "Log retrieval is not implemented. Logs are output to console/stdout.",
+      "note": "For production, consider using a log aggregation service or file-based logging."
+    },
+    "settings": {
+      "title": "System Configuration",
+      "loading": "Loading configuration...",
+      "note": "Configuration updates require environment variable changes and server restart."
+    }
+  }
 }

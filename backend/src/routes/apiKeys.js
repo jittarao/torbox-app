@@ -31,6 +31,11 @@ export function setupApiKeyRoutes(app, backend) {
       // Register API key in master database
       const authId = await backend.masterDatabase.registerApiKey(apiKey, keyName);
 
+      // Invalidate cached API client if it exists (in case key was updated)
+      if (backend.uploadProcessor) {
+        backend.uploadProcessor.invalidateApiClient(authId);
+      }
+
       // Register user in UserDatabaseManager (creates DB if needed)
       await backend.userDatabaseManager.registerUser(apiKey, keyName);
 
@@ -124,6 +129,12 @@ export function setupApiKeyRoutes(app, backend) {
         const pollInterval = req.body.pollInterval || 5;
 
         await backend.masterDatabase.registerApiKey(apiKey, keyName, pollInterval);
+
+        // Invalidate cached API client if it exists (in case key was updated)
+        if (backend.uploadProcessor) {
+          backend.uploadProcessor.invalidateApiClient(authId);
+        }
+
         await backend.userDatabaseManager.registerUser(apiKey, keyName, pollInterval);
 
         // Create automation engine for this user
