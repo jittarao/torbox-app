@@ -440,7 +440,8 @@ class UploadProcessor {
     }
 
     // Add type-specific options for torrents
-    if (type === 'torrent' || upload_type === 'magnet') {
+    // Note: upload_type='magnet' is validated to only work with type='torrent' in the route
+    if (type === 'torrent') {
       const seedValue = seed !== null && seed !== undefined ? seed : 1;
       const allowZipValue = allow_zip !== null && allow_zip !== undefined ? allow_zip : 1;
       formData.append('seed', seedValue);
