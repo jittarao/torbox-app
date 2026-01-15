@@ -1235,6 +1235,20 @@ class UploadProcessor {
 
             // Mark corresponding upload record as file_deleted if it exists
             // file.relativePath is already relative to storage root
+            // First check if upload exists and was queued (to decrement counter)
+            const uploadBeforeDelete = userDb.db
+              .prepare(
+                `
+                SELECT status
+                FROM uploads
+                WHERE file_path = ? AND file_deleted = false
+              `
+              )
+              .get(file.relativePath);
+
+            const wasQueued = uploadBeforeDelete?.status === 'queued';
+
+            // Mark as file_deleted
             userDb.db
               .prepare(
                 `
@@ -1245,10 +1259,16 @@ class UploadProcessor {
               )
               .run(file.relativePath);
 
+            // Decrement counter if upload was queued (since getQueuedUploads filters out file_deleted = true)
+            if (wasQueued) {
+              this.masterDatabase.decrementUploadCounter(authId);
+            }
+
             logger.debug('Deleted file due to retention period', {
               authId,
               filePath: file.relativePath,
               ageDays: Math.floor((now - file.mtime.getTime()) / (24 * 60 * 60 * 1000)),
+              wasQueued,
             });
           } catch (error) {
             logger.error('Error deleting old file', error, {
@@ -1278,6 +1298,20 @@ class UploadProcessor {
 
             // Mark corresponding upload record as file_deleted if it exists
             // file.relativePath is already relative to storage root
+            // First check if upload exists and was queued (to decrement counter)
+            const uploadBeforeDelete = userDb.db
+              .prepare(
+                `
+                SELECT status
+                FROM uploads
+                WHERE file_path = ? AND file_deleted = false
+              `
+              )
+              .get(file.relativePath);
+
+            const wasQueued = uploadBeforeDelete?.status === 'queued';
+
+            // Mark as file_deleted
             userDb.db
               .prepare(
                 `
@@ -1288,11 +1322,17 @@ class UploadProcessor {
               )
               .run(file.relativePath);
 
+            // Decrement counter if upload was queued (since getQueuedUploads filters out file_deleted = true)
+            if (wasQueued) {
+              this.masterDatabase.decrementUploadCounter(authId);
+            }
+
             logger.debug('Deleted file due to size limit', {
               authId,
               filePath: file.relativePath,
               fileSize: file.size,
               remainingToFree: sizeToFree,
+              wasQueued,
             });
           } catch (error) {
             logger.error('Error deleting file for size limit', error, {
