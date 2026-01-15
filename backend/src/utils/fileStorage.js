@@ -153,6 +153,46 @@ export async function deleteUploadFile(authId, filePath) {
 }
 
 /**
+ * Validate that a file path belongs to a specific user
+ * @param {string} authId - User authentication ID
+ * @param {string} filePath - File path (relative to storage root or absolute)
+ * @returns {boolean} True if the file path belongs to the user
+ */
+export function validateFilePathOwnership(authId, filePath) {
+  if (!authId || !filePath) {
+    return false;
+  }
+
+  // Get the user's upload directory
+  const userUploadDir = getUserUploadDir(authId);
+
+  // Resolve the path to normalize it (handles .. and . components)
+  // filePath is relative to UPLOAD_STORAGE_DIR (as returned by saveUploadFile)
+  let resolvedPath;
+  if (path.isAbsolute(filePath)) {
+    resolvedPath = path.resolve(filePath);
+  } else {
+    // For relative paths, resolve from UPLOAD_STORAGE_DIR (not userUploadDir)
+    // This matches how saveUploadFile returns paths and how getUserUploadFiles calculates them
+    resolvedPath = path.resolve(UPLOAD_STORAGE_DIR, filePath);
+  }
+
+  // Security check: Ensure the resolved path is within the user's upload directory
+  // Use path.resolve to normalize both paths for comparison
+  const normalizedUserDir = path.resolve(userUploadDir);
+  const normalizedResolvedPath = path.resolve(resolvedPath);
+
+  // Use path.relative to check if the resolved path is within the user directory
+  // If the relative path starts with '..', it means we're outside the directory
+  const relativePath = path.relative(normalizedUserDir, normalizedResolvedPath);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Get the absolute file path for an upload
  * @param {string} filePath - Relative file path from storage root
  * @returns {string} Absolute file path

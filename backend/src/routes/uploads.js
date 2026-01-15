@@ -4,7 +4,12 @@ import {
   validateNumericId,
 } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
-import { deleteUploadFile, saveUploadFile, getUploadFilePath } from '../utils/fileStorage.js';
+import {
+  deleteUploadFile,
+  saveUploadFile,
+  getUploadFilePath,
+  validateFilePathOwnership,
+} from '../utils/fileStorage.js';
 import { hashApiKey } from '../utils/crypto.js';
 import rateLimit from 'express-rate-limit';
 import { readFile } from 'fs/promises';
@@ -296,6 +301,23 @@ export function setupUploadsRoutes(app, backend) {
             continue;
           }
 
+          // Security: Validate that file_path belongs to the authenticated user
+          if (upload_type === 'file' && file_path) {
+            if (!validateFilePathOwnership(authId, file_path)) {
+              logger.error('File path ownership validation failed', {
+                authId,
+                file_path,
+                endpoint: '/api/uploads/batch',
+                method: 'POST',
+              });
+              errors.push({
+                upload,
+                error: 'Invalid file path: file must belong to authenticated user',
+              });
+              continue;
+            }
+          }
+
           if ((upload_type === 'magnet' || upload_type === 'link') && !url) {
             errors.push({ upload, error: 'url is required for magnet/link uploads' });
             continue;
@@ -410,6 +432,22 @@ export function setupUploadsRoutes(app, backend) {
           success: false,
           error: extensionError,
         });
+      }
+
+      // Security: Validate that file_path belongs to the authenticated user
+      if (upload_type === 'file' && file_path) {
+        if (!validateFilePathOwnership(authId, file_path)) {
+          logger.error('File path ownership validation failed', {
+            authId,
+            file_path,
+            endpoint: '/api/uploads',
+            method: 'POST',
+          });
+          return res.status(403).json({
+            success: false,
+            error: 'Invalid file path: file must belong to authenticated user',
+          });
+        }
       }
 
       if ((upload_type === 'magnet' || upload_type === 'link') && !url) {

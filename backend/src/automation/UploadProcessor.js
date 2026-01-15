@@ -7,6 +7,7 @@ import {
   deleteUploadFile,
   calculateUserUploadDirSize,
   getUserUploadFiles,
+  validateFilePathOwnership,
 } from '../utils/fileStorage.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
@@ -364,9 +365,19 @@ class UploadProcessor {
    * Build FormData for file upload
    * @param {string} filePath - Path to file
    * @param {string} name - Filename
+   * @param {string} authId - User authentication ID (required for security validation)
    * @returns {Promise<FormData>} FormData with file appended
    */
-  async buildFileFormData(filePath, name) {
+  async buildFileFormData(filePath, name, authId) {
+    // Security: Validate that file_path belongs to the authenticated user
+    if (!authId || !validateFilePathOwnership(authId, filePath)) {
+      logger.error('File path ownership validation failed in processor', {
+        authId,
+        filePath,
+      });
+      throw new Error('Invalid file path: file must belong to authenticated user');
+    }
+
     const absolutePath = getUploadFilePath(filePath);
     const exists = await fileExists(filePath);
     if (!exists) {
@@ -395,16 +406,29 @@ class UploadProcessor {
 
   /**
    * Build FormData for upload request
-   * @param {Object} upload - Upload record
+   * @param {Object} upload - Upload record (must include authId)
    * @returns {Promise<FormData>} FormData ready for API request
    */
   async buildFormData(upload) {
-    const { upload_type, file_path, url, name, seed, allow_zip, as_queued, password, type } =
-      upload;
+    const {
+      upload_type,
+      file_path,
+      url,
+      name,
+      seed,
+      allow_zip,
+      as_queued,
+      password,
+      type,
+      authId,
+    } = upload;
     let formData;
 
     if (upload_type === 'file') {
-      formData = await this.buildFileFormData(file_path, name);
+      if (!authId) {
+        throw new Error('authId is required for file uploads');
+      }
+      formData = await this.buildFileFormData(file_path, name, authId);
     } else {
       formData = new FormData();
       if (upload_type === 'magnet') {
