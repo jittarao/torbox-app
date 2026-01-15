@@ -558,7 +558,7 @@ class UploadProcessor {
     // Update upload status
     // Note: Files are NOT deleted here - they are kept and cleaned up periodically
     // by cleanupUserFiles() based on size limits and retention period
-    userDb.db
+    const updateResult = userDb.db
       .prepare(
         `
         UPDATE uploads
@@ -571,8 +571,11 @@ class UploadProcessor {
       )
       .run(id);
 
-    // Update counter
-    this.masterDatabase.decrementUploadCounter(upload.authId);
+    // Update counter only if the upload still exists (wasn't deleted during processing)
+    // If the upload was deleted, the UPDATE returns 0 rows affected, so we skip decrement
+    if (updateResult.changes > 0) {
+      this.masterDatabase.decrementUploadCounter(upload.authId);
+    }
 
     logger.info('Upload processed successfully', {
       uploadId: id,
@@ -763,7 +766,7 @@ class UploadProcessor {
     const userFriendlyError = this.createUserFriendlyError(error, isRateLimit);
 
     // Update upload record
-    userDb.db
+    const updateResult = userDb.db
       .prepare(
         `
         UPDATE uploads
@@ -778,11 +781,14 @@ class UploadProcessor {
       )
       .run(finalStatus, userFriendlyError, finalRetryCount, nextAttemptAt, id);
 
-    // Update counters
-    if (finalStatus === 'failed' && wasQueued) {
-      this.masterDatabase.decrementUploadCounter(upload.authId);
-    } else if (finalStatus === 'queued') {
-      await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
+    // Update counters only if the upload still exists (wasn't deleted during processing)
+    // If the upload was deleted, the UPDATE returns 0 rows affected, so we skip counter updates
+    if (updateResult.changes > 0) {
+      if (finalStatus === 'failed' && wasQueued) {
+        this.masterDatabase.decrementUploadCounter(upload.authId);
+      } else if (finalStatus === 'queued') {
+        await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
+      }
     }
 
     // Log appropriate message
