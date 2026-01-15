@@ -85,30 +85,67 @@ export async function saveUploadFile(authId, fileBuffer, originalFilename, type)
 
 /**
  * Delete an uploaded file from storage
+ * @param {string} authId - User authentication ID (required for security)
  * @param {string} filePath - File path (relative to storage root or absolute)
  * @returns {Promise<void>}
  */
-export async function deleteUploadFile(filePath) {
+export async function deleteUploadFile(authId, filePath) {
   try {
-    // If relative path, make it absolute
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(UPLOAD_STORAGE_DIR, filePath);
+    if (!authId) {
+      throw new Error('authId is required for file deletion');
+    }
+
+    // Get the user's upload directory
+    const userUploadDir = getUserUploadDir(authId);
+
+    // Resolve the path to normalize it (handles .. and . components)
+    let resolvedPath;
+    if (path.isAbsolute(filePath)) {
+      resolvedPath = path.resolve(filePath);
+    } else {
+      // For relative paths, resolve from the user's upload directory
+      resolvedPath = path.resolve(userUploadDir, filePath);
+    }
+
+    // Security check: Ensure the resolved path is within the user's upload directory
+    // Use path.resolve to normalize both paths for comparison
+    const normalizedUserDir = path.resolve(userUploadDir);
+    const normalizedResolvedPath = path.resolve(resolvedPath);
+
+    // Use path.relative to check if the resolved path is within the user directory
+    // If the relative path starts with '..', it means we're outside the directory
+    const relativePath = path.relative(normalizedUserDir, normalizedResolvedPath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      logger.error('Path traversal attempt detected', {
+        authId,
+        filePath,
+        resolvedPath: normalizedResolvedPath,
+        userUploadDir: normalizedUserDir,
+        relativePath,
+      });
+      throw new Error('Invalid file path: path must be within user upload directory');
+    }
 
     // Check if file exists
     try {
-      await access(absolutePath, constants.F_OK);
+      await access(normalizedResolvedPath, constants.F_OK);
     } catch {
       // File doesn't exist, that's okay
-      logger.warn('File not found for deletion', { filePath: absolutePath });
+      logger.warn('File not found for deletion', {
+        authId,
+        filePath: normalizedResolvedPath,
+      });
       return;
     }
 
     // Delete file
-    await unlink(absolutePath);
-    logger.info('File deleted successfully', { filePath: absolutePath });
+    await unlink(normalizedResolvedPath);
+    logger.info('File deleted successfully', {
+      authId,
+      filePath: normalizedResolvedPath,
+    });
   } catch (error) {
-    logger.error('Error deleting upload file', error, { filePath });
+    logger.error('Error deleting upload file', error, { authId, filePath });
     // Don't throw - file deletion failure shouldn't break the flow
   }
 }
