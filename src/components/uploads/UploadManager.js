@@ -142,9 +142,9 @@ export default function UploadManager({ apiKey }) {
         </div>
       </div>
 
-      <UploadTabs activeTab={activeTab} setActiveTab={setActiveTab} statusCounts={statusCounts} />
-
       <UploadStatistics uploadStatistics={uploadStatistics} />
+
+      <UploadTabs activeTab={activeTab} setActiveTab={setActiveTab} statusCounts={statusCounts} />
 
       {error && (
         <div className="p-4 bg-red-500/20 text-red-500 dark:bg-red-400/20 dark:text-red-400 rounded-lg">
