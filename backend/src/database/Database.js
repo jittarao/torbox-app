@@ -589,15 +589,17 @@ class Database {
   async updateUploadCounters(authId, userDb) {
     try {
       // Query actual counts from user DB
-      // Count ALL queued uploads (including deferred ones)
+      // Count ALL queued uploads (including deferred ones, but excluding deleted files)
       // The next_upload_attempt_at field in user_registry handles timing logic,
       // so we don't need to exclude deferred uploads from the counter
+      // However, we must exclude deleted files (file_deleted = true) as they cannot be processed
       const queuedCount = userDb.db
         .prepare(
           `
           SELECT COUNT(*) as count
           FROM uploads
           WHERE status = 'queued'
+            AND (file_deleted IS NULL OR file_deleted = false)
         `
         )
         .get();
@@ -607,12 +609,14 @@ class Database {
       // Check if there are any uploads ready to process immediately (next_attempt_at IS NULL)
       // If any uploads are ready, we should set next_upload_attempt_at to NULL
       // so that getUsersWithQueuedUploads includes this user for processing
+      // Exclude deleted files (file_deleted = true) as they cannot be processed
       const readyUploadsCount = userDb.db
         .prepare(
           `
           SELECT COUNT(*) as count
           FROM uploads
           WHERE status = 'queued'
+            AND (file_deleted IS NULL OR file_deleted = false)
             AND (next_attempt_at IS NULL 
                  OR next_attempt_at = ''
                  OR datetime(next_attempt_at) <= datetime('now'))
@@ -630,12 +634,14 @@ class Database {
         nextUploadAttemptAt = null;
       } else if (queuedUploadsCount > 0) {
         // If all uploads are deferred, get the minimum deferred time
+        // Exclude deleted files (file_deleted = true) as they cannot be processed
         const nextAttemptResult = userDb.db
           .prepare(
             `
             SELECT MIN(next_attempt_at) as min_next_attempt_at
             FROM uploads
             WHERE status = 'queued'
+              AND (file_deleted IS NULL OR file_deleted = false)
               AND next_attempt_at IS NOT NULL
               AND next_attempt_at != ''
               AND COALESCE(datetime(next_attempt_at), '9999-12-31 23:59:59') > datetime('now')
