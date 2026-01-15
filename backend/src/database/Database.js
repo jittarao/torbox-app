@@ -604,21 +604,48 @@ class Database {
 
       const queuedUploadsCount = queuedCount?.count || 0;
 
-      // Get next attempt time for uploads that are deferred (have future next_attempt_at)
-      const nextAttemptResult = userDb.db
+      // Check if there are any uploads ready to process immediately (next_attempt_at IS NULL)
+      // If any uploads are ready, we should set next_upload_attempt_at to NULL
+      // so that getUsersWithQueuedUploads includes this user for processing
+      const readyUploadsCount = userDb.db
         .prepare(
           `
-          SELECT MIN(next_attempt_at) as min_next_attempt_at
+          SELECT COUNT(*) as count
           FROM uploads
           WHERE status = 'queued'
-            AND next_attempt_at IS NOT NULL
-            AND next_attempt_at != ''
-            AND COALESCE(datetime(next_attempt_at), '9999-12-31 23:59:59') > datetime('now')
+            AND (next_attempt_at IS NULL 
+                 OR next_attempt_at = ''
+                 OR datetime(next_attempt_at) <= datetime('now'))
         `
         )
         .get();
 
-      const nextUploadAttemptAt = nextAttemptResult?.min_next_attempt_at || null;
+      const hasReadyUploads = (readyUploadsCount?.count || 0) > 0;
+
+      let nextUploadAttemptAt = null;
+
+      if (hasReadyUploads) {
+        // If there are uploads ready to process immediately, set next_upload_attempt_at to NULL
+        // This ensures getUsersWithQueuedUploads will include this user
+        nextUploadAttemptAt = null;
+      } else if (queuedUploadsCount > 0) {
+        // If all uploads are deferred, get the minimum deferred time
+        const nextAttemptResult = userDb.db
+          .prepare(
+            `
+            SELECT MIN(next_attempt_at) as min_next_attempt_at
+            FROM uploads
+            WHERE status = 'queued'
+              AND next_attempt_at IS NOT NULL
+              AND next_attempt_at != ''
+              AND COALESCE(datetime(next_attempt_at), '9999-12-31 23:59:59') > datetime('now')
+          `
+          )
+          .get();
+
+        nextUploadAttemptAt = nextAttemptResult?.min_next_attempt_at || null;
+      }
+      // If queuedUploadsCount is 0, nextUploadAttemptAt remains null
 
       // Update master DB
       this.runQuery(
@@ -676,13 +703,15 @@ class Database {
         const newCount = (current?.queued_uploads_count || 0) + 1;
         let newNextAttemptAt = nextAttemptAt;
 
-        // If we have a next_attempt_at, take the minimum of current and new
-        if (nextAttemptAt && current?.next_upload_attempt_at) {
+        // If the new upload is ready immediately (nextAttemptAt is null),
+        // set next_upload_attempt_at to null so the user is included in getUsersWithQueuedUploads
+        if (!nextAttemptAt) {
+          newNextAttemptAt = null;
+        } else if (current?.next_upload_attempt_at) {
+          // If both new and current are deferred, take the minimum
           const currentDate = new Date(current.next_upload_attempt_at);
           const newDate = new Date(nextAttemptAt);
           newNextAttemptAt = newDate < currentDate ? nextAttemptAt : current.next_upload_attempt_at;
-        } else if (!newNextAttemptAt) {
-          newNextAttemptAt = current?.next_upload_attempt_at || null;
         }
 
         this.runQuery(
