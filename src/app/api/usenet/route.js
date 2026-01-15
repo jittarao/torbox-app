@@ -190,6 +190,23 @@ export async function POST(request) {
     const uploadData = await safeJsonParse(uploadResponse);
 
     if (!uploadResponse.ok) {
+      // Clean up uploaded file if queue entry creation failed
+      if (file_path && upload_type === 'file') {
+        try {
+          await fetch(`${BACKEND_URL}/api/uploads/file`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+            body: JSON.stringify({ file_path }),
+          });
+        } catch (cleanupError) {
+          console.error('Error cleaning up file after queue entry creation failure:', cleanupError);
+          // Continue even if cleanup fails - log error but don't fail the response
+        }
+      }
+
       return Response.json(
         {
           success: false,

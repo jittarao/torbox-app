@@ -10,10 +10,7 @@ export async function POST(request) {
     const apiKey = headersList.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -98,6 +95,27 @@ export async function POST(request) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      // Clean up all successfully uploaded files if batch creation failed
+      const cleanupPromises = Array.from(filePathMap.values()).map((filePath) =>
+        fetch(`${BACKEND_URL}/api/uploads/file`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          body: JSON.stringify({ file_path: filePath }),
+        }).catch((cleanupError) => {
+          console.error(
+            `Error cleaning up file ${filePath} after batch creation failure:`,
+            cleanupError
+          );
+          // Continue even if individual cleanup fails
+        })
+      );
+
+      // Wait for all cleanup operations to complete (but don't fail if they do)
+      await Promise.allSettled(cleanupPromises);
+
       return NextResponse.json(
         {
           success: false,
@@ -119,9 +137,6 @@ export async function POST(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error creating batch upload:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
