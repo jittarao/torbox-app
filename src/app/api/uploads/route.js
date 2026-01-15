@@ -19,6 +19,7 @@ export async function GET(request) {
     // Forward query parameters
     if (searchParams.get('status')) params.append('status', searchParams.get('status'));
     if (searchParams.get('type')) params.append('type', searchParams.get('type'));
+    if (searchParams.get('search')) params.append('search', searchParams.get('search'));
     if (searchParams.get('page')) params.append('page', searchParams.get('page'));
     if (searchParams.get('limit')) params.append('limit', searchParams.get('limit'));
 

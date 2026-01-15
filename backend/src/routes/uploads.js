@@ -397,6 +397,7 @@ export function setupUploadsRoutes(app, backend) {
       // Query parameters
       const status = req.query.status; // optional filter
       const type = req.query.type; // optional filter
+      const search = req.query.search; // optional search filter
       const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 50, 1000));
       const page = Math.max(1, parseInt(req.query.page, 10) || 1);
       const offset = (page - 1) * limit;
@@ -413,6 +414,16 @@ export function setupUploadsRoutes(app, backend) {
       if (type) {
         conditions.push('type = ?');
         params.push(type);
+      }
+
+      if (search) {
+        // Search across name, type, status, and error_message
+        // Use LIKE with wildcards for case-insensitive search
+        const searchPattern = `%${search}%`;
+        conditions.push(
+          '(LOWER(name) LIKE LOWER(?) OR LOWER(type) LIKE LOWER(?) OR LOWER(status) LIKE LOWER(?) OR LOWER(error_message) LIKE LOWER(?))'
+        );
+        params.push(searchPattern, searchPattern, searchPattern, searchPattern);
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
