@@ -1230,7 +1230,8 @@ export function setupUploadsRoutes(app, backend) {
           userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
           deletedCount++;
 
-          if (upload.status === 'queued') {
+          // Decrement counter for queued OR processing uploads
+          if (upload.status === 'queued' || upload.status === 'processing') {
             queuedDeletedCount++;
           }
         } catch (error) {
@@ -1241,7 +1242,7 @@ export function setupUploadsRoutes(app, backend) {
         }
       }
 
-      // Update counter (decrement for each queued upload deleted)
+      // Update counter (decrement for each queued or processing upload deleted)
       for (let i = 0; i < queuedDeletedCount; i++) {
         backend.masterDatabase.decrementUploadCounter(authId);
       }
@@ -1303,7 +1304,8 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        const wasQueued = upload.status === 'queued';
+        // Decrement counter for queued OR processing uploads
+        const shouldDecrement = upload.status === 'queued' || upload.status === 'processing';
 
         // Delete file if exists (with authId for security validation)
         if (upload.file_path) {
@@ -1313,8 +1315,8 @@ export function setupUploadsRoutes(app, backend) {
         // Delete from database
         userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(uploadId);
 
-        // Update counter if it was queued
-        if (wasQueued) {
+        // Update counter if it was queued or processing
+        if (shouldDecrement) {
           backend.masterDatabase.decrementUploadCounter(authId);
         }
 
