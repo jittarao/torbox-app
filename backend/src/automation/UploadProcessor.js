@@ -868,10 +868,96 @@ class UploadProcessor {
       // Make API request
       const response = await this.makeApiRequest(apiClient, endpoint, formData);
 
-      // Handle success
-      this.handleSuccessfulUpload(upload, userDb, type, response);
+      // API call succeeded - now handle the database update
+      // If handleSuccessfulUpload throws (e.g., SQLITE_BUSY), we must NOT re-queue
+      // since the upload already succeeded on TorBox
+      try {
+        this.handleSuccessfulUpload(upload, userDb, type, response);
+        return true;
+      } catch (dbError) {
+        // Database error after successful API call - retry the database update
+        // but do NOT re-queue the upload since it already succeeded on TorBox
+        logger.error('Database error after successful API call, retrying database update', {
+          uploadId: id,
+          type,
+          error: dbError.message,
+          errorCode: dbError.code,
+        });
 
-      return true;
+        // Retry the database update with exponential backoff
+        const maxDbRetries = 3;
+        let lastDbError = dbError;
+        for (let attempt = 0; attempt < maxDbRetries; attempt++) {
+          try {
+            // Re-attempt the database update
+            this.handleSuccessfulUpload(upload, userDb, type, response);
+            logger.info('Successfully completed database update after retry', {
+              uploadId: id,
+              attempt: attempt + 1,
+            });
+            return true;
+          } catch (retryError) {
+            lastDbError = retryError;
+            if (attempt < maxDbRetries - 1) {
+              const delayMs = 100 * Math.pow(2, attempt); // 100ms, 200ms, 400ms
+              logger.warn('Database update retry failed, will retry again', {
+                uploadId: id,
+                attempt: attempt + 1,
+                maxRetries: maxDbRetries,
+                delayMs,
+                error: retryError.message,
+              });
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+          }
+        }
+
+        // All database retries failed - log critical error but don't re-queue
+        // The upload already succeeded on TorBox, so we must not retry the API call
+        logger.error(
+          'CRITICAL: Failed to update database after successful API call - upload succeeded on TorBox but database update failed',
+          {
+            uploadId: id,
+            type,
+            error: lastDbError.message,
+            errorCode: lastDbError.code,
+            maxRetries: maxDbRetries,
+          }
+        );
+
+        // Mark as completed manually to prevent re-queuing
+        // This is a best-effort attempt - if this also fails, the upload will be stuck
+        // but at least it won't cause duplicate uploads
+        try {
+          const updateResult = userDb.db
+            .prepare(
+              `
+              UPDATE uploads
+              SET status = 'completed',
+                  error_message = ?,
+                  completed_at = CURRENT_TIMESTAMP,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `
+            )
+            .run(`Database update failed after successful upload: ${lastDbError.message}`, id);
+
+          if (updateResult.changes > 0) {
+            this.masterDatabase.decrementUploadCounter(upload.authId);
+            logger.warn('Manually marked upload as completed to prevent duplicate uploads', {
+              uploadId: id,
+            });
+          }
+        } catch (finalError) {
+          logger.error('CRITICAL: Failed to manually mark upload as completed', {
+            uploadId: id,
+            error: finalError.message,
+          });
+        }
+
+        // Return true since the API call succeeded, even though database update failed
+        return true;
+      }
     } catch (error) {
       // Check if this is an authentication error and we haven't retried yet
       if (this.isAuthError(error) && !isRetryAfterAuthError) {
@@ -889,6 +975,7 @@ class UploadProcessor {
       }
 
       // Handle failure (including auth errors on retry)
+      // This catch block only handles errors from makeApiRequest, not from handleSuccessfulUpload
       await this.handleFailedUpload(upload, userDb, type, error, originalStatusValue);
       return false;
     }
