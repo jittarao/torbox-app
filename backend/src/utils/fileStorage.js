@@ -1,0 +1,141 @@
+import path from 'path';
+import { mkdir, writeFile, unlink, access } from 'fs/promises';
+import { constants } from 'fs';
+import logger from './logger.js';
+
+const UPLOAD_STORAGE_DIR = process.env.UPLOAD_STORAGE_DIR || '/app/data/uploads';
+
+/**
+ * Get the upload directory path for a user
+ * @param {string} authId - User authentication ID
+ * @returns {string} Directory path
+ */
+function getUserUploadDir(authId) {
+  return path.join(UPLOAD_STORAGE_DIR, `user_${authId}`);
+}
+
+/**
+ * Get the upload directory path for a specific type
+ * @param {string} authId - User authentication ID
+ * @param {string} type - Upload type (torrent, usenet, webdl)
+ * @returns {string} Directory path
+ */
+function getTypeUploadDir(authId, type) {
+  return path.join(getUserUploadDir(authId), type);
+}
+
+/**
+ * Generate a safe filename from original filename
+ * @param {string} originalFilename - Original filename
+ * @returns {string} Safe filename
+ */
+function generateSafeFilename(originalFilename) {
+  // Extract extension
+  const ext = path.extname(originalFilename);
+  // Generate unique filename with timestamp and random string
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  const baseName = path.basename(originalFilename, ext);
+  // Sanitize base name (remove special characters, limit length)
+  const sanitized = baseName.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 100);
+  return `${sanitized}_${timestamp}_${random}${ext}`;
+}
+
+/**
+ * Save an uploaded file to storage
+ * @param {string} authId - User authentication ID
+ * @param {Buffer|Uint8Array} fileBuffer - File buffer
+ * @param {string} originalFilename - Original filename
+ * @param {string} type - Upload type (torrent, usenet, webdl)
+ * @returns {Promise<string>} File path relative to storage root
+ */
+export async function saveUploadFile(authId, fileBuffer, originalFilename, type) {
+  try {
+    // Ensure directories exist
+    const typeDir = getTypeUploadDir(authId, type);
+    await mkdir(typeDir, { recursive: true });
+
+    // Generate safe filename
+    const safeFilename = generateSafeFilename(originalFilename);
+    const filePath = path.join(typeDir, safeFilename);
+
+    // Write file
+    await writeFile(filePath, fileBuffer);
+
+    // Return relative path from storage root
+    const relativePath = path.relative(UPLOAD_STORAGE_DIR, filePath);
+    logger.info('File saved successfully', {
+      authId,
+      type,
+      originalFilename,
+      safeFilename,
+      relativePath,
+    });
+
+    return relativePath;
+  } catch (error) {
+    logger.error('Error saving upload file', error, {
+      authId,
+      type,
+      originalFilename,
+    });
+    throw error;
+  }
+}
+
+/**
+ * Delete an uploaded file from storage
+ * @param {string} filePath - File path (relative to storage root or absolute)
+ * @returns {Promise<void>}
+ */
+export async function deleteUploadFile(filePath) {
+  try {
+    // If relative path, make it absolute
+    const absolutePath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(UPLOAD_STORAGE_DIR, filePath);
+
+    // Check if file exists
+    try {
+      await access(absolutePath, constants.F_OK);
+    } catch {
+      // File doesn't exist, that's okay
+      logger.warn('File not found for deletion', { filePath: absolutePath });
+      return;
+    }
+
+    // Delete file
+    await unlink(absolutePath);
+    logger.info('File deleted successfully', { filePath: absolutePath });
+  } catch (error) {
+    logger.error('Error deleting upload file', error, { filePath });
+    // Don't throw - file deletion failure shouldn't break the flow
+  }
+}
+
+/**
+ * Get the absolute file path for an upload
+ * @param {string} filePath - Relative file path from storage root
+ * @returns {string} Absolute file path
+ */
+export function getUploadFilePath(filePath) {
+  if (path.isAbsolute(filePath)) {
+    return filePath;
+  }
+  return path.join(UPLOAD_STORAGE_DIR, filePath);
+}
+
+/**
+ * Check if a file exists
+ * @param {string} filePath - File path (relative to storage root or absolute)
+ * @returns {Promise<boolean>} True if file exists
+ */
+export async function fileExists(filePath) {
+  try {
+    const absolutePath = getUploadFilePath(filePath);
+    await access(absolutePath, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}

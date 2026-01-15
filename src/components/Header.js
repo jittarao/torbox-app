@@ -46,7 +46,10 @@ export default function Header({ apiKey }) {
   const isActive = (path) => {
     // Handle root path specially - it can be `/` or `/${locale}`
     if (path === '/') {
-      return pathname === '/' || locales.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`);
+      return (
+        pathname === '/' ||
+        locales.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`)
+      );
     }
     return pathname === path || locales.some((locale) => pathname === `/${locale}${path}`);
   };
@@ -56,12 +59,7 @@ export default function Header({ apiKey }) {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/images/TBM-logo.png"
-              alt={t('logo')}
-              width={24}
-              height={24}
-            />
+            <Image src="/images/TBM-logo.png" alt={t('logo')} width={24} height={24} />
             <div className="flex flex-col">
               <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
                 {t('title')}
@@ -133,9 +131,15 @@ export default function Header({ apiKey }) {
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
                   className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
                     hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                    ${isActive('/archived') || isActive('/link-history') || isActive('/rss') || isActive('/user') 
-                      ? 'border-b-2 border-accent dark:border-accent-dark' 
-                      : ''}`}
+                    ${
+                      isActive('/archived') ||
+                      isActive('/link-history') ||
+                      isActive('/rss') ||
+                      isActive('/user') ||
+                      isActive('/uploads')
+                        ? 'border-b-2 border-accent dark:border-accent-dark'
+                        : ''
+                    }`}
                 >
                   <Icons.VerticalEllipsis className="w-5 h-5" />
                   <span>{t('menu.more') || 'More'}</span>
@@ -207,6 +211,19 @@ export default function Header({ apiKey }) {
                       <Icons.Rss className="w-4 h-4" />
                       <span>{t('menu.rss')}</span>
                     </Link>
+
+                    <Link
+                      href="/uploads"
+                      onClick={() => setIsMoreMenuOpen(false)}
+                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                        isActive('/uploads')
+                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
+                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
+                      }`}
+                    >
+                      <Icons.Upload className="w-4 h-4" />
+                      <span>{t('menu.uploads')}</span>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -230,9 +247,7 @@ export default function Header({ apiKey }) {
               {isClient && (
                 <button
                   onClick={toggleDarkMode}
-                  aria-label={
-                    darkMode ? t('theme.toggleLight') : t('theme.toggleDark')
-                  }
+                  aria-label={darkMode ? t('theme.toggleLight') : t('theme.toggleDark')}
                   className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
                 >
                   <span
@@ -292,7 +307,7 @@ export default function Header({ apiKey }) {
 
             {/* Tier 1: Secondary Navigation */}
             <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
-            <Link
+              <Link
                 href="/user"
                 className={`block text-white dark:text-primary-text-dark font-medium 
                   hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
@@ -343,6 +358,19 @@ export default function Header({ apiKey }) {
                   {t('menu.rss')}
                 </div>
               </Link>
+
+              <Link
+                href="/uploads"
+                className={`block text-white dark:text-primary-text-dark font-medium 
+                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
+                  ${isActive('/uploads') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icons.Upload className="w-5 h-5" />
+                  {t('menu.uploads')}
+                </div>
+              </Link>
             </div>
 
             {/* Tier 2: Utility Items */}
@@ -378,11 +406,7 @@ export default function Header({ apiKey }) {
                   </span>
                   <button
                     onClick={toggleDarkMode}
-                    aria-label={
-                      darkMode
-                        ? t('theme.toggleLight')
-                        : t('theme.toggleDark')
-                    }
+                    aria-label={darkMode ? t('theme.toggleLight') : t('theme.toggleDark')}
                     className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
                   >
                     <span
@@ -401,9 +425,7 @@ export default function Header({ apiKey }) {
                   <LanguageSwitcher />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    GitHub
-                  </span>
+                  <span className="text-white dark:text-primary-text-dark font-medium">GitHub</span>
                   <a
                     href="https://github.com/jittarao/torbox-app"
                     target="_blank"

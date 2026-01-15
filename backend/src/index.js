@@ -8,6 +8,7 @@ import Database from './database/Database.js';
 import UserDatabaseManager from './database/UserDatabaseManager.js';
 import PollingScheduler from './automation/PollingScheduler.js';
 import AutomationEngine from './automation/AutomationEngine.js';
+import UploadProcessor from './automation/UploadProcessor.js';
 import logger from './utils/logger.js';
 import cache from './utils/cache.js';
 import { createAdminRateLimiter } from './middleware/adminAuth.js';
@@ -21,6 +22,7 @@ import { setupArchivedDownloadsRoutes } from './routes/archivedDownloads.js';
 import { setupCustomViewsRoutes } from './routes/customViews.js';
 import { setupTagsRoutes } from './routes/tags.js';
 import { setupDownloadTagsRoutes } from './routes/downloadTags.js';
+import { setupUploadsRoutes } from './routes/uploads.js';
 
 class TorBoxBackend {
   constructor() {
@@ -29,6 +31,7 @@ class TorBoxBackend {
     this.masterDatabase = new Database();
     this.userDatabaseManager = null;
     this.pollingScheduler = null;
+    this.uploadProcessor = null;
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
 
     this.setupMiddleware();
@@ -139,6 +142,7 @@ class TorBoxBackend {
     setupCustomViewsRoutes(this.app, this);
     setupTagsRoutes(this.app, this);
     setupDownloadTagsRoutes(this.app, this);
+    setupUploadsRoutes(this.app, this);
     setupAdminRoutes(this.app, this);
 
     // Sentry error handler must be before other error handlers
@@ -189,6 +193,16 @@ class TorBoxBackend {
       const userDbDir = process.env.USER_DB_DIR || '/app/data/users';
       this.userDatabaseManager = new UserDatabaseManager(this.masterDatabase, userDbDir);
       logger.info('User database manager initialized', { userDbDir });
+
+      // Initialize upload processor
+      this.uploadProcessor = new UploadProcessor(this.userDatabaseManager, this.masterDatabase);
+      this.uploadProcessor.start();
+      logger.info('Upload processor started');
+
+      // Sync upload counters on startup (safety net to fix any drift)
+      logger.info('Syncing upload counters for all users...');
+      await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
+      logger.info('Upload counter sync completed');
 
       // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(
@@ -430,6 +444,10 @@ class TorBoxBackend {
 
   async shutdown() {
     logger.info('Shutting down TorBox Backend...');
+
+    if (this.uploadProcessor) {
+      this.uploadProcessor.stop();
+    }
 
     if (this.pollingScheduler) {
       this.pollingScheduler.stop();

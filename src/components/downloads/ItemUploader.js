@@ -43,7 +43,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     progress,
     webdlPassword,
     setWebdlPassword,
-    rateLimitInfo,
   } = useUpload(apiKey, activeType);
 
   // State to track if the uploader is expanded or collapsed
@@ -58,7 +57,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     if (typeof localStorage === 'undefined') {
       return DEFAULT_EXPANDED_STATES;
     }
-    
+
     try {
       const saved = localStorage.getItem(UPLOADER_EXPANDED_KEY);
       if (saved) {
@@ -69,14 +68,14 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     } catch (error) {
       console.error('Error parsing uploader expanded states:', error);
     }
-    
+
     return DEFAULT_EXPANDED_STATES;
   };
 
   // Helper function to save expanded states to localStorage
   const saveExpandedStates = (states) => {
     if (typeof localStorage === 'undefined') return;
-    
+
     try {
       localStorage.setItem(UPLOADER_EXPANDED_KEY, JSON.stringify(states));
     } catch (error) {
@@ -120,11 +119,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
   // Save options expanded state to localStorage when it changes
   useEffect(() => {
-    if (
-      isClient &&
-      typeof localStorage !== 'undefined' &&
-      activeType === 'torrents'
-    ) {
+    if (isClient && typeof localStorage !== 'undefined' && activeType === 'torrents') {
       localStorage.setItem(UPLOADER_OPTIONS_KEY, showOptions.toString());
     }
   }, [showOptions, isClient, activeType]);
@@ -146,29 +141,31 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     if (error) {
       setToast({
         message: error,
-        type: 'error'
+        type: 'error',
       });
     }
   }, [error]);
 
   // Show success notification when upload completes
   const handleUploadComplete = () => {
-    const successCount = items.filter(item => item.status === 'success').length;
+    const successCount = items.filter((item) => item.status === 'success').length;
     const totalCount = items.length;
-    
+
     if (successCount > 0 && successCount === totalCount) {
       setToast({
         message: `Successfully uploaded ${successCount} ${activeType === 'usenet' ? 'NZB' : activeType === 'torrents' ? 'torrent' : 'download'}${successCount > 1 ? 's' : ''}`,
-        type: 'success'
+        type: 'success',
       });
     }
   };
 
   // Monitor upload completion
   useEffect(() => {
-    const hasCompletedUploads = items.some(item => item.status === 'success');
-    const hasNoQueuedItems = !items.some(item => item.status === 'queued' || item.status === 'processing');
-    
+    const hasCompletedUploads = items.some((item) => item.status === 'success');
+    const hasNoQueuedItems = !items.some(
+      (item) => item.status === 'queued' || item.status === 'processing'
+    );
+
     if (hasCompletedUploads && hasNoQueuedItems && !isUploading) {
       handleUploadComplete();
     }
@@ -285,9 +282,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
         <>
           <div
             className={`grid ${
-              assetTypeInfo.showDropzone
-                ? 'lg:grid-cols-2 gap-2 lg:gap-6'
-                : 'grid-cols-1'
+              assetTypeInfo.showDropzone ? 'lg:grid-cols-2 gap-2 lg:gap-6' : 'grid-cols-1'
             } mt-4`}
           >
             <div className={`${assetTypeInfo.showDropzone ? '' : 'w-full'}`}>
@@ -353,57 +348,41 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             activeType={activeType}
           />
 
-          {items.filter((item) => item.status === 'queued').length > 0 &&
-            !isUploading && (
-              <>
-                {items.filter((item) => item.status === 'queued').length > 10 && (
-                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                      <div className="text-sm text-blue-700 dark:text-blue-300">
-                        <p className="font-medium">{t('rateLimit.info')}</p>
-                        <p className="mt-1 text-xs">
-                          {t('rateLimit.details', {
-                            count: items.filter((item) => item.status === 'queued').length,
-                            perMinute: 10,
-                            perHour: 60,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => {
-                      uploadItems();
-                      phEvent('upload_items');
-                    }}
-                    disabled={isUploading}
-                    className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-4 py-2 mb-4 rounded-md
+          {items.filter((item) => item.status === 'queued').length > 0 && !isUploading && (
+            <>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    uploadItems();
+                    phEvent('upload_items');
+                  }}
+                  disabled={isUploading}
+                  className="mt-4 w-full lg:w-auto bg-accent hover:bg-accent/90 text-white text-sm px-4 lg:px-4 py-2 mb-4 rounded-md
                       transition-colors duration-200 disabled:bg-accent/90 disabled:cursor-not-allowed"
-                  >
-                    {assetTypeInfo.buttonText} (
-                    {items.filter((item) => item.status === 'queued').length})
-                  </button>
-                </div>
-              </>
-            )}
+                >
+                  {assetTypeInfo.buttonText} (
+                  {items.filter((item) => item.status === 'queued').length})
+                </button>
+              </div>
+            </>
+          )}
 
-          <UploadProgress 
-            progress={progress} 
-            uploading={isUploading} 
-            rateLimitInfo={rateLimitInfo}
-          />
+          <UploadProgress progress={progress} uploading={isUploading} />
 
           {error && (
             <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2 flex-1">
-                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <svg
+                    className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <div className="text-sm text-red-700 dark:text-red-300">
                     <p className="font-medium">{t('errors.uploadFailed')}</p>
@@ -421,7 +400,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                   aria-label="Dismiss error"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -433,8 +417,16 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2 flex-1">
-                  <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <div className="text-sm text-blue-700 dark:text-blue-300">
                     <p className="font-medium">{t('help.nzbTips')}</p>
@@ -453,7 +445,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                   aria-label="Hide tips"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -468,7 +465,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 Show NZB Tips
               </button>
@@ -476,18 +478,16 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           )}
 
           {(() => {
-            const hasNoActiveItems = items.length > 0 &&
-              !items.some(
-                (item) =>
-                  item.status === 'queued' || item.status === 'processing',
-              );
-            
+            const hasNoActiveItems =
+              items.length > 0 &&
+              !items.some((item) => item.status === 'queued' || item.status === 'processing');
+
             if (!hasNoActiveItems) return null;
-            
+
             const successCount = items.filter((item) => item.status === 'success').length;
             const totalCount = items.length;
             const allCompleted = successCount === totalCount;
-            
+
             return (
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-end mt-4">
                 <h3 className="text-xs lg:text-sm text-primary-text dark:text-primary-text-dark/70">
@@ -511,14 +511,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           })()}
         </>
       )}
-      
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
