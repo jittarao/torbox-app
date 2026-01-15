@@ -166,6 +166,8 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
+      const authId = hashApiKey(apiKey);
+
       const { file_path } = req.body;
 
       if (!file_path) {
@@ -175,8 +177,8 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
-      // Delete file
-      await deleteUploadFile(file_path);
+      // Delete file (with authId for security validation)
+      await deleteUploadFile(authId, file_path);
 
       res.json({
         success: true,
@@ -1053,9 +1055,9 @@ export function setupUploadsRoutes(app, backend) {
       // Delete files and records
       for (const upload of uploads) {
         try {
-          // Delete file if exists
+          // Delete file if exists (with authId for security validation)
           if (upload.file_path) {
-            await deleteUploadFile(upload.file_path);
+            await deleteUploadFile(authId, upload.file_path);
           }
 
           // Delete from database
@@ -1137,9 +1139,9 @@ export function setupUploadsRoutes(app, backend) {
 
         const wasQueued = upload.status === 'queued';
 
-        // Delete file if exists
+        // Delete file if exists (with authId for security validation)
         if (upload.file_path) {
-          await deleteUploadFile(upload.file_path);
+          await deleteUploadFile(authId, upload.file_path);
         }
 
         // Delete from database
