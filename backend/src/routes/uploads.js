@@ -878,7 +878,7 @@ export function setupUploadsRoutes(app, backend) {
         // Reset failed uploads to queued status
         for (const upload of failedUploads) {
           try {
-            userDb.db
+            const updateResult = userDb.db
               .prepare(
                 `
                 UPDATE uploads
@@ -893,18 +893,18 @@ export function setupUploadsRoutes(app, backend) {
               )
               .run(currentQueueOrder++, upload.id);
 
-            retriedUploads.push(upload.id);
+            // Only add to retriedUploads and increment counter if the update actually modified a row
+            // This prevents counter drift if the upload was deleted between SELECT and UPDATE
+            if (updateResult.changes > 0) {
+              retriedUploads.push(upload.id);
+              backend.masterDatabase.incrementUploadCounter(authId, null);
+            }
           } catch (error) {
             logger.error('Error retrying upload in bulk operation', error, {
               authId,
               uploadId: upload.id,
             });
           }
-        }
-
-        // Update counter (increment for each retried upload)
-        for (let i = 0; i < retriedUploads.length; i++) {
-          backend.masterDatabase.incrementUploadCounter(authId, null);
         }
 
         logger.info('Bulk upload retry', {
@@ -980,7 +980,7 @@ export function setupUploadsRoutes(app, backend) {
         const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
 
         // Reset to queued status
-        userDb.db
+        const updateResult = userDb.db
           .prepare(
             `
             UPDATE uploads
@@ -995,6 +995,18 @@ export function setupUploadsRoutes(app, backend) {
           )
           .run(queueOrder, uploadId);
 
+        // Only update counter if the update actually modified a row
+        // This prevents counter drift if the upload was deleted between SELECT and UPDATE
+        if (updateResult.changes > 0) {
+          backend.masterDatabase.incrementUploadCounter(authId, null);
+        } else {
+          // Upload was deleted between SELECT and UPDATE, return 404
+          return res.status(404).json({
+            success: false,
+            error: 'Upload not found or was deleted',
+          });
+        }
+
         // Get updated upload
         const updatedUpload = userDb.db
           .prepare(
@@ -1007,9 +1019,6 @@ export function setupUploadsRoutes(app, backend) {
           `
           )
           .get(uploadId);
-
-        // Update counter (failed -> queued means increment)
-        backend.masterDatabase.incrementUploadCounter(authId, null);
 
         logger.info('Upload retried', { authId, uploadId });
 
