@@ -1,5 +1,5 @@
 import path from 'path';
-import { mkdir, writeFile, unlink, access } from 'fs/promises';
+import { mkdir, writeFile, unlink, access, stat, readdir } from 'fs/promises';
 import { constants } from 'fs';
 import logger from './logger.js';
 
@@ -175,4 +175,106 @@ export async function fileExists(filePath) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get file stats (size and modification time)
+ * @param {string} filePath - File path (relative to storage root or absolute)
+ * @returns {Promise<{size: number, mtime: Date}|null>} File stats or null if not found
+ */
+export async function getFileStats(filePath) {
+  try {
+    const absolutePath = getUploadFilePath(filePath);
+    const stats = await stat(absolutePath);
+    return {
+      size: stats.size,
+      mtime: stats.mtime,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Calculate total size of all files in user's upload directory
+ * @param {string} authId - User authentication ID
+ * @returns {Promise<number>} Total size in bytes
+ */
+export async function calculateUserUploadDirSize(authId) {
+  try {
+    const userUploadDir = getUserUploadDir(authId);
+    let totalSize = 0;
+
+    // Recursively calculate size of all files
+    async function calculateDirSize(dirPath) {
+      try {
+        const entries = await readdir(dirPath, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name);
+          if (entry.isDirectory()) {
+            await calculateDirSize(fullPath);
+          } else if (entry.isFile()) {
+            try {
+              const stats = await stat(fullPath);
+              totalSize += stats.size;
+            } catch {
+              // File might have been deleted, skip it
+            }
+          }
+        }
+      } catch {
+        // Directory might not exist or be inaccessible, skip it
+      }
+    }
+
+    await calculateDirSize(userUploadDir);
+    return totalSize;
+  } catch (error) {
+    logger.error('Error calculating user upload directory size', error, { authId });
+    return 0;
+  }
+}
+
+/**
+ * Get all files in user's upload directory with their stats, sorted by oldest first
+ * @param {string} authId - User authentication ID
+ * @returns {Promise<Array<{relativePath: string, absolutePath: string, size: number, mtime: Date}>>} Array of file info
+ */
+export async function getUserUploadFiles(authId) {
+  const files = [];
+
+  async function scanDirectory(dirPath, baseDir) {
+    try {
+      const entries = await readdir(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          await scanDirectory(fullPath, baseDir);
+        } else if (entry.isFile()) {
+          try {
+            const stats = await stat(fullPath);
+            const relativePath = path.relative(baseDir, fullPath);
+            files.push({
+              relativePath,
+              absolutePath: fullPath,
+              size: stats.size,
+              mtime: stats.mtime,
+            });
+          } catch {
+            // File might have been deleted, skip it
+          }
+        }
+      }
+    } catch {
+      // Directory might not exist or be inaccessible, skip it
+    }
+  }
+
+  const userUploadDir = getUserUploadDir(authId);
+  await scanDirectory(userUploadDir, UPLOAD_STORAGE_DIR);
+
+  // Sort by modification time (oldest first)
+  files.sort((a, b) => a.mtime.getTime() - b.mtime.getTime());
+
+  return files;
 }
