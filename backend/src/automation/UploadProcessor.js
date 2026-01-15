@@ -649,8 +649,9 @@ class UploadProcessor {
    * @param {Object} userDb - User database instance
    * @param {string} type - Upload type
    * @param {Error} error - Error object
+   * @param {string} originalStatus - Original status before processing started (optional, defaults to upload.status)
    */
-  async handleFailedUpload(upload, userDb, type, error) {
+  async handleFailedUpload(upload, userDb, type, error, originalStatus = null) {
     const { id } = upload;
 
     // Log failed attempt if API call was made
@@ -686,9 +687,10 @@ class UploadProcessor {
     const nextAttemptAt =
       deferMs > 0 ? this.formatDateForSQL(new Date(Date.now() + deferMs)) : null;
 
-    // Get current status for counter update
-    const currentUpload = userDb.db.prepare('SELECT status FROM uploads WHERE id = ?').get(id);
-    const wasQueued = currentUpload?.status === 'queued';
+    // Check if upload was queued before processing started
+    // Use the explicitly passed originalStatus parameter to ensure we get the correct
+    // status before processUploads() changed it to 'processing'. This prevents counter drift.
+    const wasQueued = (originalStatus ?? upload.status) === 'queued';
 
     // Create user-friendly error message
     const userFriendlyError = this.createUserFriendlyError(error, isRateLimit);
@@ -748,10 +750,13 @@ class UploadProcessor {
    * Process a single upload
    * @param {Object} upload - Upload record from database
    * @param {Object} userDb - User database instance
+   * @param {string} originalStatus - Original status before processing (optional, defaults to upload.status)
    * @returns {Promise<boolean>} True if successful
    */
-  async processUpload(upload, userDb) {
+  async processUpload(upload, userDb, originalStatus = null) {
     const { id, type } = upload;
+    // Use provided originalStatus or fall back to upload.status
+    const originalStatusValue = originalStatus ?? upload.status;
 
     try {
       // Validate authId
@@ -793,7 +798,7 @@ class UploadProcessor {
 
       return true;
     } catch (error) {
-      await this.handleFailedUpload(upload, userDb, type, error);
+      await this.handleFailedUpload(upload, userDb, type, error, originalStatusValue);
       return false;
     }
   }
@@ -871,6 +876,9 @@ class UploadProcessor {
                 .get(upload.id);
 
               if (currentStatus?.status === 'queued') {
+                // Capture original status before updating (needed for counter management)
+                const originalStatus = currentStatus.status;
+
                 // Mark as processing
                 userDb.db
                   .prepare(
@@ -884,8 +892,8 @@ class UploadProcessor {
                   )
                   .run(upload.id);
 
-                // Process upload
-                await this.processUpload({ ...upload, authId: auth_id }, userDb);
+                // Process upload (pass original status to ensure counter updates work correctly)
+                await this.processUpload({ ...upload, authId: auth_id }, userDb, originalStatus);
               }
             }
           }
