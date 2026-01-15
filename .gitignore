@@ -135,6 +135,8 @@ docker/
 *.swp
 *.swo
 *~
+.cursorignore
+.cursor/
 
 # OS generated files
 .DS_Store
@@ -166,4 +168,3 @@ temp/
 
 # Scripts (ignore build scripts)
 /scripts/
-.cursorignore

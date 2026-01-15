@@ -411,6 +411,14 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
+      // Validate that magnet links can only be used with torrent type
+      if (upload_type === 'magnet' && type !== 'torrent') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid combination: magnet links can only be used with type="torrent"',
+        });
+      }
+
       if (!name) {
         return res.status(400).json({
           success: false,
