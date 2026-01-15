@@ -104,6 +104,44 @@ export function setupUploadsRoutes(app, backend) {
     }
   });
 
+  // DELETE /api/uploads/file - Delete file from storage by file_path
+  app.delete('/api/uploads/file', uploadRateLimiter, async (req, res) => {
+    try {
+      // Get authId from header
+      const apiKey =
+        req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+      if (!apiKey) {
+        return res.status(400).json({
+          success: false,
+          error: 'API key is required',
+        });
+      }
+
+      const { file_path } = req.body;
+
+      if (!file_path) {
+        return res.status(400).json({
+          success: false,
+          error: 'file_path is required',
+        });
+      }
+
+      // Delete file
+      await deleteUploadFile(file_path);
+
+      res.json({
+        success: true,
+        message: 'File deleted successfully',
+      });
+    } catch (error) {
+      logger.error('Error deleting file', error, {
+        endpoint: '/api/uploads/file',
+        method: 'DELETE',
+      });
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // POST /api/uploads/batch - Create multiple upload entries efficiently
   app.post('/api/uploads/batch', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
     try {
