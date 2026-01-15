@@ -1235,12 +1235,22 @@ export function setupUploadsRoutes(app, backend) {
             await deleteUploadFile(authId, upload.file_path);
           }
 
+          // Re-read status after async file deletion to check if UploadProcessor
+          // completed the upload during the file deletion (race condition fix)
+          const currentUpload = userDb.db
+            .prepare('SELECT status FROM uploads WHERE id = ?')
+            .get(upload.id);
+
           // Delete from database
           userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
           deletedCount++;
 
-          // Decrement counter for queued OR processing uploads
-          if (upload.status === 'queued' || upload.status === 'processing') {
+          // Decrement counter only if status was still queued or processing
+          // at the time of deletion (not if UploadProcessor completed it)
+          if (
+            currentUpload &&
+            (currentUpload.status === 'queued' || currentUpload.status === 'processing')
+          ) {
             queuedDeletedCount++;
           }
         } catch (error) {
@@ -1313,19 +1323,26 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        // Decrement counter for queued OR processing uploads
-        const shouldDecrement = upload.status === 'queued' || upload.status === 'processing';
-
         // Delete file if exists (with authId for security validation)
         if (upload.file_path) {
           await deleteUploadFile(authId, upload.file_path);
         }
 
+        // Re-read status after async file deletion to check if UploadProcessor
+        // completed the upload during the file deletion (race condition fix)
+        const currentUpload = userDb.db
+          .prepare('SELECT status FROM uploads WHERE id = ?')
+          .get(uploadId);
+
         // Delete from database
         userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(uploadId);
 
-        // Update counter if it was queued or processing
-        if (shouldDecrement) {
+        // Update counter only if status was still queued or processing
+        // at the time of deletion (not if UploadProcessor completed it)
+        if (
+          currentUpload &&
+          (currentUpload.status === 'queued' || currentUpload.status === 'processing')
+        ) {
           backend.masterDatabase.decrementUploadCounter(authId);
         }
 
