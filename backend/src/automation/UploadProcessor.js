@@ -18,6 +18,7 @@ const API_TIMEOUT_MS = 30000;
 const INITIAL_BACKOFF_MS = 30000; // 30 seconds
 const MAX_BACKOFF_MS = 300000; // 5 minutes
 const CLEANUP_RETENTION_DAYS = 7;
+const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
 
 // Non-retryable error codes
 const NON_RETRYABLE_ERRORS = [
@@ -44,6 +45,7 @@ class UploadProcessor {
     this.isRunning = false;
     this.intervalId = null;
     this.lastCleanupAt = null;
+    this.lastRecoveryAt = null;
     this.cleanupIntervalMs = 24 * 60 * 60 * 1000; // Cleanup once per day
 
     // API clients cache: { authId: ApiClient }
@@ -806,6 +808,95 @@ class UploadProcessor {
   // ==================== Upload Queue Management ====================
 
   /**
+   * Recover stuck 'processing' uploads by resetting them to 'queued'
+   * Uploads that have been 'processing' for more than PROCESSING_TIMEOUT_MS are considered stuck
+   * This handles cases where the processor crashed or restarted during processing
+   * @param {Object} userDb - User database instance
+   * @param {string} authId - User authentication ID
+   * @returns {number} Number of uploads recovered
+   */
+  recoverStuckProcessingUploads(userDb, authId) {
+    try {
+      const timeoutThreshold = this.formatDateForSQL(new Date(Date.now() - PROCESSING_TIMEOUT_MS));
+
+      const result = userDb.db
+        .prepare(
+          `
+          UPDATE uploads
+          SET status = 'queued',
+              error_message = NULL,
+              last_processed_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE status = 'processing'
+            AND (
+              last_processed_at IS NULL
+              OR datetime(last_processed_at) <= datetime(?)
+            )
+        `
+        )
+        .run(timeoutThreshold);
+
+      if (result.changes > 0) {
+        logger.info('Recovered stuck processing uploads', {
+          authId,
+          recoveredCount: result.changes,
+          timeoutThreshold,
+        });
+
+        // Update counters after recovery
+        this.masterDatabase.updateUploadCounters(authId, userDb).catch((error) => {
+          logger.error('Failed to update counters after recovery', error, { authId });
+        });
+      }
+
+      return result.changes;
+    } catch (error) {
+      logger.error('Failed to recover stuck processing uploads', error, { authId });
+      return 0;
+    }
+  }
+
+  /**
+   * Recover stuck 'processing' uploads for all active users
+   * Called on startup and periodically to ensure no uploads are permanently stuck
+   * @returns {Promise<number>} Total number of uploads recovered across all users
+   */
+  async recoverStuckUploadsForAllUsers() {
+    if (!this.userDatabaseManager) {
+      return 0;
+    }
+
+    try {
+      const activeUsers = this.masterDatabase.getActiveUsers();
+      let totalRecovered = 0;
+
+      for (const user of activeUsers) {
+        try {
+          const userDb = await this.userDatabaseManager.getUserDatabase(user.auth_id);
+          const recovered = this.recoverStuckProcessingUploads(userDb, user.auth_id);
+          totalRecovered += recovered;
+        } catch (error) {
+          logger.error('Error recovering stuck uploads for user', error, {
+            authId: user.auth_id,
+          });
+        }
+      }
+
+      if (totalRecovered > 0) {
+        logger.info('Recovery completed for all users', {
+          totalRecovered,
+          userCount: activeUsers.length,
+        });
+      }
+
+      return totalRecovered;
+    } catch (error) {
+      logger.error('Error in recovery process', error);
+      return 0;
+    }
+  }
+
+  /**
    * Get queued uploads for a user, ordered by queue_order
    * @param {Object} userDb - User database instance
    * @param {string} authId - User authentication ID
@@ -850,6 +941,10 @@ class UploadProcessor {
       const shouldCleanup =
         !this.lastCleanupAt || now - this.lastCleanupAt >= this.cleanupIntervalMs;
 
+      // Recover stuck uploads periodically (every hour)
+      // This ensures uploads stuck in 'processing' state are recovered even if startup recovery missed them
+      const shouldRecover = !this.lastRecoveryAt || now - this.lastRecoveryAt >= 60 * 60 * 1000;
+
       for (const user of usersWithUploads) {
         const { auth_id } = user;
 
@@ -859,6 +954,11 @@ class UploadProcessor {
           // Cleanup old attempts if needed
           if (shouldCleanup) {
             this.cleanupOldAttempts(userDb);
+          }
+
+          // Recover stuck processing uploads if needed
+          if (shouldRecover) {
+            this.recoverStuckProcessingUploads(userDb, auth_id);
           }
 
           // Process one upload per type per cycle to respect rate limits
@@ -904,9 +1004,12 @@ class UploadProcessor {
         }
       }
 
-      // Update cleanup timestamp after processing all users
+      // Update cleanup and recovery timestamps after processing all users
       if (shouldCleanup) {
         this.lastCleanupAt = now;
+      }
+      if (shouldRecover) {
+        this.lastRecoveryAt = now;
       }
     } catch (error) {
       logger.error('Error in upload processing cycle', error);
@@ -960,7 +1063,10 @@ class UploadProcessor {
       intervalMs: PROCESSOR_INTERVAL_MS,
     });
 
-    // Process immediately on start
+    // Note: Recovery is called separately before start() in initializeServices()
+    // to ensure it completes before syncUploadCountersForAllUsers()
+
+    // Process immediately on start (to process any recovered uploads)
     this.processUploads();
 
     // Then process at intervals
