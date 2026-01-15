@@ -5,7 +5,8 @@
  */
 export const up = (db) => {
   // User registry table - maps auth_id to database path
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS user_registry (
       auth_id TEXT PRIMARY KEY,
       db_path TEXT NOT NULL UNIQUE,
@@ -16,22 +17,28 @@ export const up = (db) => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `).run();
+  `
+  ).run();
 
   // Create index for faster lookups
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_user_registry_status 
     ON user_registry(status)
-  `).run();
+  `
+  ).run();
 
   // Create index for efficient polling queries
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_user_registry_polling 
     ON user_registry(has_active_rules, next_poll_at, status)
-  `).run();
+  `
+  ).run();
 
   // API keys table - stores encrypted API keys (multi-user schema)
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS api_keys (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       auth_id TEXT NOT NULL UNIQUE,
@@ -42,13 +49,16 @@ export const up = (db) => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (auth_id) REFERENCES user_registry (auth_id) ON DELETE CASCADE
     )
-  `).run();
+  `
+  ).run();
 
   // Create index for active keys lookup
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_api_keys_active 
     ON api_keys(is_active, auth_id)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {
@@ -57,4 +67,3 @@ export const down = (db) => {
   db.prepare('DROP INDEX IF EXISTS idx_user_registry_status').run();
   db.prepare('DROP TABLE IF EXISTS user_registry').run();
 };
-
