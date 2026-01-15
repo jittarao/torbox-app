@@ -805,6 +805,134 @@ export function setupUploadsRoutes(app, backend) {
     }
   );
 
+  // POST /api/uploads/bulk/retry - Bulk retry failed uploads
+  // NOTE: This must be defined BEFORE /api/uploads/:id/retry to avoid route conflict
+  app.post(
+    '/api/uploads/bulk/retry',
+    extractAuthIdMiddleware,
+    uploadRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+        const { ids } = req.body; // Array of upload IDs
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids array is required and must not be empty',
+          });
+        }
+
+        // Validate all IDs are positive integers
+        const invalidIds = ids.filter((id) => !validateNumericId(id));
+        if (invalidIds.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid ids. All IDs must be positive integers.',
+          });
+        }
+
+        // Convert all IDs to numbers
+        const numericIds = ids.map((id) => parseInt(id, 10));
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+
+        // Get uploads to check status
+        const placeholders = numericIds.map(() => '?').join(',');
+        const uploads = userDb.db
+          .prepare(`SELECT id, status FROM uploads WHERE id IN (${placeholders})`)
+          .all(...numericIds);
+
+        if (uploads.length === 0) {
+          return res.status(404).json({
+            success: false,
+            error: 'No uploads found',
+          });
+        }
+
+        // Filter to only failed uploads
+        const failedUploads = uploads.filter((u) => u.status === 'failed');
+
+        if (failedUploads.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'No failed uploads found to retry',
+          });
+        }
+
+        // Get max queue_order to append to end
+        const maxOrderResult = userDb.db
+          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
+          .get('queued');
+
+        let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
+        const retriedUploads = [];
+
+        // Reset failed uploads to queued status
+        for (const upload of failedUploads) {
+          try {
+            userDb.db
+              .prepare(
+                `
+                UPDATE uploads
+                SET status = 'queued',
+                    error_message = NULL,
+                    retry_count = 0,
+                    next_attempt_at = NULL,
+                    queue_order = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `
+              )
+              .run(currentQueueOrder++, upload.id);
+
+            retriedUploads.push(upload.id);
+          } catch (error) {
+            logger.error('Error retrying upload in bulk operation', error, {
+              authId,
+              uploadId: upload.id,
+            });
+          }
+        }
+
+        // Update counter (increment for each retried upload)
+        for (let i = 0; i < retriedUploads.length; i++) {
+          backend.masterDatabase.incrementUploadCounter(authId, null);
+        }
+
+        logger.info('Bulk upload retry', {
+          authId,
+          requested: numericIds.length,
+          retried: retriedUploads.length,
+        });
+
+        res.json({
+          success: true,
+          message: `Retried ${retriedUploads.length} upload(s)`,
+          data: {
+            retried: retriedUploads.length,
+            requested: numericIds.length,
+            uploadIds: retriedUploads,
+          },
+        });
+      } catch (error) {
+        logger.error('Error bulk retrying uploads', error, {
+          endpoint: '/api/uploads/bulk/retry',
+          method: 'POST',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    }
+  );
+
   // POST /api/uploads/:id/retry - Retry failed upload
   app.post(
     '/api/uploads/:id/retry',
@@ -1200,134 +1328,6 @@ export function setupUploadsRoutes(app, backend) {
         logger.error('Error deleting upload', error, {
           endpoint: `/api/uploads/${req.params.id}`,
           method: 'DELETE',
-          authId: req.validatedAuthId,
-        });
-        res.status(500).json({ success: false, error: error.message });
-      }
-    }
-  );
-
-  // POST /api/uploads/bulk/retry - Bulk retry failed uploads
-  // NOTE: This must be defined BEFORE /api/uploads/:id to avoid route conflict
-  app.post(
-    '/api/uploads/bulk/retry',
-    extractAuthIdMiddleware,
-    uploadRateLimiter,
-    async (req, res) => {
-      try {
-        const authId = req.validatedAuthId;
-        const { ids } = req.body; // Array of upload IDs
-
-        if (!Array.isArray(ids) || ids.length === 0) {
-          return res.status(400).json({
-            success: false,
-            error: 'ids array is required and must not be empty',
-          });
-        }
-
-        // Validate all IDs are positive integers
-        const invalidIds = ids.filter((id) => !validateNumericId(id));
-        if (invalidIds.length > 0) {
-          return res.status(400).json({
-            success: false,
-            error: 'Invalid ids. All IDs must be positive integers.',
-          });
-        }
-
-        // Convert all IDs to numbers
-        const numericIds = ids.map((id) => parseInt(id, 10));
-
-        if (!backend.userDatabaseManager) {
-          return res.status(503).json({
-            success: false,
-            error: 'Service is initializing, please try again in a moment',
-          });
-        }
-
-        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-
-        // Get uploads to check status
-        const placeholders = numericIds.map(() => '?').join(',');
-        const uploads = userDb.db
-          .prepare(`SELECT id, status FROM uploads WHERE id IN (${placeholders})`)
-          .all(...numericIds);
-
-        if (uploads.length === 0) {
-          return res.status(404).json({
-            success: false,
-            error: 'No uploads found',
-          });
-        }
-
-        // Filter to only failed uploads
-        const failedUploads = uploads.filter((u) => u.status === 'failed');
-
-        if (failedUploads.length === 0) {
-          return res.status(400).json({
-            success: false,
-            error: 'No failed uploads found to retry',
-          });
-        }
-
-        // Get max queue_order to append to end
-        const maxOrderResult = userDb.db
-          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
-          .get('queued');
-
-        let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
-        const retriedUploads = [];
-
-        // Reset failed uploads to queued status
-        for (const upload of failedUploads) {
-          try {
-            userDb.db
-              .prepare(
-                `
-                UPDATE uploads
-                SET status = 'queued',
-                    error_message = NULL,
-                    retry_count = 0,
-                    next_attempt_at = NULL,
-                    queue_order = ?,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `
-              )
-              .run(currentQueueOrder++, upload.id);
-
-            retriedUploads.push(upload.id);
-          } catch (error) {
-            logger.error('Error retrying upload in bulk operation', error, {
-              authId,
-              uploadId: upload.id,
-            });
-          }
-        }
-
-        // Update counter (increment for each retried upload)
-        for (let i = 0; i < retriedUploads.length; i++) {
-          backend.masterDatabase.incrementUploadCounter(authId, null);
-        }
-
-        logger.info('Bulk upload retry', {
-          authId,
-          requested: numericIds.length,
-          retried: retriedUploads.length,
-        });
-
-        res.json({
-          success: true,
-          message: `Retried ${retriedUploads.length} upload(s)`,
-          data: {
-            retried: retriedUploads.length,
-            requested: numericIds.length,
-            uploadIds: retriedUploads,
-          },
-        });
-      } catch (error) {
-        logger.error('Error bulk retrying uploads', error, {
-          endpoint: '/api/uploads/bulk/retry',
-          method: 'POST',
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
