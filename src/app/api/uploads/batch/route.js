@@ -70,17 +70,25 @@ export async function POST(request) {
     });
 
     // Prepare uploads for batch endpoint (remove file_data, add file_path)
-    const preparedUploads = uploads.map((upload) => {
-      const prepared = { ...upload };
-      if (upload.upload_type === 'file') {
-        if (filePathMap.has(upload)) {
-          prepared.file_path = filePathMap.get(upload);
+    // Filter out uploads that failed file upload - they're already in fileUploadErrors
+    const preparedUploads = uploads
+      .filter((upload) => {
+        // Include non-file uploads (url, magnet, etc.)
+        if (upload.upload_type !== 'file') {
+          return true;
         }
-        delete prepared.file_data;
-        delete prepared.filename;
-      }
-      return prepared;
-    });
+        // Only include file uploads that successfully uploaded
+        return filePathMap.has(upload);
+      })
+      .map((upload) => {
+        const prepared = { ...upload };
+        if (upload.upload_type === 'file') {
+          prepared.file_path = filePathMap.get(upload);
+          delete prepared.file_data;
+          delete prepared.filename;
+        }
+        return prepared;
+      });
 
     // Create batch upload entries
     const response = await fetch(`${BACKEND_URL}/api/uploads/batch`, {
