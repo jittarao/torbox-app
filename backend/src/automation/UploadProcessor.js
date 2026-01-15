@@ -1166,21 +1166,25 @@ class UploadProcessor {
                 // Capture original status before updating (needed for counter management)
                 const originalStatus = currentStatus.status;
 
-                // Mark as processing
-                userDb.db
+                // Mark as processing - use atomic UPDATE with status check to prevent race conditions
+                // Only proceed if the UPDATE actually changed a row (result.changes > 0)
+                const result = userDb.db
                   .prepare(
                     `
                     UPDATE uploads
                     SET status = 'processing',
                         last_processed_at = CURRENT_TIMESTAMP,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
+                    WHERE id = ? AND status = 'queued'
                   `
                   )
                   .run(upload.id);
 
-                // Process upload (pass original status to ensure counter updates work correctly)
-                await this.processUpload({ ...upload, authId: auth_id }, userDb, originalStatus);
+                // Only process if the UPDATE succeeded (another thread didn't claim it first)
+                if (result.changes > 0) {
+                  // Process upload (pass original status to ensure counter updates work correctly)
+                  await this.processUpload({ ...upload, authId: auth_id }, userDb, originalStatus);
+                }
               }
             }
           }
