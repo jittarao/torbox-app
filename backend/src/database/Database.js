@@ -589,7 +589,8 @@ class Database {
   async updateUploadCounters(authId, userDb) {
     try {
       // Query actual counts from user DB
-      // Count ALL queued uploads (including deferred ones, but excluding deleted files)
+      // Count ALL pending uploads (queued + processing, including deferred ones, but excluding deleted files)
+      // Both 'queued' and 'processing' are pending uploads that haven't completed yet
       // The next_upload_attempt_at field in user_registry handles timing logic,
       // so we don't need to exclude deferred uploads from the counter
       // However, we must exclude deleted files (file_deleted = true) as they cannot be processed
@@ -598,7 +599,7 @@ class Database {
           `
           SELECT COUNT(*) as count
           FROM uploads
-          WHERE status = 'queued'
+          WHERE status IN ('queued', 'processing')
             AND (file_deleted IS NULL OR file_deleted = false)
         `
         )
@@ -607,6 +608,7 @@ class Database {
       const queuedUploadsCount = queuedCount?.count || 0;
 
       // Check if there are any uploads ready to process immediately (next_attempt_at IS NULL)
+      // Include both 'queued' uploads that are ready AND 'processing' uploads (which are already active)
       // If any uploads are ready, we should set next_upload_attempt_at to NULL
       // so that getUsersWithQueuedUploads includes this user for processing
       // Exclude deleted files (file_deleted = true) as they cannot be processed
@@ -615,11 +617,14 @@ class Database {
           `
           SELECT COUNT(*) as count
           FROM uploads
-          WHERE status = 'queued'
+          WHERE status IN ('queued', 'processing')
             AND (file_deleted IS NULL OR file_deleted = false)
-            AND (next_attempt_at IS NULL 
-                 OR next_attempt_at = ''
-                 OR datetime(next_attempt_at) <= datetime('now'))
+            AND (
+              status = 'processing'
+              OR next_attempt_at IS NULL 
+              OR next_attempt_at = ''
+              OR datetime(next_attempt_at) <= datetime('now')
+            )
         `
         )
         .get();
@@ -634,6 +639,7 @@ class Database {
         nextUploadAttemptAt = null;
       } else if (queuedUploadsCount > 0) {
         // If all uploads are deferred, get the minimum deferred time
+        // Only check 'queued' uploads for next_attempt_at (processing uploads are already active)
         // Exclude deleted files (file_deleted = true) as they cannot be processed
         const nextAttemptResult = userDb.db
           .prepare(
