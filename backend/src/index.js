@@ -196,10 +196,23 @@ class TorBoxBackend {
 
       // Initialize upload processor
       this.uploadProcessor = new UploadProcessor(this.userDatabaseManager, this.masterDatabase);
+
+      // Recover stuck 'processing' uploads on startup (before syncing counters)
+      // This ensures uploads stuck from a previous crash/restart are reset to 'queued'
+      logger.info('Recovering stuck processing uploads on startup...');
+      const recoveredCount = await this.uploadProcessor.recoverStuckUploadsForAllUsers();
+      if (recoveredCount > 0) {
+        logger.info('Startup recovery completed', { recoveredCount });
+      } else {
+        logger.info('No stuck uploads found on startup');
+      }
+
+      // Start the upload processor
       this.uploadProcessor.start();
       logger.info('Upload processor started');
 
       // Sync upload counters on startup (safety net to fix any drift)
+      // This runs after recovery to ensure recovered uploads are counted
       logger.info('Syncing upload counters for all users...');
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
       logger.info('Upload counter sync completed');
