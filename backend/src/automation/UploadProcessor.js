@@ -282,10 +282,13 @@ class UploadProcessor {
   /**
    * Get or create API client for a user
    * @param {string} authId - User authentication ID
+   * @param {boolean} forceRefresh - If true, invalidate cache and create new client
    * @returns {Promise<ApiClient>} API client instance
    */
-  async getApiClient(authId) {
-    if (this.apiClients.has(authId)) {
+  async getApiClient(authId, forceRefresh = false) {
+    if (forceRefresh) {
+      this.apiClients.delete(authId);
+    } else if (this.apiClients.has(authId)) {
       return this.apiClients.get(authId);
     }
 
@@ -300,6 +303,18 @@ class UploadProcessor {
     this.apiClients.set(authId, apiClient);
 
     return apiClient;
+  }
+
+  /**
+   * Invalidate API client cache for a specific user
+   * This should be called when an API key is updated or when auth errors occur
+   * @param {string} authId - User authentication ID
+   */
+  invalidateApiClient(authId) {
+    if (this.apiClients.has(authId)) {
+      this.apiClients.delete(authId);
+      logger.debug('Invalidated API client cache', { authId });
+    }
   }
 
   // ==================== Upload Attempt Logging ====================
@@ -553,6 +568,17 @@ class UploadProcessor {
   }
 
   /**
+   * Check if error is an authentication error
+   * @param {Error} error - Error object
+   * @returns {boolean} True if authentication error
+   */
+  isAuthError(error) {
+    const errorData = error.response?.data;
+    const errorCode = errorData?.error;
+    return errorCode === 'BAD_TOKEN' || errorCode === 'AUTH_ERROR' || errorCode === 'NO_AUTH';
+  }
+
+  /**
    * Check if error is non-retryable
    * @param {Error} error - Error object
    * @returns {boolean} True if non-retryable
@@ -768,9 +794,10 @@ class UploadProcessor {
    * @param {Object} upload - Upload record from database
    * @param {Object} userDb - User database instance
    * @param {string} originalStatus - Original status before processing (optional, defaults to upload.status)
+   * @param {boolean} isRetryAfterAuthError - Internal flag to prevent infinite retry loops
    * @returns {Promise<boolean>} True if successful
    */
-  async processUpload(upload, userDb, originalStatus = null) {
+  async processUpload(upload, userDb, originalStatus = null, isRetryAfterAuthError = false) {
     const { id, type } = upload;
     // Use provided originalStatus or fall back to upload.status
     const originalStatusValue = originalStatus ?? upload.status;
@@ -781,8 +808,8 @@ class UploadProcessor {
         throw new Error('authId is required for processing upload');
       }
 
-      // Get API client
-      const apiClient = await this.getApiClient(upload.authId);
+      // Get API client (force refresh if this is a retry after auth error)
+      const apiClient = await this.getApiClient(upload.authId, isRetryAfterAuthError);
 
       // Check rate limit before making request
       if (this.isAtRateLimit(userDb, type) || this.isTooCloseToRateLimit(userDb, type)) {
@@ -805,6 +832,7 @@ class UploadProcessor {
         upload_type: upload.upload_type,
         hasFile: upload.upload_type === 'file',
         filePath: upload.upload_type === 'file' ? upload.file_path : null,
+        isRetryAfterAuthError,
       });
 
       // Make API request
@@ -815,6 +843,22 @@ class UploadProcessor {
 
       return true;
     } catch (error) {
+      // Check if this is an authentication error and we haven't retried yet
+      if (this.isAuthError(error) && !isRetryAfterAuthError) {
+        logger.warn('Authentication error detected, invalidating cache and retrying once', {
+          uploadId: id,
+          authId: upload.authId,
+          errorCode: error.response?.data?.error,
+        });
+
+        // Invalidate the cached API client
+        this.invalidateApiClient(upload.authId);
+
+        // Retry once with a fresh client
+        return await this.processUpload(upload, userDb, originalStatusValue, true);
+      }
+
+      // Handle failure (including auth errors on retry)
       await this.handleFailedUpload(upload, userDb, type, error, originalStatusValue);
       return false;
     }
