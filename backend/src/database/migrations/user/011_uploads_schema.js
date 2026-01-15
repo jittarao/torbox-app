@@ -23,6 +23,7 @@ export const up = (db) => {
       next_attempt_at DATETIME,
       last_processed_at DATETIME,
       completed_at DATETIME,
+      file_deleted BOOLEAN DEFAULT false,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -60,9 +61,18 @@ export const up = (db) => {
     ON uploads(status, type, next_attempt_at, queue_order)
   `
   ).run();
+
+  // Index for efficient queries filtering by file_deleted
+  db.prepare(
+    `
+    CREATE INDEX IF NOT EXISTS idx_uploads_file_deleted 
+    ON uploads(file_deleted, completed_at)
+  `
+  ).run();
 };
 
 export const down = (db) => {
+  db.prepare('DROP INDEX IF EXISTS idx_uploads_file_deleted').run();
   db.prepare('DROP INDEX IF EXISTS idx_uploads_dequeue').run();
   db.prepare('DROP INDEX IF EXISTS idx_uploads_created_at').run();
   db.prepare('DROP INDEX IF EXISTS idx_uploads_queue_order').run();
