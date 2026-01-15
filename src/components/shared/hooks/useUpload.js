@@ -5,15 +5,6 @@ import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { useUploaderStore } from '@/store/uploaderStore';
 
-// Rate limits: 10 per minute, 60 per hour
-const RATE_LIMIT_PER_MINUTE = 10;
-const RATE_LIMIT_PER_HOUR = 60;
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
-
-// Minimum delay between uploads to respect rate limits (6 seconds = 10 per minute)
-const MIN_UPLOAD_DELAY_MS = 6000;
-
 // Local storage keys
 const STORAGE_KEY = 'torrent-upload-options';
 const SHOW_OPTIONS_KEY = 'uploader-options-expanded';
@@ -50,15 +41,6 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Show/hide options state
   const [showOptions, setShowOptions] = useState(false);
-
-  // Rate limiting state
-  const [rateLimitInfo, setRateLimitInfo] = useState({
-    uploadsInLastMinute: [],
-    uploadsInLastHour: [],
-    waitTimeMs: 0,
-    estimatedCompletionTime: null,
-    isRateLimited: false,
-  });
 
   // Initialize from localStorage after component is mounted
   useEffect(() => {
@@ -269,102 +251,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     }
   };
 
-  // Calculate rate limit wait time
-  const calculateWaitTime = (uploadsInLastMinute, uploadsInLastHour) => {
-    const now = Date.now();
-
-    // Ensure arrays are defined (default to empty arrays)
-    const safeMinute = Array.isArray(uploadsInLastMinute) ? uploadsInLastMinute : [];
-    const safeHour = Array.isArray(uploadsInLastHour) ? uploadsInLastHour : [];
-
-    // Clean old entries
-    const recentMinute = safeMinute.filter((time) => now - time < MINUTE_MS);
-    const recentHour = safeHour.filter((time) => now - time < HOUR_MS);
-
-    let waitTime = 0;
-
-    // Check per-minute limit
-    if (recentMinute.length >= RATE_LIMIT_PER_MINUTE) {
-      const oldestInMinute = Math.min(...recentMinute);
-      waitTime = Math.max(waitTime, MINUTE_MS - (now - oldestInMinute));
-    }
-
-    // Check per-hour limit
-    if (recentHour.length >= RATE_LIMIT_PER_HOUR) {
-      const oldestInHour = Math.min(...recentHour);
-      waitTime = Math.max(waitTime, HOUR_MS - (now - oldestInHour));
-    }
-
-    return {
-      waitTimeMs: waitTime,
-      uploadsInLastMinute: recentMinute,
-      uploadsInLastHour: recentHour,
-      isRateLimited: waitTime > 0,
-    };
-  };
-
-  // Get available rate limit capacity
-  const getAvailableCapacity = (uploadsInLastMinute, uploadsInLastHour) => {
-    const now = Date.now();
-
-    // Ensure arrays are defined (default to empty arrays)
-    const safeMinute = Array.isArray(uploadsInLastMinute) ? uploadsInLastMinute : [];
-    const safeHour = Array.isArray(uploadsInLastHour) ? uploadsInLastHour : [];
-
-    const recentMinute = safeMinute.filter((time) => now - time < MINUTE_MS);
-    const recentHour = safeHour.filter((time) => now - time < HOUR_MS);
-
-    const availablePerMinute = Math.max(0, RATE_LIMIT_PER_MINUTE - recentMinute.length);
-    const availablePerHour = Math.max(0, RATE_LIMIT_PER_HOUR - recentHour.length);
-
-    return Math.min(availablePerMinute, availablePerHour);
-  };
-
-  // Wait for rate limit if needed
-  const waitForRateLimit = async (uploadsInLastMinute, uploadsInLastHour) => {
-    const rateLimit = calculateWaitTime(uploadsInLastMinute, uploadsInLastHour);
-
-    if (rateLimit.waitTimeMs > 0) {
-      setRateLimitInfo({
-        ...rateLimit,
-        estimatedCompletionTime: null, // Will be calculated in uploadItems
-      });
-      await new Promise((resolve) => setTimeout(resolve, rateLimit.waitTimeMs));
-
-      // Re-filter arrays after waiting since time has passed
-      const now = Date.now();
-      const recentMinute = rateLimit.uploadsInLastMinute.filter((time) => now - time < MINUTE_MS);
-      const recentHour = rateLimit.uploadsInLastHour.filter((time) => now - time < HOUR_MS);
-
-      return {
-        ...rateLimit,
-        uploadsInLastMinute: recentMinute,
-        uploadsInLastHour: recentHour,
-        waitTimeMs: 0,
-        isRateLimited: false,
-      };
-    }
-
-    return rateLimit;
-  };
-
   // Upload a single item
-  const uploadItem = async (item, uploadsInLastMinute, uploadsInLastHour) => {
-    // Use rateLimitInfo state if arrays are not provided (for external calls)
-    const minuteArray = uploadsInLastMinute ?? rateLimitInfo.uploadsInLastMinute ?? [];
-    const hourArray = uploadsInLastHour ?? rateLimitInfo.uploadsInLastHour ?? [];
-
-    // Ensure arrays are valid
-    if (!Array.isArray(minuteArray) || !Array.isArray(hourArray)) {
-      console.error('[uploadItem] Invalid rate limit arrays:', { minuteArray, hourArray });
-      throw new Error('Invalid rate limit tracking arrays');
-    }
-
-    // Wait for rate limit before uploading
-    const rateLimit = await waitForRateLimit(minuteArray, hourArray);
-    let currentMinute = rateLimit.uploadsInLastMinute;
-    let currentHour = rateLimit.uploadsInLastHour;
-
+  const uploadItem = async (item) => {
     const formData = new FormData();
 
     // Handle different item types
@@ -380,8 +268,11 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     }
 
     if (item.type === 'torrent' || item.type === 'magnet') {
-      formData.append('seed', item.seed);
-      formData.append('allow_zip', item.allowZip);
+      // Use nullish coalescing to get defaults from globalOptions or DEFAULT_OPTIONS
+      const seedValue = item.seed ?? globalOptions.seed ?? DEFAULT_OPTIONS.seed;
+      const allowZipValue = item.allowZip ?? globalOptions.allowZip ?? DEFAULT_OPTIONS.allowZip;
+      formData.append('seed', seedValue);
+      formData.append('allow_zip', allowZipValue);
     }
 
     // Add password if activeType is webdl
@@ -399,66 +290,90 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       formData.append('as_queued', item.asQueued);
     }
 
-    let result;
-    let retryCount = 0;
-    const maxRetries = 3;
+    // Queue upload via NextJS API (which handles backend queuing)
+    const result = await retryFetch(getApiEndpoint(item.type), {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey },
+      body: formData,
+      permanent: [
+        (data) =>
+          Object.values(NON_RETRYABLE_ERRORS).some(
+            (err) => data.error?.includes(err) || data.detail?.includes(err)
+          ),
+      ],
+    });
 
-    // Handle 429 errors with exponential backoff
-    while (retryCount < maxRetries) {
-      result = await retryFetch(getApiEndpoint(item.type), {
-        method: 'POST',
-        headers: { 'x-api-key': apiKey },
-        body: formData,
-        permanent: [
-          (data) =>
-            Object.values(NON_RETRYABLE_ERRORS).some(
-              (err) => data.error?.includes(err) || data.detail?.includes(err)
-            ),
-        ],
-      });
+    // The upload is queued and will be processed in the background by the backend
+    return result;
+  };
 
-      // If we get a 429 error, wait longer and retry
-      if (
-        !result.success &&
-        (result.error?.includes('429') || result.error?.includes('Too many requests'))
-      ) {
-        retryCount++;
-        if (retryCount < maxRetries) {
-          // Exponential backoff: 30s, 60s, 120s
-          const backoffDelay = 30000 * Math.pow(2, retryCount - 1);
-          setRateLimitInfo((prev) => ({
-            ...prev,
-            waitTimeMs: backoffDelay,
-            isRateLimited: true,
-          }));
-          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
-          continue;
+  // Batch upload items (for large batches)
+  const uploadItemsBatch = async (itemsToUpload) => {
+    const batchEndpoint = '/api/uploads/batch';
+
+    // Prepare uploads for batch API
+    const uploads = await Promise.all(
+      itemsToUpload.map(async (item) => {
+        const upload = {
+          type: assetType === 'torrents' ? 'torrent' : assetType,
+          upload_type:
+            item.type === 'magnet' ? 'magnet' : typeof item.data === 'string' ? 'link' : 'file',
+          name: item.name || 'Unknown',
+        };
+
+        // Handle file uploads - convert to base64
+        if (upload.upload_type === 'file' && item.data instanceof File) {
+          const arrayBuffer = await item.data.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          upload.file_data = buffer.toString('base64');
+          upload.filename = item.data.name;
+        } else if (upload.upload_type === 'magnet' || upload.upload_type === 'link') {
+          upload.url = item.data;
         }
-      }
 
-      break;
-    }
+        // Add type-specific options
+        // Check if it's a torrent/magnet upload (either by item.type or assetType)
+        if (
+          item.type === 'torrent' ||
+          item.type === 'magnet' ||
+          assetType === 'torrents' ||
+          upload.type === 'torrent'
+        ) {
+          // Use nullish coalescing to preserve 0 values, but default to 1 if undefined
+          // seed: 1 = Auto, 2 = Seed, 3 = Don't Seed
+          upload.seed = item.seed ?? globalOptions.seed ?? 1;
+          // allow_zip: default to true if not set
+          upload.allow_zip = item.allowZip ?? globalOptions.allowZip ?? true;
+        }
 
-    // Track successful upload for rate limiting
-    if (result.success) {
-      const now = Date.now();
-      currentMinute = [...currentMinute, now];
-      currentHour = [...currentHour, now];
+        if (assetType === 'webdl' && webdlPassword) {
+          upload.password = webdlPassword;
+        }
 
-      setRateLimitInfo((prev) => ({
-        uploadsInLastMinute: currentMinute,
-        uploadsInLastHour: currentHour,
-        waitTimeMs: 0,
-        isRateLimited: false,
-        estimatedCompletionTime: prev.estimatedCompletionTime,
-      }));
-    }
+        if (globalOptions.asQueued) {
+          upload.as_queued = item.asQueued !== undefined ? item.asQueued : false;
+        }
 
-    return {
-      ...result,
-      uploadsInLastMinute: currentMinute,
-      uploadsInLastHour: currentHour,
-    };
+        return upload;
+      })
+    );
+
+    const result = await retryFetch(batchEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({ uploads }),
+      permanent: [
+        (data) =>
+          Object.values(NON_RETRYABLE_ERRORS).some(
+            (err) => data.error?.includes(err) || data.detail?.includes(err)
+          ),
+      ],
+    });
+
+    return result;
   };
 
   // Upload a list of items
@@ -467,178 +382,126 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     const pendingItems = items.filter((item) => item.status === 'queued');
     setProgress({ current: 0, total: pendingItems.length });
 
-    // Initialize rate limit tracking
-    let currentUploadsInMinute = [...rateLimitInfo.uploadsInLastMinute];
-    let currentUploadsInHour = [...rateLimitInfo.uploadsInLastHour];
-    let processedCount = 0;
+    const BATCH_THRESHOLD = 10; // Use batch API for 10+ items
 
-    // Calculate estimated completion time
-    const calculateEstimatedTime = (remaining, uploadsInMinute, uploadsInHour) => {
-      if (remaining === 0) return null;
+    // Use batch upload for large batches
+    if (pendingItems.length >= BATCH_THRESHOLD) {
+      // Mark all as processing
+      pendingItems.forEach((item) => {
+        const idx = items.findIndex((x) => x === item);
+        updateItemStatus(idx, 'processing');
+      });
 
-      const now = Date.now();
-      let currentTime = now;
-      let tempMinute = [...uploadsInMinute];
-      let tempHour = [...uploadsInHour];
+      const result = await uploadItemsBatch(pendingItems);
 
-      // Helper to calculate wait time with simulated time
-      const calculateWaitTimeAt = (simulatedTime, minuteArray, hourArray) => {
-        const recentMinute = minuteArray.filter((time) => simulatedTime - time < MINUTE_MS);
-        const recentHour = hourArray.filter((time) => simulatedTime - time < HOUR_MS);
+      // retryFetch returns { success: true, data: <api_response> }
+      // API response is { success: true, data: { uploads: [...] } }
+      // Handle both result.data.uploads and result.data.data.uploads
+      const responseData = result.data?.data || result.data;
+      const uploads = responseData?.uploads || [];
+      const errors = responseData?.errors || [];
 
-        let waitTime = 0;
+      if (result.success && uploads.length > 0) {
+        // Map results back to items by matching index (most reliable)
+        // The backend returns uploads in the same order as sent
+        pendingItems.forEach((item, index) => {
+          const idx = items.findIndex((x) => x === item);
+          if (uploads[index]) {
+            // Successfully uploaded
+            updateItemStatus(idx, 'success');
+          } else {
+            // Check if there's an error for this item
+            const error = errors.find((e) => {
+              // Try to match by name or index
+              return (
+                e.upload?.name === item.name ||
+                e.index === index ||
+                (e.upload && JSON.stringify(e.upload) === JSON.stringify(item))
+              );
+            });
+            updateItemStatus(idx, 'error', error?.error || 'Upload failed');
+          }
+        });
 
-        // Check per-minute limit
-        if (recentMinute.length >= RATE_LIMIT_PER_MINUTE) {
-          const oldestInMinute = Math.min(...recentMinute);
-          waitTime = Math.max(waitTime, MINUTE_MS - (simulatedTime - oldestInMinute));
-        }
-
-        // Check per-hour limit
-        if (recentHour.length >= RATE_LIMIT_PER_HOUR) {
-          const oldestInHour = Math.min(...recentHour);
-          waitTime = Math.max(waitTime, HOUR_MS - (simulatedTime - oldestInHour));
-        }
-
-        return waitTime;
-      };
-
-      for (let i = 0; i < remaining; i++) {
-        // Clean old entries based on current simulation time
-        tempMinute = tempMinute.filter((time) => currentTime - time < MINUTE_MS);
-        tempHour = tempHour.filter((time) => currentTime - time < HOUR_MS);
-
-        // Check if we need to wait due to rate limits
-        const waitTime = calculateWaitTimeAt(currentTime, tempMinute, tempHour);
-        if (waitTime > 0) {
-          currentTime += waitTime;
-          // Clean old entries again after waiting
-          tempMinute = tempMinute.filter((time) => currentTime - time < MINUTE_MS);
-          tempHour = tempHour.filter((time) => currentTime - time < HOUR_MS);
-        }
-
-        // Simulate adding upload timestamp
-        tempMinute.push(currentTime);
-        tempHour.push(currentTime);
-
-        // Add minimum delay between uploads (only if not the last item)
-        if (i < remaining - 1) {
-          currentTime += MIN_UPLOAD_DELAY_MS;
-        }
-      }
-
-      return currentTime;
-    };
-
-    const estimatedCompletion = calculateEstimatedTime(
-      pendingItems.length,
-      currentUploadsInMinute,
-      currentUploadsInHour
-    );
-    setRateLimitInfo((prev) => ({
-      ...prev,
-      estimatedCompletionTime: estimatedCompletion,
-    }));
-
-    // Process items sequentially to strictly respect rate limits
-    // Process one at a time to avoid race conditions with concurrent uploads
-    for (let i = 0; i < pendingItems.length; i++) {
-      const item = pendingItems[i];
-      const idx = items.findIndex((x) => x === item);
-
-      // Check available capacity before each upload
-      const availableCapacity = getAvailableCapacity(currentUploadsInMinute, currentUploadsInHour);
-
-      // If we're at the limit, wait before proceeding
-      if (availableCapacity <= 0) {
-        const rateLimit = calculateWaitTime(currentUploadsInMinute, currentUploadsInHour);
-
-        if (rateLimit.waitTimeMs > 0) {
-          setRateLimitInfo((prev) => ({
-            ...prev,
-            waitTimeMs: rateLimit.waitTimeMs,
-            isRateLimited: true,
-            estimatedCompletionTime: prev.estimatedCompletionTime,
-          }));
-
-          await new Promise((resolve) => setTimeout(resolve, rateLimit.waitTimeMs));
-
-          // Clean old entries after waiting
-          const now = Date.now();
-          currentUploadsInMinute = currentUploadsInMinute.filter((time) => now - time < MINUTE_MS);
-          currentUploadsInHour = currentUploadsInHour.filter((time) => now - time < HOUR_MS);
-        }
-      }
-
-      updateItemStatus(idx, 'processing');
-
-      const result = await uploadItem(item, currentUploadsInMinute, currentUploadsInHour);
-
-      // Update rate limit tracking immediately after each upload
-      if (result.uploadsInLastMinute) {
-        currentUploadsInMinute = result.uploadsInLastMinute;
-      }
-      if (result.uploadsInLastHour) {
-        currentUploadsInHour = result.uploadsInLastHour;
-      }
-
-      if (result.success) {
-        updateItemStatus(idx, 'success');
-        processedCount++;
         setProgress({
-          current: processedCount,
+          current: uploads.length,
           total: pendingItems.length,
         });
 
-        // Clear any previous errors on success
-        setError(null);
-      } else {
-        updateItemStatus(idx, 'error', result.error);
-        setError(result.userMessage || result.error);
-        // Continue processing other items even if one fails
-      }
-
-      // Update rate limit info after each upload
-      const rateLimit = calculateWaitTime(currentUploadsInMinute, currentUploadsInHour);
-      const remaining = pendingItems.length - processedCount;
-      const newEstimated =
-        remaining > 0
-          ? calculateEstimatedTime(remaining, currentUploadsInMinute, currentUploadsInHour)
-          : null;
-
-      setRateLimitInfo({
-        uploadsInLastMinute: currentUploadsInMinute,
-        uploadsInLastHour: currentUploadsInHour,
-        waitTimeMs: rateLimit.waitTimeMs,
-        isRateLimited: rateLimit.isRateLimited,
-        estimatedCompletionTime: newEstimated,
-      });
-
-      // Add minimum delay between uploads (except for the last one)
-      if (i < pendingItems.length - 1) {
-        // Check if we need to wait due to rate limits
-        const nextAvailableCapacity = getAvailableCapacity(
-          currentUploadsInMinute,
-          currentUploadsInHour
-        );
-
-        if (nextAvailableCapacity <= 0) {
-          // Will wait in next iteration's rate limit check
-          continue;
+        if (errors.length > 0) {
+          setError(`${errors.length} upload(s) failed`);
+        } else {
+          setError(null);
         }
+      } else if (result.success) {
+        // Success response - try to match by name as fallback if index matching didn't work
+        const uploadMap = new Map();
+        uploads.forEach((upload) => {
+          const matchingItem = pendingItems.find((item) => item.name === upload.name);
+          if (matchingItem) {
+            uploadMap.set(matchingItem, upload);
+          }
+        });
 
-        // Otherwise, wait the minimum delay
-        await new Promise((resolve) => setTimeout(resolve, MIN_UPLOAD_DELAY_MS));
+        pendingItems.forEach((item) => {
+          const idx = items.findIndex((x) => x === item);
+          if (uploadMap.has(item)) {
+            updateItemStatus(idx, 'success');
+          } else {
+            const error = errors.find((e) => e.upload?.name === item.name);
+            updateItemStatus(idx, 'error', error?.error || 'Upload failed');
+          }
+        });
+
+        setProgress({
+          current: uploads.length,
+          total: pendingItems.length,
+        });
+
+        if (errors.length > 0) {
+          setError(`${errors.length} upload(s) failed`);
+        } else {
+          setError(null);
+        }
+      } else {
+        // Batch failed - mark all as error
+        pendingItems.forEach((item) => {
+          const idx = items.findIndex((x) => x === item);
+          updateItemStatus(idx, 'error', result.error || 'Batch upload failed');
+        });
+        setError(result.userMessage || result.error || 'Batch upload failed');
+      }
+    } else {
+      // Use individual uploads for small batches
+      let processedCount = 0;
+
+      for (let i = 0; i < pendingItems.length; i++) {
+        const item = pendingItems[i];
+        const idx = items.findIndex((x) => x === item);
+
+        updateItemStatus(idx, 'processing');
+
+        const result = await uploadItem(item);
+
+        if (result.success) {
+          updateItemStatus(idx, 'success');
+          processedCount++;
+          setProgress({
+            current: processedCount,
+            total: pendingItems.length,
+          });
+
+          // Clear any previous errors on success
+          setError(null);
+        } else {
+          updateItemStatus(idx, 'error', result.error);
+          setError(result.userMessage || result.error);
+          // Continue processing other items even if one fails
+        }
       }
     }
 
     setIsUploading(false);
-    setRateLimitInfo((prev) => ({
-      ...prev,
-      estimatedCompletionTime: null,
-      waitTimeMs: 0,
-      isRateLimited: false,
-    }));
   };
 
   // Update global upload options
@@ -728,7 +591,6 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     assetType,
     webdlPassword,
     setWebdlPassword,
-    rateLimitInfo,
   };
 };
 
