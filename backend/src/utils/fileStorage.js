@@ -99,12 +99,14 @@ export async function deleteUploadFile(authId, filePath) {
     const userUploadDir = getUserUploadDir(authId);
 
     // Resolve the path to normalize it (handles .. and . components)
+    // filePath is relative to UPLOAD_STORAGE_DIR (as returned by saveUploadFile)
     let resolvedPath;
     if (path.isAbsolute(filePath)) {
       resolvedPath = path.resolve(filePath);
     } else {
-      // For relative paths, resolve from the user's upload directory
-      resolvedPath = path.resolve(userUploadDir, filePath);
+      // For relative paths, resolve from UPLOAD_STORAGE_DIR (not userUploadDir)
+      // This matches how saveUploadFile returns paths and how getUserUploadFiles calculates them
+      resolvedPath = path.resolve(UPLOAD_STORAGE_DIR, filePath);
     }
 
     // Security check: Ensure the resolved path is within the user's upload directory
