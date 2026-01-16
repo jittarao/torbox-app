@@ -350,7 +350,7 @@ class Database {
    * Register or update an API key
    * @param {string} apiKey - Plain text API key
    * @param {string} keyName - Optional name for the key
-   * @returns {Promise<string>} - authId
+   * @returns {Promise<{authId: string, wasNew: boolean}>} - authId and whether it was a new insertion
    */
   async registerApiKey(apiKey, keyName = null) {
     const authId = hashApiKey(apiKey);
@@ -358,6 +358,8 @@ class Database {
 
     // Check if API key already exists in api_keys table
     const existing = this.getQuery('SELECT auth_id FROM api_keys WHERE auth_id = ?', [authId]);
+
+    const wasNew = !existing;
 
     if (existing) {
       // Update existing
@@ -384,7 +386,7 @@ class Database {
     cache.invalidateUserRegistry(authId);
     cache.invalidateActiveUsers();
 
-    return authId;
+    return { authId, wasNew };
   }
 
   /**
@@ -408,6 +410,18 @@ class Database {
       'UPDATE user_registry SET status = "inactive", updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
       [authId]
     );
+
+    // Invalidate cache since user registry changed
+    cache.invalidateUserRegistry(authId);
+    cache.invalidateActiveUsers();
+  }
+
+  /**
+   * Delete an API key (for rollback purposes)
+   * @param {string} authId - User authentication ID
+   */
+  deleteApiKey(authId) {
+    this.runQuery('DELETE FROM api_keys WHERE auth_id = ?', [authId]);
 
     // Invalidate cache since user registry changed
     cache.invalidateUserRegistry(authId);
