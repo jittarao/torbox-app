@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAutomationRulesStore } from '@/store/automationRulesStore';
 import { useBackendModeStore } from '@/store/backendModeStore';
 
@@ -14,6 +14,11 @@ export function useAutomationRules(apiKey) {
   // Subscribe to backend mode store to react to changes
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
 
+  // Track if we've attempted to load rules to prevent infinite loops
+  const loadAttemptedRef = useRef(false);
+  const lastApiKeyRef = useRef(null);
+  const lastBackendModeRef = useRef(null);
+
   // Update API key in store when it changes
   useEffect(() => {
     if (apiKey) {
@@ -28,11 +33,30 @@ export function useAutomationRules(apiKey) {
       return;
     }
 
-    // Only load rules if we have an API key, no rules loaded yet, not currently loading, and backend is available
-    if (apiKey && rules.length === 0 && !loading && backendMode === 'backend') {
+    // Reset load attempt flag if API key changed
+    if (lastApiKeyRef.current !== apiKey) {
+      loadAttemptedRef.current = false;
+      lastApiKeyRef.current = apiKey;
+    }
+
+    // Reset load attempt flag if backend mode changed from unavailable to available
+    if (lastBackendModeRef.current !== 'backend' && backendMode === 'backend') {
+      loadAttemptedRef.current = false;
+    }
+    lastBackendModeRef.current = backendMode;
+
+    // Only load rules if we have an API key, no rules loaded yet, not currently loading, backend is available, and we haven't already attempted to load
+    if (
+      apiKey &&
+      rules.length === 0 &&
+      !loading &&
+      backendMode === 'backend' &&
+      !loadAttemptedRef.current
+    ) {
+      loadAttemptedRef.current = true;
       loadRules(apiKey);
     }
-  }, [apiKey, rules.length, loading, backendMode, backendIsLoading, loadRules]);
+  }, [apiKey, rules.length, loading, backendMode, backendIsLoading]);
 
   // Wrapper for saveRules that includes apiKey
   const saveRulesWithKey = async (newRules) => {
