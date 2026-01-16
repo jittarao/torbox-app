@@ -165,7 +165,8 @@ export function setupDiagnosticsRoutes(router, backend) {
           diagnostics.issues.orphanedApiKeys.length +
           diagnostics.issues.orphanedUsers.length +
           diagnostics.issues.duplicateAuthIds.length +
-          diagnostics.issues.duplicateDbPaths.length;
+          diagnostics.issues.duplicateDbPaths.length +
+          diagnostics.issues.missingFiles.length;
 
         diagnostics.summary.totalIssues = totalIssues;
         diagnostics.summary.status =
