@@ -6,7 +6,11 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const [error, setError] = useState(null);
 
   const fetchLinkHistory = useCallback(async () => {
-    if (!apiKey) return;
+    if (!apiKey) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
     try {
       setLoading(true);
