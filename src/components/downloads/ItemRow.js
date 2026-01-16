@@ -1,13 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import {
-  formatSize,
-  formatSpeed,
-  formatEta,
-  timeAgo,
-  formatDate,
-} from './utils/formatters';
+import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
@@ -23,7 +17,6 @@ function ItemRow({
   handleItemSelection,
   setItems,
   downloadHistory,
-  setDownloadHistory,
   onRowSelect,
   expandedItems,
   toggleFiles,
@@ -40,7 +33,7 @@ function ItemRow({
   dataIndex,
 }) {
   const commonT = useTranslations('Common');
-  
+
   const renderDownloadProgress = (item) => {
     // Only show progress for active downloads
     if (!item.active || item.download_finished) {
@@ -49,12 +42,12 @@ function ItemRow({
 
     const downloadSpeed = item.download_speed || 0;
     const totalSize = item.size || 0;
-    
+
     // For usenet and webdl, use the progress field if available
     // For torrents, calculate from total_downloaded if available
     let progress = 0;
     let downloadedSize = 0;
-    
+
     if (item.assetType === 'usenet' || item.assetType === 'webdl') {
       // Use progress field (0-1) for usenet and webdl
       progress = (item.progress || 0) * 100;
@@ -69,7 +62,7 @@ function ItemRow({
         downloadedSize = totalSize * (item.progress || 0);
       }
     }
-    
+
     // Calculate ETA based on remaining size and speed
     const remainingSize = totalSize - downloadedSize;
     const etaSeconds = downloadSpeed > 0 ? remainingSize / downloadSpeed : 0;
@@ -78,12 +71,12 @@ function ItemRow({
       <div className="flex flex-col gap-1 min-w-0">
         {/* Progress bar */}
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div 
+          <div
             className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-all duration-300"
             style={{ width: `${Math.min(100, progress)}%` }}
           />
         </div>
-        
+
         {/* Progress text */}
         <div className="flex items-center justify-between text-xs">
           <span className="text-primary-text/70 dark:text-primary-text-dark/70">
@@ -93,14 +86,12 @@ function ItemRow({
             {formatSize(downloadedSize)} / {formatSize(totalSize)}
           </span>
         </div>
-        
+
         {/* Speed and ETA */}
         {downloadSpeed > 0 && (
           <div className="flex items-center justify-between text-xs text-primary-text/60 dark:text-primary-text-dark/60">
             <span>↓ {formatSpeed(downloadSpeed)}</span>
-            {etaSeconds > 0 && (
-              <span>ETA: {formatEta(etaSeconds, commonT)}</span>
-            )}
+            {etaSeconds > 0 && <span>ETA: {formatEta(etaSeconds, commonT)}</span>}
           </div>
         )}
       </div>
@@ -113,11 +104,7 @@ function ItemRow({
     switch (columnId) {
       case 'name':
         return (
-          <td
-            key={columnId}
-            className="px-2 md:px-4 py-4 max-w-[150px] relative"
-            style={baseStyle}
-          >
+          <td key={columnId} className="px-2 md:px-4 py-4 max-w-[150px] relative" style={baseStyle}>
             <div
               className={`text-sm text-primary-text dark:text-primary-text-dark ${
                 isMobile ? 'break-all' : 'whitespace-nowrap truncate'
@@ -149,13 +136,9 @@ function ItemRow({
             {isMobile && (
               <div className="flex flex-col mt-1 text-xs text-primary-text/60 dark:text-primary-text-dark/60">
                 <div className="flex flex-col items-start gap-2">
-                  {item.download_state && (
-                    <DownloadStateBadge item={item} size="xs" />
-                  )}
+                  {item.download_state && <DownloadStateBadge item={item} size="xs" />}
                   <span>{formatSize(item.size || 0)}</span>
-                  {item.created_at && (
-                    <span>{timeAgo(item.created_at, commonT)}</span>
-                  )}
+                  {item.created_at && <span>{timeAgo(item.created_at, commonT)}</span>}
                 </div>
               </div>
             )}
@@ -196,11 +179,7 @@ function ItemRow({
         );
       case 'download_state':
         return (
-          <td
-            key={columnId}
-            className="px-4 py-4 whitespace-nowrap"
-            style={baseStyle}
-          >
+          <td key={columnId} className="px-4 py-4 whitespace-nowrap" style={baseStyle}>
             <DownloadStateBadge item={item} />
           </td>
         );
@@ -217,9 +196,7 @@ function ItemRow({
                 style={{ width: `${(item.progress || 0) * 100}%` }}
               ></div>
             </div>
-            <span className="text-xs">
-              {((item.progress || 0) * 100).toFixed(1)}%
-            </span>
+            <span className="text-xs">{((item.progress || 0) * 100).toFixed(1)}%</span>
           </td>
         );
       case 'download_progress':
@@ -313,15 +290,25 @@ function ItemRow({
             style={baseStyle}
           >
             <div className="flex items-center gap-2">
-              <span className={`inline-block w-2 h-2 rounded-full ${
-                item.assetType === 'torrents' ? 'bg-blue-500' :
-                item.assetType === 'usenet' ? 'bg-green-500' :
-                item.assetType === 'webdl' ? 'bg-purple-500' : 'bg-gray-500'
-              }`}></span>
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${
+                  item.assetType === 'torrents'
+                    ? 'bg-blue-500'
+                    : item.assetType === 'usenet'
+                      ? 'bg-green-500'
+                      : item.assetType === 'webdl'
+                        ? 'bg-purple-500'
+                        : 'bg-gray-500'
+                }`}
+              ></span>
               <span className="capitalize">
-                {item.assetType === 'torrents' ? 'Torrent' :
-                 item.assetType === 'usenet' ? 'Usenet' :
-                 item.assetType === 'webdl' ? 'Web' : 'Unknown'}
+                {item.assetType === 'torrents'
+                  ? 'Torrent'
+                  : item.assetType === 'usenet'
+                    ? 'Usenet'
+                    : item.assetType === 'webdl'
+                      ? 'Web'
+                      : 'Unknown'}
               </span>
             </div>
           </td>
@@ -384,7 +371,10 @@ function ItemRow({
   const visibleColumns = isMobile ? ['name'] : activeColumns;
 
   const isDownloaded = downloadHistory.some(
-    (download) => download.itemId === item.id && !download.fileId,
+    (download) =>
+      String(download.itemId) === String(item.id) &&
+      download.assetType === item.assetType &&
+      !download.fileId
   );
 
   return (
@@ -407,11 +397,7 @@ function ItemRow({
       }}
       onClick={(e) => {
         // Ignore clicks on buttons or if has selected files
-        if (
-          e.target.closest('button') ||
-          onRowSelect(item.id, selectedItems.files)
-        )
-          return;
+        if (e.target.closest('button') || onRowSelect(item.id, selectedItems.files)) return;
         const isChecked = selectedItems.items?.has(item.id);
         handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
       }}
@@ -421,9 +407,7 @@ function ItemRow({
           type="checkbox"
           checked={selectedItems.items?.has(item.id)}
           disabled={onRowSelect(item.id, selectedItems.files)}
-          onChange={(e) =>
-            handleItemSelection(item.id, e.target.checked, rowIndex, e.shiftKey)
-          }
+          onChange={(e) => handleItemSelection(item.id, e.target.checked, rowIndex, e.shiftKey)}
           style={{ pointerEvents: 'none' }}
           className="accent-accent dark:accent-accent-dark"
         />
@@ -443,7 +427,6 @@ function ItemRow({
           isMobile={isMobile}
           viewMode={viewMode}
           downloadHistory={downloadHistory}
-          setDownloadHistory={setDownloadHistory}
         />
       </td>
     </tr>

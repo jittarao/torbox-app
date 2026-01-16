@@ -23,6 +23,7 @@ import { setupCustomViewsRoutes } from './routes/customViews.js';
 import { setupTagsRoutes } from './routes/tags.js';
 import { setupDownloadTagsRoutes } from './routes/downloadTags.js';
 import { setupUploadsRoutes } from './routes/uploads.js';
+import { setupLinkHistoryRoutes } from './routes/linkHistory.js';
 
 class TorBoxBackend {
   constructor() {
@@ -143,6 +144,7 @@ class TorBoxBackend {
     setupTagsRoutes(this.app, this);
     setupDownloadTagsRoutes(this.app, this);
     setupUploadsRoutes(this.app, this);
+    setupLinkHistoryRoutes(this.app, this);
     setupAdminRoutes(this.app, this);
 
     // Sentry error handler must be before other error handlers

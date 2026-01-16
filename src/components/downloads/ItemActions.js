@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useUpload } from '../shared/hooks/useUpload';
+import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
@@ -20,15 +21,15 @@ export default function ItemActions({
   isMobile = false,
   viewMode,
   downloadHistory,
-  setDownloadHistory,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
   const { downloadSingle } = useDownloads(
     apiKey,
     activeType,
     downloadHistory,
-    setDownloadHistory,
+    fetchDownloadHistory
   );
   const { controlTorrent, controlQueuedItem } = useUpload(apiKey);
   const t = useTranslations('ItemActions');
@@ -44,11 +45,7 @@ export default function ItemActions({
     }
 
     const idField =
-      activeType === 'usenet'
-        ? 'usenet_id'
-        : activeType === 'webdl'
-          ? 'web_id'
-          : 'torrent_id';
+      activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
 
     const metadata = {
       assetType: activeType,
@@ -56,13 +53,7 @@ export default function ItemActions({
     };
     // If there's only one file, download it directly
     if (item.files.length === 1) {
-      await downloadSingle(
-        item.id,
-        { fileId: item.files[0].id },
-        idField,
-        false,
-        metadata,
-      );
+      await downloadSingle(item.id, { fileId: item.files[0].id }, idField, false, metadata);
       return;
     } else {
       // Otherwise, download the item as a zip
@@ -74,9 +65,7 @@ export default function ItemActions({
   const handleForceStart = async () => {
     const result = await controlQueuedItem(item.id, 'start');
     setToast({
-      message: result.success
-        ? t('toast.downloadStarted')
-        : t('toast.downloadFailed'),
+      message: result.success ? t('toast.downloadStarted') : t('toast.downloadFailed'),
       type: result.success ? 'success' : 'error',
     });
     if (!result.success) {
@@ -89,9 +78,7 @@ export default function ItemActions({
     if (activeType !== 'torrents') return;
     const result = await controlTorrent(item.id, 'stop_seeding');
     setToast({
-      message: result.success
-        ? t('toast.seedingStopped')
-        : t('toast.seedingStopFailed'),
+      message: result.success ? t('toast.seedingStopped') : t('toast.seedingStopFailed'),
       type: result.success ? 'success' : 'error',
     });
     if (!result.success) {
@@ -99,10 +86,8 @@ export default function ItemActions({
     } else {
       setItems((prev) =>
         prev.map((localItem) =>
-          localItem.id === item.id
-            ? { ...localItem, active: false }
-            : localItem,
-        ),
+          localItem.id === item.id ? { ...localItem, active: false } : localItem
+        )
       );
     }
   };
@@ -134,14 +119,11 @@ export default function ItemActions({
     setIsExporting(true);
 
     try {
-      const response = await fetch(
-        `/api/torrents/export?torrent_id=${item.id}&type=torrent`,
-        {
-          headers: {
-            'x-api-key': apiKey,
-          },
+      const response = await fetch(`/api/torrents/export?torrent_id=${item.id}&type=torrent`, {
+        headers: {
+          'x-api-key': apiKey,
         },
-      );
+      });
 
       if (response.ok) {
         // Create a blob from the response and download it
@@ -176,9 +158,7 @@ export default function ItemActions({
   };
 
   return (
-    <div
-      className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end space-x-2'}`}
-    >
+    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end space-x-2'}`}>
       <ItemActionButtons
         item={item}
         onDelete={handleDelete}
