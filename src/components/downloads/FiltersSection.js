@@ -445,7 +445,7 @@ export default function FiltersSection({
 
           <div className="flex justify-between items-center gap-2">
             {/* View Selector - Show inline when not expanded */}
-            {apiKey && views && views.length > 0 && !isExpanded && (
+            {apiKey && views?.length > 0 && !isExpanded && (
               <div className="flex items-center gap-1.5">
                 <CustomViews
                   views={views}
@@ -508,7 +508,7 @@ export default function FiltersSection({
         {isExpanded && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {/* View Selector - Show in right section when expanded (only if backend is available) */}
-            {apiKey && views && views.length > 0 && (
+            {apiKey && views?.length > 0 && (
               <div className="flex items-center gap-2">
                 <CustomViews
                   views={views}
