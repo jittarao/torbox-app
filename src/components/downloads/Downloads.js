@@ -28,6 +28,7 @@ import { useTags } from '@/components/shared/hooks/useTags';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
+import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
 import { fetchUserProfile, hasProPlan } from '@/utils/userProfile';
 
@@ -67,6 +68,7 @@ export default function Downloads({ apiKey }) {
   const hasExpandedRef = useRef(false);
   const scrollContainerRef = useRef(null);
   const fetchDownloadHistoryRef = useRef(false);
+  const migrationAttemptedRef = useRef(false);
   const isMobile = useIsMobile();
 
   // Ensure user database exists when API key is provided
@@ -337,21 +339,49 @@ export default function Downloads({ apiKey }) {
     }
   }, []);
 
-  // Fetch link history from backend on initial load
+  // One-time migration from localStorage to backend, then fetch from backend
   useEffect(() => {
-    if (
-      apiKey &&
-      downloadHistory.length === 0 &&
-      !downloadHistoryLoading &&
-      !fetchDownloadHistoryRef.current
-    ) {
-      fetchDownloadHistoryRef.current = true;
-      fetchDownloadHistory(apiKey);
-    }
-    // Reset ref when apiKey changes
     if (!apiKey) {
       fetchDownloadHistoryRef.current = false;
+      migrationAttemptedRef.current = false;
+      return;
     }
+
+    // Only run migration once per API key
+    if (migrationAttemptedRef.current) {
+      // Migration already attempted, just fetch if needed
+      if (
+        downloadHistory.length === 0 &&
+        !downloadHistoryLoading &&
+        !fetchDownloadHistoryRef.current
+      ) {
+        fetchDownloadHistoryRef.current = true;
+        fetchDownloadHistory(apiKey);
+      }
+      return;
+    }
+
+    const runMigrationAndFetch = async () => {
+      migrationAttemptedRef.current = true;
+
+      // Run migration first (it will skip if already done)
+      const migrationResult = await migrateDownloadHistory(apiKey);
+      if (migrationResult.success && migrationResult.migrated > 0) {
+        console.log(`Migrated ${migrationResult.migrated} entries from localStorage`);
+      }
+
+      // Then fetch from backend (will include migrated entries)
+      if (
+        downloadHistory.length === 0 &&
+        !downloadHistoryLoading &&
+        !fetchDownloadHistoryRef.current
+      ) {
+        fetchDownloadHistoryRef.current = true;
+        fetchDownloadHistory(apiKey);
+      }
+    };
+
+    runMigrationAndFetch();
   }, [apiKey, downloadHistory.length, downloadHistoryLoading, fetchDownloadHistory]);
 
   // Expand rows with selected files on initial load
