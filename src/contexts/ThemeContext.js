@@ -1,51 +1,50 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useCallback, useSyncExternalStore } from 'react';
 
 const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
-  const [darkMode, setDarkMode] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-    
-    // Load theme from localStorage on mount
-    const storedTheme = localStorage.getItem('darkMode');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Use stored theme or system preference
-    const initialTheme = storedTheme !== null ? storedTheme === 'true' : prefersDark;
-    setDarkMode(initialTheme);
-    
-    // Apply theme to document
-    document.documentElement.classList.toggle('dark', initialTheme);
-  }, []);
-
-  // Ensure theme is applied whenever darkMode changes
-  useEffect(() => {
-    if (isClient) {
-      document.documentElement.classList.toggle('dark', darkMode);
-      localStorage.setItem('darkMode', darkMode);
+// Subscribe to theme changes (listens for class changes on documentElement)
+function subscribeToTheme(callback) {
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.attributeName === 'class') {
+        callback();
+      }
     }
-  }, [darkMode, isClient]);
+  });
 
-  const toggleDarkMode = () => {
-    setDarkMode(prev => !prev);
-  };
+  observer.observe(document.documentElement, { attributes: true });
+
+  return () => observer.disconnect();
+}
+
+// Get current theme from DOM
+function getThemeSnapshot() {
+  return document.documentElement.classList.contains('dark');
+}
+
+// Server snapshot - always false (blocking script will set correct class before hydration)
+function getServerSnapshot() {
+  return false;
+}
+
+export function ThemeProvider({ children }) {
+  // useSyncExternalStore properly handles SSR/hydration
+  const darkMode = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getServerSnapshot);
+
+  const toggleDarkMode = useCallback(() => {
+    const newValue = !document.documentElement.classList.contains('dark');
+    document.documentElement.classList.toggle('dark', newValue);
+    localStorage.setItem('darkMode', String(newValue));
+  }, []);
 
   const value = {
     darkMode,
     toggleDarkMode,
-    isClient,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

@@ -27,6 +27,8 @@ import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
+import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
 import { fetchUserProfile, hasProPlan } from '@/utils/userProfile';
 
@@ -39,7 +41,12 @@ export default function Downloads({ apiKey }) {
   const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
-  const [downloadHistory, setDownloadHistory] = useState([]);
+
+  // Use Zustand store for download history
+  const downloadHistory = useDownloadHistoryStore((state) => state.downloadHistory);
+  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
+  const downloadHistoryLoading = useDownloadHistoryStore((state) => state.isLoading);
+  const clearDownloadHistory = useDownloadHistoryStore((state) => state.clearDownloadHistory);
   const [videoPlayerState, setVideoPlayerState] = useState({
     isOpen: false,
     streamUrl: null,
@@ -61,6 +68,9 @@ export default function Downloads({ apiKey }) {
   const [hasProPlanAccess, setHasProPlanAccess] = useState(false);
   const hasExpandedRef = useRef(false);
   const scrollContainerRef = useRef(null);
+  const fetchDownloadHistoryRef = useRef(false);
+  const migrationAttemptedRef = useRef(false);
+  const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
 
   // Ensure user database exists when API key is provided
@@ -156,7 +166,7 @@ export default function Downloads({ apiKey }) {
     setSelectedItems,
   } = useSelection(itemsWithTags);
   const { downloadLinks, isDownloading, downloadProgress, handleBulkDownload, setDownloadLinks } =
-    useDownloads(apiKey, activeType, downloadHistory, setDownloadHistory);
+    useDownloads(apiKey, activeType, downloadHistory, fetchDownloadHistory);
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
@@ -331,17 +341,72 @@ export default function Downloads({ apiKey }) {
     }
   }, []);
 
+  // One-time migration from localStorage to backend, then fetch from backend
   useEffect(() => {
-    const storedDownloadHistory = localStorage.getItem('torboxDownloadHistory');
-    if (storedDownloadHistory) {
-      try {
-        setDownloadHistory(JSON.parse(storedDownloadHistory));
-      } catch (error) {
-        console.error('Error parsing download history from localStorage:', error);
-        setDownloadHistory([]);
-      }
+    // Check if API key has changed (even from one valid key to another)
+    const apiKeyChanged =
+      previousApiKeyRef.current !== null && previousApiKeyRef.current !== apiKey;
+
+    if (!apiKey) {
+      fetchDownloadHistoryRef.current = false;
+      migrationAttemptedRef.current = false;
+      previousApiKeyRef.current = null;
+      clearDownloadHistory();
+      return;
     }
-  }, []);
+
+    // If API key changed, reset refs and clear old download history
+    if (apiKeyChanged) {
+      fetchDownloadHistoryRef.current = false;
+      migrationAttemptedRef.current = false;
+      clearDownloadHistory();
+    }
+
+    // Update previous API key ref
+    previousApiKeyRef.current = apiKey;
+
+    // Only run migration once per API key
+    if (migrationAttemptedRef.current) {
+      // Migration already attempted, just fetch if needed
+      if (
+        downloadHistory.length === 0 &&
+        !downloadHistoryLoading &&
+        !fetchDownloadHistoryRef.current
+      ) {
+        fetchDownloadHistoryRef.current = true;
+        fetchDownloadHistory(apiKey);
+      }
+      return;
+    }
+
+    const runMigrationAndFetch = async () => {
+      migrationAttemptedRef.current = true;
+
+      // Run migration first (it will skip if already done)
+      const migrationResult = await migrateDownloadHistory(apiKey);
+      if (migrationResult.success && migrationResult.migrated > 0) {
+        console.log(`Migrated ${migrationResult.migrated} entries from localStorage`);
+      }
+
+      // Then fetch from backend (will include migrated entries)
+      if (
+        downloadHistory.length === 0 &&
+        !downloadHistoryLoading &&
+        !fetchDownloadHistoryRef.current
+      ) {
+        fetchDownloadHistoryRef.current = true;
+        fetchDownloadHistory(apiKey);
+      }
+    };
+
+    runMigrationAndFetch();
+  }, [
+    apiKey,
+    downloadHistory.length,
+    downloadHistoryLoading,
+    fetchDownloadHistory,
+    clearDownloadHistory,
+  ]);
 
   // Expand rows with selected files on initial load
   useEffect(() => {
@@ -604,7 +669,6 @@ export default function Downloads({ apiKey }) {
                 handleRowSelect={handleRowSelect}
                 setSelectedItems={setSelectedItems}
                 downloadHistory={downloadHistory}
-                setDownloadHistory={setDownloadHistory}
                 isBlurred={isBlurred}
                 deleteItem={deleteItem}
                 sortedItems={sortedItems}
@@ -657,7 +721,6 @@ export default function Downloads({ apiKey }) {
                 activeColumns={activeColumns}
                 onFileSelect={handleFileSelect}
                 downloadHistory={downloadHistory}
-                setDownloadHistory={setDownloadHistory}
                 onDelete={deleteItem}
                 expandedItems={expandedItems}
                 toggleFiles={toggleFiles}

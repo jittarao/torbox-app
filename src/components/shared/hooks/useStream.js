@@ -55,7 +55,7 @@ export function useStream(apiKey) {
       }
 
       const data = await response.json();
-      
+
       // Check if response indicates success
       if (data.success === false) {
         throw new Error(data.error || 'Failed to create stream');
@@ -82,7 +82,12 @@ export function useStream(apiKey) {
    * @param {number} audioIndex - Audio index (0 for first, only used with tokens)
    * @returns {Promise<Object>} - Stream data including metadata and stream URL
    */
-  const getStreamData = async (presignedTokenOrItemId, tokenOrFileId, subtitleIndexOrType = null, audioIndex = 0) => {
+  const getStreamData = async (
+    presignedTokenOrItemId,
+    tokenOrFileId,
+    subtitleIndexOrType = null,
+    audioIndex = 0
+  ) => {
     if (!apiKey) {
       throw new Error('API key is required');
     }
@@ -92,8 +97,9 @@ export function useStream(apiKey) {
 
     try {
       // Determine if we're using tokens (string) or itemId/fileId (number)
-      const isTokenMode = typeof presignedTokenOrItemId === 'string' && typeof tokenOrFileId === 'string';
-      
+      const isTokenMode =
+        typeof presignedTokenOrItemId === 'string' && typeof tokenOrFileId === 'string';
+
       let params;
       if (isTokenMode) {
         // Original mode: using presignedToken and token
@@ -127,7 +133,7 @@ export function useStream(apiKey) {
       }
 
       const data = await response.json();
-      
+
       // Check if response indicates success
       if (data.success === false) {
         throw new Error(data.error || 'Failed to get stream data');
