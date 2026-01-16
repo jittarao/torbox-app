@@ -46,6 +46,7 @@ export default function Downloads({ apiKey }) {
   const downloadHistory = useDownloadHistoryStore((state) => state.downloadHistory);
   const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
   const downloadHistoryLoading = useDownloadHistoryStore((state) => state.isLoading);
+  const clearDownloadHistory = useDownloadHistoryStore((state) => state.clearDownloadHistory);
   const [videoPlayerState, setVideoPlayerState] = useState({
     isOpen: false,
     streamUrl: null,
@@ -69,6 +70,7 @@ export default function Downloads({ apiKey }) {
   const scrollContainerRef = useRef(null);
   const fetchDownloadHistoryRef = useRef(false);
   const migrationAttemptedRef = useRef(false);
+  const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
 
   // Ensure user database exists when API key is provided
@@ -341,11 +343,27 @@ export default function Downloads({ apiKey }) {
 
   // One-time migration from localStorage to backend, then fetch from backend
   useEffect(() => {
+    // Check if API key has changed (even from one valid key to another)
+    const apiKeyChanged =
+      previousApiKeyRef.current !== null && previousApiKeyRef.current !== apiKey;
+
     if (!apiKey) {
       fetchDownloadHistoryRef.current = false;
       migrationAttemptedRef.current = false;
+      previousApiKeyRef.current = null;
+      clearDownloadHistory();
       return;
     }
+
+    // If API key changed, reset refs and clear old download history
+    if (apiKeyChanged) {
+      fetchDownloadHistoryRef.current = false;
+      migrationAttemptedRef.current = false;
+      clearDownloadHistory();
+    }
+
+    // Update previous API key ref
+    previousApiKeyRef.current = apiKey;
 
     // Only run migration once per API key
     if (migrationAttemptedRef.current) {
@@ -382,7 +400,13 @@ export default function Downloads({ apiKey }) {
     };
 
     runMigrationAndFetch();
-  }, [apiKey, downloadHistory.length, downloadHistoryLoading, fetchDownloadHistory]);
+  }, [
+    apiKey,
+    downloadHistory.length,
+    downloadHistoryLoading,
+    fetchDownloadHistory,
+    clearDownloadHistory,
+  ]);
 
   // Expand rows with selected files on initial load
   useEffect(() => {

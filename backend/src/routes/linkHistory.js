@@ -281,68 +281,8 @@ export function setupLinkHistoryRoutes(app, backend) {
     }
   });
 
-  // DELETE /api/link-history/:id - Delete single entry
-  app.delete(
-    '/api/link-history/:id',
-    extractAuthIdMiddleware,
-    validateNumericIdMiddleware('id'),
-    userRateLimiter,
-    async (req, res) => {
-      try {
-        const authId = req.validatedAuthId;
-        const linkId = req.validatedIds.id;
-
-        if (!backend.userDatabaseManager) {
-          return res.status(503).json({
-            success: false,
-            error: 'Service is initializing, please try again in a moment',
-          });
-        }
-
-        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-
-        // Check if exists
-        const existing = userDb.db
-          .prepare(
-            `
-            SELECT id FROM link_history WHERE id = ?
-          `
-          )
-          .get(linkId);
-
-        if (!existing) {
-          return res.status(404).json({
-            success: false,
-            error: 'Link history entry not found',
-          });
-        }
-
-        // Delete
-        userDb.db
-          .prepare(
-            `
-            DELETE FROM link_history WHERE id = ?
-          `
-          )
-          .run(linkId);
-
-        res.json({
-          success: true,
-          message: 'Link history entry deleted successfully',
-        });
-      } catch (error) {
-        logger.error('Error deleting link history entry', error, {
-          endpoint: `/api/link-history/${req.params.id}`,
-          method: 'DELETE',
-          linkId: req.validatedIds?.id,
-          authId: req.validatedAuthId,
-        });
-        res.status(500).json({ success: false, error: error.message });
-      }
-    }
-  );
-
   // DELETE /api/link-history/bulk - Bulk delete entries
+  // NOTE: This must be registered BEFORE /api/link-history/:id to prevent "bulk" from matching the :id parameter
   app.delete(
     '/api/link-history/bulk',
     extractAuthIdMiddleware,
@@ -408,6 +348,68 @@ export function setupLinkHistoryRoutes(app, backend) {
         logger.error('Error bulk deleting link history', error, {
           endpoint: '/api/link-history/bulk',
           method: 'DELETE',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json({ success: false, error: error.message });
+      }
+    }
+  );
+
+  // DELETE /api/link-history/:id - Delete single entry
+  // NOTE: This must be registered AFTER /api/link-history/bulk to allow the bulk route to match first
+  app.delete(
+    '/api/link-history/:id',
+    extractAuthIdMiddleware,
+    validateNumericIdMiddleware('id'),
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+        const linkId = req.validatedIds.id;
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+
+        // Check if exists
+        const existing = userDb.db
+          .prepare(
+            `
+            SELECT id FROM link_history WHERE id = ?
+          `
+          )
+          .get(linkId);
+
+        if (!existing) {
+          return res.status(404).json({
+            success: false,
+            error: 'Link history entry not found',
+          });
+        }
+
+        // Delete
+        userDb.db
+          .prepare(
+            `
+            DELETE FROM link_history WHERE id = ?
+          `
+          )
+          .run(linkId);
+
+        res.json({
+          success: true,
+          message: 'Link history entry deleted successfully',
+        });
+      } catch (error) {
+        logger.error('Error deleting link history entry', error, {
+          endpoint: `/api/link-history/${req.params.id}`,
+          method: 'DELETE',
+          linkId: req.validatedIds?.id,
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
