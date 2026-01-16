@@ -89,7 +89,6 @@ const UploadIcon = ({ className = 'h-5 w-5' }) => (
   </svg>
 );
 
-
 const WarningIcon = ({ className = 'h-5 w-5' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -597,7 +596,7 @@ const HistoryIcon = ({ className = 'h-4 w-4' }) => (
   </svg>
 );
 
-const MoonIcon = ({ className = 'h-3 w-3' }) => (
+const MoonIcon = ({ className = '' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -606,13 +605,13 @@ const MoonIcon = ({ className = 'h-3 w-3' }) => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="text-primary-text-dark"
+    className={`h-3 w-3 text-primary-text-dark ${className}`}
   >
     <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
   </svg>
 );
 
-const SunIcon = ({ className = 'h-3 w-3' }) => (
+const SunIcon = ({ className = '' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -621,7 +620,7 @@ const SunIcon = ({ className = 'h-3 w-3' }) => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="text-primary-text"
+    className={`h-3 w-3 text-primary-text ${className}`}
   >
     <circle cx="12" cy="12" r="4" />
     <path d="M12 2v2" />
@@ -1033,7 +1032,7 @@ const GoogleDriveIcon = ({ className = 'h-4 w-4' }) => (
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M7.76 16.24C6.67 15.16 6 13.66 6 12s.67-3.16 1.76-4.24lC8.84 5.76C10.34 5 12 5s3.16.67 4.24 1.76L21 3v6h-6l2.24-2.24C16.16 6.67 14.66 6 13 6s-3.16.67-4.24 1.76L6 12l1.76 4.24z"/>
+    <path d="M7.76 16.24C6.67 15.16 6 13.66 6 12s.67-3.16 1.76-4.24lC8.84 5.76C10.34 5 12 5s3.16.67 4.24 1.76L21 3v6h-6l2.24-2.24C16.16 6.67 14.66 6 13 6s-3.16.67-4.24 1.76L6 12l1.76 4.24z" />
   </svg>
 );
 
@@ -1044,7 +1043,7 @@ const DropboxIcon = ({ className = 'h-4 w-4' }) => (
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M6 2l6 4 6-4v4l-6 4-6-4V2zm0 8l6 4 6-4v4l-6 4-6-4v-4zm0 8l6 4 6-4v4l-6 4-6-4v-4z"/>
+    <path d="M6 2l6 4 6-4v4l-6 4-6-4V2zm0 8l6 4 6-4v4l-6 4-6-4v-4zm0 8l6 4 6-4v4l-6 4-6-4v-4z" />
   </svg>
 );
 
@@ -1055,7 +1054,7 @@ const OneDriveIcon = ({ className = 'h-4 w-4' }) => (
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .494.083.964.237 1.4-1.272.65-2.147 2.018-2.147 3.6 0 1.83 1.66 3.2 3.5 3.2.47 0 .92-.086 1.335-.25.62 1.334 1.926 2.25 3.437 2.25 1.512 0 2.818-.916 3.437-2.25.415.163.865.248 1.336.248 1.84 0 3.5-1.37 3.5-3.2zm-6.5-1.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5z"/>
+    <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .494.083.964.237 1.4-1.272.65-2.147 2.018-2.147 3.6 0 1.83 1.66 3.2 3.5 3.2.47 0 .92-.086 1.335-.25.62 1.334 1.926 2.25 3.437 2.25 1.512 0 2.818-.916 3.437-2.25.415.163.865.248 1.336.248 1.84 0 3.5-1.37 3.5-3.2zm-6.5-1.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5z" />
   </svg>
 );
 
@@ -1066,7 +1065,7 @@ const GoFileIcon = ({ className = 'h-4 w-4' }) => (
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
   </svg>
 );
 
@@ -1077,7 +1076,7 @@ const FichierIcon = ({ className = 'h-4 w-4' }) => (
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
   </svg>
 );
 
@@ -1088,7 +1087,7 @@ const PixeldrainIcon = ({ className = 'h-4 w-4' }) => (
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
   </svg>
 );
 

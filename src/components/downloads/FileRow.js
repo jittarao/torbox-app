@@ -32,27 +32,25 @@ function FileRow({
   hasProPlan = false,
 }) {
   const t = useTranslations('FileActions');
-  const assetKey = (itemId, fileId) =>
-    fileId ? `${itemId}-${fileId}` : itemId;
+  const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
 
   // If fileIndex is provided, render only that file; otherwise render all files
-  const filesToRender = fileIndex !== null 
-    ? [item.files[fileIndex]].filter(Boolean)
-    : item.files;
+  const filesToRender = fileIndex !== null ? [item.files[fileIndex]].filter(Boolean) : item.files;
 
   return (
     <>
       {filesToRender.map((file, index) => {
         // Use the provided fileIndex for the actual index, or use the map index
         const actualIndex = fileIndex !== null ? fileIndex : index;
-        const isChecked =
-          selectedItems.files.get(item.id)?.has(file.id) || false;
+        const isChecked = selectedItems.files.get(item.id)?.has(file.id) || false;
         const isDisabled = selectedItems.items?.has(item.id);
         const isDownloaded = downloadHistory.some(
           (download) =>
-            (download.itemId === item.id && !download.fileId) || // Complete item downloaded
-            (download.itemId === item.id && download.fileId === file.id) || // Current file downloaded
-            (download.itemId === item.id && item.files.length === 1), // Complete item with single file downloaded
+            String(download.itemId) === String(item.id) &&
+            download.assetType === item.assetType &&
+            (!download.fileId || // Complete item downloaded
+              String(download.fileId) === String(file.id) || // Current file downloaded
+              item.files.length === 1) // Complete item with single file downloaded
         );
 
         return (
@@ -86,13 +84,7 @@ function FileRow({
                 checked={isChecked}
                 disabled={isDisabled}
                 onChange={(e) =>
-                  handleFileSelection(
-                    item.id,
-                    actualIndex,
-                    file,
-                    e.target.checked,
-                    e.shiftKey,
-                  )
+                  handleFileSelection(item.id, actualIndex, file, e.target.checked, e.shiftKey)
                 }
                 style={{ pointerEvents: 'none' }}
                 className="accent-accent dark:accent-accent-dark"
@@ -100,28 +92,22 @@ function FileRow({
             </td>
 
             {/* File Name and Size */}
-            <td
-              className="pl-3 md:pl-6 py-2"
-              colSpan={isMobile ? 1 : activeColumns.length}
-            >
+            <td className="pl-3 md:pl-6 py-2" colSpan={isMobile ? 1 : activeColumns.length}>
               <div
                 className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4'}`}
                 style={{
-                  maxWidth:
-                    isMobile
-                      ? "100%"
-                      : tableWidth -
-                        ACTIONS_COLUMN_WIDTH -
-                        CHECKBOX_COLUMN_WIDTH -
-                        EXTRA_COLUMN_PADDING,
+                  maxWidth: isMobile
+                    ? '100%'
+                    : tableWidth -
+                      ACTIONS_COLUMN_WIDTH -
+                      CHECKBOX_COLUMN_WIDTH -
+                      EXTRA_COLUMN_PADDING,
                 }}
               >
                 <div
                   className={`text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
                 >
-                  <Tooltip
-                    content={isBlurred ? '' : file.short_name || file.name}
-                  >
+                  <Tooltip content={isBlurred ? '' : file.short_name || file.name}>
                     {file.short_name || file.name}
                   </Tooltip>
                 </div>
@@ -157,11 +143,7 @@ function FileRow({
                   hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                 title={t('copyLink')}
               >
-                {isCopying[assetKey(item.id, file.id)] ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Icons.Copy />
-                )}
+                {isCopying[assetKey(item.id, file.id)] ? <Spinner size="sm" /> : <Icons.Copy />}
               </button>
 
               {/* Download button */}

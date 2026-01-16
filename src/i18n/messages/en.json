@@ -430,8 +430,7 @@
       "user": "User"
     },
     "theme": {
-      "toggleDark": "Toggle dark mode",
-      "toggleLight": "Toggle light mode"
+      "toggle": "Toggle theme"
     },
     "title": "TorBox Manager"
   },
