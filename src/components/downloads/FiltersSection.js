@@ -46,16 +46,21 @@ export default function FiltersSection({
 
   // Ensure each group has at least one empty filter
   useEffect(() => {
-    if (isExpanded && columnFilters && columnFilters.groups && Array.isArray(columnFilters.groups)) {
-      const hasEmptyGroups = columnFilters.groups.some(group => 
-        !group.filters || group.filters.length === 0
+    if (
+      isExpanded &&
+      columnFilters &&
+      columnFilters.groups &&
+      Array.isArray(columnFilters.groups)
+    ) {
+      const hasEmptyGroups = columnFilters.groups.some(
+        (group) => !group.filters || group.filters.length === 0
       );
-      
+
       if (hasEmptyGroups) {
-        setColumnFilters(prev => {
+        setColumnFilters((prev) => {
           if (!prev || !prev.groups || !Array.isArray(prev.groups)) return prev;
-          
-          const updatedGroups = prev.groups.map(group => {
+
+          const updatedGroups = prev.groups.map((group) => {
             // If group has no filters, add one empty filter
             if (!group.filters || group.filters.length === 0) {
               return {
@@ -65,7 +70,7 @@ export default function FiltersSection({
             }
             return group;
           });
-          
+
           return {
             ...prev,
             groups: updatedGroups,
@@ -86,7 +91,11 @@ export default function FiltersSection({
   // Initialize filter groups structure if needed (only once on mount)
   useEffect(() => {
     // Check if columnFilters is in the old flat array format
-    if (Array.isArray(columnFilters) && columnFilters.length > 0 && columnFilters[0]?.column !== undefined) {
+    if (
+      Array.isArray(columnFilters) &&
+      columnFilters.length > 0 &&
+      columnFilters[0]?.column !== undefined
+    ) {
       // Convert old flat structure to new group structure
       setColumnFilters({
         logicOperator: LOGIC_OPERATORS.AND,
@@ -108,7 +117,12 @@ export default function FiltersSection({
           },
         ],
       });
-    } else if (!columnFilters || !columnFilters.groups || !Array.isArray(columnFilters.groups) || columnFilters.groups.length === 0) {
+    } else if (
+      !columnFilters ||
+      !columnFilters.groups ||
+      !Array.isArray(columnFilters.groups) ||
+      columnFilters.groups.length === 0
+    ) {
       // Ensure it has the proper structure with at least one empty group
       setColumnFilters({
         logicOperator: LOGIC_OPERATORS.AND,
@@ -124,15 +138,18 @@ export default function FiltersSection({
   }, []); // Only run once on mount
 
   // Normalize filter structure - ensure it's always in group format
-  const filterGroups = (columnFilters && columnFilters.groups)
-    ? columnFilters.groups
-    : (Array.isArray(columnFilters) && columnFilters.length > 0 && columnFilters[0]?.column !== undefined
-      ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: columnFilters }]
-      : [{ logicOperator: LOGIC_OPERATORS.AND, filters: [] }]);
+  const filterGroups =
+    columnFilters && columnFilters.groups
+      ? columnFilters.groups
+      : Array.isArray(columnFilters) &&
+          columnFilters.length > 0 &&
+          columnFilters[0]?.column !== undefined
+        ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: columnFilters }]
+        : [{ logicOperator: LOGIC_OPERATORS.AND, filters: [] }];
   const groupLogicOperator = (columnFilters && columnFilters.logicOperator) || LOGIC_OPERATORS.AND;
 
   const handleAddGroup = () => {
-    setColumnFilters(prev => {
+    setColumnFilters((prev) => {
       // Ensure we have a proper structure
       let current;
       if (prev && prev.groups && Array.isArray(prev.groups)) {
@@ -150,7 +167,7 @@ export default function FiltersSection({
           groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: [] }],
         };
       }
-      
+
       return {
         ...current,
         groups: [
@@ -165,11 +182,13 @@ export default function FiltersSection({
   };
 
   const handleUpdateGroup = (groupIndex, field, value) => {
-    setColumnFilters(prev => {
-      const current = prev.groups ? prev : {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
+    setColumnFilters((prev) => {
+      const current = prev.groups
+        ? prev
+        : {
+            logicOperator: LOGIC_OPERATORS.AND,
+            groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+          };
       const newGroups = [...current.groups];
       newGroups[groupIndex] = {
         ...newGroups[groupIndex],
@@ -183,11 +202,13 @@ export default function FiltersSection({
   };
 
   const handleRemoveGroup = (groupIndex) => {
-    setColumnFilters(prev => {
-      const current = prev.groups ? prev : {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
+    setColumnFilters((prev) => {
+      const current = prev.groups
+        ? prev
+        : {
+            logicOperator: LOGIC_OPERATORS.AND,
+            groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+          };
       const newGroups = current.groups.filter((_, i) => i !== groupIndex);
       if (newGroups.length === 0) {
         return {
@@ -203,11 +224,13 @@ export default function FiltersSection({
   };
 
   const handleAddFilter = (groupIndex) => {
-    setColumnFilters(prev => {
-      const current = prev.groups ? prev : {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
+    setColumnFilters((prev) => {
+      const current = prev.groups
+        ? prev
+        : {
+            logicOperator: LOGIC_OPERATORS.AND,
+            groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+          };
       const newGroups = [...current.groups];
       newGroups[groupIndex] = {
         ...newGroups[groupIndex],
@@ -224,11 +247,13 @@ export default function FiltersSection({
   };
 
   const handleUpdateFilter = (groupIndex, filterIndex, field, value) => {
-    setColumnFilters(prev => {
-      const current = prev.groups ? prev : {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
+    setColumnFilters((prev) => {
+      const current = prev.groups
+        ? prev
+        : {
+            logicOperator: LOGIC_OPERATORS.AND,
+            groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+          };
       const newGroups = [...current.groups];
       const newFilters = [...(newGroups[groupIndex].filters || [])];
       newFilters[filterIndex] = {
@@ -247,11 +272,13 @@ export default function FiltersSection({
   };
 
   const handleRemoveFilter = (groupIndex, filterIndex) => {
-    setColumnFilters(prev => {
-      const current = prev.groups ? prev : {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
+    setColumnFilters((prev) => {
+      const current = prev.groups
+        ? prev
+        : {
+            logicOperator: LOGIC_OPERATORS.AND,
+            groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+          };
       const newGroups = [...current.groups];
       newGroups[groupIndex] = {
         ...newGroups[groupIndex],
@@ -265,11 +292,13 @@ export default function FiltersSection({
   };
 
   const handleGroupLogicChange = (newLogic) => {
-    setColumnFilters(prev => {
-      const current = prev.groups ? prev : {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
+    setColumnFilters((prev) => {
+      const current = prev.groups
+        ? prev
+        : {
+            logicOperator: LOGIC_OPERATORS.AND,
+            groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+          };
       return {
         ...current,
         logicOperator: newLogic,
@@ -290,7 +319,7 @@ export default function FiltersSection({
             groups: [
               {
                 logicOperator: LOGIC_OPERATORS.AND,
-                filters: columnFilters.filter(f => f.column),
+                filters: columnFilters.filter((f) => f.column),
               },
             ],
           };
@@ -327,7 +356,7 @@ export default function FiltersSection({
             groups: [
               {
                 logicOperator: LOGIC_OPERATORS.AND,
-                filters: columnFilters.filter(f => f.column),
+                filters: columnFilters.filter((f) => f.column),
               },
             ],
           };
@@ -378,17 +407,20 @@ export default function FiltersSection({
   };
 
   // Check if there are any active filters
-  const hasActiveFilters = filterGroups.some(group =>
-    group.filters && group.filters.some(f => f.column)
+  const hasActiveFilters = filterGroups.some(
+    (group) => group.filters && group.filters.some((f) => f.column)
   );
-  const activeFilterCount = filterGroups.reduce((count, group) =>
-    count + (group.filters?.filter(f => f.column).length || 0), 0
+  const activeFilterCount = filterGroups.reduce(
+    (count, group) => count + (group.filters?.filter((f) => f.column).length || 0),
+    0
   );
 
   return (
     <div className="mb-4">
       {/* Header */}
-      <div className={`flex sm:justify-between gap-2 sm:gap-3 ${isExpanded ? 'flex-col sm:flex-row' : 'flex-col'}`}>
+      <div
+        className={`flex sm:justify-between gap-2 sm:gap-3 ${isExpanded ? 'flex-col sm:flex-row' : 'flex-col'}`}
+      >
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           <button
             type="button"
@@ -411,7 +443,7 @@ export default function FiltersSection({
             )}
           </button>
 
-          <div className='flex justify-between items-center gap-2'>
+          <div className="flex justify-between items-center gap-2">
             {/* View Selector - Show inline when not expanded */}
             {apiKey && views.length > 0 && !isExpanded && (
               <div className="flex items-center gap-1.5">
@@ -445,7 +477,7 @@ export default function FiltersSection({
             )}
 
             {/* Manage Tags Button - Show when not expanded (only if backend is available) */}
-            {apiKey && views !== undefined && !isExpanded && (
+            {apiKey && views !== undefined && views !== null && !isExpanded && (
               <button
                 type="button"
                 onClick={() => setShowTagManager(true)}
@@ -508,7 +540,7 @@ export default function FiltersSection({
             )}
 
             {/* Manage Tags Button (only if backend is available) */}
-            {apiKey && views !== undefined && (
+            {apiKey && views !== undefined && views !== null && (
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -536,66 +568,72 @@ export default function FiltersSection({
               </div>
             )}
 
-              <div className="flex flex-wrap items-center gap-2 sm:pl-3 sm:border-l sm:border-border sm:dark:border-border-dark">
-                {hasActiveFilters && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Apply filters to the table
-                        if (onFiltersChange) {
-                          onFiltersChange(columnFilters);
-                        }
-                      }}
-                      className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 transition-opacity shadow-sm"
-                    >
-                      Apply Filters
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Clear all filters
-                        const emptyFilters = {
-                          logicOperator: LOGIC_OPERATORS.AND,
-                          groups: [
-                            {
-                              logicOperator: LOGIC_OPERATORS.AND,
-                              filters: [],
-                            },
-                          ],
-                        };
-                        setColumnFilters(emptyFilters);
-                        if (onFiltersChange) {
-                          onFiltersChange(emptyFilters);
-                        }
-                      }}
-                      className="px-3 py-1.5 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </>
-                )}
-                {filterGroups.length > 1 && (
-                  <div className="flex items-center gap-2 pl-2 border-l border-border dark:border-border-dark">
-                    <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">{customViewsT('betweenGroups')}</span>
-                    <Select
-                      value={groupLogicOperator}
-                      onChange={(e) => handleGroupLogicChange(e.target.value)}
-                      className="min-w-[80px] text-xs"
-                    >
-                      <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.and')}</option>
-                      <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.or')}</option>
-                    </Select>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleAddGroup}
-                  className="px-3 py-1.5 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors whitespace-nowrap"
-                >
-                  + {customViewsT('addGroup')}
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:pl-3 sm:border-l sm:border-border sm:dark:border-border-dark">
+              {hasActiveFilters && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Apply filters to the table
+                      if (onFiltersChange) {
+                        onFiltersChange(columnFilters);
+                      }
+                    }}
+                    className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 transition-opacity shadow-sm"
+                  >
+                    Apply Filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Clear all filters
+                      const emptyFilters = {
+                        logicOperator: LOGIC_OPERATORS.AND,
+                        groups: [
+                          {
+                            logicOperator: LOGIC_OPERATORS.AND,
+                            filters: [],
+                          },
+                        ],
+                      };
+                      setColumnFilters(emptyFilters);
+                      if (onFiltersChange) {
+                        onFiltersChange(emptyFilters);
+                      }
+                    }}
+                    className="px-3 py-1.5 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors"
+                  >
+                    Clear
+                  </button>
+                </>
+              )}
+              {filterGroups.length > 1 && (
+                <div className="flex items-center gap-2 pl-2 border-l border-border dark:border-border-dark">
+                  <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
+                    {customViewsT('betweenGroups')}
+                  </span>
+                  <Select
+                    value={groupLogicOperator}
+                    onChange={(e) => handleGroupLogicChange(e.target.value)}
+                    className="min-w-[80px] text-xs"
+                  >
+                    <option value={LOGIC_OPERATORS.AND}>
+                      {automationRulesT('logicOperators.and')}
+                    </option>
+                    <option value={LOGIC_OPERATORS.OR}>
+                      {automationRulesT('logicOperators.or')}
+                    </option>
+                  </Select>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleAddGroup}
+                className="px-3 py-1.5 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors whitespace-nowrap"
+              >
+                + {customViewsT('addGroup')}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -617,7 +655,9 @@ export default function FiltersSection({
                   {groupIndex > 0 && (
                     <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
                       <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
-                        {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? automationRulesT('logicOperators.and') : automationRulesT('logicOperators.or')}
+                        {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
+                          ? automationRulesT('logicOperators.and')
+                          : automationRulesT('logicOperators.or')}
                       </div>
                     </div>
                   )}
@@ -663,7 +703,9 @@ export default function FiltersSection({
                             onChange={(e) => setSaveColumns(e.target.checked)}
                             className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark focus:ring-accent dark:focus:ring-accent-dark"
                           />
-                          <span className="whitespace-nowrap">{customViewsT('includeColumns')}</span>
+                          <span className="whitespace-nowrap">
+                            {customViewsT('includeColumns')}
+                          </span>
                         </label>
                       </div>
                     )}
