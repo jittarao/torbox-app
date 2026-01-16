@@ -7,6 +7,30 @@ import { retryFetch } from '@/utils/retryFetch';
 // Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
 
+/**
+ * Parse SQLite datetime string as UTC
+ * Backend stores UTC datetime strings in SQLite format "YYYY-MM-DD HH:MM:SS" without timezone info.
+ * JavaScript's Date constructor interprets strings without timezone as local time.
+ * This function converts SQLite format to ISO format with 'Z' suffix to ensure UTC parsing.
+ * @param {string|null|undefined} dateString - UTC datetime string in SQLite or ISO format
+ * @returns {Date} Date object parsed as UTC
+ */
+const parseUtcDate = (dateString) => {
+  if (!dateString) {
+    return new Date();
+  }
+
+  // If already in ISO format, ensure it has 'Z' for UTC
+  if (dateString.includes('T')) {
+    const utcDateString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+    return new Date(utcDateString);
+  }
+
+  // SQLite format "YYYY-MM-DD HH:MM:SS" - convert to ISO "YYYY-MM-DDTHH:MM:SSZ"
+  const utcDateString = `${dateString.replace(' ', 'T')}Z`;
+  return new Date(utcDateString);
+};
+
 const addToDownloadHistory = async (link, apiKey) => {
   // Only save to backend - no localStorage fallback to avoid dual sources of truth
   if (!apiKey) {
@@ -141,19 +165,19 @@ export function useDownloads(
     if (fileId) {
       existingDownload = downloadHistory.find(
         (download) =>
-          download.itemId === id &&
-          download.fileId === fileId &&
+          String(download.itemId) === String(id) &&
+          String(download.fileId) === String(fileId) &&
           download.assetType === actualAssetType &&
-          Math.abs(new Date().getTime() - new Date(download.generatedAt).getTime()) <=
+          Math.abs(new Date().getTime() - parseUtcDate(download.generatedAt).getTime()) <=
             1000 * 60 * 60 * 3 // within 3 hours
       );
     } else {
       existingDownload = downloadHistory.find(
         (download) =>
-          download.itemId === id &&
+          String(download.itemId) === String(id) &&
           download.assetType === actualAssetType &&
           !download.fileId &&
-          Math.abs(new Date().getTime() - new Date(download.generatedAt).getTime()) <=
+          Math.abs(new Date().getTime() - parseUtcDate(download.generatedAt).getTime()) <=
             1000 * 60 * 60 * 3 // within 3 hours
       );
     }
