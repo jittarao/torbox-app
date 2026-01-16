@@ -209,6 +209,33 @@ export default function AdminDiagnosticsPage() {
                 </div>
               </div>
             )}
+            {statistics.integrityChecks && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Integrity Checks
+                </h4>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Checked:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {statistics.integrityChecks.checked} / {statistics.integrityChecks.total}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Failed:</span>
+                    <span
+                      className={`font-medium ${
+                        statistics.integrityChecks.failed === 0
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`}
+                    >
+                      {statistics.integrityChecks.failed}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -398,6 +425,120 @@ export default function AdminDiagnosticsPage() {
                   {issues.missingFiles.length > 20 && (
                     <div className="text-sm text-yellow-800 dark:text-yellow-300 text-center pt-2">
                       ... and {issues.missingFiles.length - 20} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Status Mismatches */}
+            {issues.statusMismatches && issues.statusMismatches.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
+                  ⚠️ Status Mismatches ({issues.statusMismatches.length})
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Users where API key status and registry status don't match
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {issues.statusMismatches.map((mismatch, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
+                    >
+                      <div className="text-sm">
+                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          {mismatch.auth_id}
+                        </div>
+                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                          Registry: <span className="font-medium">{mismatch.registry_status}</span>{' '}
+                          | API Key:{' '}
+                          <span className="font-medium">
+                            {mismatch.api_key_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                          Key: {mismatch.key_name} | Created:{' '}
+                          {new Date(mismatch.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Database Integrity Failures */}
+            {issues.databaseIntegrityFailures && issues.databaseIntegrityFailures.length > 0 && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-red-900 dark:text-red-200 mb-3">
+                  ❌ Database Integrity Failures ({issues.databaseIntegrityFailures.length}) -
+                  CRITICAL
+                </h3>
+                <p className="text-sm text-red-800 dark:text-red-300 mb-3">
+                  Databases that failed integrity checks. These may be corrupted.
+                </p>
+                {statistics.integrityChecks && (
+                  <p className="text-xs text-red-700 dark:text-red-400 mb-3">
+                    Checked {statistics.integrityChecks.checked} of{' '}
+                    {statistics.integrityChecks.total} databases
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {issues.databaseIntegrityFailures.map((failure, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
+                    >
+                      <div className="text-sm">
+                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          {failure.auth_id}
+                        </div>
+                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                          {failure.db_path}
+                        </div>
+                        <div className="mt-1 text-red-700 dark:text-red-300 font-medium">
+                          Error: {failure.error}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Orphaned Files */}
+            {issues.orphanedFiles && issues.orphanedFiles.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
+                  ⚠️ Orphaned Database Files ({issues.orphanedFiles.length})
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Database files found on disk but not registered in the user registry
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {issues.orphanedFiles.slice(0, 20).map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                          {file.filename}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {file.path}
+                        </div>
+                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                          Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
+                          {new Date(file.modified).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {issues.orphanedFiles.length > 20 && (
+                    <div className="text-sm text-yellow-800 dark:text-yellow-300 text-center pt-2">
+                      ... and {issues.orphanedFiles.length - 20} more
                     </div>
                   )}
                 </div>
