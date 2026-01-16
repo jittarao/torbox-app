@@ -1,4 +1,15 @@
 import { create } from 'zustand';
+import { useBackendModeStore } from '@/store/backendModeStore';
+
+/**
+ * Check if backend is available (not disabled)
+ * Uses Zustand store for centralized state management
+ */
+function isBackendAvailable() {
+  if (typeof window === 'undefined') return false;
+  const { mode } = useBackendModeStore.getState();
+  return mode === 'backend';
+}
 
 export const useCustomViewsStore = create((set, get) => ({
   views: [],
@@ -24,6 +35,12 @@ export const useCustomViewsStore = create((set, get) => ({
   loadViews: async (apiKey) => {
     if (!apiKey) {
       set({ error: 'API key is required', loading: false });
+      return;
+    }
+
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      set({ views: [], loading: false, error: null });
       return;
     }
 
@@ -67,6 +84,11 @@ export const useCustomViewsStore = create((set, get) => ({
   saveView: async (apiKey, name, filters, sort, columns, assetType = null) => {
     if (!apiKey) {
       throw new Error('API key is required');
+    }
+
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      throw new Error('Custom views feature is disabled when backend is disabled');
     }
 
     set({ loading: true, error: null });
@@ -115,6 +137,11 @@ export const useCustomViewsStore = create((set, get) => ({
       throw new Error('API key is required');
     }
 
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      throw new Error('Custom views feature is disabled when backend is disabled');
+    }
+
     set({ loading: true, error: null });
     try {
       const response = await fetch(`/api/custom-views/${id}`, {
@@ -157,6 +184,11 @@ export const useCustomViewsStore = create((set, get) => ({
   deleteView: async (apiKey, id) => {
     if (!apiKey) {
       throw new Error('API key is required');
+    }
+
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      throw new Error('Custom views feature is disabled when backend is disabled');
     }
 
     set({ loading: true, error: null });

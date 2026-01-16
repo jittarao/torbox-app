@@ -385,11 +385,21 @@ class UserDatabaseManager {
    * Register a new user and create their database
    * @param {string} apiKey - User's API key
    * @param {string} keyName - Optional name for the API key
+   * @param {number} pollInterval - Optional polling interval in minutes (currently accepted but not stored; intervals are calculated dynamically)
    * @returns {Promise<string>} - authId of the created user
    */
-  async registerUser(apiKey, keyName = null) {
+  async registerUser(apiKey, keyName = null, pollInterval = null) {
     const authId = hashApiKey(apiKey);
     const dbPath = path.join(this.userDbDir, `user_${authId}.sqlite`);
+
+    // Log pollInterval if provided (currently not stored; intervals are calculated dynamically)
+    if (pollInterval !== null) {
+      logger.debug('Poll interval provided during user registration', {
+        authId,
+        pollInterval,
+        note: 'Intervals are calculated dynamically based on user activity and rules',
+      });
+    }
 
     // Check if user already exists
     let existing;
@@ -406,24 +416,87 @@ class UserDatabaseManager {
       return authId;
     }
 
-    // Insert into user registry
-    if (this.masterDbIsInstance) {
-      this.masterDb.runQuery(
-        `
-        INSERT INTO user_registry (auth_id, db_path)
-        VALUES (?, ?)
-      `,
-        [authId, dbPath]
-      );
-    } else {
-      this.masterDb
-        .prepare(
+    // Insert into user registry using INSERT OR IGNORE to handle race conditions gracefully
+    // This prevents errors if two requests try to register the same user simultaneously
+    try {
+      if (this.masterDbIsInstance) {
+        this.masterDb.runQuery(
           `
-        INSERT INTO user_registry (auth_id, db_path)
-        VALUES (?, ?)
-      `
-        )
-        .run(authId, dbPath);
+          INSERT OR IGNORE INTO user_registry (auth_id, db_path)
+          VALUES (?, ?)
+        `,
+          [authId, dbPath]
+        );
+      } else {
+        this.masterDb
+          .prepare(
+            `
+          INSERT OR IGNORE INTO user_registry (auth_id, db_path)
+          VALUES (?, ?)
+        `
+          )
+          .run(authId, dbPath);
+      }
+
+      // Verify the user was inserted or already exists (handle race conditions)
+      // After INSERT OR IGNORE, check if user exists in registry
+      const userAfterInsert = this.masterDbIsInstance
+        ? this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId])
+        : this.masterDb.prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?').get(authId);
+
+      if (!userAfterInsert) {
+        // This shouldn't happen with INSERT OR IGNORE, but handle it gracefully
+        logger.warn('User registration may have failed - user not found after insert', {
+          authId,
+          dbPath,
+        });
+        throw new Error(`Failed to register user: user not found in registry after insert`);
+      }
+    } catch (error) {
+      // Handle constraint violations and other database errors
+      const isConstraintError =
+        error.code === 'SQLITE_CONSTRAINT' ||
+        error.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+        error.message?.includes('UNIQUE constraint') ||
+        error.message?.includes('constraint failed');
+
+      if (isConstraintError) {
+        // UNIQUE constraint violation - check if user was created by another request (race condition)
+        const existingAfterError = this.masterDbIsInstance
+          ? this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId])
+          : this.masterDb
+              .prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?')
+              .get(authId);
+
+        if (existingAfterError) {
+          // User was created by another request (race condition), which is fine
+          logger.debug('User already exists in registry (race condition handled)', { authId });
+        } else {
+          // Constraint error but user doesn't exist - unexpected state
+          logger.error('UNIQUE constraint violation but user not found in registry', error, {
+            authId,
+            dbPath,
+          });
+          throw new Error(
+            `Failed to register user: constraint violation but user not found in registry`
+          );
+        }
+      } else {
+        // Non-constraint error - check if user exists (might have been created by another request)
+        const existingAfterError = this.masterDbIsInstance
+          ? this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId])
+          : this.masterDb
+              .prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?')
+              .get(authId);
+
+        if (!existingAfterError) {
+          // User still doesn't exist, re-throw the error
+          logger.error('Failed to register user in registry', error, { authId, dbPath });
+          throw error;
+        }
+        // User was created by another request (race condition), which is fine
+        logger.debug('User already exists in registry (race condition handled)', { authId });
+      }
     }
 
     // Invalidate cache since user registry changed

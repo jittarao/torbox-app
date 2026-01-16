@@ -78,7 +78,7 @@ class TorBoxBackend {
     // IP-based rate limiting (global)
     const ipLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
-      max: 100,
+      max: 300,
       standardHeaders: true,
       legacyHeaders: false,
       handler: (req, res) => {
@@ -94,7 +94,7 @@ class TorBoxBackend {
     // Per-user rate limiting (applied after authId validation)
     this.userRateLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.USER_RATE_LIMIT_MAX || '200', 10),
+      max: parseInt(process.env.USER_RATE_LIMIT_MAX || '300', 10),
       standardHeaders: true,
       legacyHeaders: false,
       keyGenerator: (req) => {

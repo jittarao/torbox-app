@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
+import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -16,6 +17,10 @@ function hashApiKey(apiKey) {
 }
 
 export async function GET(request, { params }) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Tags feature is disabled when backend is disabled');
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
@@ -68,6 +73,10 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Tags feature is disabled when backend is disabled');
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
@@ -114,6 +123,10 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Tags feature is disabled when backend is disabled');
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
