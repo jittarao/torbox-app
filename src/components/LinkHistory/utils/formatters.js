@@ -1,8 +1,10 @@
 import { timeAgo } from '@/components/downloads/utils/formatters';
 
+const EXPIRATION_TIME = 3 * 60 * 60 * 1000; // 3 hours
+
 /**
  * Get expiration date from generated date
- * Links expire 4 hours after generation
+ * Links expire 3 hours after generation
  * @param {string|null|undefined} generatedAt - UTC datetime string in SQLite or ISO format
  * @param {Function} t - Translation function
  * @param {Function} linkHistoryT - LinkHistory translation function
@@ -27,7 +29,7 @@ export const getExpirationDate = (generatedAt, t, linkHistoryT) => {
   }
 
   const generatedDate = new Date(utcDateString);
-  const expirationDate = new Date(generatedDate.getTime() + 4 * 60 * 60 * 1000);
+  const expirationDate = new Date(generatedDate.getTime() + EXPIRATION_TIME);
   const now = new Date();
 
   if (expirationDate < now) {

@@ -16,7 +16,7 @@ const LinkHistory = ({ apiKey }) => {
   const t = useTranslations('Common');
   const linkHistoryT = useTranslations('LinkHistory');
   const isMobile = useIsMobile();
-  const { mode: backendMode } = useBackendMode();
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const isBackendAvailable = backendMode === 'backend';
 
   const [pagination, setPagination] = useState({
@@ -116,7 +116,7 @@ const LinkHistory = ({ apiKey }) => {
         />
       </div>
 
-      {!isBackendAvailable && (
+      {!backendIsLoading && !isBackendAvailable && (
         <div className="p-4 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-400/20 dark:text-yellow-400 rounded-lg mb-4">
           Link history feature is disabled when backend is disabled.
         </div>
@@ -142,7 +142,7 @@ const LinkHistory = ({ apiKey }) => {
 
       {!loading && (
         <>
-          {!isBackendAvailable ? (
+          {!backendIsLoading && !isBackendAvailable ? (
             <div className="p-8 text-center text-primary-text/70 dark:text-primary-text-dark/70">
               <p>Link history is not available when backend is disabled.</p>
             </div>
