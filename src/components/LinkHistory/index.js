@@ -10,7 +10,7 @@ import EmptyState from './components/EmptyState';
 import SearchBar from './components/SearchBar';
 import LinkHistoryTable from './components/LinkHistoryTable';
 import Pagination from './components/Pagination';
-import { useBackendMode } from '@/utils/backendCheck';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 const LinkHistory = ({ apiKey }) => {
   const t = useTranslations('Common');
