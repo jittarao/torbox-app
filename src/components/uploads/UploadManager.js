@@ -21,6 +21,9 @@ import UploadTable from './UploadTable';
 
 export default function UploadManager({ apiKey }) {
   const [activeTab, setActiveTab] = useState('queued');
+  // Input value (immediate updates for UI responsiveness)
+  const [searchInput, setSearchInput] = useState('');
+  // Debounced search value (triggers API calls)
   const [filters, setFilters] = useState({
     type: '',
     search: '',
@@ -68,6 +71,15 @@ export default function UploadManager({ apiKey }) {
     })
   );
 
+  // Debounce search input - update search value after 500ms of no typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchInput }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   // Reset to page 1 when tab or search changes
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -108,6 +120,8 @@ export default function UploadManager({ apiKey }) {
             filters={filters}
             setFilters={setFilters}
             setPagination={setPagination}
+            searchInput={searchInput}
+            onSearchChange={setSearchInput}
             compact={true}
           />
           {selectedUploads.size > 0 && (
