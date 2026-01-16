@@ -17,7 +17,7 @@ export function setupConfigRoutes(router, backend) {
           ),
         },
         rate_limiting: {
-          user_rate_limit_max: parseInt(process.env.USER_RATE_LIMIT_MAX || '200', 10),
+          user_rate_limit_max: parseInt(process.env.USER_RATE_LIMIT_MAX || '300', 10),
           admin_rate_limit_max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX || '100', 10),
         },
         database: {

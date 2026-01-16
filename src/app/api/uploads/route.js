@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // GET /api/uploads - List uploads
 export async function GET(request) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Upload logs feature is disabled when backend is disabled');
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
@@ -56,6 +61,10 @@ export async function GET(request) {
 
 // POST /api/uploads - Create upload (used internally, not directly by frontend)
 export async function POST(request) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Upload logs feature is disabled when backend is disabled');
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');

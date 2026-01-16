@@ -220,6 +220,12 @@ class AdminApiClient {
   async getConfig() {
     return this.request('/config');
   }
+
+  // ===== Diagnostics =====
+
+  async getDiagnostics() {
+    return this.request('/diagnostics');
+  }
 }
 
 // Export singleton instance

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useBackendModeStore } from '@/store/backendModeStore';
 
 export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const [history, setHistory] = useState([]);
@@ -10,6 +11,9 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const effectivePageRef = useRef(pagination.page);
   // Flag to skip fetch when page change is due to search reset
   const skipPageChangeFetchRef = useRef(false);
+
+  // Subscribe to backend mode store to react to changes
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
 
   // Reset page to 1 when search changes (runs synchronously before fetch)
   useEffect(() => {
@@ -38,6 +42,24 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
     if (!apiKey) {
       setLoading(false);
       setError(null);
+      return;
+    }
+
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
+    // Check if backend is available
+    if (backendMode !== 'backend') {
+      setHistory([]);
+      setLoading(false);
+      setError(null);
+      setPagination((prev) => ({
+        ...prev,
+        total: 0,
+        totalPages: 0,
+      }));
       return;
     }
 
@@ -103,15 +125,20 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
         setLoading(false);
       }
     }
-  }, [apiKey, pagination.limit, search, setPagination]);
+  }, [apiKey, pagination.limit, search, setPagination, backendMode, backendIsLoading]);
 
   // Track previous values to detect what triggered the effect
   const prevPageRef = useRef(pagination.page);
   const prevSearchForEffectRef = useRef(search);
 
-  // Fetch when apiKey, page, limit, or search changes
+  // Fetch when apiKey, page, limit, search, or backend mode changes
   // Skip fetch if page change is due to search reset (search change already triggered it)
   useEffect(() => {
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
     const pageChanged = prevPageRef.current !== pagination.page;
     const searchChanged = prevSearchForEffectRef.current !== search;
 
@@ -126,9 +153,12 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
     }
 
     fetchLinkHistory();
-    // Auto-refresh every 1 minute
+    // Auto-refresh every 1 minute (only if backend is available)
     const interval = setInterval(() => {
-      fetchLinkHistory();
+      // Only refresh if backend is available
+      if (backendMode === 'backend' && !backendIsLoading) {
+        fetchLinkHistory();
+      }
     }, 60000);
     return () => {
       clearInterval(interval);
@@ -137,7 +167,15 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
         abortControllerRef.current.abort();
       }
     };
-  }, [apiKey, pagination.page, pagination.limit, search, fetchLinkHistory]);
+  }, [
+    apiKey,
+    pagination.page,
+    pagination.limit,
+    search,
+    fetchLinkHistory,
+    backendMode,
+    backendIsLoading,
+  ]);
 
   return {
     history,

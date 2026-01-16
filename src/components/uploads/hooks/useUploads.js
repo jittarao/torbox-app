@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useBackendModeStore } from '@/store/backendModeStore';
 
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
   const [uploads, setUploads] = useState([]);
@@ -7,8 +8,29 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const [statusCounts, setStatusCounts] = useState({});
   const [uploadStatistics, setUploadStatistics] = useState(null);
 
+  // Subscribe to backend mode store to react to changes
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
+
   const fetchUploads = useCallback(async () => {
     if (!apiKey) return;
+
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
+    // Check if backend is available
+    if (backendMode !== 'backend') {
+      setUploads([]);
+      setLoading(false);
+      setError(null);
+      setPagination((prev) => ({
+        ...prev,
+        total: 0,
+        totalPages: 0,
+      }));
+      return;
+    }
 
     try {
       setLoading(true);
@@ -64,11 +86,25 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     filters.type,
     filters.search,
     setPagination,
+    backendMode,
+    backendIsLoading,
   ]);
 
   // Fetch status counts separately when tab changes
   const fetchStatusCounts = useCallback(async () => {
     if (!apiKey) return;
+
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
+    // Check if backend is available
+    if (backendMode !== 'backend') {
+      setStatusCounts({});
+      setUploadStatistics(null);
+      return;
+    }
 
     try {
       const params = new URLSearchParams();
@@ -92,7 +128,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     } catch (err) {
       console.error('Error fetching status counts:', err);
     }
-  }, [apiKey, filters.type]);
+  }, [apiKey, filters.type, backendMode, backendIsLoading]);
 
   useEffect(() => {
     fetchUploads();

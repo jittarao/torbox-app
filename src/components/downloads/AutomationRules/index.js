@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useAutomationRulesStorage, useBackendMode } from '@/utils/backendDetector';
+import { useAutomationRules } from '@/components/shared/hooks/useAutomationRules';
+import { useBackendMode } from '@/hooks/useBackendMode';
 import useIsMobile from '@/hooks/useIsMobile';
-import { 
-  TRIGGER_TYPES, 
-  CONDITION_TYPES, 
-  COMPARISON_OPERATORS, 
+import {
+  TRIGGER_TYPES,
+  CONDITION_TYPES,
+  COMPARISON_OPERATORS,
   LOGIC_OPERATORS,
-  ACTION_TYPES 
+  ACTION_TYPES,
 } from './constants';
 import RuleCard from './components/RuleCard';
 import RuleForm from './components/RuleForm';
@@ -46,7 +47,6 @@ export default function AutomationRules() {
   const t = useTranslations('AutomationRules');
   const commonT = useTranslations('Common');
   const { mode: backendMode } = useBackendMode();
-  const [rules, setRules, loading, error] = useAutomationRulesStorage();
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
@@ -55,6 +55,7 @@ export default function AutomationRules() {
   const isMobile = useIsMobile();
   const apiKey = localStorage.getItem('torboxApiKey');
   const [newRule, setNewRule] = useState(getDefaultNewRule());
+  const { rules, saveRules } = useAutomationRules(apiKey);
 
   // Backend mode indicator
   const isBackendMode = backendMode === 'backend';
@@ -69,15 +70,15 @@ export default function AutomationRules() {
         created_at: Date.now(),
         execution_count: 0,
         last_execution: null,
-      }
+      },
     };
-    
-    // Update local state
+
+    // Update state via store
     const updatedRules = [...rules, ruleWithId];
-    setRules(updatedRules);
+    await saveRules(updatedRules);
   };
 
-  const handleAddRule = () => {
+  const handleAddRule = async () => {
     if (!newRule.name) return;
 
     if (editingRuleId) {
@@ -92,9 +93,9 @@ export default function AutomationRules() {
                 updatedAt: Date.now(),
               },
             }
-          : rule,
+          : rule
       );
-      setRules(updatedRules);
+      await saveRules(updatedRules);
       setEditingRuleId(null);
     } else {
       // Add new rule with metadata
@@ -115,14 +116,14 @@ export default function AutomationRules() {
           },
         },
       ];
-      setRules(updatedRules);
+      await saveRules(updatedRules);
     }
 
     setIsAddingRule(false);
     setNewRule(getDefaultNewRule());
   };
 
-  const handleEditRule = (rule) => {
+  const handleEditRule = async (rule) => {
     // Rules from backend are always in group structure
     setNewRule(rule);
     setEditingRuleId(rule.id);
@@ -143,32 +144,32 @@ export default function AutomationRules() {
               'x-api-key': apiKey,
             },
           });
-          
+
           if (!response.ok) {
             throw new Error(`Failed to delete rule: ${response.status}`);
           }
         }
         // If ID is invalid, skip API call (likely a local-only rule)
       }
-      
-      // Update local state
+
+      // Update state via store
       const updatedRules = rules.filter((rule) => rule.id !== ruleId);
-      setRules(updatedRules);
+      await saveRules(updatedRules);
     } catch (error) {
       console.error('Error deleting rule:', error);
-      // Update local state even on error
+      // Update state even on error
       const updatedRules = rules.filter((rule) => rule.id !== ruleId);
-      setRules(updatedRules);
+      await saveRules(updatedRules);
     }
   };
 
   const handleToggleRule = async (ruleId) => {
     try {
-      const rule = rules.find(r => r.id === ruleId);
+      const rule = rules.find((r) => r.id === ruleId);
       if (!rule) return;
-      
+
       const newEnabled = !rule.enabled;
-      
+
       if (isBackendMode) {
         // Validate and convert ruleId to a positive integer
         // Backend expects a positive integer ID
@@ -183,14 +184,14 @@ export default function AutomationRules() {
             },
             body: JSON.stringify({ enabled: newEnabled }),
           });
-          
+
           if (!response.ok) {
             throw new Error(`Failed to update rule: ${response.status}`);
           }
         }
         // If ID is invalid, skip API call (likely a local-only rule)
       }
-      
+
       // Update local state
       const updatedRules = rules.map((rule) => {
         if (rule.id === ruleId) {
@@ -207,11 +208,11 @@ export default function AutomationRules() {
         }
         return rule;
       });
-      
-      setRules(updatedRules);
+
+      await saveRules(updatedRules);
     } catch (error) {
       console.error('Error toggling rule:', error);
-      // Update local state even on error
+      // Update state even on error
       const updatedRules = rules.map((rule) => {
         if (rule.id === ruleId) {
           const now = Date.now();
@@ -227,11 +228,11 @@ export default function AutomationRules() {
         }
         return rule;
       });
-      setRules(updatedRules);
+      await saveRules(updatedRules);
     }
   };
 
-  const handleViewLogs = (ruleId) => {
+  const handleViewLogs = async (ruleId) => {
     setViewingLogsRuleId(ruleId);
     loadRuleLogs(ruleId);
   };
@@ -240,7 +241,7 @@ export default function AutomationRules() {
     try {
       if (!isBackendMode) {
         // No backend available, show empty logs
-        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
         return;
       }
 
@@ -248,17 +249,17 @@ export default function AutomationRules() {
       // Backend expects a positive integer ID
       if (ruleId === null || ruleId === undefined || ruleId === '') {
         // Invalid ID - likely a local-only rule, skip API call
-        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
         return;
       }
 
       // Convert to number if it's a string, otherwise use as-is
       const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : Number(ruleId);
-      
+
       // Validate it's a positive integer
       if (isNaN(numericId) || !Number.isInteger(numericId) || numericId <= 0) {
         // Invalid ID - likely a local-only rule, skip API call
-        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
         return;
       }
 
@@ -268,21 +269,21 @@ export default function AutomationRules() {
           'x-api-key': apiKey,
         },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
-        setRuleLogs(prev => ({ ...prev, [ruleId]: data.logs || [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: data.logs || [] }));
       } else {
         const errorData = await response.json().catch(() => ({}));
         // Only log error if it's not the expected "invalid id" error for local rules
         if (!errorData.error || !errorData.error.includes('Invalid id')) {
           console.error('Error loading rule logs:', errorData.error || `HTTP ${response.status}`);
         }
-        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
       }
     } catch (error) {
       console.error('Error loading rule logs:', error);
-      setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+      setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
     }
   };
 
@@ -290,7 +291,7 @@ export default function AutomationRules() {
     try {
       if (!isBackendMode) {
         // No backend available, just clear local state
-        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
         return;
       }
 
@@ -299,7 +300,7 @@ export default function AutomationRules() {
       const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
       if (!numericId || isNaN(numericId) || numericId <= 0) {
         // Invalid ID - likely a local-only rule, just clear local state
-        setRuleLogs(prev => ({ ...prev, [ruleId]: [] }));
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
         return;
       }
 
@@ -431,7 +432,6 @@ export default function AutomationRules() {
     });
   };
 
-
   const handleCancelForm = () => {
     setIsAddingRule(false);
     setEditingRuleId(null);
@@ -439,7 +439,7 @@ export default function AutomationRules() {
   };
 
   const activeRules = rules.filter((rule) => rule.enabled);
-  const viewingRule = rules.find(r => r.id === viewingLogsRuleId);
+  const viewingRule = rules.find((r) => r.id === viewingLogsRuleId);
 
   return (
     <div className="px-2 py-2 lg:p-4 mt-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
@@ -457,8 +457,7 @@ export default function AutomationRules() {
             </span>
           )}
           <span className="text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-            ({activeRules.length} rule{activeRules.length === 1 ? '' : 's'}{' '}
-            active)
+            ({activeRules.length} rule{activeRules.length === 1 ? '' : 's'} active)
           </span>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
@@ -508,10 +507,7 @@ export default function AutomationRules() {
             {!isAddingRule && (
               <div className="space-y-4">
                 {/* Preset Rules */}
-                <PresetRulesSection
-                  onApplyPreset={applyPreset}
-                  t={t}
-                />
+                <PresetRulesSection onApplyPreset={applyPreset} t={t} />
 
                 {/* Add Custom Rule */}
                 <div className="flex justify-center items-center">
@@ -560,4 +556,3 @@ export default function AutomationRules() {
     </div>
   );
 }
-

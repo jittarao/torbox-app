@@ -18,8 +18,11 @@ import UploadPagination from './UploadPagination';
 import UploadStatistics from './UploadStatistics';
 import UploadFilters from './UploadFilters';
 import UploadTable from './UploadTable';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function UploadManager({ apiKey }) {
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
+  const isBackendAvailable = backendMode === 'backend';
   const [activeTab, setActiveTab] = useState('queued');
   // Input value (immediate updates for UI responsiveness)
   const [searchInput, setSearchInput] = useState('');
@@ -158,6 +161,12 @@ export default function UploadManager({ apiKey }) {
 
       <UploadStatistics uploadStatistics={uploadStatistics} />
 
+      {!backendIsLoading && !isBackendAvailable && (
+        <div className="p-4 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-400/20 dark:text-yellow-400 rounded-lg">
+          Upload logs feature is disabled when backend is disabled.
+        </div>
+      )}
+
       <UploadTabs activeTab={activeTab} setActiveTab={setActiveTab} statusCounts={statusCounts} />
 
       {error && (
@@ -180,7 +189,11 @@ export default function UploadManager({ apiKey }) {
 
       {!loading && (
         <>
-          {uploads.length === 0 ? (
+          {!backendIsLoading && !isBackendAvailable ? (
+            <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
+              Upload logs are not available when backend is disabled.
+            </div>
+          ) : uploads.length === 0 ? (
             <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
               {filters.search
                 ? 'No uploads match your search criteria'

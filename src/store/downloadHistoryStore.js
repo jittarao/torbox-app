@@ -1,4 +1,15 @@
 import { create } from 'zustand';
+import { useBackendModeStore } from '@/store/backendModeStore';
+
+/**
+ * Check if backend is available (not disabled)
+ * Uses Zustand store for centralized state management
+ */
+function isBackendAvailable() {
+  if (typeof window === 'undefined') return false;
+  const { mode } = useBackendModeStore.getState();
+  return mode === 'backend';
+}
 
 /**
  * Download history store
@@ -15,6 +26,12 @@ export const useDownloadHistoryStore = create((set, get) => ({
     // Check if API key exists and is not empty
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       set({ downloadHistory: [], error: null });
+      return;
+    }
+
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      set({ downloadHistory: [], isLoading: false, error: null });
       return;
     }
 

@@ -64,6 +64,49 @@ const addToDownloadHistory = async (link, apiKey) => {
   }
 };
 
+const addBulkToDownloadHistory = async (links, apiKey) => {
+  // Bulk save to backend - used for bulk download operations
+  if (!apiKey) {
+    console.warn('Cannot save link history: API key is required');
+    return;
+  }
+
+  if (!Array.isArray(links) || links.length === 0) {
+    return;
+  }
+
+  try {
+    const entries = links.map((link) => ({
+      item_id: link.itemId,
+      file_id: link.fileId || null,
+      url: link.url,
+      asset_type: link.assetType,
+      item_name: link.itemName || null,
+      file_name: link.fileName || null,
+      generated_at: link.generatedAt || new Date().toISOString(),
+    }));
+
+    const response = await fetch('/api/link-history/bulk', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({ entries }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(
+        'Error bulk saving link history to backend:',
+        errorData.error || 'Unknown error'
+      );
+    }
+  } catch (error) {
+    console.error('Error bulk saving link history to backend:', error);
+  }
+};
+
 // Sanitize filename by extracting the actual filename from folder/filename format
 // and replacing invalid characters that can cause issues in URLs or file systems
 const sanitizeFilename = (filename) => {
@@ -126,7 +169,13 @@ export function useDownloads(
     return null;
   };
 
-  const requestDownloadLink = async (id, options = {}, idField = null, metadata = {}) => {
+  const requestDownloadLink = async (
+    id,
+    options = {},
+    idField = null,
+    metadata = {},
+    skipHistorySave = false
+  ) => {
     if (!apiKey) return false;
 
     // For 'all' type, determine the actual asset type from metadata
@@ -186,6 +235,7 @@ export function useDownloads(
       return {
         success: true,
         data: { id: existingDownload.id, url: existingDownload.url },
+        linkHistory: null, // No new link to save
       };
 
     const params = new URLSearchParams({
@@ -214,7 +264,7 @@ export function useDownloads(
           ? metadata.item?.files?.find((file) => file.id === fileId)?.short_name || null
           : null;
 
-        // Store in backend
+        // Prepare link history data
         const newDownloadHistory = {
           id: resultId,
           itemId: id,
@@ -225,15 +275,24 @@ export function useDownloads(
           itemName,
           fileName,
         };
-        await addToDownloadHistory(newDownloadHistory, apiKey);
 
-        return { success: true, data: { id: resultId, url: downloadUrl } };
+        // Only save immediately if not in bulk mode
+        if (!skipHistorySave) {
+          await addToDownloadHistory(newDownloadHistory, apiKey);
+        }
+
+        return {
+          success: true,
+          data: { id: resultId, url: downloadUrl },
+          linkHistory: skipHistorySave ? newDownloadHistory : null, // Return link data for bulk save
+        };
       }
     }
 
     return {
       success: false,
       error: result.error || 'Unknown error',
+      linkHistory: null,
     };
   };
 
@@ -363,6 +422,9 @@ export function useDownloads(
       }),
     ];
 
+    // Collect all link history entries for bulk save
+    const linkHistoryEntries = [];
+
     // Process in chunks
     for (let i = 0; i < downloadTasks.length; i += CONCURRENT_DOWNLOADS) {
       const chunk = downloadTasks.slice(i, i + CONCURRENT_DOWNLOADS);
@@ -370,14 +432,15 @@ export function useDownloads(
         chunk.map(async (task) => {
           const result =
             task.type === 'item'
-              ? await requestDownloadLink(task.id, {}, null, task.metadata)
+              ? await requestDownloadLink(task.id, {}, null, task.metadata, true) // Skip individual history save
               : await requestDownloadLink(
                   task.itemId,
                   {
                     fileId: task.fileId,
                   },
                   null,
-                  task.metadata
+                  task.metadata,
+                  true // Skip individual history save
                 );
 
           if (result.success) {
@@ -402,6 +465,12 @@ export function useDownloads(
               ...prev,
               current: prev.current + 1,
             }));
+
+            // Collect link history entry for bulk save
+            if (result.linkHistory) {
+              linkHistoryEntries.push(result.linkHistory);
+            }
+
             return true;
           }
 
@@ -414,6 +483,11 @@ export function useDownloads(
     }
 
     setIsDownloading(false);
+
+    // Save all link history entries in bulk after all downloads complete
+    if (linkHistoryEntries.length > 0 && apiKey) {
+      await addBulkToDownloadHistory(linkHistoryEntries, apiKey);
+    }
 
     // Fetch updated history from backend after all bulk downloads complete
     if (fetchDownloadHistory && apiKey) {
