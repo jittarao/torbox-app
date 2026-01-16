@@ -1,6 +1,7 @@
 /**
  * Validation utilities and middleware
  */
+import { hashApiKey } from '../utils/crypto.js';
 
 /**
  * Validate authId format (64-character hex string)
@@ -79,6 +80,30 @@ export function validateNumericIdMiddleware(paramName = 'id') {
     req.validatedIds[paramName] = parseInt(id, 10);
     next();
   };
+}
+
+/**
+ * Middleware to extract authId from API key if authId not provided
+ * This allows routes to accept either an API key (x-api-key header) or direct authId
+ */
+export function extractAuthIdMiddleware(req, res, next) {
+  // If authId already validated, use it
+  if (req.validatedAuthId) {
+    return next();
+  }
+
+  // Try to get authId from API key
+  const apiKey =
+    req.headers['x-api-key'] ||
+    req.headers['authorization']?.replace('Bearer ', '') ||
+    req.body?.apiKey;
+  if (apiKey) {
+    req.validatedAuthId = hashApiKey(apiKey);
+    return next();
+  }
+
+  // Fall back to validateAuthIdMiddleware
+  return validateAuthIdMiddleware(req, res, next);
 }
 
 /**

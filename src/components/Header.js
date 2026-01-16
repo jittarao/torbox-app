@@ -18,7 +18,7 @@ import { getVersion } from '@/utils/version';
 export default function Header({ apiKey }) {
   const t = useTranslations('Header');
   const pathname = usePathname();
-  const { darkMode, toggleDarkMode, isClient } = useTheme();
+  const { toggleDarkMode } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const moreMenuRef = useRef(null);
@@ -244,21 +244,18 @@ export default function Header({ apiKey }) {
 
             {/* Settings: Dark mode toggle and Language Switcher */}
             <div className="flex items-center gap-3">
-              {isClient && (
-                <button
-                  onClick={toggleDarkMode}
-                  aria-label={darkMode ? t('theme.toggleLight') : t('theme.toggleDark')}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
-                >
-                  <span
-                    className={`${
-                      darkMode ? 'translate-x-6' : 'translate-x-1'
-                    } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
-                  >
-                    {darkMode ? <Icons.Moon /> : <Icons.Sun />}
-                  </span>
-                </button>
-              )}
+              <button
+                onClick={toggleDarkMode}
+                aria-label={t('theme.toggle')}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
+              >
+                {/* CSS-based positioning to avoid hydration mismatch */}
+                <span className="translate-x-1 dark:translate-x-6 inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800">
+                  {/* Show both icons, use CSS to toggle visibility */}
+                  <Icons.Sun className="block dark:hidden" />
+                  <Icons.Moon className="hidden dark:block" />
+                </span>
+              </button>
               <LanguageSwitcher compact={true} />
               <a
                 href="https://github.com/jittarao/torbox-app"
@@ -398,46 +395,43 @@ export default function Header({ apiKey }) {
             </div>
 
             {/* Settings */}
-            {isClient && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    {t('theme.toggleDark')}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark font-medium">
+                  {t('theme.toggle')}
+                </span>
+                <button
+                  onClick={toggleDarkMode}
+                  aria-label={t('theme.toggle')}
+                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
+                >
+                  {/* CSS-based positioning to avoid hydration mismatch */}
+                  <span className="translate-x-1 dark:translate-x-6 inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800">
+                    {/* Show both icons, use CSS to toggle visibility */}
+                    <Icons.Sun className="block dark:hidden" />
+                    <Icons.Moon className="hidden dark:block" />
                   </span>
-                  <button
-                    onClick={toggleDarkMode}
-                    aria-label={darkMode ? t('theme.toggleLight') : t('theme.toggleDark')}
-                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
-                  >
-                    <span
-                      className={`${
-                        darkMode ? 'translate-x-6' : 'translate-x-1'
-                      } inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800`}
-                    >
-                      {darkMode ? <Icons.Moon /> : <Icons.Sun />}
-                    </span>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
-                    {t('menu.language') || 'Language'}
-                  </span>
-                  <LanguageSwitcher />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-white dark:text-primary-text-dark font-medium">GitHub</span>
-                  <a
-                    href="https://github.com/jittarao/torbox-app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="GitHub Repository"
-                    className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
-                  >
-                    <Icons.GitHub className="w-5 h-5" />
-                  </a>
-                </div>
+                </button>
               </div>
-            )}
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark font-medium">
+                  {t('menu.language') || 'Language'}
+                </span>
+                <LanguageSwitcher />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white dark:text-primary-text-dark font-medium">GitHub</span>
+                <a
+                  href="https://github.com/jittarao/torbox-app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="GitHub Repository"
+                  className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+                >
+                  <Icons.GitHub className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
           </div>
         )}
       </div>

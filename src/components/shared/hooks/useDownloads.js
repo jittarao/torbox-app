@@ -6,28 +6,38 @@ import { retryFetch } from '@/utils/retryFetch';
 
 // Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
-const DOWNLOAD_HISTORY_KEY = 'torboxDownloadHistory';
 
-// Helper to get/set localStorage
-const getDownloadHistory = () => {
-  const history = localStorage.getItem(DOWNLOAD_HISTORY_KEY);
-  if (history) {
-    try {
-      return JSON.parse(history);
-    } catch (error) {
-      console.error('Error parsing download history from localStorage:', error);
-      return [];
-    }
+const addToDownloadHistory = async (link, apiKey) => {
+  // Only save to backend - no localStorage fallback to avoid dual sources of truth
+  if (!apiKey) {
+    console.warn('Cannot save link history: API key is required');
+    return;
   }
-  return [];
-};
 
-const addToDownloadHistory = (link) => {
-  const history = getDownloadHistory();
-  history.unshift(link);
-  // Keep only last 200 entries
-  const trimmedHistory = history.slice(0, 200);
-  localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(trimmedHistory));
+  try {
+    const response = await fetch('/api/link-history', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        item_id: link.itemId,
+        file_id: link.fileId || null,
+        url: link.url,
+        asset_type: link.assetType,
+        item_name: link.itemName || null,
+        file_name: link.fileName || null,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error saving link history to backend:', errorData.error || 'Unknown error');
+    }
+  } catch (error) {
+    console.error('Error saving link history to backend:', error);
+  }
 };
 
 // Sanitize filename by extracting the actual filename from folder/filename format
@@ -45,7 +55,7 @@ export function useDownloads(
   apiKey,
   assetType = 'torrents',
   downloadHistory,
-  setDownloadHistory,
+  fetchDownloadHistory
 ) {
   const [downloadLinks, setDownloadLinks] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -92,12 +102,7 @@ export function useDownloads(
     return null;
   };
 
-  const requestDownloadLink = async (
-    id,
-    options = {},
-    idField = null,
-    metadata = {},
-  ) => {
+  const requestDownloadLink = async (id, options = {}, idField = null, metadata = {}) => {
     if (!apiKey) return false;
 
     // For 'all' type, determine the actual asset type from metadata
@@ -107,7 +112,7 @@ export function useDownloads(
 
     if (assetType === 'all' && metadata.item) {
       actualAssetType = metadata.item.assetType || 'torrents';
-      
+
       // Determine the correct endpoint and ID field based on the actual asset type
       switch (actualAssetType) {
         case 'usenet':
@@ -139,10 +144,8 @@ export function useDownloads(
           download.itemId === id &&
           download.fileId === fileId &&
           download.assetType === actualAssetType &&
-          Math.abs(
-            new Date().getTime() - new Date(download.generatedAt).getTime(),
-          ) <=
-            1000 * 60 * 60 * 3, // within 3 hours
+          Math.abs(new Date().getTime() - new Date(download.generatedAt).getTime()) <=
+            1000 * 60 * 60 * 3 // within 3 hours
       );
     } else {
       existingDownload = downloadHistory.find(
@@ -150,10 +153,8 @@ export function useDownloads(
           download.itemId === id &&
           download.assetType === actualAssetType &&
           !download.fileId &&
-          Math.abs(
-            new Date().getTime() - new Date(download.generatedAt).getTime(),
-          ) <=
-            1000 * 60 * 60 * 3, // within 3 hours
+          Math.abs(new Date().getTime() - new Date(download.generatedAt).getTime()) <=
+            1000 * 60 * 60 * 3 // within 3 hours
       );
     }
 
@@ -165,9 +166,7 @@ export function useDownloads(
 
     const params = new URLSearchParams({
       [idField]: id,
-      ...(fileId !== undefined && fileId !== null
-        ? { file_id: fileId }
-        : { zip_link: 'true' }),
+      ...(fileId !== undefined && fileId !== null ? { file_id: fileId } : { zip_link: 'true' }),
     });
 
     const result = await retryFetch(`${actualEndpoint}?${params}`, {
@@ -175,7 +174,7 @@ export function useDownloads(
       permanent: [
         (data) =>
           Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err),
+            (err) => data.error?.includes(err) || data.detail?.includes(err)
           ),
       ],
     });
@@ -183,26 +182,15 @@ export function useDownloads(
     if (result.success) {
       const downloadUrl = extractDownloadUrl(result.data);
       if (downloadUrl) {
-        const resultId =
-          fileId !== undefined && fileId !== null ? `${id}-${fileId}` : id;
+        const resultId = fileId !== undefined && fileId !== null ? `${id}-${fileId}` : id;
 
-        // Optimize metadata for storage
-        const optimizedMetadata = {
-          ...metadata,
-          item: fileId
-            ? {
-                ...metadata.item,
-                files: metadata.item?.files?.filter(
-                  (file) => file.id === fileId,
-                ),
-              }
-            : {
-                ...metadata.item,
-                files: undefined,
-              },
-        };
+        // Extract just the names we need for display
+        const itemName = metadata.item?.name || null;
+        const fileName = fileId
+          ? metadata.item?.files?.find((file) => file.id === fileId)?.short_name || null
+          : null;
 
-        // Store in localStorage
+        // Store in backend
         const newDownloadHistory = {
           id: resultId,
           itemId: id,
@@ -210,10 +198,10 @@ export function useDownloads(
           url: downloadUrl,
           assetType: actualAssetType,
           generatedAt: new Date().toISOString(),
-          metadata: optimizedMetadata,
+          itemName,
+          fileName,
         };
-        addToDownloadHistory(newDownloadHistory);
-        setDownloadHistory((prev) => [newDownloadHistory, ...prev]);
+        await addToDownloadHistory(newDownloadHistory, apiKey);
 
         return { success: true, data: { id: resultId, url: downloadUrl } };
       }
@@ -230,7 +218,7 @@ export function useDownloads(
     options = {},
     idField = null,
     copyLink = false,
-    metadata = {},
+    metadata = {}
   ) => {
     try {
       const result = await requestDownloadLink(id, options, idField, metadata);
@@ -275,6 +263,12 @@ export function useDownloads(
         } else {
           window.open(result.data.url, '_blank');
         }
+
+        // Fetch updated history from backend after single download completes
+        if (fetchDownloadHistory && apiKey) {
+          fetchDownloadHistory(apiKey);
+        }
+
         return true;
       }
       return false;
@@ -287,7 +281,7 @@ export function useDownloads(
     const totalItems = selectedItems.items.size;
     const totalFiles = Array.from(selectedItems.files.entries()).reduce(
       (acc, [_, files]) => acc + files.size,
-      0,
+      0
     );
     const total = totalItems + totalFiles;
 
@@ -319,8 +313,7 @@ export function useDownloads(
             type: 'item',
             id,
             name:
-              item?.name ||
-              `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${id}`,
+              item?.name || `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${id}`,
             metadata: {
               assetType,
               item,
@@ -328,26 +321,22 @@ export function useDownloads(
           };
         }
       }),
-      ...Array.from(selectedItems.files.entries()).flatMap(
-        ([itemId, fileIds]) => {
-          const item = items.find((t) => t.id === itemId);
-          return Array.from(fileIds).map((fileId) => ({
-            type: 'file',
-            itemId,
-            fileId,
-            name:
-              item?.files?.find((f) => f.id === fileId)?.name ||
-              `File ${fileId}`,
-            metadata: {
-              assetType,
-              item: {
-                ...item,
-                files: item.files.filter((f) => f.id === fileId), // Filter to include only the specific file
-              },
+      ...Array.from(selectedItems.files.entries()).flatMap(([itemId, fileIds]) => {
+        const item = items.find((t) => t.id === itemId);
+        return Array.from(fileIds).map((fileId) => ({
+          type: 'file',
+          itemId,
+          fileId,
+          name: item?.files?.find((f) => f.id === fileId)?.name || `File ${fileId}`,
+          metadata: {
+            assetType,
+            item: {
+              ...item,
+              files: item.files.filter((f) => f.id === fileId), // Filter to include only the specific file
             },
-          }));
-        },
-      ),
+          },
+        }));
+      }),
     ];
 
     // Process in chunks
@@ -364,14 +353,13 @@ export function useDownloads(
                     fileId: task.fileId,
                   },
                   null,
-                  task.metadata,
+                  task.metadata
                 );
 
           if (result.success) {
             // Determine filename with extension for download managers
-            const filename =
-              task.type === 'item' ? `${task.name}.zip` : task.name;
-            
+            const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
+
             // Sanitize filename to remove invalid characters (like forward slashes)
             // that can cause download managers to misinterpret the URL
             const sanitizedFilename = sanitizeFilename(filename);
@@ -394,7 +382,7 @@ export function useDownloads(
           }
 
           return false;
-        }),
+        })
       );
 
       // Stop if any download failed after retries
@@ -402,6 +390,11 @@ export function useDownloads(
     }
 
     setIsDownloading(false);
+
+    // Fetch updated history from backend after all bulk downloads complete
+    if (fetchDownloadHistory && apiKey) {
+      fetchDownloadHistory(apiKey);
+    }
   };
 
   return {

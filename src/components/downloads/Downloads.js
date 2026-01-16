@@ -27,6 +27,7 @@ import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { formatSize } from './utils/formatters';
 import { fetchUserProfile, hasProPlan } from '@/utils/userProfile';
 
@@ -39,7 +40,11 @@ export default function Downloads({ apiKey }) {
   const [activeType, setActiveType] = useState('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
-  const [downloadHistory, setDownloadHistory] = useState([]);
+
+  // Use Zustand store for download history
+  const downloadHistory = useDownloadHistoryStore((state) => state.downloadHistory);
+  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
+  const downloadHistoryLoading = useDownloadHistoryStore((state) => state.isLoading);
   const [videoPlayerState, setVideoPlayerState] = useState({
     isOpen: false,
     streamUrl: null,
@@ -61,6 +66,7 @@ export default function Downloads({ apiKey }) {
   const [hasProPlanAccess, setHasProPlanAccess] = useState(false);
   const hasExpandedRef = useRef(false);
   const scrollContainerRef = useRef(null);
+  const fetchDownloadHistoryRef = useRef(false);
   const isMobile = useIsMobile();
 
   // Ensure user database exists when API key is provided
@@ -156,7 +162,7 @@ export default function Downloads({ apiKey }) {
     setSelectedItems,
   } = useSelection(itemsWithTags);
   const { downloadLinks, isDownloading, downloadProgress, handleBulkDownload, setDownloadLinks } =
-    useDownloads(apiKey, activeType, downloadHistory, setDownloadHistory);
+    useDownloads(apiKey, activeType, downloadHistory, fetchDownloadHistory);
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
@@ -331,17 +337,22 @@ export default function Downloads({ apiKey }) {
     }
   }, []);
 
+  // Fetch link history from backend on initial load
   useEffect(() => {
-    const storedDownloadHistory = localStorage.getItem('torboxDownloadHistory');
-    if (storedDownloadHistory) {
-      try {
-        setDownloadHistory(JSON.parse(storedDownloadHistory));
-      } catch (error) {
-        console.error('Error parsing download history from localStorage:', error);
-        setDownloadHistory([]);
-      }
+    if (
+      apiKey &&
+      downloadHistory.length === 0 &&
+      !downloadHistoryLoading &&
+      !fetchDownloadHistoryRef.current
+    ) {
+      fetchDownloadHistoryRef.current = true;
+      fetchDownloadHistory(apiKey);
     }
-  }, []);
+    // Reset ref when apiKey changes
+    if (!apiKey) {
+      fetchDownloadHistoryRef.current = false;
+    }
+  }, [apiKey, downloadHistory.length, downloadHistoryLoading, fetchDownloadHistory]);
 
   // Expand rows with selected files on initial load
   useEffect(() => {
@@ -604,7 +615,6 @@ export default function Downloads({ apiKey }) {
                 handleRowSelect={handleRowSelect}
                 setSelectedItems={setSelectedItems}
                 downloadHistory={downloadHistory}
-                setDownloadHistory={setDownloadHistory}
                 isBlurred={isBlurred}
                 deleteItem={deleteItem}
                 sortedItems={sortedItems}
@@ -657,7 +667,6 @@ export default function Downloads({ apiKey }) {
                 activeColumns={activeColumns}
                 onFileSelect={handleFileSelect}
                 downloadHistory={downloadHistory}
-                setDownloadHistory={setDownloadHistory}
                 onDelete={deleteItem}
                 expandedItems={expandedItems}
                 toggleFiles={toggleFiles}

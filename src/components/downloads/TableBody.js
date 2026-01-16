@@ -1,11 +1,20 @@
 'use client';
 
-import { useState, useRef, useMemo, useDeferredValue, useCallback, useEffect, useLayoutEffect, startTransition } from 'react';
+import {
+  useState,
+  useRef,
+  useMemo,
+  useDeferredValue,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  startTransition,
+} from 'react';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
 import { useDownloads } from '../shared/hooks/useDownloads';
-import { useStream } from '../shared/hooks/useStream';
+import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 
@@ -19,7 +28,6 @@ export default function TableBody({
   onFileSelect,
   setSelectedItems,
   downloadHistory,
-  setDownloadHistory,
   expandedItems,
   toggleFiles,
   apiKey,
@@ -32,7 +40,6 @@ export default function TableBody({
   isFullscreen,
   scrollContainerRef,
   hasProPlan = false,
-  onOpenVideoPlayer,
   onFileStreamInit,
 }) {
   const t = useTranslations('TableBody');
@@ -43,11 +50,12 @@ export default function TableBody({
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
   const [isStreaming, setIsStreaming] = useState({});
+  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
   const { downloadSingle } = useDownloads(
     apiKey,
     activeType,
     downloadHistory,
-    setDownloadHistory,
+    fetchDownloadHistory
   );
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
@@ -78,7 +86,7 @@ export default function TableBody({
       // Calculate immediately and after DOM is ready
       updateTableOffset();
       requestAnimationFrame(updateTableOffset);
-      
+
       // Only listen to resize, not scroll, to avoid constant updates
       window.addEventListener('resize', updateTableOffset);
 
@@ -102,7 +110,7 @@ export default function TableBody({
   const flattenedRows = useMemo(() => {
     const rows = [];
     const expandedSet = new Set(expandedItemsArray);
-    
+
     deferredItems.forEach((item, itemIndex) => {
       // Add item row
       rows.push({
@@ -137,16 +145,19 @@ export default function TableBody({
   }, []);
 
   // Memoize estimateSize to prevent recalculation on every render
-  const estimateSize = useCallback((index) => {
-    const row = flattenedRows[index];
-    // Height estimates for mobile vs desktop
-    // Mobile rows are much taller due to vertical action layout and extra info
-    if (isMobile) {
-      return row?.type === 'item' ? 170 : 60;
-    }
-    // Desktop estimates
-    return row?.type === 'item' ? 70 : 50;
-  }, [flattenedRows, isMobile]);
+  const estimateSize = useCallback(
+    (index) => {
+      const row = flattenedRows[index];
+      // Height estimates for mobile vs desktop
+      // Mobile rows are much taller due to vertical action layout and extra info
+      if (isMobile) {
+        return row?.type === 'item' ? 170 : 60;
+      }
+      // Desktop estimates
+      return row?.type === 'item' ? 70 : 50;
+    },
+    [flattenedRows, isMobile]
+  );
 
   // Memoize getScrollElement to ensure stable reference
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
@@ -174,162 +185,156 @@ export default function TableBody({
 
   // Use the appropriate virtualizer based on mode - memoize to ensure stable reference
   const virtualizer = useMemo(
-    () => isFullscreen ? containerVirtualizer : windowVirtualizer,
+    () => (isFullscreen ? containerVirtualizer : windowVirtualizer),
     [isFullscreen, containerVirtualizer, windowVirtualizer]
   );
 
   // Define isDisabled first so it can be used in handlers
-  const isDisabled = useCallback((itemId) => {
-    return (
-      selectedItems.files?.has(itemId) &&
-      selectedItems.files.get(itemId).size > 0
-    );
-  }, [selectedItems]);
+  const isDisabled = useCallback(
+    (itemId) => {
+      return selectedItems.files?.has(itemId) && selectedItems.files.get(itemId).size > 0;
+    },
+    [selectedItems]
+  );
 
-  const handleItemSelection = useCallback((
-    itemId,
-    checked,
-    rowIndex,
-    isShiftKey = false,
-  ) => {
-    if (
-      isShiftKey &&
-      typeof rowIndex === 'number' &&
-      lastClickedItemIndexRef.current !== null
-    ) {
-      const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
-      const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
+  const handleItemSelection = useCallback(
+    (itemId, checked, rowIndex, isShiftKey = false) => {
+      if (isShiftKey && typeof rowIndex === 'number' && lastClickedItemIndexRef.current !== null) {
+        const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
+        const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
 
-      setSelectedItems((prev) => {
-        const newItems = new Set(prev.items);
-        for (let i = start; i <= end; i++) {
-          const t = items[i];
-          if (checked && !isDisabled(t.id)) {
-            newItems.add(t.id);
-          } else {
-            newItems.delete(t.id);
+        setSelectedItems((prev) => {
+          const newItems = new Set(prev.items);
+          for (let i = start; i <= end; i++) {
+            const t = items[i];
+            if (checked && !isDisabled(t.id)) {
+              newItems.add(t.id);
+            } else {
+              newItems.delete(t.id);
+            }
           }
-        }
-        return {
-          items: newItems,
-          files: prev.files,
-        };
-      });
-    } else {
-      setSelectedItems((prev) => {
-        const newItems = new Set(prev.items);
-        if (checked && !isDisabled(itemId)) {
-          newItems.add(itemId);
-        } else {
-          newItems.delete(itemId);
-        }
-        return {
-          items: newItems,
-          files: prev.files,
-        };
-      });
-    }
-    lastClickedItemIndexRef.current = rowIndex;
-  }, [items, setSelectedItems, isDisabled]);
-
-  const handleFileSelection = useCallback((
-    itemId,
-    fileIndex,
-    file,
-    checked,
-    isShiftKey = false,
-  ) => {
-    if (isShiftKey && lastClickedFileIndexRef.current !== null) {
-      const start = Math.min(lastClickedFileIndexRef.current, fileIndex);
-      const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
-      const item = items.find((i) => i.id === itemId);
-      if (item) {
-        item.files.slice(start, end + 1).forEach((f) => {
-          onFileSelect(itemId, f.id, checked);
+          return {
+            items: newItems,
+            files: prev.files,
+          };
+        });
+      } else {
+        setSelectedItems((prev) => {
+          const newItems = new Set(prev.items);
+          if (checked && !isDisabled(itemId)) {
+            newItems.add(itemId);
+          } else {
+            newItems.delete(itemId);
+          }
+          return {
+            items: newItems,
+            files: prev.files,
+          };
         });
       }
-    } else {
-      onFileSelect(itemId, file.id, checked);
-    }
-    lastClickedFileIndexRef.current = fileIndex;
-  }, [items, onFileSelect]);
+      lastClickedItemIndexRef.current = rowIndex;
+    },
+    [items, setSelectedItems, isDisabled]
+  );
 
-  const assetKey = useCallback((itemId, fileId) =>
-    fileId ? `${itemId}-${fileId}` : itemId, []);
+  const handleFileSelection = useCallback(
+    (itemId, fileIndex, file, checked, isShiftKey = false) => {
+      if (isShiftKey && lastClickedFileIndexRef.current !== null) {
+        const start = Math.min(lastClickedFileIndexRef.current, fileIndex);
+        const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
+        const item = items.find((i) => i.id === itemId);
+        if (item) {
+          item.files.slice(start, end + 1).forEach((f) => {
+            onFileSelect(itemId, f.id, checked);
+          });
+        }
+      } else {
+        onFileSelect(itemId, file.id, checked);
+      }
+      lastClickedFileIndexRef.current = fileIndex;
+    },
+    [items, onFileSelect]
+  );
 
-  const handleFileDownload = useCallback(async (itemId, file, copyLink = false) => {
-    const key = assetKey(itemId, file.id);
-    if (copyLink) {
-      setIsCopying((prev) => ({ ...prev, [key]: true }));
-    } else {
-      setIsDownloading((prev) => ({ ...prev, [key]: true }));
-    }
-    const options = { fileId: file.id, filename: file.name };
+  const assetKey = useCallback((itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId), []);
 
-    const idField =
-      activeType === 'usenet'
-        ? 'usenet_id'
-        : activeType === 'webdl'
-          ? 'web_id'
-          : 'torrent_id';
+  const handleFileDownload = useCallback(
+    async (itemId, file, copyLink = false) => {
+      const key = assetKey(itemId, file.id);
+      if (copyLink) {
+        setIsCopying((prev) => ({ ...prev, [key]: true }));
+      } else {
+        setIsDownloading((prev) => ({ ...prev, [key]: true }));
+      }
+      const options = { fileId: file.id, filename: file.name };
 
-    const metadata = {
-      assetType: activeType,
-      item: items.find((item) => item.id === itemId),
-    };
+      const idField =
+        activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
 
-    await downloadSingle(itemId, options, idField, copyLink, metadata)
-      .then(() => {
-        setToast({
-          message: t('toast.copyLink'),
-          type: 'success',
+      const metadata = {
+        assetType: activeType,
+        item: items.find((item) => item.id === itemId),
+      };
+
+      await downloadSingle(itemId, options, idField, copyLink, metadata)
+        .then(() => {
+          setToast({
+            message: t('toast.copyLink'),
+            type: 'success',
+          });
+        })
+        .catch((err) => {
+          setToast({
+            message: t('toast.copyLinkFailed'),
+            type: 'error',
+          });
+        })
+        .finally(() => {
+          if (copyLink) {
+            setIsCopying((prev) => ({ ...prev, [key]: false }));
+          } else {
+            setIsDownloading((prev) => ({ ...prev, [key]: false }));
+          }
         });
-      })
-      .catch((err) => {
+    },
+    [assetKey, activeType, items, downloadSingle, setToast, t]
+  );
+
+  const handleFileStream = useCallback(
+    async (itemId, file) => {
+      const key = assetKey(itemId, file.id);
+      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+
+      try {
+        // Call the parent's handler to get metadata and show track selection modal
+        if (onFileStreamInit) {
+          await onFileStreamInit(itemId, file);
+        }
+      } catch (error) {
+        console.error('Error initiating stream:', error);
         setToast({
-          message: t('toast.copyLinkFailed'),
+          message: error.message || 'Failed to initiate stream',
           type: 'error',
         });
-      })
-      .finally(() => {
-        if (copyLink) {
-          setIsCopying((prev) => ({ ...prev, [key]: false }));
-        } else {
-          setIsDownloading((prev) => ({ ...prev, [key]: false }));
-        }
-      });
-  }, [assetKey, activeType, items, downloadSingle, setToast, t]);
-
-
-  const handleFileStream = useCallback(async (itemId, file) => {
-    const key = assetKey(itemId, file.id);
-    setIsStreaming((prev) => ({ ...prev, [key]: true }));
-
-    try {
-      // Call the parent's handler to get metadata and show track selection modal
-      if (onFileStreamInit) {
-        await onFileStreamInit(itemId, file);
+      } finally {
+        setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
-    } catch (error) {
-      console.error('Error initiating stream:', error);
-      setToast({
-        message: error.message || 'Failed to initiate stream',
-        type: 'error',
-      });
-    } finally {
-      setIsStreaming((prev) => ({ ...prev, [key]: false }));
-    }
-  }, [assetKey, onFileStreamInit, setToast]);
+    },
+    [assetKey, onFileStreamInit, setToast]
+  );
 
-  const rowStyle = useMemo(() => ({
-    willChange: 'transform',
-  }), []);
+  const rowStyle = useMemo(
+    () => ({
+      willChange: 'transform',
+    }),
+    []
+  );
 
   // Track view mode changes to prevent flushSync errors
   const prevViewModeRef = useRef(viewMode);
   const isTransitioningRef = useRef(false);
   const [virtualRows, setVirtualRows] = useState([]);
-  
+
   // Check for view mode change synchronously during render
   if (prevViewModeRef.current !== viewMode) {
     isTransitioningRef.current = true;
@@ -339,7 +344,7 @@ export default function TableBody({
       setVirtualRows([]);
     }
   }
-  
+
   // Update virtual rows after render completes to prevent flushSync errors
   // This is critical when switching from Card to Table view
   useLayoutEffect(() => {
@@ -354,18 +359,18 @@ export default function TableBody({
         isTransitioningRef.current = false;
       }
     };
-    
+
     // Use requestAnimationFrame to ensure we're outside the render phase
     const rafId = requestAnimationFrame(updateRows);
     return () => cancelAnimationFrame(rafId);
   }, [virtualizer, viewMode, flattenedRows.length]);
-  
+
   // Update virtual rows on scroll to keep them in sync
   // This ensures scroll updates work even though we're using state
   useEffect(() => {
     // Skip during transitions
     if (isTransitioningRef.current) return;
-    
+
     const updateRows = () => {
       try {
         const rows = virtualizer.getVirtualItems();
@@ -374,26 +379,26 @@ export default function TableBody({
         // Silently handle errors
       }
     };
-    
+
     // Use an interval to update rows frequently for smooth scrolling
     // This is more reliable than scroll events which might be throttled
     const intervalId = setInterval(() => {
       requestAnimationFrame(updateRows);
     }, 16); // ~60fps
-    
+
     return () => clearInterval(intervalId);
   }, [virtualizer]);
-  
+
   // Get virtual rows - always use state to prevent flushSync errors
   // State is updated in effects to keep it in sync with scroll
   const currentVirtualRows = virtualRows;
-  
+
   // Calculate startOffset - only show spacer for rows that are actually before the first visible
   // In fullscreen: use container scroll position
   // In normal mode: useWindowVirtualizer calculates from document top, but table starts at tableOffsetTop
   const firstVisibleRow = currentVirtualRows[0];
   let startOffset = 0;
-  
+
   if (firstVisibleRow && firstVisibleRow.index > 0) {
     if (isFullscreen) {
       // In fullscreen mode, calculate offset based on container scroll
@@ -404,17 +409,17 @@ export default function TableBody({
     } else if (tableOffsetTop > 0) {
       // In normal mode, use window scroll position
       const currentScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
-      
+
       // Only show spacer if we've scrolled past where the table content starts
       if (currentScrollY > tableOffsetTop) {
         // Calculate the offset within the table by summing row sizes
         // But limit it to a reasonable maximum based on scroll position
         const scrollIntoTable = currentScrollY - tableOffsetTop;
-        
+
         for (let i = 0; i < firstVisibleRow.index; i++) {
           startOffset += estimateSize(i);
         }
-        
+
         // Don't show a spacer larger than how far we've scrolled into the table
         // This prevents the huge spacer issue
         startOffset = Math.min(startOffset, scrollIntoTable);
@@ -446,22 +451,22 @@ export default function TableBody({
       ref={tbodyRef}
       className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark"
     >
-        {/* Top spacer */}
-        {startOffset > 0 && (
-          <tr>
-            <td colSpan={activeColumns.length + 2} style={{ height: startOffset, padding: 0 }} />
-          </tr>
-        )}
-        {/* Virtualized rows */}
-        {currentVirtualRows
-          .filter((virtualRow) => {
-            // Filter out invalid indices (can happen during data updates)
-            return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
-          })
-          .map((virtualRow) => {
-            const row = flattenedRows[virtualRow.index];
+      {/* Top spacer */}
+      {startOffset > 0 && (
+        <tr>
+          <td colSpan={activeColumns.length + 2} style={{ height: startOffset, padding: 0 }} />
+        </tr>
+      )}
+      {/* Virtualized rows */}
+      {currentVirtualRows
+        .filter((virtualRow) => {
+          // Filter out invalid indices (can happen during data updates)
+          return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
+        })
+        .map((virtualRow) => {
+          const row = flattenedRows[virtualRow.index];
 
-            if (row.type === 'item') {
+          if (row.type === 'item') {
             return (
               <ItemRow
                 key={`item-${row.item.id}`}
@@ -472,7 +477,6 @@ export default function TableBody({
                 setItems={setItems}
                 setSelectedItems={setSelectedItems}
                 downloadHistory={downloadHistory}
-                setDownloadHistory={setDownloadHistory}
                 onRowSelect={onRowSelect}
                 expandedItems={expandedItems}
                 toggleFiles={toggleFiles}
@@ -518,11 +522,12 @@ export default function TableBody({
             );
           }
         })}
-        {/* Bottom spacer */}
-        {currentVirtualRows.length > 0 && (() => {
+      {/* Bottom spacer */}
+      {currentVirtualRows.length > 0 &&
+        (() => {
           const lastVisibleRow = currentVirtualRows[currentVirtualRows.length - 1];
           const lastVisibleIndex = lastVisibleRow?.index ?? 0;
-          
+
           // Calculate height of rows after the last visible row
           let bottomOffset = 0;
           if (lastVisibleIndex < flattenedRows.length - 1) {
@@ -531,7 +536,7 @@ export default function TableBody({
               bottomOffset += estimateSize(i);
             }
           }
-          
+
           // Only show bottom spacer if there are rows after the last visible one
           return bottomOffset > 0 ? (
             <tr>

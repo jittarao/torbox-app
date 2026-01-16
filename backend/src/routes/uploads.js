@@ -1,5 +1,5 @@
 import {
-  validateAuthIdMiddleware,
+  extractAuthIdMiddleware,
   validateNumericIdMiddleware,
   validateNumericId,
 } from '../middleware/validation.js';
@@ -10,7 +10,6 @@ import {
   getUploadFilePath,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
-import { hashApiKey } from '../utils/crypto.js';
 import rateLimit from 'express-rate-limit';
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -45,29 +44,6 @@ function validateFileExtension(type, upload_type, filePathOrName) {
   }
 
   return null;
-}
-
-/**
- * Middleware to extract authId from API key if authId not provided
- */
-function extractAuthIdMiddleware(req, res, next) {
-  // If authId already validated, use it
-  if (req.validatedAuthId) {
-    return next();
-  }
-
-  // Try to get authId from API key
-  const apiKey =
-    req.headers['x-api-key'] ||
-    req.headers['authorization']?.replace('Bearer ', '') ||
-    req.body?.apiKey;
-  if (apiKey) {
-    req.validatedAuthId = hashApiKey(apiKey);
-    return next();
-  }
-
-  // Fall back to validateAuthIdMiddleware
-  return validateAuthIdMiddleware(req, res, next);
 }
 
 /**

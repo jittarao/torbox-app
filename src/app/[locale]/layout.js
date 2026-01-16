@@ -24,13 +24,13 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: 'TorBox Manager',
-  description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
+  description: "A power user's alternative to TorBox UI. Built for speed and efficiency.",
   manifest: '/manifest.json',
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'black-translucent',
   openGraph: {
     title: 'TorBox Manager',
-    description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
+    description: "A power user's alternative to TorBox UI. Built for speed and efficiency.",
     type: 'website',
     locale: 'en_US',
     siteName: 'TorBox Manager',
@@ -38,7 +38,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'TorBox Manager',
-    description: 'A power user\'s alternative to TorBox UI. Built for speed and efficiency.',
+    description: "A power user's alternative to TorBox UI. Built for speed and efficiency.",
   },
   robots: {
     index: true,
@@ -89,17 +89,38 @@ export default async function LocaleLayout({ children, params }) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#000000" />
+        {/* Blocking script to set theme before React hydrates - prevents flash/mismatch */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('darkMode');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var isDark = stored !== null ? stored === 'true' : prefersDark;
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
       >
         <ThemeProvider>
-          <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>}>
+          <Suspense
+            fallback={
+              <div className="flex justify-center items-center min-h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+              </div>
+            }
+          >
             <MessagesLoader locale={locale}>
               <PostHogProvider>
                 <FileHandler />
