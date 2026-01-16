@@ -22,6 +22,9 @@ const LinkHistory = ({ apiKey }) => {
     total: 0,
     totalPages: 0,
   });
+  // Input value (immediate updates for UI responsiveness)
+  const [searchInput, setSearchInput] = useState('');
+  // Debounced search value (triggers API calls)
   const [search, setSearch] = useState('');
   const [selectedLinks, setSelectedLinks] = useState(new Set());
 
@@ -35,10 +38,14 @@ const LinkHistory = ({ apiKey }) => {
   const { deleting, bulkDeleting, copySuccess, handleDelete, handleBulkDelete, handleCopy } =
     useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks);
 
-  // Reset to page 1 when search changes
+  // Debounce search input - update search value after 500ms of no typing
   useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [search]);
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleSelectAll = useCallback(
     (checked) => {
@@ -68,7 +75,7 @@ const LinkHistory = ({ apiKey }) => {
   }, []);
 
   const handleSearchChange = useCallback((value) => {
-    setSearch(value);
+    setSearchInput(value);
   }, []);
 
   const handleOpenLink = useCallback((url) => {
@@ -97,7 +104,7 @@ const LinkHistory = ({ apiKey }) => {
           {linkHistoryT('title')}
         </h1>
         <SearchBar
-          search={search}
+          search={searchInput}
           onSearchChange={handleSearchChange}
           selectedCount={selectedLinks.size}
           onBulkDelete={handleBulkDeleteClick}
