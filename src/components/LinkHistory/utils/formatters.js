@@ -3,12 +3,17 @@ import { timeAgo } from '@/components/downloads/utils/formatters';
 /**
  * Get expiration date from generated date
  * Links expire 4 hours after generation
- * @param {string} generatedAt - UTC datetime string in SQLite or ISO format
+ * @param {string|null|undefined} generatedAt - UTC datetime string in SQLite or ISO format
  * @param {Function} t - Translation function
  * @param {Function} linkHistoryT - LinkHistory translation function
  * @returns {string} Formatted expiration date or "expired" message
  */
 export const getExpirationDate = (generatedAt, t, linkHistoryT) => {
+  // Handle null or undefined generatedAt
+  if (!generatedAt) {
+    return linkHistoryT('expired') || 'Expired';
+  }
+
   // Backend returns UTC datetime strings in SQLite format "YYYY-MM-DD HH:MM:SS"
   // JavaScript's Date constructor interprets strings without timezone as local time
   // We need to explicitly parse it as UTC by converting to ISO format with 'Z' suffix
