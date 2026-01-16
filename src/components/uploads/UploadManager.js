@@ -18,7 +18,7 @@ import UploadPagination from './UploadPagination';
 import UploadStatistics from './UploadStatistics';
 import UploadFilters from './UploadFilters';
 import UploadTable from './UploadTable';
-import { useBackendMode } from '@/utils/backendCheck';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function UploadManager({ apiKey }) {
   const { mode: backendMode } = useBackendMode();

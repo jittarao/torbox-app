@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useBackendModeStore } from '@/utils/backendCheck';
+import { useBackendModeStore } from '@/store/backendModeStore';
 
 /**
  * Check if backend is available (not disabled)
