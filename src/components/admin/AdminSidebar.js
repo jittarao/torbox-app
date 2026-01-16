@@ -8,6 +8,7 @@ const menuItems = [
   { path: '/admin/users', label: 'Users', icon: '👥' },
   { path: '/admin/system', label: 'System', icon: '⚙️' },
   { path: '/admin/databases', label: 'Databases', icon: '💾' },
+  { path: '/admin/diagnostics', label: 'Diagnostics', icon: '🔍' },
   { path: '/admin/automation', label: 'Automation', icon: '🤖' },
   { path: '/admin/settings', label: 'Settings', icon: '🔧' },
 ];

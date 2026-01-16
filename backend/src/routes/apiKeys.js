@@ -29,7 +29,7 @@ export function setupApiKeyRoutes(app, backend) {
       }
 
       // Register API key in master database
-      const authId = await backend.masterDatabase.registerApiKey(apiKey, keyName);
+      const { authId, wasNew } = await backend.masterDatabase.registerApiKey(apiKey, keyName);
 
       // Invalidate cached API client if it exists (in case key was updated)
       if (backend.uploadProcessor) {
@@ -37,7 +37,32 @@ export function setupApiKeyRoutes(app, backend) {
       }
 
       // Register user in UserDatabaseManager (creates DB if needed)
-      await backend.userDatabaseManager.registerUser(apiKey, keyName);
+      // If this fails and the API key was newly inserted, rollback by deleting the API key
+      try {
+        await backend.userDatabaseManager.registerUser(apiKey, keyName);
+      } catch (error) {
+        // Rollback: if API key was newly inserted and user registration failed,
+        // delete the API key to maintain consistency between api_keys and user_registry
+        if (wasNew) {
+          logger.warn('User registration failed after API key registration, rolling back API key', {
+            authId,
+            error: error.message,
+          });
+          try {
+            backend.masterDatabase.deleteApiKey(authId);
+          } catch (rollbackError) {
+            logger.error(
+              'Failed to rollback API key after user registration failure',
+              rollbackError,
+              {
+                authId,
+              }
+            );
+          }
+        }
+        // Re-throw the original error
+        throw error;
+      }
 
       // Create automation engine for this user
       const apiKeyData = backend.masterDatabase.getApiKey(authId);
@@ -128,14 +153,55 @@ export function setupApiKeyRoutes(app, backend) {
         const keyName = req.body.keyName || null;
         const pollInterval = req.body.pollInterval || 5;
 
-        await backend.masterDatabase.registerApiKey(apiKey, keyName, pollInterval);
+        // Register API key in master database
+        const { authId: registeredAuthId, wasNew } = await backend.masterDatabase.registerApiKey(
+          apiKey,
+          keyName
+        );
+
+        // Verify authId matches (should always be the same)
+        if (registeredAuthId !== authId) {
+          logger.warn('AuthId mismatch during registration', {
+            expected: authId,
+            received: registeredAuthId,
+          });
+        }
 
         // Invalidate cached API client if it exists (in case key was updated)
         if (backend.uploadProcessor) {
           backend.uploadProcessor.invalidateApiClient(authId);
         }
 
-        await backend.userDatabaseManager.registerUser(apiKey, keyName, pollInterval);
+        // Register user in UserDatabaseManager (creates DB if needed)
+        // If this fails and the API key was newly inserted, rollback by deleting the API key
+        try {
+          await backend.userDatabaseManager.registerUser(apiKey, keyName, pollInterval);
+        } catch (error) {
+          // Rollback: if API key was newly inserted and user registration failed,
+          // delete the API key to maintain consistency between api_keys and user_registry
+          if (wasNew) {
+            logger.warn(
+              'User registration failed after API key registration, rolling back API key',
+              {
+                authId,
+                error: error.message,
+              }
+            );
+            try {
+              backend.masterDatabase.deleteApiKey(authId);
+            } catch (rollbackError) {
+              logger.error(
+                'Failed to rollback API key after user registration failure',
+                rollbackError,
+                {
+                  authId,
+                }
+              );
+            }
+          }
+          // Re-throw the original error
+          throw error;
+        }
 
         // Create automation engine for this user
         const apiKeyData = backend.masterDatabase.getApiKey(authId);
