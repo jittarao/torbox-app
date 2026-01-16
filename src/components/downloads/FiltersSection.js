@@ -445,7 +445,7 @@ export default function FiltersSection({
 
           <div className="flex justify-between items-center gap-2">
             {/* View Selector - Show inline when not expanded */}
-            {apiKey && views.length > 0 && !isExpanded && (
+            {apiKey && views && views.length > 0 && !isExpanded && (
               <div className="flex items-center gap-1.5">
                 <CustomViews
                   views={views}
