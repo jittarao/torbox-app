@@ -49,7 +49,7 @@ export default function ItemsTable({
     fileId: null,
     file: null,
   });
-  const { createStream, getStreamData } = useStream(apiKey);
+  const { createStream } = useStream(apiKey);
 
   // Map activeType to stream type
   const getStreamType = useCallback(() => {
@@ -98,7 +98,7 @@ export default function ItemsTable({
         // You might want to pass setToast here or handle error differently
       }
     },
-    [getStreamType, getStreamData]
+    [getStreamType, createStream]
   );
 
   // Handle track selection and open video player
@@ -134,7 +134,7 @@ export default function ItemsTable({
         // Check if hls_url is already provided in the response
         let streamUrl = data.hls_url || streamMetadata.hls_url;
 
-        // If hls_url not provided, get it via getStreamData
+        // If hls_url not provided, get it via createStream
         if (!streamUrl && presignedToken && userToken) {
           const streamData = await createStream(
             itemId,
@@ -185,7 +185,7 @@ export default function ItemsTable({
         // You might want to pass setToast here or handle error differently
       }
     },
-    [trackSelectionModal, getStreamType, createStream, getStreamData, onOpenVideoPlayer]
+    [trackSelectionModal, getStreamType, createStream, onOpenVideoPlayer]
   );
 
   // Load mobile notice dismissal preference from localStorage

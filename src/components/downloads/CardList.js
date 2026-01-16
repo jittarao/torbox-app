@@ -60,7 +60,7 @@ export default function CardList({
     downloadHistory,
     fetchDownloadHistory
   );
-  const { createStream, getStreamData } = useStream(apiKey);
+  const { createStream } = useStream(apiKey);
   const isMobile = useIsMobile();
   const scrollElementRef = useRef(null);
   const containerOffsetTopRef = useRef(0);
@@ -318,7 +318,7 @@ export default function CardList({
         setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [assetKey, getStreamType, getStreamData, setToast]
+    [assetKey, getStreamType, createStream, setToast]
   );
 
   // Handle track selection and open video player
@@ -356,7 +356,7 @@ export default function CardList({
         // Check if hls_url is already provided in the response
         let streamUrl = data.hls_url || streamMetadata.hls_url;
 
-        // If hls_url not provided, get it via getStreamData
+        // If hls_url not provided, get it via createStream
         if (!streamUrl && presignedToken && userToken) {
           const streamData = await createStream(
             itemId,
@@ -412,15 +412,7 @@ export default function CardList({
         setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [
-      trackSelectionModal,
-      getStreamType,
-      createStream,
-      getStreamData,
-      assetKey,
-      setToast,
-      onOpenVideoPlayer,
-    ]
+    [trackSelectionModal, getStreamType, createStream, assetKey, setToast, onOpenVideoPlayer]
   );
 
   // Create a lookup map for efficient item assetType retrieval
@@ -448,7 +440,8 @@ export default function CardList({
       (download) =>
         String(download.itemId) === String(itemId) &&
         download.assetType === itemAssetType &&
-        String(download.fileId) === String(fileId)
+        (!download.fileId || // Complete item downloaded (all files included)
+          String(download.fileId) === String(fileId)) // Specific file downloaded
     );
   };
 
