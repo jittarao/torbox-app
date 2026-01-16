@@ -812,7 +812,7 @@ export default function FiltersSection({
       )}
 
       {/* Tag Manager Modal (only if backend is available) */}
-      {views !== undefined && (
+      {views !== undefined && views !== null && (
         <TagManager
           isOpen={showTagManager}
           onClose={() => setShowTagManager(false)}
