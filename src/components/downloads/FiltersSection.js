@@ -16,6 +16,7 @@ export default function FiltersSection({
   columnFilters,
   setColumnFilters,
   activeView,
+  views: viewsProp,
   onApplyView,
   onClearView,
   onFiltersChange,
@@ -24,7 +25,9 @@ export default function FiltersSection({
   activeColumns,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { views, saveView, deleteView, updateView } = useCustomViews(apiKey);
+  const { views: viewsFromHook, saveView, deleteView, updateView } = useCustomViews(apiKey);
+  // Use views prop if provided (for backend gating), otherwise use hook
+  const views = viewsProp !== undefined ? viewsProp : viewsFromHook;
   const customViewsT = useTranslations('CustomViews');
   const automationRulesT = useTranslations('AutomationRules');
 
@@ -441,13 +444,14 @@ export default function FiltersSection({
               </div>
             )}
 
-            {/* Manage Tags Button - Show when not expanded */}
-            {apiKey && !isExpanded && (
+            {/* Manage Tags Button - Show when not expanded (only if backend is available) */}
+            {apiKey && views !== undefined && !isExpanded && (
               <button
                 type="button"
                 onClick={() => setShowTagManager(true)}
                 className="px-2 py-1 text-xs font-medium text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors flex items-center justify-center gap-1"
                 title="Manage tags"
+                disabled={views === null}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -471,8 +475,8 @@ export default function FiltersSection({
 
         {isExpanded && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-            {/* View Selector - Show in right section when expanded */}
-            {apiKey && views.length > 0 && (
+            {/* View Selector - Show in right section when expanded (only if backend is available) */}
+            {apiKey && views && views.length > 0 && (
               <div className="flex items-center gap-2">
                 <CustomViews
                   views={views}
@@ -503,14 +507,15 @@ export default function FiltersSection({
               </div>
             )}
 
-            {/* Manage Tags Button */}
-            {apiKey && (
+            {/* Manage Tags Button (only if backend is available) */}
+            {apiKey && views !== undefined && (
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowTagManager(true)}
                   className="px-2 py-1 text-xs font-medium text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark transition-colors flex items-center justify-center gap-1"
                   title="Manage tags"
+                  disabled={views === null}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -764,12 +769,14 @@ export default function FiltersSection({
         </div>
       )}
 
-      {/* Tag Manager Modal */}
-      <TagManager
-        isOpen={showTagManager}
-        onClose={() => setShowTagManager(false)}
-        apiKey={apiKey}
-      />
+      {/* Tag Manager Modal (only if backend is available) */}
+      {views !== undefined && (
+        <TagManager
+          isOpen={showTagManager}
+          onClose={() => setShowTagManager(false)}
+          apiKey={apiKey}
+        />
+      )}
     </div>
   );
 }

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // DELETE /api/link-history/[id] - Delete link history entry
 export async function DELETE(request, { params }) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Link history feature is disabled when backend is disabled');
+  }
+
   try {
     const { id } = await params;
     const headersList = await headers();

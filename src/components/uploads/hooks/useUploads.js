@@ -1,4 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useBackendModeStore } from '@/utils/backendCheck';
+
+/**
+ * Check if backend is available (not disabled)
+ * Uses Zustand store for centralized state management
+ */
+function isBackendAvailable() {
+  if (typeof window === 'undefined') return false;
+  const { mode } = useBackendModeStore.getState();
+  return mode === 'backend';
+}
 
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
   const [uploads, setUploads] = useState([]);
@@ -9,6 +20,19 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
 
   const fetchUploads = useCallback(async () => {
     if (!apiKey) return;
+
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      setUploads([]);
+      setLoading(false);
+      setError(null);
+      setPagination((prev) => ({
+        ...prev,
+        total: 0,
+        totalPages: 0,
+      }));
+      return;
+    }
 
     try {
       setLoading(true);
@@ -69,6 +93,13 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   // Fetch status counts separately when tab changes
   const fetchStatusCounts = useCallback(async () => {
     if (!apiKey) return;
+
+    // Check if backend is available
+    if (!isBackendAvailable()) {
+      setStatusCounts({});
+      setUploadStatistics(null);
+      return;
+    }
 
     try {
       const params = new URLSearchParams();
