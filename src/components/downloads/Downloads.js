@@ -31,6 +31,7 @@ import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
 import { fetchUserProfile, hasProPlan } from '@/utils/userProfile';
+import { useBackendMode } from '@/utils/backendCheck';
 
 export default function Downloads({ apiKey }) {
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
@@ -72,6 +73,8 @@ export default function Downloads({ apiKey }) {
   const migrationAttemptedRef = useRef(false);
   const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
+  const { mode: backendMode } = useBackendMode();
+  const isBackendAvailable = backendMode === 'backend';
 
   // Ensure user database exists when API key is provided
   useEffect(() => {
@@ -124,18 +127,18 @@ export default function Downloads({ apiKey }) {
 
   const { loading, items, setItems, fetchItems } = useFetchData(apiKey, activeType);
 
-  // Load tags
+  // Load tags (only if backend is available)
   const { loadTags, tags, loading: tagsLoading } = useTags(apiKey);
 
-  // Load tags once when component mounts
+  // Load tags once when component mounts (only if backend is available)
   useEffect(() => {
-    if (apiKey && tags.length === 0 && !tagsLoading) {
+    if (isBackendAvailable && apiKey && tags.length === 0 && !tagsLoading) {
       loadTags();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]);
+  }, [apiKey, isBackendAvailable]);
 
-  // Load download tags
+  // Load download tags (only if backend is available)
   const {
     fetchDownloadTags,
     mapTagsToDownloads,
@@ -143,13 +146,18 @@ export default function Downloads({ apiKey }) {
     loading: downloadTagsLoading,
   } = useDownloadTags(apiKey);
 
-  // Load download tags once when component mounts
+  // Load download tags once when component mounts (only if backend is available)
   useEffect(() => {
-    if (apiKey && Object.keys(tagMappings).length === 0 && !downloadTagsLoading) {
+    if (
+      isBackendAvailable &&
+      apiKey &&
+      Object.keys(tagMappings).length === 0 &&
+      !downloadTagsLoading
+    ) {
       fetchDownloadTags();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]);
+  }, [apiKey, isBackendAvailable]);
 
   // Map tags to items whenever items or tagMappings change
   const itemsWithTags = useMemo(() => {
@@ -205,7 +213,7 @@ export default function Downloads({ apiKey }) {
     appliedFilters
   );
 
-  // Load custom views
+  // Load custom views (only if backend is available)
   const {
     views,
     activeView,
@@ -215,13 +223,13 @@ export default function Downloads({ apiKey }) {
     loading: viewsLoading,
   } = useCustomViews(apiKey);
 
-  // Load custom views once when component mounts
+  // Load custom views once when component mounts (only if backend is available)
   useEffect(() => {
-    if (apiKey && views.length === 0 && !viewsLoading) {
+    if (isBackendAvailable && apiKey && views.length === 0 && !viewsLoading) {
       loadViews();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]);
+  }, [apiKey, isBackendAvailable]);
 
   // Update pause reason when video player opens/closes
   useEffect(() => {
@@ -594,7 +602,8 @@ export default function Downloads({ apiKey }) {
             activeType={activeType}
             columnFilters={columnFilters}
             setColumnFilters={setColumnFilters}
-            activeView={activeView}
+            activeView={isBackendAvailable ? activeView : null}
+            views={isBackendAvailable ? views : []}
             sortField={sortField}
             sortDirection={sortDirection}
             activeColumns={activeColumns}

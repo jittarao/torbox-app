@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useAutomationRulesStorage, useBackendMode } from '@/utils/backendDetector';
+import { useAutomationRulesStorage } from '@/utils/automationRulesStorage';
+import { useBackendMode } from '@/utils/backendCheck';
 import useIsMobile from '@/hooks/useIsMobile';
 import { 
   TRIGGER_TYPES, 

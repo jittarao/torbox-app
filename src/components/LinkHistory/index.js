@@ -10,11 +10,14 @@ import EmptyState from './components/EmptyState';
 import SearchBar from './components/SearchBar';
 import LinkHistoryTable from './components/LinkHistoryTable';
 import Pagination from './components/Pagination';
+import { useBackendMode } from '@/utils/backendCheck';
 
 const LinkHistory = ({ apiKey }) => {
   const t = useTranslations('Common');
   const linkHistoryT = useTranslations('LinkHistory');
   const isMobile = useIsMobile();
+  const { mode: backendMode } = useBackendMode();
+  const isBackendAvailable = backendMode === 'backend';
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -113,6 +116,12 @@ const LinkHistory = ({ apiKey }) => {
         />
       </div>
 
+      {!isBackendAvailable && (
+        <div className="p-4 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-400/20 dark:text-yellow-400 rounded-lg mb-4">
+          Link history feature is disabled when backend is disabled.
+        </div>
+      )}
+
       {error && (
         <div className="p-4 bg-red-500/20 text-red-500 dark:bg-red-400/20 dark:text-red-400 rounded-lg mb-4">
           {error}
@@ -133,7 +142,11 @@ const LinkHistory = ({ apiKey }) => {
 
       {!loading && (
         <>
-          {history.length === 0 ? (
+          {!isBackendAvailable ? (
+            <div className="p-8 text-center text-primary-text/70 dark:text-primary-text-dark/70">
+              <p>Link history is not available when backend is disabled.</p>
+            </div>
+          ) : history.length === 0 ? (
             <EmptyState />
           ) : (
             <>

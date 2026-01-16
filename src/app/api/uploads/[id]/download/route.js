@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // GET /api/uploads/[id]/download - Download original file
 export async function GET(request, { params }) {
+  if (isBackendDisabled()) {
+    return getBackendDisabledResponse('Upload logs feature is disabled when backend is disabled');
+  }
+
   try {
     const { id } = await params;
     const headersList = await headers();
