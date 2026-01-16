@@ -73,7 +73,7 @@ export default function Downloads({ apiKey }) {
   const migrationAttemptedRef = useRef(false);
   const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
-  const { mode: backendMode } = useBackendMode();
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const isBackendAvailable = backendMode === 'backend';
 
   // Ensure user database exists when API key is provided
@@ -351,6 +351,11 @@ export default function Downloads({ apiKey }) {
 
   // One-time migration from localStorage to backend, then fetch from backend
   useEffect(() => {
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
     // Check if API key has changed (even from one valid key to another)
     const apiKeyChanged =
       previousApiKeyRef.current !== null && previousApiKeyRef.current !== apiKey;
@@ -372,6 +377,11 @@ export default function Downloads({ apiKey }) {
 
     // Update previous API key ref
     previousApiKeyRef.current = apiKey;
+
+    // Only fetch if backend is available
+    if (!isBackendAvailable) {
+      return;
+    }
 
     // Only run migration once per API key
     if (migrationAttemptedRef.current) {
@@ -414,6 +424,8 @@ export default function Downloads({ apiKey }) {
     downloadHistoryLoading,
     fetchDownloadHistory,
     clearDownloadHistory,
+    isBackendAvailable,
+    backendIsLoading,
   ]);
 
   // Expand rows with selected files on initial load
@@ -603,7 +615,7 @@ export default function Downloads({ apiKey }) {
             columnFilters={columnFilters}
             setColumnFilters={setColumnFilters}
             activeView={isBackendAvailable ? activeView : null}
-            views={isBackendAvailable ? views : []}
+            views={isBackendAvailable ? views : null}
             sortField={sortField}
             sortDirection={sortDirection}
             activeColumns={activeColumns}

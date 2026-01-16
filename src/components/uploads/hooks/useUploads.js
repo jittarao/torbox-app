@@ -1,16 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBackendModeStore } from '@/store/backendModeStore';
 
-/**
- * Check if backend is available (not disabled)
- * Uses Zustand store for centralized state management
- */
-function isBackendAvailable() {
-  if (typeof window === 'undefined') return false;
-  const { mode } = useBackendModeStore.getState();
-  return mode === 'backend';
-}
-
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
   const [uploads, setUploads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,11 +8,19 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const [statusCounts, setStatusCounts] = useState({});
   const [uploadStatistics, setUploadStatistics] = useState(null);
 
+  // Subscribe to backend mode store to react to changes
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
+
   const fetchUploads = useCallback(async () => {
     if (!apiKey) return;
 
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
     // Check if backend is available
-    if (!isBackendAvailable()) {
+    if (backendMode !== 'backend') {
       setUploads([]);
       setLoading(false);
       setError(null);
@@ -88,14 +86,21 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     filters.type,
     filters.search,
     setPagination,
+    backendMode,
+    backendIsLoading,
   ]);
 
   // Fetch status counts separately when tab changes
   const fetchStatusCounts = useCallback(async () => {
     if (!apiKey) return;
 
+    // Wait for backend check to complete before deciding
+    if (backendIsLoading) {
+      return;
+    }
+
     // Check if backend is available
-    if (!isBackendAvailable()) {
+    if (backendMode !== 'backend') {
       setStatusCounts({});
       setUploadStatistics(null);
       return;
@@ -123,7 +128,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     } catch (err) {
       console.error('Error fetching status counts:', err);
     }
-  }, [apiKey, filters.type]);
+  }, [apiKey, filters.type, backendMode, backendIsLoading]);
 
   useEffect(() => {
     fetchUploads();
