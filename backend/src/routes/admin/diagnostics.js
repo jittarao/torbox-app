@@ -1,4 +1,6 @@
 import fs from 'fs';
+import path from 'path';
+import { Database as SQLiteDatabase } from 'bun:sqlite';
 import { sendSuccess, sendError, asyncHandler } from './helpers.js';
 import logger from '../../utils/logger.js';
 
@@ -23,6 +25,9 @@ export function setupDiagnosticsRoutes(router, backend) {
           duplicateAuthIds: [],
           duplicateDbPaths: [],
           missingFiles: [],
+          statusMismatches: [],
+          databaseIntegrityFailures: [],
+          orphanedFiles: [],
         },
         summary: {
           totalIssues: 0,
@@ -140,6 +145,129 @@ export function setupDiagnosticsRoutes(router, backend) {
           missing: missingFiles.length,
         };
 
+        // Check for status mismatches between api_keys and user_registry
+        const statusMismatches = masterDb.allQuery(
+          `
+            SELECT 
+              ur.auth_id,
+              ur.status as registry_status,
+              ak.is_active as api_key_active,
+              ur.db_path,
+              ur.created_at,
+              ak.key_name
+            FROM user_registry ur
+            INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id
+            WHERE (ur.status = 'active' AND ak.is_active != 1)
+               OR (ur.status != 'active' AND ak.is_active = 1)
+          `
+        );
+
+        diagnostics.issues.statusMismatches = statusMismatches.map((mismatch) => ({
+          auth_id: mismatch.auth_id,
+          registry_status: mismatch.registry_status,
+          api_key_active: mismatch.api_key_active === 1,
+          db_path: mismatch.db_path,
+          created_at: mismatch.created_at,
+          key_name: mismatch.key_name || '(unnamed)',
+        }));
+
+        // Check for orphaned database files (files in userDbDir but not in registry)
+        const orphanedFiles = [];
+        try {
+          if (fs.existsSync(userDbDir)) {
+            const files = fs.readdirSync(userDbDir);
+            const registeredPaths = new Set(allUsers.map((user) => path.basename(user.db_path)));
+
+            const registeredBaseNames = new Set(
+              allUsers.map((user) => {
+                const basename = path.basename(user.db_path, '.sqlite');
+                return basename;
+              })
+            );
+
+            files.forEach((file) => {
+              try {
+                const fullPath = path.join(userDbDir, file);
+                const stats = fs.statSync(fullPath);
+
+                // Skip directories
+                if (stats.isDirectory()) {
+                  return;
+                }
+
+                // Check for .sqlite files
+                if (file.endsWith('.sqlite')) {
+                  if (!registeredPaths.has(file)) {
+                    orphanedFiles.push({
+                      filename: file,
+                      path: fullPath,
+                      size: stats.size,
+                      modified: stats.mtime,
+                    });
+                  }
+                } else if (file.endsWith('-wal') || file.endsWith('-shm')) {
+                  // Check WAL and SHM files (SQLite journal files)
+                  const baseName = file.replace(/-wal$/, '').replace(/-shm$/, '');
+                  if (!registeredBaseNames.has(baseName)) {
+                    orphanedFiles.push({
+                      filename: file,
+                      path: fullPath,
+                      size: stats.size,
+                      modified: stats.mtime,
+                    });
+                  }
+                }
+              } catch (fileError) {
+                // Skip files we can't stat (permissions, etc.)
+                logger.debug('Skipping file in orphaned check', {
+                  file,
+                  error: fileError.message,
+                });
+              }
+            });
+          }
+        } catch (error) {
+          logger.warn('Error checking for orphaned files', { error: error.message, userDbDir });
+        }
+
+        diagnostics.issues.orphanedFiles = orphanedFiles;
+
+        // Database integrity checks (sample a subset to avoid performance issues)
+        const databaseIntegrityFailures = [];
+        const integrityCheckLimit = 50; // Check first 50 databases to avoid timeout
+        const usersToCheck = allUsers.slice(0, integrityCheckLimit);
+
+        for (const user of usersToCheck) {
+          if (fs.existsSync(user.db_path)) {
+            try {
+              const db = new SQLiteDatabase(user.db_path);
+              const integrityResult = db.prepare('PRAGMA integrity_check').get();
+              db.close();
+
+              if (integrityResult && integrityResult.integrity_check !== 'ok') {
+                databaseIntegrityFailures.push({
+                  auth_id: user.auth_id,
+                  db_path: user.db_path,
+                  error: integrityResult.integrity_check,
+                });
+              }
+            } catch (error) {
+              databaseIntegrityFailures.push({
+                auth_id: user.auth_id,
+                db_path: user.db_path,
+                error: `Failed to check integrity: ${error.message}`,
+              });
+            }
+          }
+        }
+
+        diagnostics.issues.databaseIntegrityFailures = databaseIntegrityFailures;
+        diagnostics.statistics.integrityChecks = {
+          checked: usersToCheck.length,
+          total: allUsers.length,
+          failed: databaseIntegrityFailures.length,
+        };
+
         // Active users breakdown
         const activeUsersBreakdown = masterDb.getQuery(
           `
@@ -166,14 +294,18 @@ export function setupDiagnosticsRoutes(router, backend) {
           diagnostics.issues.orphanedUsers.length +
           diagnostics.issues.duplicateAuthIds.length +
           diagnostics.issues.duplicateDbPaths.length +
-          diagnostics.issues.missingFiles.length;
+          diagnostics.issues.missingFiles.length +
+          diagnostics.issues.statusMismatches.length +
+          diagnostics.issues.databaseIntegrityFailures.length +
+          diagnostics.issues.orphanedFiles.length;
 
         diagnostics.summary.totalIssues = totalIssues;
         diagnostics.summary.status =
           totalIssues === 0
             ? 'healthy'
             : diagnostics.issues.duplicateAuthIds.length > 0 ||
-                diagnostics.issues.duplicateDbPaths.length > 0
+                diagnostics.issues.duplicateDbPaths.length > 0 ||
+                diagnostics.issues.databaseIntegrityFailures.length > 0
               ? 'critical'
               : 'warning';
 
