@@ -146,7 +146,7 @@ export default function TorrentOptions({
                   onChange={(e) => {
                     const value = Math.max(
                       1,
-                      Math.min(10, parseInt(e.target.value) || 1),
+                      Math.min(999, parseInt(e.target.value) || 1),
                     );
                     updateGlobalOptions({ autoStartLimit: value });
                   }}
