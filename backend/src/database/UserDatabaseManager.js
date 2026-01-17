@@ -499,8 +499,84 @@ class UserDatabaseManager {
       throw error;
     }
 
+    // If user not found in registry, check if they have an API key
+    // This handles data inconsistency from before the foreign key fix
     if (!user) {
-      throw new Error(`User ${authId} not found in registry`);
+      let hasApiKey = false;
+      try {
+        if (this.masterDbIsInstance) {
+          const apiKey = this.masterDb.getQuery(
+            'SELECT auth_id FROM api_keys WHERE auth_id = ? AND is_active = 1',
+            [authId]
+          );
+          hasApiKey = !!apiKey;
+        } else {
+          const apiKey = this.masterDb
+            .prepare('SELECT auth_id FROM api_keys WHERE auth_id = ? AND is_active = 1')
+            .get(authId);
+          hasApiKey = !!apiKey;
+        }
+      } catch (error) {
+        logger.warn('Failed to check for API key when user not found in registry', error, {
+          authId,
+        });
+      }
+
+      if (hasApiKey) {
+        // User has API key but no registry entry - create it automatically
+        // This fixes data inconsistency from before the foreign key constraint fix
+        logger.info('User has API key but missing registry entry, creating it automatically', {
+          authId,
+        });
+        const dbPath = path.join(this.userDbDir, `user_${authId}.sqlite`);
+        try {
+          if (this.masterDbIsInstance) {
+            this.masterDb.runQuery(
+              `
+              INSERT OR IGNORE INTO user_registry (auth_id, db_path)
+              VALUES (?, ?)
+            `,
+              [authId, dbPath]
+            );
+          } else {
+            this.masterDb
+              .prepare(
+                `
+              INSERT OR IGNORE INTO user_registry (auth_id, db_path)
+              VALUES (?, ?)
+            `
+              )
+              .run(authId, dbPath);
+          }
+
+          // Verify the user was inserted
+          if (this.masterDbIsInstance) {
+            user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [
+              authId,
+            ]);
+          } else {
+            user = this.masterDb
+              .prepare('SELECT db_path FROM user_registry WHERE auth_id = ?')
+              .get(authId);
+          }
+
+          if (user) {
+            cache.setUserRegistry(authId, user);
+            cache.invalidateActiveUsers();
+            logger.info('Successfully created missing user registry entry', { authId, dbPath });
+          } else {
+            throw new Error('Failed to create user registry entry');
+          }
+        } catch (error) {
+          logger.error('Failed to auto-create user registry entry', error, { authId, dbPath });
+          throw new Error(
+            `User ${authId} not found in registry and failed to create it automatically: ${error.message}`
+          );
+        }
+      } else {
+        // No API key either - user doesn't exist
+        throw new Error(`User ${authId} not found in registry`);
+      }
     }
 
     // Extract db_path
@@ -607,8 +683,12 @@ class UserDatabaseManager {
       // Verify the user was inserted or already exists (handle race conditions)
       // After INSERT OR IGNORE, check if user exists in registry
       const userAfterInsert = this.masterDbIsInstance
-        ? this.masterDb.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId])
-        : this.masterDb.prepare('SELECT auth_id FROM user_registry WHERE auth_id = ?').get(authId);
+        ? this.masterDb.getQuery('SELECT auth_id, db_path FROM user_registry WHERE auth_id = ?', [
+            authId,
+          ])
+        : this.masterDb
+            .prepare('SELECT auth_id, db_path FROM user_registry WHERE auth_id = ?')
+            .get(authId);
 
       if (!userAfterInsert) {
         // This shouldn't happen with INSERT OR IGNORE, but handle it gracefully
@@ -617,6 +697,36 @@ class UserDatabaseManager {
           dbPath,
         });
         throw new Error(`Failed to register user: user not found in registry after insert`);
+      }
+
+      // If user already existed but db_path is different (e.g., placeholder from registerApiKey),
+      // update it to the correct path
+      if (userAfterInsert.db_path !== dbPath) {
+        if (this.masterDbIsInstance) {
+          this.masterDb.runQuery(
+            `
+            UPDATE user_registry 
+            SET db_path = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE auth_id = ?
+          `,
+            [dbPath, authId]
+          );
+        } else {
+          this.masterDb
+            .prepare(
+              `
+            UPDATE user_registry 
+            SET db_path = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE auth_id = ?
+          `
+            )
+            .run(dbPath, authId);
+        }
+        logger.debug('Updated db_path for existing user registry entry', {
+          authId,
+          oldPath: userAfterInsert.db_path,
+          newPath: dbPath,
+        });
       }
     } catch (error) {
       // Handle constraint violations and other database errors

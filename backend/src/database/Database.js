@@ -352,11 +352,49 @@ class Database {
    * Register or update an API key
    * @param {string} apiKey - Plain text API key
    * @param {string} keyName - Optional name for the key
+   * @param {string} dbPath - Optional database path (if not provided, will use placeholder)
    * @returns {Promise<{authId: string, wasNew: boolean}>} - authId and whether it was a new insertion
    */
-  async registerApiKey(apiKey, keyName = null) {
+  async registerApiKey(apiKey, keyName = null, dbPath = null) {
     const authId = hashApiKey(apiKey);
     const encryptedKey = encrypt(apiKey);
+
+    // Ensure user_registry entry exists before inserting into api_keys
+    // (required by foreign key constraint)
+    const existingUser = this.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [
+      authId,
+    ]);
+
+    if (!existingUser) {
+      // Create user_registry entry if it doesn't exist
+      // Use provided dbPath or a placeholder that will be updated by registerUser
+      const placeholderDbPath = dbPath || `/app/data/users/user_${authId}.sqlite`;
+      try {
+        this.runQuery(
+          `
+          INSERT OR IGNORE INTO user_registry (auth_id, db_path)
+          VALUES (?, ?)
+        `,
+          [authId, placeholderDbPath]
+        );
+      } catch (error) {
+        // If insert fails (e.g., race condition), check if user was created by another request
+        const userAfterError = this.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [
+          authId,
+        ]);
+        if (!userAfterError) {
+          // User still doesn't exist, re-throw the error
+          logger.error('Failed to create user_registry entry before registering API key', error, {
+            authId,
+          });
+          throw error;
+        }
+        // User was created by another request (race condition), which is fine
+        logger.debug('User registry entry created by another request (race condition handled)', {
+          authId,
+        });
+      }
+    }
 
     // Check if API key already exists in api_keys table
     const existing = this.getQuery('SELECT auth_id FROM api_keys WHERE auth_id = ?', [authId]);
