@@ -22,7 +22,7 @@ class RuleExecutor {
     for (const torrent of torrents) {
       try {
         const ruleEvaluator = await this.getRuleEvaluator();
-        logger.verbose('Executing action on torrent', {
+        logger.debug('Executing action on torrent', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
@@ -35,7 +35,7 @@ class RuleExecutor {
         await ruleEvaluator.executeAction(rule.action, torrent);
         successCount++;
 
-        logger.verbose('Action successfully executed', {
+        logger.debug('Action successfully executed', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
@@ -51,7 +51,7 @@ class RuleExecutor {
           torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
         } catch (statusError) {
           // If we can't get status, just log without it
-          logger.verbose('Could not get torrent status for error logging', {
+          logger.debug('Could not get torrent status for error logging', {
             authId: this.authId,
             torrentId: torrent.id,
             statusError: statusError.message,

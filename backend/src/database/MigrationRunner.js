@@ -150,7 +150,7 @@ class MigrationRunner {
    * Run all pending migrations
    */
   async runMigrations() {
-    logger.verbose('Running database migrations...', { dbType: this.dbType });
+    logger.debug('Running database migrations...', { dbType: this.dbType });
 
     // First, ensure migrations table exists
     await this.ensureMigrationsTable();
@@ -159,7 +159,7 @@ class MigrationRunner {
     const appliedMigrations = this.getAppliedMigrations();
 
     if (migrationFiles.length === 0) {
-      logger.verbose('No migration files found', { dbType: this.dbType });
+      logger.debug('No migration files found', { dbType: this.dbType });
       return 0;
     }
 
@@ -170,11 +170,11 @@ class MigrationRunner {
     });
 
     if (pendingMigrations.length === 0) {
-      logger.verbose('No pending migrations', { dbType: this.dbType });
+      logger.debug('No pending migrations', { dbType: this.dbType });
       return 0;
     }
 
-    logger.verbose(`Found ${pendingMigrations.length} pending migration(s)`, {
+    logger.debug(`Found ${pendingMigrations.length} pending migration(s)`, {
       dbType: this.dbType,
       totalMigrations: migrationFiles.length,
       appliedMigrations: appliedMigrations.length,
@@ -184,7 +184,7 @@ class MigrationRunner {
       const { version, name } = this.parseMigrationFile(file);
 
       try {
-        logger.verbose(`Running migration ${version}_${name}...`, {
+        logger.debug(`Running migration ${version}_${name}...`, {
           dbType: this.dbType,
           version,
           name,
@@ -212,7 +212,7 @@ class MigrationRunner {
         this.markMigrationApplied(version, name);
         migrationsRun++;
 
-        logger.verbose(`✓ Migration ${version}_${name} applied successfully`, {
+        logger.debug(`✓ Migration ${version}_${name} applied successfully`, {
           dbType: this.dbType,
           version,
           name,
@@ -239,7 +239,7 @@ class MigrationRunner {
       }
     }
 
-    logger.verbose(`Applied ${migrationsRun} migration(s)`, {
+    logger.debug(`Applied ${migrationsRun} migration(s)`, {
       dbType: this.dbType,
       migrationsRun,
     });
@@ -276,7 +276,7 @@ class MigrationRunner {
         throw new Error(`Migration ${migrationFile} does not export a 'down' function`);
       }
 
-      logger.verbose(`Rolling back migration ${version}...`, {
+      logger.debug(`Rolling back migration ${version}...`, {
         dbType: this.dbType,
         version,
       });
@@ -290,7 +290,7 @@ class MigrationRunner {
       // Remove from applied migrations (only after successful rollback)
       this.db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(version);
 
-      logger.verbose(`✓ Migration ${version} rolled back successfully`, {
+      logger.debug(`✓ Migration ${version} rolled back successfully`, {
         dbType: this.dbType,
         version,
       });
@@ -342,7 +342,7 @@ class MigrationRunner {
           `
           ).run();
           
-          logger.verbose(`Created schema_migrations table for ${this.dbType} database`);
+          logger.debug(`Created schema_migrations table for ${this.dbType} database`);
           return;
         }
 
@@ -360,7 +360,7 @@ class MigrationRunner {
           await createResult;
         }
 
-        logger.verbose(`Created schema_migrations table for ${this.dbType} database`);
+        logger.debug(`Created schema_migrations table for ${this.dbType} database`);
       }
     } catch (error) {
       logger.error('Error ensuring migrations table', error, {

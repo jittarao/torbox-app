@@ -42,7 +42,7 @@ class RuleEvaluator {
     }
 
     if (!rule.last_evaluated_at) {
-      logger.verbose('Rule has no last_evaluated_at, evaluating immediately', {
+      logger.debug('Rule has no last_evaluated_at, evaluating immediately', {
         ruleId: rule.id,
         ruleName: rule.name,
         intervalMinutes,
@@ -60,7 +60,7 @@ class RuleEvaluator {
     if (timeSinceLastEvaluation < intervalMs) {
       const remainingMs = intervalMs - timeSinceLastEvaluation;
       const remainingMinutes = (remainingMs / MS_PER_MINUTE).toFixed(2);
-      logger.verbose('Rule evaluation skipped - interval not elapsed', {
+      logger.debug('Rule evaluation skipped - interval not elapsed', {
         ruleId: rule.id,
         ruleName: rule.name,
         intervalMinutes,
@@ -72,7 +72,7 @@ class RuleEvaluator {
       return true;
     }
 
-    logger.verbose('Rule interval elapsed, proceeding with evaluation', {
+    logger.debug('Rule interval elapsed, proceeding with evaluation', {
       ruleId: rule.id,
       ruleName: rule.name,
       intervalMinutes,
@@ -230,7 +230,7 @@ class RuleEvaluator {
 
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
 
-    logger.verbose('Evaluating rule against torrents', {
+    logger.debug('Evaluating rule against torrents', {
       ruleId: rule.id,
       ruleName: rule.name,
       hasGroups,
@@ -280,7 +280,7 @@ class RuleEvaluator {
       });
 
       if (groupResults.length === 0) {
-        logger.verbose('No groups in rule, matches nothing', {
+        logger.debug('No groups in rule, matches nothing', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
@@ -294,7 +294,7 @@ class RuleEvaluator {
           : groupResults.every((result) => result);
 
       if (finalResult) {
-        logger.verbose('Torrent matched rule', {
+        logger.debug('Torrent matched rule', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
@@ -323,7 +323,7 @@ class RuleEvaluator {
     const groupLogicOp = group.logicOperator || 'and';
 
     if (conditions.length === 0) {
-      logger.verbose('Empty group in rule, matches nothing', {
+      logger.debug('Empty group in rule, matches nothing', {
         ruleId: rule.id,
         ruleName: rule.name,
         groupIndex,
@@ -340,7 +340,7 @@ class RuleEvaluator {
         tagsByDownloadId,
         speedHistoryMap
       );
-      logger.verbose('Condition evaluated', {
+      logger.debug('Condition evaluated', {
         ruleId: rule.id,
         ruleName: rule.name,
         groupIndex,
@@ -360,7 +360,7 @@ class RuleEvaluator {
         ? conditionResults.some((result) => result)
         : conditionResults.every((result) => result);
 
-    logger.verbose('Group evaluation result', {
+    logger.debug('Group evaluation result', {
       ruleId: rule.id,
       ruleName: rule.name,
       groupIndex,
@@ -387,7 +387,7 @@ class RuleEvaluator {
 
     return torrents.filter((torrent) => {
       if (conditions.length === 0) {
-        logger.verbose('Rule has no conditions, matches all torrents', {
+        logger.debug('Rule has no conditions, matches all torrents', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
@@ -411,7 +411,7 @@ class RuleEvaluator {
           : conditionResults.every((result) => result);
 
       if (finalResult) {
-        logger.verbose('Torrent matched rule (flat structure)', {
+        logger.debug('Torrent matched rule (flat structure)', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
@@ -948,7 +948,7 @@ class RuleEvaluator {
   handleStatus(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap) {
     const torrentStatus = this.getTorrentStatus(torrent);
     if (!Array.isArray(condition.value)) {
-      logger.verbose('STATUS condition has invalid value (not an array)', {
+      logger.debug('STATUS condition has invalid value (not an array)', {
         torrentId: torrent.id,
         conditionValue: condition.value,
       });
@@ -986,7 +986,7 @@ class RuleEvaluator {
 
   handleTags(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap) {
     if (!Array.isArray(condition.value)) {
-      logger.verbose('TAGS condition has invalid value (not an array)', {
+      logger.debug('TAGS condition has invalid value (not an array)', {
         torrentId: torrent.id,
         conditionValue: condition.value,
       });
@@ -994,7 +994,7 @@ class RuleEvaluator {
     }
 
     if (!condition.operator) {
-      logger.verbose('TAGS condition missing operator', {
+      logger.debug('TAGS condition missing operator', {
         torrentId: torrent.id,
         condition: JSON.stringify(condition),
       });
@@ -1027,7 +1027,7 @@ class RuleEvaluator {
       case 'is_none_of':
         return !conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
       default:
-        logger.verbose('TAGS condition has invalid operator', {
+        logger.debug('TAGS condition has invalid operator', {
           torrentId: torrent.id,
           operator: condition.operator,
           condition: JSON.stringify(condition),
@@ -1146,7 +1146,7 @@ class RuleEvaluator {
    */
   validateNumericCondition(condition, conditionType = '') {
     if (!condition.operator) {
-      logger.verbose('Numeric condition missing operator', {
+      logger.debug('Numeric condition missing operator', {
         conditionType,
         condition: JSON.stringify(condition),
       });
@@ -1154,7 +1154,7 @@ class RuleEvaluator {
     }
 
     if (condition.value === undefined || condition.value === null) {
-      logger.verbose('Numeric condition missing value', {
+      logger.debug('Numeric condition missing value', {
         conditionType,
         operator: condition.operator,
         condition: JSON.stringify(condition),
@@ -1163,7 +1163,7 @@ class RuleEvaluator {
     }
 
     if (!this.isValidNumericOperator(condition.operator)) {
-      logger.verbose('Numeric condition has invalid operator', {
+      logger.debug('Numeric condition has invalid operator', {
         conditionType,
         operator: condition.operator,
         condition: JSON.stringify(condition),
@@ -1182,7 +1182,7 @@ class RuleEvaluator {
    */
   validateStringCondition(condition, conditionType = '') {
     if (condition.value === undefined || condition.value === null || condition.value === '') {
-      logger.verbose('String condition missing value', {
+      logger.debug('String condition missing value', {
         conditionType,
         operator: condition.operator,
         condition: JSON.stringify(condition),
@@ -1256,7 +1256,7 @@ class RuleEvaluator {
         return normalizedField.endsWith(normalizedCondition);
       default:
         // Default to contains if operator not specified or unknown
-        logger.verbose('String condition using default contains operator', {
+        logger.debug('String condition using default contains operator', {
           operator,
           fieldValue,
           conditionValue,
@@ -1285,7 +1285,7 @@ class RuleEvaluator {
   compareValues(value1, operator, value2) {
     // Validate operator before comparison
     if (!this.isValidNumericOperator(operator)) {
-      logger.verbose('Invalid numeric operator, defaulting to false', {
+      logger.debug('Invalid numeric operator, defaulting to false', {
         operator,
         value1,
         value2,
@@ -1331,7 +1331,7 @@ class RuleEvaluator {
         .get(id);
 
       if (existing) {
-        logger.verbose('Download already archived, skipping', { torrentId: id });
+        logger.debug('Download already archived, skipping', { torrentId: id });
         return { success: true, message: 'Already archived' };
       }
 
@@ -1453,7 +1453,7 @@ class RuleEvaluator {
 
     transaction();
 
-    logger.verbose('Tags added to download', {
+    logger.debug('Tags added to download', {
       downloadId,
       tagIds: action.tagIds,
       tagCount: action.tagIds.length,
@@ -1513,7 +1513,7 @@ class RuleEvaluator {
 
     transaction();
 
-    logger.verbose('Tags removed from download', {
+    logger.debug('Tags removed from download', {
       downloadId,
       tagIds: action.tagIds,
       tagCount: action.tagIds.length,

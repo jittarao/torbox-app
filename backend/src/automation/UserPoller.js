@@ -116,7 +116,7 @@ class UserPoller {
   async checkRecentRuleExecutions(ruleResults = null) {
     // Check if rules executed in the current poll cycle
     if (ruleResults && ruleResults.executed > 0) {
-      logger.verbose('Rules executed in current poll cycle, user in active mode', {
+      logger.debug('Rules executed in current poll cycle, user in active mode', {
         authId: this.authId,
         executedCount: ruleResults.executed,
       });
@@ -275,12 +275,12 @@ class UserPoller {
    */
   async fetchTorrents() {
     const apiFetchStart = Date.now();
-    logger.verbose('Fetching torrents from API', { authId: this.authId });
+    logger.debug('Fetching torrents from API', { authId: this.authId });
 
     try {
       const torrents = await this.apiClient.getTorrents(true); // bypass cache
       const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
-      logger.verbose('Torrents fetched from API', {
+      logger.debug('Torrents fetched from API', {
         authId: this.authId,
         torrentCount: torrents.length,
         apiFetchDuration: `${apiFetchDuration}s`,
@@ -316,7 +316,7 @@ class UserPoller {
     }
 
     const diffStart = Date.now();
-    logger.verbose('Processing state diff', {
+    logger.debug('Processing state diff', {
       authId: this.authId,
       torrentCount: torrents.length,
     });
@@ -331,7 +331,7 @@ class UserPoller {
       );
 
       const diffDuration = ((Date.now() - diffStart) / 1000).toFixed(2);
-      logger.verbose('State diff processed', {
+      logger.debug('State diff processed', {
         authId: this.authId,
         new: changes.new?.length || 0,
         updated: changes.updated?.length || 0,
@@ -366,7 +366,7 @@ class UserPoller {
     }
 
     const derivedStart = Date.now();
-    logger.verbose('Updating derived fields', {
+    logger.debug('Updating derived fields', {
       authId: this.authId,
       newCount: changes.new?.length || 0,
       updatedCount: changes.updated?.length || 0,
@@ -383,7 +383,7 @@ class UserPoller {
       );
 
       const derivedDuration = ((Date.now() - derivedStart) / 1000).toFixed(2);
-      logger.verbose('Derived fields updated', {
+      logger.debug('Derived fields updated', {
         authId: this.authId,
         derivedDuration: `${derivedDuration}s`,
       });
@@ -408,7 +408,7 @@ class UserPoller {
     }
 
     const speedStart = Date.now();
-    logger.verbose('Processing speed updates', {
+    logger.debug('Processing speed updates', {
       authId: this.authId,
       updatedCount: updatedTorrents.length,
     });
@@ -423,7 +423,7 @@ class UserPoller {
       );
 
       const speedDuration = ((Date.now() - speedStart) / 1000).toFixed(2);
-      logger.verbose('Speed updates processed', {
+      logger.debug('Speed updates processed', {
         authId: this.authId,
         speedDuration: `${speedDuration}s`,
       });
@@ -453,7 +453,7 @@ class UserPoller {
       return ruleResults;
     }
 
-    logger.verbose('Evaluating automation rules', {
+    logger.debug('Evaluating automation rules', {
       authId: this.authId,
       torrentCount: torrents.length,
     });
@@ -461,7 +461,7 @@ class UserPoller {
     try {
       ruleResults = await this.automationEngine.evaluateRules(torrents);
       const rulesDuration = ((Date.now() - rulesStart) / 1000).toFixed(2);
-      logger.verbose('Automation rules evaluated', {
+      logger.debug('Automation rules evaluated', {
         authId: this.authId,
         evaluated: ruleResults.evaluated,
         executed: ruleResults.executed,
@@ -492,7 +492,7 @@ class UserPoller {
 
     try {
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, nonTerminalCount);
-      logger.verbose('Updated next poll time in master DB', {
+      logger.debug('Updated next poll time in master DB', {
         authId: this.authId,
         nextPollAt: nextPollAt.toISOString(),
         nonTerminalCount,
@@ -543,7 +543,7 @@ class UserPoller {
     const hasActiveRules =
       cachedHasActiveRules !== null ? cachedHasActiveRules : await this.shouldPoll();
     if (!hasActiveRules) {
-      logger.verbose('Poll skipped - no active automation rules', {
+      logger.debug('Poll skipped - no active automation rules', {
         authId: this.authId,
         hasAutomationEngine: !!this.automationEngine,
       });
@@ -655,7 +655,7 @@ class UserPoller {
     } finally {
       this.isPolling = false;
       const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
-      logger.verbose('Poll cycle finished', {
+      logger.debug('Poll cycle finished', {
         authId: this.authId,
         totalDuration: `${totalDuration}s`,
         isPolling: this.isPolling,

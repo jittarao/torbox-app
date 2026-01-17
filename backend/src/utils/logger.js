@@ -135,11 +135,16 @@ class Logger {
   }
 
   /**
-   * Log an info message
+   * Log an info message (only if DEBUG env variable is set)
    * @param {string} message - Info message
    * @param {Object} context - Additional context
    */
   info(message, context = {}) {
+    const isDebug = process.env.DEBUG === 'true';
+    if (!isDebug) {
+      return;
+    }
+
     // Add breadcrumb to Sentry for important info messages
     if (context.important || context.critical) {
       addBreadcrumb({
@@ -153,24 +158,17 @@ class Logger {
   }
 
   /**
-   * Log a debug message
+   * Log a debug message (only if DEBUG env variable is set)
    * @param {string} message - Debug message
    * @param {Object} context - Additional context
    */
   debug(message, context = {}) {
-    this.logger.debug(message, context);
-  }
-
-  /**
-   * Log a verbose message (only if DEBUG or VERBOSE env variable is set)
-   * @param {string} message - Verbose message
-   * @param {Object} context - Additional context
-   */
-  verbose(message, context = {}) {
-    const isVerbose = process.env.DEBUG === 'true';
-    if (isVerbose) {
-      this.logger.debug(message, { ...context, verbose: true });
+    const isDebug = process.env.DEBUG === 'true';
+    if (!isDebug) {
+      return;
     }
+
+    this.logger.debug(message, context);
   }
 
   /**

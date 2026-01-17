@@ -194,7 +194,7 @@ class SpeedAggregator {
       const result = this.stmtDeleteOld.run(cutoff.toISOString());
       
       if (result.changes > 0) {
-        logger.verbose('Pruned old speed samples', {
+        logger.debug('Pruned old speed samples', {
           deletedCount: result.changes,
           cutoffTime: cutoff.toISOString(),
         });
@@ -243,7 +243,7 @@ class SpeedAggregator {
     }
 
     if (samplesRecorded > 0 || errors > 0) {
-      logger.verbose('Processed speed updates', {
+      logger.debug('Processed speed updates', {
         totalTorrents: updatedTorrents.length,
         samplesRecorded,
         errors,

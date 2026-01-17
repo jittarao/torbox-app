@@ -55,6 +55,16 @@ export async function initSentry() {
       attachStacktrace: true,
       maxBreadcrumbs: 100, // Increase breadcrumb limit for better trace context
 
+      // Add Express integration explicitly for v10
+      // In v10, expressIntegration handles request and tracing automatically
+      integrations: [
+        ...(Sentry.defaultIntegrations || []),
+        // Express integration provides automatic request/tracing instrumentation
+        ...(typeof Sentry.expressIntegration === 'function'
+          ? [Sentry.expressIntegration()]
+          : []),
+      ],
+
       // Filter out health check endpoints and other noise
       beforeSend(event, hint) {
         // Filter out certain errors if needed
@@ -82,22 +92,23 @@ export async function initSentry() {
       },
     });
 
-    // Verify these are available (in @sentry/node v8+, handlers are under Sentry.Handlers)
-    const hasRequestHandler = typeof Sentry.Handlers?.requestHandler === 'function';
-    const hasErrorHandler = typeof Sentry.Handlers?.errorHandler === 'function';
-    const hasTracingHandler = typeof Sentry.Handlers?.tracingHandler === 'function';
+    // Verify Express handlers are available (in @sentry/node v10+, use expressErrorHandler instead of Handlers.errorHandler)
+    // Note: In v10, requestHandler and tracingHandler are handled automatically by expressIntegration
+    const hasExpressIntegration = typeof Sentry.expressIntegration === 'function';
+    const hasExpressErrorHandler = typeof Sentry.expressErrorHandler === 'function';
+    const hasSetupExpressErrorHandler = typeof Sentry.setupExpressErrorHandler === 'function';
 
     console.log('Sentry initialized successfully');
-    if (hasRequestHandler && hasErrorHandler) {
-      console.log('Sentry Express middleware handlers available (requestHandler, errorHandler)');
-      if (hasTracingHandler) {
-        console.log('Sentry tracing handler available');
+    if (hasExpressIntegration && hasExpressErrorHandler) {
+      console.log('Sentry Express integration available (expressIntegration, expressErrorHandler)');
+      if (hasSetupExpressErrorHandler) {
+        console.log('Sentry setupExpressErrorHandler also available');
       }
     } else {
-      console.warn('Some Sentry Express middleware handlers are not available:', {
-        requestHandler: hasRequestHandler,
-        errorHandler: hasErrorHandler,
-        tracingHandler: hasTracingHandler,
+      console.warn('Some Sentry Express handlers are not available:', {
+        expressIntegration: hasExpressIntegration,
+        expressErrorHandler: hasExpressErrorHandler,
+        setupExpressErrorHandler: hasSetupExpressErrorHandler,
       });
     }
     return Sentry;

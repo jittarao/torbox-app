@@ -227,7 +227,7 @@ export function setupDiagnosticsRoutes(router, backend) {
                 }
               } catch (fileError) {
                 // Skip files we can't stat (permissions, etc.)
-                logger.verbose('Skipping file in orphaned check', {
+                logger.debug('Skipping file in orphaned check', {
                   file,
                   error: fileError.message,
                 });

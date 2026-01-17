@@ -40,18 +40,9 @@ class TorBoxBackend {
   }
 
   setupMiddleware() {
-    // Initialize Sentry Express middleware if Sentry is enabled
-    const Sentry = getSentry();
-    if (Sentry) {
-      // Request handler must be the first middleware
-      if (typeof Sentry.Handlers?.requestHandler === 'function') {
-        this.app.use(Sentry.Handlers.requestHandler());
-      }
-      // Tracing handler creates a trace for every incoming request
-      if (typeof Sentry.Handlers?.tracingHandler === 'function') {
-        this.app.use(Sentry.Handlers.tracingHandler());
-      }
-    }
+    // Note: In Sentry v10, expressIntegration (added during init) automatically handles
+    // request and tracing instrumentation, so no separate middleware is needed here.
+    // The integration is configured in src/utils/sentry.js during Sentry.init()
 
     // Security middleware
     this.app.use(
@@ -148,9 +139,15 @@ class TorBoxBackend {
     setupAdminRoutes(this.app, this);
 
     // Sentry error handler must be before other error handlers
+    // In Sentry v10, use expressErrorHandler instead of Handlers.errorHandler
     const Sentry = getSentry();
-    if (Sentry && typeof Sentry.Handlers?.errorHandler === 'function') {
-      this.app.use(Sentry.Handlers.errorHandler());
+    if (Sentry) {
+      if (typeof Sentry.expressErrorHandler === 'function') {
+        this.app.use(Sentry.expressErrorHandler());
+      } else if (typeof Sentry.setupExpressErrorHandler === 'function') {
+        // Alternative: setupExpressErrorHandler can be used to set up error handling
+        Sentry.setupExpressErrorHandler(this.app);
+      }
     }
 
     // Error handling middleware

@@ -24,6 +24,11 @@ services:
       - NODE_ENV=production
       # Port the backend service listens on inside the container
       - PORT=3001
+      # Sentry error tracking (optional - set in .env file)
+      - SENTRY_ENABLED=${SENTRY_ENABLED:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-}
+      - SENTRY_DEBUG=${SENTRY_DEBUG:-}
     # Persistent volume for backend data (databases, user files, etc.)
     volumes:
       - backend-data:/app/data
@@ -85,6 +90,16 @@ services:
       - NODE_ENV=production
       # Disable Next.js telemetry data collection
       - NEXT_TELEMETRY_DISABLED=1
+      # Sentry error tracking (optional - set in .env file)
+      # NEXT_PUBLIC_ prefix is required for client-side access in Next.js
+      - SENTRY_ENABLED=${SENTRY_ENABLED:-}
+      - NEXT_PUBLIC_SENTRY_ENABLED=${SENTRY_ENABLED:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - NEXT_PUBLIC_SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-}
+      - NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=${NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE:-}
+      - NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=${NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE:-}
+      - SENTRY_DEBUG=${SENTRY_DEBUG:-}
     # Service dependencies: wait for backend to be healthy before starting
     depends_on:
       torbox-backend:

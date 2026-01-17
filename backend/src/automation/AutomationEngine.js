@@ -70,7 +70,7 @@ class AutomationEngine {
   invalidateRuleEvaluatorCache() {
     this._ruleEvaluatorCache = null;
     this._ruleEvaluatorDbConnection = null;
-    logger.verbose('RuleEvaluator cache invalidated', { authId: this.authId });
+    logger.debug('RuleEvaluator cache invalidated', { authId: this.authId });
   }
 
   /**
@@ -94,7 +94,7 @@ class AutomationEngine {
     this._ruleEvaluatorCache = evaluator;
     this._ruleEvaluatorDbConnection = userDb;
 
-    logger.verbose('RuleEvaluator created/cached', { authId: this.authId });
+    logger.debug('RuleEvaluator created/cached', { authId: this.authId });
     return evaluator;
   }
 
@@ -324,7 +324,7 @@ class AutomationEngine {
       timestamp: new Date().toISOString(),
     });
     await this.updateMasterDbActiveRulesFlag(hasActive);
-    logger.verbose('Active rules flag synced successfully', {
+    logger.debug('Active rules flag synced successfully', {
       authId: this.authId,
       hasActiveRules: hasActive,
     });
@@ -379,7 +379,7 @@ class AutomationEngine {
       // Cron-based triggers can be added later if needed
       // This method is kept for compatibility
 
-      logger.verbose('Rule ready', {
+      logger.debug('Rule ready', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -396,7 +396,7 @@ class AutomationEngine {
   stopRule(ruleId) {
     if (this.runningJobs.has(ruleId)) {
       this.runningJobs.delete(ruleId);
-      logger.verbose('Rule stopped', {
+      logger.debug('Rule stopped', {
         authId: this.authId,
         ruleId,
       });
@@ -419,7 +419,7 @@ class AutomationEngine {
       const enabledRules = await this.getAutomationRules({ enabled: true });
       const allRules = await this.getAutomationRules();
 
-      logger.verbose('Rules loaded', {
+      logger.debug('Rules loaded', {
         authId: this.authId,
         totalRules: allRules.length,
         enabledRules: enabledRules.length,
@@ -427,7 +427,7 @@ class AutomationEngine {
       });
 
       if (enabledRules.length === 0) {
-        logger.verbose('No enabled rules to evaluate', {
+        logger.debug('No enabled rules to evaluate', {
           authId: this.authId,
           totalRules: allRules.length,
         });
@@ -529,7 +529,7 @@ class AutomationEngine {
       return { executed: false, skipped: true };
     }
 
-    logger.verbose('Starting rule evaluation', {
+    logger.debug('Starting rule evaluation', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
@@ -544,7 +544,7 @@ class AutomationEngine {
 
     // Check if rule should be evaluated based on interval
     if (this.shouldSkipRuleEvaluation(rule)) {
-      logger.verbose('Rule evaluation skipped - interval not elapsed', {
+      logger.debug('Rule evaluation skipped - interval not elapsed', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -734,7 +734,7 @@ class AutomationEngine {
 
       // Fetch current torrents (only if rate limit check passed)
       const torrents = await this.apiClient.getTorrents(true);
-      logger.verbose('Torrents fetched for manual execution', {
+      logger.debug('Torrents fetched for manual execution', {
         authId: this.authId,
         ruleId,
         torrentCount: torrents.length,
@@ -746,7 +746,7 @@ class AutomationEngine {
       const stateDiffEngine = new StateDiffEngine(userDb);
       const derivedFieldsEngine = new DerivedFieldsEngine(userDb);
 
-      logger.verbose('Processing state changes for manual rule execution', {
+      logger.debug('Processing state changes for manual rule execution', {
         authId: this.authId,
         ruleId,
       });
@@ -754,7 +754,7 @@ class AutomationEngine {
       const changes = await stateDiffEngine.processSnapshot(torrents);
       await derivedFieldsEngine.updateDerivedFields(changes);
 
-      logger.verbose('State changes processed for manual rule execution', {
+      logger.debug('State changes processed for manual rule execution', {
         authId: this.authId,
         ruleId,
         new: changes.new.length,
@@ -979,7 +979,7 @@ class AutomationEngine {
     if (timeSinceLastEvaluation < intervalMs) {
       const remainingMs = intervalMs - timeSinceLastEvaluation;
       const remainingMinutes = (remainingMs / (60 * 1000)).toFixed(2);
-      logger.verbose('Rule evaluation skipped - interval not elapsed', {
+      logger.debug('Rule evaluation skipped - interval not elapsed', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -1021,7 +1021,7 @@ class AutomationEngine {
     try {
       await this.ruleRepository.updateLastEvaluatedAt(rule.id);
     } catch (updateError) {
-      logger.verbose('Failed to update last_evaluated_at on error (non-critical)', {
+      logger.debug('Failed to update last_evaluated_at on error (non-critical)', {
         authId: this.authId,
         ruleId: rule.id,
         errorMessage: updateError.message,
