@@ -12,7 +12,7 @@ import cache from '../utils/cache.js';
 class DatabasePool {
   constructor(maxSize = 200) {
     this.maxSize = maxSize;
-    this.cache = new Map();
+    this.cache = new Map(); // Map<key, { value, lastAccess, refCount }>
 
     // Metrics tracking
     this.metrics = {
@@ -21,6 +21,7 @@ class DatabasePool {
       evictions: 0,
       lastEvictionAt: null,
       lastWarningAt: null,
+      proactiveEvictions: 0,
     };
 
     // Warning thresholds (percentage of maxSize)
@@ -29,6 +30,11 @@ class DatabasePool {
       critical: 0.9, // 90% - log critical warning
       emergency: 0.95, // 95% - log emergency warning
     };
+
+    // Proactive eviction threshold - start evicting when we reach this percentage
+    this.evictionThreshold = 0.85; // 85% - start proactive eviction
+    this.idleTimeoutMs = 5 * 60 * 1000; // 5 minutes - evict connections idle for this long
+    this.recentAccessWindowMs = 30 * 1000; // 30 seconds - don't evict connections accessed in this window
   }
 
   /**
@@ -37,60 +43,205 @@ class DatabasePool {
    * @returns {Object|null} - Cached connection or null
    */
   get(key) {
-    if (this.cache.has(key)) {
-      // Move to end (most recently used)
-      const value = this.cache.get(key);
-      this.cache.delete(key);
-      this.cache.set(key, value);
+    const entry = this.cache.get(key);
+    if (entry) {
+      // Update last access time and increment reference count
+      // Note: refCount is used to track usage frequency, not current usage
+      // It helps prioritize which connections to keep, but idle connections
+      // can still be evicted based on lastAccess time
+      entry.lastAccess = Date.now();
+      entry.refCount = (entry.refCount || 0) + 1;
       this.metrics.hits++;
-      return value;
+      return entry.value;
     }
     this.metrics.misses++;
     return null;
   }
 
   /**
-   * Set connection in pool with capacity monitoring
+   * Release a connection reference (decrement ref count)
+   * @param {string} key - Connection key (authId)
+   */
+  release(key) {
+    const entry = this.cache.get(key);
+    if (entry && entry.refCount > 0) {
+      entry.refCount--;
+    }
+  }
+
+  /**
+   * Set connection in pool with capacity monitoring and proactive eviction
    * @param {string} key - Connection key (authId)
    * @param {Object} value - Connection object
    */
   set(key, value) {
-    const wasFull = this.cache.size >= this.maxSize;
     const previousSize = this.cache.size;
+    const now = Date.now();
 
+    // Check if key already exists
     if (this.cache.has(key)) {
-      // Update existing
-      this.cache.delete(key);
-    } else if (this.cache.size >= this.maxSize) {
-      // Remove least recently used (first item)
-      const firstKey = this.cache.keys().next().value;
-      const firstValue = this.cache.get(firstKey);
-      if (firstValue && firstValue.db) {
-        try {
-          firstValue.db.close();
-        } catch (error) {
-          // Log but don't throw - we still want to remove from cache
-          logger.warn('Error closing database connection during pool eviction', {
-            error: error.message,
-          });
-        }
-      }
-      this.cache.delete(firstKey);
-      this.metrics.evictions++;
-      this.metrics.lastEvictionAt = new Date().toISOString();
+      // Update existing entry
+      const entry = this.cache.get(key);
+      entry.value = value;
+      entry.lastAccess = now;
+      // Don't reset refCount - it might be in use
+    } else {
+      // New connection - check if we need to evict
+      const usagePercent = this.cache.size / this.maxSize;
 
-      logger.verbose('Database pool eviction occurred - pool is at capacity', {
-        poolSize: this.cache.size,
-        maxSize: this.maxSize,
-        evictedKey: firstKey,
-        totalEvictions: this.metrics.evictions,
+      // Proactive eviction: evict idle connections before hitting max capacity
+      if (usagePercent >= this.evictionThreshold) {
+        this._evictIdleConnections();
+      }
+
+      // If still at capacity after proactive eviction, evict LRU
+      if (this.cache.size >= this.maxSize) {
+        this._evictLRUConnection();
+      }
+
+      // Add new connection with metadata
+      this.cache.set(key, {
+        value,
+        lastAccess: now,
+        refCount: 0, // Will be incremented when get() is called
       });
     }
 
-    this.cache.set(key, value);
-
     // Check and log capacity warnings
     this._checkCapacityWarnings(previousSize);
+  }
+
+  /**
+   * Evict idle connections (not recently used)
+   * Note: We evict based on lastAccess time, not refCount, since refCount
+   * represents total usage, not current usage. A connection with high refCount
+   * but old lastAccess is still idle and can be evicted.
+   * @private
+   */
+  _evictIdleConnections() {
+    const now = Date.now();
+    const keysToEvict = [];
+
+    // Find idle connections (idle for longer than timeout and not recently accessed)
+    // Sort by lastAccess to evict oldest idle connections first
+    const idleConnections = [];
+    for (const [key, entry] of this.cache.entries()) {
+      const idleTime = now - entry.lastAccess;
+      // Only evict if idle for longer than timeout AND not accessed in recent window
+      // This prevents eviction of connections that were just retrieved
+      if (
+        idleTime > this.idleTimeoutMs &&
+        idleTime > this.recentAccessWindowMs
+      ) {
+        idleConnections.push({ key, idleTime, refCount: entry.refCount || 0 });
+      }
+    }
+
+    // Sort by idle time (most idle first), but prefer connections with lower refCount
+    idleConnections.sort((a, b) => {
+      // First sort by refCount (prefer evicting connections with lower refCount)
+      if (a.refCount !== b.refCount) {
+        return a.refCount - b.refCount;
+      }
+      // Then by idle time (most idle first)
+      return b.idleTime - a.idleTime;
+    });
+
+    // Evict idle connections (limit to prevent too many evictions at once)
+    const maxEvictions = Math.max(1, Math.floor(this.maxSize * 0.1)); // Evict up to 10% at once
+    for (let i = 0; i < Math.min(idleConnections.length, maxEvictions); i++) {
+      this._closeAndRemove(idleConnections[i].key, true);
+    }
+  }
+
+  /**
+   * Evict least recently used connection
+   * Prefers connections that haven't been accessed recently (outside recent window)
+   * @private
+   */
+  _evictLRUConnection() {
+    const now = Date.now();
+    let lruKey = null;
+    let lruTime = Infinity;
+    let lruRefCount = Infinity;
+
+    // Find LRU connection, preferring:
+    // 1. Connections not accessed in recent window
+    // 2. Connections with lower refCount (less frequently used)
+    // 3. Oldest lastAccess time
+    for (const [key, entry] of this.cache.entries()) {
+      const isRecent = now - entry.lastAccess < this.recentAccessWindowMs;
+      const refCount = entry.refCount || 0;
+
+      // Prefer evicting connections outside recent window
+      if (!isRecent) {
+        // Among recent connections, prefer lower refCount, then older access
+        if (refCount < lruRefCount || (refCount === lruRefCount && entry.lastAccess < lruTime)) {
+          lruKey = key;
+          lruTime = entry.lastAccess;
+          lruRefCount = refCount;
+        }
+      } else if (!lruKey) {
+        // Fallback: if no non-recent connection found, consider recent ones
+        // but only if we haven't found any candidate yet
+        if (refCount < lruRefCount || (refCount === lruRefCount && entry.lastAccess < lruTime)) {
+          lruKey = key;
+          lruTime = entry.lastAccess;
+          lruRefCount = refCount;
+        }
+      }
+    }
+
+    // If still no candidate (shouldn't happen), evict oldest
+    if (!lruKey) {
+      for (const [key, entry] of this.cache.entries()) {
+        if (entry.lastAccess < lruTime) {
+          lruKey = key;
+          lruTime = entry.lastAccess;
+        }
+      }
+    }
+
+    if (lruKey) {
+      this._closeAndRemove(lruKey, false);
+    }
+  }
+
+  /**
+   * Close and remove a connection from the pool
+   * @param {string} key - Connection key to evict
+   * @param {boolean} isProactive - Whether this is a proactive eviction
+   * @private
+   */
+  _closeAndRemove(key, isProactive = false) {
+    const entry = this.cache.get(key);
+    if (entry && entry.value && entry.value.db) {
+      try {
+        entry.value.db.close();
+      } catch (error) {
+        // Log but don't throw - we still want to remove from cache
+        logger.warn('Error closing database connection during pool eviction', {
+          error: error.message,
+          key,
+          isProactive,
+        });
+      }
+    }
+    this.cache.delete(key);
+    this.metrics.evictions++;
+    if (isProactive) {
+      this.metrics.proactiveEvictions++;
+    }
+    this.metrics.lastEvictionAt = new Date().toISOString();
+
+    logger.verbose('Database pool eviction occurred', {
+      poolSize: this.cache.size,
+      maxSize: this.maxSize,
+      evictedKey: key,
+      isProactive,
+      totalEvictions: this.metrics.evictions,
+      proactiveEvictions: this.metrics.proactiveEvictions,
+    });
   }
 
   /**
@@ -160,10 +311,10 @@ class DatabasePool {
   }
 
   delete(key) {
-    const value = this.cache.get(key);
-    if (value && value.db) {
+    const entry = this.cache.get(key);
+    if (entry && entry.value && entry.value.db) {
       try {
-        value.db.close();
+        entry.value.db.close();
       } catch (error) {
         // Log but don't throw - we still want to remove from cache
         logger.warn('Error closing database connection during deletion', { error: error.message });
@@ -173,10 +324,10 @@ class DatabasePool {
   }
 
   clear() {
-    for (const [key, value] of this.cache) {
-      if (value && value.db) {
+    for (const [key, entry] of this.cache) {
+      if (entry && entry.value && entry.value.db) {
         try {
-          value.db.close();
+          entry.value.db.close();
         } catch (error) {
           // Log but don't throw - continue cleaning up other connections
           logger.warn('Error closing database connection during pool clear', {
@@ -202,15 +353,26 @@ class DatabasePool {
     const totalRequests = this.metrics.hits + this.metrics.misses;
     const hitRate = totalRequests > 0 ? (this.metrics.hits / totalRequests) * 100 : 0;
 
+    // Count connections in use
+    let inUseCount = 0;
+    for (const entry of this.cache.values()) {
+      if ((entry.refCount || 0) > 0) {
+        inUseCount++;
+      }
+    }
+
     return {
       size: currentSize,
       maxSize: this.maxSize,
       usagePercent: parseFloat(usagePercent.toFixed(2)),
       available: this.maxSize - currentSize,
+      inUse: inUseCount,
+      idle: currentSize - inUseCount,
       metrics: {
         hits: this.metrics.hits,
         misses: this.metrics.misses,
         evictions: this.metrics.evictions,
+        proactiveEvictions: this.metrics.proactiveEvictions || 0,
         hitRate: parseFloat(hitRate.toFixed(2)),
         lastEvictionAt: this.metrics.lastEvictionAt,
         lastWarningAt: this.metrics.lastWarningAt,
@@ -295,6 +457,7 @@ class UserDatabaseManager {
       // Validate connection is still alive
       try {
         cached.db.prepare('SELECT 1').get();
+        // Connection is valid - refCount was incremented by get()
         return cached;
       } catch (error) {
         // Connection is dead, remove from pool
