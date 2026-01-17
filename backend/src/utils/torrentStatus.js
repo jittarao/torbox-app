@@ -16,17 +16,23 @@ export function getTorrentStatus(torrent) {
   }
 
   // Check download_state for specific statuses
+  // These checks match the frontend STATUS_OPTIONS logic where each status
+  // has specific active requirements
   if (torrent.download_state) {
     const state = torrent.download_state.toLowerCase();
 
-    // Failed
-    if (state.includes('failed')) {
-      return 'failed';
+    // Failed: active must be false
+    if (state.includes('failed') && !torrent.active) {
+      if (!torrent.download_finished && !torrent.download_present) {
+        return 'failed';
+      }
     }
 
-    // Stalled
-    if (state.includes('stalled')) {
-      return 'stalled';
+    // Stalled: active must be true
+    if (state.includes('stalled') && torrent.active) {
+      if (!torrent.download_finished && !torrent.download_present) {
+        return 'stalled';
+      }
     }
 
     // MetaDL
@@ -38,6 +44,11 @@ export function getTorrentStatus(torrent) {
     if (state.includes('checkingresumedata')) {
       return 'checking_resume_data';
     }
+  }
+
+  // Inactive: Not active, download not present
+  if (!torrent.active && !torrent.download_present) {
+    return 'inactive';
   }
 
   // Completed: Download finished, not active
@@ -58,11 +69,6 @@ export function getTorrentStatus(torrent) {
   // Uploading: Download finished, download not present, active
   if (torrent.download_finished && !torrent.download_present && torrent.active) {
     return 'uploading';
-  }
-
-  // Inactive: Not active, download not present
-  if (!torrent.active && !torrent.download_present) {
-    return 'inactive';
   }
 
   return 'unknown';
