@@ -10,6 +10,7 @@ import {
   getUploadFilePath,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
+import { hashApiKey } from '../utils/crypto.js';
 import rateLimit from 'express-rate-limit';
 import { readFile } from 'fs/promises';
 import path from 'path';

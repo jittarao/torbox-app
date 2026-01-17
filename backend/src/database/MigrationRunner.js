@@ -2,6 +2,7 @@ import fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import logger from '../utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,7 +86,7 @@ class MigrationRunner {
    * Run all pending migrations
    */
   async runMigrations() {
-    console.log('Running database migrations...');
+    logger.info('Running database migrations...');
 
     // First, ensure migrations table exists
     await this.ensureMigrationsTable();
@@ -99,12 +100,11 @@ class MigrationRunner {
       const { version, name } = this.parseMigrationFile(file);
 
       if (appliedMigrations.includes(version)) {
-        console.log(`Migration ${version}_${name} already applied, skipping`);
         continue;
       }
 
       try {
-        console.log(`Running migration ${version}_${name}...`);
+        logger.info(`Running migration ${version}_${name}...`);
 
         const migrationPath = path.join(this.migrationsDir, file);
         // Convert path to file:// URL (works cross-platform)
@@ -124,17 +124,17 @@ class MigrationRunner {
         this.markMigrationApplied(version, name);
         migrationsRun++;
 
-        console.log(`✓ Migration ${version}_${name} applied successfully`);
+        logger.info(`✓ Migration ${version}_${name} applied successfully`);
       } catch (error) {
-        console.error(`✗ Migration ${version}_${name} failed:`, error);
+        logger.error(`✗ Migration ${version}_${name} failed:`, error);
         throw new Error(`Migration ${version}_${name} failed: ${error.message}`);
       }
     }
 
     if (migrationsRun === 0) {
-      console.log('No pending migrations');
+      logger.info('No pending migrations');
     } else {
-      console.log(`Applied ${migrationsRun} migration(s)`);
+      logger.info(`Applied ${migrationsRun} migration(s)`);
     }
 
     return migrationsRun;
@@ -169,15 +169,15 @@ class MigrationRunner {
         throw new Error(`Migration ${migrationFile} does not export a 'down' function`);
       }
 
-      console.log(`Rolling back migration ${version}...`);
+      logger.info(`Rolling back migration ${version}...`);
       migration.down(this.db);
 
       // Remove from applied migrations
       this.db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(version);
 
-      console.log(`✓ Migration ${version} rolled back successfully`);
+      logger.info(`✓ Migration ${version} rolled back successfully`);
     } catch (error) {
-      console.error(`✗ Rollback of migration ${version} failed:`, error);
+      logger.error(`✗ Rollback of migration ${version} failed:`, error);
       throw error;
     }
   }
@@ -205,10 +205,10 @@ class MigrationRunner {
 
         const migrationsTable = await import(migrationUrl);
         migrationsTable.up(this.db);
-        console.log(`Created schema_migrations table for ${this.dbType} database`);
+        logger.info(`Created schema_migrations table for ${this.dbType} database`);
       }
     } catch (error) {
-      console.error('Error ensuring migrations table:', error);
+      logger.error('Error ensuring migrations table:', error);
       throw error;
     }
   }
