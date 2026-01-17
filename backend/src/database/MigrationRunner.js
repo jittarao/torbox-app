@@ -86,7 +86,7 @@ class MigrationRunner {
    * Run all pending migrations
    */
   async runMigrations() {
-    logger.info('Running database migrations...');
+    logger.verbose('Running database migrations...');
 
     // First, ensure migrations table exists
     await this.ensureMigrationsTable();
@@ -132,7 +132,7 @@ class MigrationRunner {
     }
 
     if (migrationsRun === 0) {
-      logger.info('No pending migrations');
+      logger.verbose('No pending migrations');
     } else {
       logger.info(`Applied ${migrationsRun} migration(s)`);
     }

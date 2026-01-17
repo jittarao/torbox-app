@@ -22,7 +22,7 @@ class RuleExecutor {
     for (const torrent of torrents) {
       try {
         const ruleEvaluator = await this.getRuleEvaluator();
-        logger.debug('Executing action on torrent', {
+        logger.verbose('Executing action on torrent', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
@@ -35,7 +35,7 @@ class RuleExecutor {
         await ruleEvaluator.executeAction(rule.action, torrent);
         successCount++;
 
-        logger.debug('Action successfully executed', {
+        logger.verbose('Action successfully executed', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,

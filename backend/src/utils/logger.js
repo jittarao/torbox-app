@@ -162,6 +162,18 @@ class Logger {
   }
 
   /**
+   * Log a verbose message (only if DEBUG or VERBOSE env variable is set)
+   * @param {string} message - Verbose message
+   * @param {Object} context - Additional context
+   */
+  verbose(message, context = {}) {
+    const isVerbose = process.env.DEBUG === 'true';
+    if (isVerbose) {
+      this.logger.debug(message, { ...context, verbose: true });
+    }
+  }
+
+  /**
    * Log an HTTP request
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object

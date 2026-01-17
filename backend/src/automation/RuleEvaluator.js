@@ -294,7 +294,7 @@ class RuleEvaluator {
           : groupResults.every((result) => result);
 
       if (finalResult) {
-        logger.debug('Torrent matched rule', {
+        logger.verbose('Torrent matched rule', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
@@ -323,7 +323,7 @@ class RuleEvaluator {
     const groupLogicOp = group.logicOperator || 'and';
 
     if (conditions.length === 0) {
-      logger.debug('Empty group in rule, matches nothing', {
+      logger.verbose('Empty group in rule, matches nothing', {
         ruleId: rule.id,
         ruleName: rule.name,
         groupIndex,
@@ -340,7 +340,7 @@ class RuleEvaluator {
         tagsByDownloadId,
         speedHistoryMap
       );
-      logger.debug('Condition evaluated', {
+      logger.verbose('Condition evaluated', {
         ruleId: rule.id,
         ruleName: rule.name,
         groupIndex,
@@ -360,7 +360,7 @@ class RuleEvaluator {
         ? conditionResults.some((result) => result)
         : conditionResults.every((result) => result);
 
-    logger.debug('Group evaluation result', {
+    logger.verbose('Group evaluation result', {
       ruleId: rule.id,
       ruleName: rule.name,
       groupIndex,
@@ -411,7 +411,7 @@ class RuleEvaluator {
           : conditionResults.every((result) => result);
 
       if (finalResult) {
-        logger.debug('Torrent matched rule (flat structure)', {
+        logger.verbose('Torrent matched rule (flat structure)', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,

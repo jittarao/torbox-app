@@ -668,7 +668,7 @@ class PollingScheduler {
    */
   async pollDueUsers() {
     if (!this.isRunning) {
-      logger.debug('Polling scheduler not running, skipping poll check');
+      logger.verbose('Polling scheduler not running, skipping poll check');
       return;
     }
 
@@ -677,7 +677,7 @@ class PollingScheduler {
     }
 
     const checkStartTime = Date.now();
-    logger.debug('Checking for users due for polling', {
+    logger.verbose('Checking for users due for polling', {
       activePollers: this.pollers.size,
       timestamp: new Date().toISOString(),
     });
@@ -686,7 +686,7 @@ class PollingScheduler {
       const dueUsers = this.masterDb.getUsersDueForPolling();
 
       if (dueUsers.length === 0) {
-        logger.debug('No users due for polling at this time', {
+        logger.verbose('No users due for polling at this time', {
           checkDuration: `${((Date.now() - checkStartTime) / 1000).toFixed(2)}s`,
         });
         return;
