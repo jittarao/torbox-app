@@ -870,7 +870,7 @@ class UploadProcessor {
       const response = await this.makeApiRequest(apiClient, endpoint, formData);
 
       // API call succeeded - now handle the database update
-      // If handleSuccessfulUpload throws (e.g., SQLITE_BUSY), we must NOT re-queue
+      // If handleSuccessfulUpload throws (e.g., SQLITE_BUSY, closed database), we must NOT re-queue
       // since the upload already succeeded on TorBox
       try {
         this.handleSuccessfulUpload(upload, userDb, type, response);
@@ -878,20 +878,50 @@ class UploadProcessor {
       } catch (dbError) {
         // Database error after successful API call - retry the database update
         // but do NOT re-queue the upload since it already succeeded on TorBox
+        const isClosedDbError =
+          dbError.message?.includes('closed database') ||
+          dbError.message?.includes('Cannot use a closed database') ||
+          dbError.name === 'RangeError';
+
         logger.error('Database error after successful API call, retrying database update', {
           uploadId: id,
           type,
           error: dbError.message,
           errorCode: dbError.code,
+          isClosedDbError,
         });
 
         // Retry the database update with exponential backoff
+        // Re-fetch database connection if it's closed
         const maxDbRetries = 3;
         let lastDbError = dbError;
+        let currentUserDb = userDb;
+
         for (let attempt = 0; attempt < maxDbRetries; attempt++) {
           try {
+            // If database connection is closed, re-fetch it
+            if (isClosedDbError || attempt > 0) {
+              // Check if connection is closed (for retries after first attempt)
+              try {
+                currentUserDb.db.prepare('SELECT 1').get();
+              } catch (checkError) {
+                // Connection is closed, re-fetch it
+                if (
+                  checkError.message?.includes('closed database') ||
+                  checkError.message?.includes('Cannot use a closed database') ||
+                  checkError.name === 'RangeError'
+                ) {
+                  logger.warn('Database connection closed during retry, re-fetching connection', {
+                    uploadId: id,
+                    attempt: attempt + 1,
+                  });
+                  currentUserDb = await this.userDatabaseManager.getUserDatabase(upload.authId);
+                }
+              }
+            }
+
             // Re-attempt the database update
-            this.handleSuccessfulUpload(upload, userDb, type, response);
+            this.handleSuccessfulUpload(upload, currentUserDb, type, response);
             logger.info('Successfully completed database update after retry', {
               uploadId: id,
               attempt: attempt + 1,
@@ -899,6 +929,11 @@ class UploadProcessor {
             return true;
           } catch (retryError) {
             lastDbError = retryError;
+            const isRetryClosedDbError =
+              retryError.message?.includes('closed database') ||
+              retryError.message?.includes('Cannot use a closed database') ||
+              retryError.name === 'RangeError';
+
             if (attempt < maxDbRetries - 1) {
               const delayMs = 100 * Math.pow(2, attempt); // 100ms, 200ms, 400ms
               logger.warn('Database update retry failed, will retry again', {
@@ -907,6 +942,7 @@ class UploadProcessor {
                 maxRetries: maxDbRetries,
                 delayMs,
                 error: retryError.message,
+                isClosedDbError: isRetryClosedDbError,
               });
               await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
@@ -929,30 +965,118 @@ class UploadProcessor {
         // Mark as completed manually to prevent re-queuing
         // This is a best-effort attempt - if this also fails, the upload will be stuck
         // but at least it won't cause duplicate uploads
-        try {
-          const updateResult = userDb.db
-            .prepare(
-              `
-              UPDATE uploads
-              SET status = 'completed',
-                  error_message = ?,
-                  completed_at = CURRENT_TIMESTAMP,
-                  updated_at = CURRENT_TIMESTAMP
-              WHERE id = ?
-            `
-            )
-            .run(`Database update failed after successful upload: ${lastDbError.message}`, id);
+        // Use retry logic for the final attempt as well
+        const finalMaxRetries = 3;
+        let finalAttemptSuccess = false;
 
-          if (updateResult.changes > 0) {
-            this.masterDatabase.decrementUploadCounter(upload.authId);
-            logger.warn('Manually marked upload as completed to prevent duplicate uploads', {
-              uploadId: id,
-            });
+        for (let finalAttempt = 0; finalAttempt < finalMaxRetries; finalAttempt++) {
+          try {
+            // Ensure we have a valid database connection for the final attempt
+            let finalUserDb = currentUserDb;
+
+            // Always re-fetch connection for final attempts to ensure it's fresh
+            if (finalAttempt === 0) {
+              // First attempt: check if current connection is valid
+              try {
+                finalUserDb.db.prepare('SELECT 1').get();
+              } catch (checkError) {
+                // Connection is closed or invalid, re-fetch it
+                const isClosedError =
+                  checkError.message?.includes('closed database') ||
+                  checkError.message?.includes('Cannot use a closed database') ||
+                  checkError.name === 'RangeError';
+
+                if (isClosedError) {
+                  logger.warn('Database connection closed for final attempt, re-fetching connection', {
+                    uploadId: id,
+                    attempt: finalAttempt + 1,
+                  });
+                  finalUserDb = await this.userDatabaseManager.getUserDatabase(upload.authId);
+                } else {
+                  // Other error during check - re-fetch anyway to be safe
+                  logger.warn('Database connection check failed, re-fetching connection', {
+                    uploadId: id,
+                    attempt: finalAttempt + 1,
+                    error: checkError.message,
+                  });
+                  finalUserDb = await this.userDatabaseManager.getUserDatabase(upload.authId);
+                }
+              }
+            } else {
+              // Subsequent attempts: always re-fetch to get a fresh connection
+              logger.warn('Re-fetching database connection for final attempt retry', {
+                uploadId: id,
+                attempt: finalAttempt + 1,
+              });
+              finalUserDb = await this.userDatabaseManager.getUserDatabase(upload.authId);
+            }
+
+            const updateResult = finalUserDb.db
+              .prepare(
+                `
+                UPDATE uploads
+                SET status = 'completed',
+                    error_message = ?,
+                    completed_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `
+              )
+              .run(`Database update failed after successful upload: ${lastDbError.message}`, id);
+
+            if (updateResult.changes > 0) {
+              this.masterDatabase.decrementUploadCounter(upload.authId);
+              logger.warn('Manually marked upload as completed to prevent duplicate uploads', {
+                uploadId: id,
+                attempt: finalAttempt + 1,
+              });
+              finalAttemptSuccess = true;
+              break; // Success - exit retry loop
+            } else {
+              // No rows updated - upload might have been deleted
+              logger.warn('No rows updated in final attempt - upload may have been deleted', {
+                uploadId: id,
+                attempt: finalAttempt + 1,
+              });
+              finalAttemptSuccess = true; // Consider this success (upload doesn't exist)
+              break;
+            }
+          } catch (finalError) {
+            const isFinalClosedError =
+              finalError.message?.includes('closed database') ||
+              finalError.message?.includes('Cannot use a closed database') ||
+              finalError.name === 'RangeError';
+
+            if (finalAttempt < finalMaxRetries - 1) {
+              const delayMs = 200 * Math.pow(2, finalAttempt); // 200ms, 400ms, 800ms
+              logger.warn('Final attempt failed, will retry', {
+                uploadId: id,
+                attempt: finalAttempt + 1,
+                maxRetries: finalMaxRetries,
+                delayMs,
+                error: finalError.message,
+                errorCode: finalError.code,
+                isClosedError: isFinalClosedError,
+              });
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+            } else {
+              // All final attempts failed
+              logger.error('CRITICAL: Failed to manually mark upload as completed after all retries', {
+                uploadId: id,
+                maxRetries: finalMaxRetries,
+                error: finalError.message,
+                errorCode: finalError.code,
+                isClosedError: isFinalClosedError,
+              });
+            }
           }
-        } catch (finalError) {
-          logger.error('CRITICAL: Failed to manually mark upload as completed', {
+        }
+
+        if (!finalAttemptSuccess) {
+          logger.error('CRITICAL: All final attempts to mark upload as completed failed', {
             uploadId: id,
-            error: finalError.message,
+            type,
+            note: 'Upload succeeded on TorBox but database update failed - upload may be stuck in processing state',
           });
         }
 
@@ -1099,7 +1223,24 @@ class UploadProcessor {
 
     query += ' ORDER BY queue_order ASC LIMIT 1';
 
-    return userDb.db.prepare(query).all(...params);
+    try {
+      return userDb.db.prepare(query).all(...params);
+    } catch (error) {
+      // Handle closed database error - connection may have been evicted from pool
+      if (
+        error.message?.includes('closed database') ||
+        error.message?.includes('Cannot use a closed database') ||
+        error.name === 'RangeError'
+      ) {
+        logger.warn('Database connection closed, will retry with fresh connection', {
+          authId,
+          error: error.message,
+        });
+        // Re-throw to let caller handle re-fetching the connection
+        throw new Error('DATABASE_CLOSED');
+      }
+      throw error;
+    }
   }
 
   /**
@@ -1152,15 +1293,59 @@ class UploadProcessor {
           const types = ['torrent', 'usenet', 'webdl'];
 
           for (const type of types) {
-            const queuedUploads = this.getQueuedUploads(userDb, auth_id, type);
+            let queuedUploads;
+            let currentUserDb = userDb;
+
+            try {
+              queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
+            } catch (error) {
+              // If database was closed, re-fetch the connection and retry
+              if (error.message === 'DATABASE_CLOSED') {
+                try {
+                  currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+                  queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
+                } catch (retryError) {
+                  logger.error('Failed to re-fetch database connection', retryError, {
+                    authId: auth_id,
+                  });
+                  continue; // Skip this type for this user
+                }
+              } else {
+                throw error; // Re-throw other errors
+              }
+            }
 
             if (queuedUploads.length > 0) {
               const upload = queuedUploads[0]; // Get first (highest priority)
 
               // Check if upload is currently being processed (avoid concurrent processing)
-              const currentStatus = userDb.db
-                .prepare('SELECT status FROM uploads WHERE id = ?')
-                .get(upload.id);
+              let currentStatus;
+              try {
+                currentStatus = currentUserDb.db
+                  .prepare('SELECT status FROM uploads WHERE id = ?')
+                  .get(upload.id);
+              } catch (error) {
+                // If database was closed, re-fetch the connection and retry
+                if (
+                  error.message?.includes('closed database') ||
+                  error.message?.includes('Cannot use a closed database') ||
+                  error.name === 'RangeError'
+                ) {
+                  try {
+                    currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+                    currentStatus = currentUserDb.db
+                      .prepare('SELECT status FROM uploads WHERE id = ?')
+                      .get(upload.id);
+                  } catch (retryError) {
+                    logger.error('Failed to re-fetch database connection', retryError, {
+                      authId: auth_id,
+                    });
+                    continue; // Skip this upload
+                  }
+                } else {
+                  throw error; // Re-throw other errors
+                }
+              }
 
               if (currentStatus?.status === 'queued') {
                 // Capture original status before updating (needed for counter management)
@@ -1168,22 +1353,58 @@ class UploadProcessor {
 
                 // Mark as processing - use atomic UPDATE with status check to prevent race conditions
                 // Only proceed if the UPDATE actually changed a row (result.changes > 0)
-                const result = userDb.db
-                  .prepare(
+                let result;
+                try {
+                  result = currentUserDb.db
+                    .prepare(
+                      `
+                      UPDATE uploads
+                      SET status = 'processing',
+                          last_processed_at = CURRENT_TIMESTAMP,
+                          updated_at = CURRENT_TIMESTAMP
+                      WHERE id = ? AND status = 'queued'
                     `
-                    UPDATE uploads
-                    SET status = 'processing',
-                        last_processed_at = CURRENT_TIMESTAMP,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ? AND status = 'queued'
-                  `
-                  )
-                  .run(upload.id);
+                    )
+                    .run(upload.id);
+                } catch (error) {
+                  // If database was closed, re-fetch the connection and retry
+                  if (
+                    error.message?.includes('closed database') ||
+                    error.message?.includes('Cannot use a closed database') ||
+                    error.name === 'RangeError'
+                  ) {
+                    try {
+                      currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+                      result = currentUserDb.db
+                        .prepare(
+                          `
+                          UPDATE uploads
+                          SET status = 'processing',
+                              last_processed_at = CURRENT_TIMESTAMP,
+                              updated_at = CURRENT_TIMESTAMP
+                          WHERE id = ? AND status = 'queued'
+                        `
+                        )
+                        .run(upload.id);
+                    } catch (retryError) {
+                      logger.error('Failed to re-fetch database connection', retryError, {
+                        authId: auth_id,
+                      });
+                      continue; // Skip this upload
+                    }
+                  } else {
+                    throw error; // Re-throw other errors
+                  }
+                }
 
                 // Only process if the UPDATE succeeded (another thread didn't claim it first)
                 if (result.changes > 0) {
                   // Process upload (pass original status to ensure counter updates work correctly)
-                  await this.processUpload({ ...upload, authId: auth_id }, userDb, originalStatus);
+                  await this.processUpload(
+                    { ...upload, authId: auth_id },
+                    currentUserDb,
+                    originalStatus
+                  );
                 }
               }
             }
