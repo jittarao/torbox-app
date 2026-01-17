@@ -2,6 +2,27 @@ import { applyIntervalMultiplier } from '../../utils/intervalUtils.js';
 import logger from '../../utils/logger.js';
 
 /**
+ * Configuration constants for polling intervals
+ * All interval values are in minutes
+ * Modify these values to adjust polling behavior across the system
+ */
+const POLLING_CONFIG = {
+  // Base intervals for different polling modes
+  intervals: {
+    idle: 15, // Idle mode: user has active rules but no recent executions
+    active: 5, // Active mode: user has active rules and recent executions with non-terminal torrents
+    activeNoTerminal: 30, // Active mode: user has active rules but no non-terminal torrents
+    noRules: 60, // No rules mode: user has no active rules
+  },
+
+  // Minimum interval constraints
+  minimum: {
+    production: 5, // Minimum polling interval in production (minutes)
+    development: 0.1, // Minimum polling interval multiplier in development (0.1 = 10x faster, 0.01 = 100x faster)
+  },
+};
+
+/**
  * Calculates polling intervals based on user state and rule execution history
  */
 class PollingIntervalCalculator {
@@ -11,18 +32,21 @@ class PollingIntervalCalculator {
    * @param {string} authId - User authentication ID
    * @param {number} nonTerminalCount - Count of non-terminal torrents
    * @param {Object} ruleResults - Optional rule evaluation results
-   * @returns {number} - Polling interval in minutes (always 60 for idle mode, adjusted in dev)
+   * @returns {number} - Polling interval in minutes (adjusted in dev)
    */
   static calculateIdleModeInterval(authId, nonTerminalCount, ruleResults = null) {
-    const baseInterval = 60;
+    const baseInterval = POLLING_CONFIG.intervals.idle;
     const adjustedInterval = applyIntervalMultiplier(baseInterval);
-    logger.debug('User in idle mode (no recent rule executions), polling every 60 minutes', {
-      authId,
-      nonTerminalCount,
-      currentPollExecuted: ruleResults?.executed || 0,
-      adjustedInterval:
-        adjustedInterval !== baseInterval ? `${adjustedInterval.toFixed(2)}min (dev)` : undefined,
-    });
+    logger.debug(
+      `User in idle mode (no recent rule executions), polling every ${baseInterval} minutes`,
+      {
+        authId,
+        nonTerminalCount,
+        currentPollExecuted: ruleResults?.executed || 0,
+        adjustedInterval:
+          adjustedInterval !== baseInterval ? `${adjustedInterval.toFixed(2)}min (dev)` : undefined,
+      }
+    );
     return adjustedInterval;
   }
 
@@ -59,11 +83,11 @@ class PollingIntervalCalculator {
 
     // No interval triggers configured, fallback to existing logic
     if (nonTerminalCount > 0) {
-      // Has active rules and non-terminal torrents: poll every 5 minutes (adjusted in dev)
-      return applyIntervalMultiplier(5);
+      // Has active rules and non-terminal torrents: poll every N minutes (adjusted in dev)
+      return applyIntervalMultiplier(POLLING_CONFIG.intervals.active);
     } else {
-      // Has active rules but no non-terminal torrents: poll every 30 minutes (adjusted in dev)
-      return applyIntervalMultiplier(30);
+      // Has active rules but no non-terminal torrents: poll every N minutes (adjusted in dev)
+      return applyIntervalMultiplier(POLLING_CONFIG.intervals.activeNoTerminal);
     }
   }
 
@@ -73,10 +97,14 @@ class PollingIntervalCalculator {
    * @returns {number} - Enforced minimum interval in minutes
    */
   static applyMinimumIntervalConstraint(intervalMinutes) {
-    // Apply multiplier to minimum interval in dev, but ensure it's at least 0.1 minutes (6 seconds) in dev
-    const MIN_POLL_INTERVAL_MINUTES =
-      process.env.NODE_ENV === 'development' ? Math.max(0.1, applyIntervalMultiplier(5)) : 5;
-    return Math.max(MIN_POLL_INTERVAL_MINUTES, intervalMinutes);
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const minInterval = isDevelopment
+      ? Math.max(
+          POLLING_CONFIG.minimum.development,
+          applyIntervalMultiplier(POLLING_CONFIG.minimum.production)
+        )
+      : POLLING_CONFIG.minimum.production;
+    return Math.max(minInterval, intervalMinutes);
   }
 
   /**
@@ -109,13 +137,13 @@ class PollingIntervalCalculator {
     // Calculate base interval based on mode
     switch (pollingMode) {
       case 'no-rules':
-        // No active rules: poll every hour (adjusted in dev)
-        baseIntervalMinutes = applyIntervalMultiplier(60);
+        // No active rules: poll every N minutes (adjusted in dev)
+        baseIntervalMinutes = applyIntervalMultiplier(POLLING_CONFIG.intervals.noRules);
         break;
 
       case 'idle':
         // Idle mode: No rules executed in current poll or last hour
-        // Poll every 60 minutes regardless of rule intervals (performance optimization)
+        // Poll every N minutes regardless of rule intervals (performance optimization)
         baseIntervalMinutes = this.calculateIdleModeInterval(authId, nonTerminalCount, ruleResults);
         break;
 

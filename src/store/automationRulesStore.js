@@ -121,8 +121,12 @@ export const useAutomationRulesStore = create((set, get) => ({
         throw new Error(errorData.error || `Backend save failed: ${response.status}`);
       }
 
-      // Update local state after successful backend save
-      set({ rules: newRules, loading: false });
+      // Get the saved rules with database-assigned IDs from the response
+      const data = await response.json();
+      const savedRules = data.rules || [];
+
+      // Update local state with the rules returned from backend (they have correct database IDs)
+      set({ rules: savedRules, loading: false });
     } catch (err) {
       console.error('Error saving automation rules:', err);
       set({ error: err.message, loading: false });

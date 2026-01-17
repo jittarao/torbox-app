@@ -172,10 +172,15 @@ export function setupDiagnosticsRoutes(router, backend) {
         }));
 
         // Check for orphaned database files (files in userDbDir but not in registry)
-        const orphanedFiles = [];
+        const orphanedSqliteFiles = [];
+        const orphanedWalFiles = [];
+        const orphanedShmFiles = [];
+
         try {
           if (fs.existsSync(userDbDir)) {
             const files = fs.readdirSync(userDbDir);
+
+            // Create sets of registered database files and base names
             const registeredPaths = new Set(allUsers.map((user) => path.basename(user.db_path)));
 
             const registeredBaseNames = new Set(
@@ -195,26 +200,29 @@ export function setupDiagnosticsRoutes(router, backend) {
                   return;
                 }
 
+                const fileInfo = {
+                  filename: file,
+                  path: fullPath,
+                  size: stats.size,
+                  modified: stats.mtime,
+                };
+
                 // Check for .sqlite files
                 if (file.endsWith('.sqlite')) {
                   if (!registeredPaths.has(file)) {
-                    orphanedFiles.push({
-                      filename: file,
-                      path: fullPath,
-                      size: stats.size,
-                      modified: stats.mtime,
-                    });
+                    orphanedSqliteFiles.push(fileInfo);
                   }
-                } else if (file.endsWith('-wal') || file.endsWith('-shm')) {
-                  // Check WAL and SHM files (SQLite journal files)
-                  const baseName = file.replace(/-wal$/, '').replace(/-shm$/, '');
+                } else if (file.endsWith('-wal')) {
+                  // Extract base name from WAL file: "user_abc123.sqlite-wal" → "user_abc123"
+                  const baseName = file.replace(/\.sqlite-wal$/, '');
                   if (!registeredBaseNames.has(baseName)) {
-                    orphanedFiles.push({
-                      filename: file,
-                      path: fullPath,
-                      size: stats.size,
-                      modified: stats.mtime,
-                    });
+                    orphanedWalFiles.push(fileInfo);
+                  }
+                } else if (file.endsWith('-shm')) {
+                  // Extract base name from SHM file: "user_abc123.sqlite-shm" → "user_abc123"
+                  const baseName = file.replace(/\.sqlite-shm$/, '');
+                  if (!registeredBaseNames.has(baseName)) {
+                    orphanedShmFiles.push(fileInfo);
                   }
                 }
               } catch (fileError) {
@@ -230,7 +238,13 @@ export function setupDiagnosticsRoutes(router, backend) {
           logger.warn('Error checking for orphaned files', { error: error.message, userDbDir });
         }
 
-        diagnostics.issues.orphanedFiles = orphanedFiles;
+        // Combine all orphaned files for total count
+        const allOrphanedFiles = [...orphanedSqliteFiles, ...orphanedWalFiles, ...orphanedShmFiles];
+
+        diagnostics.issues.orphanedFiles = allOrphanedFiles;
+        diagnostics.issues.orphanedSqliteFiles = orphanedSqliteFiles;
+        diagnostics.issues.orphanedWalFiles = orphanedWalFiles;
+        diagnostics.issues.orphanedShmFiles = orphanedShmFiles;
 
         // Database integrity checks (sample a subset to avoid performance issues)
         const databaseIntegrityFailures = [];

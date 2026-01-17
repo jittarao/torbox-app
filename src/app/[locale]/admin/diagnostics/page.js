@@ -507,17 +507,17 @@ export default function AdminDiagnosticsPage() {
               </div>
             )}
 
-            {/* Orphaned Files */}
-            {issues.orphanedFiles && issues.orphanedFiles.length > 0 && (
+            {/* Orphaned SQLite Files */}
+            {issues.orphanedSqliteFiles && issues.orphanedSqliteFiles.length > 0 && (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
-                  ⚠️ Orphaned Database Files ({issues.orphanedFiles.length})
+                  ⚠️ Orphaned SQLite Database Files ({issues.orphanedSqliteFiles.length})
                 </h3>
                 <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
                   Database files found on disk but not registered in the user registry
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.orphanedFiles.slice(0, 20).map((file, idx) => (
+                  {issues.orphanedSqliteFiles.slice(0, 20).map((file, idx) => (
                     <div
                       key={idx}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
@@ -536,9 +536,86 @@ export default function AdminDiagnosticsPage() {
                       </div>
                     </div>
                   ))}
-                  {issues.orphanedFiles.length > 20 && (
+                  {issues.orphanedSqliteFiles.length > 20 && (
                     <div className="text-sm text-yellow-800 dark:text-yellow-300 text-center pt-2">
-                      ... and {issues.orphanedFiles.length - 20} more
+                      ... and {issues.orphanedSqliteFiles.length - 20} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Orphaned WAL Files */}
+            {issues.orphanedWalFiles && issues.orphanedWalFiles.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
+                  ⚠️ Orphaned WAL Files ({issues.orphanedWalFiles.length})
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Write-Ahead Logging files found on disk but not associated with any registered
+                  database
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {issues.orphanedWalFiles.slice(0, 20).map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                          {file.filename}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {file.path}
+                        </div>
+                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                          Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
+                          {new Date(file.modified).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {issues.orphanedWalFiles.length > 20 && (
+                    <div className="text-sm text-yellow-800 dark:text-yellow-300 text-center pt-2">
+                      ... and {issues.orphanedWalFiles.length - 20} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Orphaned SHM Files */}
+            {issues.orphanedShmFiles && issues.orphanedShmFiles.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
+                  ⚠️ Orphaned SHM Files ({issues.orphanedShmFiles.length})
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Shared Memory files found on disk but not associated with any registered database
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {issues.orphanedShmFiles.slice(0, 20).map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                          {file.filename}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {file.path}
+                        </div>
+                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                          Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
+                          {new Date(file.modified).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {issues.orphanedShmFiles.length > 20 && (
+                    <div className="text-sm text-yellow-800 dark:text-yellow-300 text-center pt-2">
+                      ... and {issues.orphanedShmFiles.length - 20} more
                     </div>
                   )}
                 </div>

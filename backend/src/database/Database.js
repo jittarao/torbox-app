@@ -45,9 +45,8 @@ class Database {
       // Initialize database connection
       this.db = new SQLiteDatabase(this.dbPath);
 
-      // Enable WAL mode
-      this.db.prepare('PRAGMA journal_mode = WAL').run();
-      this.db.prepare('PRAGMA busy_timeout = 5000').run();
+      // Configure database with required PRAGMAs
+      this._configureDatabase(this.db);
 
       // Initialize migration runner for master database
       this.migrationRunner = new MigrationRunner(this.db, 'master');
@@ -100,6 +99,16 @@ class Database {
   }
 
   /**
+   * Configure database connection with required PRAGMAs
+   * @private
+   */
+  _configureDatabase(db) {
+    db.prepare('PRAGMA journal_mode = WAL').run();
+    db.prepare('PRAGMA busy_timeout = 5000').run();
+    db.prepare('PRAGMA foreign_keys = ON').run();
+  }
+
+  /**
    * Check if database connection is valid and refresh if needed
    * @returns {Promise<void>}
    */
@@ -124,9 +133,8 @@ class Database {
         // Reopen the database connection
         this.db = new SQLiteDatabase(this.dbPath);
 
-        // Re-enable WAL mode and busy timeout
-        this.db.prepare('PRAGMA journal_mode = WAL').run();
-        this.db.prepare('PRAGMA busy_timeout = 5000').run();
+        // Configure database with required PRAGMAs
+        this._configureDatabase(this.db);
 
         // Re-initialize migration runner with new connection
         this.migrationRunner = new MigrationRunner(this.db, 'master');
@@ -187,8 +195,7 @@ class Database {
           });
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           logger.info('Database connection refreshed successfully in runQuery');
@@ -210,8 +217,7 @@ class Database {
           });
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           const stmt = this.db.prepare(sql);
@@ -252,8 +258,7 @@ class Database {
           });
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           logger.info('Database connection refreshed successfully in getQuery');
@@ -273,8 +278,7 @@ class Database {
           });
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           return this.db.prepare(sql).get(params);
@@ -304,8 +308,7 @@ class Database {
           });
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           logger.info('Database connection refreshed successfully in allQuery');
@@ -325,8 +328,7 @@ class Database {
           });
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           return this.db.prepare(sql).all(params);
@@ -495,8 +497,7 @@ class Database {
           );
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           logger.info('Database connection refreshed successfully in updateActiveRulesFlag');
@@ -536,8 +537,7 @@ class Database {
           );
 
           this.db = new SQLiteDatabase(this.dbPath);
-          this.db.prepare('PRAGMA journal_mode = WAL').run();
-          this.db.prepare('PRAGMA busy_timeout = 5000').run();
+          this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
 
           // Retry the transaction
