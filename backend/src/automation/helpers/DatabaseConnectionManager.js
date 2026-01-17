@@ -22,12 +22,29 @@ class DatabaseConnectionManager {
    * @returns {boolean} - True if error indicates closed database
    */
   static isClosedDatabaseError(error) {
-    return (
-      error.name === 'RangeError' ||
-      (error.message &&
-        (error.message.includes('closed database') ||
-          error.message.includes('Cannot use a closed database')))
-    );
+    if (!error) return false;
+    
+    // Check error message first (case-insensitive) - most reliable indicator
+    const message = error.message?.toLowerCase() || '';
+    if (
+      message.includes('closed database') ||
+      message.includes('database has closed') ||
+      message.includes('database is closed') ||
+      message.includes('cannot use a closed database') ||
+      message.includes('database closed')
+    ) {
+      return true;
+    }
+    
+    // Also check error name for common patterns
+    if (error.name === 'RangeError' || error.name === 'Error') {
+      // If message contains "closed" and "database", it's likely a closed DB error
+      if (message.includes('closed') && message.includes('database')) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -79,6 +96,16 @@ class DatabaseConnectionManager {
    * @returns {Promise<any>} - Result of the operation
    */
   async executeWithRetry(operation, operationName) {
+    // Ensure connection is valid before starting operation
+    try {
+      await this.ensureConnection();
+    } catch (error) {
+      logger.error(`Failed to ensure database connection before ${operationName}`, error, {
+        authId: this.authId,
+      });
+      throw error;
+    }
+
     try {
       return await operation();
     } catch (error) {
@@ -88,11 +115,24 @@ class DatabaseConnectionManager {
           authId: this.authId,
           errorName: error.name,
           errorMessage: error.message,
+          errorStack: error.stack,
         });
 
-        // Refresh connection and retry
-        await this.ensureConnection();
-        return await operation();
+        try {
+          // Refresh connection and retry
+          await this.ensureConnection();
+          return await operation();
+        } catch (retryError) {
+          // If retry also fails with closed database error, log and re-throw
+          if (DatabaseConnectionManager.isClosedDatabaseError(retryError)) {
+            logger.error(`Database connection still closed after refresh during ${operationName}`, retryError, {
+              authId: this.authId,
+              errorName: retryError.name,
+              errorMessage: retryError.message,
+            });
+          }
+          throw retryError;
+        }
       } else {
         // Re-throw if not a closed database error or can't retry
         throw error;
