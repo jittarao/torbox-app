@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import { FileHandler } from '@/components/shared/FileHandler';
+import { ErrorHandlerInitializer } from '@/components/shared/ErrorHandlerInitializer';
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Suspense } from 'react';
@@ -123,6 +124,7 @@ export default async function LocaleLayout({ children, params }) {
           >
             <MessagesLoader locale={locale}>
               <PostHogProvider>
+                <ErrorHandlerInitializer />
                 <FileHandler />
                 {children}
               </PostHogProvider>
