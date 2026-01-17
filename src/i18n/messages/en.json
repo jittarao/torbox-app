@@ -185,6 +185,7 @@
     "executions": "executions",
     "failed": "Failed",
     "itemsAffected": "Items Affected",
+    "lastRanAt": "Last ran at",
     "lastTriggered": "last triggered",
     "logicOperators": {
       "and": "AND",
@@ -200,6 +201,17 @@
     "neverExecuted": "never executed",
     "neverTriggered": "never triggered",
     "noConditionsInGroup": "No conditions in this group. Click '+ Condition' to add one.",
+    "ruleExecuted": "Rule Executed",
+    "ruleRateLimited": "Rule Rate Limited",
+    "ruleRateLimitedDescription": "Rule execution was rate limited.",
+    "torrentMatched": "torrent matched",
+    "torrentsMatched": "torrents matched",
+    "actionPerformed": "action performed",
+    "actionsPerformed": "actions performed",
+    "actionFailed": "action failed",
+    "actionsFailed": "actions failed",
+    "actionAlreadyApplied": "action already applied or not applicable",
+    "ruleEvaluatedNoActions": "Rule was evaluated but no actions were performed.",
     "noLogs": "No logs available",
     "noRules": "No automation rules",
     "operators": {
@@ -223,6 +235,8 @@
     "ruleLogs": "Rule Logs",
     "ruleName": "Rule Name",
     "ruleNamePlaceholder": "Enter rule name",
+    "running": "Running...",
+    "runRule": "Run rule",
     "section": {
       "hide": "Hide rules",
       "show": "Show rules"

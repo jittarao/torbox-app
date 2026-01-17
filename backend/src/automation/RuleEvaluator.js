@@ -758,6 +758,13 @@ class RuleEvaluator {
     if (!telemetry || !telemetry.stalled_since) {
       return false;
     }
+    // Only evaluate DOWNLOAD_STALLED_TIME for torrents that are actually in "stalled" state
+    // According to torrentStatus.js, "stalled" requires active=true
+    // Inactive torrents (active=false) should not match this condition
+    const torrentStatus = this.getTorrentStatus(torrent);
+    if (torrentStatus !== 'stalled') {
+      return false;
+    }
     const now = Date.now();
     const stalledSince = new Date(telemetry.stalled_since);
     const conditionValue = (now - stalledSince.getTime()) / MS_PER_MINUTE;
@@ -776,6 +783,12 @@ class RuleEvaluator {
       return false;
     }
     if (!telemetry || !telemetry.upload_stalled_since) {
+      return false;
+    }
+    // Only evaluate UPLOAD_STALLED_TIME for torrents that are actually in "seeding" state
+    // Upload stall is only relevant when actively seeding
+    const torrentStatus = this.getTorrentStatus(torrent);
+    if (torrentStatus !== 'seeding') {
       return false;
     }
     const now = Date.now();

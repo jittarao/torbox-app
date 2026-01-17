@@ -21,15 +21,16 @@ class StateDiffEngine {
     this._stmtGetAllShadow = this.db.prepare('SELECT * FROM torrent_shadow');
     this._stmtGetShadow = this.db.prepare('SELECT * FROM torrent_shadow WHERE torrent_id = ?');
     this._stmtDeleteShadow = this.db.prepare('DELETE FROM torrent_shadow WHERE torrent_id = ?');
+    // Use INSERT OR IGNORE for new rows to preserve created_at default
     this._stmtInsertShadow = this.db.prepare(`
-      INSERT OR REPLACE INTO torrent_shadow (
+      INSERT OR IGNORE INTO torrent_shadow (
         torrent_id,
         last_total_downloaded,
         last_total_uploaded,
-        last_state,
-        updated_at
-      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        last_state
+      ) VALUES (?, ?, ?, ?)
     `);
+    // Use UPDATE for existing rows to preserve created_at
     this._stmtUpdateShadow = this.db.prepare(`
       UPDATE torrent_shadow SET
         last_total_downloaded = ?,
@@ -59,8 +60,9 @@ class StateDiffEngine {
     };
 
     const shadowState = this._getAllShadowState();
-    const shadowMap = new Map(shadowState.map((s) => [s.torrent_id, s]));
-    const currentIds = new Set(torrents.map((t) => t.id));
+    const shadowMap = new Map(shadowState.map((s) => [String(s.torrent_id), s]));
+    // Normalize all IDs to strings for consistent comparison (DB stores as TEXT, API returns numbers)
+    const currentIds = new Set(torrents.map((t) => String(t.id)));
 
     // Process each torrent from API
     for (const torrent of torrents) {
@@ -71,7 +73,7 @@ class StateDiffEngine {
         continue;
       }
 
-      const shadow = shadowMap.get(torrent.id);
+      const shadow = shadowMap.get(String(torrent.id));
 
       if (!shadow) {
         this._handleNewTorrent(torrent, changes, now);
@@ -94,10 +96,10 @@ class StateDiffEngine {
    * @param {Object} changes - Changes object to update
    */
   _handleTerminalState(torrent, shadowMap, changes) {
-    const shadow = shadowMap.get(torrent.id);
+    const shadow = shadowMap.get(String(torrent.id));
     if (shadow) {
       changes.removed.push(shadow);
-      this._deleteShadowState(torrent.id);
+      this._deleteShadowState(String(torrent.id));
     }
   }
 
@@ -125,12 +127,14 @@ class StateDiffEngine {
   _handleExistingTorrent(torrent, shadow, state, changes, timestamp) {
     const diff = this.computeDiff(shadow, torrent);
 
-    if (diff.hasChanges) {
-      changes.updated.push({ torrent, diff, shadow });
+    // Always include existing torrents in updated list to allow telemetry backfilling
+    // even when there are no changes detected
+    changes.updated.push({ torrent, diff, shadow });
 
+    if (diff.hasChanges) {
       if (diff.stateChanged) {
         changes.stateTransitions.push({
-          torrent_id: torrent.id,
+          torrent_id: String(torrent.id),
           from: shadow.last_state,
           to: state,
           timestamp,
@@ -143,15 +147,20 @@ class StateDiffEngine {
 
   /**
    * Find torrents that were removed (in shadow but not in current API response)
+   * Deletes shadow state for removed torrents, which cascades to telemetry and speed_history
    * @private
-   * @param {Map} shadowMap - Map of shadow states
-   * @param {Set} currentIds - Set of current torrent IDs
+   * @param {Map} shadowMap - Map of shadow states (keys are normalized to strings)
+   * @param {Set} currentIds - Set of current torrent IDs (normalized to strings)
    * @param {Object} changes - Changes object to update
    */
   _findRemovedTorrents(shadowMap, currentIds, changes) {
     for (const [torrentId, shadow] of shadowMap) {
+      // Both torrentId (from shadowMap) and currentIds are normalized to strings
       if (!currentIds.has(torrentId)) {
         changes.removed.push(shadow);
+        // Delete shadow state - this will cascade delete telemetry and speed_history
+        // via foreign key constraints (ON DELETE CASCADE)
+        this._deleteShadowState(torrentId);
       }
     }
   }
@@ -227,12 +236,18 @@ class StateDiffEngine {
     }
 
     try {
-      this._stmtInsertShadow.run(
-        torrent.id,
+      // Try to insert first (for new rows, preserves created_at default)
+      const result = this._stmtInsertShadow.run(
+        String(torrent.id),
         torrent.total_downloaded || 0,
         torrent.total_uploaded || 0,
         state
       );
+
+      // If row already exists (INSERT OR IGNORE didn't insert), update it (preserves created_at)
+      if (result.changes === 0) {
+        this.updateShadowState(torrent, timestamp);
+      }
     } catch (error) {
       logger.error('Failed to insert shadow state', error, {
         torrentId: torrent.id,
@@ -251,7 +266,7 @@ class StateDiffEngine {
 
     // If state became terminal, remove from shadow
     if (this.isTerminalState(state)) {
-      this._deleteShadowState(torrent.id);
+      this._deleteShadowState(String(torrent.id));
       return;
     }
 
@@ -260,7 +275,7 @@ class StateDiffEngine {
         torrent.total_downloaded || 0,
         torrent.total_uploaded || 0,
         state,
-        torrent.id
+        String(torrent.id)
       );
     } catch (error) {
       logger.error('Failed to update shadow state', error, {
@@ -277,7 +292,7 @@ class StateDiffEngine {
    */
   getShadowState(torrentId) {
     try {
-      return this._stmtGetShadow.get(torrentId);
+      return this._stmtGetShadow.get(String(torrentId));
     } catch (error) {
       logger.error('Failed to get shadow state', error, { torrentId });
       throw error;
@@ -305,7 +320,7 @@ class StateDiffEngine {
    */
   _deleteShadowState(torrentId) {
     try {
-      this._stmtDeleteShadow.run(torrentId);
+      this._stmtDeleteShadow.run(String(torrentId));
     } catch (error) {
       logger.error('Failed to delete terminal state from shadow', error, {
         torrentId,
