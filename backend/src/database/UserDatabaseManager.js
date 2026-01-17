@@ -369,6 +369,9 @@ class UserDatabaseManager {
     // Set busy timeout
     db.prepare('PRAGMA busy_timeout = 5000').run();
 
+    // Enable foreign keys (required for CASCADE deletes to work)
+    db.prepare('PRAGMA foreign_keys = ON').run();
+
     // Initialize migration runner for user database
     const migrationRunner = new MigrationRunner(db, 'user');
     await migrationRunner.runMigrations();

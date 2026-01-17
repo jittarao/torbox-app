@@ -175,6 +175,7 @@ class RuleRepository {
   /**
    * Save automation rules (replaces all existing rules)
    * @param {Array} rules - Array of rule objects
+   * @returns {Promise<Array>} - Array of saved rules with database-assigned IDs
    */
   async saveRules(rules) {
     const userDb = await this.getUserDb();
@@ -182,7 +183,8 @@ class RuleRepository {
     // Clear existing rules
     userDb.prepare('DELETE FROM automation_rules').run();
 
-    // Insert new rules
+    // Insert new rules and collect their database-assigned IDs
+    const savedRules = [];
     for (const rule of rules) {
       // Migrate rule to group structure if needed
       const migratedRule = RuleMigrationHelper.migrateRuleToGroups(rule);
@@ -200,7 +202,7 @@ class RuleRepository {
         INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
-      userDb.prepare(sql).run(
+      const result = userDb.prepare(sql).run(
         migratedRule.name,
         migratedRule.enabled ? 1 : 0,
         JSON.stringify(migratedRule.trigger || migratedRule.trigger_config),
@@ -209,7 +211,19 @@ class RuleRepository {
         JSON.stringify(migratedRule.metadata || {}),
         0 // cooldown_minutes is deprecated
       );
+
+      // Get the inserted rule with its database-assigned ID
+      const insertedRule = userDb
+        .prepare('SELECT * FROM automation_rules WHERE id = ?')
+        .get(result.lastInsertRowid);
+
+      if (insertedRule) {
+        const mappedRule = this.mapRuleFromDb(insertedRule);
+        savedRules.push(RuleMigrationHelper.migrateRuleToGroups(mappedRule));
+      }
     }
+
+    return savedRules;
   }
 
   /**

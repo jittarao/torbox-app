@@ -4,6 +4,8 @@ import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
 import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
+import StateDiffEngine from './StateDiffEngine.js';
+import DerivedFieldsEngine from './DerivedFieldsEngine.js';
 
 // Import helpers
 import DatabaseRetryHelper from './helpers/DatabaseRetryHelper.js';
@@ -16,6 +18,7 @@ import {
   INITIAL_POLL_INTERVAL_MINUTES,
   DEFAULT_RETRY_MAX_RETRIES,
   DEFAULT_RETRY_INITIAL_DELAY_MS,
+  MANUAL_EXECUTION_RATE_LIMIT_MS,
 } from './helpers/constants.js';
 
 /**
@@ -577,15 +580,17 @@ class AutomationEngine {
     });
 
     // Filter torrents based on action type
-    const torrentsToProcess = await this.ruleFilter.filterForAddTag(matchingTorrents, rule.action);
+    const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action);
 
     if (torrentsToProcess.length === 0) {
-      logger.info('No torrents to process after filtering (all already have tags)', {
+      logger.info('No torrents to process after filtering', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
         matchedCount: matchingTorrents.length,
         actionType: rule.action?.type,
+        reason:
+          'All matching torrents were filtered out (action already applied or not applicable)',
       });
       return { executed: false, skipped: true };
     }
@@ -596,18 +601,33 @@ class AutomationEngine {
       torrentsToProcess
     );
 
-    // Update rule execution status
-    await this.ruleRepository.updateExecutionStatus(rule.id);
+    // Only update execution status and log if actions were actually executed
+    if (successCount > 0) {
+      // Update rule execution status - only update if actions actually ran
+      await this.ruleRepository.updateExecutionStatus(rule.id);
 
-    // Log execution
-    await this.ruleRepository.logExecution(
-      rule.id,
-      rule.name,
-      'execution',
-      torrentsToProcess.length,
-      errorCount === 0,
-      errorCount > 0 ? `${errorCount} actions failed` : null
-    );
+      // Log execution - use successCount to only count items where action was actually executed
+      await this.ruleRepository.logExecution(
+        rule.id,
+        rule.name,
+        'execution',
+        successCount, // Only count successful executions
+        errorCount === 0,
+        errorCount > 0 ? `${errorCount} actions failed` : null
+      );
+    } else {
+      // No actions were executed, but we still evaluated the rule
+      // Don't update last_executed_at or create a log entry
+      logger.info('No actions executed (all failed or filtered out)', {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        matchedCount: matchingTorrents.length,
+        processedCount: torrentsToProcess.length,
+        successCount,
+        errorCount,
+      });
+    }
 
     logger.info('Rule execution completed', {
       authId: this.authId,
@@ -622,6 +642,317 @@ class AutomationEngine {
     });
 
     return { executed: true, skipped: false };
+  }
+
+  /**
+   * Manually run a single rule (bypasses interval checks)
+   * @param {number} ruleId - ID of the rule to run
+   * @returns {Promise<Object>} - Detailed execution results
+   */
+  async runRuleManually(ruleId) {
+    const executionStartTime = Date.now();
+    try {
+      logger.info('Manual rule execution started', {
+        authId: this.authId,
+        ruleId,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Get the rule first to check rate limiting before expensive operations
+      const allRules = await this.getAutomationRules();
+      const rule = allRules.find((r) => r.id === ruleId);
+
+      if (!rule) {
+        throw new Error(`Rule with ID ${ruleId} not found`);
+      }
+
+      // Rate limiting: Check if rule was evaluated recently (before expensive operations)
+      // We check last_evaluated_at because manual execution triggers evaluation regardless of actions
+      if (rule.last_evaluated_at) {
+        // SQLite returns dates as "YYYY-MM-DD HH:MM:SS" in UTC (without timezone indicator)
+        // JavaScript's Date constructor interprets strings without timezone as local time
+        // We need to explicitly parse it as UTC by converting to ISO format with 'Z' suffix
+        let lastEvaluated;
+        if (typeof rule.last_evaluated_at === 'string') {
+          if (rule.last_evaluated_at.includes('T')) {
+            // Already in ISO format, ensure it has 'Z' for UTC
+            lastEvaluated = new Date(
+              rule.last_evaluated_at.endsWith('Z')
+                ? rule.last_evaluated_at
+                : `${rule.last_evaluated_at}Z`
+            );
+          } else {
+            // SQLite format "YYYY-MM-DD HH:MM:SS" - convert to ISO "YYYY-MM-DDTHH:MM:SSZ"
+            lastEvaluated = new Date(`${rule.last_evaluated_at.replace(' ', 'T')}Z`);
+          }
+        } else {
+          lastEvaluated = new Date(rule.last_evaluated_at);
+        }
+
+        const now = new Date();
+        const timeSinceLastEvaluation = now.getTime() - lastEvaluated.getTime();
+
+        if (timeSinceLastEvaluation < MANUAL_EXECUTION_RATE_LIMIT_MS) {
+          const remainingSeconds = Math.ceil(
+            (MANUAL_EXECUTION_RATE_LIMIT_MS - timeSinceLastEvaluation) / 1000
+          );
+          const rateLimitMinutes = MANUAL_EXECUTION_RATE_LIMIT_MS / 60000;
+
+          logger.warn('Manual rule execution rate limited', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            lastEvaluatedAt: rule.last_evaluated_at,
+            timeSinceLastEvaluation: `${Math.floor(timeSinceLastEvaluation / 1000)}s`,
+            remainingSeconds,
+            rateLimitMinutes,
+          });
+
+          return {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            totalTorrents: 0,
+            matchedTorrents: 0,
+            processedTorrents: 0,
+            successCount: 0,
+            errorCount: 0,
+            executed: false,
+            skipped: true,
+            rateLimited: true,
+            reason: `Rule was evaluated ${Math.floor(timeSinceLastEvaluation / 1000)} seconds ago. Please wait ${remainingSeconds} more seconds before running manually again.`,
+            lastEvaluatedAt: rule.last_evaluated_at,
+            rateLimitMinutes,
+            executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
+          };
+        }
+      }
+
+      // Update last_evaluated_at IMMEDIATELY after rate limit check passes
+      // This acts as a lock to prevent concurrent manual executions
+      // We update it before expensive operations so subsequent requests are rate limited
+      await this.ruleRepository.updateLastEvaluatedAt(rule.id);
+
+      // Fetch current torrents (only if rate limit check passed)
+      const torrents = await this.apiClient.getTorrents(true);
+      logger.debug('Torrents fetched for manual execution', {
+        authId: this.authId,
+        ruleId,
+        torrentCount: torrents.length,
+      });
+
+      // Process state changes and update shadow/telemetry before evaluating rule
+      // This ensures we're working with fresh data, not stale shadow/telemetry
+      const userDb = await this.getUserDb();
+      const stateDiffEngine = new StateDiffEngine(userDb);
+      const derivedFieldsEngine = new DerivedFieldsEngine(userDb);
+
+      logger.debug('Processing state changes for manual rule execution', {
+        authId: this.authId,
+        ruleId,
+      });
+
+      const changes = await stateDiffEngine.processSnapshot(torrents);
+      await derivedFieldsEngine.updateDerivedFields(changes);
+
+      logger.debug('State changes processed for manual rule execution', {
+        authId: this.authId,
+        ruleId,
+        new: changes.new.length,
+        updated: changes.updated.length,
+        removed: changes.removed.length,
+        stateTransitions: changes.stateTransitions.length,
+      });
+
+      logger.info('Running rule manually', {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        torrentCount: torrents.length,
+        lastEvaluatedAt: rule.last_evaluated_at,
+      });
+
+      // Check if rule has an action configured
+      if (!rule.action || !rule.action.type) {
+        const result = {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          totalTorrents: torrents.length,
+          matchedTorrents: 0,
+          processedTorrents: 0,
+          successCount: 0,
+          errorCount: 0,
+          executed: false,
+          skipped: true,
+          reason: 'Rule has no action configured',
+          executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
+        };
+        logger.warn('Rule has no action configured', {
+          authId: this.authId,
+          ruleId: rule.id,
+          ruleName: rule.name,
+        });
+        return result;
+      }
+
+      const ruleEvaluator = await this.getRuleEvaluator();
+
+      // Evaluate rule (bypass interval check for manual execution)
+      const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
+
+      if (matchingTorrents.length === 0) {
+        const result = {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          totalTorrents: torrents.length,
+          matchedTorrents: 0,
+          processedTorrents: 0,
+          successCount: 0,
+          errorCount: 0,
+          executed: false,
+          skipped: true,
+          reason: 'No torrents matched rule conditions',
+          executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
+        };
+        logger.info('Rule did not match any torrents', {
+          authId: this.authId,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          torrentCount: torrents.length,
+        });
+        return result;
+      }
+
+      logger.info('Rule matched torrents', {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        matchedCount: matchingTorrents.length,
+        matchedIds: matchingTorrents.map((t) => t.id),
+      });
+
+      // Filter torrents based on action type
+      const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action);
+
+      if (torrentsToProcess.length === 0) {
+        const result = {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          totalTorrents: torrents.length,
+          matchedTorrents: matchingTorrents.length,
+          processedTorrents: 0,
+          successCount: 0,
+          errorCount: 0,
+          executed: false,
+          skipped: true,
+          reason:
+            'All matching torrents were filtered out (action already applied or not applicable)',
+          executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
+        };
+        logger.info('No torrents to process after filtering', {
+          authId: this.authId,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          matchedCount: matchingTorrents.length,
+          actionType: rule.action?.type,
+        });
+        return result;
+      }
+
+      // Execute actions
+      const { successCount, errorCount } = await this.ruleExecutor.executeActions(
+        rule,
+        torrentsToProcess
+      );
+
+      // Only update execution status and log if actions were actually executed
+      if (successCount > 0) {
+        // Update rule execution status - only update if actions actually ran
+        await this.ruleRepository.updateExecutionStatus(rule.id);
+
+        // Log execution - use successCount to only count items where action was actually executed
+        await this.ruleRepository.logExecution(
+          rule.id,
+          rule.name,
+          'execution',
+          successCount, // Only count successful executions
+          errorCount === 0,
+          errorCount > 0 ? `${errorCount} actions failed` : null
+        );
+      } else {
+        // No actions were executed, but we still evaluated the rule
+        // Don't update last_executed_at or create a log entry
+        logger.info('No actions executed (all failed or filtered out)', {
+          authId: this.authId,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          matchedCount: matchingTorrents.length,
+          processedCount: torrentsToProcess.length,
+          successCount,
+          errorCount,
+        });
+      }
+
+      const executionTime = ((Date.now() - executionStartTime) / 1000).toFixed(2);
+
+      logger.info('Manual rule execution completed', {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        matchedCount: matchingTorrents.length,
+        processedCount: torrentsToProcess.length,
+        successCount,
+        errorCount,
+        executionTime: `${executionTime}s`,
+      });
+
+      return {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        totalTorrents: torrents.length,
+        matchedTorrents: matchingTorrents.length,
+        processedTorrents: torrentsToProcess.length,
+        successCount,
+        errorCount,
+        executed: true,
+        skipped: false,
+        executionTime,
+      };
+    } catch (error) {
+      const executionTime = ((Date.now() - executionStartTime) / 1000).toFixed(2);
+      logger.error('Manual rule execution failed', error, {
+        authId: this.authId,
+        ruleId,
+        executionTime: `${executionTime}s`,
+        errorMessage: error.message,
+        errorStack: error.stack,
+      });
+
+      // Try to get rule name for error response
+      let ruleName = 'Unknown';
+      try {
+        const allRules = await this.getAutomationRules();
+        const rule = allRules.find((r) => r.id === ruleId);
+        if (rule) {
+          ruleName = rule.name;
+        }
+      } catch (nameError) {
+        // Ignore error getting rule name
+      }
+
+      return {
+        ruleId,
+        ruleName,
+        totalTorrents: 0,
+        matchedTorrents: 0,
+        processedTorrents: 0,
+        successCount: 0,
+        errorCount: 0,
+        executed: false,
+        skipped: false,
+        error: error.message,
+        executionTime,
+      };
+    }
   }
 
   /**
@@ -721,6 +1052,7 @@ class AutomationEngine {
 
   /**
    * Save automation rules
+   * @returns {Promise<Array>} - Array of saved rules with database-assigned IDs
    */
   async saveAutomationRules(rules) {
     // Validate all rules before saving
@@ -740,8 +1072,8 @@ class AutomationEngine {
       }
     }
 
-    // Save rules
-    await this.ruleRepository.saveRules(rules);
+    // Save rules and get back the saved rules with database-assigned IDs
+    const savedRules = await this.ruleRepository.saveRules(rules);
 
     // Update master DB flag and reset polling
     const hasActive = rules.some((r) => r.enabled);
@@ -753,6 +1085,8 @@ class AutomationEngine {
     if (hasActive) {
       await this.resetNextPollAt();
     }
+
+    return savedRules;
   }
 
   /**
