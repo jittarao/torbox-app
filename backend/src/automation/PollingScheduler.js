@@ -121,7 +121,7 @@ async function withTimeout(promise, timeoutMs, errorMessage) {
   // Prevent unhandled rejections if promise rejects after timeout
   promise.catch((error) => {
     if (timeoutOccurred) {
-      logger.verbose(
+      logger.debug(
         'Late promise rejection after timeout (suppressed to prevent unhandled rejection)',
         {
           error: error.message,
@@ -227,7 +227,7 @@ class PollingScheduler {
    */
   async getOrCreateAutomationEngine(authId, encryptedKey) {
     if (this.automationEnginesMap && this.automationEnginesMap.has(authId)) {
-      logger.verbose('Using existing automation engine', { authId });
+      logger.debug('Using existing automation engine', { authId });
       return this.automationEnginesMap.get(authId);
     }
 
@@ -512,7 +512,7 @@ class PollingScheduler {
         });
       }
 
-      logger.verbose('Starting poll for user', {
+      logger.debug('Starting poll for user', {
         authId: auth_id,
         hasActiveRules,
         dbHasActiveRules,
@@ -647,7 +647,7 @@ class PollingScheduler {
    */
   stop() {
     if (!this.isRunning) {
-      logger.verbose('PollingScheduler not running, ignoring stop request');
+      logger.debug('PollingScheduler not running, ignoring stop request');
       return;
     }
 
@@ -661,13 +661,13 @@ class PollingScheduler {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      logger.verbose('Polling interval cleared');
+      logger.debug('Polling interval cleared');
     }
 
     if (this.refreshIntervalId) {
       clearInterval(this.refreshIntervalId);
       this.refreshIntervalId = null;
-      logger.verbose('Refresh interval cleared');
+      logger.debug('Refresh interval cleared');
     }
 
     const pollerCount = this.pollers.size;
@@ -755,7 +755,7 @@ class PollingScheduler {
    */
   async pollDueUsers() {
     if (!this.isRunning) {
-      logger.verbose('Polling scheduler not running, skipping poll check');
+      logger.debug('Polling scheduler not running, skipping poll check');
       return;
     }
 
@@ -764,7 +764,7 @@ class PollingScheduler {
     }
 
     const checkStartTime = Date.now();
-    logger.verbose('Checking for users due for polling', {
+    logger.debug('Checking for users due for polling', {
       activePollers: this.pollers.size,
       timestamp: new Date().toISOString(),
     });
@@ -773,7 +773,7 @@ class PollingScheduler {
       const dueUsers = this.masterDb.getUsersDueForPolling();
 
       if (dueUsers.length === 0) {
-        logger.verbose('No users due for polling at this time', {
+        logger.debug('No users due for polling at this time', {
           checkDuration: `${((Date.now() - checkStartTime) / 1000).toFixed(2)}s`,
         });
         return;
@@ -825,7 +825,7 @@ class PollingScheduler {
    */
   async refreshPollers() {
     const refreshStartTime = Date.now();
-    logger.verbose('Refreshing pollers', {
+    logger.debug('Refreshing pollers', {
       currentPollers: this.pollers.size,
       timestamp: new Date().toISOString(),
     });
@@ -834,7 +834,7 @@ class PollingScheduler {
       const activeUsers = this.userDatabaseManager.getActiveUsers();
       const currentAuthIds = new Set(this.pollers.keys());
 
-      logger.verbose('Active users found', {
+      logger.debug('Active users found', {
         activeUserCount: activeUsers.length,
         currentPollerCount: this.pollers.size,
       });
@@ -909,7 +909,7 @@ class PollingScheduler {
         (user) => user.has_active_rules === 1
       );
 
-      logger.verbose('Active users after flag sync', {
+      logger.debug('Active users after flag sync', {
         activeUserCount: refreshedActiveUsers.length,
         usersWithActiveRulesCount: usersWithActiveRules.length,
         flagsSynced: syncStats.synced,
