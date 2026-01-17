@@ -90,7 +90,28 @@ class DatabaseConnectionManager {
   }
 
   /**
+   * Mark connection as active to prevent eviction
+   * @private
+   */
+  _markActive() {
+    if (this.userDatabaseManager && this.userDatabaseManager.pool) {
+      this.userDatabaseManager.pool.markActive(this.authId);
+    }
+  }
+
+  /**
+   * Mark connection as inactive (operation completed)
+   * @private
+   */
+  _markInactive() {
+    if (this.userDatabaseManager && this.userDatabaseManager.pool) {
+      this.userDatabaseManager.pool.markInactive(this.authId);
+    }
+  }
+
+  /**
    * Execute a database operation with automatic retry on closed database error
+   * Marks connection as active during operation to prevent eviction
    * @param {Function} operation - Async function to execute
    * @param {string} operationName - Name of operation for logging
    * @returns {Promise<any>} - Result of the operation
@@ -106,9 +127,18 @@ class DatabaseConnectionManager {
       throw error;
     }
 
+    // Mark connection as active to prevent eviction during operation
+    this._markActive();
+
     try {
-      return await operation();
+      const result = await operation();
+      // Mark inactive on success
+      this._markInactive();
+      return result;
     } catch (error) {
+      // Mark inactive before retry logic
+      this._markInactive();
+
       // Check if this is a closed database error and retry with fresh connection
       if (DatabaseConnectionManager.isClosedDatabaseError(error) && this.userDatabaseManager) {
         logger.warn(`Database connection closed during ${operationName}, refreshing and retrying`, {
@@ -121,8 +151,15 @@ class DatabaseConnectionManager {
         try {
           // Refresh connection and retry
           await this.ensureConnection();
-          return await operation();
+          // Mark new connection as active for retry
+          this._markActive();
+          const result = await operation();
+          // Mark inactive on success
+          this._markInactive();
+          return result;
         } catch (retryError) {
+          // Mark inactive on retry failure
+          this._markInactive();
           // If retry also fails with closed database error, log and re-throw
           if (DatabaseConnectionManager.isClosedDatabaseError(retryError)) {
             logger.error(`Database connection still closed after refresh during ${operationName}`, retryError, {

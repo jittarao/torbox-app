@@ -12,7 +12,7 @@ import cache from '../utils/cache.js';
 class DatabasePool {
   constructor(maxSize = 200) {
     this.maxSize = maxSize;
-    this.cache = new Map(); // Map<key, { value, lastAccess, refCount }>
+    this.cache = new Map(); // Map<key, { value, lastAccess, refCount, activeOperations }>
 
     // Metrics tracking
     this.metrics = {
@@ -51,11 +51,39 @@ class DatabasePool {
       // can still be evicted based on lastAccess time
       entry.lastAccess = Date.now();
       entry.refCount = (entry.refCount || 0) + 1;
+      // Initialize activeOperations if not present
+      if (entry.activeOperations === undefined) {
+        entry.activeOperations = 0;
+      }
       this.metrics.hits++;
       return entry.value;
     }
     this.metrics.misses++;
     return null;
+  }
+
+  /**
+   * Mark a connection as having an active operation
+   * Prevents eviction while operations are in progress
+   * @param {string} key - Connection key (authId)
+   */
+  markActive(key) {
+    const entry = this.cache.get(key);
+    if (entry) {
+      entry.activeOperations = (entry.activeOperations || 0) + 1;
+      entry.lastAccess = Date.now(); // Update access time when marking active
+    }
+  }
+
+  /**
+   * Mark a connection as having completed an operation
+   * @param {string} key - Connection key (authId)
+   */
+  markInactive(key) {
+    const entry = this.cache.get(key);
+    if (entry && entry.activeOperations > 0) {
+      entry.activeOperations--;
+    }
   }
 
   /**
@@ -104,6 +132,7 @@ class DatabasePool {
         value,
         lastAccess: now,
         refCount: 0, // Will be incremented when get() is called
+        activeOperations: 0, // Track active operations to prevent eviction
       });
     }
 
@@ -116,6 +145,7 @@ class DatabasePool {
    * Note: We evict based on lastAccess time, not refCount, since refCount
    * represents total usage, not current usage. A connection with high refCount
    * but old lastAccess is still idle and can be evicted.
+   * IMPORTANT: Never evict connections with active operations (activeOperations > 0)
    * @private
    */
   _evictIdleConnections() {
@@ -126,6 +156,11 @@ class DatabasePool {
     // Sort by lastAccess to evict oldest idle connections first
     const idleConnections = [];
     for (const [key, entry] of this.cache.entries()) {
+      // Never evict connections with active operations
+      if (entry.activeOperations > 0) {
+        continue;
+      }
+
       const idleTime = now - entry.lastAccess;
       // Only evict if idle for longer than timeout AND not accessed in recent window
       // This prevents eviction of connections that were just retrieved
@@ -157,6 +192,7 @@ class DatabasePool {
   /**
    * Evict least recently used connection
    * Prefers connections that haven't been accessed recently (outside recent window)
+   * IMPORTANT: Never evict connections with active operations (activeOperations > 0)
    * @private
    */
   _evictLRUConnection() {
@@ -169,7 +205,13 @@ class DatabasePool {
     // 1. Connections not accessed in recent window
     // 2. Connections with lower refCount (less frequently used)
     // 3. Oldest lastAccess time
+    // IMPORTANT: Skip connections with active operations
     for (const [key, entry] of this.cache.entries()) {
+      // Never evict connections with active operations
+      if (entry.activeOperations > 0) {
+        continue;
+      }
+
       const isRecent = now - entry.lastAccess < this.recentAccessWindowMs;
       const refCount = entry.refCount || 0;
 
@@ -425,6 +467,8 @@ class UserDatabaseManager {
     this.userDbDir = userDbDir;
     // Increased pool size for better scalability with 1000+ users
     this.pool = new DatabasePool(parseInt(process.env.MAX_DB_CONNECTIONS || '200'));
+    // Mutex map to prevent race conditions when creating connections for the same user
+    this.connectionLocks = new Map(); // Map<authId, Promise>
   }
 
   /**
@@ -440,6 +484,7 @@ class UserDatabaseManager {
 
   /**
    * Get or create a user database connection
+   * Uses mutex to prevent race conditions when multiple operations request the same user's connection
    * @param {string} authId - User authentication ID (API key hash)
    * @returns {Promise<Object>} - Database connection and migration runner
    */
@@ -451,7 +496,7 @@ class UserDatabaseManager {
     // Ensure user database directory exists
     await this.ensureUserDbDir();
 
-    // Check pool first
+    // Check pool first (fast path - no lock needed if connection exists)
     const cached = this.pool.get(authId);
     if (cached) {
       // Validate connection is still alive
@@ -466,7 +511,53 @@ class UserDatabaseManager {
           error: error.message,
         });
         this.pool.delete(authId);
-        // Continue to create a new connection below
+        // Continue to create a new connection below (will use lock)
+      }
+    }
+
+    // Check if another operation is already creating a connection for this user
+    // This prevents race conditions where multiple calls create duplicate connections
+    let connectionPromise = this.connectionLocks.get(authId);
+    if (connectionPromise) {
+      // Wait for the existing connection creation to complete
+      try {
+        return await connectionPromise;
+      } catch (error) {
+        // If the existing creation failed, we'll try again below
+        this.connectionLocks.delete(authId);
+      }
+    }
+
+    // Create a new connection (with mutex to prevent duplicates)
+    connectionPromise = this._createUserDatabaseConnection(authId);
+    this.connectionLocks.set(authId, connectionPromise);
+
+    try {
+      const connection = await connectionPromise;
+      return connection;
+    } finally {
+      // Remove lock after connection is created (or fails)
+      this.connectionLocks.delete(authId);
+    }
+  }
+
+  /**
+   * Internal method to create a user database connection
+   * Should only be called from getUserDatabase() which handles locking
+   * @param {string} authId - User authentication ID (API key hash)
+   * @returns {Promise<Object>} - Database connection and migration runner
+   * @private
+   */
+  async _createUserDatabaseConnection(authId) {
+    // Double-check pool after acquiring lock (another thread might have created it)
+    const cached = this.pool.get(authId);
+    if (cached) {
+      try {
+        cached.db.prepare('SELECT 1').get();
+        return cached;
+      } catch (error) {
+        // Connection is dead, remove and continue
+        this.pool.delete(authId);
       }
     }
 
@@ -617,7 +708,7 @@ class UserDatabaseManager {
 
     const dbConnection = { db, migrationRunner, authId, dbPath };
 
-    // Cache the connection
+    // Cache the connection (this will reuse existing if somehow one was created)
     this.pool.set(authId, dbConnection);
 
     return dbConnection;
