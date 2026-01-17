@@ -1,3 +1,5 @@
+import logger from '../utils/logger.js';
+
 /**
  * Speed Aggregator
  * Maintains per-poll speed samples for active torrents
@@ -24,6 +26,9 @@ class SpeedAggregator {
   };
 
   constructor(userDb) {
+    if (!userDb) {
+      throw new Error('userDb is required for SpeedAggregator');
+    }
     this.db = userDb;
     this.retentionHours = SpeedAggregator.RETENTION_HOURS;
     this.sampleCount = 0; // Counter for pruning logic
@@ -62,8 +67,23 @@ class SpeedAggregator {
    * @param {Date} timestamp - Sample timestamp
    */
   async recordSample(torrentId, totalDownloaded, totalUploaded, timestamp) {
+    // Validate inputs
+    if (!torrentId) {
+      logger.warn('Skipping speed sample: missing torrentId');
+      return;
+    }
+
+    if (!(timestamp instanceof Date) || isNaN(timestamp.getTime())) {
+      logger.warn('Skipping speed sample: invalid timestamp', { torrentId });
+      return;
+    }
+
+    // Ensure values are numbers
+    const downloaded = Number(totalDownloaded) || 0;
+    const uploaded = Number(totalUploaded) || 0;
+
     try {
-      this.stmtInsert.run(torrentId, timestamp.toISOString(), totalDownloaded, totalUploaded);
+      this.stmtInsert.run(torrentId, timestamp.toISOString(), downloaded, uploaded);
 
       // Prune old samples periodically (every Nth sample to avoid overhead)
       this.sampleCount++;
@@ -73,8 +93,11 @@ class SpeedAggregator {
       }
     } catch (error) {
       // Log error but don't throw - speed recording is not critical
-      console.error('Failed to record speed sample:', error);
-      throw error;
+      logger.warn('Failed to record speed sample', error, {
+        torrentId,
+        errorMessage: error.message,
+      });
+      // Don't throw - speed recording failures shouldn't break the poll cycle
     }
   }
 
@@ -86,11 +109,30 @@ class SpeedAggregator {
    * @returns {number} - Average speed in bytes per second
    */
   getAverageSpeed(torrentId, hours, type = SpeedAggregator.SPEED_TYPE.DOWNLOAD) {
-    const cutoffTime = this._getHoursAgo(hours);
-    const samples = this.stmtSelectSamples.all(torrentId, cutoffTime.toISOString());
-    const field = this._getFieldForType(type);
+    if (!torrentId) {
+      return 0;
+    }
 
-    return this.calculateAverageSpeed(samples, field);
+    if (hours <= 0 || !isFinite(hours)) {
+      logger.warn('Invalid hours parameter for getAverageSpeed', { torrentId, hours });
+      return 0;
+    }
+
+    try {
+      const cutoffTime = this._getHoursAgo(hours);
+      const samples = this.stmtSelectSamples.all(torrentId, cutoffTime.toISOString());
+      const field = this._getFieldForType(type);
+
+      return this.calculateAverageSpeed(samples, field);
+    } catch (error) {
+      logger.warn('Failed to get average speed', error, {
+        torrentId,
+        hours,
+        type,
+        errorMessage: error.message,
+      });
+      return 0;
+    }
   }
 
   /**
@@ -149,9 +191,18 @@ class SpeedAggregator {
   async pruneOldSamples() {
     try {
       const cutoff = this._getHoursAgo(this.retentionHours);
-      this.stmtDeleteOld.run(cutoff.toISOString());
+      const result = this.stmtDeleteOld.run(cutoff.toISOString());
+      
+      if (result.changes > 0) {
+        logger.verbose('Pruned old speed samples', {
+          deletedCount: result.changes,
+          cutoffTime: cutoff.toISOString(),
+        });
+      }
     } catch (error) {
-      console.error('Failed to prune old speed samples:', error);
+      logger.warn('Failed to prune old speed samples', error, {
+        errorMessage: error.message,
+      });
       // Don't throw - pruning is not critical
     }
   }
@@ -162,17 +213,41 @@ class SpeedAggregator {
    * @returns {Promise<void>}
    */
   async processUpdates(updatedTorrents) {
+    if (!Array.isArray(updatedTorrents) || updatedTorrents.length === 0) {
+      return;
+    }
+
     const now = new Date();
+    let samplesRecorded = 0;
+    let errors = 0;
 
     for (const { torrent } of updatedTorrents) {
-      if (this._isTorrentActive(torrent)) {
-        await this.recordSample(
-          torrent.id,
-          torrent.total_downloaded || 0,
-          torrent.total_uploaded || 0,
-          now
-        );
+      if (!torrent || !torrent.id) {
+        continue;
       }
+
+      if (this._isTorrentActive(torrent)) {
+        try {
+          await this.recordSample(
+            torrent.id,
+            torrent.total_downloaded || 0,
+            torrent.total_uploaded || 0,
+            now
+          );
+          samplesRecorded++;
+        } catch (error) {
+          errors++;
+          // Error already logged in recordSample
+        }
+      }
+    }
+
+    if (samplesRecorded > 0 || errors > 0) {
+      logger.verbose('Processed speed updates', {
+        totalTorrents: updatedTorrents.length,
+        samplesRecorded,
+        errors,
+      });
     }
   }
 

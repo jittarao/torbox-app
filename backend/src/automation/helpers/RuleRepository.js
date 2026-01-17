@@ -145,7 +145,7 @@ class RuleRepository {
         .run(ruleId);
     } catch (error) {
       // Log but don't fail - column should exist via migration
-      logger.debug('Failed to update last_evaluated_at (non-critical)', {
+      logger.verbose('Failed to update last_evaluated_at (non-critical)', {
         authId: this.authId,
         ruleId,
         errorMessage: error.message,
@@ -325,7 +325,7 @@ class RuleRepository {
       userDb
         .prepare(sql)
         .run(ruleId, ruleName, executionType, itemsProcessed, success ? 1 : 0, errorMessage);
-      logger.debug('Rule execution logged successfully', {
+      logger.verbose('Rule execution logged successfully', {
         authId: this.authId,
         ruleId,
         ruleName,

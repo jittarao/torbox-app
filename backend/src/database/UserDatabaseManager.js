@@ -727,7 +727,7 @@ class UserDatabaseManager {
 
     // Log pollInterval if provided (currently not stored; intervals are calculated dynamically)
     if (pollInterval !== null) {
-      logger.debug('Poll interval provided during user registration', {
+      logger.verbose('Poll interval provided during user registration', {
         authId,
         pollInterval,
         note: 'Intervals are calculated dynamically based on user activity and rules',
@@ -813,7 +813,7 @@ class UserDatabaseManager {
             )
             .run(dbPath, authId);
         }
-        logger.debug('Updated db_path for existing user registry entry', {
+        logger.verbose('Updated db_path for existing user registry entry', {
           authId,
           oldPath: userAfterInsert.db_path,
           newPath: dbPath,
@@ -837,7 +837,7 @@ class UserDatabaseManager {
 
         if (existingAfterError) {
           // User was created by another request (race condition), which is fine
-          logger.debug('User already exists in registry (race condition handled)', { authId });
+          logger.verbose('User already exists in registry (race condition handled)', { authId });
         } else {
           // Constraint error but user doesn't exist - unexpected state
           logger.error('UNIQUE constraint violation but user not found in registry', error, {
@@ -862,7 +862,7 @@ class UserDatabaseManager {
           throw error;
         }
         // User was created by another request (race condition), which is fine
-        logger.debug('User already exists in registry (race condition handled)', { authId });
+        logger.verbose('User already exists in registry (race condition handled)', { authId });
       }
     }
 

@@ -37,7 +37,7 @@ class PollingIntervalCalculator {
   static calculateIdleModeInterval(authId, nonTerminalCount, ruleResults = null) {
     const baseInterval = POLLING_CONFIG.intervals.idle;
     const adjustedInterval = applyIntervalMultiplier(baseInterval);
-    logger.debug(
+    logger.verbose(
       `User in idle mode (no recent rule executions), polling every ${baseInterval} minutes`,
       {
         authId,
@@ -68,7 +68,7 @@ class PollingIntervalCalculator {
     if (minRuleInterval !== null) {
       // Use minimum interval from rules with interval triggers (adjusted in dev)
       const adjustedInterval = applyIntervalMultiplier(minRuleInterval);
-      logger.debug('User in active mode, using minimum rule interval', {
+      logger.verbose('User in active mode, using minimum rule interval', {
         authId,
         minRuleInterval,
         adjustedInterval:

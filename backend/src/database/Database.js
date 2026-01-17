@@ -390,7 +390,7 @@ class Database {
           throw error;
         }
         // User was created by another request (race condition), which is fine
-        logger.debug('User registry entry created by another request (race condition handled)', {
+        logger.verbose('User registry entry created by another request (race condition handled)', {
           authId,
         });
       }
@@ -725,7 +725,7 @@ class Database {
 
       // Log the update for debugging (only if count > 0)
       if (queuedUploadsCount > 0) {
-        logger.debug('Updated upload counters', {
+        logger.verbose('Updated upload counters', {
           authId,
           queuedUploadsCount,
           nextUploadAttemptAt,
@@ -881,7 +881,7 @@ class Database {
       ) ASC
     `);
 
-    logger.debug('Users with queued uploads', {
+    logger.verbose('Users with queued uploads', {
       foundCount: result.length,
       authIds: result.map((u) => u.auth_id),
     });
@@ -973,7 +973,7 @@ class Database {
     `);
 
     // Log at debug level since this runs frequently (every 30 seconds)
-    logger.debug('Users due for polling', {
+    logger.verbose('Users due for polling', {
       foundCount: result.length,
       authIds: result.map((u) => u.auth_id),
       nextPollAts: result.map((u) => ({

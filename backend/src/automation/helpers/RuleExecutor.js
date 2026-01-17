@@ -51,7 +51,7 @@ class RuleExecutor {
           torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
         } catch (statusError) {
           // If we can't get status, just log without it
-          logger.debug('Could not get torrent status for error logging', {
+          logger.verbose('Could not get torrent status for error logging', {
             authId: this.authId,
             torrentId: torrent.id,
             statusError: statusError.message,
