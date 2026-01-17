@@ -78,7 +78,7 @@ class RuleFilter {
       const hasAllTags = Array.from(targetTagIds).every((tagId) => existingTagIds.has(tagId));
 
       if (hasAllTags) {
-        logger.debug('Skipping torrent - already has all tags', {
+        logger.verbose('Skipping torrent - already has all tags', {
           authId: this.authId,
           torrentId: torrent.id,
           torrentName: torrent.name,
@@ -172,7 +172,7 @@ class RuleFilter {
       const hasAnyTag = Array.from(targetTagIds).some((tagId) => existingTagIds.has(tagId));
 
       if (!hasAnyTag) {
-        logger.debug('Skipping torrent - does not have any tags to remove', {
+        logger.verbose('Skipping torrent - does not have any tags to remove', {
           authId: this.authId,
           torrentId: torrent.id,
           torrentName: torrent.name,
@@ -214,7 +214,7 @@ class RuleFilter {
       const isSeeding = status === 'seeding';
 
       if (!isSeeding) {
-        logger.debug('Skipping torrent - not currently seeding', {
+        logger.verbose('Skipping torrent - not currently seeding', {
           authId: this.authId,
           torrentId: torrent.id,
           torrentName: torrent.name,
@@ -255,7 +255,7 @@ class RuleFilter {
       const isQueued = status === 'queued';
 
       if (isQueued) {
-        logger.debug('Skipping torrent - already queued', {
+        logger.verbose('Skipping torrent - already queued', {
           authId: this.authId,
           torrentId: torrent.id,
           torrentName: torrent.name,

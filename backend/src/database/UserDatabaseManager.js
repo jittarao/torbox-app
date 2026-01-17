@@ -79,7 +79,7 @@ class DatabasePool {
       this.metrics.evictions++;
       this.metrics.lastEvictionAt = new Date().toISOString();
 
-      logger.warn('Database pool eviction occurred - pool is at capacity', {
+      logger.verbose('Database pool eviction occurred - pool is at capacity', {
         poolSize: this.cache.size,
         maxSize: this.maxSize,
         evictedKey: firstKey,
