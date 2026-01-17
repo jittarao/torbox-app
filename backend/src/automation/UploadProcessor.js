@@ -263,7 +263,7 @@ class UploadProcessor {
     // First, ensure minimum spacing between uploads (6 seconds for 10/minute limit)
     const minWaitTime = this.calculateMinTimeUntilNextUpload(userDb, type);
     if (minWaitTime > 0) {
-      logger.debug('Waiting for minimum interval between uploads', {
+      logger.verbose('Waiting for minimum interval between uploads', {
         type,
         waitTimeMs: minWaitTime,
       });
@@ -273,7 +273,7 @@ class UploadProcessor {
     // Then check if we're at the rate limit and wait if needed
     const waitTime = this.calculateWaitTime(userDb, type);
     if (waitTime > 0) {
-      logger.debug('Waiting for rate limit', { type, waitTimeMs: waitTime });
+      logger.verbose('Waiting for rate limit', { type, waitTimeMs: waitTime });
       await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
@@ -314,7 +314,7 @@ class UploadProcessor {
   invalidateApiClient(authId) {
     if (this.apiClients.has(authId)) {
       this.apiClients.delete(authId);
-      logger.debug('Invalidated API client cache', { authId });
+      logger.verbose('Invalidated API client cache', { authId });
     }
   }
 
@@ -389,7 +389,7 @@ class UploadProcessor {
       const formData = new FormData();
       formData.append('file', fileBuffer, name);
 
-      logger.debug('File read and appended to FormData', {
+      logger.verbose('File read and appended to FormData', {
         filePath: absolutePath,
         fileSize: fileBuffer.length,
         filename: name,
@@ -493,7 +493,7 @@ class UploadProcessor {
     const waitTime = this.calculateWaitTime(userDb, type);
     const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + waitTime));
 
-    logger.debug('At rate limit, deferring upload', {
+    logger.verbose('At rate limit, deferring upload', {
       uploadId: upload.id,
       type,
       waitTimeMs: waitTime,
@@ -857,7 +857,7 @@ class UploadProcessor {
       const endpoint = this.getApiEndpoint(type);
 
       // Log request
-      logger.debug('Sending upload to TorBox API', {
+      logger.verbose('Sending upload to TorBox API', {
         uploadId: id,
         endpoint,
         upload_type: upload.upload_type,
@@ -1485,7 +1485,7 @@ class UploadProcessor {
               this.masterDatabase.decrementUploadCounter(authId);
             }
 
-            logger.debug('Deleted file due to retention period', {
+            logger.verbose('Deleted file due to retention period', {
               authId,
               filePath: file.relativePath,
               ageDays: Math.floor((now - file.mtime.getTime()) / (24 * 60 * 60 * 1000)),
@@ -1548,7 +1548,7 @@ class UploadProcessor {
               this.masterDatabase.decrementUploadCounter(authId);
             }
 
-            logger.debug('Deleted file due to size limit', {
+            logger.verbose('Deleted file due to size limit', {
               authId,
               filePath: file.relativePath,
               fileSize: file.size,
@@ -1600,7 +1600,7 @@ class UploadProcessor {
         .run(sevenDaysAgo);
 
       if (result.changes > 0) {
-        logger.debug('Cleaned up old upload attempts', {
+        logger.verbose('Cleaned up old upload attempts', {
           deletedCount: result.changes,
           cutoffDate: sevenDaysAgo,
         });

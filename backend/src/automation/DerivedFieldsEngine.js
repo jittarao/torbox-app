@@ -1,4 +1,5 @@
 import { getTorrentStatus } from '../utils/torrentStatus.js';
+import logger from '../utils/logger.js';
 
 /**
  * Constants for derived fields engine
@@ -49,6 +50,9 @@ class DerivedFieldsEngine {
    * @param {Object} userDb - User database instance
    */
   constructor(userDb) {
+    if (!userDb) {
+      throw new Error('userDb is required for DerivedFieldsEngine');
+    }
     this.db = userDb;
     this._prepareStatements();
   }
@@ -147,10 +151,28 @@ class DerivedFieldsEngine {
    * @param {Object} torrent - Torrent object from API
    */
   async initializeTelemetry(torrentId, torrent) {
-    // Check if telemetry already exists
-    const existing = this.stmts.getTelemetryExists.get(torrentId);
-    if (existing) {
+    if (!torrentId) {
+      logger.warn('Skipping telemetry initialization: missing torrentId');
       return;
+    }
+
+    if (!torrent) {
+      logger.warn('Skipping telemetry initialization: missing torrent object', { torrentId });
+      return;
+    }
+
+    // Check if telemetry already exists
+    try {
+      const existing = this.stmts.getTelemetryExists.get(torrentId);
+      if (existing) {
+        return;
+      }
+    } catch (error) {
+      logger.warn('Error checking existing telemetry', error, {
+        torrentId,
+        errorMessage: error.message,
+      });
+      // Continue to try creating telemetry
     }
 
     const state = this.getTorrentState(torrent);
@@ -166,21 +188,30 @@ class DerivedFieldsEngine {
     const activityTimestamp = shadow && shadow.created_at != null ? shadow.created_at : nowSQL;
 
     // Initialize based on current state
-    if (state === 'downloading') {
-      this.stmts.insertTelemetry.run(torrentId, nowSQL, null);
-    } else if (state === 'seeding') {
-      this.stmts.insertTelemetry.run(torrentId, null, nowSQL);
-    } else {
-      // For other states (including stalled), check if torrent has activity history
-      // If it has downloaded/uploaded bytes, set activity timestamps
-      const lastDownloadActivity = totalDownloaded > 0 ? activityTimestamp : null;
-      const lastUploadActivity = totalUploaded > 0 ? activityTimestamp : null;
-
-      if (lastDownloadActivity || lastUploadActivity) {
-        this.stmts.insertTelemetry.run(torrentId, lastDownloadActivity, lastUploadActivity);
+    try {
+      if (state === 'downloading') {
+        this.stmts.insertTelemetry.run(torrentId, nowSQL, null);
+      } else if (state === 'seeding') {
+        this.stmts.insertTelemetry.run(torrentId, null, nowSQL);
       } else {
-        this.stmts.insertTelemetryMinimal.run(torrentId);
+        // For other states (including stalled), check if torrent has activity history
+        // If it has downloaded/uploaded bytes, set activity timestamps
+        const lastDownloadActivity = totalDownloaded > 0 ? activityTimestamp : null;
+        const lastUploadActivity = totalUploaded > 0 ? activityTimestamp : null;
+
+        if (lastDownloadActivity || lastUploadActivity) {
+          this.stmts.insertTelemetry.run(torrentId, lastDownloadActivity, lastUploadActivity);
+        } else {
+          this.stmts.insertTelemetryMinimal.run(torrentId);
+        }
       }
+    } catch (error) {
+      logger.error('Failed to initialize telemetry', error, {
+        torrentId,
+        state,
+        errorMessage: error.message,
+      });
+      throw error;
     }
   }
 
@@ -354,7 +385,9 @@ class DerivedFieldsEngine {
       }
     } catch (error) {
       // Log error but don't throw - backfilling is not critical
-      // logger.error('Error backfilling telemetry records', error);
+      logger.warn('Error backfilling telemetry records', error, {
+        errorMessage: error.message,
+      });
     }
   }
 
@@ -507,6 +540,16 @@ class DerivedFieldsEngine {
    * @private
    */
   _applyTelemetryUpdates(torrentId, updates) {
+    if (!torrentId) {
+      logger.warn('Skipping telemetry update: missing torrentId');
+      return;
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      logger.warn('Skipping telemetry update: invalid updates object', { torrentId });
+      return;
+    }
+
     // Filter and validate column names for security
     // Also filter out undefined values (but keep null if explicitly set)
     const validUpdates = Object.keys(updates)
@@ -520,21 +563,30 @@ class DerivedFieldsEngine {
       return;
     }
 
-    const setClause = Object.keys(validUpdates)
-      .map((key) => `${key} = ?`)
-      .join(', ');
-    const values = Object.keys(validUpdates).map((key) => validUpdates[key]);
-    values.push(torrentId);
+    try {
+      const setClause = Object.keys(validUpdates)
+        .map((key) => `${key} = ?`)
+        .join(', ');
+      const values = Object.keys(validUpdates).map((key) => validUpdates[key]);
+      values.push(torrentId);
 
-    this.db
-      .prepare(
-        `
-      UPDATE torrent_telemetry 
-      SET ${setClause}, updated_at = MAX(created_at, CURRENT_TIMESTAMP)
-      WHERE torrent_id = ?
-    `
-      )
-      .run(...values);
+      this.db
+        .prepare(
+          `
+        UPDATE torrent_telemetry 
+        SET ${setClause}, updated_at = MAX(created_at, CURRENT_TIMESTAMP)
+        WHERE torrent_id = ?
+      `
+        )
+        .run(...values);
+    } catch (error) {
+      logger.error('Failed to apply telemetry updates', error, {
+        torrentId,
+        updates: validUpdates,
+        errorMessage: error.message,
+      });
+      // Don't throw - telemetry updates are not critical enough to break the poll cycle
+    }
   }
 
   /**

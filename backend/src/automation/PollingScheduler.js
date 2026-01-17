@@ -121,7 +121,7 @@ async function withTimeout(promise, timeoutMs, errorMessage) {
   // Prevent unhandled rejections if promise rejects after timeout
   promise.catch((error) => {
     if (timeoutOccurred) {
-      logger.debug(
+      logger.verbose(
         'Late promise rejection after timeout (suppressed to prevent unhandled rejection)',
         {
           error: error.message,
@@ -147,6 +147,13 @@ async function withTimeout(promise, timeoutMs, errorMessage) {
  */
 class PollingScheduler {
   constructor(userDatabaseManager, masterDb, automationEnginesMap = null, options = {}) {
+    if (!userDatabaseManager) {
+      throw new Error('userDatabaseManager is required for PollingScheduler');
+    }
+    if (!masterDb) {
+      throw new Error('masterDb is required for PollingScheduler');
+    }
+
     this.userDatabaseManager = userDatabaseManager;
     this.masterDb = masterDb;
     this.automationEnginesMap = automationEnginesMap;
@@ -155,17 +162,27 @@ class PollingScheduler {
     this.intervalId = null;
     this.refreshIntervalId = null;
 
-    // Configuration
-    this.pollCheckInterval = options.pollCheckInterval || DEFAULT_POLL_CHECK_INTERVAL_MS;
-    this.refreshInterval = options.refreshInterval || DEFAULT_REFRESH_INTERVAL_MS;
-    this.pollTimeoutMs = options.pollTimeoutMs || DEFAULT_POLL_TIMEOUT_MS;
-    this.maxConcurrentPolls = options.maxConcurrentPolls || DEFAULT_MAX_CONCURRENT_POLLS;
+    // Configuration with validation
+    this.pollCheckInterval = Math.max(1000, options.pollCheckInterval || DEFAULT_POLL_CHECK_INTERVAL_MS);
+    this.refreshInterval = Math.max(1000, options.refreshInterval || DEFAULT_REFRESH_INTERVAL_MS);
+    this.pollTimeoutMs = Math.max(1000, options.pollTimeoutMs || DEFAULT_POLL_TIMEOUT_MS);
+    this.maxConcurrentPolls = Math.max(1, options.maxConcurrentPolls || DEFAULT_MAX_CONCURRENT_POLLS);
     this.pollerCleanupIntervalHours =
-      options.pollerCleanupIntervalHours || DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS;
+      Math.max(1, options.pollerCleanupIntervalHours || DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS);
 
     // State
     this.lastCleanupAt = null;
     this.flagUpdateMutexes = new Map();
+
+    // Metrics
+    this.metrics = {
+      totalPolls: 0,
+      successfulPolls: 0,
+      failedPolls: 0,
+      skippedPolls: 0,
+      timeoutPolls: 0,
+      lastPollAt: null,
+    };
   }
 
   /**
@@ -210,7 +227,7 @@ class PollingScheduler {
    */
   async getOrCreateAutomationEngine(authId, encryptedKey) {
     if (this.automationEnginesMap && this.automationEnginesMap.has(authId)) {
-      logger.debug('Using existing automation engine', { authId });
+      logger.verbose('Using existing automation engine', { authId });
       return this.automationEnginesMap.get(authId);
     }
 
@@ -237,25 +254,44 @@ class PollingScheduler {
    * @returns {Promise<UserPoller>} UserPoller instance
    */
   async createPoller(authId, encryptedKey) {
+    if (!authId) {
+      throw new Error('authId is required for createPoller');
+    }
+    if (!encryptedKey) {
+      throw new Error('encryptedKey is required for createPoller');
+    }
+
     logger.info('Creating poller for user', { authId });
 
-    const userDb = await this.userDatabaseManager.getUserDatabase(authId);
-    const automationEngine = await this.getOrCreateAutomationEngine(authId, encryptedKey);
+    try {
+      const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+      if (!userDb || !userDb.db) {
+        throw new Error('Failed to get user database');
+      }
 
-    const poller = new UserPoller(
-      authId,
-      encryptedKey,
-      userDb.db,
-      automationEngine,
-      this.masterDb,
-      this.userDatabaseManager
-    );
+      const automationEngine = await this.getOrCreateAutomationEngine(authId, encryptedKey);
 
-    poller.lastPolledAt = new Date();
-    this.pollers.set(authId, poller);
+      const poller = new UserPoller(
+        authId,
+        encryptedKey,
+        userDb.db,
+        automationEngine,
+        this.masterDb,
+        this.userDatabaseManager
+      );
 
-    logger.info('Poller created successfully', { authId });
-    return poller;
+      poller.lastPolledAt = new Date();
+      this.pollers.set(authId, poller);
+
+      logger.info('Poller created successfully', { authId });
+      return poller;
+    } catch (error) {
+      logger.error('Failed to create poller', error, {
+        authId,
+        errorMessage: error.message,
+      });
+      throw error;
+    }
   }
 
   /**
@@ -312,15 +348,31 @@ class PollingScheduler {
    * @param {number} duration - Poll duration in seconds
    */
   handlePollTimeout(authId, duration) {
-    const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
-    this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
+    if (!authId) {
+      logger.warn('handlePollTimeout called with invalid authId');
+      return;
+    }
 
-    logger.info('Set next poll time after timeout', {
-      authId,
-      nextPollAt: nextPollAt.toISOString(),
-      retryIn: '5 minutes',
-      duration: `${duration.toFixed(2)}s`,
-    });
+    try {
+      const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
+      this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
+
+      this.metrics.timeoutPolls++;
+      this.metrics.failedPolls++;
+
+      logger.info('Set next poll time after timeout', {
+        authId,
+        nextPollAt: nextPollAt.toISOString(),
+        retryIn: '5 minutes',
+        duration: `${duration.toFixed(2)}s`,
+      });
+    } catch (error) {
+      logger.error('Failed to handle poll timeout', error, {
+        authId,
+        duration,
+        errorMessage: error.message,
+      });
+    }
   }
 
   /**
@@ -330,16 +382,33 @@ class PollingScheduler {
    * @param {number} duration - Poll duration in seconds
    */
   handlePollError(authId, error, duration) {
-    const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
-    this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
+    if (!authId) {
+      logger.warn('handlePollError called with invalid authId');
+      return;
+    }
 
-    logger.info('Set next poll time after error', {
-      authId,
-      nextPollAt: nextPollAt.toISOString(),
-      retryIn: '5 minutes',
-      duration: `${duration.toFixed(2)}s`,
-      errorMessage: error.message,
-    });
+    try {
+      const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
+      this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
+
+      this.metrics.failedPolls++;
+
+      logger.info('Set next poll time after error', {
+        authId,
+        nextPollAt: nextPollAt.toISOString(),
+        retryIn: '5 minutes',
+        duration: `${duration.toFixed(2)}s`,
+        errorMessage: error?.message || 'Unknown error',
+        errorName: error?.name,
+      });
+    } catch (dbError) {
+      logger.error('Failed to handle poll error', dbError, {
+        authId,
+        originalError: error?.message,
+        duration,
+        errorMessage: dbError.message,
+      });
+    }
   }
 
   /**
@@ -403,6 +472,17 @@ class PollingScheduler {
    * @returns {Promise<void>}
    */
   async executeUserPoll(user, semaphore, counters) {
+    if (!user || !user.auth_id) {
+      logger.warn('executeUserPoll called with invalid user object', {
+        user: user ? Object.keys(user) : 'null',
+      });
+      if (semaphore) {
+        semaphore.release();
+      }
+      counters.error++;
+      return;
+    }
+
     await semaphore.acquire();
     const pollStartTime = Date.now();
 
@@ -432,7 +512,7 @@ class PollingScheduler {
         });
       }
 
-      logger.debug('Starting poll for user', {
+      logger.verbose('Starting poll for user', {
         authId: auth_id,
         hasActiveRules,
         dbHasActiveRules,
@@ -472,9 +552,12 @@ class PollingScheduler {
       if (result && result.success && !result.skipped) {
         await this.handleSuccessfulPoll(auth_id, poller, result, hasActiveRules, duration);
         counters.success++;
+        this.metrics.successfulPolls++;
+        this.metrics.lastPollAt = new Date();
       } else if (result && result.skipped) {
         this.handleSkippedPoll(auth_id, result, duration);
         counters.skipped++;
+        this.metrics.skippedPolls++;
       } else {
         logger.warn('Poll returned unexpected result', {
           authId: auth_id,
@@ -482,7 +565,9 @@ class PollingScheduler {
           duration: `${duration.toFixed(2)}s`,
         });
         counters.error++;
+        this.metrics.failedPolls++;
       }
+      this.metrics.totalPolls++;
     } catch (error) {
       const duration = (Date.now() - pollStartTime) / 1000;
       logger.error('Error polling user', error, {
@@ -528,8 +613,9 @@ class PollingScheduler {
             errorStack: err.stack,
           });
         })
-        .catch(() => {
-          console.error('Critical: Failed to log interval error');
+        .catch((logError) => {
+          // Fallback if logger itself fails
+          logger.error('Critical: Failed to log interval error', logError);
         });
     }, this.pollCheckInterval);
 
@@ -549,8 +635,9 @@ class PollingScheduler {
             errorStack: err.stack,
           });
         })
-        .catch(() => {
-          console.error('Critical: Failed to log interval error');
+        .catch((logError) => {
+          // Fallback if logger itself fails
+          logger.error('Critical: Failed to log interval error', logError);
         });
     }, this.refreshInterval);
   }
@@ -560,7 +647,7 @@ class PollingScheduler {
    */
   stop() {
     if (!this.isRunning) {
-      logger.debug('PollingScheduler not running, ignoring stop request');
+      logger.verbose('PollingScheduler not running, ignoring stop request');
       return;
     }
 
@@ -574,13 +661,13 @@ class PollingScheduler {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      logger.debug('Polling interval cleared');
+      logger.verbose('Polling interval cleared');
     }
 
     if (this.refreshIntervalId) {
       clearInterval(this.refreshIntervalId);
       this.refreshIntervalId = null;
-      logger.debug('Refresh interval cleared');
+      logger.verbose('Refresh interval cleared');
     }
 
     const pollerCount = this.pollers.size;
@@ -694,17 +781,22 @@ class PollingScheduler {
 
       logger.info('Found users due for polling', {
         count: dueUsers.length,
-        authIds: dueUsers.map((u) => u.auth_id),
-        hasActiveRulesFlags: dueUsers.map((u) => ({
-          authId: u.auth_id,
-          hasActiveRules: u.has_active_rules,
-        })),
+        authIds: dueUsers.map((u) => u?.auth_id).filter(Boolean),
+        hasActiveRulesFlags: dueUsers
+          .filter((u) => u?.auth_id)
+          .map((u) => ({
+            authId: u.auth_id,
+            hasActiveRules: u.has_active_rules,
+          })),
       });
 
       const counters = { success: 0, skipped: 0, error: 0 };
       const semaphore = new Semaphore(this.maxConcurrentPolls);
 
-      await Promise.all(dueUsers.map((user) => this.executeUserPoll(user, semaphore, counters)));
+      // Process users in parallel with concurrency control
+      await Promise.allSettled(
+        dueUsers.map((user) => this.executeUserPoll(user, semaphore, counters))
+      );
 
       const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
       logger.info('Poll cycle completed', {
@@ -733,7 +825,7 @@ class PollingScheduler {
    */
   async refreshPollers() {
     const refreshStartTime = Date.now();
-    logger.debug('Refreshing pollers', {
+    logger.verbose('Refreshing pollers', {
       currentPollers: this.pollers.size,
       timestamp: new Date().toISOString(),
     });
@@ -742,7 +834,7 @@ class PollingScheduler {
       const activeUsers = this.userDatabaseManager.getActiveUsers();
       const currentAuthIds = new Set(this.pollers.keys());
 
-      logger.debug('Active users found', {
+      logger.verbose('Active users found', {
         activeUserCount: activeUsers.length,
         currentPollerCount: this.pollers.size,
       });
@@ -817,7 +909,7 @@ class PollingScheduler {
         (user) => user.has_active_rules === 1
       );
 
-      logger.debug('Active users after flag sync', {
+      logger.verbose('Active users after flag sync', {
         activeUserCount: refreshedActiveUsers.length,
         usersWithActiveRulesCount: usersWithActiveRules.length,
         flagsSynced: syncStats.synced,
@@ -904,6 +996,20 @@ class PollingScheduler {
       isRunning: this.isRunning,
       activePollers: this.pollers.size,
       pollers: pollerStatuses,
+      metrics: {
+        ...this.metrics,
+        successRate:
+          this.metrics.totalPolls > 0
+            ? ((this.metrics.successfulPolls / this.metrics.totalPolls) * 100).toFixed(2) + '%'
+            : '0%',
+      },
+      configuration: {
+        pollCheckInterval: this.pollCheckInterval,
+        refreshInterval: this.refreshInterval,
+        pollTimeoutMs: this.pollTimeoutMs,
+        maxConcurrentPolls: this.maxConcurrentPolls,
+        pollerCleanupIntervalHours: this.pollerCleanupIntervalHours,
+      },
     };
   }
 
@@ -913,6 +1019,10 @@ class PollingScheduler {
    * @returns {Promise<Object>} Poll result
    */
   async triggerPoll(authId) {
+    if (!authId) {
+      throw new Error('authId is required for triggerPoll');
+    }
+
     logger.info('Manually triggering poll for user', {
       authId,
       timestamp: new Date().toISOString(),
@@ -923,6 +1033,7 @@ class PollingScheduler {
       logger.error('No poller found for user', {
         authId,
         availablePollers: Array.from(this.pollers.keys()),
+        totalPollers: this.pollers.size,
       });
       throw new Error(`No poller found for user ${authId}`);
     }

@@ -42,7 +42,7 @@ class Cache {
    */
   setActiveRules(authId, hasActiveRules) {
     this.activeRulesCache.set(`activeRules:${authId}`, hasActiveRules);
-    logger.debug('Cached active rules count', { authId, hasActiveRules });
+    logger.verbose('Cached active rules count', { authId, hasActiveRules });
   }
 
   /**
@@ -51,7 +51,7 @@ class Cache {
    */
   invalidateActiveRules(authId) {
     this.activeRulesCache.delete(`activeRules:${authId}`);
-    logger.debug('Invalidated active rules cache', { authId });
+    logger.verbose('Invalidated active rules cache', { authId });
   }
 
   /**
@@ -70,7 +70,7 @@ class Cache {
    */
   setUserRegistry(authId, userInfo) {
     this.userRegistryCache.set(`userRegistry:${authId}`, userInfo);
-    logger.debug('Cached user registry info', { authId });
+    logger.verbose('Cached user registry info', { authId });
   }
 
   /**
@@ -80,11 +80,11 @@ class Cache {
   invalidateUserRegistry(authId = null) {
     if (authId) {
       this.userRegistryCache.delete(`userRegistry:${authId}`);
-      logger.debug('Invalidated user registry cache', { authId });
+      logger.verbose('Invalidated user registry cache', { authId });
     } else {
       // Invalidate all user registry entries
       this.userRegistryCache.clear();
-      logger.debug('Invalidated all user registry cache');
+      logger.verbose('Invalidated all user registry cache');
     }
   }
 
@@ -104,7 +104,7 @@ class Cache {
    */
   setActiveUsers(users, variant = 'default') {
     this.activeUsersCache.set(`activeUsers:${variant}`, users);
-    logger.debug('Cached active users list', {
+    logger.verbose('Cached active users list', {
       count: users?.length || 0,
       variant,
     });
@@ -117,12 +117,12 @@ class Cache {
   invalidateActiveUsers(variant = null) {
     if (variant) {
       this.activeUsersCache.delete(`activeUsers:${variant}`);
-      logger.debug('Invalidated active users cache', { variant });
+      logger.verbose('Invalidated active users cache', { variant });
     } else {
       // Invalidate all variants
       this.activeUsersCache.delete('activeUsers:default');
       this.activeUsersCache.delete('activeUsers:withNullKeys');
-      logger.debug('Invalidated all active users cache');
+      logger.verbose('Invalidated all active users cache');
     }
   }
 
@@ -133,7 +133,7 @@ class Cache {
     this.activeRulesCache.clear();
     this.userRegistryCache.clear();
     this.activeUsersCache.clear();
-    logger.debug('Cleared all caches');
+    logger.verbose('Cleared all caches');
   }
 }
 

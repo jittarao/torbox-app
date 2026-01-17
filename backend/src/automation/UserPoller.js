@@ -17,6 +17,16 @@ class UserPoller {
     masterDb = null,
     userDatabaseManager = null
   ) {
+    if (!authId) {
+      throw new Error('authId is required for UserPoller');
+    }
+    if (!encryptedApiKey) {
+      throw new Error('encryptedApiKey is required for UserPoller');
+    }
+    if (!userDb) {
+      throw new Error('userDb is required for UserPoller');
+    }
+
     this.authId = authId;
     this.encryptedApiKey = encryptedApiKey;
     this.masterDb = masterDb;
@@ -26,12 +36,28 @@ class UserPoller {
     this.lastPolledAt = null; // Track when poller was last used (for cleanup)
     this.lastPollError = null;
 
-    // Decrypt API key
-    this.apiKey = decrypt(encryptedApiKey);
-    this.apiClient = new ApiClient(this.apiKey);
+    try {
+      // Decrypt API key
+      this.apiKey = decrypt(encryptedApiKey);
+      this.apiClient = new ApiClient(this.apiKey);
+    } catch (error) {
+      logger.error('Failed to decrypt API key or create API client', error, {
+        authId,
+        errorMessage: error.message,
+      });
+      throw new Error(`Failed to initialize UserPoller: ${error.message}`);
+    }
 
     // Initialize database connection manager (handles engines and connection refresh)
-    this.dbManager = new DatabaseConnectionManager(authId, userDb, userDatabaseManager);
+    try {
+      this.dbManager = new DatabaseConnectionManager(authId, userDb, userDatabaseManager);
+    } catch (error) {
+      logger.error('Failed to initialize DatabaseConnectionManager', error, {
+        authId,
+        errorMessage: error.message,
+      });
+      throw new Error(`Failed to initialize UserPoller: ${error.message}`);
+    }
   }
 
   /**
@@ -50,15 +76,35 @@ class UserPoller {
    * @returns {number} - Count of non-terminal torrents
    */
   countNonTerminalTorrents(torrents) {
-    const stateDiffEngine = this.dbManager.getStateDiffEngine();
-    let count = 0;
-    for (const torrent of torrents) {
-      const state = stateDiffEngine.getTorrentState(torrent);
-      if (!stateDiffEngine.isTerminalState(state)) {
-        count++;
-      }
+    if (!Array.isArray(torrents)) {
+      logger.warn('countNonTerminalTorrents called with non-array', {
+        authId: this.authId,
+        torrentsType: typeof torrents,
+      });
+      return 0;
     }
-    return count;
+
+    try {
+      const stateDiffEngine = this.dbManager.getStateDiffEngine();
+      let count = 0;
+      for (const torrent of torrents) {
+        if (!torrent) {
+          continue;
+        }
+        const state = stateDiffEngine.getTorrentState(torrent);
+        if (!stateDiffEngine.isTerminalState(state)) {
+          count++;
+        }
+      }
+      return count;
+    } catch (error) {
+      logger.warn('Error counting non-terminal torrents', error, {
+        authId: this.authId,
+        torrentCount: torrents.length,
+        errorMessage: error.message,
+      });
+      return 0;
+    }
   }
 
   /**
@@ -70,7 +116,7 @@ class UserPoller {
   async checkRecentRuleExecutions(ruleResults = null) {
     // Check if rules executed in the current poll cycle
     if (ruleResults && ruleResults.executed > 0) {
-      logger.debug('Rules executed in current poll cycle, user in active mode', {
+      logger.verbose('Rules executed in current poll cycle, user in active mode', {
         authId: this.authId,
         executedCount: ruleResults.executed,
       });
@@ -229,12 +275,12 @@ class UserPoller {
    */
   async fetchTorrents() {
     const apiFetchStart = Date.now();
-    logger.debug('Fetching torrents from API', { authId: this.authId });
+    logger.verbose('Fetching torrents from API', { authId: this.authId });
 
     try {
       const torrents = await this.apiClient.getTorrents(true); // bypass cache
       const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
-      logger.debug('Torrents fetched from API', {
+      logger.verbose('Torrents fetched from API', {
         authId: this.authId,
         torrentCount: torrents.length,
         apiFetchDuration: `${apiFetchDuration}s`,
@@ -261,8 +307,19 @@ class UserPoller {
    * @returns {Promise<Object>} - Object with new, updated, and removed torrents
    */
   async processStateChanges(torrents) {
+    if (!Array.isArray(torrents)) {
+      logger.warn('processStateChanges called with non-array', {
+        authId: this.authId,
+        torrentsType: typeof torrents,
+      });
+      return { new: [], updated: [], removed: [], stateTransitions: [] };
+    }
+
     const diffStart = Date.now();
-    logger.debug('Processing state diff', { authId: this.authId });
+    logger.verbose('Processing state diff', {
+      authId: this.authId,
+      torrentCount: torrents.length,
+    });
 
     try {
       const changes = await this.executeWithRetry(
@@ -274,11 +331,12 @@ class UserPoller {
       );
 
       const diffDuration = ((Date.now() - diffStart) / 1000).toFixed(2);
-      logger.debug('State diff processed', {
+      logger.verbose('State diff processed', {
         authId: this.authId,
-        new: changes.new.length,
-        updated: changes.updated.length,
-        removed: changes.removed.length,
+        new: changes.new?.length || 0,
+        updated: changes.updated?.length || 0,
+        removed: changes.removed?.length || 0,
+        stateTransitions: changes.stateTransitions?.length || 0,
         diffDuration: `${diffDuration}s`,
       });
       return changes;
@@ -287,6 +345,7 @@ class UserPoller {
         authId: this.authId,
         torrentCount: torrents.length,
         errorMessage: error.message,
+        errorStack: error.stack,
       });
       throw error;
     }
@@ -298,8 +357,21 @@ class UserPoller {
    * @returns {Promise<void>}
    */
   async updateDerivedFields(changes) {
+    if (!changes || typeof changes !== 'object') {
+      logger.warn('updateDerivedFields called with invalid changes object', {
+        authId: this.authId,
+        changesType: typeof changes,
+      });
+      return;
+    }
+
     const derivedStart = Date.now();
-    logger.debug('Updating derived fields', { authId: this.authId });
+    logger.verbose('Updating derived fields', {
+      authId: this.authId,
+      newCount: changes.new?.length || 0,
+      updatedCount: changes.updated?.length || 0,
+      removedCount: changes.removed?.length || 0,
+    });
 
     try {
       await this.executeWithRetry(
@@ -311,7 +383,7 @@ class UserPoller {
       );
 
       const derivedDuration = ((Date.now() - derivedStart) / 1000).toFixed(2);
-      logger.debug('Derived fields updated', {
+      logger.verbose('Derived fields updated', {
         authId: this.authId,
         derivedDuration: `${derivedDuration}s`,
       });
@@ -319,6 +391,7 @@ class UserPoller {
       logger.error('Failed to update derived fields', error, {
         authId: this.authId,
         errorMessage: error.message,
+        errorStack: error.stack,
       });
       throw error;
     }
@@ -335,7 +408,7 @@ class UserPoller {
     }
 
     const speedStart = Date.now();
-    logger.debug('Processing speed updates', {
+    logger.verbose('Processing speed updates', {
       authId: this.authId,
       updatedCount: updatedTorrents.length,
     });
@@ -350,7 +423,7 @@ class UserPoller {
       );
 
       const speedDuration = ((Date.now() - speedStart) / 1000).toFixed(2);
-      logger.debug('Speed updates processed', {
+      logger.verbose('Speed updates processed', {
         authId: this.authId,
         speedDuration: `${speedDuration}s`,
       });
@@ -380,7 +453,7 @@ class UserPoller {
       return ruleResults;
     }
 
-    logger.debug('Evaluating automation rules', {
+    logger.verbose('Evaluating automation rules', {
       authId: this.authId,
       torrentCount: torrents.length,
     });
@@ -388,7 +461,7 @@ class UserPoller {
     try {
       ruleResults = await this.automationEngine.evaluateRules(torrents);
       const rulesDuration = ((Date.now() - rulesStart) / 1000).toFixed(2);
-      logger.debug('Automation rules evaluated', {
+      logger.verbose('Automation rules evaluated', {
         authId: this.authId,
         evaluated: ruleResults.evaluated,
         executed: ruleResults.executed,
@@ -419,7 +492,7 @@ class UserPoller {
 
     try {
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, nonTerminalCount);
-      logger.debug('Updated next poll time in master DB', {
+      logger.verbose('Updated next poll time in master DB', {
         authId: this.authId,
         nextPollAt: nextPollAt.toISOString(),
         nonTerminalCount,
@@ -470,7 +543,7 @@ class UserPoller {
     const hasActiveRules =
       cachedHasActiveRules !== null ? cachedHasActiveRules : await this.shouldPoll();
     if (!hasActiveRules) {
-      logger.debug('Poll skipped - no active automation rules', {
+      logger.verbose('Poll skipped - no active automation rules', {
         authId: this.authId,
         hasAutomationEngine: !!this.automationEngine,
       });
@@ -496,8 +569,23 @@ class UserPoller {
       // Fetch torrents from API
       const torrents = await this.fetchTorrents();
 
+      if (!Array.isArray(torrents)) {
+        throw new Error('API returned invalid torrents data');
+      }
+
       // Process snapshot and compute diffs
       const changes = await this.processStateChanges(torrents);
+
+      // Validate changes structure
+      if (!changes || typeof changes !== 'object') {
+        throw new Error('processStateChanges returned invalid changes object');
+      }
+
+      // Ensure changes has required properties
+      if (!Array.isArray(changes.new)) changes.new = [];
+      if (!Array.isArray(changes.updated)) changes.updated = [];
+      if (!Array.isArray(changes.removed)) changes.removed = [];
+      if (!Array.isArray(changes.stateTransitions)) changes.stateTransitions = [];
 
       // Update derived fields
       await this.updateDerivedFields(changes);
@@ -528,14 +616,15 @@ class UserPoller {
       logger.info('Poll completed successfully', {
         authId: this.authId,
         duration: `${duration}s`,
-        new: changes.new.length,
-        updated: changes.updated.length,
-        removed: changes.removed.length,
-        rulesEvaluated: ruleResults.evaluated,
-        rulesExecuted: ruleResults.executed,
-        nonTerminalCount,
+        new: changes.new?.length || 0,
+        updated: changes.updated?.length || 0,
+        removed: changes.removed?.length || 0,
+        stateTransitions: changes.stateTransitions?.length || 0,
+        rulesEvaluated: ruleResults?.evaluated || 0,
+        rulesExecuted: ruleResults?.executed || 0,
+        nonTerminalCount: nonTerminalCount || 0,
         hasActiveRules: hasActiveRules,
-        nextPollAt: nextPollAt.toISOString(),
+        nextPollAt: nextPollAt?.toISOString() || 'unknown',
         timestamp: new Date().toISOString(),
       });
 
@@ -566,7 +655,7 @@ class UserPoller {
     } finally {
       this.isPolling = false;
       const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
-      logger.debug('Poll cycle finished', {
+      logger.verbose('Poll cycle finished', {
         authId: this.authId,
         totalDuration: `${totalDuration}s`,
         isPolling: this.isPolling,
@@ -581,8 +670,12 @@ class UserPoller {
     return {
       authId: this.authId,
       isPolling: this.isPolling,
-      lastPollAt: this.lastPollAt,
+      lastPollAt: this.lastPollAt ? this.lastPollAt.toISOString() : null,
+      lastPolledAt: this.lastPolledAt ? this.lastPolledAt.toISOString() : null,
       lastPollError: this.lastPollError,
+      hasAutomationEngine: !!this.automationEngine,
+      hasMasterDb: !!this.masterDb,
+      hasUserDatabaseManager: !!this.dbManager?.userDatabaseManager,
     };
   }
 }
