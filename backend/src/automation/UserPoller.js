@@ -265,9 +265,11 @@ class UserPoller {
     logger.debug('Processing state diff', { authId: this.authId });
 
     try {
-      const stateDiffEngine = this.dbManager.getStateDiffEngine();
       const changes = await this.executeWithRetry(
-        () => stateDiffEngine.processSnapshot(torrents),
+        () => {
+          const stateDiffEngine = this.dbManager.getStateDiffEngine();
+          return stateDiffEngine.processSnapshot(torrents);
+        },
         'processSnapshot'
       );
 
@@ -300,9 +302,11 @@ class UserPoller {
     logger.debug('Updating derived fields', { authId: this.authId });
 
     try {
-      const derivedFieldsEngine = this.dbManager.getDerivedFieldsEngine();
       await this.executeWithRetry(
-        () => derivedFieldsEngine.updateDerivedFields(changes, 5 * 60),
+        () => {
+          const derivedFieldsEngine = this.dbManager.getDerivedFieldsEngine();
+          return derivedFieldsEngine.updateDerivedFields(changes, 5 * 60);
+        },
         'updateDerivedFields'
       );
 
@@ -337,9 +341,11 @@ class UserPoller {
     });
 
     try {
-      const speedAggregator = this.dbManager.getSpeedAggregator();
       await this.executeWithRetry(
-        () => speedAggregator.processUpdates(updatedTorrents),
+        () => {
+          const speedAggregator = this.dbManager.getSpeedAggregator();
+          return speedAggregator.processUpdates(updatedTorrents);
+        },
         'processUpdates'
       );
 
