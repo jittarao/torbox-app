@@ -448,7 +448,8 @@ class UploadProcessor {
       formData.append('allow_zip', allowZipValue);
     }
 
-    if (as_queued) {
+    // Only include as_queued if it's true (handle both boolean true and SQLite integer 1)
+    if (as_queued === true || as_queued === 1) {
       formData.append('as_queued', 'true');
     }
 

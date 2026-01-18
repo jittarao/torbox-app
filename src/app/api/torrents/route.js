@@ -156,22 +156,28 @@ export async function POST(request) {
     // Get authId from backend (hash of API key)
     // For now, we'll pass the API key and let backend hash it
     // Create upload entry in backend
+    const requestBody = {
+      type: 'torrent',
+      upload_type,
+      file_path,
+      url,
+      name: name || (file ? file.name : 'Unknown'),
+      seed: seed ? parseInt(seed, 10) : null,
+      allow_zip: allowZip === 'true' || allowZip === true,
+    };
+
+    // Only include as_queued if it's true
+    if (asQueued === 'true' || asQueued === true) {
+      requestBody.as_queued = true;
+    }
+
     const uploadResponse = await fetch(`${BACKEND_URL}/api/uploads`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
       },
-      body: JSON.stringify({
-        type: 'torrent',
-        upload_type,
-        file_path,
-        url,
-        name: name || (file ? file.name : 'Unknown'),
-        seed: seed ? parseInt(seed, 10) : null,
-        allow_zip: allowZip === 'true' || allowZip === true,
-        as_queued: asQueued === 'true' || asQueued === true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const uploadData = await safeJsonParse(uploadResponse);

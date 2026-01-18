@@ -285,9 +285,9 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       formData.append('name', item.name);
     }
 
-    // Add common options
-    if (globalOptions.asQueued) {
-      formData.append('as_queued', item.asQueued);
+    // Add as_queued only if it's true
+    if (item.asQueued === true || item.asQueued === 'true') {
+      formData.append('as_queued', 'true');
     }
 
     // Queue upload via NextJS API (which handles backend queuing)
@@ -350,8 +350,9 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
           upload.password = webdlPassword;
         }
 
-        if (globalOptions.asQueued) {
-          upload.as_queued = item.asQueued !== undefined ? item.asQueued : false;
+        // Only include as_queued if it's true
+        if (item.asQueued === true || item.asQueued === 'true') {
+          upload.as_queued = true;
         }
 
         return upload;
