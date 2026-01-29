@@ -1,3 +1,4 @@
+import { TTLCache } from '@isaacs/ttlcache';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
@@ -30,6 +31,11 @@ const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing long
 const MAX_UPLOAD_DIR_SIZE_BYTES = parseInt(process.env.MAX_UPLOAD_DIR_SIZE_BYTES || '52428800', 10); // 50MB default
 const UPLOAD_FILE_RETENTION_DAYS = parseInt(process.env.UPLOAD_FILE_RETENTION_DAYS || '30', 10); // 30 days default
 const FILE_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // Cleanup files every 6 hours
+const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
+const API_CLIENT_CACHE_TTL_MS = parseInt(
+  process.env.UPLOAD_API_CLIENT_CACHE_TTL_MS || String(30 * 60 * 1000),
+  10
+); // 30 minutes default
 
 // Non-retryable error codes
 const NON_RETRYABLE_ERRORS = [
@@ -60,8 +66,11 @@ class UploadProcessor {
     this.lastFileCleanupAt = null;
     this.cleanupIntervalMs = 24 * 60 * 60 * 1000; // Cleanup once per day
 
-    // API clients cache: { authId: ApiClient }
-    this.apiClients = new Map();
+    // API clients cache: bounded TTL to prevent unbounded memory growth
+    this.apiClients = new TTLCache({
+      max: API_CLIENT_CACHE_MAX,
+      ttl: API_CLIENT_CACHE_TTL_MS,
+    });
   }
 
   // ==================== Helper Methods ====================
@@ -988,10 +997,13 @@ class UploadProcessor {
                   checkError.name === 'RangeError';
 
                 if (isClosedError) {
-                  logger.warn('Database connection closed for final attempt, re-fetching connection', {
-                    uploadId: id,
-                    attempt: finalAttempt + 1,
-                  });
+                  logger.warn(
+                    'Database connection closed for final attempt, re-fetching connection',
+                    {
+                      uploadId: id,
+                      attempt: finalAttempt + 1,
+                    }
+                  );
                   finalUserDb = await this.userDatabaseManager.getUserDatabase(upload.authId);
                 } else {
                   // Other error during check - re-fetch anyway to be safe
@@ -1062,13 +1074,16 @@ class UploadProcessor {
               await new Promise((resolve) => setTimeout(resolve, delayMs));
             } else {
               // All final attempts failed
-              logger.error('CRITICAL: Failed to manually mark upload as completed after all retries', {
-                uploadId: id,
-                maxRetries: finalMaxRetries,
-                error: finalError.message,
-                errorCode: finalError.code,
-                isClosedError: isFinalClosedError,
-              });
+              logger.error(
+                'CRITICAL: Failed to manually mark upload as completed after all retries',
+                {
+                  uploadId: id,
+                  maxRetries: finalMaxRetries,
+                  error: finalError.message,
+                  errorCode: finalError.code,
+                  isClosedError: isFinalClosedError,
+                }
+              );
             }
           }
         }
