@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
     # Port mapping: host:container (expose backend API on port 3001)
     ports:
-      - "3001:3001"
+      - '3001:3001'
     # Environment variables for backend configuration
     environment:
       # Encryption key for securing sensitive data (required - set in .env file)
@@ -35,7 +35,7 @@ services:
     # Health check to ensure backend is running and responding
     healthcheck:
       # Test command: check if /health endpoint responds successfully
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
       # Check health every 30 seconds
       interval: 30s
       # Timeout after 10 seconds if no response
@@ -49,25 +49,24 @@ services:
       - torbox-network
     # Logging configuration to prevent disk space issues
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
         # Maximum size per log file
-        max-size: "10m"
+        max-size: '10m'
         # Maximum number of log files to keep (rotates when max-size is reached)
-        max-file: "3"
+        max-file: '3'
     # Security option: prevent container from gaining new privileges
     security_opt:
       - no-new-privileges:true
-    # Resource limits - uncomment to restrict CPU and memory usage
-    # Useful for production environments with resource constraints
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1.0'
-    #       memory: 512M
-    #     reservations:
-    #       cpus: '0.5'
-    #       memory: 256M
+    # Resource limits - cap memory to avoid unbounded growth; container restarts if exceeded
+    deploy:
+      resources:
+        limits:
+          # cpus: '1.0'
+          memory: 1G
+        # reservations:
+        #   cpus: '0.5'
+        #   memory: 256M
 
   # Frontend Next.js application - user interface for Torbox
   torbox-app:
@@ -79,7 +78,7 @@ services:
     restart: unless-stopped
     # Port mapping: host:container (expose frontend on port 3000)
     ports:
-      - "3000:3000"
+      - '3000:3000'
     # Environment variables for frontend configuration
     environment:
       # Enable backend integration (set to true to use external backend)
@@ -110,19 +109,19 @@ services:
       - torbox-network
     # Logging configuration to prevent disk space issues
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
         # Maximum size per log file
-        max-size: "10m"
+        max-size: '10m'
         # Maximum number of log files to keep (rotates when max-size is reached)
-        max-file: "3"
+        max-file: '3'
     # Security option: prevent container from gaining new privileges
     security_opt:
       - no-new-privileges:true
     # Health check to ensure frontend is running and responding
     healthcheck:
       # Test command: check if frontend responds to HTTP requests
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000']
       # Check health every 30 seconds
       interval: 30s
       # Timeout after 10 seconds if no response

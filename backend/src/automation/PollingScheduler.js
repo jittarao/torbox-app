@@ -163,12 +163,20 @@ class PollingScheduler {
     this.refreshIntervalId = null;
 
     // Configuration with validation
-    this.pollCheckInterval = Math.max(1000, options.pollCheckInterval || DEFAULT_POLL_CHECK_INTERVAL_MS);
+    this.pollCheckInterval = Math.max(
+      1000,
+      options.pollCheckInterval || DEFAULT_POLL_CHECK_INTERVAL_MS
+    );
     this.refreshInterval = Math.max(1000, options.refreshInterval || DEFAULT_REFRESH_INTERVAL_MS);
     this.pollTimeoutMs = Math.max(1000, options.pollTimeoutMs || DEFAULT_POLL_TIMEOUT_MS);
-    this.maxConcurrentPolls = Math.max(1, options.maxConcurrentPolls || DEFAULT_MAX_CONCURRENT_POLLS);
-    this.pollerCleanupIntervalHours =
-      Math.max(1, options.pollerCleanupIntervalHours || DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS);
+    this.maxConcurrentPolls = Math.max(
+      1,
+      options.maxConcurrentPolls || DEFAULT_MAX_CONCURRENT_POLLS
+    );
+    this.pollerCleanupIntervalHours = Math.max(
+      1,
+      options.pollerCleanupIntervalHours || DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS
+    );
 
     // State
     this.lastCleanupAt = null;
@@ -700,6 +708,28 @@ class PollingScheduler {
   }
 
   /**
+   * Shutdown automation engine and remove engine + mutex when a poller is removed.
+   * Prevents memory leak: engines and mutexes are only removed on admin user delete otherwise.
+   * @param {string} authId - User authentication ID
+   * @private
+   */
+  _cleanupEngineAndMutexForAuth(authId) {
+    const engine = this.automationEnginesMap?.get(authId);
+    if (engine) {
+      try {
+        engine.shutdown();
+      } catch (err) {
+        logger.warn('Error shutting down engine during poller cleanup', {
+          authId,
+          errorMessage: err?.message,
+        });
+      }
+      this.automationEnginesMap.delete(authId);
+    }
+    this.flagUpdateMutexes.delete(authId);
+  }
+
+  /**
    * Clean up pollers that haven't been polled recently
    * @returns {number} Number of pollers cleaned up
    */
@@ -723,6 +753,7 @@ class PollingScheduler {
           thresholdHours: this.pollerCleanupIntervalHours,
         });
         this.pollers.delete(authId);
+        this._cleanupEngineAndMutexForAuth(authId);
         cleanedCount++;
       }
     }
@@ -956,6 +987,7 @@ class PollingScheduler {
         const userStillHasActiveRules = usersWithActiveRules.some((u) => u.auth_id === authId);
         if (!userStillHasActiveRules) {
           this.pollers.delete(authId);
+          this._cleanupEngineAndMutexForAuth(authId);
           logger.info('Removed poller for user without active rules', {
             authId,
           });
