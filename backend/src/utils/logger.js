@@ -172,7 +172,7 @@ class Logger {
   }
 
   /**
-   * Log an HTTP request
+   * Log an HTTP request. Success (2xx) only when DEBUG=true; 4xx/5xx always.
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    * @param {number} duration - Request duration in ms
@@ -194,8 +194,14 @@ class Logger {
       logData.authId = req.query?.authId || req.headers['x-auth-id'];
     }
 
-    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    this.logger[level](`${req.method} ${req.originalUrl || req.url} ${res.statusCode}`, logData);
+    const message = `${req.method} ${req.originalUrl || req.url} ${res.statusCode}`;
+    if (res.statusCode >= 500) {
+      this.logger.error(message, logData);
+    } else if (res.statusCode >= 400) {
+      this.logger.warn(message, logData);
+    } else {
+      this.info(message, logData);
+    }
   }
 }
 
