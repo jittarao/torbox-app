@@ -138,6 +138,7 @@ docker/
 .cursorignore
 .cursor/
 AGENTS.md
+/prompts
 
 # OS generated files
 .DS_Store
