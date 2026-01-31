@@ -123,23 +123,13 @@ export function setupUserRoutes(router, backend) {
       // Get database info
       const dbInfo = getDatabaseStats(user.db_path);
 
-      // Get automation engine status
-      const engine = backend.automationEngines.get(authId);
-      const engineStatus = engine
-        ? {
-            initialized: engine.isInitialized,
-            running_jobs: engine.runningJobs.size,
-          }
-        : null;
-
-      // Get poller status
+      // Get poller status (engines are created per poll / on demand, not cached)
       const pollerStatus = backend.pollingScheduler?.pollers.get(authId)?.getStatus() || null;
 
       sendSuccess(res, {
         user: {
           ...user,
           db_info: dbInfo,
-          automation_engine: engineStatus,
           poller: pollerStatus,
         },
       });
@@ -170,14 +160,7 @@ export function setupUserRoutes(router, backend) {
         dbPath: user.db_path,
       });
 
-      // Stop automation engine if running
-      const engine = backend.automationEngines.get(authId);
-      if (engine) {
-        engine.shutdown();
-        backend.automationEngines.delete(authId);
-      }
-
-      // Remove poller if exists
+      // Remove poller if exists (engines are not cached)
       if (backend.pollingScheduler) {
         const poller = backend.pollingScheduler.pollers.get(authId);
         if (poller) {

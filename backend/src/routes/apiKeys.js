@@ -1,5 +1,4 @@
 import ApiClient from '../api/ApiClient.js';
-import AutomationEngine from '../automation/AutomationEngine.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import fs from 'fs';
@@ -64,18 +63,7 @@ export function setupApiKeyRoutes(app, backend) {
         throw error;
       }
 
-      // Create automation engine for this user
-      const apiKeyData = backend.masterDatabase.getApiKey(authId);
-      const automationEngine = new AutomationEngine(
-        authId,
-        apiKeyData.encrypted_key,
-        backend.userDatabaseManager,
-        backend.masterDatabase
-      );
-      await automationEngine.initialize();
-      backend.automationEngines.set(authId, automationEngine);
-
-      // Refresh polling scheduler to pick up new user
+      // Refresh polling scheduler to pick up new user (engines are created per poll / on demand)
       if (backend.pollingScheduler) {
         await backend.pollingScheduler.refreshPollers();
       }
@@ -105,7 +93,6 @@ export function setupApiKeyRoutes(app, backend) {
       res.json({
         success: true,
         activeUsers: activeUsers.length,
-        automationEngines: backend.automationEngines.size,
         pollingScheduler: schedulerStatus,
       });
     } catch (error) {
@@ -203,18 +190,7 @@ export function setupApiKeyRoutes(app, backend) {
           throw error;
         }
 
-        // Create automation engine for this user
-        const apiKeyData = backend.masterDatabase.getApiKey(authId);
-        const automationEngine = new AutomationEngine(
-          authId,
-          apiKeyData.encrypted_key,
-          backend.userDatabaseManager,
-          backend.masterDatabase
-        );
-        await automationEngine.initialize();
-        backend.automationEngines.set(authId, automationEngine);
-
-        // Refresh polling scheduler
+        // Refresh polling scheduler (engines are created per poll / on demand)
         if (backend.pollingScheduler) {
           await backend.pollingScheduler.refreshPollers();
         }
