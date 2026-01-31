@@ -792,6 +792,32 @@ class UploadProcessor {
       )
       .run(finalStatus, userFriendlyError, finalRetryCount, nextAttemptAt, id);
 
+    // When API returns 429, defer all other queued uploads of this type so we don't keep
+    // making API calls for the rest of the queue (our pre-check uses local limits and may
+    // not match the API's stricter limit, so 554, 555, ... would otherwise each get tried
+    // and each get 429 until the window passes).
+    if (isRateLimit && nextAttemptAt) {
+      const deferOthersResult = userDb.db
+        .prepare(
+          `
+          UPDATE uploads
+          SET next_attempt_at = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE status = 'queued'
+            AND type = ?
+            AND id != ?
+        `
+        )
+        .run(nextAttemptAt, type, id);
+      if (deferOthersResult.changes > 0) {
+        logger.debug('Deferred other queued uploads due to API rate limit', {
+          type,
+          deferredCount: deferOthersResult.changes,
+          nextAttemptAt,
+        });
+      }
+    }
+
     // Update counters only if the upload still exists (wasn't deleted during processing)
     // If the upload was deleted, the UPDATE returns 0 rows affected, so we skip counter updates
     if (updateResult.changes > 0) {
