@@ -34,6 +34,7 @@ class TorBoxBackend {
     this.pollingScheduler = null;
     this.uploadProcessor = null;
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
+    this.memoryLogIntervalId = null;
 
     this.setupMiddleware();
     this.setupRoutes();
@@ -233,29 +234,19 @@ class TorBoxBackend {
       await this.pollingScheduler.start();
       logger.info('Polling scheduler started');
 
-      // Initialize automation engines for all active users
-      // This ensures has_active_rules flags are synced on startup
-      // (even if flags are out of sync, initialization will correct them)
-      // Uses parallel initialization with concurrency control for scalability (1000+ users)
+      // Sync has_active_rules flags at startup by querying user DBs directly (no engine creation).
+      // Engines are created on demand when pollers are created (users with active rules) or when API needs one.
       const activeUsers = this.masterDatabase.getActiveUsers();
-      const syncStats = { initialized: 0, errors: 0, flagsSynced: 0 };
-      const initStartTime = Date.now();
+      const syncStats = { synced: 0, errors: 0, skipped: 0 };
+      const syncStartTime = Date.now();
+      const maxConcurrentSync = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
 
-      // Concurrency limit for parallel initialization (configurable via env)
-      const maxConcurrentInit = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
-      logger.info('Starting parallel automation engine initialization', {
-        totalUsers: activeUsers.length,
-        maxConcurrent: maxConcurrentInit,
-      });
-
-      // Semaphore for concurrency control
-      class InitSemaphore {
+      class SyncSemaphore {
         constructor(maxConcurrent) {
           this.maxConcurrent = maxConcurrent;
           this.running = 0;
           this.queue = [];
         }
-
         async acquire() {
           return new Promise((resolve) => {
             if (this.running < this.maxConcurrent) {
@@ -266,7 +257,6 @@ class TorBoxBackend {
             }
           });
         }
-
         release() {
           this.running--;
           if (this.queue.length > 0) {
@@ -277,98 +267,102 @@ class TorBoxBackend {
         }
       }
 
-      const semaphore = new InitSemaphore(maxConcurrentInit);
-      const usersToInit = activeUsers.filter((user) => user.encrypted_key);
+      const syncSemaphore = new SyncSemaphore(maxConcurrentSync);
+      const usersToSync = activeUsers.filter((user) => user.encrypted_key);
 
-      // Initialize users in parallel with concurrency control
-      const initPromises = usersToInit.map(async (user) => {
-        const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
+      logger.info('Syncing has_active_rules flags at startup (no engine creation)', {
+        totalUsers: usersToSync.length,
+        maxConcurrent: maxConcurrentSync,
+      });
 
-        await semaphore.acquire();
-        try {
-          const automationEngine = new AutomationEngine(
-            auth_id,
-            encrypted_key,
-            this.userDatabaseManager,
-            this.masterDatabase
-          );
-          await automationEngine.initialize();
-
-          // Check if flag was out of sync (initialize() calls syncActiveRulesFlag())
-          const actualHasActiveRules = await automationEngine.hasActiveRules();
-          const actualFlag = actualHasActiveRules ? 1 : 0;
-
-          if (dbFlag !== actualFlag) {
-            logger.info('Active rules flag synced during startup', {
+      await Promise.all(
+        usersToSync.map(async (user) => {
+          const { auth_id, has_active_rules: dbFlag } = user;
+          await syncSemaphore.acquire();
+          try {
+            const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+            if (!userDb?.db) {
+              syncStats.skipped++;
+              return;
+            }
+            const result = userDb.db
+              .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+              .get();
+            const actualHasActiveRules = result && result.count > 0;
+            const actualFlag = actualHasActiveRules ? 1 : 0;
+            if (dbFlag !== actualFlag) {
+              this.masterDatabase.updateActiveRulesFlag(auth_id, actualHasActiveRules);
+              logger.info('Active rules flag synced at startup', {
+                authId: auth_id,
+                previousFlag: dbFlag,
+                actualFlag,
+              });
+              syncStats.synced++;
+            }
+          } catch (error) {
+            logger.warn('Failed to sync active rules flag for user at startup', {
               authId: auth_id,
-              previousFlag: dbFlag,
-              actualFlag,
+              errorMessage: error.message,
             });
-            syncStats.flagsSynced++;
+            syncStats.errors++;
+          } finally {
+            syncSemaphore.release();
           }
+        })
+      );
 
-          this.automationEngines.set(auth_id, automationEngine);
-          syncStats.initialized++;
-
-          // Log progress for large user counts
-          if (usersToInit.length > 50 && syncStats.initialized % 50 === 0) {
-            const progress = ((syncStats.initialized / usersToInit.length) * 100).toFixed(1);
-            logger.info('Initialization progress', {
-              initialized: syncStats.initialized,
-              total: usersToInit.length,
-              progress: `${progress}%`,
-              errors: syncStats.errors,
-            });
-          }
-        } catch (error) {
-          logger.error(`Failed to initialize automation engine for user ${auth_id}`, error, {
-            authId: auth_id,
-          });
-          syncStats.errors++;
-        } finally {
-          semaphore.release();
-        }
-      });
-
-      // Wait for all initializations to complete
-      await Promise.all(initPromises);
-
-      const initDuration = ((Date.now() - initStartTime) / 1000).toFixed(2);
-      logger.info('Automation engine initialization completed', {
-        totalUsers: usersToInit.length,
-        initialized: syncStats.initialized,
-        errors: syncStats.errors,
-        flagsSynced: syncStats.flagsSynced,
-        duration: `${initDuration}s`,
-        averageTime:
-          usersToInit.length > 0 ? `${(initDuration / usersToInit.length).toFixed(3)}s` : '0s',
-      });
-
-      // Refresh active users list after syncing flags to get accurate counts
-      if (syncStats.flagsSynced > 0) {
+      if (syncStats.synced > 0) {
         cache.invalidateActiveUsers();
-        const refreshedActiveUsers = this.masterDatabase.getActiveUsers();
-        const usersWithActiveRules = refreshedActiveUsers.filter(
-          (user) => user.has_active_rules === 1
-        );
+      }
 
-        logger.info('TorBox Backend started successfully', {
-          activeUsers: refreshedActiveUsers.length,
-          usersWithActiveRules: usersWithActiveRules.length,
-          automationEngines: this.automationEngines.size,
-          flagsSyncedOnStartup: syncStats.flagsSynced,
-          initializationErrors: syncStats.errors,
-        });
-      } else {
-        const usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
+      const syncDuration = ((Date.now() - syncStartTime) / 1000).toFixed(2);
+      logger.info('Startup flag sync completed', {
+        totalUsers: usersToSync.length,
+        flagsSynced: syncStats.synced,
+        errors: syncStats.errors,
+        skipped: syncStats.skipped,
+        duration: `${syncDuration}s`,
+      });
 
-        logger.info('TorBox Backend started successfully', {
-          activeUsers: activeUsers.length,
-          usersWithActiveRules: usersWithActiveRules.length,
-          automationEngines: this.automationEngines.size,
-          flagsSyncedOnStartup: syncStats.flagsSynced,
-          initializationErrors: syncStats.errors,
-        });
+      const refreshedActiveUsers = this.masterDatabase.getActiveUsers();
+      const usersWithActiveRules = refreshedActiveUsers.filter(
+        (user) => user.has_active_rules === 1
+      );
+
+      logger.info('TorBox Backend started successfully', {
+        activeUsers: refreshedActiveUsers.length,
+        usersWithActiveRules: usersWithActiveRules.length,
+        automationEngines: this.automationEngines.size,
+        flagsSyncedOnStartup: syncStats.synced,
+        syncErrors: syncStats.errors,
+      });
+
+      // Optional: periodic log of memory and pool/engine stats (e.g. hourly) for monitoring
+      const memoryLogIntervalMs = parseInt(
+        process.env.MEMORY_LOG_INTERVAL_MS || String(60 * 60 * 1000),
+        10
+      );
+      if (memoryLogIntervalMs > 0) {
+        this.memoryLogIntervalId = setInterval(() => {
+          try {
+            const memory = this.getMemoryUsage();
+            const poolStats = this.userDatabaseManager?.getPoolStats() ?? null;
+            logger.info('Memory and pool stats', {
+              memory,
+              automationEngines: this.automationEngines.size,
+              connectionPool: poolStats
+                ? {
+                    size: poolStats.size,
+                    maxSize: poolStats.maxSize,
+                    usagePercent: poolStats.usagePercent,
+                    status: poolStats.status,
+                  }
+                : null,
+            });
+          } catch (err) {
+            logger.warn('Failed to log memory/pool stats', { error: err.message });
+          }
+        }, memoryLogIntervalMs);
       }
     } catch (error) {
       logger.error('Failed to initialize services', error);
@@ -456,6 +450,11 @@ class TorBoxBackend {
 
   async shutdown() {
     logger.info('Shutting down TorBox Backend...');
+
+    if (this.memoryLogIntervalId) {
+      clearInterval(this.memoryLogIntervalId);
+      this.memoryLogIntervalId = null;
+    }
 
     if (this.uploadProcessor) {
       this.uploadProcessor.stop();

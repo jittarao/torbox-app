@@ -70,6 +70,7 @@ export function setupMetricsRoutes(router, backend) {
           memory: memoryUsage,
           system: backend.getSystemInfo(),
           automation_engines: backend.automationEngines.size,
+          connection_pool: backend.userDatabaseManager?.getPoolStats() ?? null,
           polling_scheduler: backend.pollingScheduler ? backend.pollingScheduler.getStatus() : null,
         },
       });
