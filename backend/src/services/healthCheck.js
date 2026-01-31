@@ -198,7 +198,6 @@ export class HealthCheckService {
           masterDatabase: this.masterDatabase ? 'initialized' : 'not initialized',
           userDatabaseManager: userDatabaseManager ? 'initialized' : 'not initialized',
           pollingScheduler: this.pollingScheduler ? 'running' : 'not running',
-          automationEngines: this.automationEngines ? this.automationEngines.size : 0,
         },
         connectionPool: userDatabaseManager ? userDatabaseManager.getPoolStats() : null,
       };

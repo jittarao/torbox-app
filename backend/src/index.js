@@ -332,7 +332,6 @@ class TorBoxBackend {
       logger.info('TorBox Backend started successfully', {
         activeUsers: refreshedActiveUsers.length,
         usersWithActiveRules: usersWithActiveRules.length,
-        automationEngines: this.automationEngines.size,
         flagsSyncedOnStartup: syncStats.synced,
         syncErrors: syncStats.errors,
       });
@@ -349,7 +348,6 @@ class TorBoxBackend {
             const poolStats = this.userDatabaseManager?.getPoolStats() ?? null;
             logger.info('Memory and pool stats', {
               memory,
-              automationEngines: this.automationEngines.size,
               connectionPool: poolStats
                 ? {
                     size: poolStats.size,

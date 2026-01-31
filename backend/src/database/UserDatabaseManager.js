@@ -7,10 +7,12 @@ import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
 
 /**
- * LRU Cache for database connections with metrics and monitoring
+ * LRU Cache for database connections with metrics and monitoring.
+ * Eviction is driven by lastAccess and activeOperations; refCount is a hint for LRU priority.
+ * Connections with activeOperations > 0 are never evicted (e.g. during a poll).
  */
 class DatabasePool {
-  constructor(maxSize = 200) {
+  constructor(maxSize = 200, options = {}) {
     this.maxSize = maxSize;
     this.cache = new Map(); // Map<key, { value, lastAccess, refCount, activeOperations }>
 
@@ -32,8 +34,13 @@ class DatabasePool {
     };
 
     // Proactive eviction threshold - start evicting when we reach this percentage
-    this.evictionThreshold = 0.85; // 85% - start proactive eviction
-    this.idleTimeoutMs = 5 * 60 * 1000; // 5 minutes - evict connections idle for this long
+    this.evictionThreshold =
+      options.evictionThreshold ?? parseFloat(process.env.DB_POOL_EVICTION_THRESHOLD || '0.85');
+    // Idle timeout: buffer over min poll interval (5 min) so connections about to be reused are not evicted
+    const defaultIdleTimeoutMs = 7 * 60 * 1000; // 7 minutes
+    this.idleTimeoutMs =
+      options.idleTimeoutMs ??
+      parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || String(defaultIdleTimeoutMs), 10);
     this.recentAccessWindowMs = 30 * 1000; // 30 seconds - don't evict connections accessed in this window
   }
 
@@ -453,7 +460,9 @@ class DatabasePool {
 }
 
 /**
- * Manages per-user SQLite databases with connection pooling
+ * Manages per-user SQLite databases with connection pooling.
+ * Pool eviction is driven by lastAccess and activeOperations; refCount is a hint for LRU.
+ * Connections with activeOperations > 0 are never evicted (e.g. during a poll).
  */
 class UserDatabaseManager {
   constructor(masterDb, userDbDir = '/app/data/users') {
@@ -540,180 +549,147 @@ class UserDatabaseManager {
   }
 
   /**
-   * Internal method to create a user database connection
-   * Should only be called from getUserDatabase() which handles locking
+   * Resolve user registry entry from cache or master DB.
+   * @param {string} authId - User authentication ID
+   * @returns {Object|null} - User row with db_path or null
+   * @private
+   */
+  _resolveUserRegistry(authId) {
+    const cached = cache.getUserRegistry(authId);
+    if (cached && cached.db_path) {
+      return cached;
+    }
+    const user = this.masterDbIsInstance
+      ? this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId])
+      : this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+    if (user) {
+      cache.setUserRegistry(authId, user);
+    }
+    return user || null;
+  }
+
+  /**
+   * Ensure user has a registry entry; auto-create if they have an API key but no entry.
+   * @param {string} authId - User authentication ID
+   * @returns {Object} - User row with db_path
+   * @private
+   */
+  _ensureUserRegistryEntry(authId) {
+    let user = this._resolveUserRegistry(authId);
+    if (user) return user;
+
+    let hasApiKey = false;
+    try {
+      if (this.masterDbIsInstance) {
+        const apiKey = this.masterDb.getQuery(
+          'SELECT auth_id FROM api_keys WHERE auth_id = ? AND is_active = 1',
+          [authId]
+        );
+        hasApiKey = !!apiKey;
+      } else {
+        hasApiKey = !!this.masterDb
+          .prepare('SELECT auth_id FROM api_keys WHERE auth_id = ? AND is_active = 1')
+          .get(authId);
+      }
+    } catch (error) {
+      logger.warn('Failed to check for API key when user not found in registry', error, {
+        authId,
+      });
+    }
+
+    if (!hasApiKey) {
+      throw new Error(`User ${authId} not found in registry`);
+    }
+
+    logger.info('User has API key but missing registry entry, creating it automatically', {
+      authId,
+    });
+    const dbPath = path.join(this.userDbDir, `user_${authId}.sqlite`);
+    try {
+      if (this.masterDbIsInstance) {
+        this.masterDb.runQuery(
+          'INSERT OR IGNORE INTO user_registry (auth_id, db_path) VALUES (?, ?)',
+          [authId, dbPath]
+        );
+      } else {
+        this.masterDb
+          .prepare('INSERT OR IGNORE INTO user_registry (auth_id, db_path) VALUES (?, ?)')
+          .run(authId, dbPath);
+      }
+      user = this.masterDbIsInstance
+        ? this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId])
+        : this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
+      if (user) {
+        cache.setUserRegistry(authId, user);
+        cache.invalidateActiveUsers();
+        logger.info('Successfully created missing user registry entry', { authId, dbPath });
+        return user;
+      }
+      throw new Error('Failed to create user registry entry');
+    } catch (error) {
+      logger.error('Failed to auto-create user registry entry', error, { authId, dbPath });
+      throw new Error(
+        `User ${authId} not found in registry and failed to create it automatically: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * Open user DB file, run migrations, and add connection to pool.
+   * @param {string} authId - User authentication ID
+   * @param {string} dbPath - Path to user database file
+   * @returns {Promise<Object>} - Database connection and migration runner
+   * @private
+   */
+  async _openAndMigrateUserDb(authId, dbPath) {
+    const dbDir = path.dirname(dbPath);
+    await mkdir(dbDir, { recursive: true }).catch((error) => {
+      if (error.code !== 'EEXIST') throw error;
+    });
+
+    const db = new SQLiteDatabase(dbPath);
+    db.prepare('PRAGMA journal_mode = WAL').run();
+    db.prepare('PRAGMA busy_timeout = 5000').run();
+    db.prepare('PRAGMA foreign_keys = ON').run();
+    const cacheSizeKb = parseInt(process.env.SQLITE_CACHE_SIZE_KB || '-1000', 10);
+    db.prepare(`PRAGMA cache_size = ${cacheSizeKb}`).run();
+
+    const migrationRunner = new MigrationRunner(db, 'user');
+    await migrationRunner.runMigrations();
+
+    const dbConnection = { db, migrationRunner, authId, dbPath };
+    this.pool.set(authId, dbConnection);
+    return dbConnection;
+  }
+
+  /**
+   * Internal method to create a user database connection.
+   * Should only be called from getUserDatabase() which handles locking.
    * @param {string} authId - User authentication ID (API key hash)
    * @returns {Promise<Object>} - Database connection and migration runner
    * @private
    */
   async _createUserDatabaseConnection(authId) {
-    // Double-check pool after acquiring lock (another thread might have created it)
     const cached = this.pool.get(authId);
     if (cached) {
       try {
         cached.db.prepare('SELECT 1').get();
         return cached;
       } catch (error) {
-        // Connection is dead, remove and continue
         this.pool.delete(authId);
       }
     }
 
-    // Get user registry entry (uses cache if available)
-    let user;
     try {
-      // Check cache first
-      const cached = cache.getUserRegistry(authId);
-      if (cached && cached.db_path) {
-        user = cached;
-      } else {
-        // Query database using Database class methods or raw SQLite methods
-        if (this.masterDbIsInstance) {
-          user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [
-            authId,
-          ]);
-        } else {
-          user = this.masterDb
-            .prepare('SELECT db_path FROM user_registry WHERE auth_id = ?')
-            .get(authId);
-        }
-
-        // Cache the result if found (even if minimal, it helps avoid repeated queries)
-        if (user) {
-          cache.setUserRegistry(authId, user);
-        }
-      }
+      const user = this._ensureUserRegistryEntry(authId);
+      const dbPath = user.db_path;
+      return await this._openAndMigrateUserDb(authId, dbPath);
     } catch (error) {
-      logger.error('Failed to get user registry info', error, { authId });
+      if (error.message && !error.message.includes('not found')) {
+        logger.error('Failed to get user registry info', error, { authId });
+      }
       throw error;
     }
-
-    // If user not found in registry, check if they have an API key
-    // This handles data inconsistency from before the foreign key fix
-    if (!user) {
-      let hasApiKey = false;
-      try {
-        if (this.masterDbIsInstance) {
-          const apiKey = this.masterDb.getQuery(
-            'SELECT auth_id FROM api_keys WHERE auth_id = ? AND is_active = 1',
-            [authId]
-          );
-          hasApiKey = !!apiKey;
-        } else {
-          const apiKey = this.masterDb
-            .prepare('SELECT auth_id FROM api_keys WHERE auth_id = ? AND is_active = 1')
-            .get(authId);
-          hasApiKey = !!apiKey;
-        }
-      } catch (error) {
-        logger.warn('Failed to check for API key when user not found in registry', error, {
-          authId,
-        });
-      }
-
-      if (hasApiKey) {
-        // User has API key but no registry entry - create it automatically
-        // This fixes data inconsistency from before the foreign key constraint fix
-        logger.info('User has API key but missing registry entry, creating it automatically', {
-          authId,
-        });
-        const dbPath = path.join(this.userDbDir, `user_${authId}.sqlite`);
-        try {
-          if (this.masterDbIsInstance) {
-            this.masterDb.runQuery(
-              `
-              INSERT OR IGNORE INTO user_registry (auth_id, db_path)
-              VALUES (?, ?)
-            `,
-              [authId, dbPath]
-            );
-          } else {
-            this.masterDb
-              .prepare(
-                `
-              INSERT OR IGNORE INTO user_registry (auth_id, db_path)
-              VALUES (?, ?)
-            `
-              )
-              .run(authId, dbPath);
-          }
-
-          // Verify the user was inserted
-          if (this.masterDbIsInstance) {
-            user = this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [
-              authId,
-            ]);
-          } else {
-            user = this.masterDb
-              .prepare('SELECT db_path FROM user_registry WHERE auth_id = ?')
-              .get(authId);
-          }
-
-          if (user) {
-            cache.setUserRegistry(authId, user);
-            cache.invalidateActiveUsers();
-            logger.info('Successfully created missing user registry entry', { authId, dbPath });
-          } else {
-            throw new Error('Failed to create user registry entry');
-          }
-        } catch (error) {
-          logger.error('Failed to auto-create user registry entry', error, { authId, dbPath });
-          throw new Error(
-            `User ${authId} not found in registry and failed to create it automatically: ${error.message}`
-          );
-        }
-      } else {
-        // No API key either - user doesn't exist
-        throw new Error(`User ${authId} not found in registry`);
-      }
-    }
-
-    // Extract db_path
-    const dbPath = user.db_path;
-
-    // Ensure database file exists
-    try {
-      // Create parent directory if needed
-      const dbDir = path.dirname(dbPath);
-      try {
-        await mkdir(dbDir, { recursive: true });
-      } catch (error) {
-        if (error.code !== 'EEXIST') throw error;
-      }
-
-      // Create empty database file if it doesn't exist
-      // We'll let SQLite create it, but ensure parent directory exists
-    } catch (error) {
-      logger.error('Failed to ensure database directory exists', error, { dbPath });
-      throw error;
-    }
-
-    // Open database connection
-    const db = new SQLiteDatabase(dbPath);
-
-    // Enable WAL mode for better concurrency
-    db.prepare('PRAGMA journal_mode = WAL').run();
-
-    // Set busy timeout
-    db.prepare('PRAGMA busy_timeout = 5000').run();
-
-    // Enable foreign keys (required for CASCADE deletes to work)
-    db.prepare('PRAGMA foreign_keys = ON').run();
-
-    // Cap per-connection page cache to limit memory (negative = KB; -1000 = 1MB)
-    const cacheSizeKb = parseInt(process.env.SQLITE_CACHE_SIZE_KB || '-1000', 10);
-    db.prepare(`PRAGMA cache_size = ${cacheSizeKb}`).run();
-
-    // Initialize migration runner for user database
-    const migrationRunner = new MigrationRunner(db, 'user');
-    await migrationRunner.runMigrations();
-
-    const dbConnection = { db, migrationRunner, authId, dbPath };
-
-    // Cache the connection (this will reuse existing if somehow one was created)
-    this.pool.set(authId, dbConnection);
-
-    return dbConnection;
   }
 
   /**

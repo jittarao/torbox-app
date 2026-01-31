@@ -12,16 +12,13 @@ export function setupHealthRoutes(app, backend) {
 
   // Health check
   app.get('/api/backend/status', (req, res) => {
-    const schedulerStatus = backend.pollingScheduler
-      ? backend.pollingScheduler.getStatus()
-      : null;
+    const schedulerStatus = backend.pollingScheduler ? backend.pollingScheduler.getStatus() : null;
     res.json({
       available: true,
       mode: 'selfhosted',
       version: process.env.npm_package_version || '0.1.0',
       uptime: process.uptime(),
       pollingScheduler: schedulerStatus,
-      automationEngines: backend.automationEngines?.size ?? 0,
       connectionPool: backend.userDatabaseManager?.getPoolStats() ?? null,
     });
   });

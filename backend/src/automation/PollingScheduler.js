@@ -228,35 +228,25 @@ class PollingScheduler {
   }
 
   /**
-   * Get or create automation engine for a user
+   * Create an automation engine for a single poll (not cached).
+   * Caller must call engine.shutdown() when done.
    * @param {string} authId - User authentication ID
    * @param {string} encryptedKey - Encrypted API key
    * @returns {Promise<AutomationEngine>} Automation engine instance
    */
-  async getOrCreateAutomationEngine(authId, encryptedKey) {
-    if (this.automationEnginesMap && this.automationEnginesMap.has(authId)) {
-      logger.debug('Using existing automation engine', { authId });
-      return this.automationEnginesMap.get(authId);
-    }
-
-    logger.info('Creating new automation engine', { authId });
-    const automationEngine = new AutomationEngine(
+  async createEngineForPoll(authId, encryptedKey) {
+    const engine = new AutomationEngine(
       authId,
       encryptedKey,
       this.userDatabaseManager,
       this.masterDb
     );
-    await automationEngine.initialize();
-
-    if (this.automationEnginesMap) {
-      this.automationEnginesMap.set(authId, automationEngine);
-    }
-
-    return automationEngine;
+    await engine.initialize();
+    return engine;
   }
 
   /**
-   * Create a poller for a user
+   * Create a poller for a user (no long-lived engine; engine is created per poll).
    * @param {string} authId - User authentication ID
    * @param {string} encryptedKey - Encrypted API key
    * @returns {Promise<UserPoller>} UserPoller instance
@@ -272,13 +262,11 @@ class PollingScheduler {
     logger.info('Creating poller for user', { authId });
 
     try {
-      const automationEngine = await this.getOrCreateAutomationEngine(authId, encryptedKey);
-
       const poller = new UserPoller(
         authId,
         encryptedKey,
         null, // connection acquired at poll time and released after each poll
-        automationEngine,
+        null, // engine created per poll, not cached
         this.masterDb,
         this.userDatabaseManager
       );
@@ -488,6 +476,7 @@ class PollingScheduler {
 
     await semaphore.acquire();
     const pollStartTime = Date.now();
+    let engineForPoll = null;
 
     try {
       const { auth_id, encrypted_key, has_active_rules: dbHasActiveRules } = user;
@@ -502,9 +491,12 @@ class PollingScheduler {
       }
 
       const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
-      const hasActiveRules = poller.automationEngine
-        ? await poller.automationEngine.hasActiveRules()
-        : false;
+
+      // Create engine for this poll only (not cached)
+      engineForPoll = await this.createEngineForPoll(auth_id, encrypted_key);
+      poller.automationEngine = engineForPoll;
+
+      const hasActiveRules = await engineForPoll.hasActiveRules();
 
       // Log flag mismatch if detected
       if (dbHasActiveRules !== (hasActiveRules ? 1 : 0)) {
@@ -547,9 +539,7 @@ class PollingScheduler {
       const duration = (Date.now() - pollStartTime) / 1000;
 
       // Update active rules flag if needed
-      if (poller.automationEngine) {
-        await this.updateActiveRulesFlag(auth_id, hasActiveRules, dbHasActiveRules);
-      }
+      await this.updateActiveRulesFlag(auth_id, hasActiveRules, dbHasActiveRules);
 
       // Handle poll result
       if (result && result.success && !result.skipped) {
@@ -582,6 +572,23 @@ class PollingScheduler {
       this.handlePollError(user.auth_id, error, duration);
       counters.error++;
     } finally {
+      // Discard engine after poll (not cached)
+      if (engineForPoll) {
+        try {
+          engineForPoll.shutdown();
+        } catch (err) {
+          logger.warn('Error shutting down engine after poll', {
+            authId: user?.auth_id,
+            errorMessage: err?.message,
+          });
+        }
+        if (user?.auth_id) {
+          const poller = this.pollers.get(user.auth_id);
+          if (poller) {
+            poller.automationEngine = null;
+          }
+        }
+      }
       semaphore.release();
     }
   }
@@ -703,24 +710,11 @@ class PollingScheduler {
   }
 
   /**
-   * Shutdown automation engine and remove engine + mutex when a poller is removed.
-   * Prevents memory leak: engines and mutexes are only removed on admin user delete otherwise.
+   * Remove mutex when a poller is removed (engines are not cached, so nothing to shut down).
    * @param {string} authId - User authentication ID
    * @private
    */
   _cleanupEngineAndMutexForAuth(authId) {
-    const engine = this.automationEnginesMap?.get(authId);
-    if (engine) {
-      try {
-        engine.shutdown();
-      } catch (err) {
-        logger.warn('Error shutting down engine during poller cleanup', {
-          authId,
-          errorMessage: err?.message,
-        });
-      }
-      this.automationEnginesMap.delete(authId);
-    }
     this.flagUpdateMutexes.delete(authId);
   }
 
@@ -877,31 +871,21 @@ class PollingScheduler {
         }
 
         try {
-          // Optimization: Use existing engine if available, otherwise query DB directly
+          // Query database directly (engines are not cached)
           let actualHasActiveRules = false;
-          let automationEngine = null;
-
-          if (this.automationEnginesMap && this.automationEnginesMap.has(auth_id)) {
-            // Engine already exists - use it (fast path)
-            automationEngine = this.automationEnginesMap.get(auth_id);
-            actualHasActiveRules = await automationEngine.hasActiveRules();
-          } else {
-            // Engine doesn't exist - query database directly (avoids expensive initialization)
-            const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-            if (userDb && userDb.db) {
-              try {
-                const result = userDb.db
-                  .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
-                  .get();
-                actualHasActiveRules = result && result.count > 0;
-              } finally {
-                this.userDatabaseManager.releaseConnection(auth_id);
-              }
-            } else {
-              // Database doesn't exist or can't be accessed - skip
-              syncStats.skipped++;
-              continue;
+          const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+          if (userDb && userDb.db) {
+            try {
+              const result = userDb.db
+                .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+                .get();
+              actualHasActiveRules = result && result.count > 0;
+            } finally {
+              this.userDatabaseManager.releaseConnection(auth_id);
             }
+          } else {
+            syncStats.skipped++;
+            continue;
           }
 
           const actualFlag = actualHasActiveRules ? 1 : 0;
@@ -959,11 +943,7 @@ class PollingScheduler {
         if (!this.pollers.has(auth_id)) {
           try {
             await this.createPoller(auth_id, encrypted_key);
-            const automationEngine = await this.getOrCreateAutomationEngine(auth_id, encrypted_key);
-            logger.info('Poller added successfully', {
-              authId: auth_id,
-              hasActiveRules: await automationEngine.hasActiveRules(),
-            });
+            logger.info('Poller added successfully', { authId: auth_id });
             stats.added++;
           } catch (error) {
             logger.error('Failed to create poller for user', error, {
