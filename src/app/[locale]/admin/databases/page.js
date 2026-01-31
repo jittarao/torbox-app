@@ -40,7 +40,7 @@ export default function AdminDatabasesPage() {
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Size</label>
                 <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
-                  {poolStats.currentSize} / {poolStats.maxSize}
+                  {poolStats.size ?? poolStats.currentSize} / {poolStats.maxSize}
                 </p>
               </div>
               <div>
@@ -50,8 +50,10 @@ export default function AdminDatabasesPage() {
                     poolStats.status === 'healthy'
                       ? 'text-green-600 dark:text-green-400'
                       : poolStats.status === 'warning'
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-red-600 dark:text-red-400'
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : poolStats.status === 'critical'
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {poolStats.status}

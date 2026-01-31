@@ -164,10 +164,7 @@ class DatabasePool {
       const idleTime = now - entry.lastAccess;
       // Only evict if idle for longer than timeout AND not accessed in recent window
       // This prevents eviction of connections that were just retrieved
-      if (
-        idleTime > this.idleTimeoutMs &&
-        idleTime > this.recentAccessWindowMs
-      ) {
+      if (idleTime > this.idleTimeoutMs && idleTime > this.recentAccessWindowMs) {
         idleConnections.push({ key, idleTime, refCount: entry.refCount || 0 });
       }
     }
@@ -405,6 +402,7 @@ class DatabasePool {
 
     return {
       size: currentSize,
+      currentSize: currentSize,
       maxSize: this.maxSize,
       usagePercent: parseFloat(usagePercent.toFixed(2)),
       available: this.maxSize - currentSize,
@@ -978,6 +976,19 @@ class UserDatabaseManager {
    */
   closeAll() {
     this.pool.clear();
+  }
+
+  /**
+   * Release a connection reference after use (e.g. after a poll cycle).
+   * Decrements refCount so the pool can evict the connection when idle (idleTimeoutMs).
+   * Call this when the caller no longer needs to hold the connection (e.g. polling uses
+   * get-at-poll-time and release-after so the pool is not filled by idle pollers).
+   * @param {string} authId - User authentication ID
+   */
+  releaseConnection(authId) {
+    if (authId && this.pool) {
+      this.pool.release(authId);
+    }
   }
 
   /**

@@ -7,23 +7,27 @@ This guide covers deployment instructions for both the frontend and backend comp
 ### Frontend
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/jittarao/torbox-app.git
 cd torbox-app
 ```
 
 2. Install dependencies:
+
 ```bash
 bun install
 ```
 
 3. Create a `.env.local` file with the following variables:
+
 ```bash
 BACKEND_URL=http://localhost:3001
 BACKEND_DISABLED=false
 ```
 
 4. Run the development server:
+
 ```bash
 bun run dev
 ```
@@ -32,25 +36,28 @@ bun run dev
 
 ### Environment Variables
 
-| Variable          | Description                                   | Default                  | Required |
-|-------------------|-----------------------------------------------|--------------------------|----------|
-| `BACKEND_URL`     | URL of the backend API server                 | `http://localhost:3001`  | No       |
-| `BACKEND_DISABLED`| Disable backend usage (set to `true`/`false`) | `false`                  | No       |
+| Variable           | Description                                   | Default                 | Required |
+| ------------------ | --------------------------------------------- | ----------------------- | -------- |
+| `BACKEND_URL`      | URL of the backend API server                 | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED` | Disable backend usage (set to `true`/`false`) | `false`                 | No       |
 
 ### Backend
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/jittarao/torbox-app.git
 cd torbox-app/backend
 ```
 
 2. Install dependencies:
+
 ```bash
 bun install
 ```
 
 3. Generate an encryption key:
+
 ```bash
 # Windows PowerShell:
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
@@ -60,6 +67,7 @@ openssl rand -base64 32
 ```
 
 4. Create a `.env` file in the `backend` directory with the following variables:
+
 ```bash
 FRONTEND_URL=http://localhost:3000
 ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
@@ -68,28 +76,31 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 **Important**: Replace `your_secure_encryption_key_here_minimum_32_characters` with the key generated in step 3.
 
 5. Start the server:
+
 ```bash
 bun start
 ```
 
 6. For development with auto-reload:
+
 ```bash
 bun run dev
 ```
 
 ### Environment Variables
 
-| Variable            | Description                                      | Default                      | Required   |
-|---------------------|--------------------------------------------------|------------------------------|------------|
-| `FRONTEND_URL`      | Frontend URL for CORS                            | `http://localhost:3000`      | Yes        |
-| `ENCRYPTION_KEY`    | Base64-encoded key for API key encryption        | -                            | Yes        |
-| `PORT`              | Port for backend server                          | `3001`                       | No         |
-| `NODE_ENV`          | Node environment                                 | `production`                 | No         |
-| `TORBOX_API_BASE`   | TorBox API base URL                              | `https://api.torbox.app`     | No         |
-| `TORBOX_API_VERSION`| TorBox API version                               | `v1`                         | No         |
-| `MASTER_DB_PATH`    | Directory for master database                    | `/app/data/master.db`        | No         |
-| `USER_DB_DIR`       | Directory for user database files                | `/app/data/users`            | No         |
-| `MAX_DB_CONNECTIONS`| Maximum pooled database connections              | `200`                        | No         |
+| Variable               | Description                                                                | Default                  | Required |
+| ---------------------- | -------------------------------------------------------------------------- | ------------------------ | -------- |
+| `FRONTEND_URL`         | Frontend URL for CORS                                                      | `http://localhost:3000`  | Yes      |
+| `ENCRYPTION_KEY`       | Base64-encoded key for API key encryption                                  | -                        | Yes      |
+| `PORT`                 | Port for backend server                                                    | `3001`                   | No       |
+| `NODE_ENV`             | Node environment                                                           | `production`             | No       |
+| `TORBOX_API_BASE`      | TorBox API base URL                                                        | `https://api.torbox.app` | No       |
+| `TORBOX_API_VERSION`   | TorBox API version                                                         | `v1`                     | No       |
+| `MASTER_DB_PATH`       | Directory for master database                                              | `/app/data/master.db`    | No       |
+| `USER_DB_DIR`          | Directory for user database files                                          | `/app/data/users`        | No       |
+| `MAX_DB_CONNECTIONS`   | Maximum pooled database connections                                        | `200`                    | No       |
+| `SQLITE_CACHE_SIZE_KB` | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB) | `-1000`                  | No       |
 
 ## Full Stack Deployment (Frontend + Backend)
 
@@ -106,6 +117,7 @@ This deployment method uses the provided `docker-compose.yml` file to run both f
 #### Deployment Steps
 
 1. Get the `docker-compose.yml` file (clone repository or download it):
+
 ```bash
 git clone https://github.com/jittarao/torbox-app.git
 cd torbox-app
@@ -114,6 +126,7 @@ cd torbox-app
 **Alternative**: If you only need the `docker-compose.yml` file, you can download it directly from the repository without cloning the entire project.
 
 2. Generate an encryption key (required for API key encryption):
+
 ```bash
 # Windows PowerShell:
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
@@ -123,29 +136,34 @@ openssl rand -base64 32
 ```
 
 3. Create a `.env` file in the root directory with the following variables:
+
 ```bash
 # Backend environment variables (used by the torbox-backend service)
 FRONTEND_URL=http://localhost:3000
 ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 ```
 
-**Important**: 
+**Important**:
+
 - Replace `your_secure_encryption_key_here_minimum_32_characters` with the key generated in step 2
 - The encryption key must be at least 32 characters long and should be base64-encoded
 - These environment variables are for the backend service (`torbox-backend`) - the `docker-compose.yml` file reads these from the root `.env` file
 - The frontend environment variables (`BACKEND_URL` and `BACKEND_DISABLED`) are hardcoded in `docker-compose.yml` and use the Docker service name (`http://torbox-backend:3001`) for internal communication
 
 4. Start both services (Docker will automatically pull the pre-built images):
+
 ```bash
 docker compose up -d
 ```
 
 5. Verify services are running:
+
 ```bash
 docker compose ps
 ```
 
 6. Check logs if needed:
+
 ```bash
 # All services
 docker compose logs
@@ -170,12 +188,12 @@ The `docker-compose.yml` configuration provides:
 
 - **Service Communication**: Services communicate via Docker's internal network (`torbox-network`). The frontend connects to the backend using the service name `http://torbox-backend:3001`.
 
-- **Health Checks**: 
+- **Health Checks**:
   - Backend health check: `/health` endpoint
   - Frontend health check: HTTP response check
   - Frontend waits for backend to be healthy before starting
 
-- **Persistent Storage**: 
+- **Persistent Storage**:
   - Backend data is stored in a Docker volume (`backend-data`)
   - Includes user databases, automation rules, and application data
   - Data persists across container restarts
@@ -187,22 +205,26 @@ The `docker-compose.yml` configuration provides:
 #### Managing the Deployment
 
 **Stop services:**
+
 ```bash
 docker compose down
 ```
 
 **Stop services and remove volumes (⚠️ deletes all data):**
+
 ```bash
 docker compose down -v
 ```
 
 **Update to latest images:**
+
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
 **View resource usage:**
+
 ```bash
 docker stats
 ```
@@ -225,6 +247,7 @@ Replace `/path/to/backend/data` with your desired directory path.
 ## Production Deployment (Self-Hosting with Docker + Caddy)
 
 This guide sets up a production-ready deployment on a VPS with:
+
 - Dockerized frontend and backend
 - Caddy as reverse proxy with automatic HTTPS
 - Basic server hardening
@@ -337,7 +360,8 @@ docker run -d \
 
 **Note**: The `--log-driver` and `--log-opt` flags configure log rotation (10MB max per file, 3 files max) to prevent disk space issues. These are optional but recommended for production.
 
-**Important**: 
+**Important**:
+
 - Replace `your_secure_encryption_key_here_minimum_32_characters` with the key generated in step 6
 - Replace `yourdomain.com` with your actual domain name
 - The `-p 127.0.0.1:3001:3001` binding ensures the backend is only accessible from localhost
@@ -368,7 +392,8 @@ docker run -d \
   ghcr.io/jittarao/torbox-app:latest
 ```
 
-**Important**: 
+**Important**:
+
 - The `BACKEND_URL` is set to `http://torbox-backend:3001` (using the container name) instead of `localhost` because containers communicate via Docker network using container names
 - Both containers must be on the same Docker network (`torbox-network`) for this to work
 
@@ -459,8 +484,8 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 
 ```yaml
 ports:
-  - "127.0.0.1:3000:3000"  # Frontend
-  - "127.0.0.1:3001:3001"  # Backend
+  - '127.0.0.1:3000:3000' # Frontend
+  - '127.0.0.1:3001:3001' # Backend
 ```
 
 3. Update frontend environment in `docker-compose.yml` to use localhost:
@@ -475,11 +500,13 @@ environment:
 ### Managing the Production Deployment
 
 **View running containers:**
+
 ```bash
 docker ps
 ```
 
 **View logs:**
+
 ```bash
 # Frontend
 docker logs torbox-app
@@ -492,11 +519,13 @@ docker logs -f torbox-app
 ```
 
 **Restart services:**
+
 ```bash
 docker restart torbox-app torbox-backend
 ```
 
 **Manually update to latest images:**
+
 ```bash
 docker pull ghcr.io/jittarao/torbox-app:latest
 docker pull ghcr.io/jittarao/torbox-app:backend-latest
@@ -504,6 +533,7 @@ docker restart torbox-app torbox-backend
 ```
 
 **Backup backend data:**
+
 ```bash
 docker run --rm \
   -v torbox-backend-data:/data \
@@ -512,6 +542,7 @@ docker run --rm \
 ```
 
 **Restore backend data:**
+
 ```bash
 docker run --rm \
   -v torbox-backend-data:/data \

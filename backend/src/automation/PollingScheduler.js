@@ -272,17 +272,12 @@ class PollingScheduler {
     logger.info('Creating poller for user', { authId });
 
     try {
-      const userDb = await this.userDatabaseManager.getUserDatabase(authId);
-      if (!userDb || !userDb.db) {
-        throw new Error('Failed to get user database');
-      }
-
       const automationEngine = await this.getOrCreateAutomationEngine(authId, encryptedKey);
 
       const poller = new UserPoller(
         authId,
         encryptedKey,
-        userDb.db,
+        null, // connection acquired at poll time and released after each poll
         automationEngine,
         this.masterDb,
         this.userDatabaseManager
@@ -894,10 +889,14 @@ class PollingScheduler {
             // Engine doesn't exist - query database directly (avoids expensive initialization)
             const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
             if (userDb && userDb.db) {
-              const result = userDb.db
-                .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
-                .get();
-              actualHasActiveRules = result && result.count > 0;
+              try {
+                const result = userDb.db
+                  .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+                  .get();
+                actualHasActiveRules = result && result.count > 0;
+              } finally {
+                this.userDatabaseManager.releaseConnection(auth_id);
+              }
             } else {
               // Database doesn't exist or can't be accessed - skip
               syncStats.skipped++;

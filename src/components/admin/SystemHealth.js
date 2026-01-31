@@ -22,10 +22,21 @@ export default function SystemHealth({ metrics }) {
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600 dark:text-gray-400">Pool Size</span>
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {metrics.database.connection_pool.currentSize} / {metrics.database.connection_pool.maxSize}
+                      {metrics.database.connection_pool.size ?? metrics.database.connection_pool.currentSize} /{' '}
+                      {metrics.database.connection_pool.maxSize}
                     </span>
                   </div>
                 </div>
+                {metrics.database.connection_pool.usagePercent != null && (
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600 dark:text-gray-400">Pool Usage</span>
+                      <span className="text-gray-900 dark:text-white font-medium">
+                        {metrics.database.connection_pool.usagePercent}%
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600 dark:text-gray-400">Pool Status</span>
@@ -34,13 +45,20 @@ export default function SystemHealth({ metrics }) {
                         metrics.database.connection_pool.status === 'healthy'
                           ? 'text-green-600 dark:text-green-400'
                           : metrics.database.connection_pool.status === 'warning'
-                          ? 'text-yellow-600 dark:text-yellow-400'
-                          : 'text-red-600 dark:text-red-400'
+                            ? 'text-yellow-600 dark:text-yellow-400'
+                            : metrics.database.connection_pool.status === 'critical'
+                              ? 'text-orange-600 dark:text-orange-400'
+                              : 'text-red-600 dark:text-red-400'
                       }`}
                     >
                       {metrics.database.connection_pool.status}
                     </span>
                   </div>
+                  {!['healthy', 'warning'].includes(metrics.database.connection_pool.status) && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Pool near capacity. Consider increasing <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">MAX_DB_CONNECTIONS</code> for 1000+ users.
+                    </p>
+                  )}
                 </div>
               </>
             )}
