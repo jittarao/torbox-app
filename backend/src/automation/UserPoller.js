@@ -534,6 +534,7 @@ class UserPoller {
             userDbConnection.db,
             this.userDatabaseManager
           );
+          this.userDatabaseManager.pool.markActive(this.authId);
         }
       } catch (error) {
         logger.error('Failed to get user database for poll', error, {
@@ -557,6 +558,7 @@ class UserPoller {
         errorMessage: error.message,
       });
       if (this.userDatabaseManager) {
+        this.userDatabaseManager.pool?.markInactive(this.authId);
         this.userDatabaseManager.releaseConnection(this.authId);
       }
       this.dbManager = null;
@@ -576,6 +578,7 @@ class UserPoller {
         hasAutomationEngine: !!this.automationEngine,
       });
       if (this.userDatabaseManager) {
+        this.userDatabaseManager.pool?.markInactive(this.authId);
         this.userDatabaseManager.releaseConnection(this.authId);
       }
       this.dbManager = null;
@@ -688,6 +691,7 @@ class UserPoller {
       this.isPolling = false;
       // Release connection after poll so pool is not held by idle pollers (min poll interval 5+ min)
       if (this.userDatabaseManager) {
+        this.userDatabaseManager.pool?.markInactive(this.authId);
         this.userDatabaseManager.releaseConnection(this.authId);
       }
       this.dbManager = null;

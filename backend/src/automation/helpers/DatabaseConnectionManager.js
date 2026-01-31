@@ -48,45 +48,21 @@ class DatabaseConnectionManager {
   }
 
   /**
-   * Check if database connection is closed and refresh if needed
+   * Resolve current connection from pool at use time (avoids stale references and closed-DB path).
    * @returns {Promise<void>}
    */
   async ensureConnection() {
-    // Check if database is still valid by attempting a simple query
-    try {
-      this.userDb.prepare('SELECT 1').get();
-      // Connection is valid, no need to refresh
-      return;
-    } catch (error) {
-      // Database is closed or invalid, need to refresh
-      if (DatabaseConnectionManager.isClosedDatabaseError(error)) {
-        logger.warn('Database connection is closed, refreshing connection', {
-          authId: this.authId,
-          errorName: error.name,
-          errorMessage: error.message,
-        });
-
-        if (!this.userDatabaseManager) {
-          throw new Error('Cannot refresh database connection: userDatabaseManager not available');
-        }
-
-        // Re-acquire database connection
-        const dbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
-        this.userDb = dbConnection.db;
-
-        // Update all engines with the new connection
-        this.stateDiffEngine = new StateDiffEngine(this.userDb);
-        this.derivedFieldsEngine = new DerivedFieldsEngine(this.userDb);
-        this.speedAggregator = new SpeedAggregator(this.userDb);
-
-        logger.info('Database connection refreshed successfully', {
-          authId: this.authId,
-        });
-      } else {
-        // Some other error, re-throw it
-        throw error;
-      }
+    if (!this.userDatabaseManager) {
+      throw new Error('Cannot resolve database connection: userDatabaseManager not available');
     }
+
+    const dbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
+    this.userDb = dbConnection.db;
+
+    // Re-create engines with the current connection
+    this.stateDiffEngine = new StateDiffEngine(this.userDb);
+    this.derivedFieldsEngine = new DerivedFieldsEngine(this.userDb);
+    this.speedAggregator = new SpeedAggregator(this.userDb);
   }
 
   /**
