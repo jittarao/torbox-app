@@ -21,6 +21,8 @@ export function setupHealthRoutes(app, backend) {
       version: process.env.npm_package_version || '0.1.0',
       uptime: process.uptime(),
       pollingScheduler: schedulerStatus,
+      automationEngines: backend.automationEngines?.size ?? 0,
+      connectionPool: backend.userDatabaseManager?.getPoolStats() ?? null,
     });
   });
 

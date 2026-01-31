@@ -702,6 +702,10 @@ class UserDatabaseManager {
     // Enable foreign keys (required for CASCADE deletes to work)
     db.prepare('PRAGMA foreign_keys = ON').run();
 
+    // Cap per-connection page cache to limit memory (negative = KB; -1000 = 1MB)
+    const cacheSizeKb = parseInt(process.env.SQLITE_CACHE_SIZE_KB || '-1000', 10);
+    db.prepare(`PRAGMA cache_size = ${cacheSizeKb}`).run();
+
     // Initialize migration runner for user database
     const migrationRunner = new MigrationRunner(db, 'user');
     await migrationRunner.runMigrations();

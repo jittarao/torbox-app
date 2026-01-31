@@ -907,7 +907,7 @@ class PollingScheduler {
 
           const actualFlag = actualHasActiveRules ? 1 : 0;
 
-          // Sync flag if it's out of sync
+          // Sync flag if it's out of sync (update master DB directly; no engine creation for syncing)
           if (dbFlag !== actualFlag) {
             logger.info('Syncing active rules flag during poller refresh', {
               authId: auth_id,
@@ -915,12 +915,7 @@ class PollingScheduler {
               actualFlag,
               actualHasActiveRules,
             });
-
-            // Use existing engine if available, otherwise create one just for syncing
-            if (!automationEngine) {
-              automationEngine = await this.getOrCreateAutomationEngine(auth_id, encrypted_key);
-            }
-            await automationEngine.syncActiveRulesFlag();
+            this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
             syncStats.synced++;
           }
         } catch (error) {
