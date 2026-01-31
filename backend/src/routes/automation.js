@@ -24,11 +24,22 @@ async function getEngineForRequest(backend, authId) {
  * Automation rules routes
  */
 export function setupAutomationRoutes(app, backend) {
-  const { userRateLimiter, pollingScheduler, userDatabaseManager } = backend;
+  const { userRateLimiter, pollingScheduler } = backend;
 
   // GET /api/automation/rules - Get all automation rules (direct DB, no engine)
   app.get('/api/automation/rules', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
     const authId = req.validatedAuthId;
+    const userDatabaseManager = backend.userDatabaseManager;
+    if (!userDatabaseManager) {
+      logger.error('User database manager not initialized', {
+        endpoint: '/api/automation/rules',
+        authId,
+      });
+      return res.status(503).json({
+        success: false,
+        error: 'Service initializing',
+      });
+    }
     let userDbConnection;
     try {
       userDbConnection = await userDatabaseManager.getUserDatabase(authId);
