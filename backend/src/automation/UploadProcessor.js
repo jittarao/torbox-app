@@ -1315,6 +1315,7 @@ class UploadProcessor {
 
         try {
           const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+          this.userDatabaseManager.pool.markActive(auth_id);
 
           // Cleanup old attempts if needed
           if (shouldCleanup) {
@@ -1455,6 +1456,8 @@ class UploadProcessor {
           logger.error('Error processing uploads for user', error, {
             authId: auth_id,
           });
+        } finally {
+          this.userDatabaseManager.pool?.markInactive(auth_id);
         }
       }
 
