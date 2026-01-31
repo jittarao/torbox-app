@@ -226,6 +226,10 @@ class AdminApiClient {
   async getDiagnostics() {
     return this.request('/diagnostics');
   }
+
+  async repairStatusMismatches() {
+    return this.request('/diagnostics/repair-status-mismatches', { method: 'POST' });
+  }
 }
 
 // Export singleton instance

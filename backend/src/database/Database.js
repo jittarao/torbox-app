@@ -425,6 +425,12 @@ class Database {
       );
     }
 
+    // Keep registry status in sync: (re-)registering a key makes the user active
+    this.runQuery(
+      'UPDATE user_registry SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
+      ['active', authId]
+    );
+
     // Invalidate cache since user registry changed
     cache.invalidateUserRegistry(authId);
     cache.invalidateActiveUsers();
@@ -472,7 +478,7 @@ class Database {
   }
 
   /**
-   * Update user status
+   * Update user status (keeps user_registry.status and api_keys.is_active in sync)
    * @param {string} authId - User authentication ID
    * @param {string} status - New status ('active', 'inactive', etc.)
    */
@@ -480,6 +486,11 @@ class Database {
     this.runQuery(
       'UPDATE user_registry SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
       [status, authId]
+    );
+    const isActive = status === 'active' ? 1 : 0;
+    this.runQuery(
+      'UPDATE api_keys SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
+      [isActive, authId]
     );
 
     // Invalidate cache since user registry changed

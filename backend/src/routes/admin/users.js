@@ -250,11 +250,8 @@ export function setupUserRoutes(router, backend) {
         adminIp: req.ip,
       });
 
-      // Update status
-      backend.masterDatabase.runQuery(
-        'UPDATE user_registry SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
-        [status, authId]
-      );
+      // Update status (syncs both user_registry.status and api_keys.is_active)
+      backend.masterDatabase.updateUserStatus(authId, status);
 
       // Clear cache
       const cache = (await import('../../utils/cache.js')).default;
