@@ -6,7 +6,9 @@ import DatabaseConnectionManager from './helpers/DatabaseConnectionManager.js';
 
 /**
  * Per-user poller
- * Handles polling and state updates for a single user
+ * Handles polling and state updates for a single user.
+ * DB connection is acquired at poll time and released after each poll (lazy connection)
+ * so the pool is not filled by idle pollers when minimum poll interval is 5+ minutes.
  */
 class UserPoller {
   constructor(
@@ -23,21 +25,18 @@ class UserPoller {
     if (!encryptedApiKey) {
       throw new Error('encryptedApiKey is required for UserPoller');
     }
-    if (!userDb) {
-      throw new Error('userDb is required for UserPoller');
-    }
 
     this.authId = authId;
     this.encryptedApiKey = encryptedApiKey;
     this.masterDb = masterDb;
     this.automationEngine = automationEngine;
+    this.userDatabaseManager = userDatabaseManager;
     this.isPolling = false;
     this.lastPollAt = null;
     this.lastPolledAt = null; // Track when poller was last used (for cleanup)
     this.lastPollError = null;
 
     try {
-      // Decrypt API key
       this.apiKey = decrypt(encryptedApiKey);
       this.apiClient = new ApiClient(this.apiKey);
     } catch (error) {
@@ -48,15 +47,11 @@ class UserPoller {
       throw new Error(`Failed to initialize UserPoller: ${error.message}`);
     }
 
-    // Initialize database connection manager (handles engines and connection refresh)
-    try {
+    // DB connection is acquired at poll time and released after each poll (userDb may be null)
+    if (userDb && userDatabaseManager) {
       this.dbManager = new DatabaseConnectionManager(authId, userDb, userDatabaseManager);
-    } catch (error) {
-      logger.error('Failed to initialize DatabaseConnectionManager', error, {
-        authId,
-        errorMessage: error.message,
-      });
-      throw new Error(`Failed to initialize UserPoller: ${error.message}`);
+    } else {
+      this.dbManager = null;
     }
   }
 
@@ -83,6 +78,7 @@ class UserPoller {
       });
       return 0;
     }
+    if (!this.dbManager) return 0;
 
     try {
       const stateDiffEngine = this.dbManager.getStateDiffEngine();
@@ -219,6 +215,7 @@ class UserPoller {
    * @returns {Promise<void>}
    */
   async ensureDatabaseConnection() {
+    if (!this.dbManager) return;
     await this.dbManager.ensureConnection();
   }
 
@@ -229,6 +226,9 @@ class UserPoller {
    * @returns {Promise<any>} - Result of the operation
    */
   async executeWithRetry(operation, operationName) {
+    if (!this.dbManager) {
+      throw new Error('No database connection for poll operation');
+    }
     return await this.dbManager.executeWithRetry(operation, operationName);
   }
 
@@ -524,6 +524,30 @@ class UserPoller {
       };
     }
 
+    // Acquire DB connection for this poll cycle (released in finally); avoids holding connections between polls (min interval 5+ min)
+    if (!this.dbManager && this.userDatabaseManager) {
+      try {
+        const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
+        if (userDbConnection?.db) {
+          this.dbManager = new DatabaseConnectionManager(
+            this.authId,
+            userDbConnection.db,
+            this.userDatabaseManager
+          );
+        }
+      } catch (error) {
+        logger.error('Failed to get user database for poll', error, {
+          authId: this.authId,
+          errorMessage: error.message,
+        });
+        return {
+          success: false,
+          error: `Database connection error: ${error.message}`,
+          skipped: false,
+        };
+      }
+    }
+
     // Ensure database connection is valid before starting poll
     try {
       await this.ensureDatabaseConnection();
@@ -532,6 +556,10 @@ class UserPoller {
         authId: this.authId,
         errorMessage: error.message,
       });
+      if (this.userDatabaseManager) {
+        this.userDatabaseManager.releaseConnection(this.authId);
+      }
+      this.dbManager = null;
       return {
         success: false,
         error: `Database connection error: ${error.message}`,
@@ -547,6 +575,10 @@ class UserPoller {
         authId: this.authId,
         hasAutomationEngine: !!this.automationEngine,
       });
+      if (this.userDatabaseManager) {
+        this.userDatabaseManager.releaseConnection(this.authId);
+      }
+      this.dbManager = null;
       return {
         success: true,
         skipped: true,
@@ -654,6 +686,11 @@ class UserPoller {
       };
     } finally {
       this.isPolling = false;
+      // Release connection after poll so pool is not held by idle pollers (min poll interval 5+ min)
+      if (this.userDatabaseManager) {
+        this.userDatabaseManager.releaseConnection(this.authId);
+      }
+      this.dbManager = null;
       const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
       logger.debug('Poll cycle finished', {
         authId: this.authId,

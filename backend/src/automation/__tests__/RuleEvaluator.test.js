@@ -465,7 +465,14 @@ describe('RuleEvaluator', () => {
         const telemetryMap = new Map([['1', { torrent_id: '1', stalled_since: tenMinutesAgo }]]);
 
         const condition = { type: 'DOWNLOAD_STALLED_TIME', operator: 'gte', value: 5 };
-        const torrent = { id: '1' };
+        // Torrent must be in "stalled" status (active=true, not finished, no download present)
+        const torrent = {
+          id: '1',
+          download_state: 'stalled - no peers',
+          active: true,
+          download_finished: false,
+          download_present: false,
+        };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true);
@@ -490,7 +497,13 @@ describe('RuleEvaluator', () => {
         ]);
 
         const condition = { type: 'UPLOAD_STALLED_TIME', operator: 'gte', value: 15 };
-        const torrent = { id: '1' };
+        // Torrent must be in "seeding" status (upload stall is only relevant when actively seeding)
+        const torrent = {
+          id: '1',
+          active: true,
+          download_finished: true,
+          download_present: true,
+        };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent, telemetryMap);
         expect(result).toBe(true);
@@ -827,9 +840,13 @@ describe('RuleEvaluator', () => {
 
       it('should evaluate STATUS condition - stalled', () => {
         const condition = { type: 'STATUS', value: ['stalled'] };
+        // Stalled requires active=true, not finished, no download present (per torrentStatus.js)
         const torrent = {
           id: '1',
           download_state: 'stalled - no peers',
+          active: true,
+          download_finished: false,
+          download_present: false,
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -1319,8 +1336,12 @@ describe('RuleEvaluator', () => {
     });
 
     it('should return stalled status', () => {
+      // Stalled requires active=true, not finished, no download present (per torrentStatus.js)
       const torrent = {
         download_state: 'stalled - no peers available',
+        active: true,
+        download_finished: false,
+        download_present: false,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
