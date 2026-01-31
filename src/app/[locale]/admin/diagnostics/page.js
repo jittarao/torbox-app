@@ -8,23 +8,39 @@ export default function AdminDiagnosticsPage() {
   const [diagnostics, setDiagnostics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [repairLoading, setRepairLoading] = useState(false);
+
+  const loadDiagnostics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await adminApiClient.getDiagnostics();
+      setDiagnostics(result);
+    } catch (err) {
+      console.error('Error loading diagnostics:', err);
+      setError(err.message || 'Failed to load diagnostics');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadDiagnostics = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await adminApiClient.getDiagnostics();
-        setDiagnostics(result);
-      } catch (err) {
-        console.error('Error loading diagnostics:', err);
-        setError(err.message || 'Failed to load diagnostics');
-      } finally {
-        setLoading(false);
-      }
-    };
     loadDiagnostics();
   }, []);
+
+  const handleRepairStatusMismatches = async () => {
+    try {
+      setRepairLoading(true);
+      setError(null);
+      await adminApiClient.repairStatusMismatches();
+      await loadDiagnostics();
+    } catch (err) {
+      console.error('Error repairing status mismatches:', err);
+      setError(err.message || 'Repair failed');
+    } finally {
+      setRepairLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -434,12 +450,24 @@ export default function AdminDiagnosticsPage() {
             {/* Status Mismatches */}
             {issues.statusMismatches && issues.statusMismatches.length > 0 && (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
-                  ⚠️ Status Mismatches ({issues.statusMismatches.length})
-                </h3>
-                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
-                  Users where API key status and registry status don't match
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200">
+                      ⚠️ Status Mismatches ({issues.statusMismatches.length})
+                    </h3>
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
+                      Users where API key status and registry status don't match
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRepairStatusMismatches}
+                    disabled={repairLoading}
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    {repairLoading ? 'Repairing…' : 'Repair'}
+                  </button>
+                </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {issues.statusMismatches.map((mismatch, idx) => (
                     <div

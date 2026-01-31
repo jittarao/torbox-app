@@ -330,4 +330,33 @@ export function setupDiagnosticsRoutes(router, backend) {
       }
     })
   );
+
+  // Repair status mismatches (sync user_registry.status to api_keys.is_active)
+  router.post(
+    '/diagnostics/repair-status-mismatches',
+    asyncHandler(async (req, res) => {
+      const masterDb = backend.masterDatabase;
+      const mismatches = masterDb.allQuery(
+        `
+        SELECT ur.auth_id, ak.is_active as api_key_active
+        FROM user_registry ur
+        INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id
+        WHERE (ur.status = 'active' AND ak.is_active != 1)
+           OR (ur.status != 'active' AND ak.is_active = 1)
+      `
+      );
+      let repaired = 0;
+      for (const row of mismatches) {
+        const newStatus = row.api_key_active === 1 ? 'active' : 'inactive';
+        masterDb.updateUserStatus(row.auth_id, newStatus);
+        repaired++;
+      }
+      logger.info('Repaired status mismatches', { repaired, authIds: mismatches.map((m) => m.auth_id) });
+      sendSuccess(res, {
+        message: `Repaired ${repaired} status mismatch(es).`,
+        repaired,
+        authIds: mismatches.map((m) => m.auth_id),
+      });
+    })
+  );
 }
