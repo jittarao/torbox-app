@@ -318,6 +318,22 @@ class RuleRepository {
       }
 
       const userDb = await this.getUserDb();
+
+      // Rule may have been deleted or replaced (e.g. saveRules) between execution and logging.
+      // FK constraint would fail; skip log when rule no longer exists.
+      const ruleExists = userDb
+        .prepare('SELECT 1 FROM automation_rules WHERE id = ?')
+        .get(ruleId);
+      if (!ruleExists) {
+        logger.debug('Skipping execution log: rule no longer exists (may have been deleted or replaced)', {
+          authId: this.authId,
+          ruleId,
+          ruleName,
+          executionType,
+        });
+        return;
+      }
+
       const sql = `
         INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -334,7 +350,20 @@ class RuleRepository {
         success,
       });
     } catch (error) {
-      // Log the error but don't throw - we don't want logging failures to break rule execution
+      // FK failure means rule was deleted/replaced between execution and log; treat as non-fatal
+      const isFk =
+        error?.code === 'SQLITE_CONSTRAINT_FOREIGNKEY' ||
+        String(error?.message || '').includes('FOREIGN KEY');
+      if (isFk) {
+        logger.debug('Rule no longer exists, execution log skipped', {
+          authId: this.authId,
+          ruleId,
+          ruleName,
+          executionType,
+        });
+        return;
+      }
+      // Log other errors so we don't hide real issues
       logger.error('Failed to log rule execution', error, {
         authId: this.authId,
         ruleId,
