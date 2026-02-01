@@ -3,6 +3,17 @@
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 
+export const ASSET_TYPE_STORAGE_KEY = 'downloads-asset-type';
+export const ASSET_TYPE_IDS = ['all', 'torrents', 'usenet', 'webdl'];
+
+function getStoredAssetType() {
+  if (typeof window === 'undefined') return 'all';
+  const stored = localStorage.getItem(ASSET_TYPE_STORAGE_KEY);
+  return stored && ASSET_TYPE_IDS.includes(stored) ? stored : 'all';
+}
+
+export { getStoredAssetType };
+
 export default function AssetTypeTabs({ activeType, onTypeChange }) {
   const t = useTranslations('Common');
 
