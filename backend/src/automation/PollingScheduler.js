@@ -492,6 +492,13 @@ class PollingScheduler {
 
       const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
 
+      // Reserve next_poll_at so this user is not returned as due again until poll completes or times out
+      this.masterDb.updateNextPollAt(
+        auth_id,
+        new Date(Date.now() + this.pollTimeoutMs),
+        0
+      );
+
       // Create engine for this poll only (not cached)
       engineForPoll = await this.createEngineForPoll(auth_id, encrypted_key);
       poller.automationEngine = engineForPoll;
@@ -530,6 +537,8 @@ class PollingScheduler {
             duration: `${duration.toFixed(2)}s`,
           });
           this.handlePollTimeout(auth_id, duration);
+          // Clear isPolling so the next scheduled poll can run; the timed-out poll keeps running in background
+          poller.resetPollingState();
           counters.error++;
           return;
         }

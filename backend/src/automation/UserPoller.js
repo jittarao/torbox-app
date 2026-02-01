@@ -32,6 +32,7 @@ class UserPoller {
     this.automationEngine = automationEngine;
     this.userDatabaseManager = userDatabaseManager;
     this.isPolling = false;
+    this._pollGeneration = 0; // So zombie poll finally doesn't clear isPolling after timeout + new poll
     this.lastPollAt = null;
     this.lastPolledAt = null; // Track when poller was last used (for cleanup)
     this.lastPollError = null;
@@ -590,6 +591,7 @@ class UserPoller {
     }
 
     this.isPolling = true;
+    const myGeneration = ++this._pollGeneration;
     const startTime = Date.now();
     const pollStartTime = new Date();
 
@@ -688,7 +690,10 @@ class UserPoller {
         duration: parseFloat(duration),
       };
     } finally {
-      this.isPolling = false;
+      // Only clear isPolling if this poll is still the current one (avoids zombie poll clearing it after timeout + new poll)
+      if (this._pollGeneration === myGeneration) {
+        this.isPolling = false;
+      }
       // Release connection after poll so pool is not held by idle pollers (min poll interval 5+ min)
       if (this.userDatabaseManager) {
         this.userDatabaseManager.pool?.markInactive(this.authId);
@@ -702,6 +707,15 @@ class UserPoller {
         isPolling: this.isPolling,
       });
     }
+  }
+
+  /**
+   * Reset polling state so the next poll can run.
+   * Called by the scheduler when a poll times out; the timed-out poll keeps running in the background
+   * but isPolling is cleared so the next scheduled poll is not skipped.
+   */
+  resetPollingState() {
+    this.isPolling = false;
   }
 
   /**
