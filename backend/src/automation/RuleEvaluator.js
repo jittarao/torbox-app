@@ -1378,7 +1378,9 @@ class RuleEvaluator {
         return await this.apiClient.controlTorrent(torrent.id, 'force_start');
 
       case 'delete':
-        return await this.apiClient.deleteTorrent(torrent.id);
+        return await this.apiClient.deleteTorrent(torrent.id, {
+          isQueued: this.getTorrentStatus(torrent) === 'queued',
+        });
 
       // Pause and Resume actions have been deprecated in TorBox API
       // case 'pause':
@@ -1394,7 +1396,9 @@ class RuleEvaluator {
         if (archiveResult.message === 'Already archived') {
           return archiveResult;
         }
-        return await this.apiClient.deleteTorrent(torrent.id);
+        return await this.apiClient.deleteTorrent(torrent.id, {
+          isQueued: this.getTorrentStatus(torrent) === 'queued',
+        });
 
       case 'add_tag':
         return await this.addTagsToDownload(action, torrent);

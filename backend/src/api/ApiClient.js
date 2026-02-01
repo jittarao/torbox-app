@@ -301,13 +301,15 @@ class ApiClient {
     );
   }
 
-  async deleteTorrent(torrentId) {
+  async deleteTorrent(torrentId, options = {}) {
     return this.handleApiCall(
       async () => {
-        // First check if it's queued or active
-        const torrents = await this.getTorrents();
-        const isQueued = torrents.some(t => t.id === torrentId && !t.download_state);
-        
+        let isQueued = options.isQueued;
+        if (isQueued === undefined) {
+          // Caller did not pass isQueued — fetch and derive (backward compatible)
+          const torrents = await this.getTorrents();
+          isQueued = torrents.some(t => t.id === torrentId && !t.download_state);
+        }
         if (isQueued) {
           return await this.controlQueuedTorrent(torrentId, 'delete');
         } else {

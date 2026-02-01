@@ -1573,8 +1573,10 @@ describe('RuleEvaluator', () => {
         'test'
       );
 
-      // Verify torrent was deleted after archiving
-      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1');
+      // Verify torrent was deleted after archiving (no download_state => queued)
+      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1', {
+        isQueued: true,
+      });
     });
 
     it('should skip archive if already archived', async () => {
@@ -1617,7 +1619,21 @@ describe('RuleEvaluator', () => {
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1');
+      // No download_state => queued
+      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1', {
+        isQueued: true,
+      });
+    });
+
+    it('should execute delete action with active torrent (isQueued: false)', async () => {
+      const action = { type: 'delete' };
+      const torrent = { id: 'torrent-1', download_state: 'seeding' };
+
+      await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1', {
+        isQueued: false,
+      });
     });
 
     it('should throw error when action is missing', async () => {
