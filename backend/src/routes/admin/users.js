@@ -9,6 +9,7 @@ import {
   asyncHandler,
   getUserDatabaseSafe,
 } from './helpers.js';
+import { decrypt } from '../../utils/crypto.js';
 import logger from '../../utils/logger.js';
 
 /**
@@ -91,6 +92,32 @@ export function setupUserRoutes(router, backend) {
           totalPages: Math.ceil(total / limit),
         },
       });
+    })
+  );
+
+  // Get decrypted API key for a user
+  router.get(
+    '/users/:authId/api-key',
+    asyncHandler(async (req, res) => {
+      const authId = validateAuthIdParam(req, res);
+      if (!authId) return;
+
+      const row = backend.masterDatabase.getQuery(
+        'SELECT encrypted_key FROM api_keys WHERE auth_id = ?',
+        [authId]
+      );
+
+      if (!row?.encrypted_key) {
+        return sendError(res, 'No API key found for this user', 404);
+      }
+
+      try {
+        const apiKey = decrypt(row.encrypted_key);
+        sendSuccess(res, { api_key: apiKey });
+      } catch (error) {
+        logger.error('Failed to decrypt API key', { authId, error: error.message });
+        return sendError(res, 'Failed to retrieve API key', 500);
+      }
     })
   );
 

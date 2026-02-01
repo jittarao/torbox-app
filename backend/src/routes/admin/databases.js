@@ -72,6 +72,19 @@ export function setupDatabaseRoutes(router, backend) {
         return sendError(res, 'Database file not found', 404);
       }
 
+      // Flush WAL into main .db so backup is a consistent snapshot (DB uses WAL mode)
+      const userDb = await getUserDatabaseSafe(backend, authId);
+      if (userDb) {
+        try {
+          userDb.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+        } catch (checkpointError) {
+          logger.warn('WAL checkpoint failed before backup', {
+            authId,
+            error: checkpointError.message,
+          });
+        }
+      }
+
       // Create backup path
       const backupDir = path.join(path.dirname(user.db_path), 'backups');
       await fs.promises.mkdir(backupDir, { recursive: true });
@@ -188,29 +201,21 @@ export function setupDatabaseRoutes(router, backend) {
         return sendError(res, 'Backup file not found', 404);
       }
 
-      // Get file stats
-      const stats = fs.statSync(backupPath);
+      // Read file as buffer and send raw bytes (avoids compression/stream corruption)
+      const buffer = await fs.promises.readFile(backupPath);
 
       // Set headers for file download
       res.setHeader('Content-Type', 'application/octet-stream');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', stats.size);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'no-transform');
 
-      // Stream the file
-      const fileStream = fs.createReadStream(backupPath);
-      fileStream.pipe(res);
-
-      fileStream.on('error', (error) => {
-        logger.error('Error streaming backup file', error, { authId, filename });
-        if (!res.headersSent) {
-          sendError(res, 'Error reading backup file', 500);
-        }
-      });
+      res.send(buffer);
 
       logger.info('Admin downloaded database backup', {
         authId,
         filename,
-        size: stats.size,
+        size: buffer.length,
         adminIp: req.ip,
       });
     })
