@@ -10,7 +10,10 @@ import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
 import useIsMobile from '../../hooks/useIsMobile';
 
-import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
+import AssetTypeTabs, {
+  getStoredAssetType,
+  ASSET_TYPE_STORAGE_KEY,
+} from '@/components/shared/AssetTypeTabs';
 import DownloadPanel from './DownloadPanel';
 import ItemUploader from './ItemUploader';
 import SpeedChart from './SpeedChart';
@@ -39,7 +42,7 @@ export default function Downloads({ apiKey }) {
   const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const [toast, setToast] = useState(null);
-  const [activeType, setActiveType] = useState('all');
+  const [activeType, setActiveType] = useState(getStoredAssetType);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
 
@@ -577,6 +580,7 @@ export default function Downloads({ apiKey }) {
         activeType={activeType}
         onTypeChange={(type) => {
           setActiveType(type);
+          localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
           setSelectedItems({ items: new Set(), files: new Map() });
         }}
       />
