@@ -190,10 +190,10 @@ export function setupUserRoutes(router, backend) {
       // Delete from master database (cascade will handle api_keys)
       backend.masterDatabase.runQuery('DELETE FROM user_registry WHERE auth_id = ?', [authId]);
 
-      // Clear cache
+      // Invalidate cache
       const cache = (await import('../../utils/cache.js')).default;
-      cache.clearUserRegistry(authId);
-      cache.clearActiveUsers();
+      cache.invalidateUserRegistry(authId);
+      cache.invalidateActiveUsers();
 
       sendSuccess(res, {
         message: 'User deleted successfully',
@@ -236,10 +236,10 @@ export function setupUserRoutes(router, backend) {
       // Update status (syncs both user_registry.status and api_keys.is_active)
       backend.masterDatabase.updateUserStatus(authId, status);
 
-      // Clear cache
+      // Invalidate cache
       const cache = (await import('../../utils/cache.js')).default;
-      cache.clearUserRegistry(authId);
-      cache.clearActiveUsers();
+      cache.invalidateUserRegistry(authId);
+      cache.invalidateActiveUsers();
 
       sendSuccess(res, {
         message: 'User status updated successfully',
