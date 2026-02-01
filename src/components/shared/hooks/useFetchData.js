@@ -438,10 +438,9 @@ export function useFetchData(apiKey, type = 'torrents') {
     
     const initialFetch = async () => {
       try {
-        // Only fetch the current active type when type changes
-        // Set skipLoading to false on initial fetch so loading is shown and then cleared by fetchLocalItems
-        // Set skipLoading to true on subsequent fetches (e.g. tab switch) so we don't flash loading
-        await fetchLocalItems(true, type, 0, items.length === 0 ? false : true);
+        // Always show loading when effect runs (type/apiKey change). Don't use items.length
+        // so we're not affected by stale closure or localStorage (e.g. incognito vs normal).
+        await fetchLocalItems(true, type, 0, false);
       } finally {
         fetchInProgressRef.current = false;
         // Always clear loading when this effect's fetch finishes so the spinner never gets stuck
@@ -451,7 +450,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     };
 
     initialFetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, apiKey]);
 
   // Setter and fetch functions based on the current type
