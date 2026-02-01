@@ -11,7 +11,6 @@ import AutomationEngine from './automation/AutomationEngine.js';
 import UploadProcessor from './automation/UploadProcessor.js';
 import logger from './utils/logger.js';
 import cache from './utils/cache.js';
-import { createAdminRateLimiter } from './middleware/adminAuth.js';
 import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
 import { setupAdminRoutes } from './routes/admin.js';
@@ -67,12 +66,17 @@ class TorBoxBackend {
     // Compression
     this.app.use(compression());
 
-    // IP-based rate limiting (global)
+    // IP-based rate limiting (global); skip admin routes so they are not limited or counted
     const ipLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
       max: 300,
       standardHeaders: true,
       legacyHeaders: false,
+      skip: (req) => {
+        const url = (req.originalUrl || '').split('?')[0];
+        const path = (req.path || '').split('?')[0];
+        return url.startsWith('/api/admin') || path.startsWith('/admin');
+      },
       handler: (req, res) => {
         res.status(429).json({
           success: false,
@@ -101,9 +105,6 @@ class TorBoxBackend {
         });
       },
     });
-
-    // Admin rate limiting (stricter than user limits)
-    this.adminRateLimiter = createAdminRateLimiter(rateLimit);
 
     // JSON payload size validation
     this.app.use(validateJsonPayloadSize(10 * 1024 * 1024)); // 10MB
