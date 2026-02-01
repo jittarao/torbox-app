@@ -14,11 +14,9 @@ import { setupDiagnosticsRoutes } from './admin/diagnostics.js';
  */
 export function setupAdminRoutes(app, backend) {
   const router = express.Router();
-  const { adminRateLimiter } = backend;
 
-  // Apply admin auth middleware to all routes
+  // Apply admin auth middleware to all routes (no rate limit for admin)
   router.use(adminAuthMiddleware);
-  router.use(adminRateLimiter);
 
   // ===== Admin Authentication =====
 
