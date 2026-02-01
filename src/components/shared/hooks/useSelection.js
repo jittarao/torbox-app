@@ -11,13 +11,14 @@ export function useSelection(items) {
       const { items: storedItems, files: storedFiles } = JSON.parse(stored);
 
       // If no items available yet, just convert to Set/Map without validation
+      // Guard against corrupt/old localStorage (missing items or files)
       if (!currentItems?.length) {
         return {
-          items: new Set(storedItems),
+          items: new Set(Array.isArray(storedItems) ? storedItems : []),
           files: new Map(
-            Object.entries(storedFiles).map(([key, value]) => [
+            Object.entries(storedFiles && typeof storedFiles === 'object' ? storedFiles : {}).map(([key, value]) => [
               parseInt(key),
-              new Set(value),
+              new Set(Array.isArray(value) ? value : []),
             ]),
           ),
         };
