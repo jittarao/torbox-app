@@ -439,11 +439,14 @@ export function useFetchData(apiKey, type = 'torrents') {
     const initialFetch = async () => {
       try {
         // Only fetch the current active type when type changes
-        // Set skipLoading to false on initial fetch
-        // Set skipLoading to true on subsequent fetches
+        // Set skipLoading to false on initial fetch so loading is shown and then cleared by fetchLocalItems
+        // Set skipLoading to true on subsequent fetches (e.g. tab switch) so we don't flash loading
         await fetchLocalItems(true, type, 0, items.length === 0 ? false : true);
       } finally {
         fetchInProgressRef.current = false;
+        // Always clear loading when this effect's fetch finishes so the spinner never gets stuck
+        // (e.g. if fetchLocalItems threw or 'all' path didn't call setLoading(false))
+        setLoading(false);
       }
     };
 
