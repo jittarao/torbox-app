@@ -438,17 +438,16 @@ export function useFetchData(apiKey, type = 'torrents') {
     
     const initialFetch = async () => {
       try {
-        // Only fetch the current active type when type changes
-        // Set skipLoading to false on initial fetch
-        // Set skipLoading to true on subsequent fetches
-        await fetchLocalItems(true, type, 0, items.length === 0 ? false : true);
+        // Always show loading when effect runs (type/apiKey change). Don't use items.length
+        // so we're not affected by stale closure or localStorage (e.g. incognito vs normal).
+        await fetchLocalItems(true, type, 0, false);
       } finally {
         fetchInProgressRef.current = false;
+        setLoading(false);
       }
     };
 
     initialFetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, apiKey]);
 
   // Setter and fetch functions based on the current type
