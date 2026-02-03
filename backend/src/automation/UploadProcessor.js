@@ -529,6 +529,21 @@ class UploadProcessor {
   }
 
   /**
+   * Check if TorBox API response body indicates failure.
+   * TorBox can return HTTP 200 with { success: false, error, detail } for business logic failures.
+   * We must not mark uploads as completed when the torrent was not actually created.
+   * @param {Object} response - Axios response (response.data, response.status)
+   * @returns {boolean} True if response indicates API-side failure
+   */
+  isApiResponseFailure(response) {
+    const data = response?.data;
+    if (!data || typeof data !== 'object') return false;
+    if (data.success === false) return true;
+    if (data.error != null && data.error !== '') return true;
+    return false;
+  }
+
+  /**
    * Make API request to TorBox
    * @param {ApiClient} apiClient - API client instance
    * @param {string} endpoint - API endpoint URL
@@ -904,6 +919,23 @@ class UploadProcessor {
 
       // Make API request
       const response = await this.makeApiRequest(apiClient, endpoint, formData);
+
+      // TorBox can return HTTP 200 with { success: false, error, detail } when the torrent was not created.
+      // Treat that as failure so we do not mark the upload as completed.
+      if (this.isApiResponseFailure(response)) {
+        const data = response.data || {};
+        const syntheticError = Object.assign(
+          new Error(data.detail || data.error || 'TorBox API returned failure'),
+          {
+            response: {
+              status: response.status ?? 200,
+              data: { error: data.error, detail: data.detail },
+            },
+          }
+        );
+        await this.handleFailedUpload(upload, userDb, type, syntheticError, originalStatusValue);
+        return false;
+      }
 
       // API call succeeded - now handle the database update
       // If handleSuccessfulUpload throws (e.g., SQLITE_BUSY, closed database), we must NOT re-queue
