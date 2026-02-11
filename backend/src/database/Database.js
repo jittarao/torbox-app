@@ -944,15 +944,21 @@ class Database {
 
   /**
    * Get users due for polling (cron-like query)
-   * Only returns users with has_active_rules = 1
+   * Only returns users with has_active_rules = 1.
+   * Limited to MAX_USERS_DUE_FOR_POLLING per call to avoid thundering herd after outages.
    * @returns {Array} - Array of users where has_active_rules = 1 AND (next_poll_at <= NOW() OR next_poll_at IS NULL/empty/0) AND status = 'active'
    */
   getUsersDueForPolling() {
+    const limit = Math.max(
+      1,
+      parseInt(process.env.MAX_USERS_DUE_FOR_POLLING || '100', 10)
+    );
     // Convert ISO format (2026-01-11T13:04:23.860Z) to SQLite datetime format (2026-01-11 13:04:23)
     // for proper datetime comparison. Handle both ISO and SQLite formats.
     // Strategy: Replace T with space, remove Z, then extract first 19 chars (YYYY-MM-DD HH:MM:SS)
     // Only poll users with active rules (has_active_rules = 1)
-    const result = this.allQuery(`
+    const result = this.allQuery(
+      `
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
@@ -984,7 +990,10 @@ class Database {
         NULLIF(NULLIF(NULLIF(ur.next_poll_at, ''), '0'), '0000-00-00 00:00:00'),
         '9999-12-31 23:59:59'
       ) ASC
-    `);
+      LIMIT ?
+    `,
+      [limit]
+    );
 
     // Log at debug level since this runs frequently (every 30 seconds)
     logger.debug('Users due for polling', {
