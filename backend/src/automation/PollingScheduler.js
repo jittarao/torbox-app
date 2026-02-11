@@ -5,7 +5,8 @@ import cache from '../utils/cache.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
-const DEFAULT_REFRESH_INTERVAL_MS = 60000; // 1 minute
+const DEFAULT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes (rules have min 5 min interval; no need to refresh poller list every 60s)
+const REFRESH_FULL_SYNC_EVERY_N = 6; // Do expensive "sync has_active_rules from all user DBs" every N refreshes (~90 min at 15 min refresh)
 const DEFAULT_POLL_TIMEOUT_MS = 300000; // 5 minutes
 const DEFAULT_MAX_CONCURRENT_POLLS = 7;
 const DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS = 24;
@@ -167,7 +168,11 @@ class PollingScheduler {
       1000,
       options.pollCheckInterval || DEFAULT_POLL_CHECK_INTERVAL_MS
     );
-    this.refreshInterval = Math.max(1000, options.refreshInterval || DEFAULT_REFRESH_INTERVAL_MS);
+    this.refreshInterval = Math.max(
+      60 * 1000,
+      options.refreshInterval ??
+        parseInt(process.env.REFRESH_INTERVAL_MS || String(DEFAULT_REFRESH_INTERVAL_MS), 10)
+    );
     this.pollTimeoutMs = Math.max(1000, options.pollTimeoutMs || DEFAULT_POLL_TIMEOUT_MS);
     this.maxConcurrentPolls = Math.max(
       1,
@@ -182,6 +187,7 @@ class PollingScheduler {
     this.lastCleanupAt = null;
     this.flagUpdateMutexes = new Map();
     this._refreshInProgress = false;
+    this._refreshCount = 0; // Incremented each refresh; full sync every REFRESH_FULL_SYNC_EVERY_N
     this._refreshSyncConcurrency = Math.min(
       10,
       Math.max(1, parseInt(process.env.REFRESH_SYNC_CONCURRENCY || '10', 10))
@@ -498,11 +504,7 @@ class PollingScheduler {
       const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
 
       // Reserve next_poll_at so this user is not returned as due again until poll completes or times out
-      this.masterDb.updateNextPollAt(
-        auth_id,
-        new Date(Date.now() + this.pollTimeoutMs),
-        0
-      );
+      this.masterDb.updateNextPollAt(auth_id, new Date(Date.now() + this.pollTimeoutMs), 0);
 
       // Create engine for this poll only (not cached)
       engineForPoll = await this.createEngineForPoll(auth_id, encrypted_key);
@@ -813,7 +815,12 @@ class PollingScheduler {
         return;
       }
 
-      logger.info('Found users due for polling', {
+      // Diagnostic: warn in prod when we're about to run many polls (correlate with disk/CPU spikes)
+      if (dueUsers.length >= 20) {
+        logger.warn('PollDueUsers: large due list', { dueCount: dueUsers.length });
+      }
+
+      logger.debug('Found users due for polling', {
         count: dueUsers.length,
         authIds: dueUsers.map((u) => u?.auth_id).filter(Boolean),
         hasActiveRulesFlags: dueUsers
@@ -853,10 +860,10 @@ class PollingScheduler {
   }
 
   /**
-   * Refresh pollers based on active users
-   * Ensures pollers exist for users with active rules
-   * First syncs the has_active_rules flag for all active users to ensure accuracy.
-   * Uses a re-entrancy guard and limited concurrency to avoid disk I/O spikes.
+   * Refresh pollers based on active users.
+   * - Light refresh (most runs): use master DB has_active_rules only; add/remove pollers. No user DB opens.
+   * - Full refresh (every REFRESH_FULL_SYNC_EVERY_N): sync has_active_rules from all user DBs, then add/remove pollers.
+   * Rules have a minimum 5 min interval, so refreshing the poller list every 15 min is enough.
    */
   async refreshPollers() {
     if (this._refreshInProgress) {
@@ -864,85 +871,95 @@ class PollingScheduler {
       return;
     }
     this._refreshInProgress = true;
+    this._refreshCount++;
     const refreshStartTime = Date.now();
+    const doFullSync = this._refreshCount % REFRESH_FULL_SYNC_EVERY_N === 1; // 1st, 7th, 13th... (and first run after start)
 
     try {
-      logger.debug('Refreshing pollers', {
-        currentPollers: this.pollers.size,
-        timestamp: new Date().toISOString(),
-      });
+      const poolStats = this.userDatabaseManager.getPoolStats?.() ?? null;
+      if (doFullSync) {
+        logger.warn('RefreshPollers full sync started (visible in prod)', {
+          refreshCount: this._refreshCount,
+          currentPollers: this.pollers.size,
+          poolSize: poolStats?.size ?? null,
+          poolMaxSize: poolStats?.maxSize ?? null,
+        });
+      } else {
+        logger.debug('RefreshPollers light refresh started', {
+          refreshCount: this._refreshCount,
+          currentPollers: this.pollers.size,
+        });
+      }
 
-      const activeUsers = this.userDatabaseManager.getActiveUsers();
+      let usersWithActiveRules;
+
+      if (doFullSync) {
+        // Step 1 (full sync only): Sync has_active_rules from each user DB, then get list with active rules
+        const activeUsers = this.userDatabaseManager.getActiveUsers();
+        const currentAuthIds = new Set(this.pollers.keys());
+        const syncStats = { synced: 0, errors: 0, skipped: 0 };
+        const syncSemaphore = new Semaphore(this._refreshSyncConcurrency);
+
+        const syncOneUser = async (user) => {
+          const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
+          if (!encrypted_key) return;
+          await syncSemaphore.acquire();
+          try {
+            let actualHasActiveRules = false;
+            const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+            if (userDb && userDb.db) {
+              try {
+                const result = userDb.db
+                  .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+                  .get();
+                actualHasActiveRules = result && result.count > 0;
+              } finally {
+                this.userDatabaseManager.releaseConnection(auth_id);
+              }
+            } else {
+              syncStats.skipped++;
+              return;
+            }
+            const actualFlag = actualHasActiveRules ? 1 : 0;
+            if (dbFlag !== actualFlag) {
+              this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
+              syncStats.synced++;
+            }
+          } catch (error) {
+            logger.warn('Failed to sync active rules flag for user', {
+              authId: user.auth_id,
+              errorMessage: error.message,
+            });
+            syncStats.errors++;
+          } finally {
+            syncSemaphore.release();
+          }
+        };
+
+        await Promise.all(activeUsers.map((user) => syncOneUser(user)));
+
+        const syncDurationMs = Date.now() - refreshStartTime;
+        logger.warn('RefreshPollers full sync completed (visible in prod)', {
+          activeUsersCount: activeUsers.length,
+          synced: syncStats.synced,
+          errors: syncStats.errors,
+          skipped: syncStats.skipped,
+          durationMs: syncDurationMs,
+        });
+
+        cache.invalidateActiveUsers();
+        const refreshedActiveUsers = this.userDatabaseManager.getActiveUsers();
+        usersWithActiveRules = refreshedActiveUsers.filter((user) => user.has_active_rules === 1);
+      } else {
+        // Light refresh: use master DB only (has_active_rules is kept in sync by API when rules are toggled)
+        const activeUsers = this.userDatabaseManager.getActiveUsers();
+        usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
+      }
+
       const currentAuthIds = new Set(this.pollers.keys());
 
-      logger.debug('Active users found', {
-        activeUserCount: activeUsers.length,
-        currentPollerCount: this.pollers.size,
-      });
-
-      // Step 1: Sync has_active_rules flag for all active users with limited concurrency
-      // to avoid opening hundreds of user DBs at once (prevents disk I/O and CPU spikes)
-      const syncStats = { synced: 0, errors: 0, skipped: 0 };
-      const syncSemaphore = new Semaphore(this._refreshSyncConcurrency);
-
-      const syncOneUser = async (user) => {
-        const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
-        if (!encrypted_key) return;
-        await syncSemaphore.acquire();
-        try {
-          let actualHasActiveRules = false;
-          const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-          if (userDb && userDb.db) {
-            try {
-              const result = userDb.db
-                .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
-                .get();
-              actualHasActiveRules = result && result.count > 0;
-            } finally {
-              this.userDatabaseManager.releaseConnection(auth_id);
-            }
-          } else {
-            syncStats.skipped++;
-            return;
-          }
-          const actualFlag = actualHasActiveRules ? 1 : 0;
-          if (dbFlag !== actualFlag) {
-            logger.info('Syncing active rules flag during poller refresh', {
-              authId: auth_id,
-              previousFlag: dbFlag,
-              actualFlag,
-              actualHasActiveRules,
-            });
-            this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
-            syncStats.synced++;
-          }
-        } catch (error) {
-          logger.warn('Failed to sync active rules flag for user', {
-            authId: user.auth_id,
-            errorMessage: error.message,
-          });
-          syncStats.errors++;
-        } finally {
-          syncSemaphore.release();
-        }
-      };
-
-      await Promise.all(activeUsers.map((user) => syncOneUser(user)));
-
-      // Step 2: Refresh active users list after syncing flags (to get updated flags)
-      // Invalidate cache to ensure we get fresh data
-      cache.invalidateActiveUsers();
-      const refreshedActiveUsers = this.userDatabaseManager.getActiveUsers();
-      const usersWithActiveRules = refreshedActiveUsers.filter(
-        (user) => user.has_active_rules === 1
-      );
-
-      logger.debug('Active users after flag sync', {
-        activeUserCount: refreshedActiveUsers.length,
+      logger.debug('Active users with rules', {
         usersWithActiveRulesCount: usersWithActiveRules.length,
-        flagsSynced: syncStats.synced,
-        syncErrors: syncStats.errors,
-        skipped: syncStats.skipped,
       });
 
       const stats = { added: 0, removed: 0, error: 0 };
@@ -989,14 +1006,22 @@ class PollingScheduler {
       }
 
       const refreshDuration = ((Date.now() - refreshStartTime) / 1000).toFixed(2);
-      logger.info('Poller refresh completed', {
-        activeUsers: activeUsers.length,
-        addedCount: stats.added,
-        removedCount: stats.removed,
-        errorCount: stats.error,
-        totalPollers: this.pollers.size,
-        duration: `${refreshDuration}s`,
-      });
+      if (doFullSync) {
+        logger.warn('RefreshPollers full sync completed', {
+          addedCount: stats.added,
+          removedCount: stats.removed,
+          errorCount: stats.error,
+          totalPollers: this.pollers.size,
+          duration: `${refreshDuration}s`,
+        });
+      } else {
+        logger.debug('RefreshPollers light completed', {
+          addedCount: stats.added,
+          removedCount: stats.removed,
+          totalPollers: this.pollers.size,
+          duration: `${refreshDuration}s`,
+        });
+      }
     } catch (error) {
       const refreshDuration = ((Date.now() - refreshStartTime) / 1000).toFixed(2);
       logger.error('Error refreshing pollers', error, {
