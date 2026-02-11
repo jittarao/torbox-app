@@ -181,6 +181,11 @@ class PollingScheduler {
     // State
     this.lastCleanupAt = null;
     this.flagUpdateMutexes = new Map();
+    this._refreshInProgress = false;
+    this._refreshSyncConcurrency = Math.min(
+      10,
+      Math.max(1, parseInt(process.env.REFRESH_SYNC_CONCURRENCY || '10', 10))
+    );
 
     // Metrics
     this.metrics = {
@@ -850,16 +855,23 @@ class PollingScheduler {
   /**
    * Refresh pollers based on active users
    * Ensures pollers exist for users with active rules
-   * First syncs the has_active_rules flag for all active users to ensure accuracy
+   * First syncs the has_active_rules flag for all active users to ensure accuracy.
+   * Uses a re-entrancy guard and limited concurrency to avoid disk I/O spikes.
    */
   async refreshPollers() {
+    if (this._refreshInProgress) {
+      logger.debug('Skipping refreshPollers - previous run still in progress');
+      return;
+    }
+    this._refreshInProgress = true;
     const refreshStartTime = Date.now();
-    logger.debug('Refreshing pollers', {
-      currentPollers: this.pollers.size,
-      timestamp: new Date().toISOString(),
-    });
 
     try {
+      logger.debug('Refreshing pollers', {
+        currentPollers: this.pollers.size,
+        timestamp: new Date().toISOString(),
+      });
+
       const activeUsers = this.userDatabaseManager.getActiveUsers();
       const currentAuthIds = new Set(this.pollers.keys());
 
@@ -868,19 +880,16 @@ class PollingScheduler {
         currentPollerCount: this.pollers.size,
       });
 
-      // Step 1: Sync has_active_rules flag for all active users
-      // This ensures the flag accurately reflects the actual state in user databases
-      // Optimized: Directly query user databases instead of creating engines
+      // Step 1: Sync has_active_rules flag for all active users with limited concurrency
+      // to avoid opening hundreds of user DBs at once (prevents disk I/O and CPU spikes)
       const syncStats = { synced: 0, errors: 0, skipped: 0 };
-      for (const user of activeUsers) {
+      const syncSemaphore = new Semaphore(this._refreshSyncConcurrency);
+
+      const syncOneUser = async (user) => {
         const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
-
-        if (!encrypted_key) {
-          continue; // Skip users without API keys
-        }
-
+        if (!encrypted_key) return;
+        await syncSemaphore.acquire();
         try {
-          // Query database directly (engines are not cached)
           let actualHasActiveRules = false;
           const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
           if (userDb && userDb.db) {
@@ -894,12 +903,9 @@ class PollingScheduler {
             }
           } else {
             syncStats.skipped++;
-            continue;
+            return;
           }
-
           const actualFlag = actualHasActiveRules ? 1 : 0;
-
-          // Sync flag if it's out of sync (update master DB directly; no engine creation for syncing)
           if (dbFlag !== actualFlag) {
             logger.info('Syncing active rules flag during poller refresh', {
               authId: auth_id,
@@ -912,12 +918,16 @@ class PollingScheduler {
           }
         } catch (error) {
           logger.warn('Failed to sync active rules flag for user', {
-            authId: auth_id,
+            authId: user.auth_id,
             errorMessage: error.message,
           });
           syncStats.errors++;
+        } finally {
+          syncSemaphore.release();
         }
-      }
+      };
+
+      await Promise.all(activeUsers.map((user) => syncOneUser(user)));
 
       // Step 2: Refresh active users list after syncing flags (to get updated flags)
       // Invalidate cache to ensure we get fresh data
@@ -994,6 +1004,8 @@ class PollingScheduler {
         errorMessage: error.message,
         errorStack: error.stack,
       });
+    } finally {
+      this._refreshInProgress = false;
     }
   }
 
