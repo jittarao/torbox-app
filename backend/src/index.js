@@ -224,8 +224,8 @@ class TorBoxBackend {
         this.masterDatabase,
         this.automationEngines,
         {
-          maxConcurrentPolls: parseInt(process.env.MAX_CONCURRENT_POLLS || '7', 10),
-          pollTimeoutMs: parseInt(process.env.POLL_TIMEOUT_MS || '300000', 10),
+          maxConcurrentPolls: parseInt(process.env.MAX_CONCURRENT_POLLS || '12', 10),
+          pollKickoutMs: parseInt(process.env.POLL_KICKOUT_MS || '120000', 10),
           pollerCleanupIntervalHours: parseInt(
             process.env.POLLER_CLEANUP_INTERVAL_HOURS || '24',
             10
