@@ -220,13 +220,26 @@ class ApiClient {
         throw error;
       }
       
-      // Handle other errors
-      logger.error(`Error ${operation || 'in API call'}`, error, {
-        endpoint,
-        ...context,
-        status: error.response?.status,
-        errorCode: error.response?.data?.error,
-      });
+      // Plan-restricted (403) — log as info so prod logs are not polluted
+      const isPlanRestricted =
+        error.response?.status === 403 &&
+        error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
+      if (isPlanRestricted) {
+        logger.info(`Error ${operation || 'in API call'}`, {
+          endpoint,
+          ...context,
+          status: 403,
+          errorCode: 'PLAN_RESTRICTED_FEATURE',
+          message: error.response?.data?.detail || error.message,
+        });
+      } else {
+        logger.error(`Error ${operation || 'in API call'}`, error, {
+          endpoint,
+          ...context,
+          status: error.response?.status,
+          errorCode: error.response?.data?.error,
+        });
+      }
       throw error;
     }
   }
