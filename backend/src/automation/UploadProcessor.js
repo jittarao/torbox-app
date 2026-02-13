@@ -764,7 +764,7 @@ class UploadProcessor {
         errorCode,
         errorMessage
       );
-      logger.info('TorBox API error response', {
+      logger.warn('TorBox API error response', {
         uploadId: id,
         type,
         status: error.response.status,
