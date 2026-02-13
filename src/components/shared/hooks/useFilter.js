@@ -26,8 +26,8 @@ const evaluateFilter = (filter, item) => {
   const operator = filter.operator;
   const filterValue = filter.value;
 
-  // Handle null/undefined values
-  if (columnValue === null || columnValue === undefined) {
+  // Handle null/undefined values (skip for download_state: queued items have no raw value, status is derived via getMatchingStatus)
+  if (filter.column !== 'download_state' && (columnValue === null || columnValue === undefined)) {
     return false;
   }
 
@@ -41,9 +41,13 @@ const evaluateFilter = (filter, item) => {
       // Convert filter value from percentage to 0-1 range
       numFilter = numFilter / 100;
     }
-    
+
     // Handle size columns: stored as bytes, but user enters as MB
-    if (filter.column === 'size' || filter.column === 'total_uploaded' || filter.column === 'total_downloaded') {
+    if (
+      filter.column === 'size' ||
+      filter.column === 'total_uploaded' ||
+      filter.column === 'total_downloaded'
+    ) {
       // Convert filter value from MB to bytes
       numFilter = numFilter * 1024 * 1024;
     }
@@ -90,14 +94,14 @@ const evaluateFilter = (filter, item) => {
   // Timestamp columns (treat as relative time - value is in days, convert to minutes)
   if (isTimestampColumn(filter.column)) {
     if (!columnValue) return false;
-    
+
     const itemTime = new Date(columnValue).getTime();
     if (isNaN(itemTime)) return false;
-    
+
     const now = Date.now();
     const diffMs = now - itemTime;
     const diffMinutes = diffMs / (1000 * 60);
-    
+
     // Filter value is in days, convert to minutes
     const filterDays = typeof filterValue === 'number' ? filterValue : parseFloat(filterValue) || 0;
     const filterMinutes = filterDays * 24 * 60;
@@ -115,7 +119,7 @@ const evaluateFilter = (filter, item) => {
         return diffMinutes <= filterMinutes;
       case COMPARISON_OPERATORS.EQ:
         // Within 1 day tolerance
-        return Math.abs(diffMinutes - filterMinutes) < (24 * 60);
+        return Math.abs(diffMinutes - filterMinutes) < 24 * 60;
       default:
         return true;
     }
@@ -142,28 +146,30 @@ const evaluateFilter = (filter, item) => {
       // For download_state, use getMatchingStatus to get the proper status label
       const itemStatus = getMatchingStatus(item);
       const itemStatusLabel = itemStatus?.label?.toLowerCase() || '';
-      
+
       // Filter values are lowercase status names like 'downloading', 'uploading', 'stalled'
-      const filterValues = Array.isArray(filterValue) 
-        ? filterValue.map(v => String(v).toLowerCase()) 
+      const filterValues = Array.isArray(filterValue)
+        ? filterValue.map((v) => String(v).toLowerCase())
         : [];
 
       switch (operator) {
         case MULTI_SELECT_OPERATORS.IS_ANY_OF:
           if (filterValues.length === 0) return true;
           // Match against status label (case-insensitive)
-          return filterValues.some(fv => itemStatusLabel === fv);
+          return filterValues.some((fv) => itemStatusLabel === fv);
         case MULTI_SELECT_OPERATORS.IS_NONE_OF:
           if (filterValues.length === 0) return true;
           // Item status should NOT be in the filter values
-          return !filterValues.some(fv => itemStatusLabel === fv);
+          return !filterValues.some((fv) => itemStatusLabel === fv);
         default:
           return true;
       }
     } else if (filter.column === 'asset_type') {
       // For asset_type, match directly
       const itemValue = String(columnValue || '').toLowerCase();
-      const filterValues = Array.isArray(filterValue) ? filterValue.map(v => String(v).toLowerCase()) : [];
+      const filterValues = Array.isArray(filterValue)
+        ? filterValue.map((v) => String(v).toLowerCase())
+        : [];
 
       switch (operator) {
         case MULTI_SELECT_OPERATORS.IS_ANY_OF:
@@ -181,20 +187,22 @@ const evaluateFilter = (filter, item) => {
   // Tag columns (multi-select by tag IDs)
   if (isTagsColumn(filter.column)) {
     const itemTags = item.tags || [];
-    const itemTagIds = itemTags.map(tag => tag.id);
-    const filterTagIds = Array.isArray(filterValue) 
-      ? filterValue.map(v => typeof v === 'number' ? v : parseInt(v, 10)).filter(id => !isNaN(id))
+    const itemTagIds = itemTags.map((tag) => tag.id);
+    const filterTagIds = Array.isArray(filterValue)
+      ? filterValue
+          .map((v) => (typeof v === 'number' ? v : parseInt(v, 10)))
+          .filter((id) => !isNaN(id))
       : [];
 
     switch (operator) {
       case MULTI_SELECT_OPERATORS.IS_ANY_OF:
         if (filterTagIds.length === 0) return true;
         // Item must have at least one of the selected tags
-        return filterTagIds.some(tagId => itemTagIds.includes(tagId));
+        return filterTagIds.some((tagId) => itemTagIds.includes(tagId));
       case MULTI_SELECT_OPERATORS.IS_NONE_OF:
         if (filterTagIds.length === 0) return true;
         // Item must have none of the selected tags
-        return !filterTagIds.some(tagId => itemTagIds.includes(tagId));
+        return !filterTagIds.some((tagId) => itemTagIds.includes(tagId));
       default:
         return true;
     }
@@ -207,7 +215,7 @@ export function useFilter(
   items,
   initialSearch = '',
   initialStatusFilter = 'all',
-  customFilters = [],
+  customFilters = []
 ) {
   const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
@@ -236,8 +244,7 @@ export function useFilter(
 
       // Handle search filtering
       const matchesSearch =
-        !search ||
-        (item.name && item.name.toLowerCase().includes(search.toLowerCase()));
+        !search || (item.name && item.name.toLowerCase().includes(search.toLowerCase()));
 
       // Handle status filtering
       let matchesStatus = true;
@@ -245,22 +252,13 @@ export function useFilter(
         try {
           // Handle array of filters
           const filters = Array.isArray(statusFilter)
-            ? statusFilter.map((f) =>
-                typeof f === 'string' ? JSON.parse(f) : f,
-              )
-            : [
-                typeof statusFilter === 'string'
-                  ? JSON.parse(statusFilter)
-                  : statusFilter,
-              ];
+            ? statusFilter.map((f) => (typeof f === 'string' ? JSON.parse(f) : f))
+            : [typeof statusFilter === 'string' ? JSON.parse(statusFilter) : statusFilter];
 
           const itemStatus = getMatchingStatus(item);
 
           // If filtering for Downloading status, also include Meta_DL and Checking_Resume_Data
-          if (
-            itemStatus.label === 'Meta_DL' ||
-            itemStatus.label === 'Checking_Resume_Data'
-          ) {
+          if (itemStatus.label === 'Meta_DL' || itemStatus.label === 'Checking_Resume_Data') {
             const downloadingFilter = filters.find(
               (f) =>
                 JSON.stringify(f) ===
@@ -268,7 +266,7 @@ export function useFilter(
                   active: true,
                   download_finished: false,
                   download_present: false,
-                }),
+                })
             );
             if (downloadingFilter) return true;
           }
@@ -284,51 +282,53 @@ export function useFilter(
 
       // Handle column-based filters with group support
       let matchesColumnFilters = true;
-      
+
       if (columnFilters && typeof columnFilters === 'object') {
         // New group structure
         if (columnFilters.groups && Array.isArray(columnFilters.groups)) {
           const groupLogic = columnFilters.logicOperator || LOGIC_OPERATORS.AND;
-          
+
           // Evaluate each group
           const groupResults = columnFilters.groups.map((group) => {
             const groupLogicOp = group.logicOperator || LOGIC_OPERATORS.AND;
             const filters = group.filters || [];
-            
+
             if (filters.length === 0) return true;
-            
+
             // Evaluate filters within the group
             const filterResults = filters
-              .filter(f => f.column) // Only evaluate filters with a column
-              .map(filter => evaluateFilter(filter, item));
-            
+              .filter((f) => f.column) // Only evaluate filters with a column
+              .map((filter) => evaluateFilter(filter, item));
+
             if (filterResults.length === 0) return true;
-            
+
             // Apply group logic
             if (groupLogicOp === LOGIC_OPERATORS.OR) {
-              return filterResults.some(result => result === true);
+              return filterResults.some((result) => result === true);
             } else {
-              return filterResults.every(result => result === true);
+              return filterResults.every((result) => result === true);
             }
           });
-          
+
           // Apply logic between groups
           if (groupResults.length === 0) {
             matchesColumnFilters = true;
           } else if (groupLogic === LOGIC_OPERATORS.OR) {
-            matchesColumnFilters = groupResults.some(result => result === true);
+            matchesColumnFilters = groupResults.some((result) => result === true);
           } else {
-            matchesColumnFilters = groupResults.every(result => result === true);
+            matchesColumnFilters = groupResults.every((result) => result === true);
           }
         } else if (Array.isArray(columnFilters)) {
           // Old flat structure - backward compatibility
-          matchesColumnFilters = columnFilters.length === 0 || 
-            columnFilters.every(filter => evaluateFilter(filter, item));
+          matchesColumnFilters =
+            columnFilters.length === 0 ||
+            columnFilters.every((filter) => evaluateFilter(filter, item));
         }
       } else if (Array.isArray(columnFilters)) {
         // Old flat structure
-        matchesColumnFilters = columnFilters.length === 0 || 
-          columnFilters.every(filter => evaluateFilter(filter, item));
+        matchesColumnFilters =
+          columnFilters.length === 0 ||
+          columnFilters.every((filter) => evaluateFilter(filter, item));
       }
 
       return matchesSearch && matchesStatus && matchesColumnFilters;
