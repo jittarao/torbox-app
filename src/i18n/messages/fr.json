@@ -555,9 +555,9 @@
         "description": "Téléchargez plusieurs torrents en un seul clic",
         "title": "Téléchargement par lots"
       },
-      "debrid": {
-        "description": "Intégration transparente avec les services debrid",
-        "title": "Intégration de Debrid"
+      "automation": {
+        "description": "Créez des règles intelligentes pour gérer automatiquement vos téléchargements.",
+        "title": "Règles d'automatisation"
       },
       "search": {
         "description": "Recherche sur plusieurs sites de torrents",
@@ -565,7 +565,7 @@
       }
     },
     "footer": {
-      "description": "Nous ne stockons aucune de vos informations. Cette application est entièrement open source sur",
+      "description": "Cette application est entièrement open source sur",
       "github": "GitHub"
     },
     "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité.",

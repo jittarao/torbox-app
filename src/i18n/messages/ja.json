@@ -555,9 +555,9 @@
         "description": "ワンクリックで複数のトレントをアップロード",
         "title": "バッチアップロード"
       },
-      "debrid": {
-        "description": "Debridサービスとのスムーズな統合",
-        "title": "Debrid-統合"
+      "automation": {
+        "description": "スマートなルールを作成してダウンロードを自動管理します。",
+        "title": "自動化ルール"
       },
       "search": {
         "description": "複数のトレントサイトを検索",
@@ -565,7 +565,7 @@
       }
     },
     "footer": {
-      "description": "お客様の情報は一切保存しません。このアプリは完全にオープンソースで",
+      "description": "このアプリは完全にオープンソースで",
       "github": "GitHub"
     },
     "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",

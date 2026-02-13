@@ -555,9 +555,9 @@
         "description": "Prześlij wiele torrentów jednym kliknięciem",
         "title": "Przesyłanie grupowe"
       },
-      "debrid": {
-        "description": "Bezproblemowa integracja z usługami debrid",
-        "title": "Integracja Debrid"
+      "automation": {
+        "description": "Twórz reguły inteligentne do automatycznego zarządzania swoimi pobieraniami.",
+        "title": "Reguły automatyzacji"
       },
       "search": {
         "description": "Szukaj w wielu witrynach torrentów",
@@ -565,7 +565,7 @@
       }
     },
     "footer": {
-      "description": "Nie przechowujemy żadnych Twoich informacji. Ta aplikacja jest w pełni open source na",
+      "description": "Ta aplikacja jest w pełni open source na",
       "github": "GitHub"
     },
     "subtitle": "Alternatywa dla zaawansowanych użytkowników interfejsu TorBox. Zbudowana dla szybkości i wydajności.",

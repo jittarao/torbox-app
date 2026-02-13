@@ -1,150 +1,233 @@
 'use client';
 
 import { useState } from 'react';
+import { Syne } from 'next/font/google';
 import ApiKeyInput from './downloads/ApiKeyInput';
 import { useTranslations } from 'next-intl';
+
+const syne = Syne({
+  subsets: ['latin'],
+  variable: '--font-syne',
+  display: 'swap',
+});
 
 export default function LandingPage({ onKeyChange }) {
   const t = useTranslations('LandingPage');
   const referralT = useTranslations('Referral');
   const [showCopied, setShowCopied] = useState(false);
 
+  const features = [
+    {
+      key: 'batchUpload',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      ),
+    },
+    {
+      key: 'search',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+      ),
+    },
+    {
+      key: 'automation',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+      ),
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400">
+    <div
+      className={`${syne.variable} min-h-screen bg-[#0a0a0b] text-zinc-100 antialiased overflow-x-hidden`}
+      style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif' }}
+    >
+      {/* Background: gradient + grid + grain */}
+      <div className="fixed inset-0 pointer-events-none" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(251,191,36,0.08),transparent)]" />
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px)`,
+            backgroundSize: '64px 64px',
+          }}
+        />
+      </div>
+
+      <div className="relative max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-24">
+        {/* Hero */}
+        <header className="text-center mb-20 sm:mb-28">
+          <h1
+            className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 text-white"
+            style={{
+              animation: 'landing-fade-in-up 0.7s ease-out forwards',
+              opacity: 0,
+            }}
+          >
             {t('title')}
           </h1>
-          <p className="text-2xl mb-12 text-gray-300 font-light">
+          <p
+            className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto font-normal leading-relaxed"
+            style={{
+              animation: 'landing-fade-in-up 0.7s ease-out 0.12s forwards',
+              opacity: 0,
+            }}
+          >
             {t('subtitle')}
           </p>
+        </header>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
-            <div className="p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-xl">
-              <div className="w-12 h-12 mb-4 mx-auto text-blue-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.625 1.5H9a3.75 3.75 0 013.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 013.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 01-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875zm6.905 9.97a.75.75 0 00-1.06 0l-3 3a.75.75 0 101.06 1.06l1.72-1.72V18a.75.75 0 001.5 0v-5.19l1.72 1.72a.75.75 0 101.06-1.06l-3-3z"
-                    clipRule="evenodd"
-                  />
-                  <path d="M14.25 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0016.5 7.5h-1.875a.375.375 0 01-.375-.375V5.25z" />
-                </svg>
+        {/* Features */}
+        <section
+          className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-20"
+          style={{
+            animation: 'landing-fade-in-up 0.7s ease-out 0.24s forwards',
+            opacity: 0,
+          }}
+        >
+          {features.map(({ key, icon }, i) => (
+            <div
+              key={key}
+              className="group relative p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 hover:border-amber-500/30 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-12px_rgba(251,191,36,0.15)]"
+              style={{
+                animation: `landing-fade-in-up 0.6s ease-out ${0.32 + i * 0.08}s forwards`,
+                opacity: 0,
+              }}
+            >
+              <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-5 transition-colors duration-300 group-hover:bg-amber-500/20 [&_svg]:w-5 [&_svg]:h-5">
+                {icon}
               </div>
-              <h3 className="text-xl font-bold mb-3 text-blue-400">
-                {t('features.batchUpload.title')}
+              <h3
+                className="text-lg font-semibold text-white mb-2"
+                style={{ fontFamily: 'var(--font-syne), system-ui' }}
+              >
+                {t(`features.${key}.title`)}
               </h3>
-              <p className="text-gray-300">
-                {t('features.batchUpload.description')}
+              <p className="text-sm text-zinc-500 leading-relaxed">
+                {t(`features.${key}.description`)}
               </p>
             </div>
-            <div className="p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-xl">
-              <div className="w-12 h-12 mb-4 mx-auto text-violet-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-violet-400">
-                {t('features.search.title')}
-              </h3>
-              <p className="text-gray-300">
-                {t('features.search.description')}
-              </p>
-            </div>
-            <div className="p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-xl">
-              <div className="w-12 h-12 mb-4 mx-auto text-indigo-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M20.599 1.5c-.376 0-.743.111-1.055.32l-5.08 3.385a18.747 18.747 0 00-3.471 2.987 10.04 10.04 0 014.815 4.815 18.748 18.748 0 002.987-3.471l3.386-5.08A1.902 1.902 0 0020.599 1.5zm-8.3 14.025a18.76 18.76 0 001.896-1.207 8.026 8.026 0 00-4.513-4.513A18.75 18.75 0 008.475 11.7l-.278.5a5.26 5.26 0 013.601 3.602l.502-.278zM6.75 13.5A3.75 3.75 0 003 17.25a1.5 1.5 0 01-1.601 1.497.75.75 0 00-.7 1.123 5.25 5.25 0 009.8-2.62 3.75 3.75 0 00-3.75-3.75z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-indigo-400">
-                {t('features.debrid.title')}
-              </h3>
-              <p className="text-gray-300">
-                {t('features.debrid.description')}
-              </p>
-            </div>
-          </div>
+          ))}
+        </section>
 
-          <div className="max-w-md mx-auto p-8 bg-gray-800/30 backdrop-blur border border-gray-700/50 rounded-xl">
-            <h2 className="text-2xl font-bold mb-6 text-white">
+        {/* CTA: API Key */}
+        <section
+          className="max-w-lg mx-auto"
+          style={{
+            animation: 'landing-fade-in-up 0.7s ease-out 0.56s forwards',
+            opacity: 0,
+          }}
+        >
+          <div className="relative p-8 sm:p-10 rounded-2xl border border-zinc-800 bg-white/[0.03] backdrop-blur-sm shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+            <h2
+              className="text-xl font-semibold text-white mb-6 text-center"
+              style={{ fontFamily: 'var(--font-syne), system-ui' }}
+            >
               {t('apiKeyInput.title')}
             </h2>
             <ApiKeyInput onKeyChange={onKeyChange} />
-            <p className="mt-4 text-sm text-gray-400">
+            <p className="mt-5 text-sm text-zinc-500 text-center">
               {t('apiKeyInput.description')}{' '}
               <a
                 href="https://torbox.app/settings"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
               >
                 {t('apiKeyInput.link')}
               </a>
             </p>
           </div>
+        </section>
 
-          {/* Referral Section */}
-          <div className="max-w-md mx-auto mt-8 text-center">
-            <p className="text-sm text-gray-400 mb-2">
-              {referralT('landingDescription')}{' '}
-              <a
-                href="https://torbox.app/subscription?referral=7908ea44-023c-45f5-86ce-564bc6edaf34"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                {referralT('signUp')}
-              </a>
-              {' '}or{' '}
-              <button
-                onClick={async () => {
-                  await navigator.clipboard.writeText('7908ea44-023c-45f5-86ce-564bc6edaf34');
-                  setShowCopied(true);
-                  setTimeout(() => setShowCopied(false), 2000);
-                }}
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                {showCopied ? referralT('copied') : referralT('copyCode')}
-              </button>
-            </p>
+        {/* Referral */}
+        <div
+          className="max-w-lg mx-auto mt-8 text-center"
+          style={{
+            animation: 'landing-fade-in 0.6s ease-out 0.72s forwards',
+            opacity: 0,
+          }}
+        >
+          <div className="text-sm text-zinc-500">
+            <p>{referralT('landingDescription')}</p>
+            <a
+              href="https://torbox.app/subscription?referral=7908ea44-023c-45f5-86ce-564bc6edaf34"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+            >
+              {referralT('signUp')}
+            </a>{' '}
+            or{' '}
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText('7908ea44-023c-45f5-86ce-564bc6edaf34');
+                setShowCopied(true);
+                setTimeout(() => setShowCopied(false), 2000);
+              }}
+              className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+            >
+              {showCopied ? referralT('copied') : referralT('copyCode')}
+            </button>
           </div>
-
-          <footer className="mt-12 text-sm text-gray-400">
-            <p>
-              {t('footer.description')}{' '}
-              <a
-                href="https://github.com/jittarao/torbox-app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                {t('footer.github')}
-              </a>
-            </p>
-          </footer>
         </div>
+
+        {/* Footer */}
+        <footer
+          className="mt-16 pt-8 border-t border-zinc-800/60 text-center text-sm text-zinc-600"
+          style={{
+            animation: 'landing-fade-in 0.6s ease-out 0.84s forwards',
+            opacity: 0,
+          }}
+        >
+          <p>
+            {t('footer.description')}{' '}
+            <a
+              href="https://github.com/jittarao/torbox-app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400/90 hover:text-amber-400 underline underline-offset-2 transition-colors"
+            >
+              {t('footer.github')}
+            </a>
+          </p>
+        </footer>
       </div>
     </div>
   );

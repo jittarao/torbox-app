@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
+import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
 
 const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
@@ -134,10 +135,13 @@ export default function Home() {
     }
   });
 
-  // Handle API key change
+  // Only store when empty or valid UUID; never overwrite a valid key with invalid input.
   const handleKeyChange = (newKey) => {
-    setApiKey(newKey);
-    localStorage.setItem('torboxApiKey', newKey);
+    const trimmed = (newKey || '').trim();
+    if (trimmed === '' || isValidTorboxApiKey(trimmed)) {
+      setApiKey(trimmed);
+      localStorage.setItem('torboxApiKey', trimmed);
+    }
   };
 
   // Don't render anything until client-side hydration is complete

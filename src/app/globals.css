@@ -60,6 +60,27 @@ select option {
   color: #E5E7EB;
 }
 
+/* Landing page entrance animations */
+@keyframes landing-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Firefox-specific fix for select dropdown options */
 @-moz-document url-prefix() {
   select option {
