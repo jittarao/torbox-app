@@ -7,13 +7,18 @@ import cache from '../utils/cache.js';
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
 const DEFAULT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes (rules have min 5 min interval; no need to refresh poller list every 60s)
 const REFRESH_FULL_SYNC_EVERY_N = 6; // Do expensive "sync has_active_rules from all user DBs" every N refreshes (~90 min at 15 min refresh)
-const DEFAULT_POLL_TIMEOUT_MS = 300000; // 5 minutes
-const DEFAULT_MAX_CONCURRENT_POLLS = 7;
+// Minimum time between polling the same user (each user must not be polled more than once per this window)
+const MIN_POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes — matches rules' minimum interval
+// Per-user kick-out: max time one user's poll may run inside a cycle before we give up and free the slot
+const DEFAULT_POLL_KICKOUT_MS = 120000; // 2 minutes — kick slow users out so others can use the slot
+const DEFAULT_MAX_CONCURRENT_POLLS = 12; // Number of users polled in parallel
 const DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS = 24;
-const ERROR_RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const ERROR_RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes after first timeout
+const TIMEOUT_BACKOFF_RETRY_MS = 15 * 60 * 1000; // 15 minutes after repeated timeouts (free concurrency slot)
 const SKIPPED_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
 const STAGGER_PERCENTAGE = 0.1; // 10% of base interval
+const SLOW_POLL_WARNING_PERCENT = 0.8; // Log when poll has run this fraction of per-user timeout
 
 /**
  * Semaphore utility for limiting concurrent operations
@@ -173,7 +178,10 @@ class PollingScheduler {
       options.refreshInterval ??
         parseInt(process.env.REFRESH_INTERVAL_MS || String(DEFAULT_REFRESH_INTERVAL_MS), 10)
     );
-    this.pollTimeoutMs = Math.max(1000, options.pollTimeoutMs || DEFAULT_POLL_TIMEOUT_MS);
+    this.pollKickoutMs = Math.max(
+      1000,
+      options.pollKickoutMs ?? options.pollTimeoutMs ?? parseInt(process.env.POLL_KICKOUT_MS || String(DEFAULT_POLL_KICKOUT_MS), 10)
+    );
     this.maxConcurrentPolls = Math.max(
       1,
       options.maxConcurrentPolls || DEFAULT_MAX_CONCURRENT_POLLS
@@ -186,6 +194,10 @@ class PollingScheduler {
     // State
     this.lastCleanupAt = null;
     this.flagUpdateMutexes = new Map();
+    /** @type {Map<string, number>} Consecutive timeout count per user; used for backoff so repeat timeouts don't hold slots */
+    this.userConsecutiveTimeoutCount = new Map();
+    /** Single semaphore shared across all poll cycles so we never exceed maxConcurrentPolls globally */
+    this.pollSemaphore = null;
     this._refreshInProgress = false;
     this._refreshCount = 0; // Incremented each refresh; full sync every REFRESH_FULL_SYNC_EVERY_N
     this._refreshSyncConcurrency = Math.min(
@@ -356,16 +368,21 @@ class PollingScheduler {
     }
 
     try {
-      const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
+      const count = (this.userConsecutiveTimeoutCount.get(authId) || 0) + 1;
+      this.userConsecutiveTimeoutCount.set(authId, count);
+      const retryMs =
+        count >= 2 ? TIMEOUT_BACKOFF_RETRY_MS : ERROR_RETRY_INTERVAL_MS;
+      const nextPollAt = new Date(Date.now() + retryMs);
       this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
 
       this.metrics.timeoutPolls++;
       this.metrics.failedPolls++;
 
-      logger.info('Set next poll time after timeout', {
+      logger.info('Set next poll time after per-user timeout', {
         authId,
         nextPollAt: nextPollAt.toISOString(),
-        retryIn: '5 minutes',
+        retryIn: count >= 2 ? '15 minutes (backoff)' : '5 minutes',
+        consecutiveTimeouts: count,
         duration: `${duration.toFixed(2)}s`,
       });
     } catch (error) {
@@ -422,6 +439,7 @@ class PollingScheduler {
    * @param {number} duration - Poll duration in seconds
    */
   async handleSuccessfulPoll(authId, poller, result, hasActiveRules, duration) {
+    this.userConsecutiveTimeoutCount.delete(authId);
     const nextPollAt = await poller.calculateNextPollAt(
       result.nonTerminalCount || 0,
       hasActiveRules,
@@ -467,9 +485,10 @@ class PollingScheduler {
   }
 
   /**
-   * Execute poll for a single user
+   * Execute poll for a single user.
+   * Each user has a per-user kick-out timeout (pollKickoutMs); one slow poll gets kicked out and cannot block others.
    * @param {Object} user - User object from database
-   * @param {Semaphore} semaphore - Semaphore for concurrency control
+   * @param {Semaphore} semaphore - Semaphore for concurrency control (maxConcurrentPolls)
    * @param {Object} counters - Object to track success/skipped/error counts
    * @returns {Promise<void>}
    */
@@ -503,8 +522,7 @@ class PollingScheduler {
 
       const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
 
-      // Reserve next_poll_at so this user is not returned as due again until poll completes or times out
-      this.masterDb.updateNextPollAt(auth_id, new Date(Date.now() + this.pollTimeoutMs), 0);
+      // (Reservation of next_poll_at for this user is done at start of pollDueUsers for the whole batch)
 
       // Create engine for this poll only (not cached)
       engineForPoll = await this.createEngineForPoll(auth_id, encrypted_key);
@@ -527,29 +545,43 @@ class PollingScheduler {
         dbHasActiveRules,
       });
 
-      // Execute poll with timeout
+      // Warn when poll runs a long time (before timeout) so operators can tune POLL_TIMEOUT_MS or investigate
+      const slowPollThresholdMs = Math.floor(this.pollKickoutMs * SLOW_POLL_WARNING_PERCENT);
+      const slowPollWarningTimer = setTimeout(() => {
+        const elapsed = ((Date.now() - pollStartTime) / 1000).toFixed(1);
+        logger.warn('Poll still running (approaching per-user timeout)', {
+          authId: auth_id,
+          elapsedSeconds: elapsed,
+          perUserTimeoutMs: this.pollKickoutMs,
+          percentOfTimeout: Math.round(SLOW_POLL_WARNING_PERCENT * 100),
+        });
+      }, slowPollThresholdMs);
+
+      // Per-user timeout: this user only; other users are unaffected
       let result;
       try {
         result = await withTimeout(
           poller.poll(hasActiveRules),
-          this.pollTimeoutMs,
-          `Poll timeout after ${this.pollTimeoutMs / 1000}s`
+          this.pollKickoutMs,
+          `Per-user poll timeout after ${this.pollKickoutMs / 1000}s`
         );
       } catch (error) {
         if (error.isTimeout || error.name === 'TimeoutError' || error.message.includes('timeout')) {
           const duration = (Date.now() - pollStartTime) / 1000;
-          logger.error('Poll timeout exceeded', error, {
+          logger.error('Per-user poll timeout exceeded (kicking user out of concurrency slot)', error, {
             authId: auth_id,
-            timeoutMs: this.pollTimeoutMs,
+            perUserTimeoutMs: this.pollKickoutMs,
             duration: `${duration.toFixed(2)}s`,
           });
           this.handlePollTimeout(auth_id, duration);
-          // Clear isPolling so the next scheduled poll can run; the timed-out poll keeps running in background
           poller.resetPollingState();
           counters.error++;
+          // return then finally: semaphore.release() frees the slot for the next due user
           return;
         }
         throw error;
+      } finally {
+        clearTimeout(slowPollWarningTimer);
       }
 
       const duration = (Date.now() - pollStartTime) / 1000;
@@ -625,6 +657,7 @@ class PollingScheduler {
     });
 
     this.isRunning = true;
+    this.pollSemaphore = new Semaphore(this.maxConcurrentPolls);
 
     // Initial load of active users
     logger.info('Performing initial poller refresh');
@@ -696,6 +729,7 @@ class PollingScheduler {
       logger.debug('Refresh interval cleared');
     }
 
+    this.pollSemaphore = null;
     const pollerCount = this.pollers.size;
     this.pollers.clear();
 
@@ -732,6 +766,7 @@ class PollingScheduler {
    */
   _cleanupEngineAndMutexForAuth(authId) {
     this.flagUpdateMutexes.delete(authId);
+    this.userConsecutiveTimeoutCount.delete(authId);
   }
 
   /**
@@ -815,7 +850,12 @@ class PollingScheduler {
         return;
       }
 
-      // Diagnostic: warn in prod when we're about to run many polls (correlate with disk/CPU spikes)
+      logger.info('Polling users in parallel', {
+        dueCount: dueUsers.length,
+        maxConcurrent: this.maxConcurrentPolls,
+        perUserTimeoutSeconds: this.pollKickoutMs / 1000,
+      });
+
       if (dueUsers.length >= 20) {
         logger.warn('PollDueUsers: large due list', { dueCount: dueUsers.length });
       }
@@ -831,10 +871,22 @@ class PollingScheduler {
           })),
       });
 
-      const counters = { success: 0, skipped: 0, error: 0 };
-      const semaphore = new Semaphore(this.maxConcurrentPolls);
+      // Reserve next_poll_at so the same user is not polled more than once per MIN_POLL_INTERVAL (5 min).
+      // Next cycle (30s later) won't re-queue these users; new due users from next cycle join the same queue.
+      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
+      for (const u of dueUsers) {
+        if (u?.auth_id) {
+          this.masterDb.updateNextPollAt(u.auth_id, reserveUntil, 0);
+        }
+      }
 
-      // Process users in parallel with concurrency control
+      const counters = { success: 0, skipped: 0, error: 0 };
+      const semaphore = this.pollSemaphore;
+      if (!semaphore) {
+        return;
+      }
+
+      // Global semaphore: max 12 concurrent across all cycles; new users from next 30s run join the same queue
       await Promise.allSettled(
         dueUsers.map((user) => this.executeUserPoll(user, semaphore, counters))
       );
@@ -1058,7 +1110,8 @@ class PollingScheduler {
       configuration: {
         pollCheckInterval: this.pollCheckInterval,
         refreshInterval: this.refreshInterval,
-        pollTimeoutMs: this.pollTimeoutMs,
+        minPollIntervalMs: MIN_POLL_INTERVAL_MS,
+        pollKickoutMs: this.pollKickoutMs,
         maxConcurrentPolls: this.maxConcurrentPolls,
         pollerCleanupIntervalHours: this.pollerCleanupIntervalHours,
       },
@@ -1093,8 +1146,8 @@ class PollingScheduler {
     try {
       const result = await withTimeout(
         poller.poll(),
-        this.pollTimeoutMs,
-        `Manual poll timeout after ${this.pollTimeoutMs / 1000}s`
+        this.pollKickoutMs,
+        `Per-user poll timeout after ${this.pollKickoutMs / 1000}s`
       );
 
       logger.info('Manual poll completed', {
@@ -1110,7 +1163,7 @@ class PollingScheduler {
       if (error.isTimeout || error.name === 'TimeoutError' || error.message.includes('timeout')) {
         logger.error('Manual poll timeout exceeded', error, {
           authId,
-          timeoutMs: this.pollTimeoutMs,
+          timeoutMs: this.pollKickoutMs,
         });
       } else {
         logger.error('Manual poll failed', error, {
