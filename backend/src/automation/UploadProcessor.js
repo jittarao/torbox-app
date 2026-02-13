@@ -858,12 +858,19 @@ class UploadProcessor {
       }
     }
 
-    // Log appropriate message
+    // Log appropriate message (include TorBox response in rate-limit log so prod sees it in one place)
     if (isRateLimit) {
       logger.warn('Rate limit hit, will retry later', {
         uploadId: id,
         type,
         waitTimeMs: deferMs,
+        ...(error.response && {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          retryAfter:
+            error.response.headers?.['retry-after'] ?? error.response.headers?.['Retry-After'],
+          data: error.response.data,
+        }),
       });
     } else if (shouldRetry) {
       logger.warn('Upload failed, will retry', {
