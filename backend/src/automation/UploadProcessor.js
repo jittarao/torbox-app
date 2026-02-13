@@ -773,6 +773,12 @@ class UploadProcessor {
           error.response.headers?.['retry-after'] ?? error.response.headers?.['Retry-After'],
         data: error.response.data,
       });
+    } else if (this.isRateLimitError(error)) {
+      logger.warn('Rate limit (no API response body)', {
+        uploadId: id,
+        type,
+        message: error.message,
+      });
     }
 
     const isRateLimit = this.isRateLimitError(error);
