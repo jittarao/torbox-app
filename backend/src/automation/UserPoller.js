@@ -294,8 +294,7 @@ class UserPoller {
       }
 
       const isPlanRestricted =
-        error.response?.status === 403 &&
-        error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
+        error.response?.status === 403 && error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
       const logPayload = {
         authId: this.authId,
         errorMessage: error.message,
@@ -331,13 +330,10 @@ class UserPoller {
     });
 
     try {
-      const changes = await this.executeWithRetry(
-        () => {
-          const stateDiffEngine = this.dbManager.getStateDiffEngine();
-          return stateDiffEngine.processSnapshot(torrents);
-        },
-        'processSnapshot'
-      );
+      const changes = await this.executeWithRetry(() => {
+        const stateDiffEngine = this.dbManager.getStateDiffEngine();
+        return stateDiffEngine.processSnapshot(torrents);
+      }, 'processSnapshot');
 
       const diffDuration = ((Date.now() - diffStart) / 1000).toFixed(2);
       logger.debug('State diff processed', {
@@ -383,13 +379,10 @@ class UserPoller {
     });
 
     try {
-      await this.executeWithRetry(
-        () => {
-          const derivedFieldsEngine = this.dbManager.getDerivedFieldsEngine();
-          return derivedFieldsEngine.updateDerivedFields(changes, 5 * 60);
-        },
-        'updateDerivedFields'
-      );
+      await this.executeWithRetry(() => {
+        const derivedFieldsEngine = this.dbManager.getDerivedFieldsEngine();
+        return derivedFieldsEngine.updateDerivedFields(changes, 5 * 60);
+      }, 'updateDerivedFields');
 
       const derivedDuration = ((Date.now() - derivedStart) / 1000).toFixed(2);
       logger.debug('Derived fields updated', {
@@ -423,13 +416,10 @@ class UserPoller {
     });
 
     try {
-      await this.executeWithRetry(
-        () => {
-          const speedAggregator = this.dbManager.getSpeedAggregator();
-          return speedAggregator.processUpdates(updatedTorrents);
-        },
-        'processUpdates'
-      );
+      await this.executeWithRetry(() => {
+        const speedAggregator = this.dbManager.getSpeedAggregator();
+        return speedAggregator.processUpdates(updatedTorrents);
+      }, 'processUpdates');
 
       const speedDuration = ((Date.now() - speedStart) / 1000).toFixed(2);
       logger.debug('Speed updates processed', {
@@ -685,19 +675,39 @@ class UserPoller {
       this.lastPollError = error.message;
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       const isPlanRestricted =
-        error.response?.status === 403 &&
-        error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
-      const pollFailPayload = {
-        authId: this.authId,
-        duration: `${duration}s`,
-        errorMessage: error.message,
-        errorStack: error.stack,
-        timestamp: new Date().toISOString(),
-      };
-      if (isPlanRestricted) {
-        logger.info('Poll failed', pollFailPayload);
+        error.response?.status === 403 && error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
+      if (isPlanRestricted && this.automationEngine) {
+        try {
+          const disabledCount = await this.automationEngine.disableAllRules();
+          logger.info('Poll failed (plan restricted); disabled all automation rules', {
+            authId: this.authId,
+            duration: `${duration}s`,
+            disabledCount,
+          });
+        } catch (disableErr) {
+          logger.error('Failed to disable rules after plan restricted', disableErr, {
+            authId: this.authId,
+          });
+          logger.info('Poll failed', {
+            authId: this.authId,
+            duration: `${duration}s`,
+            errorMessage: error.message,
+            timestamp: new Date().toISOString(),
+          });
+        }
       } else {
-        logger.error('Poll failed', error, pollFailPayload);
+        const pollFailPayload = {
+          authId: this.authId,
+          duration: `${duration}s`,
+          errorMessage: error.message,
+          errorStack: error.stack,
+          timestamp: new Date().toISOString(),
+        };
+        if (isPlanRestricted) {
+          logger.info('Poll failed', pollFailPayload);
+        } else {
+          logger.error('Poll failed', error, pollFailPayload);
+        }
       }
 
       return {
