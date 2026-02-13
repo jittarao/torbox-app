@@ -555,9 +555,9 @@
         "description": "Carga varios torrents con un solo clic",
         "title": "Carga por lotes"
       },
-      "debrid": {
-        "description": "Integración perfecta con los servicios de Debrid",
-        "title": "Integración de Debrid"
+      "automation": {
+        "description": "Crea reglas inteligentes para gestionar tus descargas automáticamente.",
+        "title": "Reglas de automatización"
       },
       "search": {
         "description": "Busca en múltiples sitios de torrents",
@@ -565,7 +565,7 @@
       }
     },
     "footer": {
-      "description": "No almacenamos ninguna de sus información. Esta aplicación es completamente de código abierto en",
+      "description": "Esta aplicación es completamente de código abierto en",
       "github": "GitHub"
     },
     "subtitle": "La alternativa del usuario avanzado a la interfaz de usuario de TorBox. Creado para la velocidad y la eficiencia.",

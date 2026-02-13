@@ -563,29 +563,29 @@
   },
   "LandingPage": {
     "apiKeyInput": {
-      "description": "Find your API key at",
+      "description": "Paste your API key to get started. Get your key at",
       "link": "torbox.app/settings",
-      "title": "Enter TorBox API Key"
+      "title": "Connect Your TorBox Account"
     },
     "features": {
       "batchUpload": {
-        "description": "Upload multiple torrents with a single click",
+        "description": "Add multiple torrents, NZB files, magnets, and hoster links in one go.",
         "title": "Batch Upload"
       },
-      "debrid": {
-        "description": "Seamless integration with debrid services",
-        "title": "Debrid Integration"
+      "automation": {
+        "description": "Create smart rules to automatically manage your downloads.",
+        "title": "Automation Rules"
       },
       "search": {
-        "description": "Search across multiple torrent sites",
+        "description": "Search across multiple torrent and usenet sites from one place.",
         "title": "Smart Search"
       }
     },
     "footer": {
-      "description": "We don't store any of your information. This app is fully open source on",
+      "description": "TorBox Manager is open source. View the project on",
       "github": "GitHub"
     },
-    "subtitle": "The power user's alternative to TorBox UI. Built for speed and efficiency.",
+    "subtitle": "The power-user interface for TorBox: batch uploads, smart search, automation rules, and a customizable dashboard.",
     "title": "TorBox Manager"
   },
   "LinkHistory": {

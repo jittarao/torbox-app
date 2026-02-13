@@ -5,6 +5,7 @@ import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
 import { ensureUserDb } from '@/utils/ensureUserDb';
+import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 
 export default function ApiKeyInput({
   value,
@@ -15,7 +16,15 @@ export default function ApiKeyInput({
   const [showKey, setShowKey] = useState(false);
   const [showManager, setShowManager] = useState(false);
   const [keepManagerOpen, setKeepManagerOpen] = useState(false);
+  const [draft, setDraft] = useState(undefined);
   const ensureDbTimeoutRef = useRef(null);
+
+  const committedValue = value ?? '';
+
+  // When parent commits a new value, show it (clear draft).
+  useEffect(() => {
+    setDraft(undefined);
+  }, [committedValue]);
 
   // Load manager open state from localStorage on mount
   useEffect(() => {
@@ -39,11 +48,11 @@ export default function ApiKeyInput({
       clearTimeout(ensureDbTimeoutRef.current);
     }
 
-    // Only ensure DB if we have a valid-looking API key (at least 20 chars)
-    if (value && value.length >= 20) {
+    // Only ensure DB if we have a valid TorBox API key (UUID format)
+    if (committedValue && isValidTorboxApiKey(committedValue)) {
       // Debounce the API call - wait 1 second after user stops typing
       ensureDbTimeoutRef.current = setTimeout(async () => {
-        const result = await ensureUserDb(value);
+        const result = await ensureUserDb(committedValue);
         if (result.success && result.wasCreated) {
           console.log('User database created for API key');
         }
@@ -55,7 +64,20 @@ export default function ApiKeyInput({
         clearTimeout(ensureDbTimeoutRef.current);
       }
     };
-  }, [value]);
+  }, [committedValue]);
+
+  const displayValue = draft !== undefined ? draft : committedValue;
+
+  const handleInputChange = (e) => {
+    const raw = e.target.value;
+    const trimmed = raw.trim();
+    if (trimmed === '' || isValidTorboxApiKey(trimmed)) {
+      setDraft(undefined);
+      onKeyChange(trimmed);
+    } else {
+      setDraft(raw);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -63,8 +85,8 @@ export default function ApiKeyInput({
         <div className="relative flex-1">
           <input
             type={showKey ? 'text' : 'password'}
-            value={value}
-            onChange={(e) => onKeyChange(e.target.value)}
+            value={displayValue}
+            onChange={handleInputChange}
             placeholder={t('placeholder')}
             className="w-full px-3 py-2 pr-12 md:p-3 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
               bg-transparent text-primary-text dark:text-primary-text-dark 
@@ -103,7 +125,7 @@ export default function ApiKeyInput({
       {showManager && (
         <ApiKeyManager
           onKeySelect={onKeyChange}
-          activeKey={value}
+          activeKey={committedValue}
           onClose={() => setShowManager(false)}
           keepOpen={keepManagerOpen}
           onKeepOpenToggle={handleKeepManagerToggle}

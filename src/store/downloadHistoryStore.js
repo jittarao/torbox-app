@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useBackendModeStore } from '@/store/backendModeStore';
+import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 
 /**
  * Check if backend is available (not disabled)
@@ -26,6 +27,11 @@ export const useDownloadHistoryStore = create((set, get) => ({
     // Check if API key exists and is not empty
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       set({ downloadHistory: [], error: null });
+      return;
+    }
+    // Never send invalid key to API (e.g. draft/partial input)
+    if (!isValidTorboxApiKey(apiKey)) {
+      set({ isLoading: false, error: null });
       return;
     }
 

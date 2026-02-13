@@ -555,9 +555,9 @@
         "description": "Mehrere Torrents mit einem einzigen Klick hochladen",
         "title": "Batch-Upload"
       },
-      "debrid": {
-        "description": "Nahtlose Integration mit Debrid-Diensten",
-        "title": "Debrid-Integration"
+      "automation": {
+        "description": "Erstellen Sie intelligente Regeln, um Ihre Downloads automatisch zu verwalten.",
+        "title": "Automatisierungs-Regeln"
       },
       "search": {
         "description": "Suchen Sie über mehrere Torrent-Sites",
@@ -565,7 +565,7 @@
       }
     },
     "footer": {
-      "description": "Wir speichern keine Ihrer Informationen. Diese App ist vollständig Open Source auf",
+      "description": "Diese App ist vollständig Open Source auf",
       "github": "GitHub"
     },
     "subtitle": "Die Alternative zur TorBox-Benutzeroberfläche für Power-User. Auf Geschwindigkeit und Effizienz ausgelegt. ",

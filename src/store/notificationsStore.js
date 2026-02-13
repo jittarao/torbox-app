@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createApiClient } from '@/utils/apiClient';
+import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 
 export const useNotificationsStore = create((set, get) => ({
   notifications: [],
@@ -31,6 +32,11 @@ export const useNotificationsStore = create((set, get) => ({
   fetchNotifications: async (apiKey) => {
     if (!apiKey) {
       set({ error: 'API key is required', loading: false });
+      return;
+    }
+    // Never send invalid key to API (e.g. draft/partial input)
+    if (!isValidTorboxApiKey(apiKey)) {
+      set({ fetchingNotifications: false, loading: false });
       return;
     }
 
