@@ -1,6 +1,6 @@
 {
   "name": "torbox",
-  "version": "0.1.58",
+  "version": "0.1.581",
   "private": true,
   "scripts": {
     "dev": "next dev",
