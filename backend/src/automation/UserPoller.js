@@ -293,11 +293,19 @@ class UserPoller {
         await this.handleAuthenticationError(error);
       }
 
-      logger.error('Failed to fetch torrents from API', error, {
+      const isPlanRestricted =
+        error.response?.status === 403 &&
+        error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
+      const logPayload = {
         authId: this.authId,
         errorMessage: error.message,
         apiFetchDuration: `${((Date.now() - apiFetchStart) / 1000).toFixed(2)}s`,
-      });
+      };
+      if (isPlanRestricted) {
+        logger.info('Failed to fetch torrents from API', logPayload);
+      } else {
+        logger.error('Failed to fetch torrents from API', error, logPayload);
+      }
       throw error;
     }
   }
@@ -676,13 +684,21 @@ class UserPoller {
     } catch (error) {
       this.lastPollError = error.message;
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      logger.error('Poll failed', error, {
+      const isPlanRestricted =
+        error.response?.status === 403 &&
+        error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
+      const pollFailPayload = {
         authId: this.authId,
         duration: `${duration}s`,
         errorMessage: error.message,
         errorStack: error.stack,
         timestamp: new Date().toISOString(),
-      });
+      };
+      if (isPlanRestricted) {
+        logger.info('Poll failed', pollFailPayload);
+      } else {
+        logger.error('Poll failed', error, pollFailPayload);
+      }
 
       return {
         success: false,
