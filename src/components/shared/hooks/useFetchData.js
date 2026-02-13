@@ -64,8 +64,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
       const rateData = rateLimitDataRef.current[activeType];
       const now = Date.now();
-      const minInterval =
-        MIN_INTERVAL_MAPPING[activeType] || MIN_INTERVAL_BETWEEN_CALLS;
+      const minInterval = MIN_INTERVAL_MAPPING[activeType] || MIN_INTERVAL_BETWEEN_CALLS;
       if (now - rateData.lastFetchTime < minInterval) {
         return true;
       }
@@ -75,7 +74,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         .slice(-MAX_CALLS);
       return rateData.callTimestamps.length >= MAX_CALLS;
     },
-    [type],
+    [type]
   );
 
   const checkAndAutoStartTorrents = useCallback(
@@ -118,7 +117,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         console.error('Error in auto-start check:', error);
       }
     },
-    [apiKey, type],
+    [apiKey, type]
   );
 
   // Helper function to generate user-friendly error messages
@@ -138,49 +137,56 @@ export function useFetchData(apiKey, type = 'torrents') {
       return 'Access denied. Please check your API key and account status.';
     } else if (status === 429) {
       return 'Too many requests to TorBox servers. Please wait a moment.';
-    } else if (message && (message.includes('NetworkError') || message.includes('Failed to fetch'))) {
+    } else if (
+      message &&
+      (message.includes('NetworkError') || message.includes('Failed to fetch'))
+    ) {
       return `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
     }
     return `Failed to fetch ${activeType} data`;
   }, []);
 
   // Helper function to handle errors consistently
-  const handleFetchError = useCallback((
-    error,
-    activeType,
-    currentFetchId,
-    rateData,
-    skipLoading,
-    responseStatus = null
-  ) => {
-    perfMonitor.endTimer(`fetch-${activeType}`);
-    
-    const statusCode = responseStatus || (error?.message?.match(/\d{3}/)?.[0] ? parseInt(error.message.match(/\d{3}/)[0]) : null);
-    const errorMessage = error?.error || error?.message || `Error fetching ${activeType} data${statusCode ? `: ${statusCode}` : ''}`;
-    
-    // Log as warning for server errors (5xx), not as error
-    if (statusCode && statusCode >= 500) {
-      console.warn(`Backend error fetching ${activeType} data (${statusCode}):`, errorMessage);
-    } else {
-      console.warn(`Error fetching ${activeType} data${statusCode ? ` (${statusCode})` : ''}:`, errorMessage);
-    }
+  const handleFetchError = useCallback(
+    (error, activeType, currentFetchId, rateData, skipLoading, responseStatus = null) => {
+      perfMonitor.endTimer(`fetch-${activeType}`);
 
-    // Only set error state if this is the latest fetch and current type
-    if (currentFetchId === rateData.latestFetchId && activeType === type) {
-      const userMessage = getErrorMessage(statusCode || error?.message, activeType);
-      setError(userMessage);
-    }
+      const statusCode =
+        responseStatus ||
+        (error?.message?.match(/\d{3}/)?.[0] ? parseInt(error.message.match(/\d{3}/)[0]) : null);
+      const errorMessage =
+        error?.error ||
+        error?.message ||
+        `Error fetching ${activeType} data${statusCode ? `: ${statusCode}` : ''}`;
 
-    if (!skipLoading) {
-      setLoading(false);
-    }
-    return [];
-  }, [type, getErrorMessage, setError, setLoading]);
+      // Log as warning for server errors (5xx), not as error
+      if (statusCode && statusCode >= 500) {
+        console.warn(`Backend error fetching ${activeType} data (${statusCode}):`, errorMessage);
+      } else {
+        console.warn(
+          `Error fetching ${activeType} data${statusCode ? ` (${statusCode})` : ''}:`,
+          errorMessage
+        );
+      }
+
+      // Only set error state if this is the latest fetch and current type
+      if (currentFetchId === rateData.latestFetchId && activeType === type) {
+        const userMessage = getErrorMessage(statusCode || error?.message, activeType);
+        setError(userMessage);
+      }
+
+      if (!skipLoading) {
+        setLoading(false);
+      }
+      return [];
+    },
+    [type, getErrorMessage, setError, setLoading]
+  );
 
   const fetchLocalItems = useCallback(
     async (bypassCache = false, customType = null, retryCount = 0, skipLoading = false) => {
       const activeType = customType || type;
-      
+
       // Prevent infinite retry loops
       if (retryCount > 1) {
         console.error('Max retry attempts reached, giving up');
@@ -214,12 +220,12 @@ export function useFetchData(apiKey, type = 'torrents') {
           fetchLocalItems(bypassCache, 'usenet', retryCount, true),
           fetchLocalItems(bypassCache, 'webdl', retryCount, true),
         ]);
-        
+
         // Extract results from settled promises (handle both fulfilled and rejected)
         const flattenedResults = results
           .map((result) => (result.status === 'fulfilled' ? result.value : []))
           .flat();
-        
+
         // Only set loading to false after ALL three fetches complete
         if (!skipLoading) {
           setLoading(false);
@@ -325,9 +331,11 @@ export function useFetchData(apiKey, type = 'torrents') {
         if (data.success && data.data && Array.isArray(data.data)) {
           // Validate user data to prevent cross-user contamination
           if (!validateUserData(data.data, apiKey)) {
-            console.warn(`Invalid user data detected (attempt ${retryCount + 1}/2), retrying with cache bypass`);
+            console.warn(
+              `Invalid user data detected (attempt ${retryCount + 1}/2), retrying with cache bypass`
+            );
             // Add a small delay before retry to avoid overwhelming the API
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             return fetchLocalItems(true, customType, retryCount + 1);
           }
 
@@ -337,18 +345,15 @@ export function useFetchData(apiKey, type = 'torrents') {
           // Update the appropriate state based on the type
           switch (activeType) {
             case 'usenet':
-              setUsenetItems(sortedItems.map(item => ({ ...item, assetType: 'usenet' })));
+              setUsenetItems(sortedItems.map((item) => ({ ...item, assetType: 'usenet' })));
               break;
             case 'webdl':
-              setWebdlItems(sortedItems.map(item => ({ ...item, assetType: 'webdl' })));
+              setWebdlItems(sortedItems.map((item) => ({ ...item, assetType: 'webdl' })));
               break;
             default:
-              setTorrents(sortedItems.map(item => ({ ...item, assetType: 'torrents' })));
+              setTorrents(sortedItems.map((item) => ({ ...item, assetType: 'torrents' })));
               // Only check auto-start for torrents if 30 seconds have elapsed
-              if (
-                now - lastAutoStartCheckRef.current >=
-                AUTO_START_CHECK_INTERVAL
-              ) {
+              if (now - lastAutoStartCheckRef.current >= AUTO_START_CHECK_INTERVAL) {
                 await checkAndAutoStartTorrents(sortedItems);
                 lastAutoStartCheckRef.current = now;
               }
@@ -386,28 +391,18 @@ export function useFetchData(apiKey, type = 'torrents') {
         }
         return [];
       } catch (err) {
-        return handleFetchError(
-          err,
-          activeType,
-          currentFetchId,
-          rateData,
-          skipLoading
-        );
+        return handleFetchError(err, activeType, currentFetchId, rateData, skipLoading);
       }
     },
-    [apiKey, checkAndAutoStartTorrents, isRateLimited, type, handleFetchError],
+    [apiKey, checkAndAutoStartTorrents, isRateLimited, type, handleFetchError]
   );
 
-   // Active data based on the current type
+  // Active data based on the current type
   const items = useMemo(() => {
     switch (type) {
       case 'all':
         // Combine all types (assetType is already present on each item)
-        const allItems = [
-          ...(torrents || []),
-          ...(usenetItems || []),
-          ...(webdlItems || [])
-        ];
+        const allItems = [...(torrents || []), ...(usenetItems || []), ...(webdlItems || [])];
         return allItems;
       case 'usenet':
         return usenetItems || [];
@@ -427,15 +422,15 @@ export function useFetchData(apiKey, type = 'torrents') {
       fetchInProgressRef.current = false;
       return;
     }
-    
+
     // Return if fetch is already in progress
     if (fetchInProgressRef.current) {
       return;
     }
-    
+
     // Set fetchInProgressRef to true to prevent multiple simultaneous fetches
     fetchInProgressRef.current = true;
-    
+
     const initialFetch = async () => {
       try {
         // Always show loading when effect runs (type/apiKey change). Don't use items.length
@@ -456,22 +451,23 @@ export function useFetchData(apiKey, type = 'torrents') {
   const setItems = useMemo(() => {
     switch (type) {
       case 'all':
-        // For 'all' type, we need to update the appropriate individual state
-        // This is a bit complex since we need to determine which type each item belongs to
-        return (newItems) => {
-          // Safety check: ensure newItems is an array
-          if (!Array.isArray(newItems)) {
-            console.warn('setItems called with non-array:', newItems);
-            return;
+        // For 'all' type, support both array and functional updates. Functional updates
+        // run the updater on each list (torrents, usenet, webdl) so only the list
+        // that contains the changed item actually updates (e.g. stop_seeding only touches setTorrents).
+        return (newItemsOrUpdater) => {
+          if (typeof newItemsOrUpdater === 'function') {
+            const updater = newItemsOrUpdater;
+            setTorrents((prev) => updater(prev || []));
+            setUsenetItems((prev) => updater(prev || []));
+            setWebdlItems((prev) => updater(prev || []));
+          } else if (Array.isArray(newItemsOrUpdater)) {
+            const list = newItemsOrUpdater;
+            setTorrents(list.filter((item) => item.assetType === 'torrents'));
+            setUsenetItems(list.filter((item) => item.assetType === 'usenet'));
+            setWebdlItems(list.filter((item) => item.assetType === 'webdl'));
+          } else {
+            console.warn('setItems called with non-array and non-function:', newItemsOrUpdater);
           }
-          
-          const torrentItems = newItems.filter(item => item.assetType === 'torrents');
-          const usenetItems = newItems.filter(item => item.assetType === 'usenet');
-          const webdlItems = newItems.filter(item => item.assetType === 'webdl');
-          
-          setTorrents(torrentItems);
-          setUsenetItems(usenetItems);
-          setWebdlItems(webdlItems);
         };
       case 'usenet':
         return setUsenetItems;
@@ -491,7 +487,7 @@ export function useFetchData(apiKey, type = 'torrents') {
           return Promise.all([
             fetchLocalItems(bypassCache, 'torrents', 0, true),
             fetchLocalItems(bypassCache, 'usenet', 0, true),
-            fetchLocalItems(bypassCache, 'webdl', 0, true)
+            fetchLocalItems(bypassCache, 'webdl', 0, true),
           ]);
         case 'usenet':
           return fetchLocalItems(bypassCache, 'usenet', 0, true);
@@ -502,7 +498,6 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
     };
   }, [type, fetchLocalItems]);
-
 
   // Polling for new items
   useEffect(() => {
@@ -601,9 +596,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
 
       if (isVisible) {
-        const inactiveDuration = lastInactiveTime
-          ? Date.now() - lastInactiveTime
-          : 0;
+        const inactiveDuration = lastInactiveTime ? Date.now() - lastInactiveTime : 0;
         // Only fetch if we've been inactive for a while and not rate limited
         if (inactiveDuration > 10000 && !isRateLimited()) {
           fetchLocalItems(true, type, 0, true);

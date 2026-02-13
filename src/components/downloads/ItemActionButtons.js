@@ -93,7 +93,9 @@ export default function ItemActionButtons({
             disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
             title={privateTrackerWarning ? 'Click again to confirm stopping private tracker seeding' : t('stop.title')}
           >
-            {isStopping ? <Spinner size="sm" /> : <Icons.Stop />}
+            <span className="pointer-events-none inline-flex items-center justify-center">
+              {isStopping ? <Spinner size="sm" /> : <Icons.Stop />}
+            </span>
             {isMobile && (
               <span className="ml-2 text-xs">
                 {privateTrackerWarning ? 'Confirm Stop' : t('stop.label')}
