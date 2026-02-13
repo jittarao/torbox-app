@@ -712,7 +712,7 @@ class UploadProcessor {
    */
   createUserFriendlyError(error, isRateLimit) {
     if (isRateLimit || error.message?.includes('Request failed with status code 429')) {
-      return null; // Rate limit handled via next_attempt_at
+      return 'Rate limit reached. Will retry automatically.';
     }
 
     const errorData = error.response?.data;
@@ -764,6 +764,15 @@ class UploadProcessor {
         errorCode,
         errorMessage
       );
+      logger.info('TorBox API error response', {
+        uploadId: id,
+        type,
+        status: error.response.status,
+        statusText: error.response.statusText,
+        retryAfter:
+          error.response.headers?.['retry-after'] ?? error.response.headers?.['Retry-After'],
+        data: error.response.data,
+      });
     }
 
     const isRateLimit = this.isRateLimitError(error);
