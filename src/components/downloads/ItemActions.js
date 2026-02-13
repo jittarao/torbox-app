@@ -86,7 +86,14 @@ export default function ItemActions({
     } else {
       setItems((prev) =>
         prev.map((localItem) =>
-          localItem.id === item.id ? { ...localItem, active: false } : localItem
+          localItem.id === item.id
+            ? {
+                ...localItem,
+                active: false,
+                download_state: 'completed',
+                download_present: true,
+              }
+            : localItem
         )
       );
     }
