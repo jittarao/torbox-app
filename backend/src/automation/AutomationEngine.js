@@ -331,6 +331,31 @@ class AutomationEngine {
   }
 
   /**
+   * Disable all automation rules and sync master DB (e.g. when API returns PLAN_RESTRICTED_FEATURE).
+   * User can re-enable rules manually when they have a paid plan again.
+   * @returns {Promise<number>} - Number of rules disabled
+   */
+  async disableAllRules() {
+    const disabledCount = await this.ruleRepository.disableAllRules();
+    cache.invalidateActiveRules(this.authId);
+    if (this.masterDb) {
+      try {
+        this.masterDb.updateActiveRulesFlag(this.authId, false);
+      } catch (error) {
+        logger.error('Failed to update master DB after disabling rules', error, {
+          authId: this.authId,
+          disabledCount,
+        });
+      }
+    }
+    logger.info('Disabled all automation rules (plan restricted)', {
+      authId: this.authId,
+      disabledCount,
+    });
+    return disabledCount;
+  }
+
+  /**
    * Reset next poll timestamp to 5 minutes from now (when rules change)
    * In development, uses reduced interval based on DEV_INTERVAL_MULTIPLIER
    */

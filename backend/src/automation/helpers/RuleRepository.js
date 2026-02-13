@@ -227,6 +227,24 @@ class RuleRepository {
   }
 
   /**
+   * Disable all automation rules (e.g. when API returns PLAN_RESTRICTED_FEATURE).
+   * @returns {Promise<number>} - Number of rules that were disabled
+   */
+  async disableAllRules() {
+    const userDb = await this.getUserDb();
+    const result = userDb
+      .prepare(
+        `
+      UPDATE automation_rules 
+      SET enabled = 0, updated_at = CURRENT_TIMESTAMP 
+      WHERE enabled = 1
+    `
+      )
+      .run();
+    return result.changes;
+  }
+
+  /**
    * Update rule status (enabled/disabled)
    * @param {number} ruleId - Rule ID
    * @param {boolean} enabled - Whether rule is enabled
