@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import Icons from '@/components/icons';
 import { formatSize } from './utils/formatters';
+import { getDisplayMimetype } from './utils/mimetypeDisplay';
 import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
@@ -123,7 +124,7 @@ function FileRow({
                       className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 
                       text-accent dark:text-accent-dark whitespace-nowrap"
                     >
-                      {file.mimetype}
+                      {getDisplayMimetype(file.mimetype, file.name || file.short_name)}
                     </span>
                   )}
                 </div>

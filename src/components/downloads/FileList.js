@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { formatSize } from './utils/formatters';
+import { getDisplayMimetype } from './utils/mimetypeDisplay';
 import Icons from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import { useTranslations } from 'next-intl';
@@ -25,8 +26,7 @@ function FileList({
     <div className="mt-4 border-t border-border/50 dark:border-border-dark/50 pt-4">
       <div className="space-y-2">
         {files.map((file, fileIndex) => {
-          const isChecked =
-            selectedItems.files.get(itemId)?.has(file.id) || false;
+          const isChecked = selectedItems.files.get(itemId)?.has(file.id) || false;
           const isDisabled = selectedItems.items?.has(itemId);
           const assetKey = `${itemId}-${file.id}`;
 
@@ -60,13 +60,7 @@ function FileList({
                     disabled={isDisabled}
                     onChange={(e) => {
                       e.stopPropagation();
-                      onFileSelect(
-                        itemId,
-                        fileIndex,
-                        file,
-                        e.target.checked,
-                        e.shiftKey,
-                      );
+                      onFileSelect(itemId, fileIndex, file, e.target.checked, e.shiftKey);
                     }}
                     onClick={(e) => e.stopPropagation()}
                     className="accent-accent dark:accent-accent-dark"
@@ -75,9 +69,7 @@ function FileList({
                   {/* File Name and Size */}
                   <div
                     className={`grid items-center gap-3 min-w-0 flex-1 ${
-                      isMobile
-                        ? 'grid-cols-[1fr,auto]'
-                        : 'grid-cols-[1fr,auto,auto]'
+                      isMobile ? 'grid-cols-[1fr,auto]' : 'grid-cols-[1fr,auto,auto]'
                     }`}
                   >
                     <span
@@ -93,7 +85,7 @@ function FileList({
                     </span>
                     {file.mimetype && !isMobile && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 text-accent dark:text-accent-dark whitespace-nowrap w-fit">
-                        {file.mimetype}
+                        {getDisplayMimetype(file.mimetype, file.name || file.short_name)}
                       </span>
                     )}
                   </div>
@@ -110,11 +102,7 @@ function FileList({
                     className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                     title={t('copyLink')}
                   >
-                    {isCopying[assetKey] ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <Icons.Copy />
-                    )}
+                    {isCopying[assetKey] ? <Spinner size="sm" /> : <Icons.Copy />}
                   </button>
                   <button
                     onClick={(e) => {
@@ -125,11 +113,7 @@ function FileList({
                     className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                     title={t('download')}
                   >
-                    {isDownloading[assetKey] ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <Icons.Download />
-                    )}
+                    {isDownloading[assetKey] ? <Spinner size="sm" /> : <Icons.Download />}
                   </button>
                   {/* Play button - only show for video files and Pro plan users */}
                   {isVideoFile(file) && onFileStream && hasProPlan && (
@@ -142,11 +126,7 @@ function FileList({
                       className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
                       title={t('play')}
                     >
-                      {isStreaming?.[assetKey] ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <Icons.Play />
-                      )}
+                      {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Icons.Play />}
                     </button>
                   )}
                 </div>
