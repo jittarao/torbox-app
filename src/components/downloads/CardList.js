@@ -34,7 +34,6 @@ export default function CardList({
   isFullscreen,
   viewMode = 'card',
   scrollContainerRef,
-  hasProPlan = false,
   onOpenVideoPlayer,
 }) {
   const t = useTranslations('CardList');
@@ -596,7 +595,6 @@ export default function CardList({
                     isDownloading={isDownloading}
                     isStreaming={isStreaming}
                     apiKey={apiKey}
-                    hasProPlan={hasProPlan}
                   />
                 </div>
               );

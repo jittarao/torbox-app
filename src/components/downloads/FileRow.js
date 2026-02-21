@@ -30,7 +30,6 @@ function FileRow({
   fileIndex = null, // If provided, render only this specific file
   measureRef,
   dataIndex,
-  hasProPlan = false,
 }) {
   const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
@@ -165,8 +164,8 @@ function FileRow({
                 )}
               </button>
 
-              {/* Play button - only show for video files and Pro plan users */}
-              {isVideoFile(file) && handleFileStream && hasProPlan && (
+              {/* Play button - only show for video files */}
+              {isVideoFile(file) && handleFileStream && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

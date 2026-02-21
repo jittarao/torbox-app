@@ -39,7 +39,6 @@ export default function TableBody({
   tableWidth,
   isFullscreen,
   scrollContainerRef,
-  hasProPlan = false,
   onFileStreamInit,
 }) {
   const t = useTranslations('TableBody');
@@ -517,7 +516,6 @@ export default function TableBody({
                 measureRef={virtualizer.measureElement}
                 dataIndex={virtualRow.index}
                 style={rowStyle}
-                hasProPlan={hasProPlan}
               />
             );
           }
