@@ -35,7 +35,6 @@ function ItemCard({
   isDownloading,
   isStreaming,
   apiKey,
-  hasProPlan = false,
 }) {
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
@@ -419,7 +418,6 @@ function ItemCard({
           isDownloading={isDownloading}
           isStreaming={isStreaming}
           isMobile={isMobile}
-          hasProPlan={hasProPlan}
         />
       )}
 

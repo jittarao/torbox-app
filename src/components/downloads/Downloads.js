@@ -33,7 +33,7 @@ import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
-import { fetchUserProfile, hasProPlan } from '@/utils/userProfile';
+import { fetchUserProfile } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function Downloads({ apiKey }) {
@@ -69,7 +69,6 @@ export default function Downloads({ apiKey }) {
   const [viewMode, setViewMode] = useState('table');
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
-  const [hasProPlanAccess, setHasProPlanAccess] = useState(false);
   const hasExpandedRef = useRef(false);
   const scrollContainerRef = useRef(null);
   const fetchDownloadHistoryRef = useRef(false);
@@ -102,17 +101,14 @@ export default function Downloads({ apiKey }) {
       fetchUserProfile(apiKey)
         .then((userData) => {
           if (userData) {
-            setHasProPlanAccess(hasProPlan(userData));
+            console.log('User profile:', userData);
           } else {
-            setHasProPlanAccess(false);
+            console.log('No user profile found');
           }
         })
         .catch((error) => {
-          console.error('Error checking user plan:', error);
-          setHasProPlanAccess(false);
+          console.error('Error fetching user profile:', error);
         });
-    } else {
-      setHasProPlanAccess(false);
     }
   }, [apiKey]);
 
@@ -705,7 +701,6 @@ export default function Downloads({ apiKey }) {
                 toggleFiles={toggleFiles}
                 isFullscreen={isFullscreen}
                 scrollContainerRef={scrollContainerRef}
-                hasProPlan={hasProPlanAccess}
                 onOpenVideoPlayer={(
                   streamUrl,
                   fileName,
@@ -755,7 +750,6 @@ export default function Downloads({ apiKey }) {
                 isFullscreen={isFullscreen}
                 viewMode={viewMode}
                 scrollContainerRef={scrollContainerRef}
-                hasProPlan={hasProPlanAccess}
                 onOpenVideoPlayer={(
                   streamUrl,
                   fileName,

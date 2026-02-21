@@ -46,7 +46,7 @@ export function hasProPlan(userData) {
   if (!userData || !userData.plan) {
     return false;
   }
-  
+
   // Plan ID 2 is Pro plan
   return userData.plan === 2;
 }
@@ -64,6 +64,6 @@ export function getPlanName(planId, t = null) {
     2: t ? t('plans.pro') : 'Pro',
     3: t ? t('plans.standard') : 'Standard',
   };
-  
+
   return planNames[planId] || (t ? t('plans.unknown') : 'Unknown');
 }

@@ -33,7 +33,6 @@ export default function ItemsTable({
   viewMode = 'table',
   isFullscreen,
   scrollContainerRef,
-  hasProPlan = false,
   onOpenVideoPlayer,
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
@@ -294,7 +293,6 @@ export default function ItemsTable({
             tableWidth={tableWidth}
             isFullscreen={isFullscreen}
             scrollContainerRef={scrollContainerRef}
-            hasProPlan={hasProPlan}
             onFileStreamInit={handleFileStreamInit}
           />
         </table>

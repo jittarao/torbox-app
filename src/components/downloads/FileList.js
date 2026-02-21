@@ -19,7 +19,6 @@ function FileList({
   isStreaming,
   isMobile,
   isFileDownloaded,
-  hasProPlan = false,
 }) {
   const t = useTranslations('FileActions');
   return (
@@ -115,8 +114,8 @@ function FileList({
                   >
                     {isDownloading[assetKey] ? <Spinner size="sm" /> : <Icons.Download />}
                   </button>
-                  {/* Play button - only show for video files and Pro plan users */}
-                  {isVideoFile(file) && onFileStream && hasProPlan && (
+                  {/* Play button - only show for video files */}
+                  {isVideoFile(file) && onFileStream && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
