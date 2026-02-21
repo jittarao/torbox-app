@@ -35,6 +35,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const lastAutoStartCheckRef = useRef(0);
   const processedQueueIdsRef = useRef(new Set());
   const fetchInProgressRef = useRef(false);
+  const deltaCursorRef = useRef({ torrents: null, usenet: null, webdl: null });
 
   // A per-type rate limit tracker
   const rateLimitDataRef = useRef({});
@@ -265,7 +266,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         return [];
       }
 
-      // Determine endpoint based on activeType
+      // Determine endpoint based on activeType; add delta/cursor for subsequent requests
       let endpoint;
       switch (activeType) {
         case 'usenet':
@@ -276,6 +277,10 @@ export function useFetchData(apiKey, type = 'torrents') {
           break;
         default:
           endpoint = '/api/torrents';
+      }
+      const cursor = deltaCursorRef.current[activeType];
+      if (cursor) {
+        endpoint += `?delta=1&cursor=${encodeURIComponent(cursor)}`;
       }
 
       try {
@@ -339,19 +344,55 @@ export function useFetchData(apiKey, type = 'torrents') {
             return fetchLocalItems(true, customType, retryCount + 1);
           }
 
-          // Sort items by added date if available
-          const sortedItems = sortItems(data.data);
+          const assetType =
+            activeType === 'usenet' ? 'usenet' : activeType === 'webdl' ? 'webdl' : 'torrents';
+          let sortedItems;
+
+          if (data.delta === true) {
+            // Delta response: merge with current list (remove then upsert by id)
+            const removedSet = new Set(data.removed || []);
+            const currentList =
+              activeType === 'usenet'
+                ? usenetRef.current
+                : activeType === 'webdl'
+                  ? webdlRef.current
+                  : torrentsRef.current;
+            let list = (currentList || []).filter((item) => !removedSet.has(item.id));
+            for (const item of data.data) {
+              const withType = { ...item, assetType };
+              const idx = list.findIndex((i) => i.id === item.id);
+              if (idx >= 0) {
+                list[idx] = withType;
+              } else {
+                list.push(withType);
+              }
+            }
+            sortedItems = sortItems(list);
+          } else {
+            // Full response
+            sortedItems = sortItems(data.data);
+          }
+
+          if (data.cursor) {
+            deltaCursorRef.current[activeType] = data.cursor;
+          }
 
           // Update the appropriate state based on the type
           switch (activeType) {
             case 'usenet':
-              setUsenetItems(sortedItems.map((item) => ({ ...item, assetType: 'usenet' })));
+              setUsenetItems(
+                sortedItems.map((item) => ({ ...item, assetType: 'usenet' }))
+              );
               break;
             case 'webdl':
-              setWebdlItems(sortedItems.map((item) => ({ ...item, assetType: 'webdl' })));
+              setWebdlItems(
+                sortedItems.map((item) => ({ ...item, assetType: 'webdl' }))
+              );
               break;
             default:
-              setTorrents(sortedItems.map((item) => ({ ...item, assetType: 'torrents' })));
+              setTorrents(
+                sortedItems.map((item) => ({ ...item, assetType: 'torrents' }))
+              );
               // Only check auto-start for torrents if 30 seconds have elapsed
               if (now - lastAutoStartCheckRef.current >= AUTO_START_CHECK_INTERVAL) {
                 await checkAndAutoStartTorrents(sortedItems);
@@ -412,6 +453,13 @@ export function useFetchData(apiKey, type = 'torrents') {
         return torrents || [];
     }
   }, [type, torrents, usenetItems, webdlItems]);
+
+  // Reset delta cursors when apiKey changes so first request after change is full
+  useEffect(() => {
+    if (!apiKey) {
+      deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
+    }
+  }, [apiKey]);
 
   // Fetch data on type change or apiKey change
   useEffect(() => {

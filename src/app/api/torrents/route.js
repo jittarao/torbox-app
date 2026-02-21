@@ -1,14 +1,17 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { safeJsonParse } from '@/utils/safeJsonParse';
+import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
+
+const CACHE_TYPE = 'torrents';
 
 // Get all torrents
-export async function GET() {
+export async function GET(request) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
-
-  // Always bypass cache for user-specific data to prevent cross-user contamination
-  const bypassCache = true;
+  const { searchParams } = new URL(request.url);
+  const delta = searchParams.get('delta') === '1';
+  const cursor = searchParams.get('cursor');
 
   try {
     // Add timestamp to force cache bypass
@@ -57,14 +60,39 @@ export async function GET() {
       data: [...(torrentsData.data || []), ...(queuedData.data || [])],
     };
 
-    return Response.json(mergedData, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
-        Vary: 'Authorization', // Ensure cache varies by user
-      },
-    });
+    const cacheHeaders = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+      Vary: 'Authorization',
+    };
+
+    if (delta && cursor && apiKey) {
+      const cached = getCached(apiKey, CACHE_TYPE);
+      if (cached) {
+        const deltaResult = computeDelta(cached.data, mergedData.data);
+        const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
+        const payload = {
+          success: mergedData.success,
+          delta: true,
+          data: deltaResult.data,
+          cursor: newCursor,
+        };
+        if (deltaResult.removed.length > 0) {
+          payload.removed = deltaResult.removed;
+        }
+        return Response.json(payload, { headers: cacheHeaders });
+      }
+    }
+
+    if (apiKey) {
+      const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
+      return Response.json(
+        { ...mergedData, cursor: newCursor },
+        { headers: cacheHeaders }
+      );
+    }
+    return Response.json(mergedData, { headers: cacheHeaders });
   } catch (error) {
     console.error('Error fetching torrents:', error);
 
