@@ -23,6 +23,7 @@ import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import VideoPlayerModal from './VideoPlayerModal';
+import AudioPlayer from './AudioPlayer';
 import AutomationRules from './AutomationRules';
 import FiltersSection from './FiltersSection';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
@@ -64,6 +65,15 @@ export default function Downloads({ apiKey }) {
     introInformation: null,
     initialAudioIndex: 0,
     initialSubtitleIndex: null,
+  });
+  const [audioPlayerState, setAudioPlayerState] = useState({
+    isOpen: false,
+    url: null,
+    itemId: null,
+    fileId: null,
+    assetType: 'torrent',
+    fileName: null,
+    apiKey: null,
   });
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState('table');
@@ -172,8 +182,14 @@ export default function Downloads({ apiKey }) {
     handleRowSelect,
     setSelectedItems,
   } = useSelection(itemsWithTags);
-  const { downloadLinks, isDownloading, downloadProgress, handleBulkDownload, setDownloadLinks } =
-    useDownloads(apiKey, activeType, downloadHistory, fetchDownloadHistory);
+  const {
+    downloadLinks,
+    isDownloading,
+    downloadProgress,
+    handleBulkDownload,
+    setDownloadLinks,
+    requestDownloadLink,
+  } = useDownloads(apiKey, activeType, downloadHistory, fetchDownloadHistory);
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
@@ -235,6 +251,11 @@ export default function Downloads({ apiKey }) {
     setPauseReason('videoPlayer', videoPlayerState.isOpen);
   }, [videoPlayerState.isOpen, setPauseReason]);
 
+  // Update pause reason when audio player opens/closes
+  useEffect(() => {
+    setPauseReason('audioPlayer', audioPlayerState.isOpen);
+  }, [audioPlayerState.isOpen, setPauseReason]);
+
   // Start notifications polling once when component mounts
   const { fetchNotifications: fetchNotificationsStore } = useNotificationsStore();
   useEffect(() => {
@@ -244,7 +265,7 @@ export default function Downloads({ apiKey }) {
 
       // Set up periodic polling (every 2 minutes)
       const interval = setInterval(() => {
-        // Check if polling is paused (e.g., video player is open)
+        // Check if polling is paused (e.g., video or audio player is open)
         if (isPollingPaused()) {
           return;
         }
@@ -327,6 +348,56 @@ export default function Downloads({ apiKey }) {
       setIsExporting(false);
     }
   };
+
+  const handleAudioPlay = useCallback(
+    async (itemId, file) => {
+      const idField =
+        activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
+      const metadata = {
+        assetType: activeType,
+        item: itemsWithTags.find((i) => i.id === itemId),
+      };
+      const result = await requestDownloadLink(
+        itemId,
+        { fileId: file.id, filename: file.name || file.short_name },
+        idField,
+        metadata
+      );
+      if (result.success && result.data?.url) {
+        setAudioPlayerState({
+          isOpen: true,
+          url: result.data.url,
+          itemId,
+          fileId: file.id,
+          assetType: activeType,
+          fileName: file.name || file.short_name || 'Audio',
+          apiKey,
+        });
+      } else {
+        setToast({
+          message: result.error || 'Could not get audio link',
+          type: 'error',
+        });
+      }
+    },
+    [activeType, itemsWithTags, requestDownloadLink, setToast, apiKey]
+  );
+
+  const handleAudioRefreshUrl = useCallback(async () => {
+    const { itemId, fileId, assetType: at, apiKey: key } = audioPlayerState;
+    if (itemId == null || fileId == null || !key) return null;
+    const idField = at === 'usenet' ? 'usenet_id' : at === 'webdl' ? 'web_id' : 'torrent_id';
+    const metadata = {
+      assetType: at,
+      item: itemsWithTags.find((i) => i.id === itemId),
+    };
+    const result = await requestDownloadLink(itemId, { fileId }, idField, metadata);
+    if (result.success && result.data?.url) {
+      setAudioPlayerState((prev) => ({ ...prev, url: result.data.url }));
+      return result.data.url;
+    }
+    throw new Error(result.error || 'Failed to refresh link');
+  }, [audioPlayerState, itemsWithTags, requestDownloadLink]);
 
   const toggleFiles = (itemId) => {
     setExpandedItems((prev) => {
@@ -730,6 +801,7 @@ export default function Downloads({ apiKey }) {
                       initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
                   });
                 }}
+                onAudioPlay={handleAudioPlay}
               />
             ) : (
               <CardList
@@ -779,6 +851,7 @@ export default function Downloads({ apiKey }) {
                       initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
                   });
                 }}
+                onAudioPlay={handleAudioPlay}
               />
             )}
           </div>
@@ -816,6 +889,28 @@ export default function Downloads({ apiKey }) {
               setVideoPlayerState((prev) => ({ ...prev, streamUrl: newUrl }))
             }
           />
+          {audioPlayerState.isOpen && (
+            <AudioPlayer
+              audioUrl={audioPlayerState.url}
+              fileName={audioPlayerState.fileName}
+              itemId={audioPlayerState.itemId}
+              fileId={audioPlayerState.fileId}
+              assetType={audioPlayerState.assetType}
+              apiKey={audioPlayerState.apiKey}
+              onClose={() =>
+                setAudioPlayerState({
+                  isOpen: false,
+                  url: null,
+                  itemId: null,
+                  fileId: null,
+                  assetType: 'torrent',
+                  fileName: null,
+                  apiKey: null,
+                })
+              }
+              onRefreshUrl={handleAudioRefreshUrl}
+            />
+          )}
         </>
       )}
 

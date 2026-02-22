@@ -1,6 +1,6 @@
 {
   "name": "torbox-backend",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "TorBox Manager Backend - Self-hosted automation and data persistence",
   "type": "module",
   "main": "src/index.js",

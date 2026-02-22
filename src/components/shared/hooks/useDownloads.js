@@ -500,6 +500,7 @@ export function useDownloads(
     isDownloading,
     downloadProgress,
     downloadSingle,
+    requestDownloadLink,
     handleBulkDownload,
     setDownloadLinks,
   };

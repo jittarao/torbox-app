@@ -23,6 +23,7 @@ function ItemCard({
   onFileSelect,
   onFileDownload,
   onFileStream,
+  onAudioPlay,
   onDelete,
   toggleFiles,
   expandedItems,
@@ -414,6 +415,7 @@ function ItemCard({
           onFileSelect={onFileSelect}
           onFileDownload={onFileDownload}
           onFileStream={onFileStream}
+          onAudioPlay={onAudioPlay}
           isCopying={isCopying}
           isDownloading={isDownloading}
           isStreaming={isStreaming}

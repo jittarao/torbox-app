@@ -171,3 +171,7 @@ temp/
 
 # Scripts (ignore build scripts)
 /scripts/
+
+# Audiobook
+.ffprobe/
+.audiobook-cache/

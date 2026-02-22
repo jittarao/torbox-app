@@ -136,3 +136,18 @@ export const formatTime = (seconds) => {
   }
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
+
+/**
+ * Format remaining time for display (e.g. "2h 34m" or "15m 30s")
+ * @param {number} seconds - Remaining seconds
+ * @returns {string}
+ */
+export const formatTimeRemaining = (seconds) => {
+  if (seconds == null || isNaN(seconds) || seconds < 0) return '0:00';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  if (hrs > 0) return `${hrs}h ${mins}m`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+};

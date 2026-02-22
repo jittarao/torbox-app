@@ -34,6 +34,7 @@ export default function ItemsTable({
   isFullscreen,
   scrollContainerRef,
   onOpenVideoPlayer,
+  onAudioPlay,
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -294,6 +295,7 @@ export default function ItemsTable({
             isFullscreen={isFullscreen}
             scrollContainerRef={scrollContainerRef}
             onFileStreamInit={handleFileStreamInit}
+            onAudioPlay={onAudioPlay}
           />
         </table>
       </div>
