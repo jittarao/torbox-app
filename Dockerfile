@@ -97,7 +97,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install dumb-init for proper signal handling
 # dumb-init ensures signals (SIGTERM, SIGINT) are properly forwarded to the Node.js process
-RUN apk add --no-cache dumb-init
+# ffmpeg: provides ffprobe for audiobook chapter extraction (API route); Alpine build is musl-compatible
+RUN apk add --no-cache dumb-init ffmpeg
 
 # Create non-root user for enhanced security
 # Running as non-root user limits potential damage if container is compromised
@@ -141,6 +142,8 @@ RUN mkdir -p .next/cache data logs && \
 
 # Set production environment variables
 ENV NODE_ENV=production
+# Use system ffprobe (Alpine package); avoids auto-download of glibc binary that cannot run on musl
+ENV FFPROBE_PATH=/usr/bin/ffprobe
 # Port the application will listen on
 ENV PORT=3000
 # Bind to all network interfaces (0.0.0.0) to accept connections from outside container
