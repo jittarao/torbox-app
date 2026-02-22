@@ -4,12 +4,7 @@ import { useEffect } from 'react';
  * useAudioKeyboard - Handles keyboard shortcuts for audio player
  * Space = play/pause, ArrowLeft/Right = seek, ArrowUp/Down = volume, C = chapters
  */
-export function useAudioKeyboard({
-  onPlayPause,
-  onSeek,
-  onVolumeChange,
-  onToggleChapters,
-}) {
+export function useAudioKeyboard({ onPlayPause, onSeek, onVolumeChange, onToggleChapters }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (
@@ -25,10 +20,10 @@ export function useAudioKeyboard({
         onPlayPause?.();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        onSeek?.(-10);
+        onSeek?.(-15);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        onSeek?.(10);
+        onSeek?.(15);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         onVolumeChange?.(0.1);

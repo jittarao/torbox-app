@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { spawn } from 'child_process';
 import { getChapterCache, setChapterCache } from '@/app/api/lib/audiobook-cache';
 import { getFfprobePath } from '@/app/api/lib/ffprobe-bootstrap';
@@ -7,9 +8,19 @@ const FFPROBE_TIMEOUT_MS = 60000;
 
 /**
  * POST /api/audiobook/chapters
- * Body: { id: string, file_id: string, url: string } — cache key is id+file_id; url is the TorBox CDN URL.
+ * Body: { id: string, file_id: string, url: string } — cache key is id+file_id; url is the stream/CDN URL.
+ * Requires x-api-key header. URL must be HTTP or HTTPS (self-hosted setups often use localhost or private URLs).
  */
 export async function POST(request) {
+  const headersList = await headers();
+  const apiKey = headersList.get('x-api-key');
+  if (!apiKey || !apiKey.trim()) {
+    return NextResponse.json(
+      { success: false, error: 'API key is required' },
+      { status: 401 }
+    );
+  }
+
   let body;
   try {
     body = await request.json();
@@ -27,7 +38,16 @@ export async function POST(request) {
       { status: 400 }
     );
   }
-  if (!cdnUrl || !cdnUrl.startsWith('http')) {
+  if (!cdnUrl || !cdnUrl.startsWith('http://') && !cdnUrl.startsWith('https://')) {
+    return NextResponse.json(
+      { success: false, error: 'url must be a valid HTTP(s) URL' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    new URL(cdnUrl);
+  } catch {
     return NextResponse.json(
       { success: false, error: 'url must be a valid HTTP(s) URL' },
       { status: 400 }
@@ -105,12 +125,15 @@ export async function POST(request) {
     const msg = result.error;
     const isExpired =
       /401|403|expired|forbidden|unauthorized/i.test(msg) || /Invalid data/i.test(msg);
+    if (!isExpired) {
+      console.error('Audiobook chapters: ffprobe error', { id, fileId, message: msg });
+    }
     return NextResponse.json(
       {
         success: false,
         error: isExpired
           ? 'Chapter extraction failed: link may have expired or file is not accessible'
-          : 'Chapter extraction failed: ' + msg,
+          : 'Chapter extraction failed',
       },
       { status: isExpired ? 401 : 500 }
     );
