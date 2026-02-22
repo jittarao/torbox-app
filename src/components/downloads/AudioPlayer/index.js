@@ -20,6 +20,7 @@ import TimerMenu from './TimerMenu';
 import VolumeControl from './VolumeControl';
 import ChaptersPanel from './ChaptersPanel';
 import { useAudioKeyboard } from './useAudioKeyboard';
+import { hasChapterSupport } from '../utils/videoDetection';
 
 /** Placeholder cover area (no cover image yet) */
 const CoverPlaceholder = (
@@ -30,13 +31,6 @@ const CoverPlaceholder = (
   </div>
 );
 
-/** Only .m4b and .m4a support chapter metadata; these trigger the chapters API and chapter UI. */
-const hasChapterSupportFileName = (name) => {
-  if (!name) return false;
-  const lower = String(name).toLowerCase();
-  return lower.endsWith('.m4b') || lower.endsWith('.m4a');
-};
-
 export default function AudioPlayer({
   audioUrl,
   fileName,
@@ -46,7 +40,7 @@ export default function AudioPlayer({
   onClose,
   onRefreshUrl,
 }) {
-  const hasChaptersSupport = hasChapterSupportFileName(fileName);
+  const hasChaptersSupport = hasChapterSupport({ name: fileName });
   const audioRef = useRef(null);
   const wasPlayingBeforeSeekRef = useRef(false);
   const isSeekingRef = useRef(false);
