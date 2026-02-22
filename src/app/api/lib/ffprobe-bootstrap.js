@@ -76,6 +76,11 @@ function downloadFile(url, extension) {
         ? `${file}.zip`
         : `${file}.tar.xz`;
     const stream = createWriteStream(dest);
+    stream.on('error', (err) => {
+      stream.close();
+      fs.unlink(dest).catch(() => {});
+      reject(err);
+    });
     https
       .get(url, { headers: { 'User-Agent': 'TorBox-Manager/1.0' } }, (res) => {
         if (res.statusCode === 302 || res.statusCode === 301) {
