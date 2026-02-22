@@ -143,7 +143,7 @@ export const formatTime = (seconds) => {
  * @returns {string}
  */
 export const formatTimeRemaining = (seconds) => {
-  if (seconds == null || isNaN(seconds) || seconds < 0) return '0:00';
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '0:00';
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);

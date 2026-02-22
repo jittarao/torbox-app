@@ -18,7 +18,8 @@ export default function PlaybackControls({
   onNextChapter,
   onSkip,
 }) {
-  const canPlay = duration != null && Number.isFinite(duration);
+  const canPlay =
+    (duration != null && (Number.isFinite(duration) || duration === Infinity)) || isPlaying;
   const longPressTimerRef = useRef(null);
   const longPressFiredRef = useRef(false);
 
