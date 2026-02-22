@@ -60,6 +60,7 @@ export default function ProgressBar({
         onTouchEnd={(e) => {
           onSeekEnd();
           onSeekEndTouch(e);
+          e.preventDefault(); // suppress synthetic click to avoid double seek
         }}
         role="slider"
         aria-valuenow={seekValue}
