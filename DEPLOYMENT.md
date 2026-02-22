@@ -34,12 +34,41 @@ bun run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) and enter your TorBox API key to begin.
 
+### ffprobe Setup (Audiobook Chapters)
+
+Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs in the **frontend** (Next.js) process via `/api/audiobook/chapters`.
+
+**You only need one of these:**
+
+- **`FFPROBE_PATH`** – Path to an existing ffprobe binary (e.g. from system FFmpeg or Homebrew). When set and the file exists, the app uses it and **does not** use or need a cache directory. No auto-download.
+- **Auto-download (no `FFPROBE_PATH`)** – The app downloads a compatible ffprobe build on first use. Where it goes: if **`FFPROBE_AUTO_DIR`** is set, the binary is extracted there; if not set, it uses **`<project>/.ffprobe`** (project root). The resolved path is stored in `<cacheDir>/path.json` for reuse. Auto-bootstrap is supported only on **Windows** and **Linux**; on other platforms you must set `FFPROBE_PATH`.
+
+**Local development:**
+
+- **Windows / Linux – Auto-bootstrap (default):** No setup required. On first chapter extraction, downloads into `<project>/.ffprobe`. Needs outbound HTTPS and (on Windows) PowerShell.
+- **macOS:** Auto-bootstrap is not supported. Install FFmpeg (e.g. `brew install ffmpeg`) and set **only** `FFPROBE_PATH` in `.env.local` (no cache dir needed):
+  ```bash
+  FFPROBE_PATH=/opt/homebrew/bin/ffprobe   # Apple Silicon
+  # or
+  FFPROBE_PATH=/usr/local/bin/ffprobe     # Intel
+  ```
+- **Use system ffprobe (Windows / Linux):** Install [FFmpeg](https://ffmpeg.org/) and set **only** `FFPROBE_PATH` in `.env.local`:
+  ```bash
+  FFPROBE_PATH=C:\path\to\ffprobe.exe   # Windows
+  FFPROBE_PATH=/usr/bin/ffprobe         # Linux (e.g. apt install ffmpeg)
+  ```
+- **Custom cache directory (auto-download only):** When you are _not_ setting `FFPROBE_PATH`, you can set `FFPROBE_AUTO_DIR` so the auto-downloaded binary is stored there instead of `<project>/.ffprobe`.
+
+**Docker:** See [ffprobe in Docker](#ffprobe-in-docker) below.
+
 ### Environment Variables
 
-| Variable           | Description                                   | Default                 | Required |
-| ------------------ | --------------------------------------------- | ----------------------- | -------- |
-| `BACKEND_URL`      | URL of the backend API server                 | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED` | Disable backend usage (set to `true`/`false`) | `false`                 | No       |
+| Variable            | Description                                                                                    | Default                 | Required |
+| ------------------- | ---------------------------------------------------------------------------------------------- | ----------------------- | -------- |
+| `BACKEND_URL`       | URL of the backend API server                                                                  | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED`  | Disable backend usage (set to `true`/`false`)                                                  | `false`                 | No       |
+| `FFPROBE_PATH`      | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
+| `FFPROBE_AUTO_DIR` | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set). | `<project>/.ffprobe`    | No       |
 
 ### Backend
 
@@ -141,6 +170,10 @@ openssl rand -base64 32
 # Backend environment variables (used by the torbox-backend service)
 FRONTEND_URL=http://localhost:3000
 ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
+
+# Optional: ffprobe for audiobook chapter extraction (frontend container)
+# FFPROBE_AUTO_DIR=/tmp/.ffprobe
+# FFPROBE_PATH=/usr/bin/ffprobe
 ```
 
 **Important**:
@@ -149,6 +182,7 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 - The encryption key must be at least 32 characters long and should be base64-encoded
 - These environment variables are for the backend service (`torbox-backend`) - the `docker-compose.yml` file reads these from the root `.env` file
 - The frontend environment variables (`BACKEND_URL` and `BACKEND_DISABLED`) are hardcoded in `docker-compose.yml` and use the Docker service name (`http://torbox-backend:3001`) for internal communication
+- For audiobook chapter extraction, you can add `FFPROBE_AUTO_DIR` or `FFPROBE_PATH` to the frontend service in `docker-compose.yml` (see [ffprobe in Docker](#ffprobe-in-docker))
 
 4. Start both services (Docker will automatically pull the pre-built images):
 
@@ -228,6 +262,44 @@ docker compose up -d
 ```bash
 docker stats
 ```
+
+#### ffprobe in Docker
+
+Chapter extraction runs in the **frontend** (Next.js) container. **Choose one:** use a pre-installed binary (`FFPROBE_PATH`) or let the app auto-download (`FFPROBE_AUTO_DIR`). You do not need both.
+
+**Option A – Pre-installed ffprobe (simplest if you control the image)**  
+Build a custom frontend image that includes FFmpeg:
+
+```dockerfile
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+```
+
+Then set **only** `FFPROBE_PATH`; you do **not** need `FFPROBE_AUTO_DIR`:
+
+```bash
+FFPROBE_PATH=/usr/bin/ffprobe
+```
+
+**Option B – Auto-download (pre-built image)**  
+Do **not** set `FFPROBE_PATH`. Set `FFPROBE_AUTO_DIR` to a writable path. The app will download ffprobe into **that directory** (not project root) on first use. The pre-built image is glibc-based; ensure the container has outbound HTTPS.
+
+- **Ephemeral:** `FFPROBE_AUTO_DIR=/tmp/.ffprobe` works, but the binary lives inside the container and is lost on restart, so the app will re-download on next use. No error, just extra download after each restart.
+- **Persistent:** Use a volume so the cache dir is outside the container filesystem; the binary then survives restarts and is not re-downloaded. Example for `docker run`:
+  ```bash
+  -e FFPROBE_AUTO_DIR=/app/.ffprobe -v torbox-ffprobe-cache:/app/.ffprobe
+  ```
+  For Docker Compose, add to the **frontend** service (`torbox-app`):
+  ```yaml
+  environment:
+    - FFPROBE_AUTO_DIR=/app/.ffprobe
+  volumes:
+    - ffprobe-cache:/app/.ffprobe
+  ```
+  and add `ffprobe-cache:` under `volumes:`.
+
+**Alpine-based images:** The auto-downloaded binary is glibc-based and will not run on Alpine (musl). Either use a glibc-based image (Option B) or install ffprobe in the image (`apk add ffmpeg`) and use Option A with `FFPROBE_PATH=/usr/bin/ffprobe`.
+
+**Read-only filesystem:** Set either `FFPROBE_PATH` to a binary in a writable location or `FFPROBE_AUTO_DIR` to a writable path (e.g. a mounted volume).
 
 #### Custom Volume Location
 
@@ -389,13 +461,15 @@ docker run -d \
   -e BACKEND_DISABLED=false \
   -e NODE_ENV=production \
   -e NEXT_TELEMETRY_DISABLED=1 \
+  -e FFPROBE_AUTO_DIR=/tmp/.ffprobe \
   ghcr.io/jittarao/torbox-app:latest
 ```
 
 **Important**:
 
-- The `BACKEND_URL` is set to `http://torbox-backend:3001` (using the container name) instead of `localhost` because containers communicate via Docker network using container names
-- Both containers must be on the same Docker network (`torbox-network`) for this to work
+- The `BACKEND_URL` is set to `http://torbox-backend:3001` (using the container name) because containers communicate via Docker network using container names.
+- Both containers must be on the same Docker network (`torbox-network`).
+- **Audiobook chapters:** Either set **`FFPROBE_PATH`** (if your image includes FFmpeg—the pre-built image does not) and then you do not need a cache dir, or set **`FFPROBE_AUTO_DIR`** so the app auto-downloads ffprobe into that path on first use. With `/tmp/.ffprobe`, the binary is lost on container restart and will be re-downloaded next time; for a persistent cache use a volume (see [ffprobe in Docker](#ffprobe-in-docker)). Omit both if you do not need chapter extraction.
 
 **Note**: The `--log-driver` and `--log-opt` flags configure log rotation (10MB max per file, 3 files max) to prevent disk space issues. These are optional but recommended for production.
 
@@ -488,12 +562,7 @@ ports:
   - '127.0.0.1:3001:3001' # Backend
 ```
 
-3. Update frontend environment in `docker-compose.yml` to use localhost:
-
-```yaml
-environment:
-  - BACKEND_URL=http://localhost:3001
-```
+3. Keep `BACKEND_URL=http://torbox-backend:3001` for the frontend service—the frontend runs inside a container and must reach the backend via the Docker service name, not localhost.
 
 4. Follow steps 4-7 from the [Full Stack Deployment](#full-stack-deployment-frontend--backend) section to start and verify services.
 

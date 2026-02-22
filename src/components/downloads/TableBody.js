@@ -40,6 +40,7 @@ export default function TableBody({
   isFullscreen,
   scrollContainerRef,
   onFileStreamInit,
+  onAudioPlay,
 }) {
   const t = useTranslations('TableBody');
 
@@ -322,6 +323,27 @@ export default function TableBody({
     [assetKey, onFileStreamInit, setToast]
   );
 
+  const handleAudioPlay = useCallback(
+    async (itemId, file) => {
+      const key = assetKey(itemId, file.id);
+      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      try {
+        if (onAudioPlay) {
+          await onAudioPlay(itemId, file);
+        }
+      } catch (error) {
+        console.error('Error opening audio:', error);
+        setToast({
+          message: error.message || 'Failed to open audio',
+          type: 'error',
+        });
+      } finally {
+        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+      }
+    },
+    [assetKey, onAudioPlay, setToast]
+  );
+
   const rowStyle = useMemo(
     () => ({
       willChange: 'transform',
@@ -333,6 +355,9 @@ export default function TableBody({
   const prevViewModeRef = useRef(viewMode);
   const isTransitioningRef = useRef(false);
   const [virtualRows, setVirtualRows] = useState([]);
+  // Ref to latest virtualizer so effects don't depend on it (virtualizer reference changes every render)
+  const virtualizerRef = useRef(virtualizer);
+  virtualizerRef.current = virtualizer;
 
   // Check for view mode change synchronously during render
   if (prevViewModeRef.current !== viewMode) {
@@ -347,9 +372,10 @@ export default function TableBody({
   // Update virtual rows after render completes to prevent flushSync errors
   // This is critical when switching from Card to Table view
   useLayoutEffect(() => {
+    const v = virtualizerRef.current;
     const updateRows = () => {
       try {
-        const rows = virtualizer.getVirtualItems();
+        const rows = v.getVirtualItems();
         setVirtualRows(rows);
         // Mark transition as complete after update
         isTransitioningRef.current = false;
@@ -362,7 +388,7 @@ export default function TableBody({
     // Use requestAnimationFrame to ensure we're outside the render phase
     const rafId = requestAnimationFrame(updateRows);
     return () => cancelAnimationFrame(rafId);
-  }, [virtualizer, viewMode, flattenedRows.length]);
+  }, [viewMode, flattenedRows.length]);
 
   // Update virtual rows on scroll to keep them in sync
   // This ensures scroll updates work even though we're using state
@@ -372,7 +398,7 @@ export default function TableBody({
 
     const updateRows = () => {
       try {
-        const rows = virtualizer.getVirtualItems();
+        const rows = virtualizerRef.current.getVirtualItems();
         setVirtualRows(rows);
       } catch (error) {
         // Silently handle errors
@@ -386,7 +412,7 @@ export default function TableBody({
     }, 16); // ~60fps
 
     return () => clearInterval(intervalId);
-  }, [virtualizer]);
+  }, []);
 
   // Get virtual rows - always use state to prevent flushSync errors
   // State is updated in effects to keep it in sync with scroll
@@ -504,6 +530,7 @@ export default function TableBody({
                 handleFileSelection={handleFileSelection}
                 handleFileDownload={handleFileDownload}
                 handleFileStream={handleFileStream}
+                handleAudioPlay={handleAudioPlay}
                 activeColumns={activeColumns}
                 downloadHistory={downloadHistory}
                 isCopying={isCopying}
