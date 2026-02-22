@@ -36,9 +36,13 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
   - State diffing for efficient change detection
   - Speed aggregation for performance metrics
 
+### Audiobook & Media
+
+- **Chapter Extraction**: For audiobooks and long audio files, the app can extract chapter metadata using **ffprobe** (from FFmpeg). This enables chapter lists and navigation in the built-in audio player. ffprobe is optional; see [Deployment: ffprobe setup](DEPLOYMENT.md#ffprobe-setup-audiobook-chapters) for configuration.
+
 ### User Experience
 
-- **Customizable Interface**: 
+- **Customizable Interface**:
   - Resizable columns
   - Customizable table views
   - Card and list view modes
@@ -90,10 +94,12 @@ The self-hosted backend uses a **multi-user architecture**:
 - **Docker Deployment**: Docker and Docker Compose
 - **Local Development**: Node.js 18.0 or later (or Bun)
 - **Valid TorBox API key** (get yours from [torbox.app/settings](https://torbox.app/settings))
+- **ffprobe (optional)**: Required only for audiobook chapter extraction. The app can auto-download a compatible binary on first use, or you can set `FFPROBE_PATH` to your own ffprobe. See [DEPLOYMENT.md – ffprobe setup](DEPLOYMENT.md#ffprobe-setup-audiobook-chapters).
 
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 15** with App Router
 - **React 19** with hooks
 - **Tailwind CSS** for styling
@@ -104,6 +110,7 @@ The self-hosted backend uses a **multi-user architecture**:
 - **next-pwa** for Progressive Web App support
 
 ### Backend (Optional)
+
 - **Express.js** web framework
 - **SQLite** for master and per-user databases (data isolation)
 - **Bun** runtime for high performance

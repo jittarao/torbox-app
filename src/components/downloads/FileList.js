@@ -4,7 +4,7 @@ import { getDisplayMimetype } from './utils/mimetypeDisplay';
 import Icons from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import { useTranslations } from 'next-intl';
-import { isVideoFile } from './utils/videoDetection';
+import { isVideoFile, isAudioFile } from './utils/videoDetection';
 
 function FileList({
   files,
@@ -14,6 +14,7 @@ function FileList({
   onFileSelect,
   onFileDownload,
   onFileStream,
+  onAudioPlay,
   isCopying,
   isDownloading,
   isStreaming,
@@ -114,12 +115,26 @@ function FileList({
                   >
                     {isDownloading[assetKey] ? <Spinner size="sm" /> : <Icons.Download />}
                   </button>
-                  {/* Play button - only show for video files */}
+                  {/* Play button - video files */}
                   {isVideoFile(file) && onFileStream && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onFileStream(itemId, file);
+                      }}
+                      disabled={isStreaming?.[assetKey]}
+                      className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                      title={t('play')}
+                    >
+                      {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Icons.Play />}
+                    </button>
+                  )}
+                  {/* Play button - audio files */}
+                  {isAudioFile(file) && onAudioPlay && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAudioPlay(itemId, file);
                       }}
                       disabled={isStreaming?.[assetKey]}
                       className="p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"

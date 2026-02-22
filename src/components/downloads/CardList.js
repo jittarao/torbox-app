@@ -35,6 +35,7 @@ export default function CardList({
   viewMode = 'card',
   scrollContainerRef,
   onOpenVideoPlayer,
+  onAudioPlay,
 }) {
   const t = useTranslations('CardList');
   const lastClickedItemIndexRef = useRef(null);
@@ -414,6 +415,27 @@ export default function CardList({
     [trackSelectionModal, getStreamType, createStream, assetKey, setToast, onOpenVideoPlayer]
   );
 
+  const handleAudioPlay = useCallback(
+    async (itemId, file) => {
+      const key = assetKey(itemId, file.id);
+      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      try {
+        if (onAudioPlay) {
+          await onAudioPlay(itemId, file);
+        }
+      } catch (error) {
+        console.error('Error opening audio:', error);
+        setToast({
+          message: error.message || 'Failed to open audio',
+          type: 'error',
+        });
+      } finally {
+        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+      }
+    },
+    [assetKey, onAudioPlay, setToast]
+  );
+
   // Create a lookup map for efficient item assetType retrieval
   const itemAssetTypeMap = useMemo(() => {
     const map = new Map();
@@ -583,6 +605,7 @@ export default function CardList({
                     onFileSelect={handleFileSelection}
                     onFileDownload={handleFileDownload}
                     onFileStream={handleFileStream}
+                    onAudioPlay={handleAudioPlay}
                     onDelete={onDelete}
                     toggleFiles={toggleFiles}
                     expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList

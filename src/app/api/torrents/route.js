@@ -87,10 +87,7 @@ export async function GET(request) {
 
     if (apiKey) {
       const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
-      return Response.json(
-        { ...mergedData, cursor: newCursor },
-        { headers: cacheHeaders }
-      );
+      return Response.json({ ...mergedData, cursor: newCursor }, { headers: cacheHeaders });
     }
     return Response.json(mergedData, { headers: cacheHeaders });
   } catch (error) {
@@ -309,6 +306,14 @@ export async function DELETE(request) {
     const data = await safeJsonParse(response);
 
     if (!response.ok) {
+      console.error('[torrents DELETE] Upstream error:', {
+        endpoint,
+        id,
+        isQueued,
+        status: response.status,
+        error: data.error,
+        detail: data.detail,
+      });
       return Response.json(
         {
           success: false,
@@ -321,6 +326,16 @@ export async function DELETE(request) {
 
     return Response.json(data);
   } catch (error) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    console.error('[torrents DELETE] Error:', error);
+    return Response.json(
+      {
+        success: false,
+        error:
+          error.message ||
+          'There was an unknown error deleting this torrent. Please try again later.',
+        detail: 'DOWNLOAD_SERVER_ERROR',
+      },
+      { status: 500 }
+    );
   }
 }
