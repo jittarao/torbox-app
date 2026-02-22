@@ -7,7 +7,7 @@ import { getDisplayMimetype } from './utils/mimetypeDisplay';
 import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
-import { isVideoFile } from './utils/videoDetection';
+import { isVideoFile, isAudioFile } from './utils/videoDetection';
 
 const ACTIONS_COLUMN_WIDTH = 210;
 const CHECKBOX_COLUMN_WIDTH = 60;
@@ -19,6 +19,7 @@ function FileRow({
   handleFileSelection,
   handleFileDownload,
   handleFileStream,
+  handleAudioPlay,
   activeColumns,
   downloadHistory,
   isCopying,
@@ -164,12 +165,31 @@ function FileRow({
                 )}
               </button>
 
-              {/* Play button - only show for video files */}
+              {/* Play button - video files (stream) */}
               {isVideoFile(file) && handleFileStream && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleFileStream(item.id, file);
+                  }}
+                  disabled={isStreaming?.[assetKey(item.id, file.id)]}
+                  className="p-1.5 rounded-full text-accent dark:text-accent-dark 
+                    hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
+                  title={t('play')}
+                >
+                  {isStreaming?.[assetKey(item.id, file.id)] ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Icons.Play />
+                  )}
+                </button>
+              )}
+              {/* Play button - audio files (mp3, m4b, m4a, etc.) */}
+              {isAudioFile(file) && handleAudioPlay && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAudioPlay(item.id, file);
                   }}
                   disabled={isStreaming?.[assetKey(item.id, file.id)]}
                   className="p-1.5 rounded-full text-accent dark:text-accent-dark 
