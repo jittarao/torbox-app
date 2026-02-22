@@ -36,6 +36,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const processedQueueIdsRef = useRef(new Set());
   const fetchInProgressRef = useRef(false);
   const deltaCursorRef = useRef({ torrents: null, usenet: null, webdl: null });
+  const prevApiKeyRef = useRef(apiKey);
 
   // A per-type rate limit tracker
   const rateLimitDataRef = useRef({});
@@ -454,10 +455,20 @@ export function useFetchData(apiKey, type = 'torrents') {
     }
   }, [type, torrents, usenetItems, webdlItems]);
 
-  // Reset delta cursors when apiKey changes so first request after change is full
+  // When apiKey changes (including switching between two saved keys), reset delta cursors,
+  // item state, and refs so we never merge delta into the previous key's data or show stale data.
   useEffect(() => {
-    if (!apiKey) {
+    if (prevApiKeyRef.current !== apiKey) {
+      prevApiKeyRef.current = apiKey;
       deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
+      rateLimitDataRef.current = {};
+      processedQueueIdsRef.current = new Set();
+      fetchInProgressRef.current = false;
+      setTorrents([]);
+      setUsenetItems([]);
+      setWebdlItems([]);
+      setLoading(!!apiKey);
+      setError(null);
     }
   }, [apiKey]);
 
