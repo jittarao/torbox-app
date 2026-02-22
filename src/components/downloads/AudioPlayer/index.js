@@ -479,12 +479,9 @@ export default function AudioPlayer({
     if (!onRefreshUrl) return;
     setErrorMessage(null);
     try {
-      const newUrl = await onRefreshUrl();
-      if (newUrl && audioRef.current) {
-        audioRef.current.src = newUrl;
-        audioRef.current.load();
-        setStatus('ready');
-      }
+      await onRefreshUrl();
+      setStatus('ready');
+      // Parent updates audioUrl; the main useEffect (audioUrl dep) will set src and load() once
     } catch (err) {
       setStatus('error');
       setErrorMessage(err.message || 'Failed to refresh link');
