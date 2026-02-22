@@ -83,6 +83,7 @@ function downloadFile(url, extension) {
           if (redirect) {
             stream.close();
             fs.unlink(dest).catch(() => {});
+            res.destroy();
             downloadFile(redirect, extension).then(resolve).catch(reject);
             return;
           }
@@ -90,6 +91,7 @@ function downloadFile(url, extension) {
         if (res.statusCode !== 200) {
           stream.close();
           fs.unlink(dest).catch(() => {});
+          res.destroy();
           reject(new Error(`Download failed: HTTP ${res.statusCode}`));
           return;
         }
