@@ -208,7 +208,10 @@ export async function getFfprobePath() {
       const cached = await readCachedPath();
       if (cached) return cached;
       return bootstrapFfprobe();
-    })();
+    })().catch((err) => {
+      ffprobePathPromise = null;
+      throw err;
+    });
   }
   return ffprobePathPromise;
 }
