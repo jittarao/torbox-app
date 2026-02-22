@@ -120,12 +120,14 @@ function FileRow({
                     {formatSize(file.size || 0)}
                   </span>
                   {file.mimetype && (
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 
-                      text-accent dark:text-accent-dark whitespace-nowrap"
-                    >
-                      {getDisplayMimetype(file.mimetype, file.name || file.short_name)}
-                    </span>
+                    <Tooltip content={getDisplayMimetype(file.mimetype, file.name || file.short_name)}>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 
+                        text-accent dark:text-accent-dark min-w-0 max-w-[7rem] sm:max-w-[9rem] md:max-w-[12rem] truncate inline-block"
+                      >
+                        {getDisplayMimetype(file.mimetype, file.name || file.short_name)}
+                      </span>
+                    </Tooltip>
                   )}
                 </div>
               </div>
