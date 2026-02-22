@@ -385,7 +385,9 @@ export default function Downloads({ apiKey }) {
 
   const handleAudioRefreshUrl = useCallback(async () => {
     const { itemId, fileId, assetType: at, apiKey: key } = audioPlayerState;
-    if (itemId == null || fileId == null || !key) return null;
+    if (itemId == null || fileId == null || !key) {
+      throw new Error('Cannot refresh link: missing item, file, or API key');
+    }
     const idField = at === 'usenet' ? 'usenet_id' : at === 'webdl' ? 'web_id' : 'torrent_id';
     const metadata = {
       assetType: at,
