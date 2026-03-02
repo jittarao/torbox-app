@@ -6,6 +6,51 @@ import { getFfprobePath } from '@/app/api/lib/ffprobe-bootstrap';
 
 const FFPROBE_TIMEOUT_MS = 60000;
 
+/** Classify ffprobe failure for API response. */
+function classifyExtractionError(message) {
+  const msg = (message || '').trim();
+  if (/timed out/i.test(msg)) {
+    return {
+      code: 'TIMEOUT',
+      error: 'Chapter extraction timed out; the file may be too large or the URL too slow.',
+      hint: 'Try again or use a faster CDN. Timeout is 60s.',
+    };
+  }
+  if (/401|403|forbidden|unauthorized|expired/i.test(msg) || /Invalid data/i.test(msg)) {
+    return {
+      code: 'ACCESS_DENIED',
+      error: 'Chapter extraction failed: link may have expired or file is not accessible.',
+      hint: 'Debrid and time-limited URLs often require cookies or headers that ffprobe cannot send. Use a publicly reachable URL or a proxy that adds auth.',
+    };
+  }
+  if (/Invalid ffprobe output|parse error/i.test(msg)) {
+    return {
+      code: 'INVALID_OUTPUT',
+      error: 'Chapter extraction failed: ffprobe returned invalid data.',
+      hint: 'The URL might point to an HTML error page instead of an audio file.',
+    };
+  }
+  if (/ENOENT|not found|no such file/i.test(msg)) {
+    return {
+      code: 'FFPROBE_NOT_FOUND',
+      error: 'Chapter extraction failed: ffprobe could not be run.',
+      hint: 'Set FFPROBE_PATH or allow auto-download. See DEPLOYMENT.md.',
+    };
+  }
+  if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|getaddrinfo/i.test(msg)) {
+    return {
+      code: 'NETWORK_ERROR',
+      error: 'Chapter extraction failed: server could not reach the URL.',
+      hint: 'Check that the URL is reachable from this server (DNS, firewall, VPN).',
+    };
+  }
+  return {
+    code: 'EXTRACTION_FAILED',
+    error: msg.length > 300 ? msg.slice(0, 297) + '...' : msg || 'Chapter extraction failed.',
+    hint: 'Check that the URL returns an audio file (e.g. .m4a, .m4b) and is reachable without auth from this server.',
+  };
+}
+
 /**
  * POST /api/audiobook/chapters
  * Body: { id: string, file_id: string, url: string } — cache key is id+file_id; url is the stream/CDN URL.
@@ -68,8 +113,11 @@ export async function POST(request) {
       {
         success: false,
         error: 'Chapter extraction unavailable: ' + (err.message || 'ffprobe failed'),
+        code: 'FFPROBE_UNAVAILABLE',
+        hint: 'Set FFPROBE_PATH to your ffprobe binary or allow auto-download. See DEPLOYMENT.md.',
+        details: err.message || undefined,
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
@@ -119,23 +167,25 @@ export async function POST(request) {
       clearTimeout(timeout);
       reject(err);
     });
-  }).catch((err) => ({ error: err.message || 'Chapter extraction failed' }));
+  }).catch((err) => ({ rawMessage: err.message || 'Chapter extraction failed' }));
 
-  if (result && result.error) {
-    const msg = result.error;
-    const isExpired =
-      /401|403|expired|forbidden|unauthorized/i.test(msg) || /Invalid data/i.test(msg);
-    if (!isExpired) {
-      console.error('Audiobook chapters: ffprobe error', { id, fileId, message: msg });
+  if (result && result.rawMessage) {
+    const msg = result.rawMessage;
+    const { code, error, hint } = classifyExtractionError(msg);
+    if (code !== 'TIMEOUT') {
+      console.error('Audiobook chapters: ffprobe error', { id, fileId, code, message: msg });
     }
+    const status =
+      code === 'ACCESS_DENIED' ? 401 : code === 'FFPROBE_NOT_FOUND' ? 503 : 500;
     return NextResponse.json(
       {
         success: false,
-        error: isExpired
-          ? 'Chapter extraction failed: link may have expired or file is not accessible'
-          : 'Chapter extraction failed',
+        error,
+        code,
+        hint,
+        details: msg.length <= 500 ? msg : msg.slice(0, 497) + '...',
       },
-      { status: isExpired ? 401 : 500 }
+      { status }
     );
   }
 
