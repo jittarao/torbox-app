@@ -1374,8 +1374,18 @@ class RuleEvaluator {
       case 'stop_seeding':
         return await this.apiClient.controlTorrent(torrent.id, 'stop_seeding');
 
-      case 'force_start':
+      case 'force_start': {
+        const status = this.getTorrentStatus(torrent);
+        if (status !== 'queued') {
+          logger.info('Skipping force_start - torrent is not queued', {
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            status,
+          });
+          return { skipped: true, reason: 'force_start only applies to queued torrents' };
+        }
         return await this.apiClient.controlTorrent(torrent.id, 'force_start');
+      }
 
       case 'delete':
         return await this.apiClient.deleteTorrent(torrent.id, {
