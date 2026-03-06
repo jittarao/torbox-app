@@ -447,6 +447,89 @@ class TorBoxBackend {
     return parts.join(' ');
   }
 
+  /**
+   * Re-sync has_active_rules in master from each user DB (same logic as startup).
+   * Use after suspected flag drift so pollers are recreated for users who have enabled rules.
+   * @returns {Promise<{ synced: number, errors: number, skipped: number, durationSeconds: number }>}
+   */
+  async syncHasActiveRulesFromUserDbs() {
+    const activeUsers = this.masterDatabase.getActiveUsers();
+    const syncStats = { synced: 0, errors: 0, skipped: 0 };
+    const syncStartTime = Date.now();
+    const maxConcurrentSync = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
+
+    class SyncSemaphore {
+      constructor(maxConcurrent) {
+        this.maxConcurrent = maxConcurrent;
+        this.running = 0;
+        this.queue = [];
+      }
+      async acquire() {
+        return new Promise((resolve) => {
+          if (this.running < this.maxConcurrent) {
+            this.running++;
+            resolve();
+          } else {
+            this.queue.push(resolve);
+          }
+        });
+      }
+      release() {
+        this.running--;
+        if (this.queue.length > 0) {
+          this.running++;
+          const next = this.queue.shift();
+          next();
+        }
+      }
+    }
+
+    const syncSemaphore = new SyncSemaphore(maxConcurrentSync);
+    const usersToSync = activeUsers.filter((user) => user.encrypted_key);
+
+    await Promise.all(
+      usersToSync.map(async (user) => {
+        const { auth_id, has_active_rules: dbFlag } = user;
+        await syncSemaphore.acquire();
+        try {
+          const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+          if (!userDb?.db) {
+            syncStats.skipped++;
+            return;
+          }
+          const result = userDb.db
+            .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+            .get();
+          const actualHasActiveRules = result && result.count > 0;
+          const actualFlag = actualHasActiveRules ? 1 : 0;
+          if (dbFlag !== actualFlag) {
+            this.masterDatabase.updateActiveRulesFlag(auth_id, actualHasActiveRules);
+            syncStats.synced++;
+          }
+        } catch (error) {
+          logger.warn('Failed to sync active rules flag for user', {
+            authId: auth_id,
+            errorMessage: error.message,
+          });
+          syncStats.errors++;
+        } finally {
+          syncSemaphore.release();
+        }
+      })
+    );
+
+    if (syncStats.synced > 0) {
+      cache.invalidateActiveUsers();
+    }
+
+    const durationSeconds = (Date.now() - syncStartTime) / 1000;
+    logger.info('Sync has_active_rules from user DBs completed', {
+      ...syncStats,
+      durationSeconds,
+    });
+    return { ...syncStats, durationSeconds };
+  }
+
   async shutdown() {
     logger.info('Shutting down TorBox Backend...');
 

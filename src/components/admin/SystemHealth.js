@@ -1,4 +1,29 @@
-export default function SystemHealth({ metrics }) {
+'use client';
+
+import { useState } from 'react';
+import adminApiClient from '@/utils/adminApiClient';
+
+export default function SystemHealth({ metrics, onRefresh }) {
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState(null);
+
+  const handleSyncRulesFlags = async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const data = await adminApiClient.syncRulesFlags();
+      const msg = data?.sync
+        ? `Synced ${data.sync.synced} user flags in ${data.sync.durationSeconds?.toFixed(1) ?? '?'}s. Pollers: ${data.pollersAfterRefresh ?? '—'}`
+        : 'Sync completed.';
+      setSyncMessage({ type: 'success', text: msg });
+      onRefresh?.();
+    } catch (err) {
+      setSyncMessage({ type: 'error', text: err.message || 'Sync failed' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (!metrics) return null;
 
   return (
@@ -20,7 +45,9 @@ export default function SystemHealth({ metrics }) {
               <>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600 dark:text-gray-400">Pool Size</span>
+                    <span className="text-gray-600 dark:text-gray-400" title="Open SQLite connections to per-user databases (not the same as Active Pollers)">
+                      Pool size (user DB connections)
+                    </span>
                     <span className="text-gray-900 dark:text-white font-medium">
                       {metrics.database.connection_pool.size ?? metrics.database.connection_pool.currentSize} /{' '}
                       {metrics.database.connection_pool.maxSize}
@@ -54,11 +81,11 @@ export default function SystemHealth({ metrics }) {
                       {metrics.database.connection_pool.status}
                     </span>
                   </div>
-                  {!['healthy', 'warning'].includes(metrics.database.connection_pool.status) && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Pool near capacity. Consider increasing <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">MAX_DB_CONNECTIONS</code> for 1000+ users.
-                    </p>
-                  )}
+                    {!['healthy', 'warning'].includes(metrics.database.connection_pool.status) && (
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Many user DBs have an open connection. Consider increasing <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">MAX_DB_CONNECTIONS</code> for 1000+ users.
+                      </p>
+                    )}
                 </div>
               </>
             )}
@@ -90,6 +117,28 @@ export default function SystemHealth({ metrics }) {
                   {metrics.polling.activePollers || 0}
                 </span>
               </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Users with at least one enabled automation rule (separate from pool connections above).
+              </p>
+            </div>
+            <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={handleSyncRulesFlags}
+                disabled={syncing}
+                className="px-3 py-1.5 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {syncing ? 'Syncing…' : 'Sync rules flags & refresh pollers'}
+              </button>
+              {syncMessage && (
+                <p
+                  className={`mt-2 text-sm ${
+                    syncMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {syncMessage.text}
+                </p>
+              )}
             </div>
           </div>
         </div>

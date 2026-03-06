@@ -215,6 +215,13 @@ class AdminApiClient {
     return this.request('/automation/stats');
   }
 
+  /**
+   * Re-sync has_active_rules from all user DBs and refresh pollers (repair after flag drift).
+   */
+  async syncRulesFlags() {
+    return this.request('/automation/sync-rules-flags', { method: 'POST' });
+  }
+
   // ===== System Configuration =====
 
   async getConfig() {

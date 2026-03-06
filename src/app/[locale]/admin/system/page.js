@@ -69,7 +69,7 @@ export default function AdminSystemPage() {
           </div>
         ) : metrics ? (
           <>
-            <SystemHealth metrics={metrics} />
+            <SystemHealth metrics={metrics} onRefresh={loadMetrics} />
             <PerformanceMetrics metrics={metrics.performance} />
           </>
         ) : (
