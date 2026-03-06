@@ -132,6 +132,7 @@ export function setupApiKeyRoutes(app, backend) {
         if (!dbExists) {
           // DB file doesn't exist, create it
           await backend.userDatabaseManager.getUserDatabase(authId);
+          backend.userDatabaseManager.releaseConnection(authId);
           wasCreated = true;
           dbExists = true;
         }
