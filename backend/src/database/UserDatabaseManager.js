@@ -12,7 +12,7 @@ import cache from '../utils/cache.js';
  * Connections with activeOperations > 0 are never evicted (e.g. during a poll).
  */
 class DatabasePool {
-  constructor(maxSize = 200, options = {}) {
+  constructor(maxSize = 50, options = {}) {
     this.maxSize = maxSize;
     this.cache = new Map(); // Map<key, { value, lastAccess, refCount, activeOperations }>
 
@@ -472,8 +472,9 @@ class UserDatabaseManager {
     this.masterDb = masterDb;
     this.masterDbIsInstance = typeof masterDb.getQuery === 'function';
     this.userDbDir = userDbDir;
-    // Increased pool size for better scalability with 1000+ users
-    this.pool = new DatabasePool(parseInt(process.env.MAX_DB_CONNECTIONS || '200'));
+    // Pool sized for concurrent polls + sync + API; connections closed after poll/sync so we don't hold 100s
+    const defaultPoolSize = 50; // maxConcurrentPolls (12) + REFRESH_SYNC_CONCURRENCY (5) + API headroom
+    this.pool = new DatabasePool(parseInt(process.env.MAX_DB_CONNECTIONS || String(defaultPoolSize), 10));
     // Mutex map to prevent race conditions when creating connections for the same user
     this.connectionLocks = new Map(); // Map<authId, Promise>
   }
@@ -955,15 +956,29 @@ class UserDatabaseManager {
   }
 
   /**
-   * Release a connection reference after use (e.g. after a poll cycle).
+   * Release a connection reference after use (e.g. short API request).
    * Decrements refCount so the pool can evict the connection when idle (idleTimeoutMs).
-   * Call this when the caller no longer needs to hold the connection (e.g. polling uses
-   * get-at-poll-time and release-after so the pool is not filled by idle pollers).
+   * Use closeConnection when the caller is done with the connection for the foreseeable future
+   * (e.g. after a poll cycle) so the connection is closed and removed from the pool.
    * @param {string} authId - User authentication ID
    */
   releaseConnection(authId) {
     if (authId && this.pool) {
       this.pool.release(authId);
+    }
+  }
+
+  /**
+   * Close and remove a user's database connection from the pool.
+   * Call this when the caller is done with the connection for the foreseeable future
+   * (e.g. after a poll cycle or full-sync user check). The next request for this user
+   * will open a new connection. Use this in polling and batch sync to avoid holding
+   * hundreds of idle connections; use releaseConnection for short request/response flows.
+   * @param {string} authId - User authentication ID
+   */
+  closeConnection(authId) {
+    if (authId && this.pool) {
+      this.pool.delete(authId);
     }
   }
 

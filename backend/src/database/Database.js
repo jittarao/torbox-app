@@ -984,7 +984,7 @@ class Database {
           });
           errors++;
         } finally {
-          userDatabaseManager.releaseConnection(user.auth_id);
+          userDatabaseManager.closeConnection(user.auth_id);
         }
       }
 

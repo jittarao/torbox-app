@@ -564,13 +564,12 @@ class UserPoller {
     try {
       await this.ensureDatabaseConnection();
     } catch (error) {
-      logger.error('Failed to ensure database connection', error, {
-        authId: this.authId,
-        errorMessage: error.message,
-      });
+        logger.error('Failed to ensure database connection', error, {
+          authId: this.authId,
+          errorMessage: error.message,
+        });
       if (this.userDatabaseManager) {
-        this.userDatabaseManager.pool?.markInactive(this.authId);
-        this.userDatabaseManager.releaseConnection(this.authId);
+        this.userDatabaseManager.closeConnection(this.authId);
       }
       this.dbManager = null;
       return {
@@ -589,8 +588,7 @@ class UserPoller {
         hasAutomationEngine: !!this.automationEngine,
       });
       if (this.userDatabaseManager) {
-        this.userDatabaseManager.pool?.markInactive(this.authId);
-        this.userDatabaseManager.releaseConnection(this.authId);
+        this.userDatabaseManager.closeConnection(this.authId);
       }
       this.dbManager = null;
       return {
@@ -733,10 +731,9 @@ class UserPoller {
       if (this._pollGeneration === myGeneration) {
         this.isPolling = false;
       }
-      // Release connection after poll so pool is not held by idle pollers (min poll interval 5+ min)
+      // Close connection after poll so we don't hold 100s of idle connections; next poll will open fresh
       if (this.userDatabaseManager) {
-        this.userDatabaseManager.pool?.markInactive(this.authId);
-        this.userDatabaseManager.releaseConnection(this.authId);
+        this.userDatabaseManager.closeConnection(this.authId);
       }
       this.dbManager = null;
       const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
