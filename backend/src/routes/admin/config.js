@@ -22,7 +22,7 @@ export function setupConfigRoutes(router, backend) {
           admin_rate_limit_max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX || '100', 10),
         },
         database: {
-          max_db_connections: parseInt(process.env.MAX_DB_CONNECTIONS || '200', 10),
+          max_db_connections: parseInt(process.env.MAX_DB_CONNECTIONS || '50', 10),
           master_db_path: process.env.MASTER_DB_PATH || '/app/data/master.db',
           user_db_dir: process.env.USER_DB_DIR || '/app/data/users',
         },

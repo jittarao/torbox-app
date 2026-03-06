@@ -966,7 +966,7 @@ class PollingScheduler {
                   .get();
                 actualHasActiveRules = result && result.count > 0;
               } finally {
-                this.userDatabaseManager.releaseConnection(auth_id);
+                this.userDatabaseManager.closeConnection(auth_id);
               }
             } else {
               syncStats.skipped++;
