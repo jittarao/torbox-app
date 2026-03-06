@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import useAdminStore from '@/store/adminStore';
+import adminApiClient from '@/utils/adminApiClient';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 
 export default function UserList({
@@ -13,9 +14,11 @@ export default function UserList({
   onPageChange,
   onStatusFilter,
   onSearch,
+  onUsersUpdated,
 }) {
-  const { deleteUser, updateUserStatus } = useAdminStore();
+  const { deleteUser, updateUserStatus, fetchUsers } = useAdminStore();
   const [deleting, setDeleting] = useState(null);
+  const [reactivating, setReactivating] = useState(false);
   const [searchValue, setSearchValue] = useState(filters?.search || '');
 
   const handleDelete = async (authId, e) => {
@@ -53,6 +56,28 @@ export default function UserList({
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     onSearch(searchValue);
+  };
+
+  const handleReactivateAllInactive = async () => {
+    if (!confirm('Reactivate all inactive API keys? This will set is_active = 1 and status = active for every user with an inactive key.')) {
+      return;
+    }
+    setReactivating(true);
+    try {
+      const data = await adminApiClient.reactivateApiKeys();
+      const count = data?.reactivated ?? data?.count ?? 0;
+      if (count > 0) {
+        alert(`Reactivated ${count} API key(s).`);
+        fetchUsers(filters);
+        onUsersUpdated?.();
+      } else {
+        alert('No inactive API keys to reactivate.');
+      }
+    } catch (err) {
+      alert(`Error: ${err.message || 'Failed to reactivate keys'}`);
+    } finally {
+      setReactivating(false);
+    }
   };
 
   return (
@@ -99,6 +124,15 @@ export default function UserList({
               }`}
             >
               Inactive
+            </button>
+            <button
+              type="button"
+              onClick={handleReactivateAllInactive}
+              disabled={reactivating}
+              className="px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+              title="Set all inactive API keys to active (user_registry.status and api_keys.is_active)"
+            >
+              {reactivating ? 'Reactivating…' : 'Reactivate all inactive keys'}
             </button>
           </div>
         </div>
