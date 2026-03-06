@@ -173,6 +173,8 @@ export function setupMetricsRoutes(router, backend) {
             authId: user.auth_id,
             error: error.message,
           });
+        } finally {
+          backend.userDatabaseManager.releaseConnection(user.auth_id);
         }
       }
 

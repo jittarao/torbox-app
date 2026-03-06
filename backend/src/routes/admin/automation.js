@@ -39,6 +39,8 @@ export function setupAutomationRoutes(router, backend) {
             authId: user.auth_id,
             error: error.message,
           });
+        } finally {
+          backend.userDatabaseManager.releaseConnection(user.auth_id);
         }
       }
 
@@ -102,6 +104,8 @@ export function setupAutomationRoutes(router, backend) {
             authId: user.auth_id,
             error: error.message,
           });
+        } finally {
+          backend.userDatabaseManager.releaseConnection(user.auth_id);
         }
       }
 
@@ -151,6 +155,8 @@ export function setupAutomationRoutes(router, backend) {
             authId: user.auth_id,
             error: error.message,
           });
+        } finally {
+          backend.userDatabaseManager.releaseConnection(user.auth_id);
         }
       }
 
@@ -217,6 +223,8 @@ export function setupAutomationRoutes(router, backend) {
             authId: user.auth_id,
             error: error.message,
           });
+        } finally {
+          backend.userDatabaseManager.releaseConnection(user.auth_id);
         }
       }
 

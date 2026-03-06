@@ -1512,6 +1512,7 @@ class UploadProcessor {
           });
         } finally {
           this.userDatabaseManager.pool?.markInactive(auth_id);
+          this.userDatabaseManager.releaseConnection(auth_id);
         }
       }
 

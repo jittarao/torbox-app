@@ -82,6 +82,8 @@ export function setupDatabaseRoutes(router, backend) {
             authId,
             error: checkpointError.message,
           });
+        } finally {
+          backend.userDatabaseManager.releaseConnection(authId);
         }
       }
 
@@ -247,6 +249,7 @@ export function setupDatabaseRoutes(router, backend) {
         return sendError(res, 'Failed to access user database', 500);
       }
 
+      try {
       // Get size before
       const statsBefore = fs.statSync(user.db_path);
       const sizeBefore = statsBefore.size;
@@ -273,6 +276,9 @@ export function setupDatabaseRoutes(router, backend) {
         space_freed: spaceFreed,
         space_freed_formatted: formatBytes(spaceFreed),
       });
+      } finally {
+        backend.userDatabaseManager.releaseConnection(authId);
+      }
     })
   );
 

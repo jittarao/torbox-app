@@ -295,17 +295,21 @@ export function setupUserRoutes(router, backend) {
       if (dbStats?.exists) {
         const userDb = await getUserDatabaseSafe(backend, authId);
         if (userDb) {
-          const tables = [
-            'automation_rules',
-            'torrent_shadow',
-            'torrent_telemetry',
-            'speed_history',
-            'archived_downloads',
-            'custom_views',
-            'tags',
-            'download_tags',
-          ];
-          dbStats.table_counts = getTableCounts(userDb.db, tables);
+          try {
+            const tables = [
+              'automation_rules',
+              'torrent_shadow',
+              'torrent_telemetry',
+              'speed_history',
+              'archived_downloads',
+              'custom_views',
+              'tags',
+              'download_tags',
+            ];
+            dbStats.table_counts = getTableCounts(userDb.db, tables);
+          } finally {
+            backend.userDatabaseManager.releaseConnection(authId);
+          }
         }
       }
 
@@ -334,6 +338,7 @@ export function setupUserRoutes(router, backend) {
         return sendError(res, 'Failed to access user database', 500);
       }
 
+      try {
       // Get automation rules
       const rules = userDb.db
         .prepare(
@@ -389,6 +394,9 @@ export function setupUserRoutes(router, backend) {
           ...stats,
         },
       });
+      } finally {
+        backend.userDatabaseManager.releaseConnection(authId);
+      }
     })
   );
 }
