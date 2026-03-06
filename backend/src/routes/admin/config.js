@@ -11,7 +11,7 @@ export function setupConfigRoutes(router, backend) {
         polling: {
           max_concurrent_polls: parseInt(process.env.MAX_CONCURRENT_POLLS || '12', 10),
           min_poll_interval_ms: 5 * 60 * 1000,
-          poll_kickout_ms: parseInt(process.env.POLL_KICKOUT_MS || '120000', 10),
+          poll_kickout_ms: parseInt(process.env.POLL_KICKOUT_MS || '180000', 10),
           poller_cleanup_interval_hours: parseInt(
             process.env.POLLER_CLEANUP_INTERVAL_HOURS || '24',
             10
