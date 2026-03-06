@@ -10,7 +10,7 @@ const REFRESH_FULL_SYNC_EVERY_N = 6; // Do expensive "sync has_active_rules from
 // Minimum time between polling the same user (each user must not be polled more than once per this window)
 const MIN_POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes — matches rules' minimum interval
 // Per-user kick-out: max time one user's poll may run inside a cycle before we give up and free the slot
-const DEFAULT_POLL_KICKOUT_MS = 120000; // 2 minutes — kick slow users out so others can use the slot
+const DEFAULT_POLL_KICKOUT_MS = 180000; // 3 minutes — allows slow API/DB for users with many torrents; set POLL_KICKOUT_MS=120000 for stricter slot usage
 const DEFAULT_MAX_CONCURRENT_POLLS = 12; // Number of users polled in parallel
 const DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS = 24;
 const ERROR_RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes after first timeout
@@ -201,8 +201,8 @@ class PollingScheduler {
     this._refreshInProgress = false;
     this._refreshCount = 0; // Incremented each refresh; full sync every REFRESH_FULL_SYNC_EVERY_N
     this._refreshSyncConcurrency = Math.min(
-      10,
-      Math.max(1, parseInt(process.env.REFRESH_SYNC_CONCURRENCY || '10', 10))
+      20,
+      Math.max(1, parseInt(process.env.REFRESH_SYNC_CONCURRENCY || '5', 10))
     );
 
     // Metrics
