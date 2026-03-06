@@ -241,4 +241,23 @@ export function setupAutomationRoutes(router, backend) {
       });
     })
   );
+
+  // Force re-sync has_active_rules from all user DBs and refresh pollers (repair after flag drift)
+  router.post(
+    '/automation/sync-rules-flags',
+    asyncHandler(async (req, res) => {
+      const syncResult = await backend.syncHasActiveRulesFromUserDbs();
+      if (backend.pollingScheduler) {
+        await backend.pollingScheduler.refreshPollers();
+      }
+      const status = backend.pollingScheduler
+        ? backend.pollingScheduler.getStatus()
+        : null;
+      sendSuccess(res, {
+        message: 'Sync completed; pollers refreshed',
+        sync: syncResult,
+        pollersAfterRefresh: status?.activePollers ?? null,
+      });
+    })
+  );
 }
