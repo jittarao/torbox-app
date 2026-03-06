@@ -242,7 +242,7 @@ class UserPoller {
    */
   async handleAuthenticationError(error) {
     this.consecutiveAuthFailures = (this.consecutiveAuthFailures || 0) + 1;
-    const threshold = Math.max(1, parseInt(process.env.AUTH_FAILURE_DEACTIVATE_AFTER || '2', 10));
+    const threshold = Math.max(1, parseInt(process.env.AUTH_FAILURE_DEACTIVATE_AFTER || '3', 10));
 
     logger.error('API authentication failed - API key may be invalid or expired', error, {
       authId: this.authId,
@@ -254,7 +254,7 @@ class UserPoller {
       deactivateThreshold: threshold,
     });
 
-    // Only mark inactive after N consecutive auth failures (avoids deactivating on transient "try again" errors)
+    // Only mark inactive after N consecutive polling cycles that failed with auth error (one increment per cycle; ApiClient does not retry on auth error, so retries within a request do not add to count; successful poll resets counter)
     if (
       this.consecutiveAuthFailures >= threshold &&
       this.masterDb &&
