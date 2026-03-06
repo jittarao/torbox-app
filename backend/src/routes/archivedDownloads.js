@@ -70,6 +70,10 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
@@ -145,6 +149,10 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
@@ -206,6 +214,10 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );

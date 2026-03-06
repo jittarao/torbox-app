@@ -1511,8 +1511,7 @@ class UploadProcessor {
             authId: auth_id,
           });
         } finally {
-          this.userDatabaseManager.pool?.markInactive(auth_id);
-          this.userDatabaseManager.releaseConnection(auth_id);
+          this.userDatabaseManager.closeConnection(auth_id);
         }
       }
 

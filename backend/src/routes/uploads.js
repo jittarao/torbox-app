@@ -364,6 +364,10 @@ export function setupUploadsRoutes(app, backend) {
         method: 'POST',
       });
       res.status(500).json({ success: false, error: error.message });
+    } finally {
+      if (req.validatedAuthId && backend.userDatabaseManager) {
+        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+      }
     }
   });
 
@@ -517,6 +521,10 @@ export function setupUploadsRoutes(app, backend) {
         authId: req.validatedAuthId,
       });
       res.status(500).json({ success: false, error: error.message });
+    } finally {
+      if (req.validatedAuthId && backend.userDatabaseManager) {
+        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+      }
     }
   });
 
@@ -662,6 +670,10 @@ export function setupUploadsRoutes(app, backend) {
         authId: req.validatedAuthId,
       });
       res.status(500).json({ success: false, error: error.message });
+    } finally {
+      if (req.validatedAuthId && backend.userDatabaseManager) {
+        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+      }
     }
   });
 
@@ -712,6 +724,10 @@ export function setupUploadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
@@ -795,6 +811,10 @@ export function setupUploadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
@@ -923,6 +943,10 @@ export function setupUploadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
@@ -1024,6 +1048,10 @@ export function setupUploadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
@@ -1167,6 +1195,10 @@ export function setupUploadsRoutes(app, backend) {
         authId: req.validatedAuthId,
       });
       res.status(500).json({ success: false, error: error.message });
+    } finally {
+      if (req.validatedAuthId && backend.userDatabaseManager) {
+        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+      }
     }
   });
 
@@ -1282,6 +1314,10 @@ export function setupUploadsRoutes(app, backend) {
         authId: req.validatedAuthId,
       });
       res.status(500).json({ success: false, error: error.message });
+    } finally {
+      if (req.validatedAuthId && backend.userDatabaseManager) {
+        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+      }
     }
   });
 
@@ -1353,6 +1389,10 @@ export function setupUploadsRoutes(app, backend) {
           authId: req.validatedAuthId,
         });
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
   );
