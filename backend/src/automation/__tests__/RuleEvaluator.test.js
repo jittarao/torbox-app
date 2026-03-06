@@ -1536,13 +1536,29 @@ describe('RuleEvaluator', () => {
       expect(mockApiClient.controlTorrent).toHaveBeenCalledWith('torrent-1', 'stop_seeding');
     });
 
-    it('should execute force_start action', async () => {
+    it('should execute force_start action when torrent is queued', async () => {
       const action = { type: 'force_start' };
-      const torrent = { id: 'torrent-1' };
+      const torrent = { id: 'torrent-1' }; // no active/download_state → queued
 
       await ruleEvaluator.executeAction(action, torrent);
 
       expect(mockApiClient.controlTorrent).toHaveBeenCalledWith('torrent-1', 'force_start');
+    });
+
+    it('should skip force_start when torrent is not queued', async () => {
+      const action = { type: 'force_start' };
+      const torrent = {
+        id: 'torrent-1',
+        name: 'test',
+        active: false,
+        download_present: false,
+        download_finished: true,
+      }; // inactive (queued requires !download_finished)
+
+      const result = await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.controlTorrent).not.toHaveBeenCalled();
+      expect(result).toEqual({ skipped: true, reason: 'force_start only applies to queued torrents' });
     });
 
     it('should execute archive action', async () => {

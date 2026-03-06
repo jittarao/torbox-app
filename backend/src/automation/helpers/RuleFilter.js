@@ -240,7 +240,8 @@ class RuleFilter {
   }
 
   /**
-   * Filter torrents for force_start action - skip torrents that are already queued
+   * Filter torrents for force_start action - only keep queued torrents.
+   * force_start is only valid for queued torrents; inactive/seeding/etc. cannot be force-started.
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
    * @param {Object} action - Action configuration
    * @returns {Promise<Array>} - Filtered torrents
@@ -254,8 +255,8 @@ class RuleFilter {
       const status = getTorrentStatus(torrent);
       const isQueued = status === 'queued';
 
-      if (isQueued) {
-        logger.debug('Skipping torrent - already queued', {
+      if (!isQueued) {
+        logger.debug('Skipping torrent for force_start - not queued', {
           authId: this.authId,
           torrentId: torrent.id,
           torrentName: torrent.name,
@@ -269,7 +270,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered torrents that are already queued', {
+      logger.info('Filtered torrents for force_start (only queued allowed)', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,
