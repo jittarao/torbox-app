@@ -119,6 +119,19 @@ class AdminApiClient {
     });
   }
 
+  /**
+   * Bulk reactivate API keys. Pass authIds to reactivate only those; omit to reactivate all inactive keys.
+   * @param {string[]} [authIds]
+   */
+  async reactivateApiKeys(authIds = null) {
+    return this.request('/users/reactivate-api-keys', {
+      method: 'POST',
+      body: JSON.stringify(
+        authIds && authIds.length > 0 ? { authIds } : {}
+      ),
+    });
+  }
+
   async getUserDatabase(authId) {
     return this.request(`/users/${authId}/database`);
   }

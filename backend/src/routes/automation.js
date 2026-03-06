@@ -21,6 +21,28 @@ async function getEngineForRequest(backend, authId) {
 }
 
 /**
+ * Send 403 or 404 when getEngineForRequest returned null (user exists but key inactive, or user not found).
+ */
+function sendEngineUnavailableResponse(res, backend, authId) {
+  const reason = backend.masterDatabase.getApiKeyUnavailableReason(authId);
+  if (reason === 'inactive') {
+    return res.status(403).json({
+      success: false,
+      error: 'API key is inactive. Please re-add your API key in Settings to run automations.',
+      code: 'API_KEY_INACTIVE',
+    });
+  }
+  if (reason === 'missing') {
+    return res.status(403).json({
+      success: false,
+      error: 'API key missing. Please add your API key in Settings.',
+      code: 'API_KEY_MISSING',
+    });
+  }
+  return res.status(404).json({ success: false, error: 'User not found' });
+}
+
+/**
  * Automation rules routes
  */
 export function setupAutomationRoutes(app, backend) {
@@ -69,7 +91,7 @@ export function setupAutomationRoutes(app, backend) {
     try {
       const engine = await getEngineForRequest(backend, authId);
       if (!engine) {
-        return res.status(404).json({ success: false, error: 'User not found' });
+        return sendEngineUnavailableResponse(res, backend, authId);
       }
       const { rules } = req.body;
       const savedRules = await engine.saveAutomationRules(rules);
@@ -100,7 +122,7 @@ export function setupAutomationRoutes(app, backend) {
       try {
         const engine = await getEngineForRequest(backend, authId);
         if (!engine) {
-          return res.status(404).json({ success: false, error: 'User not found' });
+          return sendEngineUnavailableResponse(res, backend, authId);
         }
         const { enabled } = req.body;
         await engine.updateRuleStatus(ruleId, enabled);
@@ -132,7 +154,7 @@ export function setupAutomationRoutes(app, backend) {
       try {
         const engine = await getEngineForRequest(backend, authId);
         if (!engine) {
-          return res.status(404).json({ success: false, error: 'User not found' });
+          return sendEngineUnavailableResponse(res, backend, authId);
         }
         await engine.deleteRule(ruleId);
         if (pollingScheduler) {
@@ -163,7 +185,7 @@ export function setupAutomationRoutes(app, backend) {
       try {
         const engine = await getEngineForRequest(backend, authId);
         if (!engine) {
-          return res.status(404).json({ success: false, error: 'User not found' });
+          return sendEngineUnavailableResponse(res, backend, authId);
         }
         const logs = await engine.getRuleExecutionHistory(ruleId);
         res.json({ success: true, logs });
@@ -191,7 +213,7 @@ export function setupAutomationRoutes(app, backend) {
       try {
         const engine = await getEngineForRequest(backend, authId);
         if (!engine) {
-          return res.status(404).json({ success: false, error: 'User not found' });
+          return sendEngineUnavailableResponse(res, backend, authId);
         }
         await engine.clearRuleExecutionHistory(ruleId);
         res.json({
@@ -222,7 +244,7 @@ export function setupAutomationRoutes(app, backend) {
       try {
         const engine = await getEngineForRequest(backend, authId);
         if (!engine) {
-          return res.status(404).json({ success: false, error: 'User not found' });
+          return sendEngineUnavailableResponse(res, backend, authId);
         }
         const result = await engine.runRuleManually(ruleId);
         res.json({ success: true, result });

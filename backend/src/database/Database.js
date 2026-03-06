@@ -439,12 +439,24 @@ class Database {
   }
 
   /**
-   * Get encrypted API key for a user
+   * Get encrypted API key for a user (active keys only)
    */
   getApiKey(authId) {
     return this.getQuery('SELECT encrypted_key FROM api_keys WHERE auth_id = ? AND is_active = 1', [
       authId,
     ]);
+  }
+
+  /**
+   * Check why an API key is unavailable: 'inactive' (key exists but is_active=0), 'missing' (user in registry but no key), or null (user not found).
+   */
+  getApiKeyUnavailableReason(authId) {
+    const keyRow = this.getQuery('SELECT is_active FROM api_keys WHERE auth_id = ?', [authId]);
+    if (keyRow !== undefined) {
+      return keyRow.is_active === 1 ? null : 'inactive';
+    }
+    const userRow = this.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId]);
+    return userRow !== undefined ? 'missing' : null;
   }
 
   /**
@@ -463,6 +475,48 @@ class Database {
     // Invalidate cache since user registry changed
     cache.invalidateUserRegistry(authId);
     cache.invalidateActiveUsers();
+  }
+
+  /**
+   * Reactivate API keys (set is_active = 1 and user_registry.status = 'active').
+   * @param {string[]} [authIds] - If provided, only these auth_ids; otherwise all inactive keys.
+   * @returns {{ count: number, authIds: string[] }} Number reactivated and list of auth_ids.
+   */
+  reactivateApiKeys(authIds = null) {
+    let updatedAuthIds;
+    if (authIds && authIds.length > 0) {
+      const placeholders = authIds.map(() => '?').join(',');
+      this.runQuery(
+        `UPDATE api_keys SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE auth_id IN (${placeholders}) AND is_active = 0`,
+        authIds
+      );
+      this.runQuery(
+        `UPDATE user_registry SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE auth_id IN (${placeholders})`,
+        authIds
+      );
+      updatedAuthIds = authIds;
+    } else {
+      const rows = this.allQuery(
+        'SELECT auth_id FROM api_keys WHERE is_active = 0'
+      );
+      updatedAuthIds = rows.map((r) => r.auth_id);
+      if (updatedAuthIds.length === 0) {
+        cache.invalidateActiveUsers();
+        return { count: 0, authIds: [] };
+      }
+      const placeholders = updatedAuthIds.map(() => '?').join(',');
+      this.runQuery(
+        `UPDATE api_keys SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE auth_id IN (${placeholders})`,
+        updatedAuthIds
+      );
+      this.runQuery(
+        `UPDATE user_registry SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE auth_id IN (${placeholders})`,
+        updatedAuthIds
+      );
+    }
+    updatedAuthIds.forEach((id) => cache.invalidateUserRegistry(id));
+    cache.invalidateActiveUsers();
+    return { count: updatedAuthIds.length, authIds: updatedAuthIds };
   }
 
   /**

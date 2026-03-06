@@ -274,6 +274,28 @@ export function setupUserRoutes(router, backend) {
     })
   );
 
+  // Bulk reactivate API keys (set is_active = 1 and status = 'active')
+  router.post(
+    '/users/reactivate-api-keys',
+    asyncHandler(async (req, res) => {
+      const authIds = req.body?.authIds;
+      const list = Array.isArray(authIds) ? authIds : null;
+      const result = backend.masterDatabase.reactivateApiKeys(list);
+
+      logger.info('Admin bulk reactivated API keys', {
+        count: result.count,
+        authIds: result.authIds?.length ? result.authIds.slice(0, 5) : [],
+        adminIp: req.ip,
+      });
+
+      sendSuccess(res, {
+        message: `Reactivated ${result.count} API key(s).`,
+        reactivated: result.count,
+        authIds: result.authIds,
+      });
+    })
+  );
+
   // Get user database info
   router.get(
     '/users/:authId/database',
