@@ -929,6 +929,8 @@ class Database {
             authId: user.auth_id,
           });
           errors++;
+        } finally {
+          userDatabaseManager.releaseConnection(user.auth_id);
         }
       }
 

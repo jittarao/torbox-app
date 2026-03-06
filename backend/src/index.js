@@ -307,6 +307,7 @@ class TorBoxBackend {
             });
             syncStats.errors++;
           } finally {
+            this.userDatabaseManager.releaseConnection(auth_id);
             syncSemaphore.release();
           }
         })
@@ -513,6 +514,7 @@ class TorBoxBackend {
           });
           syncStats.errors++;
         } finally {
+          this.userDatabaseManager.releaseConnection(auth_id);
           syncSemaphore.release();
         }
       })
