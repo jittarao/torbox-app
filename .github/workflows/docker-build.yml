@@ -78,7 +78,7 @@ jobs:
       # Set up Docker Buildx for multi-platform builds
       # Buildx enables building for multiple architectures simultaneously
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           driver-opts: |
             network=host
@@ -312,7 +312,7 @@ jobs:
 
       # Set up Docker Buildx for manifest operations
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Authenticate with GitHub Container Registry
       - name: Log in to GHCR
