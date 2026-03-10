@@ -9,7 +9,12 @@
  *                     'seeding', 'uploading', 'inactive', 'unknown'
  */
 export function getTorrentStatus(torrent) {
-  // Check for queued status
+  // Explicit status from API (e.g. items from getqueued endpoint)
+  if (torrent.status && String(torrent.status).toLowerCase() === 'queued') {
+    return 'queued';
+  }
+
+  // Check for queued status (no download_state, not finished, not active)
   const isQueued = !torrent.download_state && !torrent.download_finished && !torrent.active;
   if (isQueued) {
     return 'queued';
@@ -20,6 +25,11 @@ export function getTorrentStatus(torrent) {
   // has specific active requirements
   if (torrent.download_state) {
     const state = torrent.download_state.toLowerCase();
+
+    // Queued: client may return download_state "queued" or "Queued" for queue items
+    if (state.includes('queued')) {
+      return 'queued';
+    }
 
     // Failed: active must be false
     if (state.includes('failed') && !torrent.active) {

@@ -943,8 +943,21 @@ describe('RuleEvaluator', () => {
         expect(result).toBe(false);
       });
 
-      it('should return false for STATUS condition when value is not an array', () => {
+      it('should accept STATUS condition when value is string (normalized to array)', () => {
         const condition = { type: 'STATUS', value: 'queued' };
+        const torrent = {
+          id: '1',
+          download_state: null,
+          download_finished: false,
+          active: false,
+        };
+
+        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        expect(result).toBe(true);
+      });
+
+      it('should return false for STATUS condition when value is empty or null', () => {
+        const condition = { type: 'STATUS', value: null };
         const torrent = {
           id: '1',
           download_state: null,
@@ -1322,6 +1335,18 @@ describe('RuleEvaluator', () => {
         active: false,
       };
 
+      const status = ruleEvaluator.getTorrentStatus(torrent);
+      expect(status).toBe('queued');
+    });
+
+    it('should return queued status when API provides status field', () => {
+      const torrent = { id: '1', status: 'queued' };
+      const status = ruleEvaluator.getTorrentStatus(torrent);
+      expect(status).toBe('queued');
+    });
+
+    it('should return queued status when download_state includes queued', () => {
+      const torrent = { id: '1', download_state: 'queued' };
       const status = ruleEvaluator.getTorrentStatus(torrent);
       expect(status).toBe('queued');
     });
