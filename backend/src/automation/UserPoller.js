@@ -36,6 +36,8 @@ class UserPoller {
     this.lastPollAt = null;
     this.lastPolledAt = null; // Track when poller was last used (for cleanup)
     this.lastPollError = null;
+    /** Cancellation token set by the scheduler when the per-user timeout fires so ghost polls exit early */
+    this._cancelToken = null;
     /** Consecutive auth failures; only mark key inactive after threshold (avoids deactivating on transient API errors) */
     this.consecutiveAuthFailures = 0;
 
@@ -600,6 +602,7 @@ class UserPoller {
 
     this.isPolling = true;
     const myGeneration = ++this._pollGeneration;
+    const cancelToken = this._newCancelToken();
     const startTime = Date.now();
     const pollStartTime = new Date();
 
@@ -613,6 +616,7 @@ class UserPoller {
 
       // Fetch torrents from API
       const torrents = await this.fetchTorrents();
+      this._checkCancelled(cancelToken);
 
       if (!Array.isArray(torrents)) {
         throw new Error('API returned invalid torrents data');
@@ -620,6 +624,7 @@ class UserPoller {
 
       // Process snapshot and compute diffs
       const changes = await this.processStateChanges(torrents);
+      this._checkCancelled(cancelToken);
 
       // Validate changes structure
       if (!changes || typeof changes !== 'object') {
@@ -634,9 +639,11 @@ class UserPoller {
 
       // Update derived fields
       await this.updateDerivedFields(changes);
+      this._checkCancelled(cancelToken);
 
       // Record speed samples for updated torrents
       await this.processSpeedUpdates(changes.updated);
+      this._checkCancelled(cancelToken);
 
       // Evaluate automation rules
       const ruleResults = await this.evaluateRules(torrents);
@@ -683,6 +690,17 @@ class UserPoller {
         nextPollAt,
       };
     } catch (error) {
+      if (error.isCancelled) {
+        // Poll was cancelled by the scheduler timeout — exit quietly without updating next_poll_at
+        // (the scheduler has already handled that via handlePollTimeout)
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        logger.debug('Poll cancelled after scheduler timeout', {
+          authId: this.authId,
+          duration: `${duration}s`,
+        });
+        return { success: false, error: 'cancelled', duration: parseFloat(duration) };
+      }
+
       this.lastPollError = error.message;
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       const isPlanRestricted =
@@ -749,9 +767,40 @@ class UserPoller {
    * Reset polling state so the next poll can run.
    * Called by the scheduler when a poll times out; the timed-out poll keeps running in the background
    * but isPolling is cleared so the next scheduled poll is not skipped.
+   * Also cancels the timed-out poll's token so it exits at its next await checkpoint.
    */
   resetPollingState() {
     this.isPolling = false;
+    if (this._cancelToken) {
+      this._cancelToken.cancelled = true;
+      this._cancelToken = null;
+    }
+  }
+
+  /**
+   * Create a new cancellation token for the current poll and return it.
+   * The previous token (if any) is automatically cancelled.
+   * @returns {{ cancelled: boolean }}
+   */
+  _newCancelToken() {
+    if (this._cancelToken) {
+      this._cancelToken.cancelled = true;
+    }
+    this._cancelToken = { cancelled: false };
+    return this._cancelToken;
+  }
+
+  /**
+   * Throw a CancelledError if the given token has been cancelled.
+   * @param {{ cancelled: boolean }} token
+   */
+  _checkCancelled(token) {
+    if (token.cancelled) {
+      const err = new Error('Poll cancelled by timeout');
+      err.name = 'CancelledError';
+      err.isCancelled = true;
+      throw err;
+    }
   }
 
   /**

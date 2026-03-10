@@ -18,11 +18,12 @@ class Cache {
       ttl: 10000, // 10 seconds
     });
 
-    // Cache for active users list (5 seconds TTL)
-    // Separate caches for different query variations
+    // Cache for active users list (60 seconds TTL)
+    // Explicit invalidateActiveUsers() is called on every mutation, so a longer TTL is safe
+    // and avoids unnecessary DB re-queries under polling load.
     this.activeUsersCache = new TTLCache({
       max: 2, // Two different query variations
-      ttl: 5000, // 5 seconds
+      ttl: 60000, // 60 seconds
     });
   }
 

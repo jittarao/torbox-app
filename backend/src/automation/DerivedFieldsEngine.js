@@ -140,9 +140,13 @@ class DerivedFieldsEngine {
       await this.handleStateTransition(transition, now);
     }
 
-    // Backfill all telemetry records with NULL activity timestamps
-    // This handles cases where telemetry exists but wasn't updated in this poll cycle
-    await this._backfillAllTelemetryRecords(now);
+    // Backfill telemetry records that have NULL activity timestamps.
+    // Only run when new torrents were added or state transitions occurred — these are the only
+    // events that produce records needing backfill. Steady-state polls with no new/transitioning
+    // torrents skip the full table scan entirely.
+    if (changes.new.length > 0 || changes.stateTransitions.length > 0) {
+      await this._backfillAllTelemetryRecords(now);
+    }
   }
 
   /**

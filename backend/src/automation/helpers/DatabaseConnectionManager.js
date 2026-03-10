@@ -49,6 +49,8 @@ class DatabaseConnectionManager {
 
   /**
    * Resolve current connection from pool at use time (avoids stale references and closed-DB path).
+   * Sub-engines (StateDiffEngine etc.) are only re-created when the underlying db reference
+   * changes, preserving their prepared statement cache across polls on the same connection.
    * @returns {Promise<void>}
    */
   async ensureConnection() {
@@ -57,12 +59,16 @@ class DatabaseConnectionManager {
     }
 
     const dbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
-    this.userDb = dbConnection.db;
+    const newDb = dbConnection.db;
 
-    // Re-create engines with the current connection
-    this.stateDiffEngine = new StateDiffEngine(this.userDb);
-    this.derivedFieldsEngine = new DerivedFieldsEngine(this.userDb);
-    this.speedAggregator = new SpeedAggregator(this.userDb);
+    // Only recreate sub-engines when the db reference actually changes (e.g. pool eviction +
+    // reconnect). Keeping the same instances preserves their compiled prepared statements.
+    if (newDb !== this.userDb) {
+      this.userDb = newDb;
+      this.stateDiffEngine = new StateDiffEngine(this.userDb);
+      this.derivedFieldsEngine = new DerivedFieldsEngine(this.userDb);
+      this.speedAggregator = new SpeedAggregator(this.userDb);
+    }
   }
 
   /**

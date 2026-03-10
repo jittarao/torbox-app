@@ -1364,9 +1364,33 @@ class UploadProcessor {
       const shouldCleanupFiles =
         !this.lastFileCleanupAt || now - this.lastFileCleanupAt >= FILE_CLEANUP_INTERVAL_MS;
 
-      for (const user of usersWithUploads) {
-        const { auth_id } = user;
+      // Process users concurrently with a bounded semaphore so that a user waiting on a rate-limit
+      // sleep does not block uploads for all subsequent users in the same 5-second cycle.
+      const UPLOAD_CONCURRENCY = Math.max(
+        1,
+        parseInt(process.env.UPLOAD_PROCESS_CONCURRENCY || '6', 10)
+      );
+      const uploadSemaphore = { running: 0, queue: [] };
+      const acquireUploadSlot = () =>
+        new Promise((resolve) => {
+          if (uploadSemaphore.running < UPLOAD_CONCURRENCY) {
+            uploadSemaphore.running++;
+            resolve();
+          } else {
+            uploadSemaphore.queue.push(resolve);
+          }
+        });
+      const releaseUploadSlot = () => {
+        uploadSemaphore.running--;
+        if (uploadSemaphore.queue.length > 0) {
+          uploadSemaphore.running++;
+          uploadSemaphore.queue.shift()();
+        }
+      };
 
+      const processOneUser = async (user) => {
+        const { auth_id } = user;
+        await acquireUploadSlot();
         try {
           const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
           this.userDatabaseManager.pool.markActive(auth_id);
@@ -1512,8 +1536,11 @@ class UploadProcessor {
           });
         } finally {
           this.userDatabaseManager.closeConnection(auth_id);
+          releaseUploadSlot();
         }
-      }
+      };
+
+      await Promise.allSettled(usersWithUploads.map((user) => processOneUser(user)));
 
       // Update cleanup and recovery timestamps after processing all users
       if (shouldCleanup) {
