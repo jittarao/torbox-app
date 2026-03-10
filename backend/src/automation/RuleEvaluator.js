@@ -947,8 +947,14 @@ class RuleEvaluator {
 
   handleStatus(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap) {
     const torrentStatus = this.getTorrentStatus(torrent);
-    if (!Array.isArray(condition.value)) {
-      logger.debug('STATUS condition has invalid value (not an array)', {
+    // Normalize value to array (UI or API may send single value as string, e.g. "queued")
+    const statusValues = Array.isArray(condition.value)
+      ? condition.value
+      : condition.value != null && condition.value !== ''
+        ? [String(condition.value)]
+        : [];
+    if (statusValues.length === 0) {
+      logger.debug('STATUS condition has empty value', {
         torrentId: torrent.id,
         conditionValue: condition.value,
       });
@@ -956,7 +962,7 @@ class RuleEvaluator {
     }
 
     const operator = condition.operator || 'is_any_of';
-    const statusMatches = condition.value.length > 0 && condition.value.includes(torrentStatus);
+    const statusMatches = statusValues.includes(torrentStatus);
 
     switch (operator) {
       case 'is_any_of':
