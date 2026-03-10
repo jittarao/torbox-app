@@ -3,7 +3,7 @@
   "version": "0.1.71",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "build:check": "bun run build && bun run scripts/analyze-bundle.js",

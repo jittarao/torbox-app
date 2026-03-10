@@ -12,6 +12,9 @@ out/
 build/
 dist/
 
+# Audiobook chapter cache (written at runtime, must not be watched by HMR)
+.audiobook-cache/
+
 # Production
 /build
 

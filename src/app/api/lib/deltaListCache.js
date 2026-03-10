@@ -106,9 +106,15 @@ function evictExpired() {
   }
 }
 
-// Evict expired entries every 5 minutes
+// Evict expired entries every 5 minutes.
+// Store the ID so a previous interval can be cleared on HMR re-evaluation,
+// preventing orphaned closures holding stale cache Maps in memory.
 if (typeof setInterval !== 'undefined') {
-  setInterval(evictExpired, 5 * 60 * 1000);
+  const INTERVAL_KEY = '__deltaListCacheEvictInterval';
+  if (global[INTERVAL_KEY]) {
+    clearInterval(global[INTERVAL_KEY]);
+  }
+  global[INTERVAL_KEY] = setInterval(evictExpired, 5 * 60 * 1000);
 }
 
 module.exports = {
