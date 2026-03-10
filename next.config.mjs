@@ -12,8 +12,10 @@ const nextConfig = {
   // Cache Components (Next.js 16.1.1+)
   cacheComponents: process.env.NODE_ENV === 'production',
 
-  // React Strict Mode
-  reactStrictMode: process.env.NODE_ENV === 'development',
+  // React Strict Mode — opt-in via REACT_STRICT_MODE=true in .env.local.
+  // Off by default in dev: it double-invokes every render and effect, which
+  // amplifies polling intervals, doubles API requests, and increases RAM usage.
+  reactStrictMode: process.env.REACT_STRICT_MODE === 'true',
 
   // Optimize bundle size
   experimental: {
@@ -41,6 +43,22 @@ const nextConfig = {
 
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
+    // Exclude runtime-written directories from the file watcher to prevent
+    // spurious HMR recompiles when e.g. audiobook cache files are written.
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          ...(config.watchOptions?.ignored
+            ? Array.isArray(config.watchOptions.ignored)
+              ? config.watchOptions.ignored
+              : [config.watchOptions.ignored]
+            : []),
+          '**/.audiobook-cache/**',
+        ],
+      };
+    }
+
     // Bundle analyzer
     if (process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
