@@ -19,9 +19,11 @@ class RuleExecutor {
     let successCount = 0;
     let errorCount = 0;
 
+    // Resolve the evaluator once outside the loop to avoid N async pool lookups per rule execution
+    const ruleEvaluator = await this.getRuleEvaluator();
+
     for (const torrent of torrents) {
       try {
-        const ruleEvaluator = await this.getRuleEvaluator();
         logger.debug('Executing action on torrent', {
           authId: this.authId,
           ruleId: rule.id,
@@ -44,18 +46,11 @@ class RuleExecutor {
           action: rule.action?.type,
         });
       } catch (error) {
-        // Safely get torrent status for logging, handle errors gracefully
         let torrentStatus = 'unknown';
         try {
-          const ruleEvaluator = await this.getRuleEvaluator();
           torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
-        } catch (statusError) {
-          // If we can't get status, just log without it
-          logger.debug('Could not get torrent status for error logging', {
-            authId: this.authId,
-            torrentId: torrent.id,
-            statusError: statusError.message,
-          });
+        } catch (_) {
+          // Status unavailable — log without it
         }
 
         logger.error('Action failed for torrent', error, {
@@ -64,7 +59,7 @@ class RuleExecutor {
           ruleName: rule.name,
           torrentId: torrent.id,
           torrentName: torrent.name,
-          torrentStatus: torrentStatus,
+          torrentStatus,
           action: rule.action?.type,
         });
         errorCount++;

@@ -119,13 +119,9 @@ class AutomationEngine {
       // Initialize next_poll_at if needed
       await this.initializeNextPollAt(enabledRules);
 
-      // Get total rule count for logging
-      const allRules = await this.getAutomationRules();
-
       this.isInitialized = true;
       logger.info('AutomationEngine initialized', {
         authId: this.authId,
-        totalRules: allRules.length,
         enabledRules: enabledRules.length,
       });
     } catch (error) {
@@ -442,19 +438,15 @@ class AutomationEngine {
       });
 
       const enabledRules = await this.getAutomationRules({ enabled: true });
-      const allRules = await this.getAutomationRules();
 
       logger.debug('Rules loaded', {
         authId: this.authId,
-        totalRules: allRules.length,
         enabledRules: enabledRules.length,
-        disabledRules: allRules.length - enabledRules.length,
       });
 
       if (enabledRules.length === 0) {
         logger.debug('No enabled rules to evaluate', {
           authId: this.authId,
-          totalRules: allRules.length,
         });
         return { evaluated: 0, executed: 0 };
       }
@@ -1172,12 +1164,8 @@ class AutomationEngine {
         await this.startRule(rule);
       }
 
-      // Get total rule count for logging
-      const allRules = await this.getAutomationRules();
-
       logger.info('Rules reloaded', {
         authId: this.authId,
-        totalRules: allRules.length,
         enabledRules: enabledRules.length,
       });
     } catch (error) {

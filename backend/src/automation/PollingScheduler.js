@@ -2,6 +2,7 @@ import UserPoller from './UserPoller.js';
 import AutomationEngine from './AutomationEngine.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
+import Semaphore from '../utils/semaphore.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
@@ -19,37 +20,6 @@ const SKIPPED_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
 const STAGGER_PERCENTAGE = 0.1; // 10% of base interval
 const SLOW_POLL_WARNING_PERCENT = 0.8; // Log when poll has run this fraction of per-user timeout
-
-/**
- * Semaphore utility for limiting concurrent operations
- */
-class Semaphore {
-  constructor(maxConcurrent) {
-    this.maxConcurrent = maxConcurrent;
-    this.running = 0;
-    this.queue = [];
-  }
-
-  async acquire() {
-    return new Promise((resolve) => {
-      if (this.running < this.maxConcurrent) {
-        this.running++;
-        resolve();
-      } else {
-        this.queue.push(resolve);
-      }
-    });
-  }
-
-  release() {
-    this.running--;
-    if (this.queue.length > 0) {
-      this.running++;
-      const next = this.queue.shift();
-      next();
-    }
-  }
-}
 
 /**
  * Mutex utility for per-user locking
@@ -194,6 +164,8 @@ class PollingScheduler {
     // State
     this.lastCleanupAt = null;
     this.flagUpdateMutexes = new Map();
+    /** Cached AutomationEngine per user — avoids re-running initialize() (4-5 DB queries) on every poll */
+    this.cachedEngines = new Map();
     /** @type {Map<string, number>} Consecutive timeout count per user; used for backoff so repeat timeouts don't hold slots */
     this.userConsecutiveTimeoutCount = new Map();
     /** Single semaphore shared across all poll cycles so we never exceed maxConcurrentPolls globally */
@@ -251,13 +223,22 @@ class PollingScheduler {
   }
 
   /**
-   * Create an automation engine for a single poll (not cached).
-   * Caller must call engine.shutdown() when done.
+   * Get or create an automation engine for a poll cycle.
+   * Engines are cached per-user so that initialize() (4-5 DB queries) only runs once instead
+   * of on every poll. On subsequent polls the engine's DB connection is refreshed via
+   * getRuleEvaluator(). The cached engine is discarded when the poller is removed.
    * @param {string} authId - User authentication ID
    * @param {string} encryptedKey - Encrypted API key
    * @returns {Promise<AutomationEngine>} Automation engine instance
    */
   async createEngineForPoll(authId, encryptedKey) {
+    const cached = this.cachedEngines.get(authId);
+    if (cached?.isInitialized) {
+      // Refresh the rule evaluator's DB connection for this poll cycle without re-initializing
+      await cached.getRuleEvaluator();
+      return cached;
+    }
+
     const engine = new AutomationEngine(
       authId,
       encryptedKey,
@@ -265,11 +246,13 @@ class PollingScheduler {
       this.masterDb
     );
     await engine.initialize();
+    this.cachedEngines.set(authId, engine);
     return engine;
   }
 
   /**
-   * Create a poller for a user (no long-lived engine; engine is created per poll).
+   * Create a poller for a user. The engine is managed separately in cachedEngines and attached
+   * at poll time via createEngineForPoll().
    * @param {string} authId - User authentication ID
    * @param {string} encryptedKey - Encrypted API key
    * @returns {Promise<UserPoller>} UserPoller instance
@@ -289,7 +272,7 @@ class PollingScheduler {
         authId,
         encryptedKey,
         null, // connection acquired at poll time and released after each poll
-        null, // engine created per poll, not cached
+        null, // engine is attached from cachedEngines just before each poll and detached after
         this.masterDb,
         this.userDatabaseManager
       );
@@ -620,21 +603,11 @@ class PollingScheduler {
       this.handlePollError(user.auth_id, error, duration);
       counters.error++;
     } finally {
-      // Discard engine after poll (not cached)
-      if (engineForPoll) {
-        try {
-          engineForPoll.shutdown();
-        } catch (err) {
-          logger.warn('Error shutting down engine after poll', {
-            authId: user?.auth_id,
-            errorMessage: err?.message,
-          });
-        }
-        if (user?.auth_id) {
-          const poller = this.pollers.get(user.auth_id);
-          if (poller) {
-            poller.automationEngine = null;
-          }
+      // Detach engine from poller after poll (engine stays cached in cachedEngines for next poll)
+      if (user?.auth_id) {
+        const poller = this.pollers.get(user.auth_id);
+        if (poller) {
+          poller.automationEngine = null;
         }
       }
       semaphore.release();
@@ -733,6 +706,16 @@ class PollingScheduler {
     const pollerCount = this.pollers.size;
     this.pollers.clear();
 
+    // Shutdown and discard all cached engines
+    for (const [authId, engine] of this.cachedEngines) {
+      try {
+        engine.shutdown();
+      } catch (_) {
+        // Best-effort
+      }
+    }
+    this.cachedEngines.clear();
+
     logger.info('PollingScheduler stopped', {
       clearedPollers: pollerCount,
       timestamp: new Date().toISOString(),
@@ -760,11 +743,20 @@ class PollingScheduler {
   }
 
   /**
-   * Remove mutex when a poller is removed (engines are not cached, so nothing to shut down).
+   * Remove the cached engine and mutex for a user when their poller is removed.
    * @param {string} authId - User authentication ID
    * @private
    */
   _cleanupEngineAndMutexForAuth(authId) {
+    const engine = this.cachedEngines.get(authId);
+    if (engine) {
+      try {
+        engine.shutdown();
+      } catch (_) {
+        // Best-effort
+      }
+      this.cachedEngines.delete(authId);
+    }
     this.flagUpdateMutexes.delete(authId);
     this.userConsecutiveTimeoutCount.delete(authId);
   }
@@ -955,6 +947,13 @@ class PollingScheduler {
         const syncOneUser = async (user) => {
           const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
           if (!encrypted_key) return;
+
+          // If master DB already reports active rules, trust it — all write paths keep the flag
+          // in sync. Only open the user DB when the flag is 0 to verify it's not a false negative.
+          if (dbFlag === 1) {
+            return;
+          }
+
           await syncSemaphore.acquire();
           try {
             let actualHasActiveRules = false;
@@ -1016,6 +1015,9 @@ class PollingScheduler {
 
       const stats = { added: 0, removed: 0, error: 0 };
 
+      // Build a Set for O(1) lookup in the removal pass below
+      const activeRulesAuthIdSet = new Set(usersWithActiveRules.map((u) => u.auth_id));
+
       // Step 3: Create pollers for users with active rules
       for (const user of usersWithActiveRules) {
         const { auth_id, encrypted_key } = user;
@@ -1044,10 +1046,9 @@ class PollingScheduler {
         }
       }
 
-      // Step 4: Remove pollers for users without active rules
+      // Step 4: Remove pollers for users without active rules (O(P) with Set lookup)
       for (const authId of currentAuthIds) {
-        const userStillHasActiveRules = usersWithActiveRules.some((u) => u.auth_id === authId);
-        if (!userStillHasActiveRules) {
+        if (!activeRulesAuthIdSet.has(authId)) {
           this.pollers.delete(authId);
           this._cleanupEngineAndMutexForAuth(authId);
           logger.info('Removed poller for user without active rules', {

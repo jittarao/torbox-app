@@ -173,56 +173,99 @@ class RuleRepository {
   }
 
   /**
-   * Save automation rules (replaces all existing rules)
+   * Save automation rules using an upsert strategy that preserves existing rule IDs.
+   * Rules that carry an `id` matching an existing row are updated in place (preserving
+   * rule_execution_log FK references). New rules (no id, or id not found) are inserted.
+   * Rules no longer present in the incoming list are deleted.
    * @param {Array} rules - Array of rule objects
    * @returns {Promise<Array>} - Array of saved rules with database-assigned IDs
    */
   async saveRules(rules) {
     const userDb = await this.getUserDb();
 
-    // Clear existing rules
-    userDb.prepare('DELETE FROM automation_rules').run();
-
-    // Insert new rules and collect their database-assigned IDs
     const savedRules = [];
-    for (const rule of rules) {
-      // Migrate rule to group structure if needed
-      const migratedRule = RuleMigrationHelper.migrateRuleToGroups(rule);
+    const incomingIds = new Set();
 
-      // Store groups structure in conditions field
-      const conditionsToStore =
-        migratedRule.groups && Array.isArray(migratedRule.groups)
-          ? {
-              logicOperator: migratedRule.logicOperator || 'and',
-              groups: migratedRule.groups,
-            }
-          : migratedRule.conditions || [];
+    const doSave = userDb.transaction(() => {
+      for (const rule of rules) {
+        const migratedRule = RuleMigrationHelper.migrateRuleToGroups(rule);
 
-      const sql = `
-        INSERT INTO automation_rules (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `;
-      const result = userDb.prepare(sql).run(
-        migratedRule.name,
-        migratedRule.enabled ? 1 : 0,
-        JSON.stringify(migratedRule.trigger || migratedRule.trigger_config),
-        JSON.stringify(conditionsToStore),
-        JSON.stringify(migratedRule.action || migratedRule.action_config),
-        JSON.stringify(migratedRule.metadata || {}),
-        0 // cooldown_minutes is deprecated
-      );
+        const conditionsToStore =
+          migratedRule.groups && Array.isArray(migratedRule.groups)
+            ? {
+                logicOperator: migratedRule.logicOperator || 'and',
+                groups: migratedRule.groups,
+              }
+            : migratedRule.conditions || [];
 
-      // Get the inserted rule with its database-assigned ID
-      const insertedRule = userDb
-        .prepare('SELECT * FROM automation_rules WHERE id = ?')
-        .get(result.lastInsertRowid);
+        const name = migratedRule.name;
+        const enabled = migratedRule.enabled ? 1 : 0;
+        const triggerConfig = JSON.stringify(migratedRule.trigger || migratedRule.trigger_config);
+        const conditions = JSON.stringify(conditionsToStore);
+        const actionConfig = JSON.stringify(migratedRule.action || migratedRule.action_config);
+        const metadata = JSON.stringify(migratedRule.metadata || {});
 
-      if (insertedRule) {
-        const mappedRule = this.mapRuleFromDb(insertedRule);
-        savedRules.push(RuleMigrationHelper.migrateRuleToGroups(mappedRule));
+        let savedId;
+        const existingId = migratedRule.id;
+
+        if (existingId) {
+          // Check whether this id still exists in the DB
+          const exists = userDb
+            .prepare('SELECT id FROM automation_rules WHERE id = ?')
+            .get(existingId);
+
+          if (exists) {
+            // Update in place — preserves rule_execution_log references
+            userDb
+              .prepare(
+                `UPDATE automation_rules
+                 SET name = ?, enabled = ?, trigger_config = ?, conditions = ?,
+                     action_config = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = ?`
+              )
+              .run(name, enabled, triggerConfig, conditions, actionConfig, metadata, existingId);
+            savedId = existingId;
+          } else {
+            // ID provided but row was removed; insert as new
+            const result = userDb
+              .prepare(
+                `INSERT INTO automation_rules
+                   (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
+                 VALUES (?, ?, ?, ?, ?, ?, 0)`
+              )
+              .run(name, enabled, triggerConfig, conditions, actionConfig, metadata);
+            savedId = result.lastInsertRowid;
+          }
+        } else {
+          // No id — always insert
+          const result = userDb
+            .prepare(
+              `INSERT INTO automation_rules
+                 (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
+               VALUES (?, ?, ?, ?, ?, ?, 0)`
+            )
+            .run(name, enabled, triggerConfig, conditions, actionConfig, metadata);
+          savedId = result.lastInsertRowid;
+        }
+
+        incomingIds.add(savedId);
+
+        const saved = userDb.prepare('SELECT * FROM automation_rules WHERE id = ?').get(savedId);
+        if (saved) {
+          savedRules.push(RuleMigrationHelper.migrateRuleToGroups(this.mapRuleFromDb(saved)));
+        }
       }
-    }
 
+      // Delete rules that are no longer in the incoming set
+      const existingRows = userDb.prepare('SELECT id FROM automation_rules').all();
+      for (const row of existingRows) {
+        if (!incomingIds.has(row.id)) {
+          userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(row.id);
+        }
+      }
+    });
+
+    doSave();
     return savedRules;
   }
 

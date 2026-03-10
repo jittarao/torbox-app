@@ -12,6 +12,35 @@ const CONNECTION_ERROR_CODES = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOT
 const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
 const SERVER_ERROR_MESSAGES = ['disconnected', 'connection'];
 
+// Module-level semaphore caps simultaneous outbound HTTP requests across all ApiClient instances.
+// With up to 12 concurrent user polls each making 2+ requests, an uncapped burst can hit
+// hundreds of concurrent requests toward TorBox. Configurable via TORBOX_API_CONCURRENCY.
+const _outboundConcurrency = Math.max(
+  1,
+  parseInt(process.env.TORBOX_API_CONCURRENCY || '24', 10)
+);
+const _outboundSemaphore = {
+  running: 0,
+  queue: [],
+  async acquire() {
+    return new Promise((resolve) => {
+      if (this.running < _outboundConcurrency) {
+        this.running++;
+        resolve();
+      } else {
+        this.queue.push(resolve);
+      }
+    });
+  },
+  release() {
+    this.running--;
+    if (this.queue.length > 0) {
+      this.running++;
+      this.queue.shift()();
+    }
+  },
+};
+
 class ApiClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
@@ -181,8 +210,18 @@ class ApiClient {
       context = {}
     } = options;
 
+    // Wrap apiCall with the module-level semaphore to cap simultaneous outbound requests
+    const throttled = async () => {
+      await _outboundSemaphore.acquire();
+      try {
+        return await apiCall();
+      } finally {
+        _outboundSemaphore.release();
+      }
+    };
+
     try {
-      return await apiCall();
+      return await throttled();
     } catch (error) {
       // Handle authentication errors
       if (this.isAuthError(error)) {
@@ -319,7 +358,11 @@ class ApiClient {
       async () => {
         let isQueued = options.isQueued;
         if (isQueued === undefined) {
-          // Caller did not pass isQueued — fetch and derive (backward compatible)
+          // Caller did not pass isQueued — fall back to fetching the full torrent list to derive it.
+          // This costs an extra API round-trip; callers should pass isQueued explicitly to avoid it.
+          logger.warn('deleteTorrent called without isQueued — falling back to full torrent fetch', {
+            torrentId,
+          });
           const torrents = await this.getTorrents();
           isQueued = torrents.some(t => t.id === torrentId && !t.download_state);
         }

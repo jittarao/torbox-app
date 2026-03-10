@@ -11,6 +11,7 @@ import AutomationEngine from './automation/AutomationEngine.js';
 import UploadProcessor from './automation/UploadProcessor.js';
 import logger from './utils/logger.js';
 import cache from './utils/cache.js';
+import Semaphore from './utils/semaphore.js';
 import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
 import { setupAdminRoutes } from './routes/admin.js';
@@ -241,34 +242,7 @@ class TorBoxBackend {
       const syncStats = { synced: 0, errors: 0, skipped: 0 };
       const syncStartTime = Date.now();
       const maxConcurrentSync = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
-
-      class SyncSemaphore {
-        constructor(maxConcurrent) {
-          this.maxConcurrent = maxConcurrent;
-          this.running = 0;
-          this.queue = [];
-        }
-        async acquire() {
-          return new Promise((resolve) => {
-            if (this.running < this.maxConcurrent) {
-              this.running++;
-              resolve();
-            } else {
-              this.queue.push(resolve);
-            }
-          });
-        }
-        release() {
-          this.running--;
-          if (this.queue.length > 0) {
-            this.running++;
-            const next = this.queue.shift();
-            next();
-          }
-        }
-      }
-
-      const syncSemaphore = new SyncSemaphore(maxConcurrentSync);
+      const syncSemaphore = new Semaphore(maxConcurrentSync);
       const usersToSync = activeUsers.filter((user) => user.encrypted_key);
 
       logger.info('Syncing has_active_rules flags at startup (no engine creation)', {
@@ -458,34 +432,7 @@ class TorBoxBackend {
     const syncStats = { synced: 0, errors: 0, skipped: 0 };
     const syncStartTime = Date.now();
     const maxConcurrentSync = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
-
-    class SyncSemaphore {
-      constructor(maxConcurrent) {
-        this.maxConcurrent = maxConcurrent;
-        this.running = 0;
-        this.queue = [];
-      }
-      async acquire() {
-        return new Promise((resolve) => {
-          if (this.running < this.maxConcurrent) {
-            this.running++;
-            resolve();
-          } else {
-            this.queue.push(resolve);
-          }
-        });
-      }
-      release() {
-        this.running--;
-        if (this.queue.length > 0) {
-          this.running++;
-          const next = this.queue.shift();
-          next();
-        }
-      }
-    }
-
-    const syncSemaphore = new SyncSemaphore(maxConcurrentSync);
+    const syncSemaphore = new Semaphore(maxConcurrentSync);
     const usersToSync = activeUsers.filter((user) => user.encrypted_key);
 
     await Promise.all(
