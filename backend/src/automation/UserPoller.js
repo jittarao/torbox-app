@@ -522,8 +522,12 @@ class UserPoller {
   /**
    * Execute a single poll cycle
    * @param {boolean} [cachedHasActiveRules] - Optional cached hasActiveRules value to avoid redundant DB calls
+   * @param {Object} [options] - Poll options
+   * @param {Function|null} [options.calculateStaggerOffset] - Optional stagger calculator
+   * @param {boolean} [options.updateMasterDb=true] - Whether to persist next_poll_at in the poller
    */
-  async poll(cachedHasActiveRules = null) {
+  async poll(cachedHasActiveRules = null, options = {}) {
+    const { calculateStaggerOffset = null, updateMasterDb = true } = options;
     if (this.isPolling) {
       logger.warn('Skipping poll - previous poll still running', {
         authId: this.authId,
@@ -653,12 +657,13 @@ class UserPoller {
       const nextPollAt = await this.calculateNextPollAt(
         nonTerminalCount,
         hasActiveRules,
-        null, // calculateStaggerOffset will be provided by scheduler
+        calculateStaggerOffset,
         ruleResults
       );
 
-      // Update master DB with next poll time and torrent count
-      await this.updateMasterDatabase(nextPollAt, nonTerminalCount);
+      if (updateMasterDb) {
+        await this.updateMasterDatabase(nextPollAt, nonTerminalCount);
+      }
 
       this.lastPollAt = new Date();
       this.lastPolledAt = new Date(); // Update last polled timestamp

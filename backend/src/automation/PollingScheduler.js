@@ -170,6 +170,7 @@ class PollingScheduler {
     this.userConsecutiveTimeoutCount = new Map();
     /** Single semaphore shared across all poll cycles so we never exceed maxConcurrentPolls globally */
     this.pollSemaphore = null;
+    this._pollCycleInProgress = false;
     this._refreshInProgress = false;
     this._refreshCount = 0; // Incremented each refresh; full sync every REFRESH_FULL_SYNC_EVERY_N
     this._refreshSyncConcurrency = Math.min(
@@ -423,14 +424,12 @@ class PollingScheduler {
    */
   async handleSuccessfulPoll(authId, poller, result, hasActiveRules, duration) {
     this.userConsecutiveTimeoutCount.delete(authId);
-    const nextPollAt = await poller.calculateNextPollAt(
-      result.nonTerminalCount || 0,
-      hasActiveRules,
-      (authId, baseIntervalMinutes) => this.calculateStaggerOffset(authId, baseIntervalMinutes),
-      result.ruleResults || null
-    );
+    const nextPollAt = result.nextPollAt;
 
-    this.masterDb.updateNextPollAt(authId, nextPollAt, result.nonTerminalCount || 0);
+    // Scheduler is the single source of truth for next_poll_at on success (poller called with updateMasterDb: false)
+    if (nextPollAt != null) {
+      this.masterDb.updateNextPollAt(authId, nextPollAt, result.nonTerminalCount ?? 0);
+    }
 
     logger.info('Poll completed successfully', {
       authId,
@@ -438,7 +437,7 @@ class PollingScheduler {
       rulesEvaluated: result.ruleResults?.evaluated || 0,
       rulesExecuted: result.ruleResults?.executed || 0,
       nonTerminalCount: result.nonTerminalCount || 0,
-      nextPollAt: nextPollAt.toISOString(),
+      nextPollAt: nextPollAt?.toISOString() || 'unknown',
       changes: result.changes
         ? {
             new: result.changes.new?.length || 0,
@@ -503,9 +502,10 @@ class PollingScheduler {
         return;
       }
 
-      const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
+      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
+      this.masterDb.updateNextPollAt(auth_id, reserveUntil, 0);
 
-      // (Reservation of next_poll_at for this user is done at start of pollDueUsers for the whole batch)
+      const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
 
       // Create engine for this poll only (not cached)
       engineForPoll = await this.createEngineForPoll(auth_id, encrypted_key);
@@ -544,7 +544,11 @@ class PollingScheduler {
       let result;
       try {
         result = await withTimeout(
-          poller.poll(hasActiveRules),
+          poller.poll(hasActiveRules, {
+            calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
+              this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
+            updateMasterDb: false, // Scheduler persists next_poll_at in handleSuccessfulPoll
+          }),
           this.pollKickoutMs,
           `Per-user poll timeout after ${this.pollKickoutMs / 1000}s`
         );
@@ -703,6 +707,7 @@ class PollingScheduler {
     }
 
     this.pollSemaphore = null;
+    this._pollCycleInProgress = false;
     const pollerCount = this.pollers.size;
     this.pollers.clear();
 
@@ -822,6 +827,13 @@ class PollingScheduler {
       return;
     }
 
+    if (this._pollCycleInProgress) {
+      logger.debug('Skipping pollDueUsers - previous cycle still in progress');
+      return;
+    }
+
+    this._pollCycleInProgress = true;
+
     if (this.shouldRunCleanup()) {
       this.cleanupStalePollers();
     }
@@ -863,15 +875,6 @@ class PollingScheduler {
           })),
       });
 
-      // Reserve next_poll_at so the same user is not polled more than once per MIN_POLL_INTERVAL (5 min).
-      // Next cycle (30s later) won't re-queue these users; new due users from next cycle join the same queue.
-      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
-      for (const u of dueUsers) {
-        if (u?.auth_id) {
-          this.masterDb.updateNextPollAt(u.auth_id, reserveUntil, 0);
-        }
-      }
-
       const counters = { success: 0, skipped: 0, error: 0 };
       const semaphore = this.pollSemaphore;
       if (!semaphore) {
@@ -900,6 +903,8 @@ class PollingScheduler {
         errorMessage: error.message,
         errorStack: error.stack,
       });
+    } finally {
+      this._pollCycleInProgress = false;
     }
   }
 

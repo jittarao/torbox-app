@@ -39,9 +39,10 @@ import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function Downloads({ apiKey }) {
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
-  // Subscribe to pause reasons to trigger re-render when pause state changes
-  const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
+  const pollingPaused = usePollingPauseStore((state) =>
+    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
+  );
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState(getStoredAssetType);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -281,7 +282,7 @@ export default function Downloads({ apiKey }) {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, pauseReasons]);
+  }, [apiKey, pollingPaused]);
 
   const sortedItems = sortTorrents(filteredItems);
 

@@ -21,6 +21,9 @@ export const useDownloadHistoryStore = create((set, get) => ({
   isLoading: false,
   error: null,
   lastFetched: null,
+  currentApiKey: null,
+  activeRequestId: 0,
+  fetchPromise: null,
 
   // Fetch download history from backend
   fetchDownloadHistory: async (apiKey) => {
@@ -41,63 +44,98 @@ export const useDownloadHistoryStore = create((set, get) => ({
       return;
     }
 
-    set({ isLoading: true, error: null });
+    const { fetchPromise, currentApiKey } = get();
+    if (fetchPromise && currentApiKey === apiKey) {
+      return fetchPromise;
+    }
 
-    try {
-      // Fetch all link history (no pagination for highlighting)
-      const response = await fetch('/api/link-history?limit=1000', {
-        headers: {
-          'x-api-key': apiKey,
-        },
+    const requestId = get().activeRequestId + 1;
+    const fetchPromiseForRequest = (async () => {
+      set({
+        isLoading: true,
+        error: null,
+        currentApiKey: apiKey,
+        activeRequestId: requestId,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        // Transform backend format to frontend format
-        const transformedHistory = (data.data || []).map((item) => ({
-          id: item.file_id ? `${item.item_id}-${item.file_id}` : item.item_id,
-          itemId: item.item_id,
-          fileId: item.file_id || null,
-          url: item.url,
-          assetType: item.asset_type,
-          generatedAt: item.generated_at,
-          itemName: item.item_name || null,
-          fileName: item.file_name || null,
-        }));
-
-        set({
-          downloadHistory: transformedHistory,
-          isLoading: false,
-          error: null,
-          lastFetched: new Date(),
+      try {
+        // Fetch all link history (no pagination for highlighting)
+        const response = await fetch('/api/link-history?limit=1000', {
+          headers: {
+            'x-api-key': apiKey,
+          },
         });
-      } else {
-        // Backend error - log error details and set empty array
+
+        if (response.ok) {
+          const data = await response.json();
+          const state = get();
+          if (state.activeRequestId !== requestId || state.currentApiKey !== apiKey) {
+            return [];
+          }
+          // Transform backend format to frontend format
+          const transformedHistory = (data.data || []).map((item) => ({
+            id: item.file_id ? `${item.item_id}-${item.file_id}` : item.item_id,
+            itemId: item.item_id,
+            fileId: item.file_id || null,
+            url: item.url,
+            assetType: item.asset_type,
+            generatedAt: item.generated_at,
+            itemName: item.item_name || null,
+            fileName: item.file_name || null,
+          }));
+
+          set({
+            downloadHistory: transformedHistory,
+            isLoading: false,
+            error: null,
+            lastFetched: new Date(),
+          });
+          return transformedHistory;
+        }
+
         const errorData = await response.json().catch(() => ({}));
         console.error('Error fetching link history from backend:', {
           status: response.status,
           error: errorData.error || 'Unknown error',
           detail: errorData.detail,
         });
-        set({
-          downloadHistory: [],
-          isLoading: false,
-          error: errorData.error || 'Failed to fetch link history',
-        });
+        if (get().activeRequestId === requestId && get().currentApiKey === apiKey) {
+          set({
+            downloadHistory: [],
+            isLoading: false,
+            error: errorData.error || 'Failed to fetch link history',
+          });
+        }
+        return [];
+      } catch (error) {
+        console.error('Error fetching link history from backend:', error);
+        if (get().activeRequestId === requestId && get().currentApiKey === apiKey) {
+          set({
+            downloadHistory: [],
+            isLoading: false,
+            error: error.message || 'Network error',
+          });
+        }
+        return [];
+      } finally {
+        if (get().activeRequestId === requestId) {
+          set({ fetchPromise: null });
+        }
       }
-    } catch (error) {
-      // Network error - set empty array
-      console.error('Error fetching link history from backend:', error);
-      set({
-        downloadHistory: [],
-        isLoading: false,
-        error: error.message || 'Network error',
-      });
-    }
+    })();
+
+    set({ fetchPromise: fetchPromiseForRequest });
+    return fetchPromiseForRequest;
   },
 
   // Clear download history (useful when API key changes)
   clearDownloadHistory: () => {
-    set({ downloadHistory: [], error: null, lastFetched: null });
+    set({
+      downloadHistory: [],
+      error: null,
+      lastFetched: null,
+      currentApiKey: null,
+      fetchPromise: null,
+    });
   },
 }));

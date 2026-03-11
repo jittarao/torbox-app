@@ -445,24 +445,34 @@ export default function CardList({
     return map;
   }, [items]);
 
+  const downloadHistoryLookup = useMemo(() => {
+    const itemDownloads = new Set();
+    const fileDownloads = new Set();
+
+    downloadHistory.forEach((download) => {
+      const itemKey = `${download.assetType}:${String(download.itemId)}`;
+      if (download.fileId == null) {
+        itemDownloads.add(itemKey);
+        return;
+      }
+
+      fileDownloads.add(`${itemKey}:${String(download.fileId)}`);
+    });
+
+    return { itemDownloads, fileDownloads };
+  }, [downloadHistory]);
+
   const isItemDownloaded = (itemId) => {
     const itemAssetType = itemAssetTypeMap.get(String(itemId));
-    return downloadHistory.some(
-      (download) =>
-        String(download.itemId) === String(itemId) &&
-        download.assetType === itemAssetType &&
-        !download.fileId
-    );
+    return downloadHistoryLookup.itemDownloads.has(`${itemAssetType}:${String(itemId)}`);
   };
 
   const isFileDownloaded = (itemId, fileId) => {
     const itemAssetType = itemAssetTypeMap.get(String(itemId));
-    return downloadHistory.some(
-      (download) =>
-        String(download.itemId) === String(itemId) &&
-        download.assetType === itemAssetType &&
-        (!download.fileId || // Complete item downloaded (all files included)
-          String(download.fileId) === String(fileId)) // Specific file downloaded
+    const itemKey = `${itemAssetType}:${String(itemId)}`;
+    return (
+      downloadHistoryLookup.itemDownloads.has(itemKey) ||
+      downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(fileId)}`)
     );
   };
 
@@ -472,64 +482,80 @@ export default function CardList({
   const [virtualRows, setVirtualRows] = useState([]);
   const [totalSize, setTotalSize] = useState(0);
 
-  // Check for view mode change synchronously during render
-  if (prevViewModeRef.current !== viewMode) {
-    isTransitioningRef.current = true;
-    prevViewModeRef.current = viewMode;
-    // Clear virtual rows during transition
-    if (virtualRows.length > 0) {
-      setVirtualRows([]);
-      setTotalSize(0);
+  const syncVirtualRows = useCallback(() => {
+    try {
+      const rows = virtualizer.getVirtualItems();
+      const size = virtualizer.getTotalSize();
+      setVirtualRows((previousRows) => {
+        if (
+          previousRows.length === rows.length &&
+          previousRows.every(
+            (row, index) =>
+              row.index === rows[index]?.index &&
+              row.start === rows[index]?.start &&
+              row.size === rows[index]?.size
+          )
+        ) {
+          return previousRows;
+        }
+
+        return rows;
+      });
+      setTotalSize((previousSize) => (previousSize === size ? previousSize : size));
+    } catch (error) {
+      // Silently handle errors and retry on the next sync event
     }
-  }
+  }, [virtualizer]);
 
   // Update virtual rows after render completes to prevent flushSync errors
   // This is critical when switching from Table to Card view
   useLayoutEffect(() => {
-    const updateRows = () => {
-      try {
-        const rows = virtualizer.getVirtualItems();
-        const size = virtualizer.getTotalSize();
-        setVirtualRows(rows);
-        setTotalSize(size);
-        // Mark transition as complete after update
-        isTransitioningRef.current = false;
-      } catch (error) {
-        // Silently handle errors - will retry on next effect run
-        isTransitioningRef.current = false;
-      }
-    };
+    const viewModeChanged = prevViewModeRef.current !== viewMode;
+    prevViewModeRef.current = viewMode;
+    if (viewModeChanged) {
+      isTransitioningRef.current = true;
+      setVirtualRows([]);
+      setTotalSize(0);
+    }
 
     // Use requestAnimationFrame to ensure we're outside the render phase
-    const rafId = requestAnimationFrame(updateRows);
+    const rafId = requestAnimationFrame(() => {
+      syncVirtualRows();
+      isTransitioningRef.current = false;
+    });
     return () => cancelAnimationFrame(rafId);
-  }, [virtualizer, viewMode, flattenedRows.length]);
+  }, [viewMode, flattenedRows.length, syncVirtualRows]);
 
-  // Update virtual rows on scroll to keep them in sync
-  // This ensures scroll updates work even though we're using state
   useEffect(() => {
-    // Skip during transitions
-    if (isTransitioningRef.current) return;
+    const scrollTarget = isFullscreen ? scrollElementRef.current : window;
+    if (!scrollTarget) {
+      return;
+    }
 
-    const updateRows = () => {
-      try {
-        const rows = virtualizer.getVirtualItems();
-        const size = virtualizer.getTotalSize();
-        setVirtualRows(rows);
-        setTotalSize(size);
-      } catch (error) {
-        // Silently handle errors
+    let rafId = null;
+    const scheduleSync = () => {
+      if (isTransitioningRef.current || rafId !== null) {
+        return;
       }
+
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        syncVirtualRows();
+      });
     };
 
-    // Use an interval to update rows frequently for smooth scrolling
-    // This is more reliable than scroll events which might be throttled
-    const intervalId = setInterval(() => {
-      requestAnimationFrame(updateRows);
-    }, 16); // ~60fps
+    scheduleSync();
+    scrollTarget.addEventListener('scroll', scheduleSync, { passive: true });
+    window.addEventListener('resize', scheduleSync);
 
-    return () => clearInterval(intervalId);
-  }, [virtualizer]);
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      scrollTarget.removeEventListener('scroll', scheduleSync);
+      window.removeEventListener('resize', scheduleSync);
+    };
+  }, [isFullscreen, flattenedRows.length, syncVirtualRows]);
 
   return (
     <>
@@ -628,16 +654,7 @@ export default function CardList({
         {virtualRows.length > 0 &&
           (() => {
             const lastVisibleRow = virtualRows[virtualRows.length - 1];
-            const lastVisibleIndex = lastVisibleRow?.index ?? 0;
-
-            // Calculate height of cards after the last visible card
-            let bottomOffset = 0;
-            if (lastVisibleIndex < flattenedRows.length - 1) {
-              // Sum estimated sizes of all cards after the last visible card
-              for (let i = lastVisibleIndex + 1; i < flattenedRows.length; i++) {
-                bottomOffset += estimateSize();
-              }
-            }
+            const bottomOffset = Math.max(0, totalSize - (lastVisibleRow?.end || 0));
 
             // Only show bottom spacer if there are cards after the last visible one
             return bottomOffset > 0 ? <div style={{ height: bottomOffset }} /> : null;

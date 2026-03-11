@@ -14,9 +14,10 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const { overallStatus, lastCheck, error, refreshHealth, isLoading } = useApiHealth(apiKey);
   const { performHealthCheck } = useHealthStore();
-  // Subscribe to pause reasons to trigger re-render when pause state changes
-  const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
+  const pollingPaused = usePollingPauseStore((state) =>
+    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
+  );
 
   // Start health checks once when component mounts
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, performHealthCheck, pauseReasons]);
+  }, [apiKey, performHealthCheck, pollingPaused]);
 
   // Status configuration
   const statusConfig = {

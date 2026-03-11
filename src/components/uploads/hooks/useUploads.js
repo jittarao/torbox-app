@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBackendModeStore } from '@/store/backendModeStore';
 
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
@@ -7,6 +7,8 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const [error, setError] = useState(null);
   const [statusCounts, setStatusCounts] = useState({});
   const [uploadStatistics, setUploadStatistics] = useState(null);
+  const uploadsRequestIdRef = useRef(0);
+  const statusCountsRequestIdRef = useRef(0);
 
   // Subscribe to backend mode store to react to changes
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
@@ -32,6 +34,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       return;
     }
 
+    const requestId = ++uploadsRequestIdRef.current;
     try {
       setLoading(true);
       setError(null);
@@ -51,6 +54,9 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       });
 
       const data = await response.json();
+      if (requestId !== uploadsRequestIdRef.current) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch uploads');
@@ -73,10 +79,14 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         setUploadStatistics(data.uploadStatistics);
       }
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching uploads:', err);
+      if (requestId === uploadsRequestIdRef.current) {
+        setError(err.message);
+        console.error('Error fetching uploads:', err);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === uploadsRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     apiKey,
@@ -106,6 +116,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       return;
     }
 
+    const requestId = ++statusCountsRequestIdRef.current;
     try {
       const params = new URLSearchParams();
       if (filters.type) params.append('type', filters.type);
@@ -117,6 +128,9 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       });
 
       const data = await response.json();
+      if (requestId !== statusCountsRequestIdRef.current) {
+        return;
+      }
 
       if (data.statusCounts) {
         setStatusCounts(data.statusCounts);
@@ -132,14 +146,12 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
 
   useEffect(() => {
     fetchUploads();
-    fetchStatusCounts();
     // Auto-refresh every 1 minute
     const interval = setInterval(() => {
       fetchUploads();
-      fetchStatusCounts();
     }, 60000);
     return () => clearInterval(interval);
-  }, [fetchUploads, fetchStatusCounts]);
+  }, [fetchUploads]);
 
   return {
     uploads,

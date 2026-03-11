@@ -127,11 +127,9 @@ class StateDiffEngine {
   _handleExistingTorrent(torrent, shadow, state, changes, timestamp) {
     const diff = this.computeDiff(shadow, torrent);
 
-    // Always include existing torrents in updated list to allow telemetry backfilling
-    // even when there are no changes detected
-    changes.updated.push({ torrent, diff, shadow });
-
+    // Only include in updated when something actually changed (telemetry/speed use this list)
     if (diff.hasChanges) {
+      changes.updated.push({ torrent, diff, shadow });
       if (diff.stateChanged) {
         changes.stateTransitions.push({
           torrent_id: String(torrent.id),

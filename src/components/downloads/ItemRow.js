@@ -18,6 +18,7 @@ function ItemRow({
   handleItemSelection,
   setItems,
   downloadHistory,
+  downloadHistoryLookup,
   onRowSelect,
   expandedItems,
   toggleFiles,
@@ -316,11 +317,8 @@ function ItemRow({
   // For mobile, we'll only show the name column
   const visibleColumns = isMobile ? ['name'] : activeColumns;
 
-  const isDownloaded = downloadHistory.some(
-    (download) =>
-      String(download.itemId) === String(item.id) &&
-      download.assetType === item.assetType &&
-      !download.fileId
+  const isDownloaded = downloadHistoryLookup.itemDownloads.has(
+    `${item.assetType}:${String(item.id)}`
   );
 
   return (
