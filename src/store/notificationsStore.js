@@ -71,6 +71,9 @@ export const useNotificationsStore = create((set, get) => ({
 
     try {
       const response = await apiClient.getNotifications();
+      if (get().currentApiKey !== apiKey) {
+        return;
+      }
 
       if (response.success) {
         // Reset error state on successful fetch
@@ -141,6 +144,9 @@ export const useNotificationsStore = create((set, get) => ({
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      if (get().currentApiKey !== apiKey) {
+        return;
+      }
       const now = Date.now();
 
       // Check if it's a connection timeout or network error

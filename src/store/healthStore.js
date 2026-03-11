@@ -70,6 +70,9 @@ export const useHealthStore = create((set, get) => ({
         },
         signal: AbortSignal.timeout(API_HEALTH_TIMEOUT),
       });
+      if (get().currentApiKey !== apiKey) {
+        return;
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -84,6 +87,9 @@ export const useHealthStore = create((set, get) => ({
         });
       }
     } catch (err) {
+      if (get().currentApiKey !== apiKey) {
+        return;
+      }
       set({
         apiHealth: 'unhealthy',
         error: err.message,

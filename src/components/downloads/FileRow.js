@@ -21,7 +21,7 @@ function FileRow({
   handleFileStream,
   handleAudioPlay,
   activeColumns,
-  downloadHistory,
+  downloadHistoryLookup,
   isCopying,
   isDownloading,
   isStreaming,
@@ -45,14 +45,10 @@ function FileRow({
         const actualIndex = fileIndex !== null ? fileIndex : index;
         const isChecked = selectedItems.files.get(item.id)?.has(file.id) || false;
         const isDisabled = selectedItems.items?.has(item.id);
-        const isDownloaded = downloadHistory.some(
-          (download) =>
-            String(download.itemId) === String(item.id) &&
-            download.assetType === item.assetType &&
-            (!download.fileId || // Complete item downloaded
-              String(download.fileId) === String(file.id) || // Current file downloaded
-              item.files.length === 1) // Complete item with single file downloaded
-        );
+        const itemKey = `${item.assetType}:${String(item.id)}`;
+        const isDownloaded =
+          downloadHistoryLookup.itemDownloads.has(itemKey) ||
+          downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
 
         return (
           <tr

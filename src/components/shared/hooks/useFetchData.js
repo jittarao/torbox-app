@@ -20,9 +20,9 @@ const AUTO_START_CHECK_INTERVAL = 30000; // 30 seconds in ms
 // 3. ✅ No polling when browser is not focused AND (auto-start is disabled OR no queued torrents)
 
 export function useFetchData(apiKey, type = 'torrents') {
-  // Subscribe to pause reasons to trigger re-render when pause state changes
-  const pauseReasons = usePollingPauseStore((state) => state.pauseReasons);
-  const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
+  const pollingPaused = usePollingPauseStore((state) =>
+    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
+  );
   // Separate state for each data type - ensure they're always arrays
   const [torrents, setTorrents] = useState([]);
   const [usenetItems, setUsenetItems] = useState([]);
@@ -258,14 +258,14 @@ export function useFetchData(apiKey, type = 'torrents') {
       rateData.lastFetchTime = now;
       rateData.callTimestamps.push(now);
       const currentFetchId = ++rateData.latestFetchId;
-
-      // If this call isn't the latest, do not update state
-      if (currentFetchId !== rateData.latestFetchId) {
-        if (!skipLoading) {
-          setLoading(false);
-        }
-        return [];
-      }
+      const isLatestFetch = () => {
+        const latestRateData = rateLimitDataRef.current[activeType];
+        return (
+          latestRateData &&
+          latestRateData.latestFetchId === currentFetchId &&
+          prevApiKeyRef.current === apiKey
+        );
+      };
 
       // Determine endpoint based on activeType; add delta/cursor for subsequent requests
       let endpoint;
@@ -285,6 +285,11 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
 
       try {
+        // Skip starting the request if a newer fetch for this type already started (e.g. rapid tab/type change)
+        if (!isLatestFetch()) {
+          if (!skipLoading) setLoading(false);
+          return [];
+        }
         perfMonitor.startTimer(`fetch-${activeType}`);
         const response = await fetch(endpoint, {
           headers: {
@@ -329,6 +334,10 @@ export function useFetchData(apiKey, type = 'torrents') {
             rateData,
             skipLoading
           );
+        }
+
+        if (!isLatestFetch()) {
+          return [];
         }
 
         perfMonitor.endTimer(`fetch-${activeType}`);
@@ -376,6 +385,10 @@ export function useFetchData(apiKey, type = 'torrents') {
 
           if (data.cursor) {
             deltaCursorRef.current[activeType] = data.cursor;
+          }
+
+          if (!isLatestFetch()) {
+            return [];
           }
 
           // Update the appropriate state based on the type
@@ -587,7 +600,7 @@ export function useFetchData(apiKey, type = 'torrents') {
 
     const shouldKeepFastPolling = () => {
       // If polling is paused (e.g., video player is open), never poll
-      if (isPollingPaused()) {
+      if (usePollingPauseStore.getState().isPollingPaused()) {
         return false;
       }
       // Keep fast polling for torrents with auto-start enabled and queued items
@@ -603,7 +616,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     // Check if we should treat the tab as inactive (either actually inactive or polling is paused)
     const isEffectivelyInactive = () => {
       // If polling is paused (e.g., video player is open), treat as inactive
-      if (isPollingPaused()) {
+      if (usePollingPauseStore.getState().isPollingPaused()) {
         return true;
       }
       // Otherwise, use actual visibility state
@@ -614,7 +627,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       stopPolling(); // Clear any existing interval first
 
       // If polling is paused, completely stop polling
-      if (isPollingPaused()) {
+      if (usePollingPauseStore.getState().isPollingPaused()) {
         return;
       }
 
@@ -649,7 +662,7 @@ export function useFetchData(apiKey, type = 'torrents') {
 
       // Only handle visibility changes if polling is not paused
       // When polling is paused (e.g., video player is open), we ignore visibility changes and stop polling
-      if (isPollingPaused()) {
+      if (usePollingPauseStore.getState().isPollingPaused()) {
         stopPolling();
         return;
       }
@@ -684,7 +697,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       if (cleanupInterval) clearInterval(cleanupInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchLocalItems, isRateLimited, type, pauseReasons]);
+  }, [fetchLocalItems, isRateLimited, type, pollingPaused]);
 
   // Return all data types and their setters
   return {

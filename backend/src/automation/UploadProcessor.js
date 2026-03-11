@@ -61,6 +61,7 @@ class UploadProcessor {
     this.masterDatabase = masterDatabase;
     this.isRunning = false;
     this.intervalId = null;
+    this._processingInProgress = false;
     this.lastCleanupAt = null;
     this.lastRecoveryAt = null;
     this.lastFileCleanupAt = null;
@@ -1348,6 +1349,13 @@ class UploadProcessor {
       return;
     }
 
+    if (this._processingInProgress) {
+      logger.debug('Skipping upload processing cycle - previous run still in progress');
+      return;
+    }
+
+    this._processingInProgress = true;
+
     try {
       const usersWithUploads = this.masterDatabase.getUsersWithQueuedUploads();
 
@@ -1554,6 +1562,8 @@ class UploadProcessor {
       }
     } catch (error) {
       logger.error('Error in upload processing cycle', error);
+    } finally {
+      this._processingInProgress = false;
     }
   }
 

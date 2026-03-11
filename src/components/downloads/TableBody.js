@@ -8,7 +8,6 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  startTransition,
 } from 'react';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
@@ -137,6 +136,23 @@ export default function TableBody({
     return rows;
   }, [deferredItems, expandedItemsArray]);
 
+  const downloadHistoryLookup = useMemo(() => {
+    const itemDownloads = new Set();
+    const fileDownloads = new Set();
+
+    downloadHistory.forEach((download) => {
+      const itemKey = `${download.assetType}:${String(download.itemId)}`;
+      if (download.fileId == null) {
+        itemDownloads.add(itemKey);
+        return;
+      }
+
+      fileDownloads.add(`${itemKey}:${String(download.fileId)}`);
+    });
+
+    return { itemDownloads, fileDownloads };
+  }, [downloadHistory]);
+
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
     // Measure the actual rendered height of the row
@@ -158,6 +174,20 @@ export default function TableBody({
     },
     [flattenedRows, isMobile]
   );
+
+  const rowMetrics = useMemo(() => {
+    const offsets = [0];
+
+    flattenedRows.forEach((row) => {
+      const size = isMobile ? (row?.type === 'item' ? 170 : 60) : row?.type === 'item' ? 70 : 50;
+      offsets.push(offsets[offsets.length - 1] + size);
+    });
+
+    return {
+      offsets,
+      totalSize: offsets[offsets.length - 1] || 0,
+    };
+  }, [flattenedRows, isMobile]);
 
   // Memoize getScrollElement to ensure stable reference
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
@@ -359,60 +389,77 @@ export default function TableBody({
   const virtualizerRef = useRef(virtualizer);
   virtualizerRef.current = virtualizer;
 
-  // Check for view mode change synchronously during render
-  if (prevViewModeRef.current !== viewMode) {
-    isTransitioningRef.current = true;
-    prevViewModeRef.current = viewMode;
-    // Clear virtual rows during transition
-    if (virtualRows.length > 0) {
-      setVirtualRows([]);
+  const syncVirtualRows = useCallback(() => {
+    try {
+      const rows = virtualizerRef.current.getVirtualItems();
+      setVirtualRows((previousRows) => {
+        if (
+          previousRows.length === rows.length &&
+          previousRows.every(
+            (row, index) =>
+              row.index === rows[index]?.index &&
+              row.start === rows[index]?.start &&
+              row.size === rows[index]?.size
+          )
+        ) {
+          return previousRows;
+        }
+
+        return rows;
+      });
+    } catch (error) {
+      // Silently handle errors and retry on the next sync event
     }
-  }
+  }, []);
 
   // Update virtual rows after render completes to prevent flushSync errors
   // This is critical when switching from Card to Table view
   useLayoutEffect(() => {
-    const v = virtualizerRef.current;
-    const updateRows = () => {
-      try {
-        const rows = v.getVirtualItems();
-        setVirtualRows(rows);
-        // Mark transition as complete after update
-        isTransitioningRef.current = false;
-      } catch (error) {
-        // Silently handle errors - will retry on next effect run
-        isTransitioningRef.current = false;
-      }
-    };
+    const viewModeChanged = prevViewModeRef.current !== viewMode;
+    prevViewModeRef.current = viewMode;
+    if (viewModeChanged) {
+      isTransitioningRef.current = true;
+      setVirtualRows([]);
+    }
 
     // Use requestAnimationFrame to ensure we're outside the render phase
-    const rafId = requestAnimationFrame(updateRows);
+    const rafId = requestAnimationFrame(() => {
+      syncVirtualRows();
+      isTransitioningRef.current = false;
+    });
     return () => cancelAnimationFrame(rafId);
-  }, [viewMode, flattenedRows.length]);
+  }, [viewMode, flattenedRows.length, isFullscreen, syncVirtualRows]);
 
-  // Update virtual rows on scroll to keep them in sync
-  // This ensures scroll updates work even though we're using state
   useEffect(() => {
-    // Skip during transitions
-    if (isTransitioningRef.current) return;
+    const scrollTarget = isFullscreen ? scrollElementRef.current : window;
+    if (!scrollTarget) {
+      return;
+    }
 
-    const updateRows = () => {
-      try {
-        const rows = virtualizerRef.current.getVirtualItems();
-        setVirtualRows(rows);
-      } catch (error) {
-        // Silently handle errors
+    let rafId = null;
+    const scheduleSync = () => {
+      if (isTransitioningRef.current || rafId !== null) {
+        return;
       }
+
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        syncVirtualRows();
+      });
     };
 
-    // Use an interval to update rows frequently for smooth scrolling
-    // This is more reliable than scroll events which might be throttled
-    const intervalId = setInterval(() => {
-      requestAnimationFrame(updateRows);
-    }, 16); // ~60fps
+    scheduleSync();
+    scrollTarget.addEventListener('scroll', scheduleSync, { passive: true });
+    window.addEventListener('resize', scheduleSync);
 
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      scrollTarget.removeEventListener('scroll', scheduleSync);
+      window.removeEventListener('resize', scheduleSync);
+    };
+  }, [isFullscreen, flattenedRows.length, syncVirtualRows]);
 
   // Get virtual rows - always use state to prevent flushSync errors
   // State is updated in effects to keep it in sync with scroll
@@ -426,11 +473,7 @@ export default function TableBody({
 
   if (firstVisibleRow && firstVisibleRow.index > 0) {
     if (isFullscreen) {
-      // In fullscreen mode, calculate offset based on container scroll
-      // Sum estimated sizes of all rows before the first visible row
-      for (let i = 0; i < firstVisibleRow.index; i++) {
-        startOffset += estimateSize(i);
-      }
+      startOffset = rowMetrics.offsets[firstVisibleRow.index] || 0;
     } else if (tableOffsetTop > 0) {
       // In normal mode, use window scroll position
       const currentScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
@@ -441,9 +484,7 @@ export default function TableBody({
         // But limit it to a reasonable maximum based on scroll position
         const scrollIntoTable = currentScrollY - tableOffsetTop;
 
-        for (let i = 0; i < firstVisibleRow.index; i++) {
-          startOffset += estimateSize(i);
-        }
+        startOffset = rowMetrics.offsets[firstVisibleRow.index] || 0;
 
         // Don't show a spacer larger than how far we've scrolled into the table
         // This prevents the huge spacer issue
@@ -502,6 +543,7 @@ export default function TableBody({
                 setItems={setItems}
                 setSelectedItems={setSelectedItems}
                 downloadHistory={downloadHistory}
+                downloadHistoryLookup={downloadHistoryLookup}
                 onRowSelect={onRowSelect}
                 expandedItems={expandedItems}
                 toggleFiles={toggleFiles}
@@ -532,7 +574,7 @@ export default function TableBody({
                 handleFileStream={handleFileStream}
                 handleAudioPlay={handleAudioPlay}
                 activeColumns={activeColumns}
-                downloadHistory={downloadHistory}
+                downloadHistoryLookup={downloadHistoryLookup}
                 isCopying={isCopying}
                 isDownloading={isDownloading}
                 isStreaming={isStreaming}
@@ -554,13 +596,10 @@ export default function TableBody({
           const lastVisibleIndex = lastVisibleRow?.index ?? 0;
 
           // Calculate height of rows after the last visible row
-          let bottomOffset = 0;
-          if (lastVisibleIndex < flattenedRows.length - 1) {
-            // Sum estimated sizes of all rows after the last visible row
-            for (let i = lastVisibleIndex + 1; i < flattenedRows.length; i++) {
-              bottomOffset += estimateSize(i);
-            }
-          }
+          const bottomOffset = Math.max(
+            0,
+            rowMetrics.totalSize - (rowMetrics.offsets[lastVisibleIndex + 1] || 0)
+          );
 
           // Only show bottom spacer if there are rows after the last visible one
           return bottomOffset > 0 ? (

@@ -173,6 +173,84 @@ class RuleRepository {
   }
 
   /**
+   * Record a successful rule execution in one DB transaction.
+   * Reduces connection churn on the hot poll path.
+   * @param {number} ruleId - Rule ID
+   * @param {string} ruleName - Rule name
+   * @param {number} itemsProcessed - Number of items processed
+   * @param {boolean} success - Whether execution succeeded
+   * @param {string|null} errorMessage - Optional error message
+   */
+  async recordExecution(ruleId, ruleName, itemsProcessed = 0, success = true, errorMessage = null) {
+    if (ruleId == null || ruleName == null) {
+      logger.warn('Invalid parameters for rule execution record', {
+        authId: this.authId,
+        ruleId,
+        ruleName,
+      });
+      return;
+    }
+
+    const userDb = await this.getUserDb();
+    const recordExecutionTx = userDb.transaction(() => {
+      const ruleExists = userDb.prepare('SELECT 1 FROM automation_rules WHERE id = ?').get(ruleId);
+      if (!ruleExists) {
+        return false;
+      }
+
+      userDb
+        .prepare(
+          `
+        UPDATE automation_rules 
+        SET last_executed_at = CURRENT_TIMESTAMP,
+            execution_count = execution_count + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+        )
+        .run(ruleId);
+
+      userDb
+        .prepare(
+          `
+        INSERT INTO rule_execution_log (rule_id, rule_name, execution_type, items_processed, success, error_message)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+        )
+        .run(ruleId, ruleName, 'execution', itemsProcessed, success ? 1 : 0, errorMessage);
+
+      return true;
+    });
+
+    try {
+      const recorded = recordExecutionTx();
+      if (!recorded) {
+        logger.debug(
+          'Skipping execution record: rule no longer exists (may have been deleted or replaced)',
+          {
+            authId: this.authId,
+            ruleId,
+            ruleName,
+          }
+        );
+      }
+    } catch (error) {
+      const isFk =
+        error?.code === 'SQLITE_CONSTRAINT_FOREIGNKEY' ||
+        String(error?.message || '').includes('FOREIGN KEY');
+      if (isFk) {
+        logger.debug('Rule no longer exists, execution record skipped', {
+          authId: this.authId,
+          ruleId,
+          ruleName,
+        });
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Save automation rules using an upsert strategy that preserves existing rule IDs.
    * Rules that carry an `id` matching an existing row are updated in place (preserving
    * rule_execution_log FK references). New rules (no id, or id not found) are inserted.

@@ -620,15 +620,10 @@ class AutomationEngine {
 
     // Only update execution status and log if actions were actually executed
     if (successCount > 0) {
-      // Update rule execution status - only update if actions actually ran
-      await this.ruleRepository.updateExecutionStatus(rule.id);
-
-      // Log execution - use successCount to only count items where action was actually executed
-      await this.ruleRepository.logExecution(
+      await this.ruleRepository.recordExecution(
         rule.id,
         rule.name,
-        'execution',
-        successCount, // Only count successful executions
+        successCount,
         errorCount === 0,
         errorCount > 0 ? `${errorCount} actions failed` : null
       );
@@ -883,15 +878,10 @@ class AutomationEngine {
 
       // Only update execution status and log if actions were actually executed
       if (successCount > 0) {
-        // Update rule execution status - only update if actions actually ran
-        await this.ruleRepository.updateExecutionStatus(rule.id);
-
-        // Log execution - use successCount to only count items where action was actually executed
-        await this.ruleRepository.logExecution(
+        await this.ruleRepository.recordExecution(
           rule.id,
           rule.name,
-          'execution',
-          successCount, // Only count successful executions
+          successCount,
           errorCount === 0,
           errorCount > 0 ? `${errorCount} actions failed` : null
         );
@@ -1048,6 +1038,7 @@ class AutomationEngine {
         this.invalidateRuleEvaluatorCache();
       }
     }
+    // Error path: log only (do not update last_executed_at / execution_count)
     await this.ruleRepository.logExecution(
       rule.id,
       rule.name,

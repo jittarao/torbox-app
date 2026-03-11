@@ -290,8 +290,10 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
       formData.append('as_queued', 'true');
     }
 
-    // Queue upload via NextJS API (which handles backend queuing)
+    // Queue upload via NextJS API (which handles backend queuing).
+    // maxRetries: 1 — one retry only for upload/control calls to fail fast and avoid long hangs.
     const result = await retryFetch(getApiEndpoint(item.type), {
+      maxRetries: 1,
       method: 'POST',
       headers: { 'x-api-key': apiKey },
       body: formData,
@@ -360,6 +362,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     );
 
     const result = await retryFetch(batchEndpoint, {
+      maxRetries: 1,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -525,6 +528,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Control queued items. Operation can be start
   const controlQueuedItem = async (queuedId, operation) => {
     const result = await retryFetch(`${getApiEndpoint()}/controlqueued`, {
+      maxRetries: 1,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -549,6 +553,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   // Control active torrents. Operation can be stop_seeding
   const controlTorrent = async (torrent_id, operation) => {
     const result = await retryFetch('/api/torrents/control', {
+      maxRetries: 1,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
