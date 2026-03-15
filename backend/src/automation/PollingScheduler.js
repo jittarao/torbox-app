@@ -1,5 +1,7 @@
 import UserPoller from './UserPoller.js';
 import AutomationEngine from './AutomationEngine.js';
+import ApiClient from '../api/ApiClient.js';
+import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
 import Semaphore from '../utils/semaphore.js';
@@ -195,12 +197,11 @@ class GlobalActionQueue {
     const masterDb = this.scheduler.masterDb;
     try {
       const concurrency = GLOBAL_ACTION_QUEUE_CONCURRENCY;
-      const runNext = () => {
-        if (this.pending.length === 0) return Promise.resolve();
-        const d = this.pending.shift();
-        return this.scheduler
-          .runActionBatch(d)
-          .then(() => {
+      const worker = async () => {
+        while (this.pending.length > 0) {
+          const d = this.pending.shift();
+          try {
+            await this.scheduler.runActionBatch(d);
             if (d.pendingId && masterDb && masterDb.deletePendingAction) {
               try {
                 masterDb.deletePendingAction(d.pendingId);
@@ -208,16 +209,14 @@ class GlobalActionQueue {
                 // ignore
               }
             }
-            return runNext();
-          })
-          .catch((err) => {
+          } catch (err) {
             logger.error('GlobalActionQueue action batch failed', err, {
               errorMessage: err.message,
             });
-            return runNext();
-          });
+          }
+        }
       };
-      const workers = Array.from({ length: concurrency }, () => runNext());
+      const workers = Array.from({ length: concurrency }, () => worker());
       await Promise.all(workers);
     } finally {
       this.draining = false;
@@ -287,6 +286,10 @@ class PollingScheduler {
     // State
     this.lastCleanupAt = null;
     this.flagUpdateMutexes = new Map();
+    /** Per-user mutex for GlobalActionQueue so same-user batches run sequentially and avoid engine race */
+    this.actionBatchMutexes = new Map();
+    /** Shared ApiClient per user (single decrypt per user); cleared when poller is removed */
+    this.cachedApiClients = new Map();
     /** Cached AutomationEngine per user — avoids re-running initialize() (4-5 DB queries) on every poll */
     this.cachedEngines = new Map();
     /** @type {Map<string, number>} Consecutive timeout count per user; used for backoff so repeat timeouts don't hold slots */
@@ -329,6 +332,20 @@ class PollingScheduler {
   }
 
   /**
+   * Get or create mutex for action batch execution (same-user batches serialized).
+   * @param {string} authId - User authentication ID
+   * @returns {Mutex} Mutex instance
+   */
+  getActionBatchMutex(authId) {
+    let mutex = this.actionBatchMutexes.get(authId);
+    if (!mutex) {
+      mutex = new Mutex();
+      this.actionBatchMutexes.set(authId, mutex);
+    }
+    return mutex;
+  }
+
+  /**
    * Atomically acquire a per-user lock and chain an operation to it
    * @param {string} authId - User authentication ID
    * @param {Function} operation - Async function to execute after acquiring lock
@@ -349,6 +366,21 @@ class PollingScheduler {
   }
 
   /**
+   * Get or create a shared ApiClient for a user (single decrypt per user).
+   * @param {string} authId - User authentication ID
+   * @param {string} encryptedKey - Encrypted API key
+   * @returns {ApiClient} ApiClient instance
+   */
+  getOrCreateApiClient(authId, encryptedKey) {
+    let client = this.cachedApiClients.get(authId);
+    if (client) return client;
+    const apiKey = decrypt(encryptedKey);
+    client = new ApiClient(apiKey);
+    this.cachedApiClients.set(authId, client);
+    return client;
+  }
+
+  /**
    * Get or create an automation engine for a poll cycle.
    * Engines are cached per-user so that initialize() (4-5 DB queries) only runs once instead
    * of on every poll. On subsequent polls the engine's DB connection is refreshed via
@@ -365,11 +397,13 @@ class PollingScheduler {
       return cached;
     }
 
+    const apiClient = this.getOrCreateApiClient(authId, encryptedKey);
     const engine = new AutomationEngine(
       authId,
       encryptedKey,
       this.userDatabaseManager,
-      this.masterDb
+      this.masterDb,
+      apiClient
     );
     await engine.initialize();
     this.cachedEngines.set(authId, engine);
@@ -394,13 +428,15 @@ class PollingScheduler {
     logger.info('Creating poller for user', { authId });
 
     try {
+      const apiClient = this.getOrCreateApiClient(authId, encryptedKey);
       const poller = new UserPoller(
         authId,
         encryptedKey,
         null, // connection acquired at poll time and released after each poll
         null, // engine is attached from cachedEngines just before each poll and detached after
         this.masterDb,
-        this.userDatabaseManager
+        this.userDatabaseManager,
+        apiClient
       );
 
       poller.lastPolledAt = new Date();
@@ -729,8 +765,8 @@ class PollingScheduler {
     const pollerCount = this.pollers.size;
     this.pollers.clear();
 
-    // Shutdown and discard all cached engines
-    for (const [authId, engine] of this.cachedEngines) {
+    // Shutdown and discard all cached engines and API clients
+    for (const [, engine] of this.cachedEngines) {
       try {
         engine.shutdown();
       } catch (_) {
@@ -738,6 +774,7 @@ class PollingScheduler {
       }
     }
     this.cachedEngines.clear();
+    this.cachedApiClients.clear();
 
     logger.info('PollingScheduler stopped', {
       clearedPollers: pollerCount,
@@ -780,6 +817,7 @@ class PollingScheduler {
       }
       this.cachedEngines.delete(authId);
     }
+    this.cachedApiClients.delete(authId);
     this.flagUpdateMutexes.delete(authId);
     this.userConsecutiveTimeoutCount.delete(authId);
   }
@@ -803,16 +841,15 @@ class PollingScheduler {
   }
 
   /**
-   * Teardown poller and engine after a poll cycle. Call from processUserPoll finally and fetch-phase errors.
-   * Does not clear userConsecutiveTimeoutCount (preserves timeout backoff).
+   * Release per-poll resources after a poll cycle; keep poller and engine for next poll (reused by getOrCreatePoller / createEngineForPoll).
+   * DB connection is released in processUserPoll finally (closeConnection, dbManager = null).
+   * Poller and engine are only removed by refreshPollers (no active rules) or cleanupStalePollers (not polled recently).
    * @param {string} authId - User authentication ID
    * @private
    */
   _teardownUserAfterPoll(authId) {
     if (!authId) return;
-    this.pollers.delete(authId);
-    this._teardownEngineForAuth(authId);
-    this.flagUpdateMutexes.delete(authId);
+    // No-op: do not delete poller or engine so they are reused on next poll (avoids re-initialize and duplicate decrypt).
   }
 
   /**
@@ -884,6 +921,8 @@ class PollingScheduler {
       return;
     }
 
+    const mutex = this.getActionBatchMutex(authId);
+    await mutex.acquire();
     try {
       const engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
       const { successCount, errorCount } = await engine.ruleExecutor.executeActions(
@@ -910,6 +949,10 @@ class PollingScheduler {
       });
     } finally {
       this._teardownEngineForAuth(authId);
+      mutex.release();
+      if (mutex.isEmpty()) {
+        this.actionBatchMutexes.delete(authId);
+      }
     }
   }
 
@@ -963,6 +1006,7 @@ class PollingScheduler {
   async processUserPoll(user, poller, torrents, counters) {
     const { auth_id, has_active_rules: dbHasActiveRules } = user;
     let engineForPoll = null;
+    const processStartTime = Date.now();
 
     try {
       engineForPoll = await this.createEngineForPoll(auth_id, user.encrypted_key);
@@ -986,7 +1030,6 @@ class PollingScheduler {
         return;
       }
 
-      const processStartTime = Date.now();
       const result = await withTimeout(
         poller.processFetchedTorrents(torrents, {
           hasActiveRules,
@@ -1015,10 +1058,10 @@ class PollingScheduler {
       this.metrics.successfulPolls++;
       this.metrics.lastPollAt = new Date();
     } catch (error) {
-      const duration = 0;
+      const duration = (Date.now() - processStartTime) / 1000;
       if (error.isTimeout || error.name === 'TimeoutError' || error.message?.includes('timeout')) {
         logger.error('Per-user process timeout in Stage 2', error, { authId: auth_id });
-        this.handlePollTimeout(auth_id, this.pollKickoutMs / 1000);
+        this.handlePollTimeout(auth_id, duration);
         counters.error++;
       } else {
         logger.error('Error in processUserPoll', error, {
@@ -1262,6 +1305,7 @@ class PollingScheduler {
               this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
               syncStats.synced++;
             }
+            user.has_active_rules = actualFlag;
           } catch (error) {
             logger.warn('Failed to sync active rules flag for user', {
               authId: user.auth_id,
@@ -1285,8 +1329,7 @@ class PollingScheduler {
         });
 
         cache.invalidateActiveUsers();
-        const refreshedActiveUsers = this.userDatabaseManager.getActiveUsers();
-        usersWithActiveRules = refreshedActiveUsers.filter((user) => user.has_active_rules === 1);
+        usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
       } else {
         // Light refresh: use master DB only (has_active_rules is kept in sync by API when rules are toggled)
         const activeUsers = this.userDatabaseManager.getActiveUsers();

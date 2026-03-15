@@ -27,15 +27,22 @@ import {
  * Evaluates and executes automation rules for a single user
  */
 class AutomationEngine {
-  constructor(authId, encryptedApiKey, userDatabaseManager, masterDb = null) {
+  constructor(authId, encryptedApiKey, userDatabaseManager, masterDb = null, sharedApiClient = null) {
     this.authId = authId;
     this.encryptedApiKey = encryptedApiKey;
     this.userDatabaseManager = userDatabaseManager;
     this.masterDb = masterDb;
-    this.apiKey = decrypt(encryptedApiKey);
-    this.apiClient = new ApiClient(this.apiKey);
+    if (sharedApiClient) {
+      this.apiClient = sharedApiClient;
+      this.apiKey = null; // not needed when using shared client
+    } else {
+      this.apiKey = decrypt(encryptedApiKey);
+      this.apiClient = new ApiClient(this.apiKey);
+    }
     this._ruleEvaluatorCache = null; // Cached RuleEvaluator instance
     this._ruleEvaluatorDbConnection = null; // Track the DB connection used by cached evaluator
+    /** Cached enabled rules; invalidated on save/toggle/delete so we avoid DB query every poll */
+    this._enabledRulesCache = null;
     this.isInitialized = false;
 
     // Initialize helpers
@@ -221,15 +228,31 @@ class AutomationEngine {
   }
 
   /**
+   * Invalidate cached enabled rules (call when rules are saved, toggled, or deleted).
+   */
+  invalidateRuleCache() {
+    this._enabledRulesCache = null;
+    logger.debug('Rule cache invalidated', { authId: this.authId });
+  }
+
+  /**
    * Get automation rules from user database
    * Always returns rules in the new group structure format
+   * When options.enabled === true, uses in-memory cache and avoids DB query until invalidateRuleCache() is called.
    * @param {Object} options - Optional filter options
    * @param {boolean} options.enabled - If true, only fetch enabled rules. If false, only fetch disabled rules. If undefined, fetch all rules.
    * @returns {Promise<Array>} - Array of automation rules
    */
   async getAutomationRules(options = {}) {
+    if (options.enabled === true && this._enabledRulesCache != null) {
+      return this._enabledRulesCache;
+    }
     const rules = await this.ruleRepository.getRules(options);
-    return rules.map((rule) => this.migrateRuleToGroups(rule));
+    const migrated = rules.map((rule) => this.migrateRuleToGroups(rule));
+    if (options.enabled === true) {
+      this._enabledRulesCache = migrated;
+    }
+    return migrated;
   }
 
   /**
@@ -342,6 +365,7 @@ class AutomationEngine {
    */
   async disableAllRules() {
     const disabledCount = await this.ruleRepository.disableAllRules();
+    this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
     if (this.masterDb) {
       try {
@@ -558,7 +582,7 @@ class AutomationEngine {
         if (!rule) continue;
 
         try {
-          const result = await this.evaluateSingleRule(rule, torrents, sharedMaps);
+          const result = await this.evaluateSingleRule(rule, torrents, sharedMaps, ruleEvaluator);
           if (result.ruleId != null) {
             evaluatedRuleIds.push(result.ruleId);
           }
@@ -592,9 +616,10 @@ class AutomationEngine {
    * @param {Object} rule - Rule to evaluate
    * @param {Array} torrents - Torrents to evaluate against
    * @param {Object} [sharedMaps] - Optional pre-loaded { telemetryMap, tagsByDownloadId, speedHistoryMap }
+   * @param {Object} [ruleEvaluatorInstance] - Optional pre-fetched RuleEvaluator (avoids per-rule getRuleEvaluator when called from batch)
    * @returns {Promise<Object>} - { executed: boolean, skipped: boolean }
    */
-  async evaluateSingleRule(rule, torrents, sharedMaps = null) {
+  async evaluateSingleRule(rule, torrents, sharedMaps = null, ruleEvaluatorInstance = null) {
     // Check if rule has an action configured
     if (!rule.action || !rule.action.type) {
       logger.warn('Rule has no action configured, skipping execution', {
@@ -618,7 +643,7 @@ class AutomationEngine {
       torrentCount: torrents.length,
     });
 
-    const ruleEvaluator = await this.getRuleEvaluator();
+    const ruleEvaluator = ruleEvaluatorInstance ?? (await this.getRuleEvaluator());
 
     // Check if rule should be evaluated based on interval
     if (this.shouldSkipRuleEvaluation(rule)) {
@@ -1125,7 +1150,8 @@ class AutomationEngine {
     const hasActive = rules.some((r) => r.enabled);
     await this.updateMasterDbActiveRulesFlag(hasActive);
 
-    // Invalidate cache since rules changed
+    // Invalidate caches since rules changed
+    this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
 
     if (hasActive) {
@@ -1141,7 +1167,8 @@ class AutomationEngine {
   async updateRuleStatus(ruleId, enabled) {
     await this.ruleRepository.updateRuleStatus(ruleId, enabled);
 
-    // Invalidate cache since rule status changed
+    // Invalidate caches since rule status changed
+    this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
 
     // Update master DB flag and reset polling if enabling
@@ -1157,7 +1184,8 @@ class AutomationEngine {
   async deleteRule(ruleId) {
     await this.ruleRepository.deleteRule(ruleId);
 
-    // Invalidate cache since rule was deleted
+    // Invalidate caches since rule was deleted
+    this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
 
     // Update master DB flag
