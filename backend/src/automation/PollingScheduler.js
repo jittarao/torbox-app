@@ -6,17 +6,17 @@ import Semaphore from '../utils/semaphore.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
-const DEFAULT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes (rules have min 5 min interval; no need to refresh poller list every 60s)
+const DEFAULT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const REFRESH_FULL_SYNC_EVERY_N = 6; // Do expensive "sync has_active_rules from all user DBs" every N refreshes (~90 min at 15 min refresh)
 // Minimum time between polling the same user (each user must not be polled more than once per this window)
-const MIN_POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes — matches rules' minimum interval
+const MIN_POLL_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes — minimum time between polling the same user
 // Per-user kick-out: max time one user's poll may run inside a cycle before we give up and free the slot
 const DEFAULT_POLL_KICKOUT_MS = 180000; // 3 minutes — allows slow API/DB for users with many torrents; set POLL_KICKOUT_MS=120000 for stricter slot usage
 const DEFAULT_MAX_CONCURRENT_POLLS = 12; // Number of users polled in parallel
 const DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS = 24;
-const ERROR_RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes after first timeout
-const TIMEOUT_BACKOFF_RETRY_MS = 15 * 60 * 1000; // 15 minutes after repeated timeouts (free concurrency slot)
-const SKIPPED_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const ERROR_RETRY_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes after error or first timeout
+const TIMEOUT_BACKOFF_RETRY_MS = 60 * 60 * 1000; // 60 minutes after repeated timeouts (free concurrency slot)
+const SKIPPED_POLL_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours when user has no active rules
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
 const STAGGER_PERCENTAGE = 0.1; // 10% of base interval
 const SLOW_POLL_WARNING_PERCENT = 0.8; // Log when poll has run this fraction of per-user timeout

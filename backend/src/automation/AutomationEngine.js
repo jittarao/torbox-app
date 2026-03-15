@@ -296,12 +296,13 @@ class AutomationEngine {
    * @returns {number|null} - Minimum interval in minutes, or null if no interval triggers
    */
   _computeMinRuleInterval(rules) {
+    const MIN_RULE_INTERVAL_MINUTES = 30;
     let minInterval = null;
     for (const rule of rules) {
       if (rule.trigger && rule.trigger.type === 'interval' && rule.trigger.value) {
-        const interval = rule.trigger.value;
-        if (minInterval === null || interval < minInterval) {
-          minInterval = interval;
+        const effectiveInterval = Math.max(rule.trigger.value, MIN_RULE_INTERVAL_MINUTES);
+        if (minInterval === null || effectiveInterval < minInterval) {
+          minInterval = effectiveInterval;
         }
       }
     }
@@ -1026,7 +1027,7 @@ class AutomationEngine {
     }
 
     const intervalMinutes = rule.trigger.value;
-    const adjustedIntervalMinutes = applyIntervalMultiplier(Math.max(intervalMinutes, 1));
+    const adjustedIntervalMinutes = applyIntervalMultiplier(Math.max(intervalMinutes, 30));
     const lastEvaluated = parseDbTimestamp(rule.last_evaluated_at);
     const intervalMs = adjustedIntervalMinutes * 60 * 1000;
     const timeSinceLastEvaluation = Date.now() - lastEvaluated.getTime();
