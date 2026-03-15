@@ -554,20 +554,24 @@ class UserPoller {
   }
 
   /**
-   * Process already-fetched torrents (state diff, derived fields, speed updates, rule evaluation).
-   * Used by the two-phase scheduler: Stage 1 fetches torrents, Stage 2 calls this with no API calls.
-   * @param {Array} torrents - Array of torrent objects from API
+   * Single canonical pipeline: optionally fetch, then state diff → derived fields → speed → rule eval → next poll.
+   * Used by both the two-phase scheduler (with prefetchedTorrents) and triggerPoll (fetches inside).
    * @param {Object} options - Options
+   * @param {Array} [options.prefetchedTorrents] - If provided, skip API fetch and use this list
    * @param {boolean} options.hasActiveRules - Whether user has active rules
    * @param {Function|null} [options.calculateStaggerOffset] - Optional stagger calculator
+   * @param {boolean} [options.updateMasterDb=false] - Whether to write next_poll_at to master DB
+   * @param {Function} [options.checkCancelled] - Optional no-arg function that throws if poll was cancelled
    * @returns {Promise<Object>} - { success, changes, ruleResults, nextPollAt, nonTerminalCount }
    */
-  async processFetchedTorrents(torrents, options = {}) {
-    const { hasActiveRules, calculateStaggerOffset = null } = options;
-
-    if (!Array.isArray(torrents)) {
-      throw new Error('processFetchedTorrents requires an array of torrents');
-    }
+  async runPipeline(options = {}) {
+    const {
+      prefetchedTorrents,
+      hasActiveRules,
+      calculateStaggerOffset = null,
+      updateMasterDb = false,
+      checkCancelled = null,
+    } = options;
 
     if (!this.dbManager && this.userDatabaseManager) {
       const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
@@ -583,10 +587,20 @@ class UserPoller {
 
     await this.ensureDatabaseConnection();
     if (!this.dbManager) {
-      throw new Error('No database connection for processFetchedTorrents');
+      throw new Error('No database connection for runPipeline');
+    }
+
+    let torrents = prefetchedTorrents;
+    if (torrents === undefined) {
+      torrents = await this.fetchTorrents();
+      if (checkCancelled) checkCancelled();
+    }
+    if (!Array.isArray(torrents)) {
+      throw new Error('Torrents must be an array');
     }
 
     const changes = await this.processStateChanges(torrents);
+    if (checkCancelled) checkCancelled();
     if (!changes || typeof changes !== 'object') {
       throw new Error('processStateChanges returned invalid changes object');
     }
@@ -596,9 +610,12 @@ class UserPoller {
     if (!Array.isArray(changes.stateTransitions)) changes.stateTransitions = [];
 
     await this.updateDerivedFields(changes);
+    if (checkCancelled) checkCancelled();
     await this.processSpeedUpdates(changes.updated);
+    if (checkCancelled) checkCancelled();
 
     const ruleResults = await this.evaluateRules(torrents);
+    if (checkCancelled) checkCancelled();
     const nonTerminalCount = this.countNonTerminalTorrents(torrents);
     const nextPollAt = await this.calculateNextPollAt(
       nonTerminalCount,
@@ -607,6 +624,10 @@ class UserPoller {
       ruleResults
     );
 
+    if (updateMasterDb) {
+      await this.updateMasterDatabase(nextPollAt, nonTerminalCount);
+    }
+
     return {
       success: true,
       changes,
@@ -614,6 +635,27 @@ class UserPoller {
       nextPollAt,
       nonTerminalCount,
     };
+  }
+
+  /**
+   * Process already-fetched torrents (state diff, derived fields, speed updates, rule evaluation).
+   * Used by the two-phase scheduler: Stage 1 fetches torrents, Stage 2 calls this with no API calls.
+   * @param {Array} torrents - Array of torrent objects from API
+   * @param {Object} options - Options
+   * @param {boolean} options.hasActiveRules - Whether user has active rules
+   * @param {Function|null} [options.calculateStaggerOffset] - Optional stagger calculator
+   * @returns {Promise<Object>} - { success, changes, ruleResults, nextPollAt, nonTerminalCount }
+   */
+  async processFetchedTorrents(torrents, options = {}) {
+    if (!Array.isArray(torrents)) {
+      throw new Error('processFetchedTorrents requires an array of torrents');
+    }
+    return this.runPipeline({
+      prefetchedTorrents: torrents,
+      hasActiveRules: options.hasActiveRules,
+      calculateStaggerOffset: options.calculateStaggerOffset ?? null,
+      updateMasterDb: false,
+    });
   }
 
   /**
@@ -715,56 +757,15 @@ class UserPoller {
         hasAutomationEngine: !!this.automationEngine,
       });
 
-      // Fetch torrents from API
-      const torrents = await this.fetchTorrents();
-      this._checkCancelled(cancelToken);
-
-      if (!Array.isArray(torrents)) {
-        throw new Error('API returned invalid torrents data');
-      }
-
-      // Process snapshot and compute diffs
-      const changes = await this.processStateChanges(torrents);
-      this._checkCancelled(cancelToken);
-
-      // Validate changes structure
-      if (!changes || typeof changes !== 'object') {
-        throw new Error('processStateChanges returned invalid changes object');
-      }
-
-      // Ensure changes has required properties
-      if (!Array.isArray(changes.new)) changes.new = [];
-      if (!Array.isArray(changes.updated)) changes.updated = [];
-      if (!Array.isArray(changes.removed)) changes.removed = [];
-      if (!Array.isArray(changes.stateTransitions)) changes.stateTransitions = [];
-
-      // Update derived fields
-      await this.updateDerivedFields(changes);
-      this._checkCancelled(cancelToken);
-
-      // Record speed samples for updated torrents
-      await this.processSpeedUpdates(changes.updated);
-      this._checkCancelled(cancelToken);
-
-      // Evaluate automation rules
-      const ruleResults = await this.evaluateRules(torrents);
-      this._checkCancelled(cancelToken);
-
-      // Count non-terminal torrents and calculate next poll time
-      const nonTerminalCount = this.countNonTerminalTorrents(torrents);
-      const nextPollAt = await this.calculateNextPollAt(
-        nonTerminalCount,
+      const result = await this.runPipeline({
         hasActiveRules,
         calculateStaggerOffset,
-        ruleResults
-      );
-
-      if (updateMasterDb) {
-        await this.updateMasterDatabase(nextPollAt, nonTerminalCount);
-      }
+        updateMasterDb,
+        checkCancelled: () => this._checkCancelled(cancelToken),
+      });
 
       this.lastPollAt = new Date();
-      this.lastPolledAt = new Date(); // Update last polled timestamp
+      this.lastPolledAt = new Date();
       this.lastPollError = null;
       if (this.masterDb && this.masterDb.resetConsecutiveAuthFailures) {
         this.masterDb.resetConsecutiveAuthFailures(this.authId);
@@ -774,25 +775,25 @@ class UserPoller {
       logger.info('Poll completed successfully', {
         authId: this.authId,
         duration: `${duration}s`,
-        new: changes.new?.length || 0,
-        updated: changes.updated?.length || 0,
-        removed: changes.removed?.length || 0,
-        stateTransitions: changes.stateTransitions?.length || 0,
-        rulesEvaluated: ruleResults?.evaluated || 0,
-        rulesExecuted: ruleResults?.executed || 0,
-        nonTerminalCount: nonTerminalCount || 0,
-        hasActiveRules: hasActiveRules,
-        nextPollAt: nextPollAt?.toISOString() || 'unknown',
+        new: result.changes.new?.length || 0,
+        updated: result.changes.updated?.length || 0,
+        removed: result.changes.removed?.length || 0,
+        stateTransitions: result.changes.stateTransitions?.length || 0,
+        rulesEvaluated: result.ruleResults?.evaluated || 0,
+        rulesExecuted: result.ruleResults?.executed || 0,
+        nonTerminalCount: result.nonTerminalCount || 0,
+        hasActiveRules,
+        nextPollAt: result.nextPollAt?.toISOString() || 'unknown',
         timestamp: new Date().toISOString(),
       });
 
       return {
         success: true,
-        changes,
-        ruleResults,
+        changes: result.changes,
+        ruleResults: result.ruleResults,
         duration: parseFloat(duration),
-        nonTerminalCount,
-        nextPollAt,
+        nonTerminalCount: result.nonTerminalCount,
+        nextPollAt: result.nextPollAt,
       };
     } catch (error) {
       if (error.isCancelled) {

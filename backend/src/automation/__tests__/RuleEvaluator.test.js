@@ -1880,18 +1880,9 @@ describe('RuleEvaluator', () => {
       expect(speed).toBeCloseTo(1024 * 1024, 0); // ~1 MB/s
     });
 
-    it('should fallback to database query when map not provided', () => {
-      const now = Date.now();
-      const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
-
-      // Mock database query
-      mockUserDb._mockAll.mockReturnValueOnce([
-        { timestamp: oneHourAgo, total_downloaded: 0 },
-        { timestamp: new Date(now).toISOString(), total_downloaded: 1024 * 1024 * 3600 },
-      ]);
-
+    it('should return 0 when map not provided (no DB fallback; callers must pass pre-loaded map)', () => {
       const speed = ruleEvaluator.getAverageSpeed('1', 1, 'download', null);
-      expect(speed).toBeCloseTo(1024 * 1024, 0);
+      expect(speed).toBe(0);
     });
   });
 

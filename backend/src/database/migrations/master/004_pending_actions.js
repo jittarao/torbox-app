@@ -8,6 +8,7 @@ export const up = (db) => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       auth_id TEXT NOT NULL,
       payload TEXT NOT NULL,
+      rule_id INTEGER UNIQUE,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `

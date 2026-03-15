@@ -5,9 +5,35 @@ import RuleMigrationHelper from './RuleMigrationHelper.js';
  * Repository for automation rule database operations
  */
 class RuleRepository {
-  constructor(authId, getUserDb) {
+  /**
+   * @param {string} authId
+   * @param {() => Promise<object>} getUserDb
+   * @param {object|null} [masterDb] - When provided, has_active_rules is synced to master after mutations
+   */
+  constructor(authId, getUserDb, masterDb = null) {
     this.authId = authId;
     this.getUserDb = getUserDb;
+    this.masterDb = masterDb;
+  }
+
+  /**
+   * Sync has_active_rules to master DB from current user DB state. No-op if masterDb not set.
+   */
+  async syncActiveFlagToMaster() {
+    if (!this.masterDb || !this.masterDb.updateActiveRulesFlag) return;
+    try {
+      const userDb = await this.getUserDb();
+      const result = userDb
+        .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
+        .get();
+      const hasActiveRules = result && result.count > 0;
+      this.masterDb.updateActiveRulesFlag(this.authId, hasActiveRules);
+    } catch (error) {
+      logger.warn('Failed to sync active rules flag to master', {
+        authId: this.authId,
+        errorMessage: error.message,
+      });
+    }
   }
 
   /**
@@ -378,6 +404,7 @@ class RuleRepository {
     });
 
     doSave();
+    await this.syncActiveFlagToMaster();
     return savedRules;
   }
 
@@ -396,6 +423,7 @@ class RuleRepository {
     `
       )
       .run();
+    await this.syncActiveFlagToMaster();
     return result.changes;
   }
 
@@ -415,6 +443,7 @@ class RuleRepository {
     `
       )
       .run(enabled ? 1 : 0, ruleId);
+    await this.syncActiveFlagToMaster();
   }
 
   /**
@@ -424,6 +453,7 @@ class RuleRepository {
   async deleteRule(ruleId) {
     const userDb = await this.getUserDb();
     userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(ruleId);
+    await this.syncActiveFlagToMaster();
   }
 
   /**

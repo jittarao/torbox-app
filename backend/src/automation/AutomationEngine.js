@@ -46,7 +46,7 @@ class AutomationEngine {
     this.isInitialized = false;
 
     // Initialize helpers
-    this.ruleRepository = new RuleRepository(authId, () => this.getUserDb());
+    this.ruleRepository = new RuleRepository(authId, () => this.getUserDb(), this.masterDb);
     this.ruleValidator = new RuleValidator(authId, (rule) => this.migrateRuleToGroups(rule));
     this.ruleExecutor = new RuleExecutor(authId, () => this.getRuleEvaluator());
     this.ruleFilter = new RuleFilter(authId, () => this.getUserDb());
@@ -367,16 +367,6 @@ class AutomationEngine {
     const disabledCount = await this.ruleRepository.disableAllRules();
     this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
-    if (this.masterDb) {
-      try {
-        this.masterDb.updateActiveRulesFlag(this.authId, false);
-      } catch (error) {
-        logger.error('Failed to update master DB after disabling rules', error, {
-          authId: this.authId,
-          disabledCount,
-        });
-      }
-    }
     logger.info('Disabled all automation rules (plan restricted)', {
       authId: this.authId,
       disabledCount,
@@ -879,9 +869,23 @@ class AutomationEngine {
       }
 
       const ruleEvaluator = await this.getRuleEvaluator();
+      const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
+      const analysis = ruleEvaluator.analyzeRule(rule);
+      const sharedMaps = {
+        telemetryMap: analysis.needsTelemetry ? ruleEvaluator.loadTelemetryData(torrentIds) : new Map(),
+        tagsByDownloadId: analysis.needsTags ? ruleEvaluator.loadTagsData(torrents, { rule }) : new Map(),
+        speedHistoryMap:
+          analysis.needsSpeed && torrentIds.length > 0
+            ? ruleEvaluator.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
+            : new Map(),
+      };
 
       // Evaluate rule (bypass interval check for manual execution)
-      const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(rule, torrents);
+      const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
+        rule,
+        torrents,
+        sharedMaps
+      );
 
       if (matchingTorrents.length === 0) {
         const result = {
@@ -1143,12 +1147,10 @@ class AutomationEngine {
       }
     }
 
-    // Save rules and get back the saved rules with database-assigned IDs
+    // Save rules and get back the saved rules with database-assigned IDs (repo syncs has_active_rules to master)
     const savedRules = await this.ruleRepository.saveRules(rules);
 
-    // Update master DB flag and reset polling
     const hasActive = rules.some((r) => r.enabled);
-    await this.updateMasterDbActiveRulesFlag(hasActive);
 
     // Invalidate caches since rules changed
     this.invalidateRuleCache();
@@ -1167,12 +1169,10 @@ class AutomationEngine {
   async updateRuleStatus(ruleId, enabled) {
     await this.ruleRepository.updateRuleStatus(ruleId, enabled);
 
-    // Invalidate caches since rule status changed
+    // Invalidate caches since rule status changed (repo already synced has_active_rules to master)
     this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
 
-    // Update master DB flag and reset polling if enabling
-    await this.syncActiveRulesFlag();
     if (enabled) {
       await this.resetNextPollAt();
     }
@@ -1184,12 +1184,9 @@ class AutomationEngine {
   async deleteRule(ruleId) {
     await this.ruleRepository.deleteRule(ruleId);
 
-    // Invalidate caches since rule was deleted
+    // Invalidate caches since rule was deleted (repo already synced has_active_rules to master)
     this.invalidateRuleCache();
     cache.invalidateActiveRules(this.authId);
-
-    // Update master DB flag
-    await this.syncActiveRulesFlag();
   }
 
   /**
