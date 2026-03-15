@@ -1402,7 +1402,8 @@ class RuleEvaluator {
           });
           return { skipped: true, reason: 'force_start only applies to queued torrents' };
         }
-        return await this.apiClient.controlTorrent(torrent.id, 'force_start');
+        // Queued items use /api/queued/controlqueued with operation 'start', not controltorrent/force_start
+        return await this.apiClient.controlQueuedTorrent(torrent.id, 'start');
       }
 
       case 'delete':

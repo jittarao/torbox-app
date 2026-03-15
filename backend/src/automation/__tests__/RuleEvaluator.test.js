@@ -38,6 +38,7 @@ describe('RuleEvaluator', () => {
     // Mock API client
     mockApiClient = {
       controlTorrent: mock(() => Promise.resolve({ success: true })),
+      controlQueuedTorrent: mock(() => Promise.resolve({ success: true })),
       deleteTorrent: mock(() => Promise.resolve({ success: true })),
     };
 
@@ -1567,7 +1568,7 @@ describe('RuleEvaluator', () => {
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.controlTorrent).toHaveBeenCalledWith('torrent-1', 'force_start');
+      expect(mockApiClient.controlQueuedTorrent).toHaveBeenCalledWith('torrent-1', 'start');
     });
 
     it('should skip force_start when torrent is not queued', async () => {
@@ -1583,6 +1584,7 @@ describe('RuleEvaluator', () => {
       const result = await ruleEvaluator.executeAction(action, torrent);
 
       expect(mockApiClient.controlTorrent).not.toHaveBeenCalled();
+      expect(mockApiClient.controlQueuedTorrent).not.toHaveBeenCalled();
       expect(result).toEqual({ skipped: true, reason: 'force_start only applies to queued torrents' });
     });
 
