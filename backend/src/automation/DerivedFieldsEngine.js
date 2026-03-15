@@ -1,4 +1,5 @@
 import { getTorrentStatus } from '../utils/torrentStatus.js';
+import { parseDbTimestamp } from '../utils/dateUtils.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -283,7 +284,7 @@ class DerivedFieldsEngine {
     // to at least STALL_THRESHOLD_SECONDS ago so it will be correctly detected as stalled
     if (state === 'stalled') {
       // Parse SQL datetime format to Date for comparison
-      const activityDate = new Date(activityTimestamp.replace(' ', 'T') + 'Z');
+      const activityDate = parseDbTimestamp(activityTimestamp);
       const minStallTime = new Date(now.getTime() - (STALL_THRESHOLD_SECONDS + 60) * 1000); // Add 1 minute buffer
       if (activityDate > minStallTime) {
         activityTimestamp = formatDateForSQL(minStallTime);
@@ -332,7 +333,7 @@ class DerivedFieldsEngine {
         // to at least STALL_THRESHOLD_SECONDS ago so it will be correctly detected as stalled
         if (state === 'stalled') {
           // Parse SQL datetime format to Date for comparison
-          const activityDate = new Date(activityTimestamp.replace(' ', 'T') + 'Z');
+          const activityDate = parseDbTimestamp(activityTimestamp);
           const minStallTime = new Date(now.getTime() - (STALL_THRESHOLD_SECONDS + 60) * 1000); // Add 1 minute buffer
           if (activityDate > minStallTime) {
             activityTimestamp = formatDateForSQL(minStallTime);
@@ -375,7 +376,7 @@ class DerivedFieldsEngine {
         // and inactivity exceeds threshold
         if (state === 'seeding' && !record.upload_stalled_since && finalUploadActivity) {
           // Database timestamps are in SQL datetime format, parse them correctly
-          const lastActivity = new Date(finalUploadActivity.replace(' ', 'T') + 'Z');
+          const lastActivity = parseDbTimestamp(finalUploadActivity);
           const inactiveTimeSeconds = (now - lastActivity) / 1000;
           if (inactiveTimeSeconds > STALL_THRESHOLD_SECONDS) {
             updates.upload_stalled_since = finalUploadActivity;
@@ -428,8 +429,8 @@ class DerivedFieldsEngine {
       // Set stalled_since to when the stall actually started (when activity stopped)
       // Database timestamps are in SQL datetime format, parse them correctly
       const lastActivity = telemetry.last_download_activity_at
-        ? new Date(telemetry.last_download_activity_at.replace(' ', 'T') + 'Z')
-        : new Date(telemetry.created_at.replace(' ', 'T') + 'Z');
+        ? parseDbTimestamp(telemetry.last_download_activity_at)
+        : parseDbTimestamp(telemetry.created_at);
       updates.stalled_since = formatDateForSQL(lastActivity);
     }
 
@@ -463,8 +464,8 @@ class DerivedFieldsEngine {
       // Set upload_stalled_since to when the stall actually started (when activity stopped)
       // Database timestamps are in SQL datetime format, parse them correctly
       const lastActivity = telemetry.last_upload_activity_at
-        ? new Date(telemetry.last_upload_activity_at.replace(' ', 'T') + 'Z')
-        : new Date(telemetry.created_at.replace(' ', 'T') + 'Z');
+        ? parseDbTimestamp(telemetry.last_upload_activity_at)
+        : parseDbTimestamp(telemetry.created_at);
       updates.upload_stalled_since = formatDateForSQL(lastActivity);
     }
 
@@ -476,7 +477,7 @@ class DerivedFieldsEngine {
       telemetry.last_upload_activity_at
     ) {
       // Database timestamps are in SQL datetime format, parse them correctly
-      const lastActivity = new Date(telemetry.last_upload_activity_at.replace(' ', 'T') + 'Z');
+      const lastActivity = parseDbTimestamp(telemetry.last_upload_activity_at);
       const inactiveTimeSeconds = (now - lastActivity) / 1000;
       if (inactiveTimeSeconds > STALL_THRESHOLD_SECONDS) {
         // Torrent is seeding but upload has been inactive, set upload_stalled_since to when activity stopped
@@ -530,8 +531,8 @@ class DerivedFieldsEngine {
     // Check inactivity duration
     // Database timestamps are in SQL datetime format, parse them correctly
     const lastActivity = telemetry[activityKey]
-      ? new Date(telemetry[activityKey].replace(' ', 'T') + 'Z')
-      : new Date(telemetry.created_at.replace(' ', 'T') + 'Z');
+      ? parseDbTimestamp(telemetry[activityKey])
+      : parseDbTimestamp(telemetry.created_at);
     const inactiveTimeSeconds = (now - lastActivity) / 1000;
 
     return inactiveTimeSeconds > STALL_THRESHOLD_SECONDS;

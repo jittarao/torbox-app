@@ -396,10 +396,10 @@ class RuleRepository {
 
       // Delete rules that are no longer in the incoming set
       const existingRows = userDb.prepare('SELECT id FROM automation_rules').all();
-      for (const row of existingRows) {
-        if (!incomingIds.has(row.id)) {
-          userDb.prepare('DELETE FROM automation_rules WHERE id = ?').run(row.id);
-        }
+      const toDelete = existingRows.filter((r) => !incomingIds.has(r.id)).map((r) => r.id);
+      if (toDelete.length > 0) {
+        const placeholders = toDelete.map(() => '?').join(',');
+        userDb.prepare(`DELETE FROM automation_rules WHERE id IN (${placeholders})`).run(...toDelete);
       }
     });
 
@@ -492,7 +492,8 @@ class RuleRepository {
   }
 
   /**
-   * Log rule execution
+   * Log rule execution (log-only; does not update rule stats).
+   * @deprecated Prefer recordExecution() which updates rule stats atomically in a transaction.
    * @param {number} ruleId - Rule ID
    * @param {string} ruleName - Rule name
    * @param {string} executionType - Type of execution

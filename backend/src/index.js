@@ -319,16 +319,16 @@ class TorBoxBackend {
   }
 
   /**
-   * Get memory usage information
+   * Get memory usage information (raw bytes for log aggregators and alerting)
    */
   getMemoryUsage() {
     const usage = process.memoryUsage();
     return {
-      rss: `${(usage.rss / 1024 / 1024).toFixed(2)} MB`,
-      heapTotal: `${(usage.heapTotal / 1024 / 1024).toFixed(2)} MB`,
-      heapUsed: `${(usage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
-      external: `${(usage.external / 1024 / 1024).toFixed(2)} MB`,
-      arrayBuffers: `${(usage.arrayBuffers / 1024 / 1024).toFixed(2)} MB`,
+      rss: usage.rss,
+      heapTotal: usage.heapTotal,
+      heapUsed: usage.heapUsed,
+      external: usage.external,
+      arrayBuffers: usage.arrayBuffers,
     };
   }
 
@@ -447,7 +447,7 @@ class TorBoxBackend {
       this.eventNotifier.stopHeartbeat();
     }
 
-    for (const [authId, engine] of this.automationEngines) {
+    for (const engine of this.automationEngines.values()) {
       engine.shutdown();
     }
 

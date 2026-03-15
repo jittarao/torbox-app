@@ -114,9 +114,10 @@ export function hashApiKey(apiKey) {
     return crypto.createHmac('sha256', secret).update(apiKey).digest('hex');
   }
   if (process.env.NODE_ENV === 'production') {
-    logger.warn(
-      'HMAC_SECRET not set. API key hashing uses plain SHA-256. Set HMAC_SECRET in production for better security.'
-    );
+    throw new Error('HMAC_SECRET environment variable is required in production');
   }
+  logger.warn(
+    'HMAC_SECRET not set. API key hashing uses plain SHA-256. Set HMAC_SECRET in production.'
+  );
   return crypto.createHash('sha256').update(apiKey).digest('hex');
 }

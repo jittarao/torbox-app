@@ -148,6 +148,21 @@ export function adminAuthMiddleware(req, res, next) {
     );
   }
 
+  // In production, reject admin key via query or body (may be logged by proxies/servers)
+  if (process.env.NODE_ENV === 'production' && keySource !== 'header') {
+    const context = getRequestContext(req);
+    logger.warn('Admin key must be provided via x-admin-key header in production', {
+      ...context,
+      source: keySource,
+    });
+    return sendErrorResponse(
+      res,
+      401,
+      'Admin authentication required',
+      'Provide admin key via x-admin-key header only'
+    );
+  }
+
   if (keySource === 'query' || keySource === 'body') {
     const context = getRequestContext(req);
     logger.warn('Admin key provided via query or body; prefer x-admin-key header', {
