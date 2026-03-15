@@ -75,21 +75,18 @@ class UserPoller {
   }
 
   /**
-   * Count non-terminal torrents. O(1) when changes from processStateChanges is provided.
+   * Count non-terminal torrents by checking each torrent's state (completed/failed excluded).
    * @param {Array} torrents - Array of torrent objects
-   * @param {Object} [changes] - Optional result from processStateChanges; when present, non-terminal = torrents.length - changes.removed.length
+   * @param {Object} [_changes] - Unused; kept for API compatibility
    * @returns {number} - Count of non-terminal torrents
    */
-  countNonTerminalTorrents(torrents, changes = null) {
+  countNonTerminalTorrents(torrents, _changes = null) {
     if (!Array.isArray(torrents)) {
       logger.warn('countNonTerminalTorrents called with non-array', {
         authId: this.authId,
         torrentsType: typeof torrents,
       });
       return 0;
-    }
-    if (changes && Array.isArray(changes.removed)) {
-      return Math.max(0, torrents.length - changes.removed.length);
     }
     if (!this.dbManager) return 0;
 

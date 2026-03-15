@@ -18,9 +18,17 @@ export const up = (db) => {
   db.prepare(
     'CREATE INDEX IF NOT EXISTS idx_pending_actions_auth_id ON pending_actions(auth_id)'
   ).run();
+
+  db.prepare(
+    `
+    CREATE INDEX IF NOT EXISTS idx_pending_actions_auth_rule
+    ON pending_actions(auth_id, rule_id, id)
+  `
+  ).run();
 };
 
 export const down = (db) => {
+  db.prepare('DROP INDEX IF EXISTS idx_pending_actions_auth_rule').run();
   db.prepare('DROP INDEX IF EXISTS idx_pending_actions_auth_id').run();
   db.prepare('DROP TABLE IF EXISTS pending_actions').run();
 };

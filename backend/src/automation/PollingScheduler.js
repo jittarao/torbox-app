@@ -224,19 +224,23 @@ class GlobalActionQueue {
     if (this.draining || this.pending.length === 0) return;
     this.draining = true;
     const masterDb = this.scheduler.masterDb;
+
+    // Partition by (authId, ruleId) so all same-rule items are merged regardless of order
+    const groups = new Map();
+    for (const item of this.pending) {
+      const k = `${item.authId}:${item.rule?.id ?? 'null'}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(item);
+    }
+    this.pending = [];
+    const batchQueue = Array.from(groups.values());
+
     try {
       const concurrency = GLOBAL_ACTION_QUEUE_CONCURRENCY;
       const worker = async () => {
-        while (this.pending.length > 0) {
-          const first = this.pending.shift();
-          const key = (authId, ruleId) => `${authId}:${ruleId ?? 'null'}`;
-          const firstKey = key(first.authId, first.rule?.id);
-          const sameRule = [first];
-          while (this.pending.length > 0) {
-            const next = this.pending[0];
-            if (key(next.authId, next.rule?.id) !== firstKey) break;
-            sameRule.push(this.pending.shift());
-          }
+        while (batchQueue.length > 0) {
+          const sameRule = batchQueue.shift();
+          if (!sameRule?.length) continue;
           const { merged, pendingIds } = this._mergeBatchForSameRule(sameRule);
           if (!merged || merged.torrentsToProcess.length === 0) {
             for (const id of pendingIds) {
@@ -1026,9 +1030,6 @@ class PollingScheduler {
         return { user, poller: null, error: new Error('User has no API key') };
       }
 
-      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
-      this.masterDb.updateNextPollAt(auth_id, reserveUntil, 0);
-
       const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
 
       const fetchTimeoutMs = Math.min(this.pollKickoutMs, 90000);
@@ -1053,13 +1054,17 @@ class PollingScheduler {
    * @param {UserPoller} poller - Poller instance
    * @param {Array} torrents - Fetched torrent list
    * @param {Object} counters - Success/skipped/error counters
+   * @param {Object} [options] - callerHoldsPipelineMutex: true when caller acquired mutex before semaphore (scheduled path)
    */
-  async processUserPoll(user, poller, torrents, counters) {
+  async processUserPoll(user, poller, torrents, counters, options = {}) {
     const { auth_id, has_active_rules: dbHasActiveRules } = user;
+    const callerHoldsPipelineMutex = options.callerHoldsPipelineMutex === true;
     let engineForPoll = null;
     const processStartTime = Date.now();
     const pipelineMutex = this.getPipelineMutex(auth_id);
-    await pipelineMutex.acquire();
+    if (!callerHoldsPipelineMutex) {
+      await pipelineMutex.acquire();
+    }
 
     try {
       engineForPoll = await this.createEngineForPoll(auth_id, user.encrypted_key);
@@ -1125,9 +1130,11 @@ class PollingScheduler {
         counters.error++;
       }
     } finally {
-      pipelineMutex.release();
-      if (pipelineMutex.isEmpty()) {
-        this.pipelineMutexes.delete(auth_id);
+      if (!callerHoldsPipelineMutex) {
+        pipelineMutex.release();
+        if (pipelineMutex.isEmpty()) {
+          this.pipelineMutexes.delete(auth_id);
+        }
       }
       if (auth_id) {
         const p = this.pollers.get(auth_id);
@@ -1184,10 +1191,9 @@ class PollingScheduler {
 
       // Reserve next_poll_at for all users we are about to fetch so the next tick does not re-enqueue them
       const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
-      for (const u of usersToFetch) {
-        if (u?.auth_id) {
-          this.masterDb.updateNextPollAt(u.auth_id, reserveUntil, 0);
-        }
+      const authIdsToReserve = usersToFetch.map((u) => u?.auth_id).filter(Boolean);
+      if (authIdsToReserve.length > 0) {
+        this.masterDb.updateNextPollAtBatch(authIdsToReserve, reserveUntil);
       }
 
       logger.info('Polling users (two-phase: fetch then process)', {
@@ -1246,16 +1252,26 @@ class PollingScheduler {
       }
 
       // Stage 2: Process all fetched results (state diff + rule eval; no API calls)
-      // Semaphore caps concurrent processUserPoll to avoid SQLite writer contention
+      // Acquire pipeline mutex BEFORE process semaphore so we don't exhaust semaphore slots while waiting on mutex
       const processSem = this.processSemaphore;
       await Promise.allSettled(
         fetchedList.map(async ({ user, poller, torrents }) => {
           if (!processSem) return;
+          const auth_id = user?.auth_id;
+          const pipelineMutex = this.getPipelineMutex(auth_id);
+          await pipelineMutex.acquire();
           await processSem.acquire();
           try {
-            return await this.processUserPoll(user, poller, torrents, counters);
+            return await this.processUserPoll(user, poller, torrents, counters, {
+              callerHoldsPipelineMutex: true,
+            });
           } finally {
             processSem.release();
+            pipelineMutex.release();
+            if (pipelineMutex.isEmpty()) {
+              this.pipelineMutexes.delete(auth_id);
+            }
+            // processUserPoll's finally already does automationEngine/closeConnection/dbManager/teardown
           }
         })
       );

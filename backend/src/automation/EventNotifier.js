@@ -32,6 +32,7 @@ class EventNotifier {
               errorMessage: err.message,
             });
             set.delete(res);
+            if (set.size === 0) this.connections.delete(authId);
           }
         }
       }
