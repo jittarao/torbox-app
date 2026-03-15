@@ -15,7 +15,6 @@ const DEFAULT_PACKAGE_VERSION = '0.1.0';
 const AUTH_ERROR_CODES = ['AUTH_ERROR', 'NO_AUTH', 'BAD_TOKEN'];
 const CONNECTION_ERROR_CODES = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'];
 const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
-const SERVER_ERROR_MESSAGES = ['disconnected', 'connection'];
 
 // Separate semaphores so fetch and action calls do not starve each other.
 // Fetch: getTorrents() only. Action: controlTorrent, controlQueuedTorrent, deleteTorrent.
@@ -129,18 +128,9 @@ class ApiClient {
              CONNECTION_ERROR_MESSAGES.some(msg => error.message?.includes(msg));
     }
     
-    // Check for server errors (5xx)
+    // Check for server errors (5xx) — all 5xx are considered connection/server errors
     if (error.response.status >= 500) {
-      const data = error.response.data;
-      // Check for specific server error messages
-      if (data && (
-        data.data === 'Server disconnected' ||
-        data.error === 'UNKNOWN_ERROR' ||
-        SERVER_ERROR_MESSAGES.some(msg => data.detail?.includes(msg))
-      )) {
-        return true;
-      }
-      return true; // All 5xx errors are considered server errors
+      return true;
     }
     
     return false;

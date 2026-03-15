@@ -3,6 +3,19 @@
  */
 import { hashApiKey } from '../utils/crypto.js';
 
+/** Minimum length for API key before hashing (avoids hashing arbitrary probe strings) */
+const MIN_API_KEY_LENGTH = 16;
+
+/**
+ * Validate API key format before hashing (length and basic character set).
+ * Used to avoid hashing short or malformed probe values in extractAuthIdMiddleware.
+ */
+export function validateApiKeyFormat(apiKey) {
+  if (!apiKey || typeof apiKey !== 'string') return false;
+  const trimmed = apiKey.trim();
+  return trimmed.length >= MIN_API_KEY_LENGTH && /^[\w\-+.=]+$/i.test(trimmed);
+}
+
 /**
  * Validate authId format (64-character hex string)
  */
@@ -92,12 +105,18 @@ export function extractAuthIdMiddleware(req, res, next) {
     return next();
   }
 
-  // Try to get authId from API key
+  // Try to get authId from API key (validate format before hashing to avoid probing)
   const apiKey =
     req.headers['x-api-key'] ||
     req.headers['authorization']?.replace('Bearer ', '') ||
     req.body?.apiKey;
   if (apiKey) {
+    if (!validateApiKeyFormat(apiKey)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid API key format. API key must be at least 16 characters and use allowed characters.',
+      });
+    }
     req.validatedAuthId = hashApiKey(apiKey);
     return next();
   }
@@ -107,7 +126,10 @@ export function extractAuthIdMiddleware(req, res, next) {
 }
 
 /**
- * Middleware to validate JSON payload size
+ * Middleware to reject requests whose Content-Length header exceeds the limit.
+ * Only checks the Content-Length header (can be absent or spoofed); the real body size
+ * limit is enforced by express.json() / body parser. Use this as an early rejection for
+ * obviously oversized declared payloads.
  */
 export function validateJsonPayloadSize(maxSizeBytes = 10 * 1024 * 1024) {
   return (req, res, next) => {

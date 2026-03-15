@@ -27,6 +27,11 @@ function getEncryptionKey() {
 
   // Salt from env so it can be unique per installation (default for backward compatibility)
   const salt = process.env.ENCRYPTION_SALT || 'torbox-salt';
+  if (!process.env.ENCRYPTION_SALT) {
+    logger.warn(
+      'ENCRYPTION_SALT not set. Using default salt; set a unique value per installation in production.'
+    );
+  }
   _cachedKey = crypto.scryptSync(key, salt, 32);
   return _cachedKey;
 }
@@ -95,13 +100,23 @@ export function decrypt(encryptedText) {
 }
 
 /**
- * Hash an API key to create a unique user identifier
+ * Hash an API key to create a unique user identifier.
+ * Uses HMAC with HMAC_SECRET when set (recommended for production); otherwise SHA-256 for backward compatibility.
  * @param {string} apiKey - API key to hash
- * @returns {string} - SHA-256 hash of the API key (hex encoded)
+ * @returns {string} - Hash of the API key (hex encoded)
  */
 export function hashApiKey(apiKey) {
   if (!apiKey) {
     throw new Error('API key is required');
+  }
+  const secret = process.env.HMAC_SECRET;
+  if (secret) {
+    return crypto.createHmac('sha256', secret).update(apiKey).digest('hex');
+  }
+  if (process.env.NODE_ENV === 'production') {
+    logger.warn(
+      'HMAC_SECRET not set. API key hashing uses plain SHA-256. Set HMAC_SECRET in production for better security.'
+    );
   }
   return crypto.createHash('sha256').update(apiKey).digest('hex');
 }

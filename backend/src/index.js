@@ -241,68 +241,12 @@ class TorBoxBackend {
       logger.info('Polling scheduler started');
 
       // Sync has_active_rules flags at startup by querying user DBs directly (no engine creation).
-      // Engines are created on demand when pollers are created (users with active rules) or when API needs one.
-      const activeUsers = this.masterDatabase.getActiveUsers();
-      const syncStats = { synced: 0, errors: 0, skipped: 0 };
-      const syncStartTime = Date.now();
-      const maxConcurrentSync = parseInt(process.env.MAX_CONCURRENT_INIT || '20', 10);
-      const syncSemaphore = new Semaphore(maxConcurrentSync);
-      const usersToSync = activeUsers.filter((user) => user.encrypted_key);
-
-      logger.info('Syncing has_active_rules flags at startup (no engine creation)', {
-        totalUsers: usersToSync.length,
-        maxConcurrent: maxConcurrentSync,
-      });
-
-      await Promise.all(
-        usersToSync.map(async (user) => {
-          const { auth_id, has_active_rules: dbFlag } = user;
-          await syncSemaphore.acquire();
-          try {
-            const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-            if (!userDb?.db) {
-              syncStats.skipped++;
-              return;
-            }
-            const result = userDb.db
-              .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
-              .get();
-            const actualHasActiveRules = result && result.count > 0;
-            const actualFlag = actualHasActiveRules ? 1 : 0;
-            if (dbFlag !== actualFlag) {
-              this.masterDatabase.updateActiveRulesFlag(auth_id, actualHasActiveRules);
-              logger.info('Active rules flag synced at startup', {
-                authId: auth_id,
-                previousFlag: dbFlag,
-                actualFlag,
-              });
-              syncStats.synced++;
-            }
-          } catch (error) {
-            logger.warn('Failed to sync active rules flag for user at startup', {
-              authId: auth_id,
-              errorMessage: error.message,
-            });
-            syncStats.errors++;
-          } finally {
-            this.userDatabaseManager.closeConnection(auth_id);
-            syncSemaphore.release();
-          }
-        })
-      );
-
-      if (syncStats.synced > 0) {
-        cache.invalidateActiveUsers();
-      }
-
-      const syncDuration = ((Date.now() - syncStartTime) / 1000).toFixed(2);
-      logger.info('Startup flag sync completed', {
-        totalUsers: usersToSync.length,
-        flagsSynced: syncStats.synced,
-        errors: syncStats.errors,
-        skipped: syncStats.skipped,
-        duration: `${syncDuration}s`,
-      });
+      const syncResult = await this.syncHasActiveRulesFromUserDbs();
+      const syncStats = {
+        synced: syncResult.synced,
+        errors: syncResult.errors,
+        skipped: syncResult.skipped,
+      };
 
       const refreshedActiveUsers = this.masterDatabase.getActiveUsers();
       const usersWithActiveRules = refreshedActiveUsers.filter(
