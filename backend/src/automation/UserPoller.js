@@ -18,7 +18,8 @@ class UserPoller {
     userDb,
     automationEngine = null,
     masterDb = null,
-    userDatabaseManager = null
+    userDatabaseManager = null,
+    sharedApiClient = null
   ) {
     if (!authId) {
       throw new Error('authId is required for UserPoller');
@@ -40,15 +41,19 @@ class UserPoller {
     /** Cancellation token set by the scheduler when the per-user timeout fires so ghost polls exit early */
     this._cancelToken = null;
 
-    try {
-      this.apiKey = decrypt(encryptedApiKey);
-      this.apiClient = new ApiClient(this.apiKey);
-    } catch (error) {
-      logger.error('Failed to decrypt API key or create API client', error, {
-        authId,
-        errorMessage: error.message,
-      });
-      throw new Error(`Failed to initialize UserPoller: ${error.message}`);
+    if (sharedApiClient) {
+      this.apiClient = sharedApiClient;
+    } else {
+      try {
+        this.apiKey = decrypt(encryptedApiKey);
+        this.apiClient = new ApiClient(this.apiKey);
+      } catch (error) {
+        logger.error('Failed to decrypt API key or create API client', error, {
+          authId,
+          errorMessage: error.message,
+        });
+        throw new Error(`Failed to initialize UserPoller: ${error.message}`);
+      }
     }
 
     // DB connection is acquired at poll time and released after each poll (userDb may be null)

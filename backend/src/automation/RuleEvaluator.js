@@ -80,11 +80,16 @@ class RuleEvaluator {
   }
 
   /**
-   * Load tags data for all downloads (used when shared batch loading; no rule check).
+   * Load tags data for all downloads. When options.rule is provided, returns empty Map if rule has no TAGS conditions.
    * @param {Array} torrents - Array of torrent objects
-   * @returns {Map} - Map of download_id -> array of tag objects { id, name }
+   * @param {Object} [options] - Optional; { rule } to gate on hasTagsCondition(rule)
+   * @returns {Map} - Map of download_id -> array of tag ids
    */
-  loadTagsDataForTorrents(torrents) {
+  loadTagsData(torrents, options = {}) {
+    const { rule } = options;
+    if (rule != null && !this.hasTagsCondition(rule)) {
+      return new Map();
+    }
     if (torrents.length === 0) {
       return new Map();
     }
@@ -127,51 +132,12 @@ class RuleEvaluator {
   }
 
   /**
-   * Load tags data for all downloads if rule has TAGS conditions
-   * @param {Object} rule - Rule configuration
+   * Load tags data for all downloads (shared batch loading; no rule gate).
    * @param {Array} torrents - Array of torrent objects
-   * @returns {Map} - Map of download_id -> array of tags
+   * @returns {Map} - Map of download_id -> array of tag ids
    */
-  loadTagsData(rule, torrents) {
-    if (!this.hasTagsCondition(rule) || torrents.length === 0) {
-      return new Map();
-    }
-
-    const allDownloadIds = new Set();
-    for (const torrent of torrents) {
-      const downloadId = this.extractDownloadId(torrent);
-      if (downloadId) {
-        allDownloadIds.add(downloadId);
-      }
-    }
-
-    if (allDownloadIds.size === 0) {
-      return new Map();
-    }
-
-    const downloadIdArray = Array.from(allDownloadIds);
-    const placeholders = downloadIdArray.map(() => '?').join(',');
-    const allDownloadTags = this.db
-      .prepare(
-        `
-      SELECT dt.download_id, t.id, t.name
-      FROM download_tags dt
-      INNER JOIN tags t ON dt.tag_id = t.id
-      WHERE dt.download_id IN (${placeholders})
-    `
-      )
-      .all(...downloadIdArray);
-
-    const tagsByDownloadId = new Map();
-    for (const row of allDownloadTags) {
-      const downloadId = String(row.download_id);
-      if (!tagsByDownloadId.has(downloadId)) {
-        tagsByDownloadId.set(downloadId, []);
-      }
-      tagsByDownloadId.get(downloadId).push(row.id);
-    }
-
-    return tagsByDownloadId;
+  loadTagsDataForTorrents(torrents) {
+    return this.loadTagsData(torrents, {});
   }
 
   /**
@@ -255,7 +221,7 @@ class RuleEvaluator {
     } else {
       const analysis = this.analyzeRule(rule);
       telemetryMap = analysis.needsTelemetry ? this.loadTelemetryData(torrentIds) : new Map();
-      tagsByDownloadId = analysis.needsTags ? this.loadTagsData(rule, torrents) : new Map();
+      tagsByDownloadId = analysis.needsTags ? this.loadTagsData(torrents, { rule }) : new Map();
       speedHistoryMap = analysis.needsSpeed
         ? this.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
         : new Map();
@@ -780,7 +746,7 @@ class RuleEvaluator {
       return false;
     }
     const downloadHours = condition.hours || DEFAULT_AVG_SPEED_HOURS;
-    const avgDownloadSpeed = this.getAverageSpeedFromMap(
+    const avgDownloadSpeed = this.getAverageSpeed(
       torrent.id,
       downloadHours,
       'download',
@@ -802,7 +768,7 @@ class RuleEvaluator {
       return false;
     }
     const uploadHours = condition.hours || DEFAULT_AVG_SPEED_HOURS;
-    const avgUploadSpeed = this.getAverageSpeedFromMap(
+    const avgUploadSpeed = this.getAverageSpeed(
       torrent.id,
       uploadHours,
       'upload',
@@ -1157,18 +1123,6 @@ class RuleEvaluator {
 
     const field = type === 'download' ? 'total_downloaded' : 'total_uploaded';
     return this.calculateAverageSpeed(samples, field);
-  }
-
-  /**
-   * Get average speed from pre-loaded speed history map
-   * @param {string} torrentId - Torrent ID
-   * @param {number} hours - Number of hours to calculate average over
-   * @param {string} type - 'download' or 'upload'
-   * @param {Map} speedHistoryMap - Pre-loaded speed history map (torrent_id -> array of samples)
-   * @returns {number} - Average speed in bytes per second
-   */
-  getAverageSpeedFromMap(torrentId, hours, type = 'download', speedHistoryMap = new Map()) {
-    return this.getAverageSpeed(torrentId, hours, type, speedHistoryMap);
   }
 
   /**

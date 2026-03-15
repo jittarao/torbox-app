@@ -1895,8 +1895,8 @@ describe('RuleEvaluator', () => {
     });
   });
 
-  describe('getAverageSpeedFromMap', () => {
-    it('should delegate to getAverageSpeed with map', () => {
+  describe('getAverageSpeed with pre-loaded map', () => {
+    it('should compute average from speedHistoryMap when provided', () => {
       const now = Date.now();
       const oneHourAgo = new Date(now - 60 * 60 * 1000);
       const speedHistoryMap = new Map([
@@ -1909,7 +1909,7 @@ describe('RuleEvaluator', () => {
         ],
       ]);
 
-      const speed = ruleEvaluator.getAverageSpeedFromMap('1', 1, 'download', speedHistoryMap);
+      const speed = ruleEvaluator.getAverageSpeed('1', 1, 'download', speedHistoryMap);
       expect(speed).toBeCloseTo(1024 * 1024, 0);
     });
   });
