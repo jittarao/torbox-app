@@ -21,7 +21,7 @@ export class Semaphore {
   }
 
   release() {
-    this.running--;
+    this.running = Math.max(0, this.running - 1);
     if (this.queue.length > 0) {
       this.running++;
       const next = this.queue.shift();

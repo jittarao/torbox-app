@@ -63,7 +63,7 @@ async function withTimeout(promise, timeoutMs, errorMessage) {
       throw error;
     });
 
-  // Prevent unhandled rejections if promise rejects after timeout
+  // Prevent unhandled rejections if promise rejects after timeout (race already settled)
   promise.catch((error) => {
     if (timeoutOccurred) {
       logger.debug(
@@ -73,12 +73,8 @@ async function withTimeout(promise, timeoutMs, errorMessage) {
           timeoutMessage: errorMessage,
         }
       );
-    } else {
-      logger.warn('Promise rejected in withTimeout (before timeout)', {
-        error: error.message,
-        timeoutMessage: errorMessage,
-      });
     }
+    // When timeout has not occurred, rejection is already propagated via wrappedPromise; do not log.
   });
 
   try {
@@ -327,7 +323,7 @@ class PollingScheduler {
         apiClient
       );
 
-      poller.lastPolledAt = new Date();
+      poller.lastPollAt = new Date();
       this.pollers.set(authId, poller);
 
       logger.info('Poller created successfully', { authId });
@@ -352,8 +348,8 @@ class PollingScheduler {
 
     if (!poller) {
       poller = await this.createPoller(authId, encryptedKey);
-    } else if (poller.lastPolledAt === null) {
-      poller.lastPolledAt = new Date();
+    } else if (poller.lastPollAt === null) {
+      poller.lastPollAt = new Date();
     }
 
     return poller;
@@ -698,16 +694,16 @@ class PollingScheduler {
     let cleanedCount = 0;
 
     for (const [authId, poller] of this.pollers.entries()) {
-      const lastPolledAt = poller.lastPolledAt;
-      if (!lastPolledAt) {
+      const lastPollAt = poller.lastPollAt;
+      if (!lastPollAt) {
         continue;
       }
 
-      const timeSinceLastPoll = now - new Date(lastPolledAt).getTime();
+      const timeSinceLastPoll = now - new Date(lastPollAt).getTime();
       if (timeSinceLastPoll > cleanupThresholdMs) {
         logger.info('Removing stale poller (not polled recently)', {
           authId,
-          lastPolledAt: lastPolledAt.toISOString(),
+          lastPollAt: lastPollAt.toISOString(),
           hoursSinceLastPoll: (timeSinceLastPoll / (60 * 60 * 1000)).toFixed(2),
           thresholdHours: this.pollerCleanupIntervalHours,
         });
@@ -894,7 +890,6 @@ class PollingScheduler {
         setImmediate(() => this.eventNotifier.notify(auth_id));
       }
       poller.lastPollAt = new Date();
-      poller.lastPolledAt = new Date();
       counters.success++;
       this.metrics.successfulPolls++;
       this.metrics.lastPollAt = new Date();

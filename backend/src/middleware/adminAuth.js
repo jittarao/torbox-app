@@ -3,8 +3,6 @@ import logger from '../utils/logger.js';
 
 // Constants
 const ADMIN_API_KEY_HEADER = 'x-admin-key';
-const ADMIN_KEY_QUERY_PARAM = 'adminKey';
-const ADMIN_KEY_BODY_PARAM = 'adminKey';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const DEFAULT_RATE_LIMIT_MAX = 100;
 
@@ -40,19 +38,14 @@ function getRequestContext(req) {
 }
 
 /**
- * Extract admin key from request (header preferred; query/body allowed but logged)
+ * Extract admin key from request. Only the x-admin-key header is accepted;
+ * query and body are rejected in all environments to avoid key leakage in logs.
  * @param {Object} req - Express request object
- * @returns {{ key: string|null, source: 'header'|'query'|'body'|null }} - Key and source
+ * @returns {{ key: string|null, source: 'header'|null }} - Key and source
  */
 function extractAdminKey(req) {
   if (req.headers[ADMIN_API_KEY_HEADER]) {
     return { key: req.headers[ADMIN_API_KEY_HEADER], source: 'header' };
-  }
-  if (req.query[ADMIN_KEY_QUERY_PARAM]) {
-    return { key: req.query[ADMIN_KEY_QUERY_PARAM], source: 'query' };
-  }
-  if (req.body?.[ADMIN_KEY_BODY_PARAM]) {
-    return { key: req.body[ADMIN_KEY_BODY_PARAM], source: 'body' };
   }
   return { key: null, source: null };
 }
@@ -135,7 +128,7 @@ export function adminAuthMiddleware(req, res, next) {
     );
   }
 
-  const { key: providedKey, source: keySource } = extractAdminKey(req);
+  const { key: providedKey } = extractAdminKey(req);
 
   if (!providedKey) {
     const context = getRequestContext(req);
@@ -146,29 +139,6 @@ export function adminAuthMiddleware(req, res, next) {
       'Admin authentication required',
       'Provide admin key via x-admin-key header'
     );
-  }
-
-  // In production, reject admin key via query or body (may be logged by proxies/servers)
-  if (process.env.NODE_ENV === 'production' && keySource !== 'header') {
-    const context = getRequestContext(req);
-    logger.warn('Admin key must be provided via x-admin-key header in production', {
-      ...context,
-      source: keySource,
-    });
-    return sendErrorResponse(
-      res,
-      401,
-      'Admin authentication required',
-      'Provide admin key via x-admin-key header only'
-    );
-  }
-
-  if (keySource === 'query' || keySource === 'body') {
-    const context = getRequestContext(req);
-    logger.warn('Admin key provided via query or body; prefer x-admin-key header', {
-      ...context,
-      source: keySource,
-    });
   }
 
   // Constant-time comparison to prevent timing attacks

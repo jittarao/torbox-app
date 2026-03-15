@@ -1,12 +1,13 @@
 import axios from 'axios';
 import logger from '../utils/logger.js';
+import Semaphore from '../utils/semaphore.js';
 
 // Constants
 const DEFAULT_TIMEOUT = 30000;
+// Fetch (getTorrents) timeout; shorter than default to leave headroom in per-user poll budget (POLL_KICKOUT_MS).
+const DEFAULT_FETCH_TIMEOUT = parseInt(process.env.TORBOX_FETCH_TIMEOUT_MS || '20000', 10);
 // Action calls (controlTorrent, controlQueuedTorrent) use a shorter timeout so that
 // a hung TorBox response on one torrent does not consume the per-user 180s poll budget.
-// With parallel action execution (RULE_ACTION_CONCURRENCY=3) a 15s action timeout means
-// the worst-case action phase is ceil(N/3)×15s instead of the old N×30s.
 const DEFAULT_ACTION_TIMEOUT = parseInt(process.env.TORBOX_ACTION_TIMEOUT_MS || '15000', 10);
 const DEFAULT_BASE_URL = 'https://api.torbox.app';
 const DEFAULT_API_VERSION = 'v1';
@@ -21,9 +22,6 @@ function normalizeActive(value) {
   return value === true || value === 1 || value === 'true';
 }
 
-// Separate semaphores so fetch and action calls do not starve each other.
-// Fetch: getTorrents() only. Action: controlTorrent, controlQueuedTorrent, deleteTorrent.
-// Other endpoints (getUsenetDownloads, getStats, etc.) use the action semaphore.
 const _fetchConcurrency = Math.max(
   1,
   parseInt(process.env.TORBOX_FETCH_CONCURRENCY || '20', 10)
@@ -33,32 +31,8 @@ const _actionConcurrency = Math.max(
   parseInt(process.env.TORBOX_ACTION_CONCURRENCY || '12', 10)
 );
 
-function createSemaphore(concurrency) {
-  return {
-    running: 0,
-    queue: [],
-    async acquire() {
-      return new Promise((resolve) => {
-        if (this.running < concurrency) {
-          this.running++;
-          resolve();
-        } else {
-          this.queue.push(resolve);
-        }
-      });
-    },
-    release() {
-      this.running--;
-      if (this.queue.length > 0) {
-        this.running++;
-        this.queue.shift()();
-      }
-    },
-  };
-}
-
-const _fetchSemaphore = createSemaphore(_fetchConcurrency);
-const _actionSemaphore = createSemaphore(_actionConcurrency);
+const _fetchSemaphore = new Semaphore(_fetchConcurrency);
+const _actionSemaphore = new Semaphore(_actionConcurrency);
 
 class ApiClient {
   constructor(apiKey) {
@@ -78,7 +52,7 @@ class ApiClient {
         'User-Agent': this.userAgent,
         'Content-Type': 'application/json'
       },
-      timeout: DEFAULT_TIMEOUT
+      timeout: DEFAULT_TIMEOUT,
     });
   }
 
@@ -303,18 +277,21 @@ class ApiClient {
   // ============================================================================
 
   async getTorrents(bypassCache = false) {
+    const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
     return this.handleApiCall(
       async () => {
         const [torrentsResponse, queuedResponse] = await Promise.all([
           this.client.get('/api/torrents/mylist', {
-            params: { bypass_cache: bypassCache }
+            params: { bypass_cache: bypassCache },
+            timeout: fetchTimeout,
           }),
           this.client.get('/api/queued/getqueued', {
-            params: { 
+            params: {
               type: 'torrent',
-              bypass_cache: bypassCache 
-            }
-          })
+              bypass_cache: bypassCache,
+            },
+            timeout: fetchTimeout,
+          }),
         ]);
 
         const torrents = (torrentsResponse.data.data || []).map((t) => ({

@@ -471,7 +471,6 @@ let backend;
 
     // Create the backend instance
     backend = new TorBoxBackend();
-    global.torboxBackend = backend; // Store globally for shutdown handlers
 
     // Initialize services before starting the server
     await backend.initializeServices();
@@ -494,7 +493,6 @@ let backend;
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  const backend = global.torboxBackend;
   if (backend) {
     await backend.shutdown();
   }
@@ -510,7 +508,6 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
-  const backend = global.torboxBackend;
   if (backend) {
     await backend.shutdown();
   }
@@ -558,12 +555,8 @@ process.on('unhandledRejection', async (reason, promise) => {
     await Sentry.flush(2000);
   }
 
-  // In production, consider graceful shutdown
-  if (process.env.NODE_ENV === 'production') {
-    const backend = global.torboxBackend;
-    if (backend) {
-      await backend.shutdown();
-    }
+  if (process.env.NODE_ENV === 'production' && backend) {
+    await backend.shutdown();
     process.exit(1);
   }
 });

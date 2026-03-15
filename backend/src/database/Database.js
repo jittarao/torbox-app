@@ -3,6 +3,7 @@ import path from 'path';
 import { mkdir } from 'fs/promises';
 import MigrationRunner from './MigrationRunner.js';
 import { encrypt, hashApiKey } from '../utils/crypto.js';
+import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
 
@@ -56,8 +57,9 @@ class Database {
       // Run migrations
       await this.migrationRunner.runMigrations();
 
-      // Mark as initialized
+      // Mark as initialized and connection known-good to skip redundant pings
       this.initialized = true;
+      this._connectionKnownGood = true;
 
       logger.info('Master database initialized', { dbPath: this.dbPath });
     } catch (error) {
@@ -87,17 +89,12 @@ class Database {
   }
 
   /**
-   * Check if an error is a closed database error
+   * Check if an error is a closed database error (delegates to shared util).
    * @param {Error} error - Error to check
    * @returns {boolean} - True if error indicates closed database
    */
   isClosedDatabaseError(error) {
-    return (
-      error.name === 'RangeError' ||
-      (error.message &&
-        (error.message.includes('closed database') ||
-          error.message.includes('Cannot use a closed database')))
-    );
+    return isClosedDatabaseError(error);
   }
 
   /**
@@ -123,13 +120,23 @@ class Database {
    */
   _reopenConnection() {
     this._statementCache.clear();
+    if (this.db) {
+      try {
+        this.db.close();
+      } catch (_) {
+        // Ignore close errors on already-closed or invalid connection
+      }
+      this.db = null;
+    }
     this.db = new SQLiteDatabase(this.dbPath);
     this._configureDatabase(this.db);
     this.migrationRunner = new MigrationRunner(this.db, 'master');
+    this._connectionKnownGood = true;
   }
 
   /**
-   * Check if database connection is valid and refresh if needed
+   * Check if database connection is valid and refresh if needed.
+   * Skips the ping when the connection is known-good to avoid redundant SELECT 1 on every poll.
    * @returns {Promise<void>}
    */
   async ensureConnection() {
@@ -137,22 +144,25 @@ class Database {
       throw new Error('Database not initialized. Call initialize() first.');
     }
 
-    // Check if database is still valid by attempting a simple query
+    if (this._connectionKnownGood) {
+      return;
+    }
+
     try {
       this.db.prepare('SELECT 1').get();
-      // Connection is valid, no need to refresh
+      this._connectionKnownGood = true;
       return;
     } catch (error) {
-      // Database is closed or invalid, need to refresh
       if (this.isClosedDatabaseError(error)) {
+        this._connectionKnownGood = false;
         logger.warn('Database connection is closed, refreshing connection', {
           errorName: error.name,
           errorMessage: error.message,
         });
         this._reopenConnection();
+        this._connectionKnownGood = true;
         logger.info('Database connection refreshed successfully');
       } else {
-        // Some other error, re-throw it
         throw error;
       }
     }
@@ -170,14 +180,12 @@ class Database {
       await this.ensureConnection();
       return operation();
     } catch (error) {
-      // Check if this is a closed database error and retry with fresh connection
       if (this.isClosedDatabaseError(error)) {
+        this._connectionKnownGood = false;
         logger.warn(`Database connection closed during ${operationName}, refreshing and retrying`, {
           errorName: error.name,
           errorMessage: error.message,
         });
-
-        // Refresh connection and retry
         await this.ensureConnection();
         return operation();
       } else {
