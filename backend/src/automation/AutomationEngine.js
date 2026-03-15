@@ -500,6 +500,7 @@ class AutomationEngine {
         executedCount: results.executedCount,
         skippedCount: results.skippedCount,
         errorCount: results.errorCount,
+        pendingActionsCount: results.pendingActions?.length ?? 0,
         evaluationDuration: `${evaluationDuration}s`,
         averageRuleDuration:
           enabledRules.length > 0
@@ -512,6 +513,7 @@ class AutomationEngine {
         executed: results.executedCount,
         skipped: results.skippedCount,
         errors: results.errorCount,
+        pendingActions: results.pendingActions ?? [],
         // Pre-computed so UserPoller.calculateNextPollAt can skip a redundant DB query
         minRuleInterval: this._computeMinRuleInterval(enabledRules),
       };
@@ -547,6 +549,8 @@ class AutomationEngine {
     let executedCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
+    const pendingActions = [];
+    const evaluatedRuleIds = [];
 
     const concurrency = Math.max(
       1,
@@ -563,8 +567,14 @@ class AutomationEngine {
 
         try {
           const result = await this.evaluateSingleRule(rule, torrents);
+          if (result.ruleId != null) {
+            evaluatedRuleIds.push(result.ruleId);
+          }
           if (result.executed) {
             executedCount++;
+            if (result.pendingAction) {
+              pendingActions.push(result.pendingAction);
+            }
           } else if (result.skipped) {
             skippedCount++;
           }
@@ -578,7 +588,11 @@ class AutomationEngine {
     const workerCount = Math.min(concurrency, enabledRules.length);
     await Promise.all(Array.from({ length: workerCount }, worker));
 
-    return { executedCount, skippedCount, errorCount };
+    if (evaluatedRuleIds.length > 0) {
+      await this.ruleRepository.batchUpdateLastEvaluatedAt(evaluatedRuleIds);
+    }
+
+    return { executedCount, skippedCount, errorCount, pendingActions };
   }
 
   /**
@@ -597,8 +611,7 @@ class AutomationEngine {
         hasAction: !!rule.action,
         actionType: rule.action?.type || 'none',
       });
-      await this.ruleRepository.updateLastEvaluatedAt(rule.id);
-      return { executed: false, skipped: true };
+      return { executed: false, skipped: true, ruleId: rule.id };
     }
 
     logger.debug('Starting rule evaluation', {
@@ -623,12 +636,11 @@ class AutomationEngine {
         intervalMinutes: rule.trigger.value,
         lastEvaluatedAt: rule.last_evaluated_at,
       });
-      return { executed: false, skipped: true };
+      return { executed: false, skipped: true, ruleId: null };
     }
 
-    // Evaluate rule
-    const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
-    await this.ruleRepository.updateLastEvaluatedAt(rule.id);
+    // Evaluate rule (last_evaluated_at is batch-updated at end of evaluateRulesBatch)
+    const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(rule, torrents);
 
     if (matchingTorrents.length === 0) {
       logger.info('Rule did not match any torrents', {
@@ -640,7 +652,7 @@ class AutomationEngine {
         lastEvaluatedAt: rule.last_evaluated_at,
         reason: 'No torrents matched rule conditions',
       });
-      return { executed: false, skipped: true };
+      return { executed: false, skipped: true, ruleId: rule.id };
     }
 
     logger.info('Rule matched torrents', {
@@ -651,8 +663,10 @@ class AutomationEngine {
       matchedIds: matchingTorrents.map((t) => t.id),
     });
 
-    // Filter torrents based on action type
-    const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action);
+    // Filter torrents based on action type (pass pre-loaded tags to avoid duplicate SELECT)
+    const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action, {
+      tagsByDownloadId,
+    });
 
     if (torrentsToProcess.length === 0) {
       logger.info('No torrents to process after filtering', {
@@ -664,51 +678,28 @@ class AutomationEngine {
         reason:
           'All matching torrents were filtered out (action already applied or not applicable)',
       });
-      return { executed: false, skipped: true };
+      return { executed: false, skipped: true, ruleId: rule.id };
     }
 
-    // Execute actions
-    const { successCount, errorCount } = await this.ruleExecutor.executeActions(
-      rule,
-      torrentsToProcess
-    );
-
-    // Only update execution status and log if actions were actually executed
-    if (successCount > 0) {
-      await this.ruleRepository.recordExecution(
-        rule.id,
-        rule.name,
-        successCount,
-        errorCount === 0,
-        errorCount > 0 ? `${errorCount} actions failed` : null
-      );
-    } else {
-      // No actions were executed, but we still evaluated the rule
-      // Don't update last_executed_at or create a log entry
-      logger.info('No actions executed (all failed or filtered out)', {
-        authId: this.authId,
-        ruleId: rule.id,
-        ruleName: rule.name,
-        matchedCount: matchingTorrents.length,
-        processedCount: torrentsToProcess.length,
-        successCount,
-        errorCount,
-      });
-    }
-
-    logger.info('Rule execution completed', {
+    // Return action descriptor for the global queue; execution and recordExecution happen in PollingScheduler
+    logger.info('Rule matched torrents, queuing actions', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
       matchedCount: matchingTorrents.length,
       processedCount: torrentsToProcess.length,
-      skippedCount: matchingTorrents.length - torrentsToProcess.length,
-      successCount,
-      errorCount,
-      totalActions: torrentsToProcess.length,
     });
 
-    return { executed: true, skipped: false };
+    return {
+      executed: true,
+      skipped: false,
+      ruleId: rule.id,
+      pendingAction: {
+        authId: this.authId,
+        rule,
+        torrentsToProcess,
+      },
+    };
   }
 
   /**
@@ -864,7 +855,7 @@ class AutomationEngine {
       const ruleEvaluator = await this.getRuleEvaluator();
 
       // Evaluate rule (bypass interval check for manual execution)
-      const matchingTorrents = await ruleEvaluator.evaluateRule(rule, torrents);
+      const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(rule, torrents);
 
       if (matchingTorrents.length === 0) {
         const result = {
@@ -897,8 +888,10 @@ class AutomationEngine {
         matchedIds: matchingTorrents.map((t) => t.id),
       });
 
-      // Filter torrents based on action type
-      const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action);
+      // Filter torrents based on action type (pass pre-loaded tags to avoid duplicate SELECT)
+      const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action, {
+        tagsByDownloadId,
+      });
 
       if (torrentsToProcess.length === 0) {
         const result = {

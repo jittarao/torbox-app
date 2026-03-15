@@ -17,34 +17,44 @@ const CONNECTION_ERROR_CODES = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOT
 const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
 const SERVER_ERROR_MESSAGES = ['disconnected', 'connection'];
 
-// Module-level semaphore caps simultaneous outbound HTTP requests across all ApiClient instances.
-// With up to 12 concurrent user polls each making 2+ requests, an uncapped burst can hit
-// hundreds of concurrent requests toward TorBox. Configurable via TORBOX_API_CONCURRENCY.
-const _outboundConcurrency = Math.max(
+// Separate semaphores so fetch and action calls do not starve each other.
+// Fetch: getTorrents() only. Action: controlTorrent, controlQueuedTorrent, deleteTorrent.
+// Other endpoints (getUsenetDownloads, getStats, etc.) use the action semaphore.
+const _fetchConcurrency = Math.max(
   1,
-  parseInt(process.env.TORBOX_API_CONCURRENCY || '24', 10)
+  parseInt(process.env.TORBOX_FETCH_CONCURRENCY || '20', 10)
 );
-const _outboundSemaphore = {
-  running: 0,
-  queue: [],
-  async acquire() {
-    return new Promise((resolve) => {
-      if (this.running < _outboundConcurrency) {
+const _actionConcurrency = Math.max(
+  1,
+  parseInt(process.env.TORBOX_ACTION_CONCURRENCY || '12', 10)
+);
+
+function createSemaphore(concurrency) {
+  return {
+    running: 0,
+    queue: [],
+    async acquire() {
+      return new Promise((resolve) => {
+        if (this.running < concurrency) {
+          this.running++;
+          resolve();
+        } else {
+          this.queue.push(resolve);
+        }
+      });
+    },
+    release() {
+      this.running--;
+      if (this.queue.length > 0) {
         this.running++;
-        resolve();
-      } else {
-        this.queue.push(resolve);
+        this.queue.shift()();
       }
-    });
-  },
-  release() {
-    this.running--;
-    if (this.queue.length > 0) {
-      this.running++;
-      this.queue.shift()();
-    }
-  },
-};
+    },
+  };
+}
+
+const _fetchSemaphore = createSemaphore(_fetchConcurrency);
+const _actionSemaphore = createSemaphore(_actionConcurrency);
 
 class ApiClient {
   constructor(apiKey) {
@@ -203,6 +213,7 @@ class ApiClient {
    * @param {Object} options - Error handling options
    * @param {string} options.endpoint - Endpoint name for logging
    * @param {string} options.operation - Operation name for logging
+   * @param {'fetch'|'action'} options.semaphore - Which pool to use: 'fetch' for getTorrents, 'action' for control/delete and other endpoints
    * @param {Function|*} options.connectionErrorFallback - Function(error) or value to return on connection errors (default: throws)
    * @param {Object} options.context - Additional context for error logging
    * @returns {Promise<*>} - Result of the API call or fallback value
@@ -211,17 +222,18 @@ class ApiClient {
     const {
       endpoint,
       operation,
+      semaphore = 'action',
       connectionErrorFallback = null,
       context = {}
     } = options;
 
-    // Wrap apiCall with the module-level semaphore to cap simultaneous outbound requests
+    const pool = semaphore === 'fetch' ? _fetchSemaphore : _actionSemaphore;
     const throttled = async () => {
-      await _outboundSemaphore.acquire();
+      await pool.acquire();
       try {
         return await apiCall();
       } finally {
-        _outboundSemaphore.release();
+        pool.release();
       }
     };
 
@@ -318,6 +330,7 @@ class ApiClient {
       {
         endpoint: '/api/torrents/mylist',
         operation: 'fetching torrents',
+        semaphore: 'fetch',
         // No connectionErrorFallback: connection failures throw with error.isConnectionError = true
         // so UserPoller can skip shadow-state processing instead of treating an outage as "0 torrents".
         context: { bypassCache }
@@ -363,22 +376,25 @@ class ApiClient {
   }
 
   async deleteTorrent(torrentId, options = {}) {
+    const isQueued = options.isQueued;
+    if (isQueued === undefined) {
+      throw new Error('deleteTorrent requires options.isQueued (true for queued, false for active). Callers must pass it explicitly.');
+    }
     return this.handleApiCall(
       async () => {
-        let isQueued = options.isQueued;
-        if (isQueued === undefined) {
-          // Caller did not pass isQueued — fall back to fetching the full torrent list to derive it.
-          // This costs an extra API round-trip; callers should pass isQueued explicitly to avoid it.
-          logger.warn('deleteTorrent called without isQueued — falling back to full torrent fetch', {
-            torrentId,
-          });
-          const torrents = await this.getTorrents();
-          isQueued = torrents.some(t => t.id === torrentId && !t.download_state);
-        }
         if (isQueued) {
-          return await this.controlQueuedTorrent(torrentId, 'delete');
+          const response = await this.client.post('/api/queued/controlqueued', {
+            queued_id: torrentId,
+            operation: 'delete',
+            type: 'torrent'
+          }, { timeout: DEFAULT_ACTION_TIMEOUT });
+          return response.data;
         } else {
-          return await this.controlTorrent(torrentId, 'delete');
+          const response = await this.client.post('/api/torrents/controltorrent', {
+            torrent_id: torrentId,
+            operation: 'delete'
+          }, { timeout: DEFAULT_ACTION_TIMEOUT });
+          return response.data;
         }
       },
       {

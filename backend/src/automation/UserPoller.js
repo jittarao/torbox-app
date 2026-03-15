@@ -540,6 +540,69 @@ class UserPoller {
   }
 
   /**
+   * Process already-fetched torrents (state diff, derived fields, speed updates, rule evaluation).
+   * Used by the two-phase scheduler: Stage 1 fetches torrents, Stage 2 calls this with no API calls.
+   * @param {Array} torrents - Array of torrent objects from API
+   * @param {Object} options - Options
+   * @param {boolean} options.hasActiveRules - Whether user has active rules
+   * @param {Function|null} [options.calculateStaggerOffset] - Optional stagger calculator
+   * @returns {Promise<Object>} - { success, changes, ruleResults, nextPollAt, nonTerminalCount }
+   */
+  async processFetchedTorrents(torrents, options = {}) {
+    const { hasActiveRules, calculateStaggerOffset = null } = options;
+
+    if (!Array.isArray(torrents)) {
+      throw new Error('processFetchedTorrents requires an array of torrents');
+    }
+
+    if (!this.dbManager && this.userDatabaseManager) {
+      const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
+      if (userDbConnection?.db) {
+        this.dbManager = new DatabaseConnectionManager(
+          this.authId,
+          userDbConnection.db,
+          this.userDatabaseManager
+        );
+        this.userDatabaseManager.pool.markActive(this.authId);
+      }
+    }
+
+    await this.ensureDatabaseConnection();
+    if (!this.dbManager) {
+      throw new Error('No database connection for processFetchedTorrents');
+    }
+
+    const changes = await this.processStateChanges(torrents);
+    if (!changes || typeof changes !== 'object') {
+      throw new Error('processStateChanges returned invalid changes object');
+    }
+    if (!Array.isArray(changes.new)) changes.new = [];
+    if (!Array.isArray(changes.updated)) changes.updated = [];
+    if (!Array.isArray(changes.removed)) changes.removed = [];
+    if (!Array.isArray(changes.stateTransitions)) changes.stateTransitions = [];
+
+    await this.updateDerivedFields(changes);
+    await this.processSpeedUpdates(changes.updated);
+
+    const ruleResults = await this.evaluateRules(torrents);
+    const nonTerminalCount = this.countNonTerminalTorrents(torrents);
+    const nextPollAt = await this.calculateNextPollAt(
+      nonTerminalCount,
+      hasActiveRules,
+      calculateStaggerOffset,
+      ruleResults
+    );
+
+    return {
+      success: true,
+      changes,
+      ruleResults,
+      nextPollAt,
+      nonTerminalCount,
+    };
+  }
+
+  /**
    * Execute a single poll cycle
    * @param {boolean} [cachedHasActiveRules] - Optional cached hasActiveRules value to avoid redundant DB calls
    * @param {Object} [options] - Poll options

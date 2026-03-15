@@ -270,12 +270,13 @@ class RuleEvaluator {
    * @returns {Promise<Array>} - Matching torrents
    */
   async evaluateRule(rule, torrents) {
+    const empty = { matchingTorrents: [], tagsByDownloadId: new Map() };
     if (!rule.enabled) {
-      return [];
+      return empty;
     }
 
     if (this.shouldSkipEvaluation(rule)) {
-      return [];
+      return empty;
     }
 
     const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
@@ -306,7 +307,7 @@ class RuleEvaluator {
       structure: hasGroups ? 'group' : 'flat',
     });
 
-    return matchingTorrents;
+    return { matchingTorrents, tagsByDownloadId };
   }
 
   /**
@@ -1475,7 +1476,7 @@ class RuleEvaluator {
       throw new Error('Download ID is required but could not be extracted from torrent');
     }
 
-    // Tag ID validation is done once before the batch by RuleExecutor.executeActions — skipped here.
+    this.validateTagIds(action.tagIds);
 
     // Add tags using transaction
     const transaction = this.db.transaction(() => {
@@ -1521,7 +1522,7 @@ class RuleEvaluator {
       throw new Error('Download ID is required but could not be extracted from torrent');
     }
 
-    // Tag ID validation is done once before the batch by RuleExecutor.executeActions — skipped here.
+    this.validateTagIds(action.tagIds);
 
     // Remove tags using transaction
     const transaction = this.db.transaction(() => {

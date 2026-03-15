@@ -117,6 +117,50 @@ async function withTimeout(promise, timeoutMs, errorMessage) {
   }
 }
 
+/** Max action batches run in parallel (each batch uses RULE_ACTION_CONCURRENCY API calls) */
+const GLOBAL_ACTION_QUEUE_CONCURRENCY = Math.min(
+  8,
+  Math.max(1, parseInt(process.env.GLOBAL_ACTION_QUEUE_CONCURRENCY || '4', 10))
+);
+
+/**
+ * Cross-user action queue: drains pending rule actions in the background so the next tick's
+ * fetch phase is not blocked. Uses ApiClient's action semaphore internally when executing.
+ */
+class GlobalActionQueue {
+  constructor(scheduler) {
+    this.scheduler = scheduler;
+    this.pending = [];
+    this.draining = false;
+  }
+
+  enqueue(descriptors) {
+    if (!Array.isArray(descriptors) || descriptors.length === 0) return;
+    this.pending.push(...descriptors);
+    this.drain().catch((err) => {
+      logger.error('GlobalActionQueue drain error', err, {
+        errorMessage: err.message,
+        pendingCount: this.pending.length,
+      });
+    });
+  }
+
+  async drain() {
+    if (this.draining || this.pending.length === 0) return;
+    this.draining = true;
+    try {
+      while (this.pending.length > 0) {
+        const batch = this.pending.splice(0, GLOBAL_ACTION_QUEUE_CONCURRENCY);
+        await Promise.allSettled(
+          batch.map((d) => this.scheduler.runActionBatch(d))
+        );
+      }
+    } finally {
+      this.draining = false;
+    }
+  }
+}
+
 /**
  * Polling Scheduler
  * Manages per-user polling cycles using cron-like approach
@@ -673,6 +717,7 @@ class PollingScheduler {
 
     this.isRunning = true;
     this.pollSemaphore = new Semaphore(this.maxConcurrentPolls);
+    this.globalActionQueue = new GlobalActionQueue(this);
 
     // Initial load of active users
     logger.info('Performing initial poller refresh');
@@ -857,7 +902,173 @@ class PollingScheduler {
   }
 
   /**
-   * Poll users that are due for polling (cron-like)
+   * Run a single action batch (from the global queue). Creates an engine, executes actions via API, records execution.
+   * @param {Object} descriptor - { authId, rule, torrentsToProcess }
+   * @returns {Promise<void>}
+   */
+  async runActionBatch(descriptor) {
+    const { authId, rule, torrentsToProcess } = descriptor;
+    if (!authId || !rule || !Array.isArray(torrentsToProcess) || torrentsToProcess.length === 0) {
+      return;
+    }
+
+    const userInfo = this.masterDb.getUserRegistryInfo(authId);
+    if (!userInfo?.encrypted_key) {
+      logger.warn('runActionBatch: no encrypted_key for user', { authId });
+      return;
+    }
+
+    let engine;
+    try {
+      engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
+      const { successCount, errorCount } = await engine.ruleExecutor.executeActions(
+        rule,
+        torrentsToProcess
+      );
+      if (successCount > 0) {
+        await engine.ruleRepository.recordExecution(
+          rule.id,
+          rule.name,
+          successCount,
+          errorCount === 0,
+          errorCount > 0 ? `${errorCount} actions failed` : null
+        );
+      }
+    } catch (error) {
+      logger.error('runActionBatch failed', error, {
+        authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        torrentCount: torrentsToProcess.length,
+        errorMessage: error.message,
+      });
+    }
+  }
+
+  /**
+   * Stage 1: Fetch torrents for a single user (TorBox API only). Semaphore limits concurrent fetches.
+   * @param {Object} user - User from master DB
+   * @param {Semaphore} semaphore - Concurrency cap for fetches
+   * @returns {Promise<{user, poller, torrents?}|{user, poller, error}>}
+   */
+  async fetchTorrentsForUser(user, semaphore) {
+    if (!user?.auth_id) {
+      return { user, poller: null, error: new Error('Invalid user') };
+    }
+
+    await semaphore.acquire();
+    const { auth_id, encrypted_key } = user;
+
+    try {
+      if (!encrypted_key) {
+        return { user, poller: null, error: new Error('User has no API key') };
+      }
+
+      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
+      this.masterDb.updateNextPollAt(auth_id, reserveUntil, 0);
+
+      const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
+
+      const fetchTimeoutMs = Math.min(this.pollKickoutMs, 90000);
+      const torrents = await withTimeout(
+        poller.fetchTorrents(),
+        fetchTimeoutMs,
+        `Fetch timeout after ${fetchTimeoutMs / 1000}s`
+      );
+
+      return { user, poller, torrents };
+    } catch (error) {
+      const poller = this.pollers.get(auth_id) || null;
+      return { user, poller, error };
+    } finally {
+      semaphore.release();
+    }
+  }
+
+  /**
+   * Stage 2: Process fetched torrents for one user (state diff, rule eval; no API calls).
+   * @param {Object} user - User from master DB
+   * @param {UserPoller} poller - Poller instance
+   * @param {Array} torrents - Fetched torrent list
+   * @param {Object} counters - Success/skipped/error counters
+   */
+  async processUserPoll(user, poller, torrents, counters) {
+    const { auth_id, has_active_rules: dbHasActiveRules } = user;
+    let engineForPoll = null;
+
+    try {
+      engineForPoll = await this.createEngineForPoll(auth_id, user.encrypted_key);
+      poller.automationEngine = engineForPoll;
+
+      const hasActiveRules = await engineForPoll.hasActiveRules();
+
+      if (dbHasActiveRules !== (hasActiveRules ? 1 : 0)) {
+        logger.warn('Active rules flag mismatch detected, will sync after poll', {
+          authId: auth_id,
+          dbFlag: dbHasActiveRules,
+          actualState: hasActiveRules,
+        });
+      }
+
+      if (!hasActiveRules) {
+        this.handleSkippedPoll(auth_id, { reason: 'No active automation rules' }, 0);
+        counters.skipped++;
+        this.metrics.skippedPolls++;
+        await this.updateActiveRulesFlag(auth_id, false, dbHasActiveRules);
+        return;
+      }
+
+      const processStartTime = Date.now();
+      const result = await withTimeout(
+        poller.processFetchedTorrents(torrents, {
+          hasActiveRules,
+          calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
+            this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
+        }),
+        this.pollKickoutMs,
+        `Per-user process timeout after ${this.pollKickoutMs / 1000}s`
+      );
+
+      const duration = (Date.now() - processStartTime) / 1000;
+      await this.updateActiveRulesFlag(auth_id, hasActiveRules, dbHasActiveRules);
+      await this.handleSuccessfulPoll(auth_id, poller, result, hasActiveRules, duration);
+      if (result.ruleResults?.pendingActions?.length) {
+        this.globalActionQueue?.enqueue(result.ruleResults.pendingActions);
+      }
+      poller.consecutiveAuthFailures = 0;
+      poller.lastPollAt = new Date();
+      poller.lastPolledAt = new Date();
+      counters.success++;
+      this.metrics.successfulPolls++;
+      this.metrics.lastPollAt = new Date();
+    } catch (error) {
+      const duration = 0;
+      if (error.isTimeout || error.name === 'TimeoutError' || error.message?.includes('timeout')) {
+        logger.error('Per-user process timeout in Stage 2', error, { authId: auth_id });
+        this.handlePollTimeout(auth_id, this.pollKickoutMs / 1000);
+        counters.error++;
+      } else {
+        logger.error('Error in processUserPoll', error, {
+          authId: auth_id,
+          errorMessage: error.message,
+        });
+        this.handlePollError(auth_id, error, duration);
+        counters.error++;
+      }
+    } finally {
+      if (auth_id) {
+        const p = this.pollers.get(auth_id);
+        if (p) p.automationEngine = null;
+        if (poller?.userDatabaseManager) {
+          poller.userDatabaseManager.closeConnection(auth_id);
+        }
+        if (poller) poller.dbManager = null;
+      }
+    }
+  }
+
+  /**
+   * Poll users that are due for polling (cron-like). Two-phase: fetch all, then process all.
    */
   async pollDueUsers() {
     if (!this.isRunning) {
@@ -892,9 +1103,9 @@ class PollingScheduler {
         return;
       }
 
-      logger.info('Polling users in parallel', {
+      logger.info('Polling users (two-phase: fetch then process)', {
         dueCount: dueUsers.length,
-        maxConcurrent: this.maxConcurrentPolls,
+        maxConcurrentFetch: this.maxConcurrentPolls,
         perUserTimeoutSeconds: this.pollKickoutMs / 1000,
       });
 
@@ -905,12 +1116,6 @@ class PollingScheduler {
       logger.debug('Found users due for polling', {
         count: dueUsers.length,
         authIds: dueUsers.map((u) => u?.auth_id).filter(Boolean),
-        hasActiveRulesFlags: dueUsers
-          .filter((u) => u?.auth_id)
-          .map((u) => ({
-            authId: u.auth_id,
-            hasActiveRules: u.has_active_rules,
-          })),
       });
 
       const counters = { success: 0, skipped: 0, error: 0 };
@@ -919,20 +1124,54 @@ class PollingScheduler {
         return;
       }
 
-      // Global semaphore: max 12 concurrent across all cycles; new users from next 30s run join the same queue
-      await Promise.allSettled(
-        dueUsers.map((user) => this.executeUserPoll(user, semaphore, counters))
+      // Stage 1: Fetch torrents for all due users (semaphore caps concurrent API fetches)
+      const fetchResults = await Promise.allSettled(
+        dueUsers.map((u) => this.fetchTorrentsForUser(u, semaphore))
       );
 
+      const fetchedList = [];
+      for (let i = 0; i < fetchResults.length; i++) {
+        const r = fetchResults[i];
+        const user = dueUsers[i];
+        if (r.status === 'rejected') {
+          counters.error++;
+          this.handlePollError(user?.auth_id, r.reason, 0);
+          continue;
+        }
+        const value = r.value;
+        if (value.error) {
+          counters.error++;
+          if (value.error.isConnectionError) {
+            this.handleConnectionError(value.user.auth_id, 0);
+          } else if (value.error.isAuthError || value.error.name === 'AuthenticationError') {
+            if (value.poller) value.poller.consecutiveAuthFailures = (value.poller.consecutiveAuthFailures || 0) + 1;
+            this.handlePollError(value.user.auth_id, value.error, 0);
+          } else {
+            this.handlePollError(value.user.auth_id, value.error, 0);
+          }
+          continue;
+        }
+        if (value.torrents) {
+          fetchedList.push({ user: value.user, poller: value.poller, torrents: value.torrents });
+        }
+      }
+
+      // Stage 2: Process all fetched results (state diff + rule eval; no API calls)
+      await Promise.allSettled(
+        fetchedList.map(({ user, poller, torrents }) =>
+          this.processUserPoll(user, poller, torrents, counters)
+        )
+      );
+
+      this.metrics.totalPolls += dueUsers.length;
       const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
       logger.info('Poll cycle completed', {
         totalUsers: dueUsers.length,
+        processedCount: fetchedList.length,
         successCount: counters.success,
         skippedCount: counters.skipped,
         errorCount: counters.error,
         totalDuration: `${totalDuration}s`,
-        averageDuration:
-          dueUsers.length > 0 ? `${(totalDuration / dueUsers.length).toFixed(2)}s` : '0s',
       });
     } catch (error) {
       const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
