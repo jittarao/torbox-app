@@ -1,7 +1,67 @@
 import ApiClient from '../api/ApiClient.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
-import fs from 'fs';
+import { access } from 'fs/promises';
+import { constants } from 'fs';
+
+/**
+ * Validate API key against TorBox API (test request).
+ * @returns {Promise<boolean>} - true if valid
+ */
+async function validateApiKeyWithTorBox(apiKey) {
+  const testClient = new ApiClient(apiKey);
+  try {
+    await testClient.getTorrents();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Register API key and user DB; on user registration failure, rollback API key if it was newly inserted.
+ * @param {Object} backend - Backend instance
+ * @param {string} apiKey - Raw API key
+ * @param {string|null} keyName - Optional key name
+ * @param {number|null} [pollInterval=null] - Optional poll interval for ensure-db
+ * @returns {Promise<{ authId: string, wasNew: boolean }>}
+ */
+async function registerAndRollbackOnFailure(backend, apiKey, keyName, pollInterval = null) {
+  const { authId, wasNew } = await backend.masterDatabase.registerApiKey(apiKey, keyName);
+
+  if (backend.uploadProcessor) {
+    backend.uploadProcessor.invalidateApiClient(authId);
+  }
+
+  try {
+    await backend.userDatabaseManager.registerUser(apiKey, keyName, pollInterval);
+  } catch (error) {
+    if (wasNew) {
+      logger.warn('User registration failed after API key registration, rolling back API key', {
+        authId,
+        error: error.message,
+      });
+      try {
+        backend.masterDatabase.deleteApiKey(authId);
+      } catch (rollbackError) {
+        logger.error(
+          'Failed to rollback API key after user registration failure',
+          rollbackError,
+          { authId }
+        );
+      }
+    }
+    throw error;
+  }
+
+  return { authId, wasNew };
+}
+
+function apiKeyRouteError(res, error, context) {
+  const message =
+    process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong';
+  res.status(500).json({ success: false, error: message, ...context });
+}
 
 /**
  * API key management routes
@@ -16,54 +76,15 @@ export function setupApiKeyRoutes(app, backend) {
         return res.status(400).json({ success: false, error: 'API key is required' });
       }
 
-      // Validate API key by making a test request
-      const testClient = new ApiClient(apiKey);
-      try {
-        await testClient.getTorrents();
-      } catch (error) {
+      if (!(await validateApiKeyWithTorBox(apiKey))) {
         return res.status(400).json({
           success: false,
           error: 'Invalid API key or TorBox API unavailable',
         });
       }
 
-      // Register API key in master database
-      const { authId, wasNew } = await backend.masterDatabase.registerApiKey(apiKey, keyName);
+      const { authId } = await registerAndRollbackOnFailure(backend, apiKey, keyName);
 
-      // Invalidate cached API client if it exists (in case key was updated)
-      if (backend.uploadProcessor) {
-        backend.uploadProcessor.invalidateApiClient(authId);
-      }
-
-      // Register user in UserDatabaseManager (creates DB if needed)
-      // If this fails and the API key was newly inserted, rollback by deleting the API key
-      try {
-        await backend.userDatabaseManager.registerUser(apiKey, keyName);
-      } catch (error) {
-        // Rollback: if API key was newly inserted and user registration failed,
-        // delete the API key to maintain consistency between api_keys and user_registry
-        if (wasNew) {
-          logger.warn('User registration failed after API key registration, rolling back API key', {
-            authId,
-            error: error.message,
-          });
-          try {
-            backend.masterDatabase.deleteApiKey(authId);
-          } catch (rollbackError) {
-            logger.error(
-              'Failed to rollback API key after user registration failure',
-              rollbackError,
-              {
-                authId,
-              }
-            );
-          }
-        }
-        // Re-throw the original error
-        throw error;
-      }
-
-      // Refresh polling scheduler to pick up new user (engines are created per poll / on demand)
       if (backend.pollingScheduler) {
         await backend.pollingScheduler.refreshPollers();
       }
@@ -78,7 +99,7 @@ export function setupApiKeyRoutes(app, backend) {
         endpoint: '/api/backend/api-key',
         method: 'POST',
       });
-      res.status(500).json({ success: false, error: error.message });
+      apiKeyRouteError(res, error);
     }
   });
 
@@ -100,7 +121,7 @@ export function setupApiKeyRoutes(app, backend) {
         endpoint: '/api/backend/api-key/status',
         method: 'GET',
       });
-      res.status(500).json({ success: false, error: error.message });
+      apiKeyRouteError(res, error);
     }
   });
 
@@ -113,10 +134,8 @@ export function setupApiKeyRoutes(app, backend) {
         return res.status(400).json({ success: false, error: 'API key is required' });
       }
 
-      // Hash API key to get authId
       const authId = hashApiKey(apiKey);
 
-      // Check if user is already registered
       const existingUser = backend.masterDatabase.getQuery(
         'SELECT auth_id, db_path FROM user_registry WHERE auth_id = ?',
         [authId]
@@ -126,72 +145,32 @@ export function setupApiKeyRoutes(app, backend) {
       let wasCreated = false;
 
       if (existingUser) {
-        // User is registered, check if DB file exists
-        dbExists = fs.existsSync(existingUser.db_path);
+        try {
+          await access(existingUser.db_path, constants.F_OK);
+          dbExists = true;
+        } catch {
+          dbExists = false;
+        }
 
         if (!dbExists) {
-          // DB file doesn't exist, create it
           await backend.userDatabaseManager.getUserDatabase(authId);
           backend.userDatabaseManager.releaseConnection(authId);
           wasCreated = true;
           dbExists = true;
         }
       } else {
-        // User not registered, register them (this creates the DB)
-        const keyName = req.body.keyName || null;
-        const pollInterval = req.body.pollInterval || 5;
-
-        // Register API key in master database
-        const { authId: registeredAuthId, wasNew } = await backend.masterDatabase.registerApiKey(
-          apiKey,
-          keyName
-        );
-
-        // Verify authId matches (should always be the same)
-        if (registeredAuthId !== authId) {
-          logger.warn('AuthId mismatch during registration', {
-            expected: authId,
-            received: registeredAuthId,
+        if (!(await validateApiKeyWithTorBox(apiKey))) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid API key or TorBox API unavailable',
           });
         }
 
-        // Invalidate cached API client if it exists (in case key was updated)
-        if (backend.uploadProcessor) {
-          backend.uploadProcessor.invalidateApiClient(authId);
-        }
+        const keyName = req.body.keyName || null;
+        const pollInterval = req.body.pollInterval ?? 5;
 
-        // Register user in UserDatabaseManager (creates DB if needed)
-        // If this fails and the API key was newly inserted, rollback by deleting the API key
-        try {
-          await backend.userDatabaseManager.registerUser(apiKey, keyName, pollInterval);
-        } catch (error) {
-          // Rollback: if API key was newly inserted and user registration failed,
-          // delete the API key to maintain consistency between api_keys and user_registry
-          if (wasNew) {
-            logger.warn(
-              'User registration failed after API key registration, rolling back API key',
-              {
-                authId,
-                error: error.message,
-              }
-            );
-            try {
-              backend.masterDatabase.deleteApiKey(authId);
-            } catch (rollbackError) {
-              logger.error(
-                'Failed to rollback API key after user registration failure',
-                rollbackError,
-                {
-                  authId,
-                }
-              );
-            }
-          }
-          // Re-throw the original error
-          throw error;
-        }
+        await registerAndRollbackOnFailure(backend, apiKey, keyName, pollInterval);
 
-        // Refresh polling scheduler (engines are created per poll / on demand)
         if (backend.pollingScheduler) {
           await backend.pollingScheduler.refreshPollers();
         }
@@ -212,7 +191,7 @@ export function setupApiKeyRoutes(app, backend) {
         endpoint: '/api/backend/api-key/ensure-db',
         method: 'POST',
       });
-      res.status(500).json({ success: false, error: error.message });
+      apiKeyRouteError(res, error);
     }
   });
 }

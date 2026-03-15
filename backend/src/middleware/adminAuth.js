@@ -40,37 +40,33 @@ function getRequestContext(req) {
 }
 
 /**
- * Extract admin key from request (header, query, or body)
+ * Extract admin key from request (header preferred; query/body allowed but logged)
  * @param {Object} req - Express request object
- * @returns {string|null} - Admin key if found, null otherwise
+ * @returns {{ key: string|null, source: 'header'|'query'|'body'|null }} - Key and source
  */
 function extractAdminKey(req) {
-  return (
-    req.headers[ADMIN_API_KEY_HEADER] ||
-    req.query[ADMIN_KEY_QUERY_PARAM] ||
-    req.body?.[ADMIN_KEY_BODY_PARAM] ||
-    null
-  );
+  if (req.headers[ADMIN_API_KEY_HEADER]) {
+    return { key: req.headers[ADMIN_API_KEY_HEADER], source: 'header' };
+  }
+  if (req.query[ADMIN_KEY_QUERY_PARAM]) {
+    return { key: req.query[ADMIN_KEY_QUERY_PARAM], source: 'query' };
+  }
+  if (req.body?.[ADMIN_KEY_BODY_PARAM]) {
+    return { key: req.body[ADMIN_KEY_BODY_PARAM], source: 'body' };
+  }
+  return { key: null, source: null };
 }
 
 /**
- * Perform constant-time comparison to prevent timing attacks
+ * Perform constant-time comparison via SHA-256 hashes (fixed length, no length leak).
  * @param {string} a - First string to compare
  * @param {string} b - Second string to compare
  * @returns {boolean} - True if strings are equal
  */
 function timingSafeCompare(a, b) {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
-  } catch (error) {
-    // Fallback to regular comparison if timingSafeEqual fails
-    logger.error('Timing-safe comparison failed', { error: error.message });
-    return a === b;
-  }
+  const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest();
+  return ha.length === hb.length && crypto.timingSafeEqual(ha, hb);
 }
 
 /**
@@ -139,7 +135,7 @@ export function adminAuthMiddleware(req, res, next) {
     );
   }
 
-  const providedKey = extractAdminKey(req);
+  const { key: providedKey, source: keySource } = extractAdminKey(req);
 
   if (!providedKey) {
     const context = getRequestContext(req);
@@ -148,8 +144,16 @@ export function adminAuthMiddleware(req, res, next) {
       res,
       401,
       'Admin authentication required',
-      'Provide admin key via x-admin-key header, adminKey query param, or adminKey in body'
+      'Provide admin key via x-admin-key header'
     );
+  }
+
+  if (keySource === 'query' || keySource === 'body') {
+    const context = getRequestContext(req);
+    logger.warn('Admin key provided via query or body; prefer x-admin-key header', {
+      ...context,
+      source: keySource,
+    });
   }
 
   // Constant-time comparison to prevent timing attacks

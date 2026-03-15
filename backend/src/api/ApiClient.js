@@ -487,12 +487,11 @@ class ApiClient {
   }
 
   async healthCheck() {
-    try {
-      await this.testConnection();
+    const result = await this.testConnection();
+    if (result.success) {
       return { status: 'healthy', apiKey: this.apiKey ? 'configured' : 'missing' };
-    } catch (error) {
-      return { status: 'unhealthy', error: error.message };
     }
+    return { status: 'unhealthy', error: result.error || 'Connection failed' };
   }
 }
 
