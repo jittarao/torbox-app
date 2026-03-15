@@ -651,6 +651,7 @@ class UserPoller {
 
       // Evaluate automation rules
       const ruleResults = await this.evaluateRules(torrents);
+      this._checkCancelled(cancelToken);
 
       // Count non-terminal torrents and calculate next poll time
       const nonTerminalCount = this.countNonTerminalTorrents(torrents);

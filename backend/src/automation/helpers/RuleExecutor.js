@@ -10,7 +10,13 @@ class RuleExecutor {
   }
 
   /**
-   * Execute actions on a list of torrents
+   * Execute actions on a list of torrents with bounded concurrency.
+   *
+   * Previously actions ran serially: N matched torrents × 30s axios timeout = N×30s, which
+   * easily exhausted the 180s per-user poll budget for rules that match many torrents.
+   * Running up to RULE_ACTION_CONCURRENCY actions in parallel collapses that to
+   * ceil(N / concurrency) × 30s, giving the poll enough headroom to complete.
+   *
    * @param {Object} rule - Rule configuration
    * @param {Array} torrents - Torrents to process
    * @returns {Promise<Object>} - { successCount, errorCount }
@@ -22,49 +28,66 @@ class RuleExecutor {
     // Resolve the evaluator once outside the loop to avoid N async pool lookups per rule execution
     const ruleEvaluator = await this.getRuleEvaluator();
 
-    for (const torrent of torrents) {
-      try {
-        logger.debug('Executing action on torrent', {
-          authId: this.authId,
-          ruleId: rule.id,
-          ruleName: rule.name,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
-          action: rule.action?.type,
-          torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
-        });
+    // Cap concurrent outbound action calls per rule. Default 3 keeps pressure on the TorBox API
+    // low while cutting worst-case wall-clock time from N×30s (serial) to ceil(N/3)×30s.
+    // Configurable via RULE_ACTION_CONCURRENCY env var.
+    const concurrency = Math.max(1, parseInt(process.env.RULE_ACTION_CONCURRENCY || '3', 10));
 
-        await ruleEvaluator.executeAction(rule.action, torrent);
-        successCount++;
+    // Worker-pool: each worker drains the shared queue until empty.
+    // Node.js is single-threaded so queue.shift() and counter mutations are safe across workers.
+    const queue = [...torrents];
 
-        logger.debug('Action successfully executed', {
-          authId: this.authId,
-          ruleId: rule.id,
-          ruleName: rule.name,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
-          action: rule.action?.type,
-        });
-      } catch (error) {
-        let torrentStatus = 'unknown';
+    const worker = async () => {
+      while (queue.length > 0) {
+        const torrent = queue.shift();
+        if (!torrent) continue;
+
         try {
-          torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
-        } catch (_) {
-          // Status unavailable — log without it
-        }
+          logger.debug('Executing action on torrent', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            action: rule.action?.type,
+            torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
+          });
 
-        logger.error('Action failed for torrent', error, {
-          authId: this.authId,
-          ruleId: rule.id,
-          ruleName: rule.name,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
-          torrentStatus,
-          action: rule.action?.type,
-        });
-        errorCount++;
+          await ruleEvaluator.executeAction(rule.action, torrent);
+          successCount++;
+
+          logger.debug('Action successfully executed', {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            action: rule.action?.type,
+          });
+        } catch (error) {
+          let torrentStatus = 'unknown';
+          try {
+            torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
+          } catch (_) {
+            // Status unavailable — log without it
+          }
+
+          logger.error('Action failed for torrent', error, {
+            authId: this.authId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+            torrentStatus,
+            action: rule.action?.type,
+          });
+          errorCount++;
+        }
       }
-    }
+    };
+
+    const workerCount = Math.min(concurrency, torrents.length);
+    await Promise.all(Array.from({ length: workerCount }, worker));
 
     return { successCount, errorCount };
   }
