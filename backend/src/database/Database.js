@@ -23,7 +23,7 @@ class Database {
       ? masterDbPath.replace('sqlite://', '')
       : masterDbPath;
 
-    console.log('Master database path:', this.dbPath);
+    logger.info('Master database path', { dbPath: this.dbPath });
   }
 
   async initialize() {
@@ -109,8 +109,23 @@ class Database {
     db.prepare('PRAGMA busy_timeout = 5000').run();
     db.prepare('PRAGMA foreign_keys = ON').run();
     // Cap per-connection page cache to limit memory (negative = KB; -1000 = 1MB)
-    const cacheSizeKb = parseInt(process.env.SQLITE_CACHE_SIZE_KB || '-1000', 10);
+    let cacheSizeKb = parseInt(process.env.SQLITE_CACHE_SIZE_KB || '-1000', 10);
+    if (!Number.isFinite(cacheSizeKb)) {
+      cacheSizeKb = -1000;
+    }
     db.prepare(`PRAGMA cache_size = ${cacheSizeKb}`).run();
+  }
+
+  /**
+   * Reopen the database connection (e.g. after closed database error).
+   * Clears statement cache, creates new connection, re-initializes migration runner.
+   * @private
+   */
+  _reopenConnection() {
+    this._statementCache.clear();
+    this.db = new SQLiteDatabase(this.dbPath);
+    this._configureDatabase(this.db);
+    this.migrationRunner = new MigrationRunner(this.db, 'master');
   }
 
   /**
@@ -134,17 +149,7 @@ class Database {
           errorName: error.name,
           errorMessage: error.message,
         });
-
-        this._statementCache.clear();
-        // Reopen the database connection
-        this.db = new SQLiteDatabase(this.dbPath);
-
-        // Configure database with required PRAGMAs
-        this._configureDatabase(this.db);
-
-        // Re-initialize migration runner with new connection
-        this.migrationRunner = new MigrationRunner(this.db, 'master');
-
+        this._reopenConnection();
         logger.info('Database connection refreshed successfully');
       } else {
         // Some other error, re-throw it
@@ -201,10 +206,7 @@ class Database {
             errorName: error.name,
             errorMessage: error.message,
           });
-          this._statementCache.clear();
-          this.db = new SQLiteDatabase(this.dbPath);
-          this._configureDatabase(this.db);
-          this.migrationRunner = new MigrationRunner(this.db, 'master');
+          this._reopenConnection();
           stmt = this.db.prepare(sql);
           this._statementCache.set(sql, stmt);
           const result = stmt.run(params);
@@ -242,10 +244,7 @@ class Database {
           errorName: error.name,
           errorMessage: error.message,
         });
-        this._statementCache.clear();
-        this.db = new SQLiteDatabase(this.dbPath);
-        this._configureDatabase(this.db);
-        this.migrationRunner = new MigrationRunner(this.db, 'master');
+        this._reopenConnection();
         stmt = this.db.prepare(sql);
         this._statementCache.set(sql, stmt);
         return stmt.get(params);
@@ -271,10 +270,7 @@ class Database {
           errorName: error.name,
           errorMessage: error.message,
         });
-        this._statementCache.clear();
-        this.db = new SQLiteDatabase(this.dbPath);
-        this._configureDatabase(this.db);
-        this.migrationRunner = new MigrationRunner(this.db, 'master');
+        this._reopenConnection();
         stmt = this.db.prepare(sql);
         this._statementCache.set(sql, stmt);
         return stmt.all(params);
@@ -628,10 +624,7 @@ class Database {
           errorMessage: error.message,
           authId,
         });
-        this._statementCache.clear();
-        this.db = new SQLiteDatabase(this.dbPath);
-        this._configureDatabase(this.db);
-        this.migrationRunner = new MigrationRunner(this.db, 'master');
+        this._reopenConnection();
         try {
           doUpdate();
         } catch (retryError) {
@@ -1029,16 +1022,8 @@ class Database {
       [limit]
     );
 
-    // Log at debug level since this runs frequently (every 30 seconds)
-    logger.debug('Users due for polling', {
-      foundCount: result.length,
-      authIds: result.map((u) => u.auth_id),
-      nextPollAts: result.map((u) => ({
-        authId: u.auth_id,
-        nextPollAt: u.next_poll_at,
-        hasActiveRules: u.has_active_rules,
-      })),
-    });
+    // Log at debug level since this runs frequently (every 30 seconds); log count only to avoid large payloads
+    logger.debug('Users due for polling', { foundCount: result.length });
 
     return result;
   }

@@ -9,6 +9,8 @@ const BYTES_PER_MB = 1024 * 1024;
 const SECONDS_PER_MINUTE = 60;
 const DEFAULT_AVG_SPEED_HOURS = 1;
 const SPEED_HISTORY_BUFFER_MULTIPLIER = 1.5;
+/** Fixed batch size for IN clauses so the same prepared statement is reused across polls */
+const IN_CLAUSE_BATCH_SIZE = 100;
 
 /**
  * Rule Evaluator
@@ -57,6 +59,31 @@ class RuleEvaluator {
   }
 
   /**
+   * Run a query with IN (?,...,?) in fixed-size batches so one prepared statement is reused.
+   * @param {Array<string>} ids - IDs for the IN clause
+   * @param {string} sqlTemplate - SQL with a single placeholder 'IN_CLAUSE' to replace with (?,...,?)
+   * @param {Array} extraParams - Extra parameters to append (e.g. timestamp)
+   * @param {string} idColumn - Column name used to filter out padded null rows (default 'torrent_id')
+   * @returns {Array} - Concatenated rows from all batches
+   */
+  _queryInBatches(ids, sqlTemplate, extraParams = [], idColumn = 'torrent_id') {
+    if (ids.length === 0) return [];
+    const placeholders = Array(IN_CLAUSE_BATCH_SIZE).fill('?').join(',');
+    const sql = sqlTemplate.replace('IN_CLAUSE', placeholders);
+    const stmt = this.db.prepare(sql);
+    const rows = [];
+    for (let i = 0; i < ids.length; i += IN_CLAUSE_BATCH_SIZE) {
+      const chunk = ids.slice(i, i + IN_CLAUSE_BATCH_SIZE);
+      const padded = chunk.length < IN_CLAUSE_BATCH_SIZE
+        ? [...chunk, ...Array(IN_CLAUSE_BATCH_SIZE - chunk.length).fill(null)]
+        : chunk;
+      const batchRows = stmt.all(...padded, ...extraParams);
+      rows.push(...batchRows.filter((r) => r[idColumn] != null));
+    }
+    return rows;
+  }
+
+  /**
    * Load telemetry data for all torrents in batch
    * @param {Array<string>} torrentIds - Array of torrent IDs
    * @returns {Map} - Map of torrent_id -> telemetry data
@@ -65,17 +92,10 @@ class RuleEvaluator {
     if (torrentIds.length === 0) {
       return new Map();
     }
-
-    const placeholders = torrentIds.map(() => '?').join(',');
-    const allTelemetry = this.db
-      .prepare(
-        `
-      SELECT * FROM torrent_telemetry 
-      WHERE torrent_id IN (${placeholders})
-    `
-      )
-      .all(...torrentIds);
-
+    const allTelemetry = this._queryInBatches(
+      torrentIds,
+      'SELECT * FROM torrent_telemetry WHERE torrent_id IN (IN_CLAUSE)'
+    );
     return new Map(allTelemetry.map((t) => [String(t.torrent_id), t]));
   }
 
@@ -107,17 +127,12 @@ class RuleEvaluator {
     }
 
     const downloadIdArray = Array.from(allDownloadIds);
-    const placeholders = downloadIdArray.map(() => '?').join(',');
-    const allDownloadTags = this.db
-      .prepare(
-        `
-      SELECT dt.download_id, t.id, t.name
-      FROM download_tags dt
-      INNER JOIN tags t ON dt.tag_id = t.id
-      WHERE dt.download_id IN (${placeholders})
-    `
-      )
-      .all(...downloadIdArray);
+    const allDownloadTags = this._queryInBatches(
+      downloadIdArray,
+      'SELECT dt.download_id, t.id, t.name FROM download_tags dt INNER JOIN tags t ON dt.tag_id = t.id WHERE dt.download_id IN (IN_CLAUSE)',
+      [],
+      'download_id'
+    );
 
     const tagsByDownloadId = new Map();
     for (const row of allDownloadTags) {
@@ -155,16 +170,11 @@ class RuleEvaluator {
     const now = new Date();
     const hoursAgo = new Date(now - maxHours * MS_PER_HOUR);
 
-    const placeholders = torrentIds.map(() => '?').join(',');
-    const allSpeedHistory = this.db
-      .prepare(
-        `
-      SELECT * FROM speed_history
-      WHERE torrent_id IN (${placeholders}) AND timestamp >= ?
-      ORDER BY torrent_id, timestamp ASC
-    `
-      )
-      .all(...torrentIds, hoursAgo.toISOString());
+    const allSpeedHistory = this._queryInBatches(
+      torrentIds,
+      'SELECT * FROM speed_history WHERE torrent_id IN (IN_CLAUSE) AND timestamp >= ? ORDER BY torrent_id, timestamp ASC',
+      [hoursAgo.toISOString()]
+    );
 
     const speedHistoryMap = new Map();
     for (const sample of allSpeedHistory) {
@@ -573,16 +583,11 @@ class RuleEvaluator {
 
     const now = new Date();
     const hoursAgo = new Date(now - maxHours * MS_PER_HOUR);
-    const placeholders = torrentIds.map(() => '?').join(',');
-    const allSpeedHistory = this.db
-      .prepare(
-        `
-      SELECT * FROM speed_history
-      WHERE torrent_id IN (${placeholders}) AND timestamp >= ?
-      ORDER BY torrent_id, timestamp ASC
-    `
-      )
-      .all(...torrentIds, hoursAgo.toISOString());
+    const allSpeedHistory = this._queryInBatches(
+      torrentIds,
+      'SELECT * FROM speed_history WHERE torrent_id IN (IN_CLAUSE) AND timestamp >= ? ORDER BY torrent_id, timestamp ASC',
+      [hoursAgo.toISOString()]
+    );
 
     const speedHistoryMap = new Map();
     for (const sample of allSpeedHistory) {
@@ -1153,30 +1158,8 @@ class RuleEvaluator {
     }
 
     const valueDelta = last[field] - first[field];
-    return valueDelta / timeDelta;
-  }
-
-  /**
-   * Calculate max speed from samples
-   */
-  calculateMaxSpeed(samples, field) {
-    if (samples.length < 2) {
-      return 0;
-    }
-
-    let maxSpeed = 0;
-    for (let i = 1; i < samples.length; i++) {
-      const prev = samples[i - 1];
-      const curr = samples[i];
-      const timeDelta = (new Date(curr.timestamp) - new Date(prev.timestamp)) / 1000;
-
-      if (timeDelta > 0) {
-        const speed = (curr[field] - prev[field]) / timeDelta;
-        maxSpeed = Math.max(maxSpeed, speed);
-      }
-    }
-
-    return maxSpeed;
+    // Clamp to non-negative: byte counters can reset if a torrent is re-added
+    return Math.max(0, valueDelta / timeDelta);
   }
 
   /**
