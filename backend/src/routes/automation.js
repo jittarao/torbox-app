@@ -260,7 +260,10 @@ export function setupAutomationRoutes(app, backend) {
         if (!engine) {
           return sendEngineUnavailableResponse(res, backend, authId);
         }
-        const result = await engine.runRuleManually(ruleId);
+        const runRule = () => engine.runRuleManually(ruleId);
+        const result = backend.pollingScheduler
+          ? await backend.pollingScheduler.runWithPipelineLock(authId, runRule)
+          : await runRule();
         res.json({ success: true, result });
       } catch (error) {
         logger.error('Error running rule manually', error, {

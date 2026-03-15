@@ -75,17 +75,21 @@ class UserPoller {
   }
 
   /**
-   * Count non-terminal torrents
+   * Count non-terminal torrents. O(1) when changes from processStateChanges is provided.
    * @param {Array} torrents - Array of torrent objects
+   * @param {Object} [changes] - Optional result from processStateChanges; when present, non-terminal = torrents.length - changes.removed.length
    * @returns {number} - Count of non-terminal torrents
    */
-  countNonTerminalTorrents(torrents) {
+  countNonTerminalTorrents(torrents, changes = null) {
     if (!Array.isArray(torrents)) {
       logger.warn('countNonTerminalTorrents called with non-array', {
         authId: this.authId,
         torrentsType: typeof torrents,
       });
       return 0;
+    }
+    if (changes && Array.isArray(changes.removed)) {
+      return Math.max(0, torrents.length - changes.removed.length);
     }
     if (!this.dbManager) return 0;
 
@@ -616,7 +620,7 @@ class UserPoller {
 
     const ruleResults = await this.evaluateRules(torrents);
     if (checkCancelled) checkCancelled();
-    const nonTerminalCount = this.countNonTerminalTorrents(torrents);
+    const nonTerminalCount = this.countNonTerminalTorrents(torrents, changes);
     const nextPollAt = await this.calculateNextPollAt(
       nonTerminalCount,
       hasActiveRules,

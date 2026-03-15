@@ -115,11 +115,6 @@ class AutomationEngine {
       // Load enabled rules from user database
       const enabledRules = await this.getAutomationRules({ enabled: true });
 
-      // Start all enabled rules
-      for (const rule of enabledRules) {
-        await this.startRule(rule);
-      }
-
       // Sync active rules flag to master DB
       await this.syncActiveRulesFlag();
 
@@ -406,25 +401,6 @@ class AutomationEngine {
         errorStack: error.stack,
       });
       throw error;
-    }
-  }
-
-  /**
-   * Start a rule. Rules are evaluated on each poll cycle; this method is kept for compatibility.
-   */
-  async startRule(rule) {
-    try {
-      logger.debug('Rule ready', {
-        authId: this.authId,
-        ruleId: rule.id,
-        ruleName: rule.name,
-      });
-    } catch (error) {
-      logger.error('Failed to start rule', error, {
-        authId: this.authId,
-        ruleId: rule.id,
-        ruleName: rule.name,
-      });
     }
   }
 
@@ -1203,23 +1179,12 @@ class AutomationEngine {
     await this.ruleRepository.clearExecutionHistory(ruleId);
   }
 
+  /**
+   * Invalidate rule caches so the next poll or manual run loads fresh rules from DB.
+   */
   async reloadRules() {
-    try {
-      logger.info('Reloading rules', { authId: this.authId });
-
-      const enabledRules = await this.getAutomationRules({ enabled: true });
-
-      for (const rule of enabledRules) {
-        await this.startRule(rule);
-      }
-
-      logger.info('Rules reloaded', {
-        authId: this.authId,
-        enabledRules: enabledRules.length,
-      });
-    } catch (error) {
-      logger.error('Failed to reload rules', error, { authId: this.authId });
-    }
+    this.invalidateRuleCache();
+    cache.invalidateActiveRules(this.authId);
   }
 
   getStatus() {

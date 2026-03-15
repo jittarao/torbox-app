@@ -486,23 +486,16 @@ class Database {
 
   /**
    * Insert a pending automation action (persisted so it survives restarts).
-   * When ruleId is provided, uses INSERT OR IGNORE so duplicate rule_id (e.g. same rule in two poll cycles) is not inserted.
+   * Multiple rows per rule_id are allowed; drain merges by (authId, rule_id) and deduplicates by torrent ID.
    * @param {string} authId
    * @param {string} payload - JSON string of { authId, rule, torrentsToProcess }
-   * @param {number|null} [ruleId] - Rule id for deduplication; when set, duplicate rule_id is ignored
-   * @returns {number} Inserted row id, or 0 if not inserted (e.g. duplicate rule_id)
+   * @param {number|null} [ruleId] - Rule id (stored for merge-on-drain)
+   * @returns {number} Inserted row id
    */
   insertPendingAction(authId, payload, ruleId = null) {
-    if (ruleId != null) {
-      const result = this.runQuery(
-        'INSERT OR IGNORE INTO pending_actions (auth_id, payload, rule_id) VALUES (?, ?, ?)',
-        [authId, payload, ruleId]
-      );
-      return result?.changes > 0 ? result.id : 0;
-    }
     const result = this.runQuery(
-      'INSERT INTO pending_actions (auth_id, payload) VALUES (?, ?)',
-      [authId, payload]
+      'INSERT INTO pending_actions (auth_id, payload, rule_id) VALUES (?, ?, ?)',
+      [authId, payload, ruleId]
     );
     return result?.id ?? 0;
   }

@@ -1,5 +1,6 @@
 /**
  * Pending automation actions queue. Survives restarts so actions are not lost on crash.
+ * Multiple pending actions per rule allowed (deduplicate at drain time by torrent ID).
  */
 export const up = (db) => {
   db.prepare(
@@ -8,7 +9,7 @@ export const up = (db) => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       auth_id TEXT NOT NULL,
       payload TEXT NOT NULL,
-      rule_id INTEGER UNIQUE,
+      rule_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `

@@ -347,15 +347,17 @@ class RuleEvaluator {
         tagsByDownloadId,
         speedHistoryMap
       );
-      logger.debug('Condition evaluated', {
-        ruleId: rule.id,
-        ruleName: rule.name,
-        groupIndex,
-        condIndex,
-        conditionType: condition.type,
-        torrentId: torrent.id,
-        matched: result,
-      });
+      if (logger.isDebugEnabled()) {
+        logger.debug('Condition evaluated', {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          groupIndex,
+          condIndex,
+          conditionType: condition.type,
+          torrentId: torrent.id,
+          matched: result,
+        });
+      }
       if (groupLogicOp === 'or' && result) {
         return true;
       }
@@ -365,13 +367,15 @@ class RuleEvaluator {
     }
 
     const groupResult = groupLogicOp === 'and';
-    logger.debug('Group evaluation result', {
-      ruleId: rule.id,
-      ruleName: rule.name,
-      groupIndex,
-      groupLogicOp,
-      groupResult,
-    });
+    if (logger.isDebugEnabled()) {
+      logger.debug('Group evaluation result', {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        groupIndex,
+        groupLogicOp,
+        groupResult,
+      });
+    }
     return groupResult;
   }
 

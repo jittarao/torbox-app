@@ -149,10 +149,8 @@ class GlobalActionQueue {
           });
           const ruleId = d.rule?.id ?? null;
           const id = masterDb.insertPendingAction(d.authId, payload, ruleId);
-          if (id) {
-            d.pendingId = id;
-            this.pending.push(d);
-          }
+          d.pendingId = id;
+          this.pending.push(d);
         } catch (err) {
           logger.warn('Failed to persist pending action', { authId: d.authId, errorMessage: err.message });
         }
@@ -170,17 +168,14 @@ class GlobalActionQueue {
 
   /**
    * Load persisted pending actions (e.g. after restart) and drain.
-   * Deduplicates by rule_id so each rule is only drained once.
+   * All rows are loaded; drain merges by (authId, rule_id) and deduplicates by torrent ID.
    */
   async loadFromPersistence() {
     const masterDb = this.scheduler.masterDb;
     if (!masterDb || !masterDb.getAllPendingActions) return;
     try {
       const rows = masterDb.getAllPendingActions();
-      const seenRuleIds = new Set();
       for (const row of rows) {
-        if (row.rule_id != null && seenRuleIds.has(row.rule_id)) continue;
-        if (row.rule_id != null) seenRuleIds.add(row.rule_id);
         try {
           const d = JSON.parse(row.payload);
           d.pendingId = row.id;
@@ -199,6 +194,32 @@ class GlobalActionQueue {
     }
   }
 
+  /**
+   * Merge descriptors for the same (authId, rule.id): union of torrentsToProcess by torrent id.
+   * Returns one merged descriptor and array of pendingIds to delete after execution.
+   */
+  _mergeBatchForSameRule(pendingList) {
+    if (pendingList.length === 0) return null;
+    const first = pendingList[0];
+    const byId = new Map();
+    const pendingIds = [];
+    for (const d of pendingList) {
+      if (d.pendingId) pendingIds.push(d.pendingId);
+      for (const t of d.torrentsToProcess || []) {
+        const id = t?.id ?? t?.torrent_id ?? t?.usenet_id ?? t?.web_id;
+        if (id != null && !byId.has(id)) byId.set(id, t);
+      }
+    }
+    return {
+      merged: {
+        authId: first.authId,
+        rule: first.rule,
+        torrentsToProcess: Array.from(byId.values()),
+      },
+      pendingIds,
+    };
+  }
+
   async drain() {
     if (this.draining || this.pending.length === 0) return;
     this.draining = true;
@@ -207,15 +228,26 @@ class GlobalActionQueue {
       const concurrency = GLOBAL_ACTION_QUEUE_CONCURRENCY;
       const worker = async () => {
         while (this.pending.length > 0) {
-          const d = this.pending.shift();
+          const first = this.pending.shift();
+          const key = (authId, ruleId) => `${authId}:${ruleId ?? 'null'}`;
+          const firstKey = key(first.authId, first.rule?.id);
+          const sameRule = [first];
+          while (this.pending.length > 0) {
+            const next = this.pending[0];
+            if (key(next.authId, next.rule?.id) !== firstKey) break;
+            sameRule.push(this.pending.shift());
+          }
+          const { merged, pendingIds } = this._mergeBatchForSameRule(sameRule);
+          if (!merged || merged.torrentsToProcess.length === 0) {
+            for (const id of pendingIds) {
+              if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
+            }
+            continue;
+          }
           try {
-            await this.scheduler.runActionBatch(d);
-            if (d.pendingId && masterDb && masterDb.deletePendingAction) {
-              try {
-                masterDb.deletePendingAction(d.pendingId);
-              } catch (_) {
-                // ignore
-              }
+            await this.scheduler.runActionBatch(merged);
+            for (const id of pendingIds) {
+              if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
             }
           } catch (err) {
             logger.error('GlobalActionQueue action batch failed', err, {
@@ -260,7 +292,6 @@ class PollingScheduler {
     this.pollers = new Map();
     this.isRunning = false;
     this.intervalId = null;
-    this.refreshIntervalId = null;
 
     // Configuration with validation
     this.pollCheckInterval = Math.max(
@@ -308,7 +339,6 @@ class PollingScheduler {
     this.pollSemaphore = null;
     /** Stage 2 semaphore: caps concurrent processUserPoll (state diff + rule eval) to avoid SQLite contention */
     this.processSemaphore = null;
-    this._pollCycleInProgress = false;
     this._refreshInProgress = false;
     this._refreshCount = 0;
 
@@ -364,6 +394,26 @@ class PollingScheduler {
       this.pipelineMutexes.set(authId, mutex);
     }
     return mutex;
+  }
+
+  /**
+   * Run an async operation under the per-user pipeline mutex (e.g. manual rule run).
+   * Use so manual execution does not race with scheduled poll on shadow state.
+   * @param {string} authId - User authentication ID
+   * @param {Function} operation - Async function to run
+   * @returns {Promise<*>} Result of operation()
+   */
+  async runWithPipelineLock(authId, operation) {
+    const mutex = this.getPipelineMutex(authId);
+    await mutex.acquire();
+    try {
+      return await operation();
+    } finally {
+      mutex.release();
+      if (mutex.isEmpty()) {
+        this.pipelineMutexes.delete(authId);
+      }
+    }
   }
 
   /**
@@ -731,25 +781,11 @@ class PollingScheduler {
 
     logger.info('Polling scheduler started successfully', {
       pollCheckInterval: `${this.pollCheckInterval / 1000}s`,
-      refreshInterval: `${this.refreshInterval / 1000}s`,
       activePollers: this.pollers.size,
       timestamp: new Date().toISOString(),
     });
 
-    // Start periodic check for new users
-    this.refreshIntervalId = setInterval(() => {
-      this.refreshPollers()
-        .catch((err) => {
-          logger.error('Unhandled error in refreshPollers interval', err, {
-            errorMessage: err.message,
-            errorStack: err.stack,
-          });
-        })
-        .catch((logError) => {
-          // Fallback if logger itself fails
-          logger.error('Critical: Failed to log interval error', logError);
-        });
-    }, this.refreshInterval);
+    // refreshPollers is called from routes on rule save/toggle/delete (event-driven), not on a timer
   }
 
   /**
@@ -774,15 +810,8 @@ class PollingScheduler {
       logger.debug('Polling interval cleared');
     }
 
-    if (this.refreshIntervalId) {
-      clearInterval(this.refreshIntervalId);
-      this.refreshIntervalId = null;
-      logger.debug('Refresh interval cleared');
-    }
-
     this.pollSemaphore = null;
     this.processSemaphore = null;
-    this._pollCycleInProgress = false;
     const pollerCount = this.pollers.size;
     this.pollers.clear();
 
@@ -1114,6 +1143,8 @@ class PollingScheduler {
 
   /**
    * Poll users that are due for polling (cron-like). Two-phase: fetch all, then process all.
+   * No global cycle lock — reserve next_poll_at for all due users up front so the next tick
+   * does not double-schedule the same users; semaphores cap concurrency.
    */
   async pollDueUsers() {
     if (!this.isRunning) {
@@ -1121,16 +1152,9 @@ class PollingScheduler {
       return;
     }
 
-    if (this._pollCycleInProgress) {
-      logger.debug('Skipping pollDueUsers - previous cycle still in progress');
-      return;
-    }
-
     if (this.shouldRunCleanup()) {
       this.cleanupStalePollers();
     }
-
-    this._pollCycleInProgress = true;
 
     const checkStartTime = Date.now();
     logger.debug('Checking for users due for polling', {
@@ -1156,6 +1180,14 @@ class PollingScheduler {
           skippedNoRules: usersToSkip.length,
         });
         return;
+      }
+
+      // Reserve next_poll_at for all users we are about to fetch so the next tick does not re-enqueue them
+      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
+      for (const u of usersToFetch) {
+        if (u?.auth_id) {
+          this.masterDb.updateNextPollAt(u.auth_id, reserveUntil, 0);
+        }
       }
 
       logger.info('Polling users (two-phase: fetch then process)', {
@@ -1200,17 +1232,7 @@ class PollingScheduler {
           if (value.error.isConnectionError) {
             this.handleConnectionError(value.user.auth_id, 0);
           } else if (value.error.isAuthError || value.error.name === 'AuthenticationError') {
-            if (this.masterDb && this.masterDb.incrementConsecutiveAuthFailures) {
-              const threshold = Math.max(1, parseInt(process.env.AUTH_FAILURE_DEACTIVATE_AFTER || '3', 10));
-              const count = this.masterDb.incrementConsecutiveAuthFailures(value.user.auth_id);
-              if (count >= threshold && this.masterDb.updateUserStatus) {
-                this.masterDb.updateUserStatus(value.user.auth_id, 'inactive');
-                logger.warn('Marked user as inactive due to consecutive authentication errors (Stage 1)', {
-                  authId: value.user.auth_id,
-                  consecutiveFailures: count,
-                });
-              }
-            }
+            // Counter and deactivation already handled in UserPoller.handleAuthenticationError
             this.handlePollError(value.user.auth_id, value.error, 0);
           } else {
             this.handlePollError(value.user.auth_id, value.error, 0);
@@ -1255,8 +1277,6 @@ class PollingScheduler {
         errorMessage: error.message,
         errorStack: error.stack,
       });
-    } finally {
-      this._pollCycleInProgress = false;
     }
   }
 
