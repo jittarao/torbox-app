@@ -154,6 +154,27 @@ class RuleRepository {
   }
 
   /**
+   * Batch update last_evaluated_at for multiple rules in one query.
+   * @param {Array<number>} ruleIds - Rule IDs to update
+   */
+  async batchUpdateLastEvaluatedAt(ruleIds) {
+    if (!Array.isArray(ruleIds) || ruleIds.length === 0) return;
+    try {
+      const userDb = await this.getUserDb();
+      const placeholders = ruleIds.map(() => '?').join(',');
+      userDb.prepare(
+        `UPDATE automation_rules SET last_evaluated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      ).run(...ruleIds);
+    } catch (error) {
+      logger.debug('Failed to batch update last_evaluated_at (non-critical)', {
+        authId: this.authId,
+        ruleCount: ruleIds.length,
+        errorMessage: error.message,
+      });
+    }
+  }
+
+  /**
    * Update rule execution status
    * @param {number} ruleId - Rule ID
    */

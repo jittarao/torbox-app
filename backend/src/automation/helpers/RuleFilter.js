@@ -14,50 +14,50 @@ class RuleFilter {
    * Filter torrents for add_tag action - skip torrents that already have all the tags
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
    * @param {Object} action - Action configuration
+   * @param {Object} [options] - Optional; tagsByDownloadId (Map<downloadId, Array<{id,name}>>) from RuleEvaluator
    * @returns {Promise<Array>} - Filtered torrents
    */
-  async filterForAddTag(matchingTorrents, action) {
+  async filterForAddTag(matchingTorrents, action, options = {}) {
     if (action.type !== 'add_tag' || !action.tagIds || action.tagIds.length === 0) {
       return matchingTorrents;
     }
 
-    const userDb = await this.getUserDb();
+    let tagsByDownloadId = options.tagsByDownloadId;
+    if (!tagsByDownloadId || !(tagsByDownloadId instanceof Map)) {
+      const userDb = await this.getUserDb();
+      const allDownloadIds = matchingTorrents
+        .map(
+          (t) =>
+            t.id?.toString() ||
+            t.torrent_id?.toString() ||
+            t.usenet_id?.toString() ||
+            t.web_id?.toString()
+        )
+        .filter((id) => id);
 
-    // Collect all download IDs
-    const allDownloadIds = matchingTorrents
-      .map(
-        (t) =>
-          t.id?.toString() ||
-          t.torrent_id?.toString() ||
-          t.usenet_id?.toString() ||
-          t.web_id?.toString()
-      )
-      .filter((id) => id);
+      if (allDownloadIds.length === 0) {
+        return matchingTorrents;
+      }
 
-    if (allDownloadIds.length === 0) {
-      return matchingTorrents;
-    }
-
-    // Batch load tags for all matching torrents
-    const placeholders = allDownloadIds.map(() => '?').join(',');
-    const allDownloadTags = userDb
-      .prepare(
-        `
+      const placeholders = allDownloadIds.map(() => '?').join(',');
+      const allDownloadTags = userDb
+        .prepare(
+          `
       SELECT dt.download_id, dt.tag_id
       FROM download_tags dt
       WHERE dt.download_id IN (${placeholders})
     `
-      )
-      .all(...allDownloadIds);
+        )
+        .all(...allDownloadIds);
 
-    // Group tag IDs by download_id
-    const tagsByDownloadId = new Map();
-    for (const row of allDownloadTags) {
-      const downloadId = String(row.download_id);
-      if (!tagsByDownloadId.has(downloadId)) {
-        tagsByDownloadId.set(downloadId, new Set());
+      tagsByDownloadId = new Map();
+      for (const row of allDownloadTags) {
+        const downloadId = String(row.download_id);
+        if (!tagsByDownloadId.has(downloadId)) {
+          tagsByDownloadId.set(downloadId, new Set());
+        }
+        tagsByDownloadId.get(downloadId).add(row.tag_id);
       }
-      tagsByDownloadId.get(downloadId).add(row.tag_id);
     }
 
     // Filter out torrents that already have all the tags
@@ -72,7 +72,11 @@ class RuleFilter {
         return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
       }
 
-      const existingTagIds = tagsByDownloadId.get(downloadId) || new Set();
+      const raw = tagsByDownloadId.get(downloadId) || [];
+      const existingTagIds =
+        Array.isArray(raw) && raw[0] != null && typeof raw[0] === 'object' && 'id' in raw[0]
+          ? new Set(raw.map((t) => t.id))
+          : new Set(Array.isArray(raw) ? raw : []);
 
       // Check if torrent already has all the tags
       const hasAllTags = Array.from(targetTagIds).every((tagId) => existingTagIds.has(tagId));
@@ -108,50 +112,50 @@ class RuleFilter {
    * Filter torrents for remove_tag action - skip torrents that don't have any of the tags
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
    * @param {Object} action - Action configuration
+   * @param {Object} [options] - Optional; tagsByDownloadId from RuleEvaluator
    * @returns {Promise<Array>} - Filtered torrents
    */
-  async filterForRemoveTag(matchingTorrents, action) {
+  async filterForRemoveTag(matchingTorrents, action, options = {}) {
     if (action.type !== 'remove_tag' || !action.tagIds || action.tagIds.length === 0) {
       return matchingTorrents;
     }
 
-    const userDb = await this.getUserDb();
+    let tagsByDownloadId = options.tagsByDownloadId;
+    if (!tagsByDownloadId || !(tagsByDownloadId instanceof Map)) {
+      const userDb = await this.getUserDb();
+      const allDownloadIds = matchingTorrents
+        .map(
+          (t) =>
+            t.id?.toString() ||
+            t.torrent_id?.toString() ||
+            t.usenet_id?.toString() ||
+            t.web_id?.toString()
+        )
+        .filter((id) => id);
 
-    // Collect all download IDs
-    const allDownloadIds = matchingTorrents
-      .map(
-        (t) =>
-          t.id?.toString() ||
-          t.torrent_id?.toString() ||
-          t.usenet_id?.toString() ||
-          t.web_id?.toString()
-      )
-      .filter((id) => id);
+      if (allDownloadIds.length === 0) {
+        return matchingTorrents;
+      }
 
-    if (allDownloadIds.length === 0) {
-      return matchingTorrents;
-    }
-
-    // Batch load tags for all matching torrents
-    const placeholders = allDownloadIds.map(() => '?').join(',');
-    const allDownloadTags = userDb
-      .prepare(
-        `
+      const placeholders = allDownloadIds.map(() => '?').join(',');
+      const allDownloadTags = userDb
+        .prepare(
+          `
       SELECT dt.download_id, dt.tag_id
       FROM download_tags dt
       WHERE dt.download_id IN (${placeholders})
     `
-      )
-      .all(...allDownloadIds);
+        )
+        .all(...allDownloadIds);
 
-    // Group tag IDs by download_id
-    const tagsByDownloadId = new Map();
-    for (const row of allDownloadTags) {
-      const downloadId = String(row.download_id);
-      if (!tagsByDownloadId.has(downloadId)) {
-        tagsByDownloadId.set(downloadId, new Set());
+      tagsByDownloadId = new Map();
+      for (const row of allDownloadTags) {
+        const downloadId = String(row.download_id);
+        if (!tagsByDownloadId.has(downloadId)) {
+          tagsByDownloadId.set(downloadId, new Set());
+        }
+        tagsByDownloadId.get(downloadId).add(row.tag_id);
       }
-      tagsByDownloadId.get(downloadId).add(row.tag_id);
     }
 
     // Filter out torrents that don't have any of the tags to remove
@@ -166,7 +170,11 @@ class RuleFilter {
         return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
       }
 
-      const existingTagIds = tagsByDownloadId.get(downloadId) || new Set();
+      const raw = tagsByDownloadId.get(downloadId) || [];
+      const existingTagIds =
+        Array.isArray(raw) && raw[0] != null && typeof raw[0] === 'object' && 'id' in raw[0]
+          ? new Set(raw.map((t) => t.id))
+          : new Set(Array.isArray(raw) ? raw : []);
 
       // Check if torrent has at least one of the tags to remove
       const hasAnyTag = Array.from(targetTagIds).some((tagId) => existingTagIds.has(tagId));
@@ -283,21 +291,21 @@ class RuleFilter {
 
   /**
    * Filter torrents based on action type
-   * Routes to the appropriate filter method based on action type
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
    * @param {Object} action - Action configuration
+   * @param {Object} [options] - Optional; tagsByDownloadId from RuleEvaluator to avoid duplicate SELECT
    * @returns {Promise<Array>} - Filtered torrents
    */
-  async filterTorrents(matchingTorrents, action) {
+  async filterTorrents(matchingTorrents, action, options = {}) {
     if (!action || !action.type) {
       return matchingTorrents;
     }
 
     switch (action.type) {
       case 'add_tag':
-        return await this.filterForAddTag(matchingTorrents, action);
+        return await this.filterForAddTag(matchingTorrents, action, options);
       case 'remove_tag':
-        return await this.filterForRemoveTag(matchingTorrents, action);
+        return await this.filterForRemoveTag(matchingTorrents, action, options);
       case 'stop_seeding':
         return await this.filterForStopSeeding(matchingTorrents, action);
       case 'force_start':

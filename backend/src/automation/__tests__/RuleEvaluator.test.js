@@ -53,7 +53,7 @@ describe('RuleEvaluator', () => {
       const torrents = [{ id: '1', name: 'test' }];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toEqual([]);
+      expect(result.matchingTorrents).toEqual([]);
     });
 
     it('should skip evaluation when interval has not elapsed', async () => {
@@ -69,7 +69,7 @@ describe('RuleEvaluator', () => {
       const torrents = [{ id: '1', name: 'test', progress: 100 }];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toEqual([]);
+      expect(result.matchingTorrents).toEqual([]);
     });
 
     it('should evaluate when interval has elapsed', async () => {
@@ -88,8 +88,8 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('1');
+      expect(result.matchingTorrents).toHaveLength(1);
+      expect(result.matchingTorrents[0].id).toBe('1');
     });
 
     it('should evaluate immediately when last_evaluated_at is null', async () => {
@@ -105,7 +105,7 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
+      expect(result.matchingTorrents).toHaveLength(1);
     });
 
     it('should handle invalid interval (less than 1 minute) and still evaluate', async () => {
@@ -122,7 +122,7 @@ describe('RuleEvaluator', () => {
 
       // Should still evaluate (uses minimum of 1 minute)
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
+      expect(result.matchingTorrents).toHaveLength(1);
     });
 
     it('should evaluate when no interval trigger is configured', async () => {
@@ -137,7 +137,7 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
+      expect(result.matchingTorrents).toHaveLength(1);
     });
 
     it('should evaluate rules with AND logic operator', async () => {
@@ -155,8 +155,8 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('1');
+      expect(result.matchingTorrents).toHaveLength(1);
+      expect(result.matchingTorrents[0].id).toBe('1');
     });
 
     it('should evaluate rules with OR logic operator', async () => {
@@ -175,9 +175,9 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(2);
-      expect(result.map((t) => t.id)).toContain('1');
-      expect(result.map((t) => t.id)).toContain('2');
+      expect(result.matchingTorrents).toHaveLength(2);
+      expect(result.matchingTorrents.map((t) => t.id)).toContain('1');
+      expect(result.matchingTorrents.map((t) => t.id)).toContain('2');
     });
 
     it('should use AND as default logic operator', async () => {
@@ -195,7 +195,7 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
+      expect(result.matchingTorrents).toHaveLength(1);
     });
 
     it('should evaluate rules with group structure (AND between groups)', async () => {
@@ -220,8 +220,8 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('1');
+      expect(result.matchingTorrents).toHaveLength(1);
+      expect(result.matchingTorrents[0].id).toBe('1');
     });
 
     it('should evaluate rules with group structure (OR between groups)', async () => {
@@ -246,9 +246,9 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(2);
-      expect(result.map((t) => t.id)).toContain('1');
-      expect(result.map((t) => t.id)).toContain('2');
+      expect(result.matchingTorrents).toHaveLength(2);
+      expect(result.matchingTorrents.map((t) => t.id)).toContain('1');
+      expect(result.matchingTorrents.map((t) => t.id)).toContain('2');
     });
 
     it('should evaluate rules with group structure (OR within group)', async () => {
@@ -272,9 +272,9 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(2);
-      expect(result.map((t) => t.id)).toContain('1');
-      expect(result.map((t) => t.id)).toContain('2');
+      expect(result.matchingTorrents).toHaveLength(2);
+      expect(result.matchingTorrents.map((t) => t.id)).toContain('1');
+      expect(result.matchingTorrents.map((t) => t.id)).toContain('2');
     });
 
     it('should return empty array for empty group', async () => {
@@ -291,7 +291,7 @@ describe('RuleEvaluator', () => {
       const torrents = [{ id: '1', name: 'test', progress: 100 }];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toEqual([]);
+      expect(result.matchingTorrents).toEqual([]);
     });
 
     it('should match all torrents when rule has no conditions (flat structure)', async () => {
@@ -305,7 +305,7 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result).toHaveLength(2);
+      expect(result.matchingTorrents).toHaveLength(2);
     });
   });
 

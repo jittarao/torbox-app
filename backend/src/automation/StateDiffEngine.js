@@ -64,26 +64,26 @@ class StateDiffEngine {
     // Normalize all IDs to strings for consistent comparison (DB stores as TEXT, API returns numbers)
     const currentIds = new Set(torrents.map((t) => String(t.id)));
 
-    // Process each torrent from API
-    for (const torrent of torrents) {
-      const state = this.getTorrentState(torrent);
+    this.db.transaction(() => {
+      for (const torrent of torrents) {
+        const state = this.getTorrentState(torrent);
 
-      if (this.isTerminalState(state)) {
-        this._handleTerminalState(torrent, shadowMap, changes);
-        continue;
+        if (this.isTerminalState(state)) {
+          this._handleTerminalState(torrent, shadowMap, changes);
+          continue;
+        }
+
+        const shadow = shadowMap.get(String(torrent.id));
+
+        if (!shadow) {
+          this._handleNewTorrent(torrent, changes, now);
+        } else {
+          this._handleExistingTorrent(torrent, shadow, state, changes, now);
+        }
       }
 
-      const shadow = shadowMap.get(String(torrent.id));
-
-      if (!shadow) {
-        this._handleNewTorrent(torrent, changes, now);
-      } else {
-        this._handleExistingTorrent(torrent, shadow, state, changes, now);
-      }
-    }
-
-    // Find removed torrents (in shadow but not in API)
-    this._findRemovedTorrents(shadowMap, currentIds, changes);
+      this._findRemovedTorrents(shadowMap, currentIds, changes);
+    })();
 
     return changes;
   }
