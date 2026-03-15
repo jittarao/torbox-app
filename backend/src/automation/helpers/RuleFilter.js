@@ -54,13 +54,13 @@ class RuleFilter {
       for (const row of allDownloadTags) {
         const downloadId = String(row.download_id);
         if (!tagsByDownloadId.has(downloadId)) {
-          tagsByDownloadId.set(downloadId, new Set());
+          tagsByDownloadId.set(downloadId, []);
         }
-        tagsByDownloadId.get(downloadId).add(row.tag_id);
+        tagsByDownloadId.get(downloadId).push(row.tag_id);
       }
     }
 
-    // Filter out torrents that already have all the tags
+    // Unified format: tagsByDownloadId values are number[] (tag ids)
     const targetTagIds = new Set(action.tagIds);
     const filtered = matchingTorrents.filter((torrent) => {
       const downloadId =
@@ -72,11 +72,7 @@ class RuleFilter {
         return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
       }
 
-      const raw = tagsByDownloadId.get(downloadId) || [];
-      const existingTagIds =
-        Array.isArray(raw) && raw[0] != null && typeof raw[0] === 'object' && 'id' in raw[0]
-          ? new Set(raw.map((t) => t.id))
-          : new Set(Array.isArray(raw) ? raw : []);
+      const existingTagIds = new Set(tagsByDownloadId.get(downloadId) || []);
 
       // Check if torrent already has all the tags
       const hasAllTags = Array.from(targetTagIds).every((tagId) => existingTagIds.has(tagId));
@@ -152,13 +148,13 @@ class RuleFilter {
       for (const row of allDownloadTags) {
         const downloadId = String(row.download_id);
         if (!tagsByDownloadId.has(downloadId)) {
-          tagsByDownloadId.set(downloadId, new Set());
+          tagsByDownloadId.set(downloadId, []);
         }
-        tagsByDownloadId.get(downloadId).add(row.tag_id);
+        tagsByDownloadId.get(downloadId).push(row.tag_id);
       }
     }
 
-    // Filter out torrents that don't have any of the tags to remove
+    // Unified format: tagsByDownloadId values are number[] (tag ids)
     const targetTagIds = new Set(action.tagIds);
     const filtered = matchingTorrents.filter((torrent) => {
       const downloadId =
@@ -170,11 +166,7 @@ class RuleFilter {
         return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
       }
 
-      const raw = tagsByDownloadId.get(downloadId) || [];
-      const existingTagIds =
-        Array.isArray(raw) && raw[0] != null && typeof raw[0] === 'object' && 'id' in raw[0]
-          ? new Set(raw.map((t) => t.id))
-          : new Set(Array.isArray(raw) ? raw : []);
+      const existingTagIds = new Set(tagsByDownloadId.get(downloadId) || []);
 
       // Check if torrent has at least one of the tags to remove
       const hasAnyTag = Array.from(targetTagIds).some((tagId) => existingTagIds.has(tagId));

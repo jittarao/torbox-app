@@ -1,7 +1,5 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
 import logger from '../utils/logger.js';
-import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
-import { parseDbTimestamp } from '../utils/dateUtils.js';
 
 // Constants
 const MIN_INTERVAL_MINUTES = 30;
@@ -59,68 +57,6 @@ class RuleEvaluator {
   }
 
   /**
-   * Check if rule evaluation should be skipped due to interval constraints
-   * @param {Object} rule - Rule configuration
-   * @returns {boolean} - True if evaluation should be skipped
-   */
-  shouldSkipEvaluation(rule) {
-    if (!rule.trigger || rule.trigger.type !== 'interval' || !rule.trigger.value) {
-      return false; // No interval trigger, evaluate on every poll
-    }
-
-    const intervalMinutes = rule.trigger.value;
-
-    if (intervalMinutes < MIN_INTERVAL_MINUTES) {
-      logger.warn('Rule has invalid interval (less than 30 minutes), using 30 minute minimum', {
-        ruleId: rule.id,
-        ruleName: rule.name,
-        intervalMinutes,
-      });
-    }
-
-    if (!rule.last_evaluated_at) {
-      logger.debug('Rule has no last_evaluated_at, evaluating immediately', {
-        ruleId: rule.id,
-        ruleName: rule.name,
-        intervalMinutes,
-      });
-      return false; // Never evaluated, evaluate immediately
-    }
-
-    const lastEvaluated = parseDbTimestamp(rule.last_evaluated_at);
-    const adjustedIntervalMinutes = applyIntervalMultiplier(
-      Math.max(intervalMinutes, MIN_INTERVAL_MINUTES)
-    );
-    const intervalMs = adjustedIntervalMinutes * MS_PER_MINUTE;
-    const timeSinceLastEvaluation = Date.now() - lastEvaluated.getTime();
-
-    if (timeSinceLastEvaluation < intervalMs) {
-      const remainingMs = intervalMs - timeSinceLastEvaluation;
-      const remainingMinutes = (remainingMs / MS_PER_MINUTE).toFixed(2);
-      logger.debug('Rule evaluation skipped - interval not elapsed', {
-        ruleId: rule.id,
-        ruleName: rule.name,
-        intervalMinutes,
-        lastEvaluatedAt: rule.last_evaluated_at,
-        timeSinceLastEvaluation: `${(timeSinceLastEvaluation / MS_PER_MINUTE).toFixed(2)} minutes`,
-        remainingMinutes: `${remainingMinutes} minutes`,
-        nextEvaluationIn: `${remainingMinutes} minutes`,
-      });
-      return true;
-    }
-
-    logger.debug('Rule interval elapsed, proceeding with evaluation', {
-      ruleId: rule.id,
-      ruleName: rule.name,
-      intervalMinutes,
-      lastEvaluatedAt: rule.last_evaluated_at,
-      timeSinceLastEvaluation: `${(timeSinceLastEvaluation / MS_PER_MINUTE).toFixed(2)} minutes`,
-    });
-
-    return false;
-  }
-
-  /**
    * Load telemetry data for all torrents in batch
    * @param {Array<string>} torrentIds - Array of torrent IDs
    * @returns {Map} - Map of torrent_id -> telemetry data
@@ -141,6 +77,53 @@ class RuleEvaluator {
       .all(...torrentIds);
 
     return new Map(allTelemetry.map((t) => [String(t.torrent_id), t]));
+  }
+
+  /**
+   * Load tags data for all downloads (used when shared batch loading; no rule check).
+   * @param {Array} torrents - Array of torrent objects
+   * @returns {Map} - Map of download_id -> array of tag objects { id, name }
+   */
+  loadTagsDataForTorrents(torrents) {
+    if (torrents.length === 0) {
+      return new Map();
+    }
+
+    const allDownloadIds = new Set();
+    for (const torrent of torrents) {
+      const downloadId = this.extractDownloadId(torrent);
+      if (downloadId) {
+        allDownloadIds.add(downloadId);
+      }
+    }
+
+    if (allDownloadIds.size === 0) {
+      return new Map();
+    }
+
+    const downloadIdArray = Array.from(allDownloadIds);
+    const placeholders = downloadIdArray.map(() => '?').join(',');
+    const allDownloadTags = this.db
+      .prepare(
+        `
+      SELECT dt.download_id, t.id, t.name
+      FROM download_tags dt
+      INNER JOIN tags t ON dt.tag_id = t.id
+      WHERE dt.download_id IN (${placeholders})
+    `
+      )
+      .all(...downloadIdArray);
+
+    const tagsByDownloadId = new Map();
+    for (const row of allDownloadTags) {
+      const downloadId = String(row.download_id);
+      if (!tagsByDownloadId.has(downloadId)) {
+        tagsByDownloadId.set(downloadId, []);
+      }
+      tagsByDownloadId.get(downloadId).push(row.id);
+    }
+
+    return tagsByDownloadId;
   }
 
   /**
@@ -185,7 +168,7 @@ class RuleEvaluator {
       if (!tagsByDownloadId.has(downloadId)) {
         tagsByDownloadId.set(downloadId, []);
       }
-      tagsByDownloadId.get(downloadId).push({ id: row.id, name: row.name });
+      tagsByDownloadId.get(downloadId).push(row.id);
     }
 
     return tagsByDownloadId;
@@ -246,12 +229,14 @@ class RuleEvaluator {
 
   /**
    * Evaluate a rule against current torrents
-   * Supports both old flat structure and new group structure
+   * Supports both old flat structure and new group structure.
+   * When sharedMaps is provided (from evaluateRulesBatch), uses pre-loaded data; otherwise loads per rule.
    * @param {Object} rule - Rule configuration
    * @param {Array} torrents - Current torrents from API
+   * @param {Object} [sharedMaps] - Optional pre-loaded { telemetryMap, tagsByDownloadId, speedHistoryMap }
    * @returns {Promise<Array>} - Matching torrents
    */
-  evaluateRule(rule, torrents) {
+  evaluateRule(rule, torrents, sharedMaps = null) {
     const empty = { matchingTorrents: [], tagsByDownloadId: new Map() };
     if (!rule.enabled) {
       return empty;
@@ -259,12 +244,22 @@ class RuleEvaluator {
     // Interval-skip is already checked in AutomationEngine.evaluateSingleRule (shouldSkipRuleEvaluation)
 
     const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
-    const analysis = this.analyzeRule(rule);
-    const telemetryMap = analysis.needsTelemetry ? this.loadTelemetryData(torrentIds) : new Map();
-    const tagsByDownloadId = analysis.needsTags ? this.loadTagsData(rule, torrents) : new Map();
-    const speedHistoryMap = analysis.needsSpeed
-      ? this.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
-      : new Map();
+    let telemetryMap;
+    let tagsByDownloadId;
+    let speedHistoryMap;
+
+    if (sharedMaps) {
+      telemetryMap = sharedMaps.telemetryMap ?? new Map();
+      tagsByDownloadId = sharedMaps.tagsByDownloadId ?? new Map();
+      speedHistoryMap = sharedMaps.speedHistoryMap ?? new Map();
+    } else {
+      const analysis = this.analyzeRule(rule);
+      telemetryMap = analysis.needsTelemetry ? this.loadTelemetryData(torrentIds) : new Map();
+      tagsByDownloadId = analysis.needsTags ? this.loadTagsData(rule, torrents) : new Map();
+      speedHistoryMap = analysis.needsSpeed
+        ? this.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
+        : new Map();
+    }
 
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
 
@@ -1094,8 +1089,8 @@ class RuleEvaluator {
       return false;
     }
 
-    const downloadTags = tagsByDownloadId.get(downloadId) || [];
-    const downloadTagIds = downloadTags.map((tag) => tag.id);
+    // Unified format: tagsByDownloadId values are number[] (tag ids)
+    const downloadTagIds = tagsByDownloadId.get(downloadId) || [];
     const conditionTagIds = condition.value
       .map((v) => (typeof v === 'number' ? v : parseInt(v, 10)))
       .filter((id) => !isNaN(id));
@@ -1445,8 +1440,11 @@ class RuleEvaluator {
 
   /**
    * Execute action on a torrent
+   * @param {Object} action - Action config
+   * @param {Object} torrent - Torrent object
+   * @param {Object} [options] - Optional; skipValidation: true to skip tag ID validation (caller validated once per batch)
    */
-  async executeAction(action, torrent) {
+  async executeAction(action, torrent, options = {}) {
     if (!action) {
       throw new Error('Action is required but was not provided');
     }
@@ -1462,19 +1460,9 @@ class RuleEvaluator {
       case 'stop_seeding':
         return await this.apiClient.controlTorrent(torrent.id, 'stop_seeding');
 
-      case 'force_start': {
-        const status = this.getTorrentStatus(torrent);
-        if (status !== 'queued') {
-          logger.info('Skipping force_start - torrent is not queued', {
-            torrentId: torrent.id,
-            torrentName: torrent.name,
-            status,
-          });
-          return { skipped: true, reason: 'force_start only applies to queued torrents' };
-        }
-        // Queued items use /api/queued/controlqueued with operation 'start', not controltorrent/force_start
+      case 'force_start':
+        // RuleFilter already restricts to queued torrents; queued items use controlqueued with operation 'start'
         return await this.apiClient.controlQueuedTorrent(torrent.id, 'start');
-      }
 
       case 'delete':
         return await this.apiClient.deleteTorrent(torrent.id, {
@@ -1500,10 +1488,10 @@ class RuleEvaluator {
         });
 
       case 'add_tag':
-        return await this.addTagsToDownload(action, torrent);
+        return await this.addTagsToDownload(action, torrent, options);
 
       case 'remove_tag':
-        return await this.removeTagsFromDownload(action, torrent);
+        return await this.removeTagsFromDownload(action, torrent, options);
 
       default:
         throw new Error(`Unknown action type: ${action.type}`);
@@ -1533,21 +1521,21 @@ class RuleEvaluator {
    * Add tags to a download
    * @param {Object} action - Action object with type and tagIds
    * @param {Object} torrent - Torrent object
+   * @param {Object} [options] - Optional; skipValidation: true if tag IDs were already validated (e.g. by RuleExecutor)
    */
-  async addTagsToDownload(action, torrent) {
-    // Validate tagIds
+  async addTagsToDownload(action, torrent, options = {}) {
     if (!Array.isArray(action.tagIds) || action.tagIds.length === 0) {
       throw new Error('tagIds must be a non-empty array for add_tag action');
     }
 
-    // Extract download ID (supporting multiple formats)
     const downloadId = this.extractDownloadId(torrent);
-
     if (!downloadId) {
       throw new Error('Download ID is required but could not be extracted from torrent');
     }
 
-    this.validateTagIds(action.tagIds);
+    if (!options.skipValidation) {
+      this.validateTagIds(action.tagIds);
+    }
 
     // Add tags using transaction
     const transaction = this.db.transaction(() => {
@@ -1579,21 +1567,21 @@ class RuleEvaluator {
    * Remove tags from a download
    * @param {Object} action - Action object with type and tagIds
    * @param {Object} torrent - Torrent object
+   * @param {Object} [options] - Optional; skipValidation: true if tag IDs were already validated (e.g. by RuleExecutor)
    */
-  async removeTagsFromDownload(action, torrent) {
-    // Validate tagIds
+  async removeTagsFromDownload(action, torrent, options = {}) {
     if (!Array.isArray(action.tagIds) || action.tagIds.length === 0) {
       throw new Error('tagIds must be a non-empty array for remove_tag action');
     }
 
-    // Extract download ID (supporting multiple formats)
     const downloadId = this.extractDownloadId(torrent);
-
     if (!downloadId) {
       throw new Error('Download ID is required but could not be extracted from torrent');
     }
 
-    this.validateTagIds(action.tagIds);
+    if (!options.skipValidation) {
+      this.validateTagIds(action.tagIds);
+    }
 
     // Remove tags using transaction
     const transaction = this.db.transaction(() => {

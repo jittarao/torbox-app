@@ -28,14 +28,12 @@ class RuleExecutor {
     // Resolve the evaluator once outside the loop to avoid N async pool lookups per rule execution
     const ruleEvaluator = await this.getRuleEvaluator();
 
-    // For tag actions, validate tag IDs once before starting the worker pool.
-    // Previously validateTagIds was called inside addTagsToDownload / removeTagsFromDownload,
-    // resulting in the same SELECT query running once per matched torrent.
-    if (
+    // For tag actions, validate tag IDs once before starting the worker pool; pass skipValidation so handlers don't re-validate.
+    const tagActionValidated =
       (rule.action?.type === 'add_tag' || rule.action?.type === 'remove_tag') &&
       Array.isArray(rule.action?.tagIds) &&
-      rule.action.tagIds.length > 0
-    ) {
+      rule.action.tagIds.length > 0;
+    if (tagActionValidated) {
       ruleEvaluator.validateTagIds(rule.action.tagIds);
     }
 
@@ -64,7 +62,9 @@ class RuleExecutor {
             torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
           });
 
-          await ruleEvaluator.executeAction(rule.action, torrent);
+          await ruleEvaluator.executeAction(rule.action, torrent, {
+            skipValidation: tagActionValidated,
+          });
           successCount++;
 
           logger.debug('Action successfully executed', {
