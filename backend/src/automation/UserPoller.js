@@ -488,9 +488,10 @@ class UserPoller {
   /**
    * Evaluate automation rules for torrents
    * @param {Array} torrents - Array of torrent objects
+   * @param {Object} [changes] - Optional state diff; when provided, transition-only rules are evaluated against a subset
    * @returns {Promise<Object>} - Object with evaluated and executed counts
    */
-  async evaluateRules(torrents) {
+  async evaluateRules(torrents, changes = null) {
     const rulesStart = Date.now();
     let ruleResults = { evaluated: 0, executed: 0 };
 
@@ -507,7 +508,7 @@ class UserPoller {
     });
 
     try {
-      ruleResults = await this.automationEngine.evaluateRules(torrents);
+      ruleResults = await this.automationEngine.evaluateRules(torrents, changes);
       const rulesDuration = ((Date.now() - rulesStart) / 1000).toFixed(2);
       logger.debug('Automation rules evaluated', {
         authId: this.authId,
@@ -615,7 +616,7 @@ class UserPoller {
     await this.processSpeedUpdates(changes.updated);
     if (checkCancelled) checkCancelled();
 
-    const ruleResults = await this.evaluateRules(torrents);
+    const ruleResults = await this.evaluateRules(torrents, changes);
     if (checkCancelled) checkCancelled();
     const nonTerminalCount = this.countNonTerminalTorrents(torrents, changes);
     const nextPollAt = await this.calculateNextPollAt(

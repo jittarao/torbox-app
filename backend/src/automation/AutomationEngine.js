@@ -411,10 +411,32 @@ class AutomationEngine {
 
 
   /**
+   * Build torrent subset for changed-only scope (new + state transitions). Used when a rule can be evaluated on the delta.
+   * @param {Array} torrents - Full torrent list
+   * @param {Object} changes - { new: Array, stateTransitions: Array<{ torrent_id }> }
+   * @returns {Array} Subset of torrents (deduplicated by id)
+   */
+  _buildChangedOnlySubset(torrents, changes) {
+    if (!changes?.new?.length && !changes?.stateTransitions?.length) return [];
+    const byId = new Map();
+    for (const t of changes.new || []) {
+      if (t?.id != null) byId.set(String(t.id), t);
+    }
+    const transitionIds = new Set((changes.stateTransitions || []).map((t) => String(t.torrent_id)));
+    for (const t of torrents) {
+      if (t?.id != null && transitionIds.has(String(t.id)) && !byId.has(String(t.id))) {
+        byId.set(String(t.id), t);
+      }
+    }
+    return Array.from(byId.values());
+  }
+
+  /**
    * Evaluate and execute rules (called after each poll)
    * @param {Array} torrents - Current torrents from API
+   * @param {Object} [changes] - Optional diff result; when provided, rules that only use transition-only conditions are evaluated against a subset (new + state transitions) to save work
    */
-  async evaluateRules(torrents) {
+  async evaluateRules(torrents, changes = null) {
     const evaluationStartTime = Date.now();
     try {
       logger.info('Starting rule evaluation', {
@@ -450,7 +472,7 @@ class AutomationEngine {
         })),
       });
 
-      const results = await this.evaluateRulesBatch(enabledRules, torrents);
+      const results = await this.evaluateRulesBatch(enabledRules, torrents, changes);
       const evaluationDuration = ((Date.now() - evaluationStartTime) / 1000).toFixed(2);
 
       logger.info('Rule evaluation cycle completed', {
@@ -499,9 +521,10 @@ class AutomationEngine {
    *
    * @param {Array} enabledRules - Rules to evaluate
    * @param {Array} torrents - Torrents to evaluate against
+   * @param {Object} [changes] - Optional diff; when set, transition-only rules are evaluated against new + stateTransitions subset
    * @returns {Promise<Object>} - { executedCount, skippedCount, errorCount, pendingActions }
    */
-  async evaluateRulesBatch(enabledRules, torrents) {
+  async evaluateRulesBatch(enabledRules, torrents, changes = null) {
     let executedCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
@@ -547,8 +570,13 @@ class AutomationEngine {
         const rule = queue.shift();
         if (!rule) continue;
 
+        const torrentList =
+          changes && ruleEvaluator.ruleCanUseChangedOnlyScope(rule)
+            ? this._buildChangedOnlySubset(torrents, changes)
+            : torrents;
+
         try {
-          const result = await this.evaluateSingleRule(rule, torrents, sharedMaps, ruleEvaluator);
+          const result = await this.evaluateSingleRule(rule, torrentList, sharedMaps, ruleEvaluator);
           if (result.ruleId != null) {
             evaluatedRuleIds.push(result.ruleId);
           }

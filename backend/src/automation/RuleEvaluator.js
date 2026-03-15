@@ -507,6 +507,27 @@ class RuleEvaluator {
   }
 
   /**
+   * Condition types that are safe to evaluate on "changed only" scope (new + state transitions).
+   * Rules that use only these conditions can be evaluated against a subset of torrents to save work.
+   */
+  static get TRANSITION_ONLY_CONDITION_TYPES() {
+    return new Set(['STATUS']);
+  }
+
+  /**
+   * Returns true if the rule only uses condition types that are safe for changed-only scope.
+   * Such rules can be evaluated against new + state-transition torrents instead of the full list.
+   * @param {Object} rule - Rule configuration
+   * @returns {boolean}
+   */
+  ruleCanUseChangedOnlyScope(rule) {
+    const conditions = this.getAllConditions(rule);
+    if (conditions.length === 0) return false;
+    const transitionOnly = RuleEvaluator.TRANSITION_ONLY_CONDITION_TYPES;
+    return conditions.every((c) => c.type && transitionOnly.has(c.type));
+  }
+
+  /**
    * Single-pass analysis of rule conditions to determine what data to load.
    * @param {Object} rule - Rule configuration
    * @returns {{ needsTelemetry: boolean, needsTags: boolean, needsSpeed: boolean, maxSpeedHours: number }}

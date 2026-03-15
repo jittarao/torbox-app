@@ -547,6 +547,17 @@ class Database {
   }
 
   /**
+   * Delete pending actions older than the given cutoff (TTL cleanup to avoid unbounded growth).
+   * @param {Date|string} cutoff - Cutoff date; rows with created_at < cutoff are deleted.
+   * @returns {number} Number of rows deleted
+   */
+  deletePendingActionsOlderThan(cutoff) {
+    const cutoffStr = cutoff instanceof Date ? cutoff.toISOString() : String(cutoff);
+    const result = this.runQuery('DELETE FROM pending_actions WHERE created_at < ?', [cutoffStr]);
+    return result?.changes ?? 0;
+  }
+
+  /**
    * Update user status (keeps user_registry.status and api_keys.is_active in sync)
    * @param {string} authId - User authentication ID
    * @param {string} status - New status ('active', 'inactive', etc.)
