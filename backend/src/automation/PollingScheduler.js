@@ -379,6 +379,43 @@ class PollingScheduler {
   }
 
   /**
+   * Handle a poll that was aborted because TorBox API was unreachable (network failure / 5xx).
+   * Shadow state was NOT touched, so we simply schedule a fast retry and avoid penalising the
+   * user's consecutive-timeout counter (this is an external outage, not a runaway poll).
+   * @param {string} authId - User authentication ID
+   * @param {number} duration - Poll duration in seconds
+   */
+  handleConnectionError(authId, duration) {
+    if (!authId) {
+      logger.warn('handleConnectionError called with invalid authId');
+      return;
+    }
+
+    try {
+      // Retry in ERROR_RETRY_INTERVAL_MS (5 min). The reserveUntil written at poll start is
+      // already ~5 min from now, so this is a no-op in the common case — but it makes intent
+      // explicit and covers edge cases where the poll finished quickly.
+      const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
+      this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
+
+      this.metrics.failedPolls++;
+
+      logger.warn('Poll aborted: TorBox API unreachable — scheduling fast retry', {
+        authId,
+        nextPollAt: nextPollAt.toISOString(),
+        retryIn: '5 minutes',
+        duration: `${duration.toFixed(2)}s`,
+      });
+    } catch (error) {
+      logger.error('Failed to handle connection error for poll', error, {
+        authId,
+        duration,
+        errorMessage: error.message,
+      });
+    }
+  }
+
+  /**
    * Handle poll error
    * @param {string} authId - User authentication ID
    * @param {Error} error - Error that occurred
@@ -586,6 +623,10 @@ class PollingScheduler {
         this.handleSkippedPoll(auth_id, result, duration);
         counters.skipped++;
         this.metrics.skippedPolls++;
+      } else if (result && result.isConnectionError) {
+        // TorBox API was unreachable — shadow state is intact, retry in 5 min
+        this.handleConnectionError(auth_id, duration);
+        counters.error++;
       } else {
         logger.warn('Poll returned unexpected result', {
           authId: auth_id,

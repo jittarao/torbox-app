@@ -499,7 +499,17 @@ class AutomationEngine {
   }
 
   /**
-   * Evaluate a batch of rules
+   * Evaluate a batch of rules with bounded concurrency.
+   *
+   * Rules are independent (different rule IDs, different torrents matched), so they can
+   * safely run in parallel. The heavy work inside each rule is API action calls; overlapping
+   * those calls across rules cuts wall-clock time proportionally to the concurrency level.
+   *
+   * Concurrency is capped at RULE_EVAL_CONCURRENCY (default 2) to avoid saturating the
+   * outbound semaphore in ApiClient when many users are polling simultaneously.
+   * better-sqlite3 synchronous operations are serialised naturally by Node.js's event loop,
+   * so shared DB access is safe.
+   *
    * @param {Array} enabledRules - Rules to evaluate
    * @param {Array} torrents - Torrents to evaluate against
    * @returns {Promise<Object>} - { executedCount, skippedCount, errorCount }
@@ -509,19 +519,35 @@ class AutomationEngine {
     let skippedCount = 0;
     let errorCount = 0;
 
-    for (const rule of enabledRules) {
-      try {
-        const result = await this.evaluateSingleRule(rule, torrents);
-        if (result.executed) {
-          executedCount++;
-        } else if (result.skipped) {
-          skippedCount++;
+    const concurrency = Math.max(
+      1,
+      parseInt(process.env.RULE_EVAL_CONCURRENCY || '2', 10)
+    );
+
+    // Worker-pool: counters are mutated only after await resolves, safe in single-threaded Node.js.
+    const queue = [...enabledRules];
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const rule = queue.shift();
+        if (!rule) continue;
+
+        try {
+          const result = await this.evaluateSingleRule(rule, torrents);
+          if (result.executed) {
+            executedCount++;
+          } else if (result.skipped) {
+            skippedCount++;
+          }
+        } catch (error) {
+          errorCount++;
+          await this.handleRuleEvaluationError(rule, error);
         }
-      } catch (error) {
-        errorCount++;
-        await this.handleRuleEvaluationError(rule, error);
       }
-    }
+    };
+
+    const workerCount = Math.min(concurrency, enabledRules.length);
+    await Promise.all(Array.from({ length: workerCount }, worker));
 
     return { executedCount, skippedCount, errorCount };
   }
