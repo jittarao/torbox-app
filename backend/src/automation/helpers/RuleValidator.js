@@ -59,8 +59,8 @@ class RuleValidator {
         if (trigger.type === 'interval') {
           if (trigger.value === undefined || trigger.value === null) {
             errors.push('Interval trigger must have a value');
-          } else if (typeof trigger.value !== 'number' || trigger.value < 1) {
-            errors.push('Interval trigger value must be a number >= 1 (minutes)');
+          } else if (typeof trigger.value !== 'number' || trigger.value < 30) {
+            errors.push('Interval trigger value must be a number >= 30 (minutes)');
           }
         }
       }

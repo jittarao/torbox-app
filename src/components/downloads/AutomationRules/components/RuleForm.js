@@ -60,12 +60,12 @@ export default function RuleForm({
                   ...rule,
                   trigger: {
                     ...rule.trigger,
-                    value: parseInt(e.target.value) || 1,
+                    value: parseInt(e.target.value) || 30,
                   },
                 })
               }
               className="w-24 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
-              min="1"
+              min="30"
             />
             <span className="text-sm text-primary-text dark:text-primary-text-dark">
               {commonT('minutes')}

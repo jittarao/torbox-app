@@ -22,7 +22,7 @@ function parseDbTimestamp(dateStr) {
 }
 
 // Constants
-const MIN_INTERVAL_MINUTES = 1;
+const MIN_INTERVAL_MINUTES = 30;
 const MS_PER_MINUTE = 60 * 1000;
 const MS_PER_HOUR = 60 * 60 * 1000;
 const BYTES_PER_MB = 1024 * 1024;
@@ -89,7 +89,7 @@ class RuleEvaluator {
     const intervalMinutes = rule.trigger.value;
 
     if (intervalMinutes < MIN_INTERVAL_MINUTES) {
-      logger.warn('Rule has invalid interval (less than 1 minute), using 1 minute minimum', {
+      logger.warn('Rule has invalid interval (less than 30 minutes), using 30 minute minimum', {
         ruleId: rule.id,
         ruleName: rule.name,
         intervalMinutes,

@@ -9,15 +9,15 @@ import logger from '../../utils/logger.js';
 const POLLING_CONFIG = {
   // Base intervals for different polling modes
   intervals: {
-    idle: 15, // Idle mode: user has active rules but no recent executions
-    active: 5, // Active mode: user has active rules and recent executions with non-terminal torrents
-    activeNoTerminal: 30, // Active mode: user has active rules but no non-terminal torrents
-    noRules: 60, // No rules mode: user has no active rules
+    idle: 60, // Idle mode: user has active rules but no recent executions
+    active: 30, // Active mode: user has active rules and recent executions with non-terminal torrents
+    activeNoTerminal: 60, // Active mode: user has active rules but no non-terminal torrents
+    noRules: 180, // No rules mode: user has no active rules (3 hours)
   },
 
   // Minimum interval constraints
   minimum: {
-    production: 5, // Minimum polling interval in production (minutes)
+    production: 30, // Minimum polling interval in production (minutes)
     development: 0.1, // Minimum polling interval multiplier in development (0.1 = 10x faster, 0.01 = 100x faster)
   },
 };
@@ -111,7 +111,7 @@ class PollingIntervalCalculator {
    * Calculate next poll timestamp based on state and adaptive polling logic
    *
    * State Machine:
-   * - no-rules: User has no active rules -> poll every 60 minutes
+   * - no-rules: User has no active rules -> poll every 180 minutes
    * - idle: User has active rules but no recent executions -> poll every 60 minutes
    * - active: User has active rules and recent executions -> poll based on rule intervals or fallback logic
    *
