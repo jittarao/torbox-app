@@ -39,6 +39,19 @@ class RuleRepository {
   }
 
   /**
+   * Get a single rule by ID (for manual execution and other single-rule operations)
+   * @param {number} ruleId - Rule ID
+   * @returns {Promise<Object|null>} - Rule object in group structure, or null if not found
+   */
+  async getRuleById(ruleId) {
+    const userDb = await this.getUserDb();
+    const row = userDb.prepare('SELECT * FROM automation_rules WHERE id = ?').get(ruleId);
+    if (!row) return null;
+    const mappedRule = this.mapRuleFromDb(row);
+    return RuleMigrationHelper.migrateRuleToGroups(mappedRule);
+  }
+
+  /**
    * Map database row to rule object
    * @param {Object} rule - Database row
    * @returns {Object} - Rule object

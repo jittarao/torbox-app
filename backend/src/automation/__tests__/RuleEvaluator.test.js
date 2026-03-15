@@ -57,20 +57,19 @@ describe('RuleEvaluator', () => {
       expect(result.matchingTorrents).toEqual([]);
     });
 
-    it('should skip evaluation when interval has not elapsed', async () => {
-      const now = Date.now();
-      const oneMinuteAgo = new Date(now - 1 * 60 * 1000).toISOString();
-
+    // Interval-based skip is handled in AutomationEngine.shouldSkipRuleEvaluation; RuleEvaluator.evaluateRule no longer skips by interval
+    it('evaluates when interval has not elapsed (interval skip is in AutomationEngine)', async () => {
+      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString();
       const rule = {
         enabled: true,
-        trigger: { type: 'interval', value: 10 }, // 10 minutes
+        trigger: { type: 'interval', value: 10 },
         last_evaluated_at: oneMinuteAgo,
         conditions: [{ type: 'PROGRESS', operator: 'gte', value: 0 }],
       };
       const torrents = [{ id: '1', name: 'test', progress: 100 }];
-
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result.matchingTorrents).toEqual([]);
+      expect(result.matchingTorrents).toHaveLength(1);
+      expect(result.matchingTorrents[0].id).toBe('1');
     });
 
     it('should evaluate when interval has elapsed', async () => {
@@ -1109,15 +1108,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with has_any operator', () => {
         const condition = { type: 'TAGS', operator: 'has_any', value: [1, 2, 3] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          [
-            '1',
-            [
-              { id: 1, name: 'tag1' },
-              { id: 2, name: 'tag2' },
-            ],
-          ],
-        ]);
+        const tagsByDownloadId = new Map([['1', [1, 2]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1131,7 +1122,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with is_any_of operator (frontend alias)', () => {
         const condition = { type: 'TAGS', operator: 'is_any_of', value: [1, 2, 3] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
+        const tagsByDownloadId = new Map([['1', [1]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1145,15 +1136,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with has_all operator', () => {
         const condition = { type: 'TAGS', operator: 'has_all', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          [
-            '1',
-            [
-              { id: 1, name: 'tag1' },
-              { id: 2, name: 'tag2' },
-            ],
-          ],
-        ]);
+        const tagsByDownloadId = new Map([['1', [1, 2]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1167,15 +1150,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with is_all_of operator (frontend alias)', () => {
         const condition = { type: 'TAGS', operator: 'is_all_of', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          [
-            '1',
-            [
-              { id: 1, name: 'tag1' },
-              { id: 2, name: 'tag2' },
-            ],
-          ],
-        ]);
+        const tagsByDownloadId = new Map([['1', [1, 2]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1189,15 +1164,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with has_all operator (missing tag)', () => {
         const condition = { type: 'TAGS', operator: 'has_all', value: [1, 2, 3] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([
-          [
-            '1',
-            [
-              { id: 1, name: 'tag1' },
-              { id: 2, name: 'tag2' },
-            ],
-          ],
-        ]);
+        const tagsByDownloadId = new Map([['1', [1, 2]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1211,7 +1178,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with has_none operator', () => {
         const condition = { type: 'TAGS', operator: 'has_none', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([['1', [{ id: 3, name: 'tag3' }]]]);
+        const tagsByDownloadId = new Map([['1', [3]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1225,7 +1192,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with is_none_of operator (frontend alias)', () => {
         const condition = { type: 'TAGS', operator: 'is_none_of', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([['1', [{ id: 3, name: 'tag3' }]]]);
+        const tagsByDownloadId = new Map([['1', [3]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1239,7 +1206,7 @@ describe('RuleEvaluator', () => {
       it('should evaluate TAGS condition with has_none operator (has excluded tag)', () => {
         const condition = { type: 'TAGS', operator: 'has_none', value: [1, 2] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
+        const tagsByDownloadId = new Map([['1', [1]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1250,10 +1217,10 @@ describe('RuleEvaluator', () => {
         expect(result).toBe(false);
       });
 
-      it('should return true for TAGS condition with empty value array', () => {
+      it('should return false for TAGS condition with empty value array', () => {
         const condition = { type: 'TAGS', operator: 'has_any', value: [] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
+        const tagsByDownloadId = new Map([['1', [1]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1261,7 +1228,7 @@ describe('RuleEvaluator', () => {
           new Map(),
           tagsByDownloadId
         );
-        expect(result).toBe(true); // No tags specified means match all
+        expect(result).toBe(false); // No valid tag IDs in condition => no match
       });
 
       it('should return false for TAGS condition when download has no tags', () => {
@@ -1305,7 +1272,7 @@ describe('RuleEvaluator', () => {
       it('should handle TAGS condition with string tag IDs', () => {
         const condition = { type: 'TAGS', operator: 'has_any', value: ['1', '2'] };
         const torrent = { id: '1' };
-        const tagsByDownloadId = new Map([['1', [{ id: 1, name: 'tag1' }]]]);
+        const tagsByDownloadId = new Map([['1', [1]]]);
 
         const result = ruleEvaluator.evaluateCondition(
           condition,
@@ -1571,7 +1538,7 @@ describe('RuleEvaluator', () => {
       expect(mockApiClient.controlQueuedTorrent).toHaveBeenCalledWith('torrent-1', 'start');
     });
 
-    it('should skip force_start when torrent is not queued', async () => {
+    it('calls controlQueuedTorrent for force_start (RuleFilter restricts to queued; no skip in executor)', async () => {
       const action = { type: 'force_start' };
       const torrent = {
         id: 'torrent-1',
@@ -1579,13 +1546,11 @@ describe('RuleEvaluator', () => {
         active: false,
         download_present: false,
         download_finished: true,
-      }; // inactive (queued requires !download_finished)
+      };
 
-      const result = await ruleEvaluator.executeAction(action, torrent);
+      await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.controlTorrent).not.toHaveBeenCalled();
-      expect(mockApiClient.controlQueuedTorrent).not.toHaveBeenCalled();
-      expect(result).toEqual({ skipped: true, reason: 'force_start only applies to queued torrents' });
+      expect(mockApiClient.controlQueuedTorrent).toHaveBeenCalledWith('torrent-1', 'start');
     });
 
     it('should execute archive action', async () => {

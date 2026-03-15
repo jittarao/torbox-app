@@ -501,18 +501,15 @@ class AutomationEngine {
   /**
    * Evaluate a batch of rules with bounded concurrency.
    *
-   * Rules are independent (different rule IDs, different torrents matched), so they can
-   * safely run in parallel. The heavy work inside each rule is API action calls; overlapping
-   * those calls across rules cuts wall-clock time proportionally to the concurrency level.
+   * Shared data (telemetry, tags, speed history) is loaded once per poll cycle and passed
+   * into each rule evaluation, collapsing N×3 queries to 3 total.
    *
    * Concurrency is capped at RULE_EVAL_CONCURRENCY (default 2) to avoid saturating the
    * outbound semaphore in ApiClient when many users are polling simultaneously.
-   * better-sqlite3 synchronous operations are serialised naturally by Node.js's event loop,
-   * so shared DB access is safe.
    *
    * @param {Array} enabledRules - Rules to evaluate
    * @param {Array} torrents - Torrents to evaluate against
-   * @returns {Promise<Object>} - { executedCount, skippedCount, errorCount }
+   * @returns {Promise<Object>} - { executedCount, skippedCount, errorCount, pendingActions }
    */
   async evaluateRulesBatch(enabledRules, torrents) {
     let executedCount = 0;
@@ -521,12 +518,38 @@ class AutomationEngine {
     const pendingActions = [];
     const evaluatedRuleIds = [];
 
+    const ruleEvaluator = await this.getRuleEvaluator();
+    const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
+
+    // Union analyze all rules: load each dataset once per cycle instead of per rule
+    let needsTelemetry = false;
+    let needsTags = false;
+    let needsSpeed = false;
+    let maxSpeedHours = 0;
+    for (const rule of enabledRules) {
+      const analysis = ruleEvaluator.analyzeRule(rule);
+      if (analysis.needsTelemetry) needsTelemetry = true;
+      if (analysis.needsTags) needsTags = true;
+      if (analysis.needsSpeed) {
+        needsSpeed = true;
+        maxSpeedHours = Math.max(maxSpeedHours, analysis.maxSpeedHours);
+      }
+    }
+
+    const sharedMaps = {
+      telemetryMap: needsTelemetry ? ruleEvaluator.loadTelemetryData(torrentIds) : new Map(),
+      tagsByDownloadId: needsTags ? ruleEvaluator.loadTagsDataForTorrents(torrents) : new Map(),
+      speedHistoryMap:
+        needsSpeed && torrentIds.length > 0
+          ? ruleEvaluator.loadSpeedHistoryDataForHours(torrentIds, maxSpeedHours)
+          : new Map(),
+    };
+
     const concurrency = Math.max(
       1,
       parseInt(process.env.RULE_EVAL_CONCURRENCY || '2', 10)
     );
 
-    // Worker-pool: counters are mutated only after await resolves, safe in single-threaded Node.js.
     const queue = [...enabledRules];
 
     const worker = async () => {
@@ -535,7 +558,7 @@ class AutomationEngine {
         if (!rule) continue;
 
         try {
-          const result = await this.evaluateSingleRule(rule, torrents);
+          const result = await this.evaluateSingleRule(rule, torrents, sharedMaps);
           if (result.ruleId != null) {
             evaluatedRuleIds.push(result.ruleId);
           }
@@ -568,9 +591,10 @@ class AutomationEngine {
    * Evaluate a single rule
    * @param {Object} rule - Rule to evaluate
    * @param {Array} torrents - Torrents to evaluate against
+   * @param {Object} [sharedMaps] - Optional pre-loaded { telemetryMap, tagsByDownloadId, speedHistoryMap }
    * @returns {Promise<Object>} - { executed: boolean, skipped: boolean }
    */
-  async evaluateSingleRule(rule, torrents) {
+  async evaluateSingleRule(rule, torrents, sharedMaps = null) {
     // Check if rule has an action configured
     if (!rule.action || !rule.action.type) {
       logger.warn('Rule has no action configured, skipping execution', {
@@ -609,7 +633,11 @@ class AutomationEngine {
     }
 
     // Evaluate rule (last_evaluated_at is batch-updated at end of evaluateRulesBatch)
-    const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(rule, torrents);
+    const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
+      rule,
+      torrents,
+      sharedMaps
+    );
 
     if (matchingTorrents.length === 0) {
       logger.info('Rule did not match any torrents', {
@@ -687,8 +715,7 @@ class AutomationEngine {
       });
 
       // Get the rule first to check rate limiting before expensive operations
-      const allRules = await this.getAutomationRules();
-      const rule = allRules.find((r) => r.id === ruleId);
+      const rule = await this.ruleRepository.getRuleById(ruleId);
 
       if (!rule) {
         throw new Error(`Rule with ID ${ruleId} not found`);
@@ -769,27 +796,30 @@ class AutomationEngine {
         torrentCount: torrents.length,
       });
 
-      // Process state changes and update shadow/telemetry before evaluating rule
-      // This ensures we're working with fresh data, not stale shadow/telemetry
-      const userDb = await this.getUserDb();
-      const stateDiffEngine = new StateDiffEngine(userDb);
-      const derivedFieldsEngine = new DerivedFieldsEngine(userDb);
-
-      logger.debug('Processing state changes for manual rule execution', {
-        authId: this.authId,
-        ruleId,
-      });
-
-      const changes = await stateDiffEngine.processSnapshot(torrents);
-      await derivedFieldsEngine.updateDerivedFields(changes);
+      // Process state changes and update shadow/telemetry before evaluating rule (with retry for transient SQLite errors)
+      const changes = await DatabaseRetryHelper.retryWithBackoff(
+        async () => {
+          const userDb = await this.getUserDb();
+          const stateDiffEngine = new StateDiffEngine(userDb);
+          const derivedFieldsEngine = new DerivedFieldsEngine(userDb);
+          const snapshotChanges = await stateDiffEngine.processSnapshot(torrents);
+          await derivedFieldsEngine.updateDerivedFields(snapshotChanges);
+          return snapshotChanges;
+        },
+        {
+          maxRetries: DEFAULT_RETRY_MAX_RETRIES,
+          initialDelayMs: DEFAULT_RETRY_INITIAL_DELAY_MS,
+          context: { authId: this.authId, ruleId },
+        }
+      );
 
       logger.debug('State changes processed for manual rule execution', {
         authId: this.authId,
         ruleId,
-        new: changes.new.length,
-        updated: changes.updated.length,
-        removed: changes.removed.length,
-        stateTransitions: changes.stateTransitions.length,
+        new: changes.new?.length ?? 0,
+        updated: changes.updated?.length ?? 0,
+        removed: changes.removed?.length ?? 0,
+        stateTransitions: changes.stateTransitions?.length ?? 0,
       });
 
       logger.info('Running rule manually', {

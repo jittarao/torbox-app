@@ -13,6 +13,7 @@ const MIN_POLL_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes — minimum time betw
 // Per-user kick-out: max time one user's poll may run inside a cycle before we give up and free the slot
 const DEFAULT_POLL_KICKOUT_MS = 180000; // 3 minutes — allows slow API/DB for users with many torrents; set POLL_KICKOUT_MS=120000 for stricter slot usage
 const DEFAULT_MAX_CONCURRENT_POLLS = 12; // Number of users polled in parallel
+const DEFAULT_MAX_CONCURRENT_PROCESS = 8; // Stage 2: max users processed in parallel (state diff + rule eval)
 const DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS = 24;
 const ERROR_RETRY_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes after error or first timeout
 const TIMEOUT_BACKOFF_RETRY_MS = 60 * 60 * 1000; // 60 minutes after repeated timeouts (free concurrency slot)
@@ -272,6 +273,11 @@ class PollingScheduler {
       1,
       options.maxConcurrentPolls || DEFAULT_MAX_CONCURRENT_POLLS
     );
+    this.maxConcurrentProcess = Math.max(
+      1,
+      options.maxConcurrentProcess ??
+        parseInt(process.env.MAX_CONCURRENT_PROCESS || String(DEFAULT_MAX_CONCURRENT_PROCESS), 10)
+    );
     this.pollerCleanupIntervalHours = Math.max(
       1,
       options.pollerCleanupIntervalHours || DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS
@@ -287,6 +293,8 @@ class PollingScheduler {
     this.userConsecutiveTimeoutCount = new Map();
     /** Single semaphore shared across all poll cycles so we never exceed maxConcurrentPolls globally */
     this.pollSemaphore = null;
+    /** Stage 2 semaphore: caps concurrent processUserPoll (state diff + rule eval) to avoid SQLite contention */
+    this.processSemaphore = null;
     this._pollCycleInProgress = false;
     this._refreshInProgress = false;
     this._refreshCount = 0; // Incremented each refresh; full sync every REFRESH_FULL_SYNC_EVERY_N
@@ -637,6 +645,7 @@ class PollingScheduler {
 
     this.isRunning = true;
     this.pollSemaphore = new Semaphore(this.maxConcurrentPolls);
+    this.processSemaphore = new Semaphore(this.maxConcurrentProcess);
     this.globalActionQueue = new GlobalActionQueue(this);
 
     // Resume any pending actions persisted before a crash/restart
@@ -715,6 +724,7 @@ class PollingScheduler {
     }
 
     this.pollSemaphore = null;
+    this.processSemaphore = null;
     this._pollCycleInProgress = false;
     const pollerCount = this.pollers.size;
     this.pollers.clear();
@@ -1143,10 +1153,18 @@ class PollingScheduler {
       }
 
       // Stage 2: Process all fetched results (state diff + rule eval; no API calls)
+      // Semaphore caps concurrent processUserPoll to avoid SQLite writer contention
+      const processSem = this.processSemaphore;
       await Promise.allSettled(
-        fetchedList.map(({ user, poller, torrents }) =>
-          this.processUserPoll(user, poller, torrents, counters)
-        )
+        fetchedList.map(async ({ user, poller, torrents }) => {
+          if (!processSem) return;
+          await processSem.acquire();
+          try {
+            return await this.processUserPoll(user, poller, torrents, counters);
+          } finally {
+            processSem.release();
+          }
+        })
       );
 
       this.metrics.totalPolls += usersToFetch.length;
@@ -1351,6 +1369,7 @@ class PollingScheduler {
         minPollIntervalMs: MIN_POLL_INTERVAL_MS,
         pollKickoutMs: this.pollKickoutMs,
         maxConcurrentPolls: this.maxConcurrentPolls,
+        maxConcurrentProcess: this.maxConcurrentProcess,
         pollerCleanupIntervalHours: this.pollerCleanupIntervalHours,
       },
     };
