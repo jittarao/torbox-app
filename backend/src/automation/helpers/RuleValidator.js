@@ -281,12 +281,9 @@ class RuleValidator {
       'has_any',
       'has_all',
       'has_none',
-      // Tag operators (frontend format - will be mapped in RuleEvaluator)
+      // Tag / multi-select (frontend format and STATUS - mapped in RuleEvaluator)
       'is_any_of',
       'is_all_of',
-      'is_none_of',
-      // Multi-select operators (for STATUS)
-      'is_any_of',
       'is_none_of',
       // String operators (for NAME, TRACKER)
       'contains',
@@ -309,13 +306,12 @@ class RuleValidator {
    * @param {Array} errors - Array to append errors to
    */
   validateConditionValue(condition, groupIndex, condIndex, errors) {
-    if (condition.value === undefined && condition.type !== 'NAME') {
-      // NAME condition doesn't require operator, but needs value
-      if (condition.type === 'NAME' && !condition.value) {
+    if (condition.type === 'NAME') {
+      if (!condition.value) {
         errors.push(`Group ${groupIndex}, condition ${condIndex} (NAME) must have a value`);
-      } else if (condition.type !== 'NAME') {
-        errors.push(`Group ${groupIndex}, condition ${condIndex} must have a value`);
       }
+    } else if (condition.value === undefined) {
+      errors.push(`Group ${groupIndex}, condition ${condIndex} must have a value`);
     }
   }
 

@@ -247,23 +247,20 @@ export async function calculateUserUploadDirSize(authId) {
     const userUploadDir = getUserUploadDir(authId);
     let totalSize = 0;
 
-    // Recursively calculate size of all files
+    // Recursively calculate size of all files (parallel stat per directory)
     async function calculateDirSize(dirPath) {
       try {
         const entries = await readdir(dirPath, { withFileTypes: true });
-        for (const entry of entries) {
-          const fullPath = path.join(dirPath, entry.name);
-          if (entry.isDirectory()) {
-            await calculateDirSize(fullPath);
-          } else if (entry.isFile()) {
-            try {
-              const stats = await stat(fullPath);
-              totalSize += stats.size;
-            } catch {
-              // File might have been deleted, skip it
-            }
-          }
-        }
+        const dirs = entries.filter((e) => e.isDirectory());
+        const files = entries.filter((e) => e.isFile());
+
+        await Promise.all(dirs.map((entry) => calculateDirSize(path.join(dirPath, entry.name))));
+
+        const statPromises = files.map((entry) =>
+          stat(path.join(dirPath, entry.name)).then((s) => s.size, () => 0)
+        );
+        const sizes = await Promise.all(statPromises);
+        totalSize += sizes.reduce((sum, n) => sum + n, 0);
       } catch {
         // Directory might not exist or be inaccessible, skip it
       }

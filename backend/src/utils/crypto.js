@@ -4,10 +4,16 @@ import logger from './logger.js';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 
+/** Cached derived encryption key (computed once per process) */
+let _cachedKey = null;
+
 /**
- * Get encryption key from environment or generate a default (for development only)
+ * Get encryption key from environment or generate a default (for development only).
+ * Result is cached to avoid repeated scrypt derivation.
  */
 function getEncryptionKey() {
+  if (_cachedKey) return _cachedKey;
+
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
     if (process.env.NODE_ENV === 'production') {
@@ -15,11 +21,14 @@ function getEncryptionKey() {
     }
     // Development fallback - DO NOT USE IN PRODUCTION
     logger.warn('Using default encryption key. Set ENCRYPTION_KEY in production!');
-    return crypto.scryptSync('default-dev-key-change-in-production', 'salt', 32);
+    _cachedKey = crypto.scryptSync('default-dev-key-change-in-production', 'salt', 32);
+    return _cachedKey;
   }
 
-  // Derive a 32-byte key from the environment variable
-  return crypto.scryptSync(key, 'torbox-salt', 32);
+  // Salt from env so it can be unique per installation (default for backward compatibility)
+  const salt = process.env.ENCRYPTION_SALT || 'torbox-salt';
+  _cachedKey = crypto.scryptSync(key, salt, 32);
+  return _cachedKey;
 }
 
 /**
@@ -45,7 +54,7 @@ export function encrypt(text) {
     // Combine IV + tag + encrypted data
     return iv.toString('hex') + ':' + tag.toString('hex') + ':' + encrypted;
   } catch (error) {
-    console.error('Encryption error:', error);
+    logger.error('Encryption error', error);
     throw new Error('Failed to encrypt data');
   }
 }
