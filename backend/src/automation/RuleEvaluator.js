@@ -269,15 +269,12 @@ class RuleEvaluator {
    * @param {Array} torrents - Current torrents from API
    * @returns {Promise<Array>} - Matching torrents
    */
-  async evaluateRule(rule, torrents) {
+  evaluateRule(rule, torrents) {
     const empty = { matchingTorrents: [], tagsByDownloadId: new Map() };
     if (!rule.enabled) {
       return empty;
     }
-
-    if (this.shouldSkipEvaluation(rule)) {
-      return empty;
-    }
+    // Interval-skip is already checked in AutomationEngine.evaluateSingleRule (shouldSkipRuleEvaluation)
 
     const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
     const telemetryMap = this.loadTelemetryData(torrentIds);
@@ -1031,7 +1028,7 @@ class RuleEvaluator {
       .filter((id) => !isNaN(id));
 
     if (conditionTagIds.length === 0) {
-      return true;
+      return false; // No valid tag IDs — do not match any torrent
     }
 
     switch (condition.operator) {

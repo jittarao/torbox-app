@@ -46,7 +46,21 @@ function sendEngineUnavailableResponse(res, backend, authId) {
  * Automation rules routes
  */
 export function setupAutomationRoutes(app, backend) {
-  const { userRateLimiter, pollingScheduler } = backend;
+  const { userRateLimiter, pollingScheduler, eventNotifier } = backend;
+
+  // GET /api/automation/events - SSE stream; notifies when this user's poll completes with changes (no rate limit for long-lived connection)
+  if (eventNotifier) {
+    app.get('/api/automation/events', validateAuthIdMiddleware, (req, res) => {
+      const authId = req.validatedAuthId;
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders?.();
+      eventNotifier.subscribe(authId, res);
+      req.on('close', () => eventNotifier.unsubscribe(authId, res));
+    });
+  }
 
   // GET /api/automation/rules - Get all automation rules (direct DB, no engine)
   app.get('/api/automation/rules', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {

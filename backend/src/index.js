@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import Database from './database/Database.js';
 import UserDatabaseManager from './database/UserDatabaseManager.js';
 import PollingScheduler from './automation/PollingScheduler.js';
+import EventNotifier from './automation/EventNotifier.js';
 import AutomationEngine from './automation/AutomationEngine.js';
 import UploadProcessor from './automation/UploadProcessor.js';
 import logger from './utils/logger.js';
@@ -33,6 +34,7 @@ class TorBoxBackend {
     this.userDatabaseManager = null;
     this.pollingScheduler = null;
     this.uploadProcessor = null;
+    this.eventNotifier = new EventNotifier();
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
     this.memoryLogIntervalId = null;
 
@@ -231,6 +233,7 @@ class TorBoxBackend {
             process.env.POLLER_CLEANUP_INTERVAL_HOURS || '24',
             10
           ),
+          eventNotifier: this.eventNotifier,
         }
       );
       await this.pollingScheduler.start();

@@ -36,22 +36,29 @@ export function useSpeedData(items, timeRange = '10m') {
   const intervalRef = useRef(null);
   const lastUpdateRef = useRef(Date.now());
   const hasActivityRef = useRef(false);
+  const itemsRef = useRef(items);
+
+  // Keep ref updated so interval callback always sees latest items without re-creating interval
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
-    // Function to update speed data
+    // Function to update speed data (reads latest items from ref)
     const updateSpeedData = () => {
-      if (!items || items.length === 0) return;
+      const currentItems = itemsRef.current;
+      if (!currentItems || currentItems.length === 0) return;
 
       const now = Date.now();
 
       // Calculate total download and upload speeds
-      const totalDownloadSpeed = items
+      const totalDownloadSpeed = currentItems
         .filter((item) => item.active === true)
         .reduce((total, item) => {
           return total + ensureValidNumber(item.download_speed);
         }, 0);
 
-      const totalUploadSpeed = items
+      const totalUploadSpeed = currentItems
         .filter((item) => item.active === true)
         .reduce((total, item) => {
           return total + ensureValidNumber(item.upload_speed);
@@ -113,13 +120,13 @@ export function useSpeedData(items, timeRange = '10m') {
     // Set up interval for regular updates
     intervalRef.current = setInterval(updateSpeedData, UPDATE_INTERVAL);
 
-    // Clean up interval on unmount
+    // Clean up interval on unmount (stable deps so interval is not recreated every poll)
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [items]);
+  }, []);
 
   // Filter data based on time range for display
   const now = Date.now();
