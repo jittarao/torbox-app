@@ -4,7 +4,12 @@ import logger from './logger.js';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 
-/** Cached derived encryption key (computed once per process) */
+/**
+ * Cached derived encryption key (computed once per process).
+ * Key rotation requires a process restart. Tests that set ENCRYPTION_KEY
+ * after the first encrypt/decrypt call will not see the new key until the cache
+ * is cleared or the process restarts.
+ */
 let _cachedKey = null;
 
 /**
@@ -42,7 +47,7 @@ function getEncryptionKey() {
  * @returns {string} - Encrypted string (hex encoded)
  */
 export function encrypt(text) {
-  if (!text) {
+  if (text == null) {
     return null;
   }
 

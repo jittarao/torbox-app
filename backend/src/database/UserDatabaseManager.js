@@ -956,6 +956,26 @@ class UserDatabaseManager {
   }
 
   /**
+   * Mark a connection as having an active operation (prevents pool eviction during poll/ops).
+   * @param {string} authId - User authentication ID
+   */
+  markActive(authId) {
+    if (authId && this.pool) {
+      this.pool.markActive(authId);
+    }
+  }
+
+  /**
+   * Mark a connection as having completed an operation.
+   * @param {string} authId - User authentication ID
+   */
+  markInactive(authId) {
+    if (authId && this.pool) {
+      this.pool.markInactive(authId);
+    }
+  }
+
+  /**
    * Release a connection reference after use (e.g. short API request).
    * Decrements refCount so the pool can evict the connection when idle (idleTimeoutMs).
    * Use closeConnection when the caller is done with the connection for the foreseeable future

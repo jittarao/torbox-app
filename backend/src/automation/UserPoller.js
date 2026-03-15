@@ -35,8 +35,7 @@ class UserPoller {
     this.userDatabaseManager = userDatabaseManager;
     this.isPolling = false;
     this._pollGeneration = 0; // So zombie poll finally doesn't clear isPolling after timeout + new poll
-    this.lastPollAt = null;
-    this.lastPolledAt = null; // Track when poller was last used (for cleanup)
+    this.lastPollAt = null; // When poller last completed a poll (used for scheduling and cleanup)
     this.lastPollError = null;
     /** Cancellation token set by the scheduler when the per-user timeout fires so ghost polls exit early */
     this._cancelToken = null;
@@ -247,7 +246,7 @@ class UserPoller {
         userDbConnection.db,
         this.userDatabaseManager
       );
-      this.userDatabaseManager.pool.markActive(this.authId);
+      this.userDatabaseManager.markActive(this.authId);
     }
   }
 
@@ -765,7 +764,6 @@ class UserPoller {
       });
 
       this.lastPollAt = new Date();
-      this.lastPolledAt = new Date();
       this.lastPollError = null;
       if (this.masterDb && this.masterDb.resetConsecutiveAuthFailures) {
         this.masterDb.resetConsecutiveAuthFailures(this.authId);
@@ -929,7 +927,6 @@ class UserPoller {
       authId: this.authId,
       isPolling: this.isPolling,
       lastPollAt: this.lastPollAt ? this.lastPollAt.toISOString() : null,
-      lastPolledAt: this.lastPolledAt ? this.lastPolledAt.toISOString() : null,
       lastPollError: this.lastPollError,
       hasAutomationEngine: !!this.automationEngine,
       hasMasterDb: !!this.masterDb,

@@ -1,6 +1,7 @@
 import StateDiffEngine from '../StateDiffEngine.js';
 import DerivedFieldsEngine from '../DerivedFieldsEngine.js';
 import SpeedAggregator from '../SpeedAggregator.js';
+import { isClosedDatabaseError } from '../../utils/dbErrors.js';
 import logger from '../../utils/logger.js';
 
 /**
@@ -14,37 +15,6 @@ class DatabaseConnectionManager {
     this.stateDiffEngine = new StateDiffEngine(userDb);
     this.derivedFieldsEngine = new DerivedFieldsEngine(userDb);
     this.speedAggregator = new SpeedAggregator(userDb);
-  }
-
-  /**
-   * Check if an error is a closed database error
-   * @param {Error} error - Error to check
-   * @returns {boolean} - True if error indicates closed database
-   */
-  static isClosedDatabaseError(error) {
-    if (!error) return false;
-    
-    // Check error message first (case-insensitive) - most reliable indicator
-    const message = error.message?.toLowerCase() || '';
-    if (
-      message.includes('closed database') ||
-      message.includes('database has closed') ||
-      message.includes('database is closed') ||
-      message.includes('cannot use a closed database') ||
-      message.includes('database closed')
-    ) {
-      return true;
-    }
-    
-    // Also check error name for common patterns
-    if (error.name === 'RangeError' || error.name === 'Error') {
-      // If message contains "closed" and "database", it's likely a closed DB error
-      if (message.includes('closed') && message.includes('database')) {
-        return true;
-      }
-    }
-    
-    return false;
   }
 
   /**
@@ -76,8 +46,8 @@ class DatabaseConnectionManager {
    * @private
    */
   _markActive() {
-    if (this.userDatabaseManager && this.userDatabaseManager.pool) {
-      this.userDatabaseManager.pool.markActive(this.authId);
+    if (this.userDatabaseManager && typeof this.userDatabaseManager.markActive === 'function') {
+      this.userDatabaseManager.markActive(this.authId);
     }
   }
 
@@ -86,8 +56,8 @@ class DatabaseConnectionManager {
    * @private
    */
   _markInactive() {
-    if (this.userDatabaseManager && this.userDatabaseManager.pool) {
-      this.userDatabaseManager.pool.markInactive(this.authId);
+    if (this.userDatabaseManager && typeof this.userDatabaseManager.markInactive === 'function') {
+      this.userDatabaseManager.markInactive(this.authId);
     }
   }
 
@@ -121,8 +91,7 @@ class DatabaseConnectionManager {
       // Mark inactive before retry logic
       this._markInactive();
 
-      // Check if this is a closed database error and retry with fresh connection
-      if (DatabaseConnectionManager.isClosedDatabaseError(error) && this.userDatabaseManager) {
+      if (isClosedDatabaseError(error) && this.userDatabaseManager) {
         logger.warn(`Database connection closed during ${operationName}, refreshing and retrying`, {
           authId: this.authId,
           errorName: error.name,
@@ -143,7 +112,7 @@ class DatabaseConnectionManager {
           // Mark inactive on retry failure
           this._markInactive();
           // If retry also fails with closed database error, log and re-throw
-          if (DatabaseConnectionManager.isClosedDatabaseError(retryError)) {
+          if (isClosedDatabaseError(retryError)) {
             logger.error(`Database connection still closed after refresh during ${operationName}`, retryError, {
               authId: this.authId,
               errorName: retryError.name,
