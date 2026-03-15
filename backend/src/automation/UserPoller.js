@@ -302,6 +302,21 @@ class UserPoller {
       });
       return torrents;
     } catch (error) {
+      const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
+
+      // Connection error (network failure, 5xx, axios timeout): TorBox API is unreachable.
+      // Propagate a clearly-tagged error so poll() can skip shadow-state processing entirely.
+      // This prevents processSnapshot([]) from wrongly marking all torrents as "removed" and
+      // pushing the user into 60-min idle polling mode during an outage.
+      if (error.isConnectionError) {
+        logger.warn('TorBox API unreachable during torrent fetch — poll will be skipped', {
+          authId: this.authId,
+          errorMessage: error.message,
+          apiFetchDuration: `${apiFetchDuration}s`,
+        });
+        throw error; // error.isConnectionError is already true (tagged by ApiClient)
+      }
+
       // Check if this is an authentication error
       if (error.isAuthError || error.name === 'AuthenticationError') {
         await this.handleAuthenticationError(error);
@@ -312,7 +327,7 @@ class UserPoller {
       const logPayload = {
         authId: this.authId,
         errorMessage: error.message,
-        apiFetchDuration: `${((Date.now() - apiFetchStart) / 1000).toFixed(2)}s`,
+        apiFetchDuration: `${apiFetchDuration}s`,
       };
       if (isPlanRestricted) {
         logger.info('Failed to fetch torrents from API', logPayload);
@@ -705,6 +720,18 @@ class UserPoller {
           duration: `${duration}s`,
         });
         return { success: false, error: 'cancelled', duration: parseFloat(duration) };
+      }
+
+      if (error.isConnectionError) {
+        // TorBox API is unreachable (network failure, 5xx, timeout).
+        // Shadow state was NOT modified — no harm done. Let the scheduler apply a fast retry.
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        return {
+          success: false,
+          isConnectionError: true,
+          error: error.message,
+          duration: parseFloat(duration),
+        };
       }
 
       this.lastPollError = error.message;

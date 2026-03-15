@@ -261,6 +261,9 @@ class ApiClient {
             : connectionErrorFallback;
         }
         
+        // Tag the error so callers (e.g. UserPoller.fetchTorrents) can detect it and skip
+        // shadow-state processing rather than treating a connection failure as "0 torrents".
+        error.isConnectionError = true;
         throw error;
       }
       
@@ -315,7 +318,8 @@ class ApiClient {
       {
         endpoint: '/api/torrents/mylist',
         operation: 'fetching torrents',
-        connectionErrorFallback: [],
+        // No connectionErrorFallback: connection failures throw with error.isConnectionError = true
+        // so UserPoller can skip shadow-state processing instead of treating an outage as "0 torrents".
         context: { bypassCache }
       }
     );
