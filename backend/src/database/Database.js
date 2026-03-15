@@ -445,6 +445,77 @@ class Database {
   }
 
   /**
+   * Get consecutive auth failure count for a user (persisted so it survives poller teardown).
+   * @param {string} authId - User authentication ID
+   * @returns {number}
+   */
+  getConsecutiveAuthFailures(authId) {
+    const row = this.getQuery(
+      'SELECT consecutive_auth_failures FROM user_registry WHERE auth_id = ?',
+      [authId]
+    );
+    if (!row || row.consecutive_auth_failures == null) return 0;
+    return Math.max(0, parseInt(row.consecutive_auth_failures, 10));
+  }
+
+  /**
+   * Increment consecutive auth failure count and return the new count.
+   * @param {string} authId - User authentication ID
+   * @returns {number} New count after increment
+   */
+  incrementConsecutiveAuthFailures(authId) {
+    this.runQuery(
+      `UPDATE user_registry SET consecutive_auth_failures = COALESCE(consecutive_auth_failures, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?`,
+      [authId]
+    );
+    cache.invalidateUserRegistry(authId);
+    return this.getConsecutiveAuthFailures(authId);
+  }
+
+  /**
+   * Reset consecutive auth failure count to 0 on successful poll.
+   * @param {string} authId - User authentication ID
+   */
+  resetConsecutiveAuthFailures(authId) {
+    this.runQuery(
+      'UPDATE user_registry SET consecutive_auth_failures = 0, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
+      [authId]
+    );
+    cache.invalidateUserRegistry(authId);
+  }
+
+  /**
+   * Insert a pending automation action (persisted so it survives restarts).
+   * @param {string} authId
+   * @param {string} payload - JSON string of { authId, rule, torrentsToProcess }
+   * @returns {number} Inserted row id
+   */
+  insertPendingAction(authId, payload) {
+    const result = this.runQuery(
+      'INSERT INTO pending_actions (auth_id, payload) VALUES (?, ?)',
+      [authId, payload]
+    );
+    return result?.id ?? 0;
+  }
+
+  /**
+   * Remove a pending action after it has been executed.
+   * @param {number} id - Row id from pending_actions
+   */
+  deletePendingAction(id) {
+    this.runQuery('DELETE FROM pending_actions WHERE id = ?', [id]);
+  }
+
+  /**
+   * Load all pending actions (used on startup to resume after crash).
+   * @returns {Array<{ id: number, auth_id: string, payload: string }>}
+   */
+  getAllPendingActions() {
+    const rows = this.allQuery('SELECT id, auth_id, payload FROM pending_actions ORDER BY id ASC');
+    return rows || [];
+  }
+
+  /**
    * Update user status (keeps user_registry.status and api_keys.is_active in sync)
    * @param {string} authId - User authentication ID
    * @param {string} status - New status ('active', 'inactive', etc.)

@@ -710,6 +710,7 @@ class AutomationEngine {
    */
   async runRuleManually(ruleId) {
     const executionStartTime = Date.now();
+    let ruleName = 'Unknown';
     try {
       logger.info('Manual rule execution started', {
         authId: this.authId,
@@ -724,6 +725,7 @@ class AutomationEngine {
       if (!rule) {
         throw new Error(`Rule with ID ${ruleId} not found`);
       }
+      ruleName = rule.name;
 
       // Rate limiting: Check if rule was evaluated recently (before expensive operations)
       // We check last_evaluated_at because manual execution triggers evaluation regardless of actions
@@ -982,18 +984,6 @@ class AutomationEngine {
         errorMessage: error.message,
         errorStack: error.stack,
       });
-
-      // Try to get rule name for error response
-      let ruleName = 'Unknown';
-      try {
-        const allRules = await this.getAutomationRules();
-        const rule = allRules.find((r) => r.id === ruleId);
-        if (rule) {
-          ruleName = rule.name;
-        }
-      } catch (nameError) {
-        // Ignore error getting rule name
-      }
 
       return {
         ruleId,

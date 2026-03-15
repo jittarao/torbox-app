@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAutomationRules } from '@/components/shared/hooks/useAutomationRules';
 import { useBackendMode } from '@/hooks/useBackendMode';
@@ -55,7 +55,10 @@ export default function AutomationRules() {
   const [runningRuleId, setRunningRuleId] = useState(null);
   const [executionResult, setExecutionResult] = useState(null);
   const isMobile = useIsMobile();
-  const apiKey = localStorage.getItem('torboxApiKey');
+  const [apiKey, setApiKey] = useState(null);
+  useEffect(() => {
+    setApiKey(typeof window !== 'undefined' ? localStorage.getItem('torboxApiKey') : null);
+  }, []);
   const [newRule, setNewRule] = useState(getDefaultNewRule());
   const { rules, saveRules } = useAutomationRules(apiKey);
 

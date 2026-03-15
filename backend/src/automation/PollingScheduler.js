@@ -136,7 +136,23 @@ class GlobalActionQueue {
 
   enqueue(descriptors) {
     if (!Array.isArray(descriptors) || descriptors.length === 0) return;
-    this.pending.push(...descriptors);
+    const masterDb = this.scheduler.masterDb;
+    for (const d of descriptors) {
+      if (masterDb && masterDb.insertPendingAction) {
+        try {
+          const payload = JSON.stringify({
+            authId: d.authId,
+            rule: d.rule,
+            torrentsToProcess: d.torrentsToProcess,
+          });
+          const id = masterDb.insertPendingAction(d.authId, payload);
+          if (id) d.pendingId = id;
+        } catch (err) {
+          logger.warn('Failed to persist pending action', { authId: d.authId, errorMessage: err.message });
+        }
+      }
+      this.pending.push(d);
+    }
     this.drain().catch((err) => {
       logger.error('GlobalActionQueue drain error', err, {
         errorMessage: err.message,
@@ -145,16 +161,63 @@ class GlobalActionQueue {
     });
   }
 
+  /**
+   * Load persisted pending actions (e.g. after restart) and drain.
+   */
+  async loadFromPersistence() {
+    const masterDb = this.scheduler.masterDb;
+    if (!masterDb || !masterDb.getAllPendingActions) return;
+    try {
+      const rows = masterDb.getAllPendingActions();
+      for (const row of rows) {
+        try {
+          const d = JSON.parse(row.payload);
+          d.pendingId = row.id;
+          this.pending.push(d);
+        } catch (err) {
+          logger.warn('Failed to parse pending action, removing', { id: row.id, errorMessage: err.message });
+          masterDb.deletePendingAction(row.id);
+        }
+      }
+      if (this.pending.length > 0) {
+        logger.info('Resumed pending actions from DB', { count: this.pending.length });
+        await this.drain();
+      }
+    } catch (err) {
+      logger.error('Failed to load pending actions from DB', err, { errorMessage: err.message });
+    }
+  }
+
   async drain() {
     if (this.draining || this.pending.length === 0) return;
     this.draining = true;
+    const masterDb = this.scheduler.masterDb;
     try {
-      while (this.pending.length > 0) {
-        const batch = this.pending.splice(0, GLOBAL_ACTION_QUEUE_CONCURRENCY);
-        await Promise.allSettled(
-          batch.map((d) => this.scheduler.runActionBatch(d))
-        );
-      }
+      const concurrency = GLOBAL_ACTION_QUEUE_CONCURRENCY;
+      const runNext = () => {
+        if (this.pending.length === 0) return Promise.resolve();
+        const d = this.pending.shift();
+        return this.scheduler
+          .runActionBatch(d)
+          .then(() => {
+            if (d.pendingId && masterDb && masterDb.deletePendingAction) {
+              try {
+                masterDb.deletePendingAction(d.pendingId);
+              } catch (_) {
+                // ignore
+              }
+            }
+            return runNext();
+          })
+          .catch((err) => {
+            logger.error('GlobalActionQueue action batch failed', err, {
+              errorMessage: err.message,
+            });
+            return runNext();
+          });
+      };
+      const workers = Array.from({ length: concurrency }, () => runNext());
+      await Promise.all(workers);
     } finally {
       this.draining = false;
     }
@@ -204,6 +267,7 @@ class PollingScheduler {
       1,
       options.pollerCleanupIntervalHours || DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS
     );
+    this.eventNotifier = options.eventNotifier || null;
 
     // State
     this.lastCleanupAt = null;
@@ -719,6 +783,11 @@ class PollingScheduler {
     this.pollSemaphore = new Semaphore(this.maxConcurrentPolls);
     this.globalActionQueue = new GlobalActionQueue(this);
 
+    // Resume any pending actions persisted before a crash/restart
+    this.globalActionQueue.loadFromPersistence().catch((err) => {
+      logger.error('loadFromPersistence failed', err, { errorMessage: err.message });
+    });
+
     // Initial load of active users
     logger.info('Performing initial poller refresh');
     await this.refreshPollers();
@@ -1067,7 +1136,12 @@ class PollingScheduler {
       if (result.ruleResults?.pendingActions?.length) {
         this.globalActionQueue?.enqueue(result.ruleResults.pendingActions);
       }
-      poller.consecutiveAuthFailures = 0;
+      if (this.masterDb && this.masterDb.resetConsecutiveAuthFailures) {
+        this.masterDb.resetConsecutiveAuthFailures(auth_id);
+      }
+      if (this.eventNotifier && result.changes && (result.changes.new?.length || result.changes.updated?.length || result.changes.removed?.length)) {
+        this.eventNotifier.notify(auth_id);
+      }
       poller.lastPollAt = new Date();
       poller.lastPolledAt = new Date();
       counters.success++;
@@ -1174,7 +1248,17 @@ class PollingScheduler {
           if (value.error.isConnectionError) {
             this.handleConnectionError(value.user.auth_id, 0);
           } else if (value.error.isAuthError || value.error.name === 'AuthenticationError') {
-            if (value.poller) value.poller.consecutiveAuthFailures = (value.poller.consecutiveAuthFailures || 0) + 1;
+            if (this.masterDb && this.masterDb.incrementConsecutiveAuthFailures) {
+              const threshold = Math.max(1, parseInt(process.env.AUTH_FAILURE_DEACTIVATE_AFTER || '3', 10));
+              const count = this.masterDb.incrementConsecutiveAuthFailures(value.user.auth_id);
+              if (count >= threshold && this.masterDb.updateUserStatus) {
+                this.masterDb.updateUserStatus(value.user.auth_id, 'inactive');
+                logger.warn('Marked user as inactive due to consecutive authentication errors (Stage 1)', {
+                  authId: value.user.auth_id,
+                  consecutiveFailures: count,
+                });
+              }
+            }
             this.handlePollError(value.user.auth_id, value.error, 0);
           } else {
             this.handlePollError(value.user.auth_id, value.error, 0);

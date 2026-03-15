@@ -4,6 +4,7 @@ import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
 import { perfMonitor } from '@/utils/performance';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { useBackendModeStore } from '@/store/backendModeStore';
 
 // Rate limit constants
 const MAX_CALLS = 5; // Maximum number of calls per WINDOW_SIZE
@@ -23,6 +24,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const pollingPaused = usePollingPauseStore((state) =>
     Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
   );
+  const backendMode = useBackendModeStore((state) => state.mode);
   // Separate state for each data type - ensure they're always arrays
   const [torrents, setTorrents] = useState([]);
   const [usenetItems, setUsenetItems] = useState([]);
@@ -698,6 +700,50 @@ export function useFetchData(apiKey, type = 'torrents') {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchLocalItems, isRateLimited, type, pollingPaused]);
+
+  // SSE: when backend mode and viewing torrents, subscribe to backend events so we refetch on automation changes
+  useEffect(() => {
+    if (backendMode !== 'backend' || !apiKey || (type !== 'torrents' && type !== 'all')) return;
+
+    const ac = new AbortController();
+    let buffer = '';
+
+    const connect = () => {
+      fetch('/api/automation/events', {
+        headers: { 'x-api-key': apiKey },
+        signal: ac.signal,
+      })
+        .then((res) => {
+          if (!res.ok || !res.body) return;
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          const read = () => {
+            reader.read().then(({ done, value }) => {
+              if (done || ac.signal.aborted) return;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+              for (const line of lines) {
+                if (line.startsWith('data:')) {
+                  fetchLocalItems(true, 'torrents', 0, true);
+                  break;
+                }
+              }
+              read();
+            });
+          };
+          read();
+        })
+        .catch((err) => {
+          if (err?.name !== 'AbortError') {
+            console.debug('SSE automation/events closed or failed', err?.message);
+          }
+        });
+    };
+
+    connect();
+    return () => ac.abort();
+  }, [apiKey, backendMode, type, fetchLocalItems]);
 
   // Return all data types and their setters
   return {

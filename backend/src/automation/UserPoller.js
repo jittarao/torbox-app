@@ -38,8 +38,6 @@ class UserPoller {
     this.lastPollError = null;
     /** Cancellation token set by the scheduler when the per-user timeout fires so ghost polls exit early */
     this._cancelToken = null;
-    /** Consecutive auth failures; only mark key inactive after threshold (avoids deactivating on transient API errors) */
-    this.consecutiveAuthFailures = 0;
 
     try {
       this.apiKey = decrypt(encryptedApiKey);
@@ -243,13 +241,17 @@ class UserPoller {
   }
 
   /**
-   * Handle authentication errors from API calls
+   * Handle authentication errors from API calls.
+   * Persists consecutive count in master DB so it survives poller teardown between cycles.
    * @param {Error} error - The authentication error
    * @throws {Error} - Re-throws with enhanced error information
    */
   async handleAuthenticationError(error) {
-    this.consecutiveAuthFailures = (this.consecutiveAuthFailures || 0) + 1;
     const threshold = Math.max(1, parseInt(process.env.AUTH_FAILURE_DEACTIVATE_AFTER || '3', 10));
+    let consecutiveAuthFailures = 0;
+    if (this.masterDb && this.masterDb.incrementConsecutiveAuthFailures) {
+      consecutiveAuthFailures = this.masterDb.incrementConsecutiveAuthFailures(this.authId);
+    }
 
     logger.error('API authentication failed - API key may be invalid or expired', error, {
       authId: this.authId,
@@ -257,13 +259,12 @@ class UserPoller {
       status: error.status,
       errorCode: error.responseData?.error,
       detail: error.responseData?.detail,
-      consecutiveAuthFailures: this.consecutiveAuthFailures,
+      consecutiveAuthFailures,
       deactivateThreshold: threshold,
     });
 
-    // Only mark inactive after N consecutive polling cycles that failed with auth error (one increment per cycle; ApiClient does not retry on auth error, so retries within a request do not add to count; successful poll resets counter)
     if (
-      this.consecutiveAuthFailures >= threshold &&
+      consecutiveAuthFailures >= threshold &&
       this.masterDb &&
       this.masterDb.updateUserStatus
     ) {
@@ -271,7 +272,7 @@ class UserPoller {
         this.masterDb.updateUserStatus(this.authId, 'inactive');
         logger.warn('Marked user as inactive due to consecutive authentication errors', {
           authId: this.authId,
-          consecutiveFailures: this.consecutiveAuthFailures,
+          consecutiveFailures: consecutiveAuthFailures,
         });
       } catch (dbError) {
         logger.error('Failed to update user status', dbError, {
@@ -752,7 +753,9 @@ class UserPoller {
       this.lastPollAt = new Date();
       this.lastPolledAt = new Date(); // Update last polled timestamp
       this.lastPollError = null;
-      this.consecutiveAuthFailures = 0; // Reset on successful poll
+      if (this.masterDb && this.masterDb.resetConsecutiveAuthFailures) {
+        this.masterDb.resetConsecutiveAuthFailures(this.authId);
+      }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       logger.info('Poll completed successfully', {
