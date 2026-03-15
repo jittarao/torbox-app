@@ -2,6 +2,25 @@ import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus
 import logger from '../utils/logger.js';
 import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
 
+/**
+ * Parse a SQLite timestamp string as UTC.
+ * SQLite stores CURRENT_TIMESTAMP as "YYYY-MM-DD HH:MM:SS" with no timezone indicator.
+ * JavaScript's Date constructor interprets strings without a timezone as local time, which
+ * causes interval calculations to be off by the server's UTC offset.
+ * @param {string|null} dateStr
+ * @returns {Date}
+ */
+function parseDbTimestamp(dateStr) {
+  if (!dateStr) return new Date(NaN);
+  if (typeof dateStr !== 'string') return new Date(dateStr);
+  // Already has timezone indicator — parse as-is
+  if (dateStr.includes('T') || dateStr.includes('Z') || dateStr.includes('+')) {
+    return new Date(dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`);
+  }
+  // SQLite "YYYY-MM-DD HH:MM:SS" format — treat as UTC
+  return new Date(`${dateStr.replace(' ', 'T')}Z`);
+}
+
 // Constants
 const MIN_INTERVAL_MINUTES = 1;
 const MS_PER_MINUTE = 60 * 1000;
@@ -19,6 +38,42 @@ class RuleEvaluator {
   constructor(userDb, apiClient) {
     this.db = userDb;
     this.apiClient = apiClient;
+
+    // Build the condition-handler lookup once so getConditionHandler() does a simple Map
+    // lookup instead of allocating a new object with 25+ bound functions on every call.
+    this._handlers = new Map([
+      ['SEEDING_TIME', this.handleSeedingTime.bind(this)],
+      ['AGE', this.handleAge.bind(this)],
+      ['LAST_DOWNLOAD_ACTIVITY_AT', this.handleLastDownloadActivity.bind(this)],
+      ['LAST_UPLOAD_ACTIVITY_AT', this.handleLastUploadActivity.bind(this)],
+      ['PROGRESS', this.handleProgress.bind(this)],
+      ['DOWNLOAD_SPEED', this.handleDownloadSpeed.bind(this)],
+      ['UPLOAD_SPEED', this.handleUploadSpeed.bind(this)],
+      ['AVG_DOWNLOAD_SPEED', this.handleAvgDownloadSpeed.bind(this)],
+      ['AVG_UPLOAD_SPEED', this.handleAvgUploadSpeed.bind(this)],
+      ['ETA', this.handleEta.bind(this)],
+      ['DOWNLOAD_STALLED_TIME', this.handleDownloadStalledTime.bind(this)],
+      ['UPLOAD_STALLED_TIME', this.handleUploadStalledTime.bind(this)],
+      ['SEEDS', this.handleSeeds.bind(this)],
+      ['PEERS', this.handlePeers.bind(this)],
+      ['RATIO', this.handleRatio.bind(this)],
+      ['TOTAL_UPLOADED', this.handleTotalUploaded.bind(this)],
+      ['TOTAL_DOWNLOADED', this.handleTotalDownloaded.bind(this)],
+      ['FILE_SIZE', this.handleFileSize.bind(this)],
+      ['FILE_COUNT', this.handleFileCount.bind(this)],
+      ['NAME', this.handleName.bind(this)],
+      ['TRACKER', this.handleTracker.bind(this)],
+      ['PRIVATE', this.handlePrivate.bind(this)],
+      ['CACHED', this.handleCached.bind(this)],
+      ['AVAILABILITY', this.handleAvailability.bind(this)],
+      ['ALLOW_ZIP', this.handleAllowZip.bind(this)],
+      ['IS_ACTIVE', this.handleIsActive.bind(this)],
+      ['SEEDING_ENABLED', this.handleSeedingEnabled.bind(this)],
+      ['LONG_TERM_SEEDING', this.handleLongTermSeeding.bind(this)],
+      ['STATUS', this.handleStatus.bind(this)],
+      ['EXPIRES_AT', this.handleExpiresAt.bind(this)],
+      ['TAGS', this.handleTags.bind(this)],
+    ]);
   }
 
   /**
@@ -50,7 +105,7 @@ class RuleEvaluator {
       return false; // Never evaluated, evaluate immediately
     }
 
-    const lastEvaluated = new Date(rule.last_evaluated_at);
+    const lastEvaluated = parseDbTimestamp(rule.last_evaluated_at);
     const adjustedIntervalMinutes = applyIntervalMultiplier(
       Math.max(intervalMinutes, MIN_INTERVAL_MINUTES)
     );
@@ -518,57 +573,13 @@ class RuleEvaluator {
   }
 
   /**
-   * Get condition handler function for a given condition type
+   * Get condition handler function for a given condition type.
+   * Uses the map pre-built in the constructor to avoid re-allocating 25+ bound functions per call.
    * @param {string} conditionType - Type of condition
    * @returns {Function|null} - Handler function or null if not found
    */
   getConditionHandler(conditionType) {
-    const handlers = {
-      // Time / State (Derived)
-      SEEDING_TIME: this.handleSeedingTime.bind(this),
-      AGE: this.handleAge.bind(this),
-      LAST_DOWNLOAD_ACTIVITY_AT: this.handleLastDownloadActivity.bind(this),
-      LAST_UPLOAD_ACTIVITY_AT: this.handleLastUploadActivity.bind(this),
-
-      // Progress & Performance (Direct from API)
-      PROGRESS: this.handleProgress.bind(this),
-      DOWNLOAD_SPEED: this.handleDownloadSpeed.bind(this),
-      UPLOAD_SPEED: this.handleUploadSpeed.bind(this),
-      AVG_DOWNLOAD_SPEED: this.handleAvgDownloadSpeed.bind(this),
-      AVG_UPLOAD_SPEED: this.handleAvgUploadSpeed.bind(this),
-      ETA: this.handleEta.bind(this),
-
-      // Stall & Inactivity (Derived)
-      DOWNLOAD_STALLED_TIME: this.handleDownloadStalledTime.bind(this),
-      UPLOAD_STALLED_TIME: this.handleUploadStalledTime.bind(this),
-
-      // Swarm & Ratio (Direct from API)
-      SEEDS: this.handleSeeds.bind(this),
-      PEERS: this.handlePeers.bind(this),
-      RATIO: this.handleRatio.bind(this),
-      TOTAL_UPLOADED: this.handleTotalUploaded.bind(this),
-      TOTAL_DOWNLOADED: this.handleTotalDownloaded.bind(this),
-
-      // Content & Metadata (Direct from API)
-      FILE_SIZE: this.handleFileSize.bind(this),
-      FILE_COUNT: this.handleFileCount.bind(this),
-      NAME: this.handleName.bind(this),
-      TRACKER: this.handleTracker.bind(this),
-      PRIVATE: this.handlePrivate.bind(this),
-      CACHED: this.handleCached.bind(this),
-      AVAILABILITY: this.handleAvailability.bind(this),
-      ALLOW_ZIP: this.handleAllowZip.bind(this),
-
-      // Lifecycle (Derived or Direct)
-      IS_ACTIVE: this.handleIsActive.bind(this),
-      SEEDING_ENABLED: this.handleSeedingEnabled.bind(this),
-      LONG_TERM_SEEDING: this.handleLongTermSeeding.bind(this),
-      STATUS: this.handleStatus.bind(this),
-      EXPIRES_AT: this.handleExpiresAt.bind(this),
-      TAGS: this.handleTags.bind(this),
-    };
-
-    return handlers[conditionType] || null;
+    return this._handlers.get(conditionType) ?? null;
   }
 
   /**
@@ -1428,6 +1439,25 @@ class RuleEvaluator {
   }
 
   /**
+   * Validate that all provided tag IDs exist in the tags table.
+   * Call this once before a batch action instead of once per torrent to avoid N identical SELECTs.
+   * @param {Array<number>} tagIds - Array of tag IDs to validate
+   * @throws {Error} if any tag ID is not found
+   */
+  validateTagIds(tagIds) {
+    if (!Array.isArray(tagIds) || tagIds.length === 0) {
+      throw new Error('tagIds must be a non-empty array');
+    }
+    const placeholders = tagIds.map(() => '?').join(',');
+    const existingTags = this.db
+      .prepare(`SELECT id FROM tags WHERE id IN (${placeholders})`)
+      .all(...tagIds);
+    if (existingTags.length !== tagIds.length) {
+      throw new Error('One or more tag IDs are invalid');
+    }
+  }
+
+  /**
    * Add tags to a download
    * @param {Object} action - Action object with type and tagIds
    * @param {Object} torrent - Torrent object
@@ -1445,19 +1475,7 @@ class RuleEvaluator {
       throw new Error('Download ID is required but could not be extracted from torrent');
     }
 
-    // Validate all tag IDs exist
-    const placeholders = action.tagIds.map(() => '?').join(',');
-    const existingTags = this.db
-      .prepare(
-        `
-      SELECT id FROM tags WHERE id IN (${placeholders})
-    `
-      )
-      .all(...action.tagIds);
-
-    if (existingTags.length !== action.tagIds.length) {
-      throw new Error('One or more tag IDs are invalid');
-    }
+    // Tag ID validation is done once before the batch by RuleExecutor.executeActions — skipped here.
 
     // Add tags using transaction
     const transaction = this.db.transaction(() => {
@@ -1503,19 +1521,7 @@ class RuleEvaluator {
       throw new Error('Download ID is required but could not be extracted from torrent');
     }
 
-    // Validate all tag IDs exist
-    const placeholders = action.tagIds.map(() => '?').join(',');
-    const existingTags = this.db
-      .prepare(
-        `
-      SELECT id FROM tags WHERE id IN (${placeholders})
-    `
-      )
-      .all(...action.tagIds);
-
-    if (existingTags.length !== action.tagIds.length) {
-      throw new Error('One or more tag IDs are invalid');
-    }
+    // Tag ID validation is done once before the batch by RuleExecutor.executeActions — skipped here.
 
     // Remove tags using transaction
     const transaction = this.db.transaction(() => {

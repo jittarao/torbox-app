@@ -28,6 +28,17 @@ class RuleExecutor {
     // Resolve the evaluator once outside the loop to avoid N async pool lookups per rule execution
     const ruleEvaluator = await this.getRuleEvaluator();
 
+    // For tag actions, validate tag IDs once before starting the worker pool.
+    // Previously validateTagIds was called inside addTagsToDownload / removeTagsFromDownload,
+    // resulting in the same SELECT query running once per matched torrent.
+    if (
+      (rule.action?.type === 'add_tag' || rule.action?.type === 'remove_tag') &&
+      Array.isArray(rule.action?.tagIds) &&
+      rule.action.tagIds.length > 0
+    ) {
+      ruleEvaluator.validateTagIds(rule.action.tagIds);
+    }
+
     // Cap concurrent outbound action calls per rule. Default 3 keeps pressure on the TorBox API
     // low while cutting worst-case wall-clock time from N×30s (serial) to ceil(N/3)×30s.
     // Configurable via RULE_ACTION_CONCURRENCY env var.
