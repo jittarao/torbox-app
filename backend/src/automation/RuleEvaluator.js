@@ -1095,30 +1095,13 @@ class RuleEvaluator {
    * @returns {number} - Average speed in bytes per second
    */
   getAverageSpeed(torrentId, hours, type = 'download', speedHistoryMap = null) {
-    let samples;
+    let samples = [];
 
-    // Use pre-loaded data if available
     if (speedHistoryMap && speedHistoryMap.has(String(torrentId))) {
       const allSamples = speedHistoryMap.get(String(torrentId));
       const now = new Date();
       const hoursAgo = new Date(now - hours * MS_PER_HOUR);
-
-      // Filter samples within the time window
       samples = allSamples.filter((sample) => new Date(sample.timestamp) >= hoursAgo);
-    } else {
-      // Fallback to database query (for backward compatibility)
-      const now = new Date();
-      const hoursAgo = new Date(now - hours * MS_PER_HOUR);
-
-      samples = this.db
-        .prepare(
-          `
-        SELECT * FROM speed_history
-        WHERE torrent_id = ? AND timestamp >= ?
-        ORDER BY timestamp ASC
-      `
-        )
-        .all(torrentId, hoursAgo.toISOString());
     }
 
     const field = type === 'download' ? 'total_downloaded' : 'total_uploaded';

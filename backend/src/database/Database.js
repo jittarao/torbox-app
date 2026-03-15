@@ -486,11 +486,20 @@ class Database {
 
   /**
    * Insert a pending automation action (persisted so it survives restarts).
+   * When ruleId is provided, uses INSERT OR IGNORE so duplicate rule_id (e.g. same rule in two poll cycles) is not inserted.
    * @param {string} authId
    * @param {string} payload - JSON string of { authId, rule, torrentsToProcess }
-   * @returns {number} Inserted row id
+   * @param {number|null} [ruleId] - Rule id for deduplication; when set, duplicate rule_id is ignored
+   * @returns {number} Inserted row id, or 0 if not inserted (e.g. duplicate rule_id)
    */
-  insertPendingAction(authId, payload) {
+  insertPendingAction(authId, payload, ruleId = null) {
+    if (ruleId != null) {
+      const result = this.runQuery(
+        'INSERT OR IGNORE INTO pending_actions (auth_id, payload, rule_id) VALUES (?, ?, ?)',
+        [authId, payload, ruleId]
+      );
+      return result?.changes > 0 ? result.id : 0;
+    }
     const result = this.runQuery(
       'INSERT INTO pending_actions (auth_id, payload) VALUES (?, ?)',
       [authId, payload]
@@ -508,10 +517,12 @@ class Database {
 
   /**
    * Load all pending actions (used on startup to resume after crash).
-   * @returns {Array<{ id: number, auth_id: string, payload: string }>}
+   * @returns {Array<{ id: number, auth_id: string, payload: string, rule_id: number|null }>}
    */
   getAllPendingActions() {
-    const rows = this.allQuery('SELECT id, auth_id, payload FROM pending_actions ORDER BY id ASC');
+    const rows = this.allQuery(
+      'SELECT id, auth_id, payload, rule_id FROM pending_actions ORDER BY id ASC'
+    );
     return rows || [];
   }
 

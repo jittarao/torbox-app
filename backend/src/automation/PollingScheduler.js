@@ -9,7 +9,6 @@ import Semaphore from '../utils/semaphore.js';
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
 const DEFAULT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-const REFRESH_FULL_SYNC_EVERY_N = 6; // Do expensive "sync has_active_rules from all user DBs" every N refreshes (~90 min at 15 min refresh)
 // Minimum time between polling the same user (each user must not be polled more than once per this window)
 const MIN_POLL_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes — minimum time between polling the same user
 // Per-user kick-out: max time one user's poll may run inside a cycle before we give up and free the slot
@@ -148,13 +147,18 @@ class GlobalActionQueue {
             rule: d.rule,
             torrentsToProcess: d.torrentsToProcess,
           });
-          const id = masterDb.insertPendingAction(d.authId, payload);
-          if (id) d.pendingId = id;
+          const ruleId = d.rule?.id ?? null;
+          const id = masterDb.insertPendingAction(d.authId, payload, ruleId);
+          if (id) {
+            d.pendingId = id;
+            this.pending.push(d);
+          }
         } catch (err) {
           logger.warn('Failed to persist pending action', { authId: d.authId, errorMessage: err.message });
         }
+      } else {
+        this.pending.push(d);
       }
-      this.pending.push(d);
     }
     this.drain().catch((err) => {
       logger.error('GlobalActionQueue drain error', err, {
@@ -166,13 +170,17 @@ class GlobalActionQueue {
 
   /**
    * Load persisted pending actions (e.g. after restart) and drain.
+   * Deduplicates by rule_id so each rule is only drained once.
    */
   async loadFromPersistence() {
     const masterDb = this.scheduler.masterDb;
     if (!masterDb || !masterDb.getAllPendingActions) return;
     try {
       const rows = masterDb.getAllPendingActions();
+      const seenRuleIds = new Set();
       for (const row of rows) {
+        if (row.rule_id != null && seenRuleIds.has(row.rule_id)) continue;
+        if (row.rule_id != null) seenRuleIds.add(row.rule_id);
         try {
           const d = JSON.parse(row.payload);
           d.pendingId = row.id;
@@ -288,6 +296,8 @@ class PollingScheduler {
     this.flagUpdateMutexes = new Map();
     /** Per-user mutex for GlobalActionQueue so same-user batches run sequentially and avoid engine race */
     this.actionBatchMutexes = new Map();
+    /** Per-user mutex so only one pipeline run (scheduler Stage 2 or triggerPoll) runs per user at a time */
+    this.pipelineMutexes = new Map();
     /** Shared ApiClient per user (single decrypt per user); cleared when poller is removed */
     this.cachedApiClients = new Map();
     /** Cached AutomationEngine per user — avoids re-running initialize() (4-5 DB queries) on every poll */
@@ -300,11 +310,7 @@ class PollingScheduler {
     this.processSemaphore = null;
     this._pollCycleInProgress = false;
     this._refreshInProgress = false;
-    this._refreshCount = 0; // Incremented each refresh; full sync every REFRESH_FULL_SYNC_EVERY_N
-    this._refreshSyncConcurrency = Math.min(
-      20,
-      Math.max(1, parseInt(process.env.REFRESH_SYNC_CONCURRENCY || '5', 10))
-    );
+    this._refreshCount = 0;
 
     // Metrics
     this.metrics = {
@@ -341,6 +347,21 @@ class PollingScheduler {
     if (!mutex) {
       mutex = new Mutex();
       this.actionBatchMutexes.set(authId, mutex);
+    }
+    return mutex;
+  }
+
+  /**
+   * Get or create mutex for pipeline execution (scheduler Stage 2 and triggerPoll).
+   * Ensures only one poll pipeline runs per user at a time.
+   * @param {string} authId - User authentication ID
+   * @returns {Mutex} Mutex instance
+   */
+  getPipelineMutex(authId) {
+    let mutex = this.pipelineMutexes.get(authId);
+    if (!mutex) {
+      mutex = new Mutex();
+      this.pipelineMutexes.set(authId, mutex);
     }
     return mutex;
   }
@@ -794,7 +815,7 @@ class PollingScheduler {
     for (let i = 0; i < authId.length; i++) {
       const char = authId.charCodeAt(i);
       hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
+      hash |= 0; // Convert to 32-bit integer
     }
 
     const normalizedHash = Math.abs(hash % 100) / 100;
@@ -819,6 +840,8 @@ class PollingScheduler {
     }
     this.cachedApiClients.delete(authId);
     this.flagUpdateMutexes.delete(authId);
+    this.actionBatchMutexes.delete(authId);
+    this.pipelineMutexes.delete(authId);
     this.userConsecutiveTimeoutCount.delete(authId);
   }
 
@@ -948,7 +971,6 @@ class PollingScheduler {
         errorMessage: error.message,
       });
     } finally {
-      this._teardownEngineForAuth(authId);
       mutex.release();
       if (mutex.isEmpty()) {
         this.actionBatchMutexes.delete(authId);
@@ -1007,6 +1029,8 @@ class PollingScheduler {
     const { auth_id, has_active_rules: dbHasActiveRules } = user;
     let engineForPoll = null;
     const processStartTime = Date.now();
+    const pipelineMutex = this.getPipelineMutex(auth_id);
+    await pipelineMutex.acquire();
 
     try {
       engineForPoll = await this.createEngineForPoll(auth_id, user.encrypted_key);
@@ -1050,7 +1074,7 @@ class PollingScheduler {
         this.masterDb.resetConsecutiveAuthFailures(auth_id);
       }
       if (this.eventNotifier && result.changes && (result.changes.new?.length || result.changes.updated?.length || result.changes.removed?.length)) {
-        this.eventNotifier.notify(auth_id);
+        setImmediate(() => this.eventNotifier.notify(auth_id));
       }
       poller.lastPollAt = new Date();
       poller.lastPolledAt = new Date();
@@ -1072,6 +1096,10 @@ class PollingScheduler {
         counters.error++;
       }
     } finally {
+      pipelineMutex.release();
+      if (pipelineMutex.isEmpty()) {
+        this.pipelineMutexes.delete(auth_id);
+      }
       if (auth_id) {
         const p = this.pollers.get(auth_id);
         if (p) p.automationEngine = null;
@@ -1234,8 +1262,7 @@ class PollingScheduler {
 
   /**
    * Refresh pollers based on active users.
-   * - Light refresh (most runs): use master DB has_active_rules only; add/remove pollers. No user DB opens.
-   * - Full refresh (every REFRESH_FULL_SYNC_EVERY_N): sync has_active_rules from all user DBs, then add/remove pollers.
+   * Uses master DB has_active_rules only (event-driven updates from RuleRepository keep it in sync). No user DB opens.
    * Pollers are created on demand when users are due; refresh only removes pollers for users without active rules.
    */
   async refreshPollers() {
@@ -1246,96 +1273,15 @@ class PollingScheduler {
     this._refreshInProgress = true;
     this._refreshCount++;
     const refreshStartTime = Date.now();
-    const doFullSync = this._refreshCount % REFRESH_FULL_SYNC_EVERY_N === 1; // 1st, 7th, 13th... (and first run after start)
 
     try {
-      const poolStats = this.userDatabaseManager.getPoolStats?.() ?? null;
-      if (doFullSync) {
-        logger.warn('RefreshPollers full sync started (visible in prod)', {
-          refreshCount: this._refreshCount,
-          currentPollers: this.pollers.size,
-          poolSize: poolStats?.size ?? null,
-          poolMaxSize: poolStats?.maxSize ?? null,
-        });
-      } else {
-        logger.debug('RefreshPollers light refresh started', {
-          refreshCount: this._refreshCount,
-          currentPollers: this.pollers.size,
-        });
-      }
+      logger.debug('RefreshPollers started', {
+        refreshCount: this._refreshCount,
+        currentPollers: this.pollers.size,
+      });
 
-      let usersWithActiveRules;
-
-      if (doFullSync) {
-        // Step 1 (full sync only): Sync has_active_rules from each user DB, then get list with active rules
-        const activeUsers = this.userDatabaseManager.getActiveUsers();
-        const currentAuthIds = new Set(this.pollers.keys());
-        const syncStats = { synced: 0, errors: 0, skipped: 0 };
-        const syncSemaphore = new Semaphore(this._refreshSyncConcurrency);
-
-        const syncOneUser = async (user) => {
-          const { auth_id, encrypted_key, has_active_rules: dbFlag } = user;
-          if (!encrypted_key) return;
-
-          // If master DB already reports active rules, trust it — all write paths keep the flag
-          // in sync. Only open the user DB when the flag is 0 to verify it's not a false negative.
-          if (dbFlag === 1) {
-            return;
-          }
-
-          await syncSemaphore.acquire();
-          try {
-            let actualHasActiveRules = false;
-            const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-            if (userDb && userDb.db) {
-              try {
-                const result = userDb.db
-                  .prepare('SELECT COUNT(*) as count FROM automation_rules WHERE enabled = 1')
-                  .get();
-                actualHasActiveRules = result && result.count > 0;
-              } finally {
-                this.userDatabaseManager.closeConnection(auth_id);
-              }
-            } else {
-              syncStats.skipped++;
-              return;
-            }
-            const actualFlag = actualHasActiveRules ? 1 : 0;
-            if (dbFlag !== actualFlag) {
-              this.masterDb.updateActiveRulesFlag(auth_id, actualHasActiveRules);
-              syncStats.synced++;
-            }
-            user.has_active_rules = actualFlag;
-          } catch (error) {
-            logger.warn('Failed to sync active rules flag for user', {
-              authId: user.auth_id,
-              errorMessage: error.message,
-            });
-            syncStats.errors++;
-          } finally {
-            syncSemaphore.release();
-          }
-        };
-
-        await Promise.all(activeUsers.map((user) => syncOneUser(user)));
-
-        const syncDurationMs = Date.now() - refreshStartTime;
-        logger.warn('RefreshPollers full sync completed (visible in prod)', {
-          activeUsersCount: activeUsers.length,
-          synced: syncStats.synced,
-          errors: syncStats.errors,
-          skipped: syncStats.skipped,
-          durationMs: syncDurationMs,
-        });
-
-        cache.invalidateActiveUsers();
-        usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
-      } else {
-        // Light refresh: use master DB only (has_active_rules is kept in sync by API when rules are toggled)
-        const activeUsers = this.userDatabaseManager.getActiveUsers();
-        usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
-      }
-
+      const activeUsers = this.userDatabaseManager.getActiveUsers();
+      const usersWithActiveRules = activeUsers.filter((user) => user.has_active_rules === 1);
       const currentAuthIds = new Set(this.pollers.keys());
 
       logger.debug('Active users with rules', {
@@ -1360,19 +1306,11 @@ class PollingScheduler {
       }
 
       const refreshDuration = ((Date.now() - refreshStartTime) / 1000).toFixed(2);
-      if (doFullSync) {
-        logger.warn('RefreshPollers full sync completed', {
-          removedCount: stats.removed,
-          totalPollers: this.pollers.size,
-          duration: `${refreshDuration}s`,
-        });
-      } else {
-        logger.debug('RefreshPollers light completed', {
-          removedCount: stats.removed,
-          totalPollers: this.pollers.size,
-          duration: `${refreshDuration}s`,
-        });
-      }
+      logger.debug('RefreshPollers completed', {
+        removedCount: stats.removed,
+        totalPollers: this.pollers.size,
+        duration: `${refreshDuration}s`,
+      });
     } catch (error) {
       const refreshDuration = ((Date.now() - refreshStartTime) / 1000).toFixed(2);
       logger.error('Error refreshing pollers', error, {
@@ -1440,6 +1378,8 @@ class PollingScheduler {
     }
 
     const poller = await this.getOrCreatePoller(authId, userInfo.encrypted_key);
+    const pipelineMutex = this.getPipelineMutex(authId);
+    await pipelineMutex.acquire();
 
     try {
       const engineForPoll = await this.createEngineForPoll(authId, userInfo.encrypted_key);
@@ -1478,6 +1418,10 @@ class PollingScheduler {
       }
       throw error;
     } finally {
+      pipelineMutex.release();
+      if (pipelineMutex.isEmpty()) {
+        this.pipelineMutexes.delete(authId);
+      }
       poller.automationEngine = null;
       if (poller.userDatabaseManager) {
         poller.userDatabaseManager.closeConnection(authId);
