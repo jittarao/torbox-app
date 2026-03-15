@@ -20,6 +20,8 @@ const ERROR_RETRY_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes after error or fir
 const TIMEOUT_BACKOFF_RETRY_MS = 60 * 60 * 1000; // 60 minutes after repeated timeouts (free concurrency slot)
 const SKIPPED_POLL_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours when user has no active rules
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
+const PENDING_ACTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — delete pending_actions older than this
+const PENDING_ACTIONS_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Run pending_actions TTL cleanup hourly
 const STAGGER_PERCENTAGE = 0.1; // 10% of base interval
 const SLOW_POLL_WARNING_PERCENT = 0.8; // Log when poll has run this fraction of per-user timeout
 
@@ -124,6 +126,8 @@ const GLOBAL_ACTION_QUEUE_CONCURRENCY = Math.min(
   8,
   Math.max(1, parseInt(process.env.GLOBAL_ACTION_QUEUE_CONCURRENCY || '4', 10))
 );
+const MAX_ACTION_BATCH_RETRIES = Math.max(1, parseInt(process.env.MAX_ACTION_BATCH_RETRIES || '3', 10));
+const ACTION_RETRY_BACKOFF_BASE_MS = 5000;
 
 /**
  * Cross-user action queue: drains pending rule actions in the background so the next tick's
@@ -197,14 +201,21 @@ class GlobalActionQueue {
   /**
    * Merge descriptors for the same (authId, rule.id): union of torrentsToProcess by torrent id.
    * Returns one merged descriptor and array of pendingIds to delete after execution.
+   * Supports both single pendingId and pendingIds array (e.g. re-queued merged batch).
    */
   _mergeBatchForSameRule(pendingList) {
     if (pendingList.length === 0) return null;
     const first = pendingList[0];
     const byId = new Map();
     const pendingIds = [];
+    let retryCount = first.retryCount ?? 0;
     for (const d of pendingList) {
-      if (d.pendingId) pendingIds.push(d.pendingId);
+      if (d.pendingIds && Array.isArray(d.pendingIds)) {
+        pendingIds.push(...d.pendingIds);
+      } else if (d.pendingId != null) {
+        pendingIds.push(d.pendingId);
+      }
+      if (d.retryCount != null && d.retryCount > retryCount) retryCount = d.retryCount;
       for (const t of d.torrentsToProcess || []) {
         const id = t?.id ?? t?.torrent_id ?? t?.usenet_id ?? t?.web_id;
         if (id != null && !byId.has(id)) byId.set(id, t);
@@ -215,6 +226,7 @@ class GlobalActionQueue {
         authId: first.authId,
         rule: first.rule,
         torrentsToProcess: Array.from(byId.values()),
+        retryCount,
       },
       pendingIds,
     };
@@ -254,9 +266,43 @@ class GlobalActionQueue {
               if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
             }
           } catch (err) {
-            logger.error('GlobalActionQueue action batch failed', err, {
-              errorMessage: err.message,
-            });
+            const retryCount = (merged.retryCount ?? 0) + 1;
+            if (retryCount > MAX_ACTION_BATCH_RETRIES) {
+              logger.error('GlobalActionQueue action batch failed after max retries, dropping', err, {
+                errorMessage: err.message,
+                authId: merged.authId,
+                ruleId: merged.rule?.id,
+                ruleName: merged.rule?.name,
+                retryCount,
+              });
+              for (const id of pendingIds) {
+                if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
+              }
+            } else {
+              const backoffMs = ACTION_RETRY_BACKOFF_BASE_MS * Math.pow(2, retryCount - 1);
+              logger.warn('GlobalActionQueue action batch failed, will retry', {
+                errorMessage: err.message,
+                authId: merged.authId,
+                ruleId: merged.rule?.id,
+                retryCount,
+                nextRetryInMs: backoffMs,
+              });
+              this.pending.push({
+                authId: merged.authId,
+                rule: merged.rule,
+                torrentsToProcess: merged.torrentsToProcess,
+                pendingIds,
+                retryCount,
+              });
+              setTimeout(() => {
+                this.drain().catch((e) => {
+                  logger.error('GlobalActionQueue drain error on retry', e, {
+                    errorMessage: e.message,
+                    pendingCount: this.pending.length,
+                  });
+                });
+              }, backoffMs);
+            }
           }
         }
       };
@@ -296,6 +342,7 @@ class PollingScheduler {
     this.pollers = new Map();
     this.isRunning = false;
     this.intervalId = null;
+    this.pendingCleanupIntervalId = null;
 
     // Configuration with validation
     this.pollCheckInterval = Math.max(
@@ -458,8 +505,8 @@ class PollingScheduler {
   /**
    * Get or create an automation engine for a poll cycle.
    * Engines are cached per-user so that initialize() (4-5 DB queries) only runs once instead
-   * of on every poll. On subsequent polls the engine's DB connection is refreshed via
-   * getRuleEvaluator(). The cached engine is discarded when the poller is removed.
+   * of on every poll. The rule evaluator (and its DB connection) is created lazily when
+   * evaluateRules runs, not at the start of processUserPoll. The cached engine is discarded when the poller is removed.
    * @param {string} authId - User authentication ID
    * @param {string} encryptedKey - Encrypted API key
    * @returns {Promise<AutomationEngine>} Automation engine instance
@@ -467,8 +514,6 @@ class PollingScheduler {
   async createEngineForPoll(authId, encryptedKey) {
     const cached = this.cachedEngines.get(authId);
     if (cached?.isInitialized) {
-      // Refresh the rule evaluator's DB connection for this poll cycle without re-initializing
-      await cached.getRuleEvaluator();
       return cached;
     }
 
@@ -544,36 +589,6 @@ class PollingScheduler {
     }
 
     return poller;
-  }
-
-  /**
-   * Update active rules flag in master DB
-   * @param {string} authId - User authentication ID
-   * @param {boolean} hasActiveRules - Whether user has active rules
-   * @param {number} previousFlag - Previous flag value from DB
-   */
-  async updateActiveRulesFlag(authId, hasActiveRules, previousFlag) {
-    await this.acquireLockAndExecute(authId, async () => {
-      try {
-        this.masterDb.updateActiveRulesFlag(authId, hasActiveRules);
-
-        const newFlag = hasActiveRules ? 1 : 0;
-        if (previousFlag !== newFlag) {
-          logger.info('Synced active rules flag in master DB', {
-            authId,
-            previousFlag,
-            newFlag,
-            hasActiveRules,
-          });
-        }
-      } catch (error) {
-        logger.error('Failed to update active rules flag', error, {
-          authId,
-          hasActiveRules,
-        });
-        throw error;
-      }
-    });
   }
 
   /**
@@ -783,6 +798,10 @@ class PollingScheduler {
         });
     }, this.pollCheckInterval);
 
+    this.pendingCleanupIntervalId = setInterval(() => {
+      this.cleanupStalePendingActions();
+    }, PENDING_ACTIONS_CLEANUP_INTERVAL_MS);
+
     logger.info('Polling scheduler started successfully', {
       pollCheckInterval: `${this.pollCheckInterval / 1000}s`,
       activePollers: this.pollers.size,
@@ -812,6 +831,10 @@ class PollingScheduler {
       clearInterval(this.intervalId);
       this.intervalId = null;
       logger.debug('Polling interval cleared');
+    }
+    if (this.pendingCleanupIntervalId) {
+      clearInterval(this.pendingCleanupIntervalId);
+      this.pendingCleanupIntervalId = null;
     }
 
     this.pollSemaphore = null;
@@ -949,6 +972,26 @@ class PollingScheduler {
   }
 
   /**
+   * Delete pending_actions rows older than PENDING_ACTIONS_TTL_MS to avoid unbounded growth.
+   * Called hourly by the scheduler.
+   * @returns {number} Number of rows deleted
+   */
+  cleanupStalePendingActions() {
+    if (!this.masterDb?.deletePendingActionsOlderThan) return 0;
+    try {
+      const cutoff = new Date(Date.now() - PENDING_ACTIONS_TTL_MS);
+      const deleted = this.masterDb.deletePendingActionsOlderThan(cutoff);
+      if (deleted > 0) {
+        logger.info('Cleaned up stale pending_actions', { deleted, cutoff: cutoff.toISOString() });
+      }
+      return deleted;
+    } catch (err) {
+      logger.error('Failed to cleanup stale pending_actions', err, { errorMessage: err.message });
+      return 0;
+    }
+  }
+
+  /**
    * Check if cleanup should run
    * @returns {boolean} True if cleanup should run
    */
@@ -1012,9 +1055,9 @@ class PollingScheduler {
   }
 
   /**
-   * Stage 1: Fetch torrents for a single user (TorBox API only). Semaphore limits concurrent fetches.
+   * Fetch torrents for a single user (TorBox API only).
    * @param {Object} user - User from master DB
-   * @param {Semaphore} semaphore - Concurrency cap for fetches
+   * @param {Semaphore|null} semaphore - Optional concurrency cap; if provided, acquire/release around fetch. If null, caller holds the slot (e.g. unified fetch+process worker).
    * @returns {Promise<{user, poller, torrents?}|{user, poller, error}>}
    */
   async fetchTorrentsForUser(user, semaphore) {
@@ -1022,7 +1065,7 @@ class PollingScheduler {
       return { user, poller: null, error: new Error('Invalid user') };
     }
 
-    await semaphore.acquire();
+    if (semaphore) await semaphore.acquire();
     const { auth_id, encrypted_key } = user;
 
     try {
@@ -1044,7 +1087,7 @@ class PollingScheduler {
       const poller = this.pollers.get(auth_id) || null;
       return { user, poller, error };
     } finally {
-      semaphore.release();
+      if (semaphore) semaphore.release();
     }
   }
 
@@ -1057,7 +1100,7 @@ class PollingScheduler {
    * @param {Object} [options] - callerHoldsPipelineMutex: true when caller acquired mutex before semaphore (scheduled path)
    */
   async processUserPoll(user, poller, torrents, counters, options = {}) {
-    const { auth_id, has_active_rules: dbHasActiveRules } = user;
+    const { auth_id } = user;
     const callerHoldsPipelineMutex = options.callerHoldsPipelineMutex === true;
     let engineForPoll = null;
     const processStartTime = Date.now();
@@ -1072,22 +1115,6 @@ class PollingScheduler {
 
       const hasActiveRules = await engineForPoll.hasActiveRules();
 
-      if (dbHasActiveRules !== (hasActiveRules ? 1 : 0)) {
-        logger.warn('Active rules flag mismatch detected, will sync after poll', {
-          authId: auth_id,
-          dbFlag: dbHasActiveRules,
-          actualState: hasActiveRules,
-        });
-      }
-
-      if (!hasActiveRules) {
-        this.handleSkippedPoll(auth_id, { reason: 'No active automation rules' }, 0);
-        counters.skipped++;
-        this.metrics.skippedPolls++;
-        await this.updateActiveRulesFlag(auth_id, false, dbHasActiveRules);
-        return;
-      }
-
       const result = await withTimeout(
         poller.processFetchedTorrents(torrents, {
           hasActiveRules,
@@ -1099,7 +1126,6 @@ class PollingScheduler {
       );
 
       const duration = (Date.now() - processStartTime) / 1000;
-      await this.updateActiveRulesFlag(auth_id, hasActiveRules, dbHasActiveRules);
       await this.handleSuccessfulPoll(auth_id, poller, result, hasActiveRules, duration);
       if (result.ruleResults?.pendingActions?.length) {
         this.globalActionQueue?.enqueue(result.ruleResults.pendingActions);
@@ -1196,9 +1222,9 @@ class PollingScheduler {
         this.masterDb.updateNextPollAtBatch(authIdsToReserve, reserveUntil);
       }
 
-      logger.info('Polling users (two-phase: fetch then process)', {
+      logger.info('Polling users (unified fetch-then-process per user)', {
         dueCount: usersToFetch.length,
-        maxConcurrentFetch: this.maxConcurrentPolls,
+        maxConcurrentPolls: this.maxConcurrentPolls,
         perUserTimeoutSeconds: this.pollKickoutMs / 1000,
       });
 
@@ -1212,75 +1238,73 @@ class PollingScheduler {
       });
 
       const counters = { success: 0, skipped: 0, error: 0 };
-      const semaphore = this.pollSemaphore;
-      if (!semaphore) {
+      const pollSem = this.pollSemaphore;
+      const processSem = this.processSemaphore;
+      if (!pollSem) {
         return;
       }
 
-      // Stage 1: Fetch torrents for all due users (semaphore caps concurrent API fetches)
-      const fetchResults = await Promise.allSettled(
-        usersToFetch.map((u) => this.fetchTorrentsForUser(u, semaphore))
-      );
+      const userQueue = [...usersToFetch];
+      const worker = async () => {
+        while (userQueue.length > 0) {
+          const user = userQueue.shift();
+          if (!user?.auth_id) continue;
 
-      const fetchedList = [];
-      for (let i = 0; i < fetchResults.length; i++) {
-        const r = fetchResults[i];
-        const user = usersToFetch[i];
-        if (r.status === 'rejected') {
-          counters.error++;
-          this.handlePollError(user?.auth_id, r.reason, 0);
-          if (user?.auth_id) this._teardownUserAfterPoll(user.auth_id);
-          continue;
-        }
-        const value = r.value;
-        if (value.error) {
-          counters.error++;
-          if (value.error.isConnectionError) {
-            this.handleConnectionError(value.user.auth_id, 0);
-          } else if (value.error.isAuthError || value.error.name === 'AuthenticationError') {
-            // Counter and deactivation already handled in UserPoller.handleAuthenticationError
-            this.handlePollError(value.user.auth_id, value.error, 0);
-          } else {
-            this.handlePollError(value.user.auth_id, value.error, 0);
-          }
-          if (value.user?.auth_id) this._teardownUserAfterPoll(value.user.auth_id);
-          continue;
-        }
-        if (value.torrents) {
-          fetchedList.push({ user: value.user, poller: value.poller, torrents: value.torrents });
-        }
-      }
-
-      // Stage 2: Process all fetched results (state diff + rule eval; no API calls)
-      // Acquire pipeline mutex BEFORE process semaphore so we don't exhaust semaphore slots while waiting on mutex
-      const processSem = this.processSemaphore;
-      await Promise.allSettled(
-        fetchedList.map(async ({ user, poller, torrents }) => {
-          if (!processSem) return;
-          const auth_id = user?.auth_id;
-          const pipelineMutex = this.getPipelineMutex(auth_id);
-          await pipelineMutex.acquire();
-          await processSem.acquire();
+          await pollSem.acquire();
           try {
-            return await this.processUserPoll(user, poller, torrents, counters, {
-              callerHoldsPipelineMutex: true,
-            });
-          } finally {
-            processSem.release();
-            pipelineMutex.release();
-            if (pipelineMutex.isEmpty()) {
-              this.pipelineMutexes.delete(auth_id);
+            const result = await this.fetchTorrentsForUser(user, null);
+            if (result.error) {
+              counters.error++;
+              if (result.error.isConnectionError) {
+                this.handleConnectionError(result.user.auth_id, 0);
+              } else if (result.error.isAuthError || result.error.name === 'AuthenticationError') {
+                this.handlePollError(result.user.auth_id, result.error, 0);
+              } else {
+                this.handlePollError(result.user.auth_id, result.error, 0);
+              }
+              if (result.user?.auth_id) this._teardownUserAfterPoll(result.user.auth_id);
+              continue;
             }
-            // processUserPoll's finally already does automationEngine/closeConnection/dbManager/teardown
+            if (!result.torrents) continue;
+
+            const auth_id = result.user.auth_id;
+            if (!processSem) {
+              await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
+                callerHoldsPipelineMutex: false,
+              });
+              continue;
+            }
+            const pipelineMutex = this.getPipelineMutex(auth_id);
+            await pipelineMutex.acquire();
+            await processSem.acquire();
+            try {
+              await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
+                callerHoldsPipelineMutex: true,
+              });
+            } finally {
+              processSem.release();
+              pipelineMutex.release();
+              if (pipelineMutex.isEmpty()) {
+                this.pipelineMutexes.delete(auth_id);
+              }
+            }
+          } catch (err) {
+            counters.error++;
+            this.handlePollError(user?.auth_id, err, 0);
+            if (user?.auth_id) this._teardownUserAfterPoll(user.auth_id);
+          } finally {
+            pollSem.release();
           }
-        })
-      );
+        }
+      };
+
+      const workerCount = Math.min(this.maxConcurrentPolls, userQueue.length);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
       this.metrics.totalPolls += usersToFetch.length;
       const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
       logger.info('Poll cycle completed', {
         totalUsers: usersToFetch.length,
-        processedCount: fetchedList.length,
         successCount: counters.success,
         skippedCount: counters.skipped,
         errorCount: counters.error,
