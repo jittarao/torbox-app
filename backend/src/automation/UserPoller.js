@@ -201,9 +201,14 @@ class UserPoller {
     // Determine current polling mode
     const pollingMode = await this.determinePollingMode(hasActiveRules, ruleResults);
 
-    // Get minimum rule interval if in active mode
+    // Use pre-computed minRuleInterval from ruleResults when available (avoids a redundant DB
+    // query since evaluateRules() already loaded all enabled rules and computed this value).
     const minRuleInterval =
-      pollingMode === 'active' ? await this.getMinimumRuleIntervalSafe() : null;
+      pollingMode === 'active'
+        ? ruleResults?.minRuleInterval !== undefined
+          ? ruleResults.minRuleInterval
+          : await this.getMinimumRuleIntervalSafe()
+        : null;
 
     return PollingIntervalCalculator.calculateNextPollAt(
       this.authId,

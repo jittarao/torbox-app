@@ -516,9 +516,6 @@ class PollingScheduler {
       logger.warn('executeUserPoll called with invalid user object', {
         user: user ? Object.keys(user) : 'null',
       });
-      if (semaphore) {
-        semaphore.release();
-      }
       counters.error++;
       return;
     }
@@ -875,10 +872,6 @@ class PollingScheduler {
 
     this._pollCycleInProgress = true;
 
-    if (this.shouldRunCleanup()) {
-      this.cleanupStalePollers();
-    }
-
     const checkStartTime = Date.now();
     logger.debug('Checking for users due for polling', {
       activePollers: this.pollers.size,
@@ -886,6 +879,10 @@ class PollingScheduler {
     });
 
     try {
+      if (this.shouldRunCleanup()) {
+        this.cleanupStalePollers();
+      }
+
       const dueUsers = this.masterDb.getUsersDueForPolling();
 
       if (dueUsers.length === 0) {
@@ -1190,9 +1187,19 @@ class PollingScheduler {
       throw new Error(`No poller found for user ${authId}`);
     }
 
+    // Attach an automation engine for the duration of the manual poll (mirrors executeUserPoll).
+    // Without this the poll always short-circuits with "No active automation rules" because
+    // the engine is detached from the poller at the end of every scheduled poll cycle.
     try {
+      const engineForPoll = await this.createEngineForPoll(authId, poller.encryptedApiKey);
+      poller.automationEngine = engineForPoll;
+
       const result = await withTimeout(
-        poller.poll(),
+        poller.poll(null, {
+          calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
+            this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
+          updateMasterDb: true,
+        }),
         this.pollKickoutMs,
         `Per-user poll timeout after ${this.pollKickoutMs / 1000}s`
       );
@@ -1219,6 +1226,8 @@ class PollingScheduler {
         });
       }
       throw error;
+    } finally {
+      poller.automationEngine = null;
     }
   }
 }

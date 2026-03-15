@@ -2,6 +2,25 @@ import RuleEvaluator from './RuleEvaluator.js';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+
+/**
+ * Parse a SQLite timestamp string as UTC.
+ * SQLite stores CURRENT_TIMESTAMP as "YYYY-MM-DD HH:MM:SS" with no timezone indicator.
+ * JavaScript's Date constructor interprets strings without a timezone as local time, which
+ * causes interval calculations to be off by the server's UTC offset.
+ * @param {string|null} dateStr
+ * @returns {Date}
+ */
+function parseDbTimestamp(dateStr) {
+  if (!dateStr) return new Date(NaN);
+  if (typeof dateStr !== 'string') return new Date(dateStr);
+  // Already has timezone indicator — parse as-is
+  if (dateStr.includes('T') || dateStr.includes('Z') || dateStr.includes('+')) {
+    return new Date(dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`);
+  }
+  // SQLite "YYYY-MM-DD HH:MM:SS" format — treat as UTC
+  return new Date(`${dateStr.replace(' ', 'T')}Z`);
+}
 import cache from '../utils/cache.js';
 import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
 import StateDiffEngine from './StateDiffEngine.js';
@@ -267,9 +286,18 @@ class AutomationEngine {
    */
   async getMinimumRuleInterval() {
     const enabledRules = await this.getAutomationRules({ enabled: true });
+    return this._computeMinRuleInterval(enabledRules);
+  }
 
+  /**
+   * Compute minimum rule interval from an already-loaded rules array.
+   * Avoids a redundant DB query when called after evaluateRules() which already fetched the rules.
+   * @param {Array} rules - Array of rule objects
+   * @returns {number|null} - Minimum interval in minutes, or null if no interval triggers
+   */
+  _computeMinRuleInterval(rules) {
     let minInterval = null;
-    for (const rule of enabledRules) {
+    for (const rule of rules) {
       if (rule.trigger && rule.trigger.type === 'interval' && rule.trigger.value) {
         const interval = rule.trigger.value;
         if (minInterval === null || interval < minInterval) {
@@ -277,7 +305,6 @@ class AutomationEngine {
         }
       }
     }
-
     return minInterval;
   }
 
@@ -448,10 +475,10 @@ class AutomationEngine {
         logger.debug('No enabled rules to evaluate', {
           authId: this.authId,
         });
-        return { evaluated: 0, executed: 0 };
+        return { evaluated: 0, executed: 0, minRuleInterval: null };
       }
 
-      logger.info('Evaluating automation rules', {
+      logger.debug('Evaluating automation rules', {
         authId: this.authId,
         enabledRuleCount: enabledRules.length,
         torrentCount: torrents.length,
@@ -485,6 +512,8 @@ class AutomationEngine {
         executed: results.executedCount,
         skipped: results.skippedCount,
         errors: results.errorCount,
+        // Pre-computed so UserPoller.calculateNextPollAt can skip a redundant DB query
+        minRuleInterval: this._computeMinRuleInterval(enabledRules),
       };
     } catch (error) {
       const evaluationDuration = ((Date.now() - evaluationStartTime) / 1000).toFixed(2);
@@ -494,7 +523,7 @@ class AutomationEngine {
         errorMessage: error.message,
         errorStack: error.stack,
       });
-      return { evaluated: 0, executed: 0, error: error.message };
+      return { evaluated: 0, executed: 0, error: error.message, minRuleInterval: null };
     }
   }
 
@@ -1005,7 +1034,7 @@ class AutomationEngine {
 
     const intervalMinutes = rule.trigger.value;
     const adjustedIntervalMinutes = applyIntervalMultiplier(Math.max(intervalMinutes, 1));
-    const lastEvaluated = new Date(rule.last_evaluated_at);
+    const lastEvaluated = parseDbTimestamp(rule.last_evaluated_at);
     const intervalMs = adjustedIntervalMinutes * 60 * 1000;
     const timeSinceLastEvaluation = Date.now() - lastEvaluated.getTime();
 
