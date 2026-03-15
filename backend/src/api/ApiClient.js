@@ -3,6 +3,11 @@ import logger from '../utils/logger.js';
 
 // Constants
 const DEFAULT_TIMEOUT = 30000;
+// Action calls (controlTorrent, controlQueuedTorrent) use a shorter timeout so that
+// a hung TorBox response on one torrent does not consume the per-user 180s poll budget.
+// With parallel action execution (RULE_ACTION_CONCURRENCY=3) a 15s action timeout means
+// the worst-case action phase is ceil(N/3)×15s instead of the old N×30s.
+const DEFAULT_ACTION_TIMEOUT = parseInt(process.env.TORBOX_ACTION_TIMEOUT_MS || '15000', 10);
 const DEFAULT_BASE_URL = 'https://api.torbox.app';
 const DEFAULT_API_VERSION = 'v1';
 const DEFAULT_PACKAGE_VERSION = '0.1.0';
@@ -322,7 +327,7 @@ class ApiClient {
         const response = await this.client.post('/api/torrents/controltorrent', {
           torrent_id: torrentId,
           operation: operation
-        });
+        }, { timeout: DEFAULT_ACTION_TIMEOUT });
         return response.data;
       },
       {
@@ -341,7 +346,7 @@ class ApiClient {
           queued_id: queuedId,
           operation: operation,
           type: 'torrent'
-        });
+        }, { timeout: DEFAULT_ACTION_TIMEOUT });
         return response.data;
       },
       {
