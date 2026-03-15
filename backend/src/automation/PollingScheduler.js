@@ -220,6 +220,15 @@ class GlobalActionQueue {
       await Promise.all(workers);
     } finally {
       this.draining = false;
+      // Re-drain if items arrived while draining (avoids items stuck until next enqueue)
+      if (this.pending.length > 0) {
+        this.drain().catch((err) => {
+          logger.error('GlobalActionQueue drain error', err, {
+            errorMessage: err.message,
+            pendingCount: this.pending.length,
+          });
+        });
+      }
     }
   }
 }
@@ -612,159 +621,6 @@ class PollingScheduler {
   }
 
   /**
-   * Execute poll for a single user.
-   * Each user has a per-user kick-out timeout (pollKickoutMs); one slow poll gets kicked out and cannot block others.
-   * @param {Object} user - User object from database
-   * @param {Semaphore} semaphore - Semaphore for concurrency control (maxConcurrentPolls)
-   * @param {Object} counters - Object to track success/skipped/error counts
-   * @returns {Promise<void>}
-   */
-  async executeUserPoll(user, semaphore, counters) {
-    if (!user || !user.auth_id) {
-      logger.warn('executeUserPoll called with invalid user object', {
-        user: user ? Object.keys(user) : 'null',
-      });
-      counters.error++;
-      return;
-    }
-
-    await semaphore.acquire();
-    const pollStartTime = Date.now();
-    let engineForPoll = null;
-
-    try {
-      const { auth_id, encrypted_key, has_active_rules: dbHasActiveRules } = user;
-
-      if (!encrypted_key) {
-        logger.warn('User has no API key, skipping poll', {
-          authId: auth_id,
-          hasActiveRules: dbHasActiveRules,
-        });
-        counters.error++;
-        return;
-      }
-
-      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
-      this.masterDb.updateNextPollAt(auth_id, reserveUntil, 0);
-
-      const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
-
-      // Create engine for this poll only (not cached)
-      engineForPoll = await this.createEngineForPoll(auth_id, encrypted_key);
-      poller.automationEngine = engineForPoll;
-
-      const hasActiveRules = await engineForPoll.hasActiveRules();
-
-      // Log flag mismatch if detected
-      if (dbHasActiveRules !== (hasActiveRules ? 1 : 0)) {
-        logger.warn('Active rules flag mismatch detected, will sync after poll', {
-          authId: auth_id,
-          dbFlag: dbHasActiveRules,
-          actualState: hasActiveRules,
-        });
-      }
-
-      logger.debug('Starting poll for user', {
-        authId: auth_id,
-        hasActiveRules,
-        dbHasActiveRules,
-      });
-
-      // Warn when poll runs a long time (before timeout) so operators can tune POLL_TIMEOUT_MS or investigate
-      const slowPollThresholdMs = Math.floor(this.pollKickoutMs * SLOW_POLL_WARNING_PERCENT);
-      const slowPollWarningTimer = setTimeout(() => {
-        const elapsed = ((Date.now() - pollStartTime) / 1000).toFixed(1);
-        logger.warn('Poll still running (approaching per-user timeout)', {
-          authId: auth_id,
-          elapsedSeconds: elapsed,
-          perUserTimeoutMs: this.pollKickoutMs,
-          percentOfTimeout: Math.round(SLOW_POLL_WARNING_PERCENT * 100),
-        });
-      }, slowPollThresholdMs);
-
-      // Per-user timeout: this user only; other users are unaffected
-      let result;
-      try {
-        result = await withTimeout(
-          poller.poll(hasActiveRules, {
-            calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
-              this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
-            updateMasterDb: false, // Scheduler persists next_poll_at in handleSuccessfulPoll
-          }),
-          this.pollKickoutMs,
-          `Per-user poll timeout after ${this.pollKickoutMs / 1000}s`
-        );
-      } catch (error) {
-        if (error.isTimeout || error.name === 'TimeoutError' || error.message.includes('timeout')) {
-          const duration = (Date.now() - pollStartTime) / 1000;
-          logger.error('Per-user poll timeout exceeded (kicking user out of concurrency slot)', error, {
-            authId: auth_id,
-            perUserTimeoutMs: this.pollKickoutMs,
-            duration: `${duration.toFixed(2)}s`,
-          });
-          this.handlePollTimeout(auth_id, duration);
-          poller.resetPollingState();
-          counters.error++;
-          // return then finally: semaphore.release() frees the slot for the next due user
-          return;
-        }
-        throw error;
-      } finally {
-        clearTimeout(slowPollWarningTimer);
-      }
-
-      const duration = (Date.now() - pollStartTime) / 1000;
-
-      // Update active rules flag if needed
-      await this.updateActiveRulesFlag(auth_id, hasActiveRules, dbHasActiveRules);
-
-      // Handle poll result
-      if (result && result.success && !result.skipped) {
-        await this.handleSuccessfulPoll(auth_id, poller, result, hasActiveRules, duration);
-        counters.success++;
-        this.metrics.successfulPolls++;
-        this.metrics.lastPollAt = new Date();
-      } else if (result && result.skipped) {
-        this.handleSkippedPoll(auth_id, result, duration);
-        counters.skipped++;
-        this.metrics.skippedPolls++;
-      } else if (result && result.isConnectionError) {
-        // TorBox API was unreachable — shadow state is intact, retry in 30 min
-        this.handleConnectionError(auth_id, duration);
-        counters.error++;
-      } else {
-        logger.warn('Poll returned unexpected result', {
-          authId: auth_id,
-          result,
-          duration: `${duration.toFixed(2)}s`,
-        });
-        counters.error++;
-        this.metrics.failedPolls++;
-      }
-      this.metrics.totalPolls++;
-    } catch (error) {
-      const duration = (Date.now() - pollStartTime) / 1000;
-      logger.error('Error polling user', error, {
-        authId: user.auth_id,
-        duration: `${duration.toFixed(2)}s`,
-        errorMessage: error.message,
-        errorStack: error.stack,
-      });
-      this.handlePollError(user.auth_id, error, duration);
-      counters.error++;
-    } finally {
-      // Detach engine from poller after poll (engine stays cached in cachedEngines for next poll)
-      if (user?.auth_id) {
-        const poller = this.pollers.get(user.auth_id);
-        if (poller) {
-          poller.automationEngine = null;
-        }
-      }
-      semaphore.release();
-    }
-  }
-
-  /**
    * Start the scheduler (cron-like approach)
    */
   async start() {
@@ -1032,6 +888,7 @@ class PollingScheduler {
           errorCount === 0,
           errorCount > 0 ? `${errorCount} actions failed` : null
         );
+        cache.invalidateRecentRuleExecutions(authId);
       }
     } catch (error) {
       logger.error('runActionBatch failed', error, {
@@ -1188,6 +1045,10 @@ class PollingScheduler {
       return;
     }
 
+    if (this.shouldRunCleanup()) {
+      this.cleanupStalePollers();
+    }
+
     this._pollCycleInProgress = true;
 
     const checkStartTime = Date.now();
@@ -1199,26 +1060,36 @@ class PollingScheduler {
     try {
       const dueUsers = this.masterDb.getUsersDueForPolling();
 
-      if (dueUsers.length === 0) {
+      // Only fetch for users with active rules; skip API call for others and reschedule
+      const usersToFetch = dueUsers.filter((u) => u.has_active_rules === 1);
+      const usersToSkip = dueUsers.filter((u) => u.has_active_rules !== 1);
+      for (const user of usersToSkip) {
+        if (user?.auth_id) {
+          this.handleSkippedPoll(user.auth_id, { reason: 'No active automation rules' }, 0);
+        }
+      }
+
+      if (usersToFetch.length === 0) {
         logger.debug('No users due for polling at this time', {
           checkDuration: `${((Date.now() - checkStartTime) / 1000).toFixed(2)}s`,
+          skippedNoRules: usersToSkip.length,
         });
         return;
       }
 
       logger.info('Polling users (two-phase: fetch then process)', {
-        dueCount: dueUsers.length,
+        dueCount: usersToFetch.length,
         maxConcurrentFetch: this.maxConcurrentPolls,
         perUserTimeoutSeconds: this.pollKickoutMs / 1000,
       });
 
-      if (dueUsers.length >= 20) {
-        logger.warn('PollDueUsers: large due list', { dueCount: dueUsers.length });
+      if (usersToFetch.length >= 20) {
+        logger.warn('PollDueUsers: large due list', { dueCount: usersToFetch.length });
       }
 
       logger.debug('Found users due for polling', {
-        count: dueUsers.length,
-        authIds: dueUsers.map((u) => u?.auth_id).filter(Boolean),
+        count: usersToFetch.length,
+        authIds: usersToFetch.map((u) => u?.auth_id).filter(Boolean),
       });
 
       const counters = { success: 0, skipped: 0, error: 0 };
@@ -1229,13 +1100,13 @@ class PollingScheduler {
 
       // Stage 1: Fetch torrents for all due users (semaphore caps concurrent API fetches)
       const fetchResults = await Promise.allSettled(
-        dueUsers.map((u) => this.fetchTorrentsForUser(u, semaphore))
+        usersToFetch.map((u) => this.fetchTorrentsForUser(u, semaphore))
       );
 
       const fetchedList = [];
       for (let i = 0; i < fetchResults.length; i++) {
         const r = fetchResults[i];
-        const user = dueUsers[i];
+        const user = usersToFetch[i];
         if (r.status === 'rejected') {
           counters.error++;
           this.handlePollError(user?.auth_id, r.reason, 0);
@@ -1278,10 +1149,10 @@ class PollingScheduler {
         )
       );
 
-      this.metrics.totalPolls += dueUsers.length;
+      this.metrics.totalPolls += usersToFetch.length;
       const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
       logger.info('Poll cycle completed', {
-        totalUsers: dueUsers.length,
+        totalUsers: usersToFetch.length,
         processedCount: fetchedList.length,
         successCount: counters.success,
         skippedCount: counters.skipped,

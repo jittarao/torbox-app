@@ -25,6 +25,13 @@ class Cache {
       max: 2, // Two different query variations
       ttl: 60000, // 60 seconds
     });
+
+    // Cache for "has recent rule executions" per user (5 minutes TTL)
+    // Reduces DB queries when no rules executed in current cycle (idle users).
+    this.recentRuleExecutionsCache = new TTLCache({
+      max: 1000,
+      ttl: 300000, // 5 minutes
+    });
   }
 
   /**
@@ -128,12 +135,39 @@ class Cache {
   }
 
   /**
+   * Get cached "has recent rule executions" for a user
+   * @param {string} authId - User authentication ID
+   * @returns {boolean|undefined} - Cached value or undefined if not cached
+   */
+  getRecentRuleExecutions(authId) {
+    return this.recentRuleExecutionsCache.get(`recentRuleExecutions:${authId}`);
+  }
+
+  /**
+   * Set cached "has recent rule executions" for a user
+   * @param {string} authId - User authentication ID
+   * @param {boolean} hasRecent - Whether user has recent rule executions
+   */
+  setRecentRuleExecutions(authId, hasRecent) {
+    this.recentRuleExecutionsCache.set(`recentRuleExecutions:${authId}`, hasRecent);
+  }
+
+  /**
+   * Invalidate recent rule executions cache for a user (call when actions are successfully executed)
+   * @param {string} authId - User authentication ID
+   */
+  invalidateRecentRuleExecutions(authId) {
+    this.recentRuleExecutionsCache.delete(`recentRuleExecutions:${authId}`);
+  }
+
+  /**
    * Clear all caches
    */
   clear() {
     this.activeRulesCache.clear();
     this.userRegistryCache.clear();
     this.activeUsersCache.clear();
+    this.recentRuleExecutionsCache.clear();
     logger.debug('Cleared all caches');
   }
 }

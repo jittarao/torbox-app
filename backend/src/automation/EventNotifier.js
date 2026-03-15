@@ -8,6 +8,44 @@ class EventNotifier {
   constructor() {
     /** @type {Map<string, Set<import('express').Response>>} */
     this.connections = new Map();
+    /** @type {ReturnType<typeof setInterval>|null} */
+    this._heartbeatId = null;
+  }
+
+  /**
+   * Start optional SSE heartbeat to keep connections alive behind proxies/load balancers.
+   * @param {number} [intervalMs] - Interval in ms (default 25000). Env: SSE_HEARTBEAT_INTERVAL_MS
+   */
+  startHeartbeat(intervalMs) {
+    if (this._heartbeatId) return;
+    const ms =
+      intervalMs ??
+      parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '25000', 10);
+    this._heartbeatId = setInterval(() => {
+      for (const [authId, set] of this.connections) {
+        for (const res of set) {
+          try {
+            res.write(': ping\n\n');
+          } catch (err) {
+            logger.debug('SSE heartbeat write failed, removing connection', {
+              authId,
+              errorMessage: err.message,
+            });
+            set.delete(res);
+          }
+        }
+      }
+    }, ms);
+  }
+
+  /**
+   * Stop the SSE heartbeat timer.
+   */
+  stopHeartbeat() {
+    if (this._heartbeatId) {
+      clearInterval(this._heartbeatId);
+      this._heartbeatId = null;
+    }
   }
 
   /**
