@@ -624,7 +624,7 @@ class UserPoller {
       };
     }
 
-    // Acquire DB connection for this poll cycle (released in finally); avoids holding connections between polls (min interval 5+ min)
+    // Acquire DB connection for this poll cycle (released in finally); avoids holding connections between polls (min interval 30+ min)
     if (!this.dbManager && this.userDatabaseManager) {
       try {
         const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
