@@ -158,13 +158,20 @@ class Logger {
   }
 
   /**
+   * Whether debug logging is enabled (avoids building log payloads in hot paths when false).
+   * @returns {boolean}
+   */
+  isDebugEnabled() {
+    return process.env.DEBUG === 'true';
+  }
+
+  /**
    * Log a debug message (only if DEBUG env variable is set)
    * @param {string} message - Debug message
    * @param {Object} context - Additional context
    */
   debug(message, context = {}) {
-    const isDebug = process.env.DEBUG === 'true';
-    if (!isDebug) {
+    if (!this.isDebugEnabled()) {
       return;
     }
 
