@@ -409,7 +409,7 @@ class PollingScheduler {
       logger.info('Set next poll time after per-user timeout', {
         authId,
         nextPollAt: nextPollAt.toISOString(),
-        retryIn: count >= 2 ? '15 minutes (backoff)' : '5 minutes',
+        retryIn: count >= 2 ? '60 minutes (backoff)' : '30 minutes',
         consecutiveTimeouts: count,
         duration: `${duration.toFixed(2)}s`,
       });
@@ -436,8 +436,8 @@ class PollingScheduler {
     }
 
     try {
-      // Retry in ERROR_RETRY_INTERVAL_MS (5 min). The reserveUntil written at poll start is
-      // already ~5 min from now, so this is a no-op in the common case — but it makes intent
+      // Retry in ERROR_RETRY_INTERVAL_MS (30 min). The reserveUntil written at poll start is
+      // already 30 min from now, so this is a no-op in the common case — but it makes intent
       // explicit and covers edge cases where the poll finished quickly.
       const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
       this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
@@ -447,7 +447,7 @@ class PollingScheduler {
       logger.warn('Poll aborted: TorBox API unreachable — scheduling fast retry', {
         authId,
         nextPollAt: nextPollAt.toISOString(),
-        retryIn: '5 minutes',
+        retryIn: '30 minutes',
         duration: `${duration.toFixed(2)}s`,
       });
     } catch (error) {
@@ -480,7 +480,7 @@ class PollingScheduler {
       logger.info('Set next poll time after error', {
         authId,
         nextPollAt: nextPollAt.toISOString(),
-        retryIn: '5 minutes',
+        retryIn: '30 minutes',
         duration: `${duration.toFixed(2)}s`,
         errorMessage: error?.message || 'Unknown error',
         errorName: error?.name,
@@ -665,7 +665,7 @@ class PollingScheduler {
         counters.skipped++;
         this.metrics.skippedPolls++;
       } else if (result && result.isConnectionError) {
-        // TorBox API was unreachable — shadow state is intact, retry in 5 min
+        // TorBox API was unreachable — shadow state is intact, retry in 30 min
         this.handleConnectionError(auth_id, duration);
         counters.error++;
       } else {
@@ -850,6 +850,37 @@ class PollingScheduler {
   }
 
   /**
+   * Teardown only the cached engine for a user (e.g. after runActionBatch).
+   * Does not touch poller, mutex, or userConsecutiveTimeoutCount.
+   * @param {string} authId - User authentication ID
+   * @private
+   */
+  _teardownEngineForAuth(authId) {
+    const engine = this.cachedEngines.get(authId);
+    if (engine) {
+      try {
+        engine.shutdown();
+      } catch (_) {
+        // Best-effort
+      }
+      this.cachedEngines.delete(authId);
+    }
+  }
+
+  /**
+   * Teardown poller and engine after a poll cycle. Call from processUserPoll finally and fetch-phase errors.
+   * Does not clear userConsecutiveTimeoutCount (preserves timeout backoff).
+   * @param {string} authId - User authentication ID
+   * @private
+   */
+  _teardownUserAfterPoll(authId) {
+    if (!authId) return;
+    this.pollers.delete(authId);
+    this._teardownEngineForAuth(authId);
+    this.flagUpdateMutexes.delete(authId);
+  }
+
+  /**
    * Clean up pollers that haven't been polled recently
    * @returns {number} Number of pollers cleaned up
    */
@@ -918,9 +949,8 @@ class PollingScheduler {
       return;
     }
 
-    let engine;
     try {
-      engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
+      const engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
       const { successCount, errorCount } = await engine.ruleExecutor.executeActions(
         rule,
         torrentsToProcess
@@ -942,6 +972,8 @@ class PollingScheduler {
         torrentCount: torrentsToProcess.length,
         errorMessage: error.message,
       });
+    } finally {
+      this._teardownEngineForAuth(authId);
     }
   }
 
@@ -1063,6 +1095,7 @@ class PollingScheduler {
           poller.userDatabaseManager.closeConnection(auth_id);
         }
         if (poller) poller.dbManager = null;
+        this._teardownUserAfterPoll(auth_id);
       }
     }
   }
@@ -1090,10 +1123,6 @@ class PollingScheduler {
     });
 
     try {
-      if (this.shouldRunCleanup()) {
-        this.cleanupStalePollers();
-      }
-
       const dueUsers = this.masterDb.getUsersDueForPolling();
 
       if (dueUsers.length === 0) {
@@ -1136,6 +1165,7 @@ class PollingScheduler {
         if (r.status === 'rejected') {
           counters.error++;
           this.handlePollError(user?.auth_id, r.reason, 0);
+          if (user?.auth_id) this._teardownUserAfterPoll(user.auth_id);
           continue;
         }
         const value = r.value;
@@ -1149,6 +1179,7 @@ class PollingScheduler {
           } else {
             this.handlePollError(value.user.auth_id, value.error, 0);
           }
+          if (value.user?.auth_id) this._teardownUserAfterPoll(value.user.auth_id);
           continue;
         }
         if (value.torrents) {
@@ -1189,7 +1220,7 @@ class PollingScheduler {
    * Refresh pollers based on active users.
    * - Light refresh (most runs): use master DB has_active_rules only; add/remove pollers. No user DB opens.
    * - Full refresh (every REFRESH_FULL_SYNC_EVERY_N): sync has_active_rules from all user DBs, then add/remove pollers.
-   * Rules have a minimum 5 min interval, so refreshing the poller list every 15 min is enough.
+   * Pollers are created on demand when users are due; refresh only removes pollers for users without active rules.
    */
   async refreshPollers() {
     if (this._refreshInProgress) {
@@ -1295,40 +1326,12 @@ class PollingScheduler {
         usersWithActiveRulesCount: usersWithActiveRules.length,
       });
 
-      const stats = { added: 0, removed: 0, error: 0 };
+      const stats = { removed: 0 };
 
       // Build a Set for O(1) lookup in the removal pass below
       const activeRulesAuthIdSet = new Set(usersWithActiveRules.map((u) => u.auth_id));
 
-      // Step 3: Create pollers for users with active rules
-      for (const user of usersWithActiveRules) {
-        const { auth_id, encrypted_key } = user;
-
-        if (!encrypted_key) {
-          logger.warn('User has no API key, skipping poller creation', {
-            authId: auth_id,
-          });
-          stats.error++;
-          continue;
-        }
-
-        if (!this.pollers.has(auth_id)) {
-          try {
-            await this.createPoller(auth_id, encrypted_key);
-            logger.info('Poller added successfully', { authId: auth_id });
-            stats.added++;
-          } catch (error) {
-            logger.error('Failed to create poller for user', error, {
-              authId: auth_id,
-              errorMessage: error.message,
-              errorStack: error.stack,
-            });
-            stats.error++;
-          }
-        }
-      }
-
-      // Step 4: Remove pollers for users without active rules (O(P) with Set lookup)
+      // Remove pollers for users without active rules (pollers are created on demand when user is due)
       for (const authId of currentAuthIds) {
         if (!activeRulesAuthIdSet.has(authId)) {
           this.pollers.delete(authId);
@@ -1343,15 +1346,12 @@ class PollingScheduler {
       const refreshDuration = ((Date.now() - refreshStartTime) / 1000).toFixed(2);
       if (doFullSync) {
         logger.warn('RefreshPollers full sync completed', {
-          addedCount: stats.added,
           removedCount: stats.removed,
-          errorCount: stats.error,
           totalPollers: this.pollers.size,
           duration: `${refreshDuration}s`,
         });
       } else {
         logger.debug('RefreshPollers light completed', {
-          addedCount: stats.added,
           removedCount: stats.removed,
           totalPollers: this.pollers.size,
           duration: `${refreshDuration}s`,
@@ -1402,7 +1402,8 @@ class PollingScheduler {
   }
 
   /**
-   * Manually trigger a poll for a specific user
+   * Manually trigger a poll for a specific user.
+   * Creates poller and engine on demand; tears them down after the poll.
    * @param {string} authId - User authentication ID
    * @returns {Promise<Object>} Poll result
    */
@@ -1416,21 +1417,15 @@ class PollingScheduler {
       timestamp: new Date().toISOString(),
     });
 
-    const poller = this.pollers.get(authId);
-    if (!poller) {
-      logger.error('No poller found for user', {
-        authId,
-        availablePollers: Array.from(this.pollers.keys()),
-        totalPollers: this.pollers.size,
-      });
-      throw new Error(`No poller found for user ${authId}`);
+    const userInfo = this.masterDb.getUserRegistryInfo(authId);
+    if (!userInfo?.encrypted_key) {
+      throw new Error(`No user or API key found for ${authId}`);
     }
 
-    // Attach an automation engine for the duration of the manual poll (mirrors executeUserPoll).
-    // Without this the poll always short-circuits with "No active automation rules" because
-    // the engine is detached from the poller at the end of every scheduled poll cycle.
+    const poller = await this.getOrCreatePoller(authId, userInfo.encrypted_key);
+
     try {
-      const engineForPoll = await this.createEngineForPoll(authId, poller.encryptedApiKey);
+      const engineForPoll = await this.createEngineForPoll(authId, userInfo.encrypted_key);
       poller.automationEngine = engineForPoll;
 
       const result = await withTimeout(
@@ -1467,6 +1462,11 @@ class PollingScheduler {
       throw error;
     } finally {
       poller.automationEngine = null;
+      if (poller.userDatabaseManager) {
+        poller.userDatabaseManager.closeConnection(authId);
+      }
+      poller.dbManager = null;
+      this._teardownUserAfterPoll(authId);
     }
   }
 }
