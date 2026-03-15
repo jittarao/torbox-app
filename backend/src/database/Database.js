@@ -15,6 +15,8 @@ class Database {
     this.db = null;
     this.migrationRunner = null;
     this.initialized = false;
+    /** @type {Map<string, import('bun:sqlite').Statement>} */
+    this._statementCache = new Map();
     // Master database path
     const masterDbPath = process.env.MASTER_DB_PATH || '/app/data/master.db';
     this.dbPath = masterDbPath.startsWith('sqlite://')
@@ -133,6 +135,7 @@ class Database {
           errorMessage: error.message,
         });
 
+        this._statementCache.clear();
         // Reopen the database connection
         this.db = new SQLiteDatabase(this.dbPath);
 
@@ -183,8 +186,13 @@ class Database {
     if (!this.db) {
       throw new Error('Database not initialized. Call initialize() first.');
     }
+    let stmt = this._statementCache.get(sql);
+    if (!stmt) {
+      stmt = this.db.prepare(sql);
+      this._statementCache.set(sql, stmt);
+    }
     try {
-      const result = this.db.prepare(sql).run(params);
+      const result = stmt.run(params);
       return { id: result.lastInsertRowid, changes: result.changes };
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
@@ -193,10 +201,13 @@ class Database {
             errorName: error.name,
             errorMessage: error.message,
           });
+          this._statementCache.clear();
           this.db = new SQLiteDatabase(this.dbPath);
           this._configureDatabase(this.db);
           this.migrationRunner = new MigrationRunner(this.db, 'master');
-          const result = this.db.prepare(sql).run(params);
+          stmt = this.db.prepare(sql);
+          this._statementCache.set(sql, stmt);
+          const result = stmt.run(params);
           return { id: result.lastInsertRowid, changes: result.changes };
         } catch (retryError) {
           logger.error('Database query execution failed after retry', retryError, {
@@ -218,18 +229,26 @@ class Database {
     if (!this.db) {
       throw new Error('Database not initialized. Call initialize() first.');
     }
+    let stmt = this._statementCache.get(sql);
+    if (!stmt) {
+      stmt = this.db.prepare(sql);
+      this._statementCache.set(sql, stmt);
+    }
     try {
-      return this.db.prepare(sql).get(params);
+      return stmt.get(params);
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
         logger.warn('Database connection closed during getQuery, refreshing and retrying', {
           errorName: error.name,
           errorMessage: error.message,
         });
+        this._statementCache.clear();
         this.db = new SQLiteDatabase(this.dbPath);
         this._configureDatabase(this.db);
         this.migrationRunner = new MigrationRunner(this.db, 'master');
-        return this.db.prepare(sql).get(params);
+        stmt = this.db.prepare(sql);
+        this._statementCache.set(sql, stmt);
+        return stmt.get(params);
       }
       throw error;
     }
@@ -239,18 +258,26 @@ class Database {
     if (!this.db) {
       throw new Error('Database not initialized. Call initialize() first.');
     }
+    let stmt = this._statementCache.get(sql);
+    if (!stmt) {
+      stmt = this.db.prepare(sql);
+      this._statementCache.set(sql, stmt);
+    }
     try {
-      return this.db.prepare(sql).all(params);
+      return stmt.all(params);
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
         logger.warn('Database connection closed during allQuery, refreshing and retrying', {
           errorName: error.name,
           errorMessage: error.message,
         });
+        this._statementCache.clear();
         this.db = new SQLiteDatabase(this.dbPath);
         this._configureDatabase(this.db);
         this.migrationRunner = new MigrationRunner(this.db, 'master');
-        return this.db.prepare(sql).all(params);
+        stmt = this.db.prepare(sql);
+        this._statementCache.set(sql, stmt);
+        return stmt.all(params);
       }
       throw error;
     }
@@ -574,12 +601,10 @@ class Database {
       throw new Error('Database not initialized. Call initialize() first.');
     }
     const doUpdate = () => {
-      this.db.transaction(() => {
-        this.runQuery(
-          `UPDATE user_registry SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?`,
-          [hasActiveRules ? 1 : 0, authId]
-        );
-      })();
+      this.runQuery(
+        `UPDATE user_registry SET has_active_rules = ?, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?`,
+        [hasActiveRules ? 1 : 0, authId]
+      );
       cache.invalidateUserRegistry(authId);
       cache.invalidateActiveUsers();
     };
@@ -592,20 +617,21 @@ class Database {
           errorMessage: error.message,
           authId,
         });
+        this._statementCache.clear();
         this.db = new SQLiteDatabase(this.dbPath);
         this._configureDatabase(this.db);
         this.migrationRunner = new MigrationRunner(this.db, 'master');
         try {
           doUpdate();
         } catch (retryError) {
-          logger.error('Transaction failed in updateActiveRulesFlag after retry', retryError, {
+          logger.error('Update failed in updateActiveRulesFlag after retry', retryError, {
             authId,
             hasActiveRules,
           });
           throw retryError;
         }
       } else {
-        logger.error('Transaction failed in updateActiveRulesFlag', error, {
+        logger.error('Update failed in updateActiveRulesFlag', error, {
           authId,
           hasActiveRules,
         });
@@ -615,23 +641,56 @@ class Database {
   }
 
   /**
+   * Format a Date as SQLite datetime (YYYY-MM-DD HH:MM:SS) in UTC for index-friendly comparison.
+   * @param {Date} d
+   * @returns {string}
+   */
+  _formatNextPollAt(d) {
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
+  /**
    * Update next poll timestamp and non-terminal torrent count
    * @param {string} authId - User authentication ID
    * @param {Date} nextPollAt - Next poll timestamp
    * @param {number} nonTerminalCount - Count of non-terminal torrents
    */
   updateNextPollAt(authId, nextPollAt, nonTerminalCount) {
+    const formatted = this._formatNextPollAt(nextPollAt);
     this.runQuery(
       `
       UPDATE user_registry 
       SET next_poll_at = ?, non_terminal_torrent_count = ?, updated_at = CURRENT_TIMESTAMP
       WHERE auth_id = ?
     `,
-      [nextPollAt.toISOString(), nonTerminalCount, authId]
+      [formatted, nonTerminalCount, authId]
     );
 
     // Invalidate cache since user registry changed
     cache.invalidateUserRegistry(authId);
+  }
+
+  /**
+   * Batch-update next_poll_at for multiple users (e.g. reserve before Stage 1).
+   * Sets non_terminal_torrent_count to 0. Invalidates cache for each authId.
+   * @param {string[]} authIds - User auth IDs
+   * @param {Date} nextPollAt - Reserve until this time
+   */
+  updateNextPollAtBatch(authIds, nextPollAt) {
+    if (authIds.length === 0) return;
+    const formatted = this._formatNextPollAt(nextPollAt);
+    const placeholders = authIds.map(() => '?').join(',');
+    this.runQuery(
+      `
+      UPDATE user_registry 
+      SET next_poll_at = ?, non_terminal_torrent_count = 0, updated_at = CURRENT_TIMESTAMP
+      WHERE auth_id IN (${placeholders})
+    `,
+      [formatted, ...authIds]
+    );
+    for (const authId of authIds) {
+      cache.invalidateUserRegistry(authId);
+    }
   }
 
   /**
@@ -943,43 +1002,17 @@ class Database {
       1,
       parseInt(process.env.MAX_USERS_DUE_FOR_POLLING || '100', 10)
     );
-    // Convert ISO format (2026-01-11T13:04:23.860Z) to SQLite datetime format (2026-01-11 13:04:23)
-    // for proper datetime comparison. Handle both ISO and SQLite formats.
-    // Strategy: Replace T with space, remove Z, then extract first 19 chars (YYYY-MM-DD HH:MM:SS)
-    // Only poll users with active rules (has_active_rules = 1)
+    // next_poll_at is stored as SQLite datetime (YYYY-MM-DD HH:MM:SS) so index is used
     const result = this.allQuery(
       `
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
-      WHERE ur.status = 'active' 
+      WHERE ur.status = 'active'
         AND (ak.is_active = 1 OR ak.is_active IS NULL)
         AND ur.has_active_rules = 1
-        AND (
-          (
-            ur.next_poll_at IS NOT NULL 
-            AND ur.next_poll_at != '' 
-            AND ur.next_poll_at != '0'
-            AND ur.next_poll_at != '0000-00-00 00:00:00'
-            AND datetime(
-              substr(
-                replace(replace(ur.next_poll_at, 'T', ' '), 'Z', ''),
-                1,
-                19
-              )
-            ) <= datetime('now')
-          )
-          OR (
-            ur.next_poll_at IS NULL 
-            OR ur.next_poll_at = '' 
-            OR ur.next_poll_at = '0'
-            OR ur.next_poll_at = '0000-00-00 00:00:00'
-          )
-        )
-      ORDER BY COALESCE(
-        NULLIF(NULLIF(NULLIF(ur.next_poll_at, ''), '0'), '0000-00-00 00:00:00'),
-        '9999-12-31 23:59:59'
-      ) ASC
+        AND (ur.next_poll_at IS NULL OR ur.next_poll_at = '' OR ur.next_poll_at <= datetime('now'))
+      ORDER BY ur.next_poll_at ASC
       LIMIT ?
     `,
       [limit]

@@ -393,13 +393,9 @@ class RuleEvaluator {
     const logicOperator = rule.logicOperator || 'and';
 
     return torrents.filter((torrent) => {
+      // Rule with no conditions matches nothing (same as empty group); avoids accidental mass-actions
       if (conditions.length === 0) {
-        logger.debug('Rule has no conditions, matches all torrents', {
-          ruleId: rule.id,
-          ruleName: rule.name,
-          torrentId: torrent.id,
-        });
-        return true;
+        return false;
       }
 
       for (let i = 0; i < conditions.length; i++) {
@@ -1345,31 +1341,20 @@ class RuleEvaluator {
         throw new Error('torrent id and hash are required for archiving');
       }
 
-      // Check if already archived
-      const existing = this.db
+      const result = this.db
         .prepare(
           `
-        SELECT id FROM archived_downloads WHERE torrent_id = ?
-      `
-        )
-        .get(id);
-
-      if (existing) {
-        logger.debug('Download already archived, skipping', { torrentId: id });
-        return { success: true, message: 'Already archived' };
-      }
-
-      // Insert new archive entry
-      this.db
-        .prepare(
-          `
-        INSERT INTO archived_downloads (torrent_id, hash, tracker, name, archived_at)
+        INSERT OR IGNORE INTO archived_downloads (torrent_id, hash, tracker, name, archived_at)
         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
       `
         )
         .run(id, hash, tracker || null, name || null);
 
-      return { success: true, message: 'Download archived successfully' };
+      const inserted = result.changes > 0;
+      return {
+        success: true,
+        message: inserted ? 'Download archived successfully' : 'Already archived',
+      };
     } catch (error) {
       logger.error('Error archiving download', error, {
         torrentId: torrent.id,
