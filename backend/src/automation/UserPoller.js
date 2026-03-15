@@ -1,6 +1,7 @@
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import cache from '../utils/cache.js';
 import PollingIntervalCalculator from './helpers/PollingIntervalCalculator.js';
 import DatabaseConnectionManager from './helpers/DatabaseConnectionManager.js';
 
@@ -122,10 +123,17 @@ class UserPoller {
       return true;
     }
 
+    // Check cache to avoid DB query on every poll for idle users (5 min TTL)
+    const cached = cache.getRecentRuleExecutions(this.authId);
+    if (cached !== undefined) {
+      return cached;
+    }
+
     // If no executions in current poll, check database for executions in last hour
     if (this.automationEngine) {
       try {
         const hasRecentExecutions = await this.automationEngine.hasRecentRuleExecutions(1); // Last hour
+        cache.setRecentRuleExecutions(this.authId, hasRecentExecutions);
         return hasRecentExecutions;
       } catch (error) {
         logger.error('Failed to check recent rule executions for adaptive polling', error, {

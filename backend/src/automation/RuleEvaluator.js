@@ -1,25 +1,7 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
 import logger from '../utils/logger.js';
 import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
-
-/**
- * Parse a SQLite timestamp string as UTC.
- * SQLite stores CURRENT_TIMESTAMP as "YYYY-MM-DD HH:MM:SS" with no timezone indicator.
- * JavaScript's Date constructor interprets strings without a timezone as local time, which
- * causes interval calculations to be off by the server's UTC offset.
- * @param {string|null} dateStr
- * @returns {Date}
- */
-function parseDbTimestamp(dateStr) {
-  if (!dateStr) return new Date(NaN);
-  if (typeof dateStr !== 'string') return new Date(dateStr);
-  // Already has timezone indicator — parse as-is
-  if (dateStr.includes('T') || dateStr.includes('Z') || dateStr.includes('+')) {
-    return new Date(dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`);
-  }
-  // SQLite "YYYY-MM-DD HH:MM:SS" format — treat as UTC
-  return new Date(`${dateStr.replace(' ', 'T')}Z`);
-}
+import { parseDbTimestamp } from '../utils/dateUtils.js';
 
 // Constants
 const MIN_INTERVAL_MINUTES = 30;
@@ -277,9 +259,12 @@ class RuleEvaluator {
     // Interval-skip is already checked in AutomationEngine.evaluateSingleRule (shouldSkipRuleEvaluation)
 
     const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
-    const telemetryMap = this.loadTelemetryData(torrentIds);
-    const tagsByDownloadId = this.loadTagsData(rule, torrents);
-    const speedHistoryMap = this.loadSpeedHistoryData(rule, torrentIds);
+    const analysis = this.analyzeRule(rule);
+    const telemetryMap = analysis.needsTelemetry ? this.loadTelemetryData(torrentIds) : new Map();
+    const tagsByDownloadId = analysis.needsTags ? this.loadTagsData(rule, torrents) : new Map();
+    const speedHistoryMap = analysis.needsSpeed
+      ? this.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
+      : new Map();
 
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
 
@@ -318,21 +303,10 @@ class RuleEvaluator {
    */
   evaluateGroupStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap) {
     const groupLogicOperator = rule.logicOperator || 'and';
+    const groups = rule.groups || [];
 
     return torrents.filter((torrent) => {
-      const groupResults = rule.groups.map((group, groupIndex) => {
-        return this.evaluateGroup(
-          group,
-          groupIndex,
-          torrent,
-          rule,
-          telemetryMap,
-          tagsByDownloadId,
-          speedHistoryMap
-        );
-      });
-
-      if (groupResults.length === 0) {
+      if (groups.length === 0) {
         logger.debug('No groups in rule, matches nothing', {
           ruleId: rule.id,
           ruleName: rule.name,
@@ -341,21 +315,39 @@ class RuleEvaluator {
         return false;
       }
 
-      const finalResult =
-        groupLogicOperator === 'or'
-          ? groupResults.some((result) => result)
-          : groupResults.every((result) => result);
+      for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+        const groupResult = this.evaluateGroup(
+          groups[groupIndex],
+          groupIndex,
+          torrent,
+          rule,
+          telemetryMap,
+          tagsByDownloadId,
+          speedHistoryMap
+        );
+        if (groupLogicOperator === 'or' && groupResult) {
+          logger.debug('Torrent matched rule', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+          });
+          return true;
+        }
+        if (groupLogicOperator === 'and' && !groupResult) {
+          return false;
+        }
+      }
 
+      const finalResult = groupLogicOperator === 'and';
       if (finalResult) {
         logger.debug('Torrent matched rule', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
           torrentName: torrent.name,
-          groupResults,
         });
       }
-
       return finalResult;
     });
   }
@@ -385,7 +377,8 @@ class RuleEvaluator {
       return false;
     }
 
-    const conditionResults = conditions.map((condition, condIndex) => {
+    for (let condIndex = 0; condIndex < conditions.length; condIndex++) {
+      const condition = conditions[condIndex];
       const result = this.evaluateCondition(
         condition,
         torrent,
@@ -399,29 +392,25 @@ class RuleEvaluator {
         groupIndex,
         condIndex,
         conditionType: condition.type,
-        conditionOperator: condition.operator,
-        conditionValue: condition.value,
         torrentId: torrent.id,
-        torrentName: torrent.name,
         matched: result,
       });
-      return result;
-    });
+      if (groupLogicOp === 'or' && result) {
+        return true;
+      }
+      if (groupLogicOp === 'and' && !result) {
+        return false;
+      }
+    }
 
-    const groupResult =
-      groupLogicOp === 'or'
-        ? conditionResults.some((result) => result)
-        : conditionResults.every((result) => result);
-
+    const groupResult = groupLogicOp === 'and';
     logger.debug('Group evaluation result', {
       ruleId: rule.id,
       ruleName: rule.name,
       groupIndex,
       groupLogicOp,
-      conditionResults,
       groupResult,
     });
-
     return groupResult;
   }
 
@@ -448,31 +437,37 @@ class RuleEvaluator {
         return true;
       }
 
-      const conditionResults = conditions.map((condition) => {
-        return this.evaluateCondition(
-          condition,
+      for (let i = 0; i < conditions.length; i++) {
+        const result = this.evaluateCondition(
+          conditions[i],
           torrent,
           telemetryMap,
           tagsByDownloadId,
           speedHistoryMap
         );
-      });
+        if (logicOperator === 'or' && result) {
+          logger.debug('Torrent matched rule (flat structure)', {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            torrentId: torrent.id,
+            torrentName: torrent.name,
+          });
+          return true;
+        }
+        if (logicOperator === 'and' && !result) {
+          return false;
+        }
+      }
 
-      const finalResult =
-        logicOperator === 'or'
-          ? conditionResults.some((result) => result)
-          : conditionResults.every((result) => result);
-
+      const finalResult = logicOperator === 'and';
       if (finalResult) {
         logger.debug('Torrent matched rule (flat structure)', {
           ruleId: rule.id,
           ruleName: rule.name,
           torrentId: torrent.id,
           torrentName: torrent.name,
-          conditionResults,
         });
       }
-
       return finalResult;
     });
   }
@@ -538,6 +533,84 @@ class RuleEvaluator {
     }
 
     return conditions;
+  }
+
+  /** Condition types that require telemetry data (torrent_telemetry table) */
+  static get TELEMETRY_CONDITION_TYPES() {
+    return new Set([
+      'LAST_DOWNLOAD_ACTIVITY_AT',
+      'LAST_UPLOAD_ACTIVITY_AT',
+      'DOWNLOAD_STALLED_TIME',
+      'UPLOAD_STALLED_TIME',
+    ]);
+  }
+
+  /**
+   * Single-pass analysis of rule conditions to determine what data to load.
+   * @param {Object} rule - Rule configuration
+   * @returns {{ needsTelemetry: boolean, needsTags: boolean, needsSpeed: boolean, maxSpeedHours: number }}
+   */
+  analyzeRule(rule) {
+    const conditions = this.getAllConditions(rule);
+    let needsTelemetry = false;
+    let needsTags = false;
+    let needsSpeed = false;
+    let maxSpeedHours = DEFAULT_AVG_SPEED_HOURS;
+
+    for (const condition of conditions) {
+      const type = condition.type;
+      if (RuleEvaluator.TELEMETRY_CONDITION_TYPES.has(type)) {
+        needsTelemetry = true;
+      }
+      if (type === 'TAGS') {
+        needsTags = true;
+      }
+      if (type === 'AVG_DOWNLOAD_SPEED' || type === 'AVG_UPLOAD_SPEED') {
+        needsSpeed = true;
+        const hours = condition.hours || DEFAULT_AVG_SPEED_HOURS;
+        maxSpeedHours = Math.max(maxSpeedHours, hours);
+      }
+    }
+
+    return {
+      needsTelemetry,
+      needsTags,
+      needsSpeed,
+      maxSpeedHours: Math.ceil(maxSpeedHours * SPEED_HISTORY_BUFFER_MULTIPLIER),
+    };
+  }
+
+  /**
+   * Load speed history for given torrent IDs and hour window (used when analyzeRule says needsSpeed).
+   * @param {Array<string>} torrentIds - Torrent IDs
+   * @param {number} maxHours - Hours to look back (with buffer already applied)
+   * @returns {Map} - Map of torrent_id -> array of speed history samples
+   */
+  loadSpeedHistoryDataForHours(torrentIds, maxHours) {
+    if (torrentIds.length === 0) return new Map();
+
+    const now = new Date();
+    const hoursAgo = new Date(now - maxHours * MS_PER_HOUR);
+    const placeholders = torrentIds.map(() => '?').join(',');
+    const allSpeedHistory = this.db
+      .prepare(
+        `
+      SELECT * FROM speed_history
+      WHERE torrent_id IN (${placeholders}) AND timestamp >= ?
+      ORDER BY torrent_id, timestamp ASC
+    `
+      )
+      .all(...torrentIds, hoursAgo.toISOString());
+
+    const speedHistoryMap = new Map();
+    for (const sample of allSpeedHistory) {
+      const torrentId = String(sample.torrent_id);
+      if (!speedHistoryMap.has(torrentId)) {
+        speedHistoryMap.set(torrentId, []);
+      }
+      speedHistoryMap.get(torrentId).push(sample);
+    }
+    return speedHistoryMap;
   }
 
   /**

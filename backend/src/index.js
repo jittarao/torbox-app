@@ -237,6 +237,7 @@ class TorBoxBackend {
         }
       );
       await this.pollingScheduler.start();
+      this.eventNotifier.startHeartbeat();
       logger.info('Polling scheduler started');
 
       // Sync has_active_rules flags at startup by querying user DBs directly (no engine creation).
@@ -496,6 +497,10 @@ class TorBoxBackend {
 
     if (this.pollingScheduler) {
       this.pollingScheduler.stop();
+    }
+
+    if (this.eventNotifier && this.eventNotifier.stopHeartbeat) {
+      this.eventNotifier.stopHeartbeat();
     }
 
     for (const [authId, engine] of this.automationEngines) {

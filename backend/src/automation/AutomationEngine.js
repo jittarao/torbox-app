@@ -2,25 +2,7 @@ import RuleEvaluator from './RuleEvaluator.js';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
-
-/**
- * Parse a SQLite timestamp string as UTC.
- * SQLite stores CURRENT_TIMESTAMP as "YYYY-MM-DD HH:MM:SS" with no timezone indicator.
- * JavaScript's Date constructor interprets strings without a timezone as local time, which
- * causes interval calculations to be off by the server's UTC offset.
- * @param {string|null} dateStr
- * @returns {Date}
- */
-function parseDbTimestamp(dateStr) {
-  if (!dateStr) return new Date(NaN);
-  if (typeof dateStr !== 'string') return new Date(dateStr);
-  // Already has timezone indicator — parse as-is
-  if (dateStr.includes('T') || dateStr.includes('Z') || dateStr.includes('+')) {
-    return new Date(dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`);
-  }
-  // SQLite "YYYY-MM-DD HH:MM:SS" format — treat as UTC
-  return new Date(`${dateStr.replace(' ', 'T')}Z`);
-}
+import { parseDbTimestamp } from '../utils/dateUtils.js';
 import cache from '../utils/cache.js';
 import { applyIntervalMultiplier } from '../utils/intervalUtils.js';
 import StateDiffEngine from './StateDiffEngine.js';
@@ -54,7 +36,6 @@ class AutomationEngine {
     this.apiClient = new ApiClient(this.apiKey);
     this._ruleEvaluatorCache = null; // Cached RuleEvaluator instance
     this._ruleEvaluatorDbConnection = null; // Track the DB connection used by cached evaluator
-    this.runningJobs = new Map();
     this.isInitialized = false;
 
     // Initialize helpers
@@ -415,19 +396,10 @@ class AutomationEngine {
   }
 
   /**
-   * Start a rule (for cron-based triggers)
+   * Start a rule. Rules are evaluated on each poll cycle; this method is kept for compatibility.
    */
   async startRule(rule) {
     try {
-      // Stop existing job if it exists
-      if (this.runningJobs.has(rule.id)) {
-        this.stopRule(rule.id);
-      }
-
-      // For now, rules are evaluated on each poll cycle
-      // Cron-based triggers can be added later if needed
-      // This method is kept for compatibility
-
       logger.debug('Rule ready', {
         authId: this.authId,
         ruleId: rule.id,
@@ -442,15 +414,11 @@ class AutomationEngine {
     }
   }
 
-  stopRule(ruleId) {
-    if (this.runningJobs.has(ruleId)) {
-      this.runningJobs.delete(ruleId);
-      logger.debug('Rule stopped', {
-        authId: this.authId,
-        ruleId,
-      });
-    }
-  }
+  /**
+   * Stop a rule. No-op; rules are poll-driven, not cron-scheduled.
+   */
+  stopRule(_ruleId) {}
+
 
   /**
    * Evaluate and execute rules (called after each poll)
@@ -936,6 +904,7 @@ class AutomationEngine {
           errorCount === 0,
           errorCount > 0 ? `${errorCount} actions failed` : null
         );
+        cache.invalidateRecentRuleExecutions(this.authId);
       } else {
         // No actions were executed, but we still evaluated the rule
         // Don't update last_executed_at or create a log entry
@@ -1183,13 +1152,8 @@ class AutomationEngine {
     try {
       logger.info('Reloading rules', { authId: this.authId });
 
-      // Stop all existing jobs
-      this.runningJobs.clear();
-
-      // Reload enabled rules from database
       const enabledRules = await this.getAutomationRules({ enabled: true });
 
-      // Start enabled rules
       for (const rule of enabledRules) {
         await this.startRule(rule);
       }
@@ -1207,13 +1171,11 @@ class AutomationEngine {
     return {
       authId: this.authId,
       initialized: this.isInitialized,
-      runningJobs: this.runningJobs.size,
     };
   }
 
   shutdown() {
     logger.info('AutomationEngine shutting down', { authId: this.authId });
-    this.runningJobs.clear();
   }
 }
 
