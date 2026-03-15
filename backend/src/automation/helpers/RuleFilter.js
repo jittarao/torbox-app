@@ -11,6 +11,49 @@ class RuleFilter {
   }
 
   /**
+   * Build a map of download ID -> tag IDs from the database for the given torrents.
+   * @param {Array} matchingTorrents - Torrents to look up tags for
+   * @returns {Promise<Map<string, number[]>>} - Map of downloadId (string) to array of tag_id
+   */
+  async _buildTagsByDownloadId(matchingTorrents) {
+    const userDb = await this.getUserDb();
+    const allDownloadIds = matchingTorrents
+      .map(
+        (t) =>
+          t.id?.toString() ||
+          t.torrent_id?.toString() ||
+          t.usenet_id?.toString() ||
+          t.web_id?.toString()
+      )
+      .filter((id) => id);
+
+    if (allDownloadIds.length === 0) {
+      return new Map();
+    }
+
+    const placeholders = allDownloadIds.map(() => '?').join(',');
+    const allDownloadTags = userDb
+      .prepare(
+        `
+      SELECT dt.download_id, dt.tag_id
+      FROM download_tags dt
+      WHERE dt.download_id IN (${placeholders})
+    `
+      )
+      .all(...allDownloadIds);
+
+    const tagsByDownloadId = new Map();
+    for (const row of allDownloadTags) {
+      const downloadId = String(row.download_id);
+      if (!tagsByDownloadId.has(downloadId)) {
+        tagsByDownloadId.set(downloadId, []);
+      }
+      tagsByDownloadId.get(downloadId).push(row.tag_id);
+    }
+    return tagsByDownloadId;
+  }
+
+  /**
    * Filter torrents for add_tag action - skip torrents that already have all the tags
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
    * @param {Object} action - Action configuration
@@ -24,40 +67,7 @@ class RuleFilter {
 
     let tagsByDownloadId = options.tagsByDownloadId;
     if (!tagsByDownloadId || !(tagsByDownloadId instanceof Map)) {
-      const userDb = await this.getUserDb();
-      const allDownloadIds = matchingTorrents
-        .map(
-          (t) =>
-            t.id?.toString() ||
-            t.torrent_id?.toString() ||
-            t.usenet_id?.toString() ||
-            t.web_id?.toString()
-        )
-        .filter((id) => id);
-
-      if (allDownloadIds.length === 0) {
-        return matchingTorrents;
-      }
-
-      const placeholders = allDownloadIds.map(() => '?').join(',');
-      const allDownloadTags = userDb
-        .prepare(
-          `
-      SELECT dt.download_id, dt.tag_id
-      FROM download_tags dt
-      WHERE dt.download_id IN (${placeholders})
-    `
-        )
-        .all(...allDownloadIds);
-
-      tagsByDownloadId = new Map();
-      for (const row of allDownloadTags) {
-        const downloadId = String(row.download_id);
-        if (!tagsByDownloadId.has(downloadId)) {
-          tagsByDownloadId.set(downloadId, []);
-        }
-        tagsByDownloadId.get(downloadId).push(row.tag_id);
-      }
+      tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
     }
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
@@ -118,40 +128,7 @@ class RuleFilter {
 
     let tagsByDownloadId = options.tagsByDownloadId;
     if (!tagsByDownloadId || !(tagsByDownloadId instanceof Map)) {
-      const userDb = await this.getUserDb();
-      const allDownloadIds = matchingTorrents
-        .map(
-          (t) =>
-            t.id?.toString() ||
-            t.torrent_id?.toString() ||
-            t.usenet_id?.toString() ||
-            t.web_id?.toString()
-        )
-        .filter((id) => id);
-
-      if (allDownloadIds.length === 0) {
-        return matchingTorrents;
-      }
-
-      const placeholders = allDownloadIds.map(() => '?').join(',');
-      const allDownloadTags = userDb
-        .prepare(
-          `
-      SELECT dt.download_id, dt.tag_id
-      FROM download_tags dt
-      WHERE dt.download_id IN (${placeholders})
-    `
-        )
-        .all(...allDownloadIds);
-
-      tagsByDownloadId = new Map();
-      for (const row of allDownloadTags) {
-        const downloadId = String(row.download_id);
-        if (!tagsByDownloadId.has(downloadId)) {
-          tagsByDownloadId.set(downloadId, []);
-        }
-        tagsByDownloadId.get(downloadId).push(row.tag_id);
-      }
+      tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
     }
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)

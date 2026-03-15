@@ -1,4 +1,5 @@
 import logger from '../../utils/logger.js';
+import { MIN_INTERVAL_MINUTES } from './constants.js';
 
 /**
  * Validator for automation rule configurations
@@ -59,8 +60,10 @@ class RuleValidator {
         if (trigger.type === 'interval') {
           if (trigger.value === undefined || trigger.value === null) {
             errors.push('Interval trigger must have a value');
-          } else if (typeof trigger.value !== 'number' || trigger.value < 30) {
-            errors.push('Interval trigger value must be a number >= 30 (minutes)');
+          } else if (typeof trigger.value !== 'number' || trigger.value < MIN_INTERVAL_MINUTES) {
+            errors.push(
+              `Interval trigger value must be a number >= ${MIN_INTERVAL_MINUTES} (minutes)`
+            );
           }
         }
       }

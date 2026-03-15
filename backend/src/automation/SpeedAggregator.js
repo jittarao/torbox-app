@@ -252,13 +252,13 @@ class SpeedAggregator {
   }
 
   /**
-   * Check if a torrent is active
+   * Check if a torrent is active (active is normalized to boolean in ApiClient.getTorrents)
    * @param {Object} torrent - Torrent object
    * @returns {boolean} - True if torrent is active
    * @private
    */
   _isTorrentActive(torrent) {
-    return torrent.active === true || torrent.active === 1 || torrent.active === 'true';
+    return torrent.active === true;
   }
 
   /**

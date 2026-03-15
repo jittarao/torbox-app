@@ -22,6 +22,7 @@ class Mutex {
   }
 
   release() {
+    if (!this.locked) return; // Guard against double-release
     if (this.queue.length > 0) {
       const next = this.queue.shift();
       next();

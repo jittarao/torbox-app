@@ -233,6 +233,25 @@ class UserPoller {
   }
 
   /**
+   * Ensure dbManager is initialized (lazy connection from pool).
+   * Idempotent; throws on connection error so callers can handle (e.g. poll returns result, runPipeline throws).
+   * @returns {Promise<void>}
+   */
+  async _ensureDbManager() {
+    if (this.dbManager) return;
+    if (!this.userDatabaseManager) return;
+    const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
+    if (userDbConnection?.db) {
+      this.dbManager = new DatabaseConnectionManager(
+        this.authId,
+        userDbConnection.db,
+        this.userDatabaseManager
+      );
+      this.userDatabaseManager.pool.markActive(this.authId);
+    }
+  }
+
+  /**
    * Check if database connection is closed and refresh if needed
    * @returns {Promise<void>}
    */
@@ -575,18 +594,7 @@ class UserPoller {
       checkCancelled = null,
     } = options;
 
-    if (!this.dbManager && this.userDatabaseManager) {
-      const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
-      if (userDbConnection?.db) {
-        this.dbManager = new DatabaseConnectionManager(
-          this.authId,
-          userDbConnection.db,
-          this.userDatabaseManager
-        );
-        this.userDatabaseManager.pool.markActive(this.authId);
-      }
-    }
-
+    await this._ensureDbManager();
     await this.ensureDatabaseConnection();
     if (!this.dbManager) {
       throw new Error('No database connection for runPipeline');
@@ -683,28 +691,18 @@ class UserPoller {
     }
 
     // Acquire DB connection for this poll cycle (released in finally); avoids holding connections between polls (min interval 30+ min)
-    if (!this.dbManager && this.userDatabaseManager) {
-      try {
-        const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
-        if (userDbConnection?.db) {
-          this.dbManager = new DatabaseConnectionManager(
-            this.authId,
-            userDbConnection.db,
-            this.userDatabaseManager
-          );
-          this.userDatabaseManager.pool.markActive(this.authId);
-        }
-      } catch (error) {
-        logger.error('Failed to get user database for poll', error, {
-          authId: this.authId,
-          errorMessage: error.message,
-        });
-        return {
-          success: false,
-          error: `Database connection error: ${error.message}`,
-          skipped: false,
-        };
-      }
+    try {
+      await this._ensureDbManager();
+    } catch (error) {
+      logger.error('Failed to get user database for poll', error, {
+        authId: this.authId,
+        errorMessage: error.message,
+      });
+      return {
+        success: false,
+        error: `Database connection error: ${error.message}`,
+        skipped: false,
+      };
     }
 
     // Ensure database connection is valid before starting poll

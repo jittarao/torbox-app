@@ -16,6 +16,11 @@ const AUTH_ERROR_CODES = ['AUTH_ERROR', 'NO_AUTH', 'BAD_TOKEN'];
 const CONNECTION_ERROR_CODES = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'];
 const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
 
+/** Normalize API active field to boolean (API may return true, 1, or 'true') */
+function normalizeActive(value) {
+  return value === true || value === 1 || value === 'true';
+}
+
 // Separate semaphores so fetch and action calls do not starve each other.
 // Fetch: getTorrents() only. Action: controlTorrent, controlQueuedTorrent, deleteTorrent.
 // Other endpoints (getUsenetDownloads, getStats, etc.) use the action semaphore.
@@ -312,9 +317,14 @@ class ApiClient {
           })
         ]);
 
-        const torrents = torrentsResponse.data.data || [];
-        const queued = queuedResponse.data.data || [];
-        
+        const torrents = (torrentsResponse.data.data || []).map((t) => ({
+          ...t,
+          active: normalizeActive(t.active),
+        }));
+        const queued = (queuedResponse.data.data || []).map((t) => ({
+          ...t,
+          active: normalizeActive(t.active),
+        }));
         return [...torrents, ...queued];
       },
       {
