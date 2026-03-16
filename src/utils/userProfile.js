@@ -38,17 +38,58 @@ export async function fetchUserProfile(apiKey) {
 }
 
 /**
- * Check if user has Pro plan (plan.id === 2)
+ * Check if user has Pro plan (plan_id === 2)
  * @param {Object} userData - User profile data
  * @returns {boolean} - True if user has Pro plan
  */
 export function hasProPlan(userData) {
-  if (!userData || !userData.plan) {
+  if (!userData || userData.plan == null) {
     return false;
   }
 
   // Plan ID 2 is Pro plan
-  return userData.plan === 2;
+  const planId = typeof userData.plan === 'object' ? userData.plan?.id : userData.plan;
+  return planId === 2;
+}
+
+/**
+ * Build a permissions object for the current user.
+ * This centralizes feature access decisions so components can stay generic.
+ * @param {Object} userData - User profile data
+ * @returns {Object} - Permissions map
+ */
+export function getUserPermissions(userData) {
+  const isPro = hasProPlan(userData);
+
+  return {
+    planId: typeof userData?.plan === 'object' ? userData.plan?.id : userData?.plan ?? null,
+    isPro,
+    downloads: {
+      torrents: true,
+      webdl: true,
+      usenet: isPro,
+    },
+  };
+}
+
+/**
+ * Generic helper to check download-type access.
+ * @param {string} type - 'torrents' | 'usenet' | 'webdl'
+ * @param {Object|null} permissions - Permissions object from getUserPermissions
+ * @returns {boolean}
+ */
+export function hasDownloadAccess(type, permissions) {
+  if (!permissions || !permissions.downloads) return false;
+  return Boolean(permissions.downloads[type]);
+}
+
+/**
+ * Check if user can use usenet downloads (requires Pro plan, plan_id === 2)
+ * @param {Object} userData - User profile data
+ * @returns {boolean} - True if user has access to usenet
+ */
+export function canUseUsenet(userData) {
+  return hasProPlan(userData);
 }
 
 /**

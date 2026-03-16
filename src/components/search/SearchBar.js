@@ -5,7 +5,12 @@ import Dropdown from '@/components/shared/Dropdown';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
-export default function SearchBar() {
+const DEFAULT_SEARCH_OPTIONS = [
+  { value: 'torrents', labelKey: 'itemTypes.Torrents' },
+  { value: 'usenet', labelKey: 'itemTypes.Usenet' },
+];
+
+export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) {
   const t = useTranslations('SearchBar');
   const commonT = useTranslations('Common');
   const [localQuery, setLocalQuery] = useState('');
@@ -40,6 +45,22 @@ export default function SearchBar() {
     clearFilters,
   } = useSearchStore();
 
+  // Resolve options: use prop when provided (permission-filtered), else default with both types
+  const searchTypeOptions = searchTypeOptionsProp ?? DEFAULT_SEARCH_OPTIONS;
+  const SEARCH_OPTIONS = searchTypeOptions.map((opt) => ({
+    value: opt.value,
+    label: opt.labelKey ? commonT(opt.labelKey) : opt.label,
+  }));
+
+  const allowedValues = SEARCH_OPTIONS.map((o) => o.value);
+
+  // If current searchType is not in allowed options, switch to first available
+  useEffect(() => {
+    if (allowedValues.length > 0 && !allowedValues.includes(searchType)) {
+      setSearchType(allowedValues[0]);
+    }
+  }, [searchTypeOptionsProp, searchType, setSearchType]);
+
   // Load search history on mount
   useEffect(() => {
     loadHistory();
@@ -57,11 +78,6 @@ export default function SearchBar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const SEARCH_OPTIONS = [
-    { value: 'torrents', label: commonT('itemTypes.Torrents') },
-    { value: 'usenet', label: commonT('itemTypes.Usenet') },
-  ];
 
   const QUALITY_OPTIONS = [
     { value: '', label: t('qualityAll') },
