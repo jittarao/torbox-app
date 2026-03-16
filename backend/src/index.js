@@ -131,6 +131,8 @@ class TorBoxBackend {
   }
 
   setupRoutes() {
+    // Expose backend on app for middleware that needs to resolve authId (e.g. dual-hash when HMAC_SECRET is set)
+    this.app.locals.backend = this;
     // Setup all route modules
     setupHealthRoutes(this.app, this);
     setupApiKeyRoutes(this.app, this);

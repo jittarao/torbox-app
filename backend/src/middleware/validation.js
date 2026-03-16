@@ -1,7 +1,7 @@
 /**
  * Validation utilities and middleware
  */
-import { hashApiKey } from '../utils/crypto.js';
+import { getAuthIdCandidates } from '../utils/crypto.js';
 
 /** Minimum length for API key before hashing (avoids hashing arbitrary probe strings) */
 const MIN_API_KEY_LENGTH = 16;
@@ -117,7 +117,18 @@ export function extractAuthIdMiddleware(req, res, next) {
         error: 'Invalid API key format. API key must be at least 16 characters and use allowed characters.',
       });
     }
-    req.validatedAuthId = hashApiKey(apiKey);
+    const candidates = getAuthIdCandidates(apiKey);
+    const backend = req.app.locals?.backend;
+    // When HMAC_SECRET is set, candidates may be [hmac, sha256]. Resolve to the authId that exists in the registry so existing users (SHA-256) still work; new users use the first candidate (HMAC).
+    if (backend?.masterDatabase && candidates.length > 1) {
+      for (const aid of candidates) {
+        if (backend.masterDatabase.hasAuthId(aid)) {
+          req.validatedAuthId = aid;
+          return next();
+        }
+      }
+    }
+    req.validatedAuthId = candidates[0];
     return next();
   }
 

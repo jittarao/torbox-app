@@ -404,6 +404,16 @@ class Database {
   }
 
   /**
+   * Check if an auth_id exists in user_registry (for dual-hash API key resolution).
+   * @param {string} authId
+   * @returns {boolean}
+   */
+  hasAuthId(authId) {
+    const row = this.getQuery('SELECT 1 FROM user_registry WHERE auth_id = ? LIMIT 1', [authId]);
+    return row !== undefined;
+  }
+
+  /**
    * Deactivate an API key
    */
   deactivateApiKey(authId) {

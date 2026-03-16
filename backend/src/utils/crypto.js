@@ -106,6 +106,16 @@ export function decrypt(encryptedText) {
 }
 
 /**
+ * SHA-256 hash of API key (no secret). Used for legacy authIds and for dual-hash resolution when HMAC_SECRET is set.
+ * @param {string} apiKey - API key to hash
+ * @returns {string} - Hash (hex encoded)
+ */
+export function sha256HashApiKey(apiKey) {
+  if (!apiKey) throw new Error('API key is required');
+  return crypto.createHash('sha256').update(apiKey).digest('hex');
+}
+
+/**
  * Hash an API key to create a unique user identifier.
  * Uses HMAC with HMAC_SECRET when set (recommended for production); otherwise SHA-256 for backward compatibility.
  * @param {string} apiKey - API key to hash
@@ -121,9 +131,27 @@ export function hashApiKey(apiKey) {
   }
   // Backward compatibility: use SHA-256 when HMAC_SECRET is not set
   if (process.env.NODE_ENV === 'production') {
-    logger.warn('HMAC_SECRET not set. API key hashing uses SHA-256. Set HMAC_SECRET in production for stronger security.');
+    logger.warn(
+      'HMAC_SECRET not set. API key hashing uses SHA-256. Set HMAC_SECRET in production for stronger security.'
+    );
   } else {
     logger.warn('HMAC_SECRET not set. API key hashing uses plain SHA-256. Set HMAC_SECRET in production.');
   }
-  return crypto.createHash('sha256').update(apiKey).digest('hex');
+  return sha256HashApiKey(apiKey);
+}
+
+/**
+ * Return candidate authIds for an API key for lookup. When HMAC_SECRET is set, returns [HMAC hash, SHA-256 hash]
+ * so existing users (stored under SHA-256) still resolve; new users use the first candidate (HMAC).
+ * When HMAC_SECRET is not set, returns a single SHA-256 hash.
+ * @param {string} apiKey - API key to hash
+ * @returns {string[]} - One or two 64-char hex strings (no duplicates)
+ */
+export function getAuthIdCandidates(apiKey) {
+  if (!apiKey) throw new Error('API key is required');
+  const sha = sha256HashApiKey(apiKey);
+  const secret = process.env.HMAC_SECRET;
+  if (!secret) return [sha];
+  const hmac = crypto.createHmac('sha256', secret).update(apiKey).digest('hex');
+  return hmac === sha ? [sha] : [hmac, sha];
 }
