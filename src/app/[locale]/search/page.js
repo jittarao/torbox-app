@@ -1,9 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Header from '@/components/Header';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
+import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
+import { useSearchStore } from '@/store/searchStore';
 
 import { Inter } from 'next/font/google';
 
@@ -12,6 +14,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export default function SearchPage() {
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState(null);
+
+  const searchType = useSearchStore((state) => state.searchType);
+  const setSearchType = useSearchStore((state) => state.setSearchType);
 
   useEffect(() => {
     const storedKey = localStorage.getItem('torboxApiKey');
@@ -20,7 +26,7 @@ export default function SearchPage() {
       loadedKey = storedKey;
       setApiKey(storedKey);
     }
-    
+
     // Ensure user database exists for loaded API key
     if (loadedKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
@@ -33,9 +39,39 @@ export default function SearchPage() {
         });
       });
     }
-    
+
     setLoading(false);
   }, []);
+
+  // Fetch user profile and derive permissions (usenet search requires Pro)
+  useEffect(() => {
+    if (apiKey && apiKey.length >= 20) {
+      fetchUserProfile(apiKey)
+        .then((userData) => {
+          setPermissions(userData ? getUserPermissions(userData) : null);
+        })
+        .catch(() => setPermissions(null));
+    } else {
+      setPermissions(null);
+    }
+  }, [apiKey]);
+
+  // If usenet is selected but user doesn't have access, switch to torrents
+  useEffect(() => {
+    if (permissions && searchType === 'usenet' && !hasDownloadAccess('usenet', permissions)) {
+      setSearchType('torrents');
+    }
+  }, [permissions, searchType, setSearchType]);
+
+  const searchTypeOptions = useMemo(() => {
+    const torrents = { value: 'torrents', labelKey: 'itemTypes.Torrents' };
+    const usenet = { value: 'usenet', labelKey: 'itemTypes.Usenet' };
+    const canUsenet = hasDownloadAccess('usenet', permissions);
+    return [
+      torrents,
+      ...(canUsenet ? [usenet] : []),
+    ];
+  }, [permissions]);
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
@@ -56,7 +92,7 @@ export default function SearchPage() {
           onKeyChange={handleKeyChange}
           allowKeyManager={true}
         />
-        <SearchBar />
+        <SearchBar searchTypeOptions={searchTypeOptions} />
         <SearchResults apiKey={apiKey} />
       </div>
     </main>

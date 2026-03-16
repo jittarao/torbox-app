@@ -34,7 +34,11 @@ import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
-import { fetchUserProfile } from '@/utils/userProfile';
+import {
+  fetchUserProfile,
+  getUserPermissions,
+  hasDownloadAccess,
+} from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function Downloads({ apiKey }) {
@@ -45,6 +49,7 @@ export default function Downloads({ apiKey }) {
   );
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState(getStoredAssetType);
+  const [permissions, setPermissions] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
 
@@ -106,22 +111,36 @@ export default function Downloads({ apiKey }) {
     }
   }, [apiKey]);
 
-  // Fetch user profile to check for Pro plan access
+  // Fetch user profile and derive permissions (plan-based feature access)
   useEffect(() => {
     if (apiKey && apiKey.length >= 20) {
       fetchUserProfile(apiKey)
         .then((userData) => {
           if (userData) {
-            console.log('User profile:', userData);
+            setPermissions(getUserPermissions(userData));
           } else {
-            console.log('No user profile found');
+            setPermissions(null);
           }
         })
         .catch((error) => {
           console.error('Error fetching user profile:', error);
+          setPermissions(null);
         });
+    } else {
+      setPermissions(null);
     }
   }, [apiKey]);
+
+  const canUseUsenet = hasDownloadAccess('usenet', permissions);
+
+  // If usenet is selected but user doesn't have Pro plan, switch to all
+  useEffect(() => {
+    if (!canUseUsenet && activeType === 'usenet') {
+      setActiveType('all');
+      localStorage.setItem(ASSET_TYPE_STORAGE_KEY, 'all');
+      setSelectedItems({ items: new Set(), files: new Map() });
+    }
+  }, [canUseUsenet, activeType]);
 
   // Function to expand all items with files
   const expandAllFiles = () => {
@@ -539,13 +558,15 @@ export default function Downloads({ apiKey }) {
     return formatSize(filesSize + itemsSize);
   }, [itemsWithTags, selectedItems]);
 
-  // Render uploaders based on active type
+  // Render uploaders based on active type (permissions control which types are allowed)
   const renderUploaders = () => {
     if (activeType === 'all') {
       return (
         <div className="space-y-2">
           <ItemUploader apiKey={apiKey} activeType="torrents" />
-          <ItemUploader apiKey={apiKey} activeType="usenet" />
+          {hasDownloadAccess('usenet', permissions) && (
+            <ItemUploader apiKey={apiKey} activeType="usenet" />
+          )}
           <ItemUploader apiKey={apiKey} activeType="webdl" />
         </div>
       );
@@ -652,6 +673,14 @@ export default function Downloads({ apiKey }) {
           setActiveType(type);
           localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
           setSelectedItems({ items: new Set(), files: new Map() });
+        }}
+        isTypeAvailable={(type) => {
+          if (type === 'all') return true;
+          // For download tabs, defer to the generic permissions helper
+          if (type === 'usenet') {
+            return hasDownloadAccess('usenet', permissions);
+          }
+          return true;
         }}
       />
 
