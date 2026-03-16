@@ -24,8 +24,7 @@ const SKIPPED_POLL_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours when user has no
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
 const PENDING_ACTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — delete pending_actions older than this
 const PENDING_ACTIONS_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Run pending_actions TTL cleanup hourly
-const STAGGER_PERCENTAGE = 0.1; // 10% of base interval
-const SLOW_POLL_WARNING_PERCENT = 0.8; // Log when poll has run this fraction of per-user timeout
+const STAGGER_PERCENTAGE = 0.3; // 30% of base interval (~9 min for 30-min window)
 
 /**
  * Wrap a promise with a timeout
@@ -546,6 +545,7 @@ class PollingScheduler {
     // Initial load of active users
     logger.info('Performing initial poller refresh');
     await this.refreshPollers();
+    await this.spreadOverdueUsersOnStartup();
 
     // Start periodic check for users due for polling
     this.intervalId = setInterval(() => {
@@ -625,7 +625,7 @@ class PollingScheduler {
 
   /**
    * Calculate stagger offset for a user based on authId hash
-   * Spreads users across 10% of base interval to prevent simultaneous polling
+   * Spreads users across STAGGER_PERCENTAGE of base interval to prevent simultaneous polling
    * @param {string} authId - User authentication ID
    * @param {number} baseIntervalMinutes - Base polling interval in minutes
    * @returns {number} - Stagger offset in milliseconds
@@ -641,6 +641,33 @@ class PollingScheduler {
     const normalizedHash = Math.abs(hash % 100) / 100;
     const baseIntervalMs = baseIntervalMinutes * 60 * 1000;
     return normalizedHash * baseIntervalMs * STAGGER_PERCENTAGE;
+  }
+
+  /**
+   * Spread overdue users across the next MIN_POLL_INTERVAL_MS window on startup
+   * to avoid thundering herd (all users polled in the first tick).
+   */
+  async spreadOverdueUsersOnStartup() {
+    const dueUsers = this.masterDb.getUsersDueForPolling();
+    if (dueUsers.length === 0) return;
+
+    const now = Date.now();
+    for (const user of dueUsers) {
+      if (!user?.auth_id) continue;
+      let hash = 0;
+      for (let i = 0; i < user.auth_id.length; i++) {
+        const char = user.auth_id.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash |= 0;
+      }
+      const offset = (Math.abs(hash % 100) / 100) * MIN_POLL_INTERVAL_MS;
+      const nextPollAt = new Date(now + offset);
+      this.masterDb.updateNextPollAt(user.auth_id, nextPollAt, user.non_terminal_torrent_count ?? 0);
+    }
+    logger.info('Spread overdue users across poll window on startup', {
+      spreadCount: dueUsers.length,
+      windowMinutes: MIN_POLL_INTERVAL_MS / (60 * 1000),
+    });
   }
 
   /**
