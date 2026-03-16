@@ -1048,12 +1048,12 @@ class Database {
       return cached;
     }
 
-    // Query database if not cached
+    // Query database if not cached (only active key so encrypted_key is set only when key is usable)
     const userInfo = this.getQuery(
       `
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
-      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id AND ak.is_active = 1
       WHERE ur.auth_id = ?
     `,
       [authId]
