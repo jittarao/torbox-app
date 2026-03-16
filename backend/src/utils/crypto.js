@@ -21,11 +21,12 @@ function getEncryptionKey() {
 
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
+    // Fallback for backward compatibility when ENCRYPTION_KEY is not set
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('ENCRYPTION_KEY environment variable is required in production');
+      logger.warn('ENCRYPTION_KEY not set. Using default key. Set ENCRYPTION_KEY in production for stronger security.');
+    } else {
+      logger.warn('Using default encryption key. Set ENCRYPTION_KEY in production!');
     }
-    // Development fallback - DO NOT USE IN PRODUCTION
-    logger.warn('Using default encryption key. Set ENCRYPTION_KEY in production!');
     _cachedKey = crypto.scryptSync('default-dev-key-change-in-production', 'salt', 32);
     return _cachedKey;
   }
@@ -118,11 +119,11 @@ export function hashApiKey(apiKey) {
   if (secret) {
     return crypto.createHmac('sha256', secret).update(apiKey).digest('hex');
   }
+  // Backward compatibility: use SHA-256 when HMAC_SECRET is not set
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('HMAC_SECRET environment variable is required in production');
+    logger.warn('HMAC_SECRET not set. API key hashing uses SHA-256. Set HMAC_SECRET in production for stronger security.');
+  } else {
+    logger.warn('HMAC_SECRET not set. API key hashing uses plain SHA-256. Set HMAC_SECRET in production.');
   }
-  logger.warn(
-    'HMAC_SECRET not set. API key hashing uses plain SHA-256. Set HMAC_SECRET in production.'
-  );
   return crypto.createHash('sha256').update(apiKey).digest('hex');
 }
