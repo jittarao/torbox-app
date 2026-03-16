@@ -31,13 +31,8 @@ function getEncryptionKey() {
     return _cachedKey;
   }
 
-  // Salt from env so it can be unique per installation (default for backward compatibility)
+  // Salt: ENCRYPTION_SALT is optional; default gives one env var (ENCRYPTION_KEY) for most installs
   const salt = process.env.ENCRYPTION_SALT || 'torbox-salt';
-  if (!process.env.ENCRYPTION_SALT) {
-    logger.warn(
-      'ENCRYPTION_SALT not set. Using default salt; set a unique value per installation in production.'
-    );
-  }
   _cachedKey = crypto.scryptSync(key, salt, 32);
   return _cachedKey;
 }
