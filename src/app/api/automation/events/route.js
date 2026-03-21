@@ -3,10 +3,6 @@ import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 
-/** Long-lived SSE proxy; avoid static optimization. On Vercel, allow up to 300s per invocation. */
-export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
-
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 function hashApiKey(apiKey) {
