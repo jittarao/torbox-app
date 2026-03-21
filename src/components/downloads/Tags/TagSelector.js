@@ -63,6 +63,8 @@ export default function TagSelector({
         onChange={onChange}
         options={tagOptions}
         placeholder="Select tags..."
+        searchable
+        searchPlaceholder="Search tags..."
         disabled={disabled || loading}
         className="w-full"
       />

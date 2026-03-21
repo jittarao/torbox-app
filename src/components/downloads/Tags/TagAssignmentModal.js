@@ -81,8 +81,8 @@ export default function TagAssignmentModal({
           bg-surface dark:bg-surface-dark
           border border-border dark:border-border-dark
           rounded-lg shadow-xl
-          w-[calc(100vw-2rem)] sm:w-full max-w-md
-          overflow-hidden flex flex-col"
+          w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[90dvh]
+          overflow-hidden flex flex-col min-h-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -143,7 +143,7 @@ export default function TagAssignmentModal({
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-4 min-h-0 overflow-y-auto overscroll-contain flex-1">
           <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mb-4">
             {mode === 'add'
               ? downloadIds.length === 1
