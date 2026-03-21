@@ -708,10 +708,17 @@ export function useFetchData(apiKey, type = 'torrents') {
     const ac = new AbortController();
     let buffer = '';
     let reconnectTimer = null;
+    let retryCount = 0;
 
+    // Permanent error status codes — stop retrying, the issue won't self-heal.
+    const isPermanentError = (status) => status === 401 || status === 403 || status === 503;
+
+    // Exponential backoff: 5s, 10s, 20s, 40s, 60s max.
     const reconnect = () => {
       if (ac.signal.aborted) return;
-      reconnectTimer = setTimeout(connect, 5000);
+      const delay = Math.min(5000 * Math.pow(2, retryCount), 60000);
+      retryCount++;
+      reconnectTimer = setTimeout(connect, delay);
     };
 
     const connect = () => {
@@ -722,15 +729,18 @@ export function useFetchData(apiKey, type = 'torrents') {
       })
         .then((res) => {
           if (!res.ok || !res.body) {
+            if (isPermanentError(res.status)) return;
             reconnect();
             return;
           }
+          retryCount = 0; // reset on successful connection
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
           const read = () => {
             reader.read().then(({ done, value }) => {
               if (ac.signal.aborted) return;
               if (done) {
+                retryCount = 0; // graceful close — reset before reconnecting
                 reconnect();
                 return;
               }
