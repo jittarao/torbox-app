@@ -707,19 +707,33 @@ export function useFetchData(apiKey, type = 'torrents') {
 
     const ac = new AbortController();
     let buffer = '';
+    let reconnectTimer = null;
+
+    const reconnect = () => {
+      if (ac.signal.aborted) return;
+      reconnectTimer = setTimeout(connect, 5000);
+    };
 
     const connect = () => {
+      if (ac.signal.aborted) return;
       fetch('/api/automation/events', {
         headers: { 'x-api-key': apiKey },
         signal: ac.signal,
       })
         .then((res) => {
-          if (!res.ok || !res.body) return;
+          if (!res.ok || !res.body) {
+            reconnect();
+            return;
+          }
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
           const read = () => {
             reader.read().then(({ done, value }) => {
-              if (done || ac.signal.aborted) return;
+              if (ac.signal.aborted) return;
+              if (done) {
+                reconnect();
+                return;
+              }
               buffer += decoder.decode(value, { stream: true });
               const lines = buffer.split('\n');
               buffer = lines.pop() || '';
@@ -730,19 +744,25 @@ export function useFetchData(apiKey, type = 'torrents') {
                 }
               }
               read();
+            }).catch((err) => {
+              if (err?.name !== 'AbortError' && !ac.signal.aborted) reconnect();
             });
           };
           read();
         })
         .catch((err) => {
-          if (err?.name !== 'AbortError') {
+          if (err?.name !== 'AbortError' && !ac.signal.aborted) {
             console.debug('SSE automation/events closed or failed', err?.message);
+            reconnect();
           }
         });
     };
 
     connect();
-    return () => ac.abort();
+    return () => {
+      ac.abort();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
   }, [apiKey, backendMode, type, fetchLocalItems]);
 
   // Return all data types and their setters
