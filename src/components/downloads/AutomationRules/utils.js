@@ -63,7 +63,14 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
     const timeOpT = isTimeBased ? t(`timeOperators.${operator}`) : null;
     const timestampOpT = isTimestampBased ? t(`timestampOperators.${operator}`) : null;
     const textOpT = isStringCondition(condition.type) ? t(`stringOperators.${operator}`) : null;
-    const numOpT = (!isTimeBased && !isTimestampBased && !isStringCondition(condition.type)) ? t(`operators.${operator}`) : null;
+    const usesNumericComparisonLabels =
+      !isTimeBased &&
+      !isTimestampBased &&
+      !isStringCondition(condition.type) &&
+      !isBooleanCondition(condition.type) &&
+      condition.type !== CONDITION_TYPES.STATUS &&
+      condition.type !== CONDITION_TYPES.TAGS;
+    const numOpT = usesNumericComparisonLabels ? t(`operators.${operator}`) : null;
 
     // Time / State
     if (condition.type === CONDITION_TYPES.SEEDING_TIME) {
