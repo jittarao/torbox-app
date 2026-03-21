@@ -137,11 +137,11 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
     } else if (condition.type === CONDITION_TYPES.RATIO) {
       return `seeding ratio ${numOpT} ${condition.value}`;
     } else if (condition.type === CONDITION_TYPES.TOTAL_UPLOADED) {
-      return `total uploaded ${numOpT} ${condition.value} MB`;
+      return `total uploaded ${numOpT} ${condition.value} GB`;
     }
     // Content & Metadata (numeric)
     else if (condition.type === CONDITION_TYPES.FILE_SIZE) {
-      return `file size ${numOpT} ${condition.value} MB`;
+      return `file size ${numOpT} ${condition.value} GB`;
     } else if (condition.type === CONDITION_TYPES.FILE_COUNT) {
       return `file count ${numOpT} ${condition.value}`;
     } else if (condition.type === CONDITION_TYPES.NAME) {

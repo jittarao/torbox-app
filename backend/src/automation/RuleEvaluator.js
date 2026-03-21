@@ -6,6 +6,7 @@ const MIN_INTERVAL_MINUTES = 30;
 const MS_PER_MINUTE = 60 * 1000;
 const MS_PER_HOUR = 60 * 60 * 1000;
 const BYTES_PER_MB = 1024 * 1024;
+const BYTES_PER_GB = BYTES_PER_MB * 1024;
 const SECONDS_PER_MINUTE = 60;
 const DEFAULT_AVG_SPEED_HOURS = 1;
 const SPEED_HISTORY_BUFFER_MULTIPLIER = 1.5;
@@ -906,7 +907,7 @@ class RuleEvaluator {
     if (!this.validateNumericCondition(condition, 'TOTAL_UPLOADED')) {
       return false;
     }
-    const conditionValue = (torrent.total_uploaded || 0) / BYTES_PER_MB;
+    const conditionValue = (torrent.total_uploaded || 0) / BYTES_PER_GB;
     return this.compareValues(conditionValue, condition.operator, condition.value);
   }
 
@@ -929,7 +930,7 @@ class RuleEvaluator {
     if (!this.validateNumericCondition(condition, 'FILE_SIZE')) {
       return false;
     }
-    const conditionValue = (torrent.size || 0) / BYTES_PER_MB;
+    const conditionValue = (torrent.size || 0) / BYTES_PER_GB;
     return this.compareValues(conditionValue, condition.operator, condition.value);
   }
 
@@ -937,7 +938,11 @@ class RuleEvaluator {
     if (!this.validateNumericCondition(condition, 'FILE_COUNT')) {
       return false;
     }
-    const conditionValue = torrent.files?.length || 0;
+    const conditionValue = Array.isArray(torrent.files)
+      ? torrent.files.length
+      : torrent.file_count != null
+        ? Number(torrent.file_count)
+        : 0;
     return this.compareValues(conditionValue, condition.operator, condition.value);
   }
 

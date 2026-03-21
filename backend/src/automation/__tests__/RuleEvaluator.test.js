@@ -559,9 +559,9 @@ describe('RuleEvaluator', () => {
         expect(result).toBe(true);
       });
 
-      it('should evaluate TOTAL_UPLOADED condition (converts bytes to MB)', () => {
+      it('should evaluate TOTAL_UPLOADED condition (converts bytes to GB)', () => {
         const condition = { type: 'TOTAL_UPLOADED', operator: 'gte', value: 1 };
-        const torrent = { id: '1', total_uploaded: 2 * 1024 * 1024 }; // 2 MB
+        const torrent = { id: '1', total_uploaded: 2 * 1024 * 1024 * 1024 }; // 2 GB
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
         expect(result).toBe(true);
@@ -577,9 +577,9 @@ describe('RuleEvaluator', () => {
     });
 
     describe('Content & Metadata (Direct from API) conditions', () => {
-      it('should evaluate FILE_SIZE condition (converts bytes to MB)', () => {
+      it('should evaluate FILE_SIZE condition (converts bytes to GB)', () => {
         const condition = { type: 'FILE_SIZE', operator: 'lt', value: 5 };
-        const torrent = { id: '1', size: 3 * 1024 * 1024 }; // 3 MB
+        const torrent = { id: '1', size: 3 * 1024 * 1024 * 1024 }; // 3 GB
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
         expect(result).toBe(true);
@@ -593,12 +593,20 @@ describe('RuleEvaluator', () => {
         expect(result).toBe(true);
       });
 
-      it('should evaluate FILE_COUNT condition using file_count field', () => {
+      it('should evaluate FILE_COUNT condition using file_count when files array is absent', () => {
         const condition = { type: 'FILE_COUNT', operator: 'lt', value: 10 };
         const torrent = { id: '1', file_count: 5 };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
         expect(result).toBe(true);
+      });
+
+      it('should evaluate FILE_COUNT from file_count when it does not match lt threshold', () => {
+        const condition = { type: 'FILE_COUNT', operator: 'lt', value: 10 };
+        const torrent = { id: '1', file_count: 15 };
+
+        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        expect(result).toBe(false);
       });
 
       it('should return 0 for FILE_COUNT condition when files array is missing', () => {
