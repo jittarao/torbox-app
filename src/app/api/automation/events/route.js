@@ -33,12 +33,32 @@ export async function GET(request) {
   const authId = hashApiKey(apiKey);
   const url = `${BACKEND_URL}/api/automation/events`;
   try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'x-auth-id': authId },
-      cache: 'no-store',
-      signal: request.signal,
+    // Race the initial connection against a 10s timeout so a reachable-but-slow
+    // backend doesn't hang the serverless function and cause a Cloudflare 524.
+    // Once headers are received the timeout is no longer relevant — the body
+    // streams freely until the client disconnects (request.signal).
+    let connectTimeoutId;
+    const connectTimeout = new Promise((_, reject) => {
+      connectTimeoutId = setTimeout(
+        () => reject(new Error('Backend SSE connect timeout')),
+        10000
+      );
     });
+
+    let res;
+    try {
+      res = await Promise.race([
+        fetch(url, {
+          method: 'GET',
+          headers: { 'x-auth-id': authId },
+          cache: 'no-store',
+          signal: request.signal,
+        }),
+        connectTimeout,
+      ]);
+    } finally {
+      clearTimeout(connectTimeoutId);
+    }
 
     if (!res.ok) {
       const text = await res.text();
