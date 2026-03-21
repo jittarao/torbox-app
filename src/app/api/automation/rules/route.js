@@ -89,11 +89,11 @@ export async function POST(request) {
 
     const body = await request.json();
     const authId = hashApiKey(apiKey);
-    
+
     // Add authId to the request body
     const requestBody = {
       ...body,
-      authId
+      authId,
     };
     
     const response = await fetch(`${BACKEND_URL}/api/automation/rules`, {

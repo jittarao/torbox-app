@@ -15,6 +15,7 @@ import RuleValidator from './helpers/RuleValidator.js';
 import RuleExecutor from './helpers/RuleExecutor.js';
 import RuleFilter from './helpers/RuleFilter.js';
 import RuleMigrationHelper from './helpers/RuleMigrationHelper.js';
+import { normalizeIntervalTriggersOnRules } from './helpers/normalizeIntervalTriggers.js';
 import {
   INITIAL_POLL_INTERVAL_MINUTES,
   DEFAULT_RETRY_MAX_RETRIES,
@@ -1134,9 +1135,11 @@ class AutomationEngine {
    * @returns {Promise<Array>} - Array of saved rules with database-assigned IDs
    */
   async saveAutomationRules(rules) {
+    const rulesToSave = normalizeIntervalTriggersOnRules(rules);
+
     // Validate all rules before saving
-    for (let i = 0; i < rules.length; i++) {
-      const rule = rules[i];
+    for (let i = 0; i < rulesToSave.length; i++) {
+      const rule = rulesToSave[i];
       const validation = this.validateRule(rule);
 
       if (!validation.valid) {
@@ -1152,9 +1155,9 @@ class AutomationEngine {
     }
 
     // Save rules and get back the saved rules with database-assigned IDs (repo syncs has_active_rules to master)
-    const savedRules = await this.ruleRepository.saveRules(rules);
+    const savedRules = await this.ruleRepository.saveRules(rulesToSave);
 
-    const hasActive = rules.some((r) => r.enabled);
+    const hasActive = rulesToSave.some((r) => r.enabled);
 
     // Invalidate caches since rules changed
     this.invalidateRuleCache();
