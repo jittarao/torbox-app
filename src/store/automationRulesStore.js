@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useBackendModeStore } from '@/store/backendModeStore';
+import { normalizeAutomationRulesForSave } from '@/utils/automationRulesNormalize';
 
 /**
  * Check if backend is available (not disabled)
@@ -92,10 +93,12 @@ export const useAutomationRulesStore = create((set, get) => ({
       throw new Error('API key is required');
     }
 
+    const rulesToSave = normalizeAutomationRulesForSave(newRules);
+
     // Check if backend is available
     if (!isBackendAvailable()) {
       // No backend mode, just update local state
-      set({ rules: newRules });
+      set({ rules: rulesToSave });
       return;
     }
 
@@ -113,7 +116,7 @@ export const useAutomationRulesStore = create((set, get) => ({
       const response = await fetch('/api/automation/rules', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ rules: newRules }),
+        body: JSON.stringify({ rules: rulesToSave }),
       });
 
       if (!response.ok) {
