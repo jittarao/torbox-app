@@ -1,0 +1,44 @@
+name: Sync main from upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: sync-upstream-main
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: jittarao/torbox-app
+  SYNC_BRANCH: main
+
+jobs:
+  merge-upstream:
+    if: github.repository != 'jittarao/torbox-app'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SYNC_BRANCH }}
+          fetch-depth: 0
+
+      - name: Merge upstream into fork
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          git fetch upstream "${SYNC_BRANCH}"
+          git merge "upstream/${SYNC_BRANCH}" --no-edit
+          git push origin "HEAD:${SYNC_BRANCH}"
+
+      - name: Job summary
+        run: |
+          {
+            echo "## Sync upstream"
+            echo "Merged ${UPSTREAM_REPO} ${SYNC_BRANCH} into origin/${SYNC_BRANCH}."
+            echo "Pushes from the default GITHUB_TOKEN do not trigger other push workflows; start Build and Push Docker Image manually if you need a new image."
+          } >> "$GITHUB_STEP_SUMMARY"
