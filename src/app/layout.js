@@ -1,3 +1,10 @@
+import { RybbitHeadScripts } from '@/components/RybbitHeadScripts';
+
 export default function RootLayout({ children }) {
-  return children;
+  return (
+    <>
+      <RybbitHeadScripts />
+      {children}
+    </>
+  );
 }
