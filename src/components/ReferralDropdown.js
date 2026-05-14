@@ -3,9 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
-
-const REFERRAL_CODE = '7908ea44-023c-45f5-86ce-564bc6edaf34';
-const REFERRAL_LINK = 'https://torbox.app/subscription?referral=7908ea44-023c-45f5-86ce-564bc6edaf34';
+import { FORK_REFERRAL_CODE, FORK_REFERRAL_LINK } from '@/components/constants';
 
 export default function ReferralDropdown() {
   const t = useTranslations('Referral');
@@ -103,12 +101,12 @@ export default function ReferralDropdown() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
-                  value={REFERRAL_CODE}
+                  value={FORK_REFERRAL_CODE}
                   readOnly
                   className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono min-w-0"
                 />
                 <button
-                  onClick={() => copyToClipboard(REFERRAL_CODE, 'code')}
+                  onClick={() => copyToClipboard(FORK_REFERRAL_CODE, 'code')}
                   className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors flex-shrink-0"
                   title={t('copyCode')}
                 >
@@ -129,12 +127,12 @@ export default function ReferralDropdown() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
-                  value={REFERRAL_LINK}
+                  value={FORK_REFERRAL_LINK}
                   readOnly
                   className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono min-w-0 break-all"
                 />
                 <a
-                  href={REFERRAL_LINK}
+                  href={FORK_REFERRAL_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors flex-shrink-0"

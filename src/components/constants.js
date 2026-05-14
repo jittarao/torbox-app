@@ -1,3 +1,7 @@
+export const FORK_REFERRAL_CODE = '09c3f0f3-4e61-4634-a6dc-40af39f8165c';
+export const FORK_REFERRAL_LINK = `https://torbox.app/subscription?referral=${FORK_REFERRAL_CODE}`;
+export const FORK_GITHUB_REPO_URL = 'https://github.com/crazycacti/torbox-app';
+
 export const API_BASE = 'https://api.torbox.app';
 export const API_SEARCH_BASE = 'https://search-api.torbox.app';
 export const API_VERSION = 'v1';
