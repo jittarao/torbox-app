@@ -99,6 +99,8 @@ services:
       - NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=${NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE:-}
       - NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=${NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE:-}
       - SENTRY_DEBUG=${SENTRY_DEBUG:-}
+      - RYBBIT_SITE_ID=${RYBBIT_SITE_ID:-}
+      - RYBBIT_SCRIPT_SRC=${RYBBIT_SCRIPT_SRC:-}
     # Service dependencies: wait for backend to be healthy before starting
     depends_on:
       torbox-backend:

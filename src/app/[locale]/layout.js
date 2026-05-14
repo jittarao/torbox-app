@@ -10,6 +10,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { locales } from '@/i18n/settings';
+import { RybbitHeadScripts } from '@/components/RybbitHeadScripts';
 
 import '@/app/globals.css';
 
@@ -92,6 +93,7 @@ export default async function LocaleLayout({ children, params }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#000000" />
+        <RybbitHeadScripts />
         {/* Blocking script to set theme before React hydrates - prevents flash/mismatch */}
         <script
           suppressHydrationWarning
