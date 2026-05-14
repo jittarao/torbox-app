@@ -550,6 +550,9 @@
       "link": "torbox.app/settings",
       "title": "TorBox API-Schlüssel eingeben"
     },
+    "forkNoticeLine": "Dieser Build ist ein von der Community gepflegter Fork und kann sich von der Upstream-App unterscheiden.",
+    "forkNoticeThisFork": "Dieser Fork auf GitHub",
+    "forkNoticeUpstream": "Upstream-Projekt",
     "features": {
       "batchUpload": {
         "description": "Mehrere Torrents mit einem einzigen Klick hochladen",
