@@ -10,6 +10,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { locales } from '@/i18n/settings';
+import { RybbitHeadScripts } from '@/components/RybbitHeadScripts';
 import '@/app/globals.css';
 
 const geistSans = Geist({
@@ -86,6 +87,7 @@ export default async function LocaleLayout({ children, params }) {
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        <RybbitHeadScripts />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
