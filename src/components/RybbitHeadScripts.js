@@ -7,16 +7,7 @@ export function RybbitHeadScripts() {
   const scriptSrc =
     process.env.RYBBIT_SCRIPT_SRC?.trim() || '/analytics/script.js';
 
-  return (
-    <>
-      <script
-        dangerouslySetInnerHTML={{ __html: 'window.__TBM_RYBBIT__=1' }}
-      />
-      <script
-        defer
-        src={scriptSrc}
-        {...{ 'data-site-id': siteId }}
-      />
-    </>
-  );
+  const boot = `(function(){try{window.__TBM_RYBBIT__=1;var el=document.createElement("script");el.src=${JSON.stringify(scriptSrc)};el.async=true;el.setAttribute("data-site-id",${JSON.stringify(siteId)});document.head.appendChild(el);}catch(e){}})();`;
+
+  return <script dangerouslySetInnerHTML={{ __html: boot }} />;
 }
