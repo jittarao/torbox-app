@@ -550,6 +550,9 @@
       "link": "torbox.app/settings",
       "title": "Entrer la clé API TorBox"
     },
+    "forkNoticeLine": "Ce déploiement est un fork maintenu par la communauté et peut différer de l’application amont.",
+    "forkNoticeThisFork": "Ce fork sur GitHub",
+    "forkNoticeUpstream": "Projet amont",
     "features": {
       "batchUpload": {
         "description": "Téléchargez plusieurs torrents en un seul clic",

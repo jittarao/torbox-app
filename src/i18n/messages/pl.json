@@ -550,6 +550,9 @@
       "link": "torbox.app/settings",
       "title": "Wprowadź klucz API TorBox"
     },
+    "forkNoticeLine": "Ta wersja to fork utrzymywany przez społeczność i może różnić się od aplikacji źródłowej.",
+    "forkNoticeThisFork": "Ten fork na GitHubie",
+    "forkNoticeUpstream": "Projekt źródłowy",
     "features": {
       "batchUpload": {
         "description": "Prześlij wiele torrentów jednym kliknięciem",
