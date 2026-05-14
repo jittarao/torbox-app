@@ -1,4 +1,3 @@
-import { Geist, Geist_Mono } from 'next/font/google';
 import { FileHandler } from '@/components/shared/FileHandler';
 import { ErrorHandlerInitializer } from '@/components/shared/ErrorHandlerInitializer';
 import { PostHogProvider } from './providers';
@@ -10,18 +9,6 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { locales } from '@/i18n/settings';
-import { RybbitHeadScripts } from '@/components/RybbitHeadScripts';
-import '@/app/globals.css';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata = {
   title: 'TorBox Manager',
@@ -62,12 +49,10 @@ export const viewport = {
   themeColor: '#000000',
 };
 
-// Generate static params for all locales
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-// Messages loader component - dynamic (uses headers() internally via getMessages)
 async function MessagesLoader({ locale, children }) {
   const messages = await getMessages();
   return (
@@ -78,61 +63,28 @@ async function MessagesLoader({ locale, children }) {
 }
 
 export default async function LocaleLayout({ children, params }) {
-  // Ensure that the incoming `locale` is valid
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <RybbitHeadScripts />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#000000" />
-        {/* Blocking script to set theme before React hydrates - prevents flash/mismatch */}
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('darkMode');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var isDark = stored !== null ? stored === 'true' : prefersDark;
-                  if (isDark) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
+    <ThemeProvider>
+      <Suspense
+        fallback={
+          <div className="flex justify-center items-center min-h-screen">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+          </div>
+        }
       >
-        <ThemeProvider>
-          <Suspense
-            fallback={
-              <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
-              </div>
-            }
-          >
-            <MessagesLoader locale={locale}>
-              <PostHogProvider>
-                <ErrorHandlerInitializer />
-                <FileHandler />
-                {children}
-              </PostHogProvider>
-            </MessagesLoader>
-          </Suspense>
-        </ThemeProvider>
-      </body>
-    </html>
+        <MessagesLoader locale={locale}>
+          <PostHogProvider>
+            <ErrorHandlerInitializer />
+            <FileHandler />
+            {children}
+          </PostHogProvider>
+        </MessagesLoader>
+      </Suspense>
+    </ThemeProvider>
   );
 }
