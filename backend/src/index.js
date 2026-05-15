@@ -221,6 +221,16 @@ class TorBoxBackend {
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
       logger.info('Upload counter sync completed');
 
+      // Sync has_active_rules before the scheduler starts so spreadOverdueUsersOnStartup() and
+      // the first poll tick see corrected flags (admin: POST /api/admin/automation/sync-rules-flags).
+      const syncResult = await this.syncHasActiveRulesFromUserDbs();
+      const syncStats = {
+        synced: syncResult.synced,
+        errors: syncResult.errors,
+        skipped: syncResult.skipped,
+      };
+      logger.info('has_active_rules sync completed before scheduler start', { ...syncStats });
+
       // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(
         this.userDatabaseManager,
@@ -239,14 +249,6 @@ class TorBoxBackend {
       await this.pollingScheduler.start();
       this.eventNotifier.startHeartbeat();
       logger.info('Polling scheduler started');
-
-      // Sync has_active_rules flags at startup by querying user DBs directly (no engine creation).
-      const syncResult = await this.syncHasActiveRulesFromUserDbs();
-      const syncStats = {
-        synced: syncResult.synced,
-        errors: syncResult.errors,
-        skipped: syncResult.skipped,
-      };
 
       const refreshedActiveUsers = this.masterDatabase.getActiveUsers();
       const usersWithActiveRules = refreshedActiveUsers.filter(

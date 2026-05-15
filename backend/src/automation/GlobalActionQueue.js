@@ -78,6 +78,27 @@ class GlobalActionQueue {
   }
 
   /**
+   * Split pending into items ready now vs items waiting on retry backoff (_deferDrainUntil).
+   * Leaves deferred items on this.pending; returns ready items to process in this drain pass.
+   * @returns {Array}
+   * @private
+   */
+  _takeReadyPending() {
+    const now = Date.now();
+    const ready = [];
+    const deferred = [];
+    for (const item of this.pending) {
+      if (typeof item._deferDrainUntil === 'number' && item._deferDrainUntil > now) {
+        deferred.push(item);
+      } else {
+        ready.push(item);
+      }
+    }
+    this.pending = deferred;
+    return ready;
+  }
+
+  /**
    * Merge descriptors for the same (authId, rule.id): union of torrentsToProcess by torrent id.
    * Returns one merged descriptor and array of pendingIds to delete after execution.
    * Supports both single pendingId and pendingIds array (e.g. re-queued merged batch).
@@ -88,6 +109,7 @@ class GlobalActionQueue {
     const byId = new Map();
     const pendingIds = [];
     let retryCount = first.retryCount ?? 0;
+    let deferUntil = null;
     for (const d of pendingList) {
       if (d.pendingIds && Array.isArray(d.pendingIds)) {
         pendingIds.push(...d.pendingIds);
@@ -95,6 +117,11 @@ class GlobalActionQueue {
         pendingIds.push(d.pendingId);
       }
       if (d.retryCount != null && d.retryCount > retryCount) retryCount = d.retryCount;
+      if (typeof d._deferDrainUntil === 'number') {
+        if (deferUntil == null || d._deferDrainUntil > deferUntil) {
+          deferUntil = d._deferDrainUntil;
+        }
+      }
       for (const t of d.torrentsToProcess || []) {
         const id = t?.id ?? t?.torrent_id ?? t?.usenet_id ?? t?.web_id;
         if (id != null && !byId.has(id)) byId.set(id, t);
@@ -106,24 +133,31 @@ class GlobalActionQueue {
         rule: first.rule,
         torrentsToProcess: Array.from(byId.values()),
         retryCount,
+        _deferDrainUntil: deferUntil,
       },
       pendingIds,
     };
   }
 
   async drain() {
-    if (this.draining || this.pending.length === 0) return;
+    const ready = this._takeReadyPending();
+    if (ready.length === 0) return;
+
+    if (this.draining) {
+      this.pending = [...ready, ...this.pending];
+      return;
+    }
+
     this.draining = true;
     const masterDb = this.scheduler.masterDb;
 
     // Partition by (authId, ruleId) so all same-rule items are merged regardless of order
     const groups = new Map();
-    for (const item of this.pending) {
+    for (const item of ready) {
       const k = `${item.authId}:${item.rule?.id ?? 'null'}`;
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(item);
     }
-    this.pending = [];
     const batchQueue = Array.from(groups.values());
 
     try {
@@ -159,6 +193,7 @@ class GlobalActionQueue {
               }
             } else {
               const backoffMs = ACTION_RETRY_BACKOFF_BASE_MS * Math.pow(2, retryCount - 1);
+              const deferUntil = Date.now() + backoffMs;
               logger.warn('GlobalActionQueue action batch failed, will retry', {
                 errorMessage: err.message,
                 authId: merged.authId,
@@ -172,6 +207,7 @@ class GlobalActionQueue {
                 torrentsToProcess: merged.torrentsToProcess,
                 pendingIds,
                 retryCount,
+                _deferDrainUntil: deferUntil,
               });
               setTimeout(() => {
                 this.drain().catch((e) => {
@@ -189,8 +225,21 @@ class GlobalActionQueue {
       await Promise.all(workers);
     } finally {
       this.draining = false;
-      // Re-drain if items arrived while draining (avoids items stuck until next enqueue)
-      if (this.pending.length > 0) {
+      // New work may have arrived during drain (enqueue). Only re-drain items that are ready
+      // now — never pull items still under _deferDrainUntil (retry backoff).
+      const now = Date.now();
+      const readyTail = [];
+      const stillDeferred = [];
+      for (const item of this.pending) {
+        if (typeof item._deferDrainUntil === 'number' && item._deferDrainUntil > now) {
+          stillDeferred.push(item);
+        } else {
+          readyTail.push(item);
+        }
+      }
+      this.pending = stillDeferred;
+      if (readyTail.length > 0) {
+        this.pending = [...readyTail, ...this.pending];
         this.drain().catch((err) => {
           logger.error('GlobalActionQueue drain error', err, {
             errorMessage: err.message,

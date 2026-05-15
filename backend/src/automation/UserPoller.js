@@ -768,6 +768,9 @@ class UserPoller {
       if (this.masterDb && this.masterDb.resetConsecutiveAuthFailures) {
         this.masterDb.resetConsecutiveAuthFailures(this.authId);
       }
+      if (this.masterDb && this.masterDb.resetConsecutivePlanRestrictedFailures) {
+        this.masterDb.resetConsecutivePlanRestrictedFailures(this.authId);
+      }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       logger.info('Poll completed successfully', {
@@ -820,24 +823,43 @@ class UserPoller {
       this.lastPollError = error.message;
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       const isPlanRestricted =
-        error.response?.status === 403 && error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
-      if (isPlanRestricted && this.automationEngine) {
-        try {
-          const disabledCount = await this.automationEngine.disableAllRules();
-          logger.info('Poll failed (plan restricted); disabled all automation rules', {
+        error.isPlanRestrictedFeature === true ||
+        (error.response?.status === 403 &&
+          error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE');
+      if (isPlanRestricted && this.masterDb?.incrementConsecutivePlanRestrictedFailures) {
+        const count = this.masterDb.incrementConsecutivePlanRestrictedFailures(this.authId);
+        const threshold = Math.max(
+          1,
+          parseInt(process.env.PLAN_RESTRICTED_DEACTIVATE_AFTER || '3', 10)
+        );
+        if (count >= threshold && this.automationEngine) {
+          try {
+            const disabledCount = await this.automationEngine.disableAllRules();
+            this.masterDb.resetConsecutivePlanRestrictedFailures(this.authId);
+            logger.warn('Poll failed (plan restricted); disabled all automation rules after threshold', {
+              authId: this.authId,
+              duration: `${duration}s`,
+              disabledCount,
+              consecutivePlanRestrictedFailures: count,
+              threshold,
+            });
+          } catch (disableErr) {
+            logger.error('Failed to disable rules after plan restricted threshold', disableErr, {
+              authId: this.authId,
+            });
+            logger.info('Poll failed', {
+              authId: this.authId,
+              duration: `${duration}s`,
+              errorMessage: error.message,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } else if (count < threshold) {
+          logger.warn('Poll failed (plan restricted); rules not disabled yet', {
             authId: this.authId,
             duration: `${duration}s`,
-            disabledCount,
-          });
-        } catch (disableErr) {
-          logger.error('Failed to disable rules after plan restricted', disableErr, {
-            authId: this.authId,
-          });
-          logger.info('Poll failed', {
-            authId: this.authId,
-            duration: `${duration}s`,
-            errorMessage: error.message,
-            timestamp: new Date().toISOString(),
+            consecutivePlanRestrictedFailures: count,
+            threshold,
           });
         }
       } else {
