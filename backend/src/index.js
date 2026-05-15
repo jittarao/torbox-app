@@ -15,6 +15,8 @@ import cache from './utils/cache.js';
 import Semaphore from './utils/semaphore.js';
 import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
+import { serverErrorPayload } from './utils/httpErrors.js';
+import { validateEnv } from './config/validateEnv.js';
 import { setupAdminRoutes } from './routes/admin.js';
 import { setupHealthRoutes } from './routes/health.js';
 import { setupApiKeyRoutes } from './routes/apiKeys.js';
@@ -170,11 +172,7 @@ class TorBoxBackend {
 
       logger.error('Unhandled error in request handler', error, context);
 
-      res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
+      res.status(500).json(serverErrorPayload(error));
     });
 
     // 404 handler
@@ -469,6 +467,7 @@ class TorBoxBackend {
 let backend;
 (async () => {
   try {
+    validateEnv();
     await initSentry();
 
     // Create the backend instance

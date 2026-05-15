@@ -33,7 +33,7 @@ const STAGGER_PERCENTAGE = 0.3; // 30% of base interval (~9 min for 30-min windo
  * @param {string} errorMessage - Error message for timeout
  * @returns {Promise} - Promise that rejects on timeout
  */
-async function withTimeout(promise, timeoutMs, errorMessage) {
+export async function withTimeout(promise, timeoutMs, errorMessage) {
   let timeoutId;
   let timeoutOccurred = false;
 

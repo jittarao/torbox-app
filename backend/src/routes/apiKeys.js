@@ -1,6 +1,7 @@
 import ApiClient from '../api/ApiClient.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import { serverErrorPayload } from '../utils/httpErrors.js';
 import { access } from 'fs/promises';
 import { constants } from 'fs';
 
@@ -57,10 +58,8 @@ async function registerAndRollbackOnFailure(backend, apiKey, keyName, pollInterv
   return { authId, wasNew };
 }
 
-function apiKeyRouteError(res, error, context) {
-  const message =
-    process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong';
-  res.status(500).json({ success: false, error: message, ...context });
+function apiKeyRouteError(res, error) {
+  res.status(500).json(serverErrorPayload(error));
 }
 
 /**
@@ -107,14 +106,10 @@ export function setupApiKeyRoutes(app, backend) {
   app.get('/api/backend/api-key/status', async (req, res) => {
     try {
       const activeUsers = backend.masterDatabase.getActiveUsers();
-      const schedulerStatus = backend.pollingScheduler
-        ? backend.pollingScheduler.getStatus()
-        : null;
 
       res.json({
         success: true,
         activeUsers: activeUsers.length,
-        pollingScheduler: schedulerStatus,
       });
     } catch (error) {
       logger.error('Error checking API key status', error, {

@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { Database } from 'bun:sqlite';
 import RuleEvaluator from '../RuleEvaluator.js';
+import SpeedAggregator from '../SpeedAggregator.js';
 
 describe('RuleEvaluator', () => {
   let ruleEvaluator;
@@ -10,7 +12,7 @@ describe('RuleEvaluator', () => {
     // Create mock functions for database methods
     const mockGet = mock(() => null);
     const mockAll = mock(() => []);
-    const mockRun = mock(() => ({ lastInsertRowid: 1 }));
+    const mockRun = mock(() => ({ lastInsertRowid: 1, changes: 1 }));
     // Transaction should return a function that executes the passed function
     const mockTransaction = mock((fn) => {
       const transactionFn = () => fn();
@@ -294,7 +296,7 @@ describe('RuleEvaluator', () => {
       expect(result.matchingTorrents).toEqual([]);
     });
 
-    it('should match all torrents when rule has no conditions (flat structure)', async () => {
+    it('should match no torrents when rule has no conditions (flat structure)', async () => {
       const rule = {
         enabled: true,
         conditions: [],
@@ -305,7 +307,7 @@ describe('RuleEvaluator', () => {
       ];
 
       const result = await ruleEvaluator.evaluateRule(rule, torrents);
-      expect(result.matchingTorrents).toHaveLength(2);
+      expect(result.matchingTorrents).toHaveLength(0);
     });
   });
 
@@ -1469,6 +1471,23 @@ describe('RuleEvaluator', () => {
   });
 
   describe('calculateMaxSpeed', () => {
+    let speedDb;
+    let speedAggregator;
+
+    beforeEach(() => {
+      speedDb = new Database(':memory:');
+      speedDb.exec(`
+        CREATE TABLE speed_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          torrent_id TEXT NOT NULL,
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+          total_downloaded INTEGER NOT NULL,
+          total_uploaded INTEGER NOT NULL
+        );
+      `);
+      speedAggregator = new SpeedAggregator(speedDb);
+    });
+
     it('should calculate max speed correctly', () => {
       const now = Date.now();
       const samples = [
@@ -1478,15 +1497,15 @@ describe('RuleEvaluator', () => {
         { timestamp: new Date(now).toISOString(), total_downloaded: 10 * 1024 * 1024 }, // 2 MB/s
       ];
 
-      const maxSpeed = ruleEvaluator.calculateMaxSpeed(samples, 'total_downloaded');
+      const maxSpeed = speedAggregator.calculateMaxSpeed(samples, 'total_downloaded');
       expect(maxSpeed).toBeCloseTo(5 * 1024 * 1024, 0); // Max is 5 MB/s
     });
 
     it('should return 0 for insufficient samples', () => {
-      const speed1 = ruleEvaluator.calculateMaxSpeed([], 'total_downloaded');
+      const speed1 = speedAggregator.calculateMaxSpeed([], 'total_downloaded');
       expect(speed1).toBe(0);
 
-      const speed2 = ruleEvaluator.calculateMaxSpeed(
+      const speed2 = speedAggregator.calculateMaxSpeed(
         [{ timestamp: new Date().toISOString() }],
         'total_downloaded'
       );
@@ -1572,15 +1591,8 @@ describe('RuleEvaluator', () => {
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      // Verify database was checked for existing archive (SELECT query)
       expect(mockUserDb.prepare).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT id FROM archived_downloads WHERE torrent_id = ?')
-      );
-      expect(mockUserDb._mockGet).toHaveBeenCalledWith('torrent-1');
-
-      // Verify database insert was called
-      expect(mockUserDb.prepare).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO archived_downloads')
+        expect.stringContaining('INSERT OR IGNORE INTO archived_downloads')
       );
       expect(mockUserDb._mockRun).toHaveBeenCalledWith(
         'torrent-1',
@@ -1604,20 +1616,15 @@ describe('RuleEvaluator', () => {
         tracker: 'http://tracker.example.com',
       };
 
-      // Mock existing archive - modify the mock implementation to return an existing archive
-      // The default mockGet returns null, so we override it for this test
-      mockUserDb._mockGet.mockImplementation(() => ({ id: 1 }));
+      mockUserDb._mockRun.mockImplementation(() => ({ changes: 0 }));
 
       const result = await ruleEvaluator.executeAction(action, torrent);
 
       expect(result).toEqual({ success: true, message: 'Already archived' });
       expect(mockApiClient.deleteTorrent).not.toHaveBeenCalled();
-      // Verify that prepare was called for the SELECT query
       expect(mockUserDb.prepare).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT id FROM archived_downloads WHERE torrent_id = ?')
+        expect.stringContaining('INSERT OR IGNORE INTO archived_downloads')
       );
-      // Verify get() was called with the torrent id
-      expect(mockUserDb._mockGet).toHaveBeenCalledWith('torrent-1');
     });
 
     it('should throw error when archive action missing required fields', async () => {

@@ -1,10 +1,18 @@
 import withPWA from 'next-pwa';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version: appPackageVersion } = require('./package.json');
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_TORBOX_MANAGER_VERSION: appPackageVersion,
+  },
+
   // Standalone output for Docker deployments
   // Always enabled since this config is used for production builds
   output: 'standalone',
@@ -20,16 +28,6 @@ const nextConfig = {
   // Optimize bundle size
   experimental: {
     optimizePackageImports: ['lodash', 'date-fns', 'chart.js'],
-  },
-
-  // Turbopack configuration
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
   },
 
   // Compress static assets (only in production)
