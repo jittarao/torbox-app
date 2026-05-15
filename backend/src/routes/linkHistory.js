@@ -1,10 +1,29 @@
 import { extractAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
+import { serverErrorPayload } from '../utils/httpErrors.js';
 
 /**
  * Link history routes
  * Handles CRUD operations for download link history
  */
+function encodeLinkHistoryCursor(row) {
+  if (!row?.generated_at || row.id == null) return null;
+  return encodeURIComponent(JSON.stringify({ g: row.generated_at, i: row.id }));
+}
+
+function decodeLinkHistoryCursor(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  try {
+    const o = JSON.parse(decodeURIComponent(raw));
+    if (o && typeof o.g === 'string' && Number.isFinite(o.i)) {
+      return { generated_at: o.g, id: o.i };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 export function setupLinkHistoryRoutes(app, backend) {
   const { userRateLimiter } = backend;
 
@@ -26,8 +45,54 @@ export function setupLinkHistoryRoutes(app, backend) {
       const page = Math.max(1, parseInt(req.query.page, 10) || 1); // Min 1
       const offset = (page - 1) * limit;
       const search = req.query.search?.trim() || null;
+      const keyset = req.query.keyset === '1' || req.query.keyset === 'true';
+      const cursorRaw = req.query.cursor;
+      const cursor = cursorRaw ? decodeLinkHistoryCursor(String(cursorRaw)) : null;
+      if (cursorRaw && !cursor) {
+        return res.status(400).json({ success: false, error: 'Invalid cursor' });
+      }
 
-      // Build query with optional search
+      if (keyset) {
+        const whereParts = [];
+        const params = [];
+
+        if (search) {
+          const searchParam = `%${search}%`;
+          whereParts.push('(item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ?)');
+          params.push(searchParam, searchParam, searchParam);
+        }
+        if (cursor) {
+          whereParts.push(
+            '(generated_at < ? OR (generated_at = ? AND id < ?))'
+          );
+          params.push(cursor.generated_at, cursor.generated_at, cursor.id);
+        }
+
+        const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+        const dataQuery = `
+          SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at
+          FROM link_history
+          ${whereClause}
+          ORDER BY generated_at DESC, id DESC
+          LIMIT ?
+        `;
+        const history = userDb.db.prepare(dataQuery).all(...params, limit);
+        const last = history[history.length - 1];
+        const nextCursor =
+          history.length === limit && last ? encodeLinkHistoryCursor(last) : null;
+
+        return res.json({
+          success: true,
+          data: history,
+          pagination: {
+            limit,
+            nextCursor,
+            hasMore: Boolean(nextCursor),
+          },
+        });
+      }
+
+      // Build query with optional search (offset / page mode)
       let countQuery = 'SELECT COUNT(*) as count FROM link_history';
       let dataQuery = `
           SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at
@@ -42,7 +107,7 @@ export function setupLinkHistoryRoutes(app, backend) {
         queryParams.push(searchParam, searchParam, searchParam);
       }
 
-      dataQuery += ' ORDER BY generated_at DESC LIMIT ? OFFSET ?';
+      dataQuery += ' ORDER BY generated_at DESC, id DESC LIMIT ? OFFSET ?';
 
       // Get total count (search uses 3 params for item_id, item_name, file_name)
       const totalCount = search
@@ -69,7 +134,7 @@ export function setupLinkHistoryRoutes(app, backend) {
         method: 'GET',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -145,7 +210,7 @@ export function setupLinkHistoryRoutes(app, backend) {
         method: 'POST',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -285,7 +350,7 @@ export function setupLinkHistoryRoutes(app, backend) {
         method: 'POST',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -362,7 +427,7 @@ export function setupLinkHistoryRoutes(app, backend) {
           method: 'DELETE',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -428,7 +493,7 @@ export function setupLinkHistoryRoutes(app, backend) {
           linkId: req.validatedIds?.id,
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);

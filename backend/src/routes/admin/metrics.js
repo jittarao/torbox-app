@@ -4,8 +4,8 @@ import {
   asyncHandler,
   getDatabaseStats,
   formatBytes,
-  getUserDatabaseSafe,
 } from './helpers.js';
+import { mapUserDatabaseWork, runWithConcurrency } from './concurrency.js';
 import logger from '../../utils/logger.js';
 
 /**
@@ -36,15 +36,22 @@ export function setupMetricsRoutes(router, backend) {
       // Get database stats
       const masterDbStats = getDatabaseStats(backend.masterDatabase.dbPath);
 
-      // Get total user database sizes
+      // Get total user database sizes (bounded parallel stat calls)
       let totalUserDbSize = 0;
       let userDbCount = 0;
       try {
         const userDbs = backend.masterDatabase.allQuery('SELECT db_path FROM user_registry');
-        for (const user of userDbs) {
-          const stats = getDatabaseStats(user.db_path);
-          if (stats?.exists) {
-            totalUserDbSize += stats.size;
+        const statResults = await runWithConcurrency(
+          userDbs,
+          async (user) => {
+            const stats = getDatabaseStats(user.db_path);
+            return stats?.exists ? stats.size : 0;
+          },
+          16
+        );
+        for (const size of statResults) {
+          if (size > 0) {
+            totalUserDbSize += size;
             userDbCount++;
           }
         }
@@ -127,16 +134,7 @@ export function setupMetricsRoutes(router, backend) {
     asyncHandler(async (req, res) => {
       const activeUsers = backend.masterDatabase.getActiveUsers();
 
-      let totalRules = 0;
-      let enabledRules = 0;
-      let totalExecutions = 0;
-      let successfulExecutions = 0;
-      let failedExecutions = 0;
-
-      for (const user of activeUsers) {
-        const userDb = await getUserDatabaseSafe(backend, user.auth_id);
-        if (!userDb) continue;
-
+      const partials = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
         try {
           const ruleStats = userDb.db
             .prepare(
@@ -148,9 +146,6 @@ export function setupMetricsRoutes(router, backend) {
         `
             )
             .get();
-
-          totalRules += ruleStats?.total || 0;
-          enabledRules += ruleStats?.enabled || 0;
 
           const execStats = userDb.db
             .prepare(
@@ -165,17 +160,41 @@ export function setupMetricsRoutes(router, backend) {
             )
             .get();
 
-          totalExecutions += execStats?.total || 0;
-          successfulExecutions += execStats?.successful || 0;
-          failedExecutions += execStats?.failed || 0;
+          return {
+            totalRules: ruleStats?.total || 0,
+            enabledRules: ruleStats?.enabled || 0,
+            totalExecutions: execStats?.total || 0,
+            successfulExecutions: execStats?.successful || 0,
+            failedExecutions: execStats?.failed || 0,
+          };
         } catch (error) {
           logger.warn('Error getting automation stats for user', {
             authId: user.auth_id,
             error: error.message,
           });
-        } finally {
-          backend.userDatabaseManager.releaseConnection(user.auth_id);
+          return {
+            totalRules: 0,
+            enabledRules: 0,
+            totalExecutions: 0,
+            successfulExecutions: 0,
+            failedExecutions: 0,
+          };
         }
+      });
+
+      let totalRules = 0;
+      let enabledRules = 0;
+      let totalExecutions = 0;
+      let successfulExecutions = 0;
+      let failedExecutions = 0;
+
+      for (const p of partials) {
+        if (!p) continue;
+        totalRules += p.totalRules;
+        enabledRules += p.enabledRules;
+        totalExecutions += p.totalExecutions;
+        successfulExecutions += p.successfulExecutions;
+        failedExecutions += p.failedExecutions;
       }
 
       sendSuccess(res, {

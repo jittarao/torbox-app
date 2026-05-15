@@ -13,7 +13,7 @@ RUN apk add --no-cache libc6-compat
 
 # Copy package files first for better Docker layer caching
 # This allows dependency installation to be cached if package.json hasn't changed
-COPY package.json ./
+COPY package.json bun.lock ./
 
 # Install only production dependencies to reduce image size
 # --frozen-lockfile: Use exact versions from lockfile (ensures reproducible builds)
@@ -39,7 +39,7 @@ RUN apk add --no-cache libc6-compat nodejs npm
 SHELL ["/bin/sh", "-e", "-c"]
 
 # Copy package files first for better Docker layer caching
-COPY package.json ./
+COPY package.json bun.lock ./
 
 # Install all dependencies including dev dependencies needed for building
 # Dev dependencies are required for TypeScript compilation, linting, etc.
