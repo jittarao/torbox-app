@@ -155,6 +155,8 @@ class PollingScheduler {
     this.processSemaphore = null;
     this._refreshInProgress = false;
     this._refreshCount = 0;
+    /** Prevents overlapping pollDueUsers() invocations from setInterval when a cycle exceeds pollCheckInterval */
+    this._pollCheckInProgress = false;
 
     // Metrics
     this.metrics = {
@@ -466,6 +468,43 @@ class PollingScheduler {
   }
 
   /**
+   * After repeated TorBox PLAN_RESTRICTED_FEATURE responses, disable all rules for the user.
+   * Single transient 403 does not disable (see PLAN_RESTRICTED_DEACTIVATE_AFTER).
+   * @param {string} authId
+   * @returns {Promise<void>}
+   */
+  async handlePlanRestrictedPollFailure(authId) {
+    if (!authId || !this.masterDb?.incrementConsecutivePlanRestrictedFailures) return;
+    const count = this.masterDb.incrementConsecutivePlanRestrictedFailures(authId);
+    const threshold = Math.max(
+      1,
+      parseInt(process.env.PLAN_RESTRICTED_DEACTIVATE_AFTER || '3', 10)
+    );
+    if (count < threshold) {
+      logger.warn('TorBox PLAN_RESTRICTED_FEATURE (rules not disabled until threshold)', {
+        authId,
+        count,
+        threshold,
+      });
+      return;
+    }
+    const userInfo = this.masterDb.getUserRegistryInfo(authId);
+    if (!userInfo?.encrypted_key) return;
+    try {
+      const engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
+      const disabledCount = await engine.disableAllRules();
+      this.masterDb.resetConsecutivePlanRestrictedFailures(authId);
+      logger.warn('Disabled all automation rules after repeated PLAN_RESTRICTED_FEATURE', {
+        authId,
+        consecutivePlanRestrictedFailures: count,
+        disabledCount,
+      });
+    } catch (e) {
+      logger.error('Failed to disable rules after plan-restricted threshold', e, { authId });
+    }
+  }
+
+  /**
    * Handle successful poll result
    * @param {string} authId - User authentication ID
    * @param {UserPoller} poller - Poller instance
@@ -475,6 +514,9 @@ class PollingScheduler {
    */
   async handleSuccessfulPoll(authId, poller, result, hasActiveRules, duration) {
     this.userConsecutiveTimeoutCount.delete(authId);
+    if (this.masterDb?.resetConsecutivePlanRestrictedFailures) {
+      this.masterDb.resetConsecutivePlanRestrictedFailures(authId);
+    }
     const nextPollAt = result.nextPollAt;
 
     // Scheduler is the single source of truth for next_poll_at on success (poller called with updateMasterDb: false)
@@ -831,6 +873,7 @@ class PollingScheduler {
       if (mutex.isEmpty()) {
         this.actionBatchMutexes.delete(authId);
       }
+      this._teardownEngineForAuth(authId);
     }
   }
 
@@ -964,136 +1007,149 @@ class PollingScheduler {
       return;
     }
 
-    if (this.shouldRunCleanup()) {
-      this.cleanupStalePollers();
+    if (this._pollCheckInProgress) {
+      logger.debug('Skipping pollDueUsers - previous cycle still in progress');
+      return;
     }
-
-    const checkStartTime = Date.now();
-    logger.debug('Checking for users due for polling', {
-      activePollers: this.pollers.size,
-      timestamp: new Date().toISOString(),
-    });
+    this._pollCheckInProgress = true;
 
     try {
-      const dueUsers = this.masterDb.getUsersDueForPolling();
+      if (this.shouldRunCleanup()) {
+        this.cleanupStalePollers();
+      }
 
-      // Only fetch for users with active rules; skip API call for others and reschedule
-      const usersToFetch = dueUsers.filter((u) => u.has_active_rules === 1);
-      const usersToSkip = dueUsers.filter((u) => u.has_active_rules !== 1);
-      for (const user of usersToSkip) {
-        if (user?.auth_id) {
-          this.handleSkippedPoll(user.auth_id, { reason: 'No active automation rules' }, 0);
+      const checkStartTime = Date.now();
+      logger.debug('Checking for users due for polling', {
+        activePollers: this.pollers.size,
+        timestamp: new Date().toISOString(),
+      });
+
+      try {
+        const dueUsers = this.masterDb.getUsersDueForPolling();
+
+        // Only fetch for users with active rules; skip API call for others and reschedule
+        const usersToFetch = dueUsers.filter((u) => u.has_active_rules === 1);
+        const usersToSkip = dueUsers.filter((u) => u.has_active_rules !== 1);
+        for (const user of usersToSkip) {
+          if (user?.auth_id) {
+            this.handleSkippedPoll(user.auth_id, { reason: 'No active automation rules' }, 0);
+          }
         }
-      }
 
-      if (usersToFetch.length === 0) {
-        logger.debug('No users due for polling at this time', {
-          checkDuration: `${((Date.now() - checkStartTime) / 1000).toFixed(2)}s`,
-          skippedNoRules: usersToSkip.length,
+        if (usersToFetch.length === 0) {
+          logger.debug('No users due for polling at this time', {
+            checkDuration: `${((Date.now() - checkStartTime) / 1000).toFixed(2)}s`,
+            skippedNoRules: usersToSkip.length,
+          });
+          return;
+        }
+
+        // Reserve next_poll_at for all users we are about to fetch so the next tick does not re-enqueue them
+        const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
+        const authIdsToReserve = usersToFetch.map((u) => u?.auth_id).filter(Boolean);
+        if (authIdsToReserve.length > 0) {
+          this.masterDb.updateNextPollAtBatch(authIdsToReserve, reserveUntil);
+        }
+
+        logger.info('Polling users (unified fetch-then-process per user)', {
+          dueCount: usersToFetch.length,
+          maxConcurrentPolls: this.maxConcurrentPolls,
+          perUserTimeoutSeconds: this.pollKickoutMs / 1000,
         });
-        return;
-      }
 
-      // Reserve next_poll_at for all users we are about to fetch so the next tick does not re-enqueue them
-      const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
-      const authIdsToReserve = usersToFetch.map((u) => u?.auth_id).filter(Boolean);
-      if (authIdsToReserve.length > 0) {
-        this.masterDb.updateNextPollAtBatch(authIdsToReserve, reserveUntil);
-      }
+        if (usersToFetch.length >= 20) {
+          logger.warn('PollDueUsers: large due list', { dueCount: usersToFetch.length });
+        }
 
-      logger.info('Polling users (unified fetch-then-process per user)', {
-        dueCount: usersToFetch.length,
-        maxConcurrentPolls: this.maxConcurrentPolls,
-        perUserTimeoutSeconds: this.pollKickoutMs / 1000,
-      });
+        logger.debug('Found users due for polling', {
+          count: usersToFetch.length,
+          authIds: usersToFetch.map((u) => u?.auth_id).filter(Boolean),
+        });
 
-      if (usersToFetch.length >= 20) {
-        logger.warn('PollDueUsers: large due list', { dueCount: usersToFetch.length });
-      }
+        const counters = { success: 0, skipped: 0, error: 0 };
+        const pollSem = this.pollSemaphore;
+        const processSem = this.processSemaphore;
+        if (!pollSem) {
+          return;
+        }
 
-      logger.debug('Found users due for polling', {
-        count: usersToFetch.length,
-        authIds: usersToFetch.map((u) => u?.auth_id).filter(Boolean),
-      });
+        const userQueue = [...usersToFetch];
+        const worker = async () => {
+          while (userQueue.length > 0) {
+            const user = userQueue.shift();
+            if (!user?.auth_id) continue;
 
-      const counters = { success: 0, skipped: 0, error: 0 };
-      const pollSem = this.pollSemaphore;
-      const processSem = this.processSemaphore;
-      if (!pollSem) {
-        return;
-      }
-
-      const userQueue = [...usersToFetch];
-      const worker = async () => {
-        while (userQueue.length > 0) {
-          const user = userQueue.shift();
-          if (!user?.auth_id) continue;
-
-          await pollSem.acquire();
-          try {
-            const result = await this.fetchTorrentsForUser(user, null);
-            if (result.error) {
-              counters.error++;
-              if (result.error.isConnectionError) {
-                this.handleConnectionError(result.user.auth_id, 0);
-              } else if (result.error.isAuthError || result.error.name === 'AuthenticationError') {
-                this.handlePollError(result.user.auth_id, result.error, 0);
-              } else {
-                this.handlePollError(result.user.auth_id, result.error, 0);
-              }
-              continue;
-            }
-            if (!result.torrents) continue;
-
-            const auth_id = result.user.auth_id;
-            if (!processSem) {
-              await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
-                callerHoldsPipelineMutex: false,
-              });
-              continue;
-            }
+            const auth_id = user.auth_id;
             const pipelineMutex = this.getPipelineMutex(auth_id);
             await pipelineMutex.acquire();
-            await processSem.acquire();
+            await pollSem.acquire();
             try {
-              await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
-                callerHoldsPipelineMutex: true,
-              });
+              const result = await this.fetchTorrentsForUser(user, null);
+              if (result.error) {
+                counters.error++;
+                if (result.error.isConnectionError) {
+                  this.handleConnectionError(result.user.auth_id, 0);
+                } else if (result.error.isPlanRestrictedFeature === true) {
+                  await this.handlePlanRestrictedPollFailure(result.user.auth_id);
+                  this.handlePollError(result.user.auth_id, result.error, 0);
+                } else if (result.error.isAuthError || result.error.name === 'AuthenticationError') {
+                  this.handlePollError(result.user.auth_id, result.error, 0);
+                } else {
+                  this.handlePollError(result.user.auth_id, result.error, 0);
+                }
+                continue;
+              }
+              if (!result.torrents) continue;
+
+              if (!processSem) {
+                await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
+                  callerHoldsPipelineMutex: true,
+                });
+                continue;
+              }
+              await processSem.acquire();
+              try {
+                await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
+                  callerHoldsPipelineMutex: true,
+                });
+              } finally {
+                processSem.release();
+              }
+            } catch (err) {
+              counters.error++;
+              this.handlePollError(user?.auth_id, err, 0);
             } finally {
-              processSem.release();
+              pollSem.release();
               pipelineMutex.release();
               if (pipelineMutex.isEmpty()) {
                 this.pipelineMutexes.delete(auth_id);
               }
             }
-          } catch (err) {
-            counters.error++;
-            this.handlePollError(user?.auth_id, err, 0);
-          } finally {
-            pollSem.release();
           }
-        }
-      };
+        };
 
-      const workerCount = Math.min(this.maxConcurrentPolls, userQueue.length);
-      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+        const workerCount = Math.min(this.maxConcurrentPolls, userQueue.length);
+        await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
-      this.metrics.totalPolls += usersToFetch.length;
-      const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
-      logger.info('Poll cycle completed', {
-        totalUsers: usersToFetch.length,
-        successCount: counters.success,
-        skippedCount: counters.skipped,
-        errorCount: counters.error,
-        totalDuration: `${totalDuration}s`,
-      });
-    } catch (error) {
-      const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
-      logger.error('Error in pollDueUsers', error, {
-        duration: `${totalDuration}s`,
-        errorMessage: error.message,
-        errorStack: error.stack,
-      });
+        this.metrics.totalPolls += usersToFetch.length;
+        const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
+        logger.info('Poll cycle completed', {
+          totalUsers: usersToFetch.length,
+          successCount: counters.success,
+          skippedCount: counters.skipped,
+          errorCount: counters.error,
+          totalDuration: `${totalDuration}s`,
+        });
+      } catch (error) {
+        const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
+        logger.error('Error in pollDueUsers', error, {
+          duration: `${totalDuration}s`,
+          errorMessage: error.message,
+          errorStack: error.stack,
+        });
+      }
+    } finally {
+      this._pollCheckInProgress = false;
     }
   }
 
