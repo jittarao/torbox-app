@@ -157,6 +157,10 @@ class PollingScheduler {
     this._refreshCount = 0;
     /** Prevents overlapping pollDueUsers() invocations from setInterval when a cycle exceeds pollCheckInterval */
     this._pollCheckInProgress = false;
+    /** When the current pollDueUsers cycle started (for stuck-cycle safety net) */
+    this._pollCycleStartedAt = null;
+    /** Bumped when a poll cycle starts or is force-abandoned so stale finally blocks do not clear the lock */
+    this._pollDueUsersTicket = 0;
 
     // Metrics
     this.metrics = {
@@ -217,12 +221,20 @@ class PollingScheduler {
    * Use so manual execution does not race with scheduled poll on shadow state.
    * @param {string} authId - User authentication ID
    * @param {Function} operation - Async function to run
+   * @param {number} [timeoutMs] - If set, operation is aborted after this many ms so the mutex is always released
    * @returns {Promise<*>} Result of operation()
    */
-  async runWithPipelineLock(authId, operation) {
+  async runWithPipelineLock(authId, operation, timeoutMs = null) {
     const mutex = this.getPipelineMutex(authId);
     await mutex.acquire();
     try {
+      if (timeoutMs != null && timeoutMs > 0) {
+        return await withTimeout(
+          operation(),
+          timeoutMs,
+          `Pipeline lock operation timed out after ${timeoutMs / 1000}s`
+        );
+      }
       return await operation();
     } finally {
       mutex.release();
@@ -846,9 +858,14 @@ class PollingScheduler {
     await mutex.acquire();
     try {
       const engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
-      const { successCount, errorCount } = await engine.ruleExecutor.executeActions(
-        rule,
-        torrentsToProcess
+      const actionBatchTimeoutMs = Math.max(
+        1000,
+        parseInt(process.env.ACTION_BATCH_TIMEOUT_MS || String(this.pollKickoutMs), 10)
+      );
+      const { successCount, errorCount } = await withTimeout(
+        engine.ruleExecutor.executeActions(rule, torrentsToProcess),
+        actionBatchTimeoutMs,
+        `Action batch timed out after ${actionBatchTimeoutMs / 1000}s`
       );
       if (successCount > 0) {
         await engine.ruleRepository.recordExecution(
@@ -868,6 +885,7 @@ class PollingScheduler {
         torrentCount: torrentsToProcess.length,
         errorMessage: error.message,
       });
+      throw error;
     } finally {
       mutex.release();
       if (mutex.isEmpty()) {
@@ -1008,10 +1026,29 @@ class PollingScheduler {
     }
 
     if (this._pollCheckInProgress) {
+      const maxCycleMs = this._getMaxPollCycleMs();
+      if (
+        this._pollCycleStartedAt != null &&
+        Date.now() - this._pollCycleStartedAt > maxCycleMs
+      ) {
+        logger.error('CRITICAL: pollDueUsers cycle exceeded max duration; resetting lock', {
+          maxCycleMs,
+          stuckForMs: Date.now() - this._pollCycleStartedAt,
+        });
+        this._pollDueUsersTicket++;
+        this._pollCheckInProgress = false;
+        this._pollCycleStartedAt = null;
+        // Do not start a new cycle in this tick — the previous async cycle may still be suspended.
+        // The next interval can enter normally; operation timeouts reduce indefinite stalls.
+        return;
+      }
       logger.debug('Skipping pollDueUsers - previous cycle still in progress');
       return;
     }
+    this._pollDueUsersTicket++;
+    const pollDueUsersTicket = this._pollDueUsersTicket;
     this._pollCheckInProgress = true;
+    this._pollCycleStartedAt = Date.now();
 
     try {
       if (this.shouldRunCleanup()) {
@@ -1149,8 +1186,27 @@ class PollingScheduler {
         });
       }
     } finally {
-      this._pollCheckInProgress = false;
+      if (this._pollDueUsersTicket === pollDueUsersTicket) {
+        this._pollCheckInProgress = false;
+        this._pollCycleStartedAt = null;
+      }
     }
+  }
+
+  /**
+   * Upper bound on pollDueUsers wall-clock before we assume the cycle is stuck and reset _pollCheckInProgress.
+   * @returns {number}
+   * @private
+   */
+  _getMaxPollCycleMs() {
+    const fromEnv = parseInt(process.env.MAX_POLL_CYCLE_MS || '', 10);
+    if (!Number.isNaN(fromEnv) && fromEnv > 0) {
+      return fromEnv;
+    }
+    return Math.max(
+      this.pollKickoutMs * 2,
+      this.maxConcurrentPolls * this.pollKickoutMs
+    );
   }
 
   /**

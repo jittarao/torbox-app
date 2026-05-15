@@ -262,7 +262,11 @@ export function setupAutomationRoutes(app, backend) {
         }
         const runRule = () => engine.runRuleManually(ruleId);
         const result = backend.pollingScheduler
-          ? await backend.pollingScheduler.runWithPipelineLock(authId, runRule)
+          ? await backend.pollingScheduler.runWithPipelineLock(
+              authId,
+              runRule,
+              backend.pollingScheduler.pollKickoutMs
+            )
           : await runRule();
         res.json({ success: true, result });
       } catch (error) {
