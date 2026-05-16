@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
+import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
 import NotificationPanel from './NotificationPanel';
 
 export default function NotificationBell({ apiKey }) {
@@ -60,8 +61,7 @@ export default function NotificationBell({ apiKey }) {
         )}
       </button>
 
-      {/* Mobile full-screen panel */}
-      {isOpen && (
+      <HeaderOverlayPortal open={isOpen}>
         <div className="md:hidden">
           <NotificationPanel
             apiKey={apiKey}
@@ -69,7 +69,7 @@ export default function NotificationBell({ apiKey }) {
             variant="mobile"
           />
         </div>
-      )}
+      </HeaderOverlayPortal>
 
       {/* Desktop dropdown */}
       <HeaderDropdownPanel

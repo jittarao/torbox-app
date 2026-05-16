@@ -157,6 +157,15 @@ select option {
       dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.95)];
   }
 
+  .ui-dropdown-panel-floating {
+    @apply isolate overflow-hidden rounded-xl
+      border border-zinc-300 bg-white py-1.5
+      shadow-[0_20px_50px_-16px_rgba(0,0,0,0.55)]
+      pointer-events-auto
+      dark:border-zinc-600 dark:bg-[#1a1a1d]
+      dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.95)];
+  }
+
   .ui-dropdown-panel--open {
     animation: ui-dropdown-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
