@@ -33,9 +33,9 @@ export default function LanguageSwitcher({ compact = false }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current?.contains(event.target)) return;
+      if (event.target.closest('[data-header-dropdown-panel]')) return;
+      setIsOpen(false);
     };
 
     const handleResize = () => {
@@ -102,7 +102,7 @@ export default function LanguageSwitcher({ compact = false }) {
         </svg>
       </button>
 
-      <HeaderDropdownPanel open={isOpen}>
+      <HeaderDropdownPanel open={isOpen} onBackdropClick={() => setIsOpen(false)}>
         {Object.entries(languages).map(([code, { name, flag }]) => (
           <button
             key={code}

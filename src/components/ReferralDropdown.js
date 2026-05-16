@@ -14,9 +14,9 @@ export default function ReferralDropdown() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current?.contains(event.target)) return;
+      if (event.target.closest('[data-header-dropdown-panel]')) return;
+      setIsOpen(false);
     };
 
     const handleResize = () => {
@@ -77,6 +77,7 @@ export default function ReferralDropdown() {
         open={isOpen}
         widthClass="w-80 max-w-[calc(100vw-2rem)]"
         className="!py-0"
+        onBackdropClick={() => setIsOpen(false)}
       >
         <div className="ui-dropdown-header">
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
