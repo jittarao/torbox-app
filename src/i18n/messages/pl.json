@@ -874,21 +874,58 @@
   },
   "SystemStatus": {
     "error": "Błąd",
+    "fullStatusPage": "Pełny status",
     "hoursAgo": "{hours} godzin temu",
     "justNow": "Właśnie teraz",
     "lastCheck": "Ostatnie sprawdzenie",
     "minutesAgo": "{minutes} minut temu",
     "never": "Nigdy",
-    "refreshStatus": "Odśwież status systemu",
+    "refreshStatus": "Kliknij, aby odświeżyć",
+    "responseTime": "{ms} ms",
+    "uptime": {
+      "barLabel": "Historia {label}, {percent}% dostępności",
+      "collecting": "Zbieranie danych…",
+      "daysAgo": "{days} d. temu",
+      "historyNote": "Paski pokazują sprawdzenia w tej przeglądarce (~1 min). Oficjalna historia na stronie statusu.",
+      "percent": "{percent}% dostępności",
+      "segment": {
+        "degraded": "Wolna odpowiedź",
+        "down": "Niedostępny",
+        "empty": "Brak danych",
+        "nodata": "Nie sprawdzono",
+        "unknown": "Nieznany",
+        "up": "Działa"
+      }
+    },
+    "rows": {
+      "app": { "label": "Ta aplikacja" },
+      "backend": { "label": "Backend self-hosted" },
+      "connection": { "label": "Twój klucz API" },
+      "platform": { "label": "Platforma TorBox" },
+      "status": {
+        "checking": "Sprawdzanie…",
+        "invalidKey": "Nieprawidłowy klucz API",
+        "issue": "Wykryto problem",
+        "notConfigured": "Nie skonfigurowano",
+        "operational": "Działa",
+        "unavailable": "Niedostępny"
+      }
+    },
     "status": {
-      "apiUnhealthy": "Problem z połączeniem API",
-      "apiUnhealthyDescription": "API TorBox nie odpowiada prawidłowo",
-      "healthy": "System zdrowy",
-      "healthyDescription": "Wszystkie systemy działają normalnie",
+      "apiUnhealthy": "Problem z połączeniem",
+      "apiUnhealthyDescription": "Nie można połączyć z TorBox przy użyciu klucza API",
+      "backendUnhealthy": "Problem z backendem",
+      "backendUnhealthyDescription": "Backend self-hosted nie odpowiada",
+      "healthy": "Wszystkie systemy działają",
+      "healthyDescription": "Aplikacja, platforma i klucz API są połączone",
+      "invalidKey": "Nieprawidłowy klucz API",
+      "invalidKeyDescription": "Klucz API został odrzucony. Zaktualizuj go w ustawieniach",
       "noApiKey": "Brak klucza API",
-      "noApiKeyDescription": "Klucz API jest wymagany do sprawdzenia połączenia z TorBox",
-      "unhealthy": "System niezdrowy",
-      "unhealthyDescription": "Lokalna aplikacja ma problemy",
+      "noApiKeyDescription": "Zaloguj się kluczem API TorBox",
+      "platformUnhealthy": "Problem platformy TorBox",
+      "platformUnhealthyDescription": "Usługi TorBox mogą być niedostępne",
+      "unhealthy": "Problem aplikacji",
+      "unhealthyDescription": "Ta aplikacja nie odpowiada prawidłowo",
       "unknown": "Status nieznany",
       "unknownDescription": "Nie można określić statusu systemu"
     }

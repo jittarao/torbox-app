@@ -1,156 +1,192 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useApiHealth } from './hooks/useApiHealth';
 import { useHealthStore } from '@/store/healthStore';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
+import SystemStatusPanel from '@/components/shared/SystemStatusPanel';
 import Icons from '@/components/icons';
 
-const HEALTH_CHECK_INTERVAL = 60000; // 60 seconds
+const HEALTH_CHECK_INTERVAL = 60000;
 
 export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const t = useTranslations('SystemStatus');
-  const [showTooltip, setShowTooltip] = useState(false);
-  const { overallStatus, lastCheck, error, refreshHealth, isLoading } = useApiHealth(apiKey);
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef(null);
+  const {
+    overallStatus,
+    lastCheck,
+    error,
+    refreshHealth,
+    isLoading,
+    platformHealth,
+    connectionHealth,
+    showBackend,
+    platformHistory,
+  } = useApiHealth(apiKey);
   const { performHealthCheck } = useHealthStore();
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
-    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
+    Object.values(state.pauseReasons).some((isPaused) => isPaused === true),
   );
 
-  // Start health checks once when component mounts
   useEffect(() => {
-    if (apiKey) {
-      // Perform initial health check
+    performHealthCheck(apiKey);
+
+    const interval = setInterval(() => {
+      if (isPollingPaused()) return;
       performHealthCheck(apiKey);
+    }, HEALTH_CHECK_INTERVAL);
 
-      // Set up periodic health checks
-      const interval = setInterval(() => {
-        // Check if polling is paused (e.g., video player is open)
-        if (isPollingPaused()) {
-          return;
-        }
-        performHealthCheck(apiKey);
-      }, HEALTH_CHECK_INTERVAL);
+    return () => clearInterval(interval);
+  }, [apiKey, performHealthCheck, pollingPaused, isPollingPaused]);
 
-      return () => {
-        clearInterval(interval);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, performHealthCheck, pollingPaused]);
+  useEffect(() => {
+    if (!isOpen) return;
 
-  // Status configuration
+    const handlePointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
+
   const statusConfig = {
     healthy: {
-      color: 'bg-green-500',
-      borderColor: 'border-green-500',
-      textColor: 'text-green-500',
       icon: Icons.CheckCircle,
+      iconClass: 'text-emerald-500 dark:text-emerald-400',
+      dotClass: 'bg-emerald-500',
       label: t('status.healthy'),
-      description: t('status.healthyDescription')
+      description: t('status.healthyDescription'),
+    },
+    'invalid-key': {
+      icon: Icons.Key,
+      iconClass: 'text-red-500 dark:text-red-400',
+      dotClass: 'bg-red-500',
+      label: t('status.invalidKey'),
+      description: t('status.invalidKeyDescription'),
     },
     'api-unhealthy': {
-      color: 'bg-yellow-500',
-      borderColor: 'border-yellow-500',
-      textColor: 'text-yellow-500',
       icon: Icons.ExclamationTriangle,
+      iconClass: 'text-amber-500 dark:text-amber-400',
+      dotClass: 'bg-amber-500',
       label: t('status.apiUnhealthy'),
-      description: t('status.apiUnhealthyDescription')
+      description: t('status.apiUnhealthyDescription'),
+    },
+    'platform-unhealthy': {
+      icon: Icons.ExclamationTriangle,
+      iconClass: 'text-amber-500 dark:text-amber-400',
+      dotClass: 'bg-amber-500',
+      label: t('status.platformUnhealthy'),
+      description: t('status.platformUnhealthyDescription'),
+    },
+    'backend-unhealthy': {
+      icon: Icons.ExclamationTriangle,
+      iconClass: 'text-amber-500 dark:text-amber-400',
+      dotClass: 'bg-amber-500',
+      label: t('status.backendUnhealthy'),
+      description: t('status.backendUnhealthyDescription'),
     },
     'no-api-key': {
-      color: 'bg-gray-400',
-      borderColor: 'border-gray-400',
-      textColor: 'text-gray-400',
       icon: Icons.Key,
+      iconClass: 'text-zinc-400',
+      dotClass: 'bg-zinc-500',
       label: t('status.noApiKey'),
-      description: t('status.noApiKeyDescription')
-    },
-    unhealthy: {
-      color: 'bg-red-500',
-      borderColor: 'border-red-500',
-      textColor: 'text-red-500',
-      icon: Icons.XCircle,
-      label: t('status.unhealthy'),
-      description: t('status.unhealthyDescription')
+      description: t('status.noApiKeyDescription'),
     },
     unknown: {
-      color: 'bg-gray-400',
-      borderColor: 'border-gray-400',
-      textColor: 'text-gray-400',
       icon: Icons.QuestionMarkCircle,
+      iconClass: 'text-zinc-400',
+      dotClass: 'bg-zinc-500',
       label: t('status.unknown'),
-      description: t('status.unknownDescription')
-    }
+      description: t('status.unknownDescription'),
+    },
   };
 
   const config = statusConfig[overallStatus] || statusConfig.unknown;
   const IconComponent = config.icon;
 
-  const formatLastCheck = (date) => {
-    if (!date) return t('never');
-    const now = new Date();
-    const diff = now - date;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    
-    if (seconds < 60) return t('justNow');
-    if (minutes < 60) return t('minutesAgo', { minutes });
-    return t('hoursAgo', { hours: Math.floor(minutes / 60) });
+  const handleToggle = useCallback(() => {
+    setIsOpen((open) => !open);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    refreshHealth();
+  }, [isOpen, refreshHealth]);
+
+  const panelProps = {
+    apiKey,
+    config,
+    overallStatus,
+    lastCheck,
+    error,
+    platformHealth,
+    connectionHealth,
+    showBackend,
+    platformHistory,
+    onRefresh: refreshHealth,
   };
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Status indicator */}
+    <div ref={rootRef} className={`relative shrink-0 ${className}`}>
       <button
-        onClick={refreshHealth}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        className={`
-          relative flex items-center justify-center w-6 h-6
-          hover:opacity-80 transition-opacity duration-200
-          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-          ${isLoading ? 'animate-pulse' : ''}
-        `}
+        type="button"
+        onClick={handleToggle}
+        className={`ui-dropdown-icon-btn ${isLoading ? 'animate-pulse' : ''}`}
         aria-label={t('refreshStatus')}
-        disabled={isLoading}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
       >
         {isLoading ? (
-          <div className="w-4 h-4 border-2 border-gray-400 dark:border-gray-300 border-t-transparent rounded-full animate-spin" />
+          <span className="h-4 w-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
         ) : (
-          <IconComponent className={`w-4 h-4 ${config.textColor}`} />
+          <IconComponent className={`h-5 w-5 ${config.iconClass}`} />
         )}
       </button>
 
-      {/* Tooltip */}
-      {showTooltip && (
-        <div className="absolute top-full right-0 mt-2 w-64 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-          <div className="flex items-start space-x-2">
-            <div className={`flex-shrink-0 w-3 h-3 rounded-full ${config.color}`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {config.label}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {config.description}
-              </p>
-              {error && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-                  {t('error')}: {error}
-                </p>
-              )}
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                {t('lastCheck')}: {formatLastCheck(lastCheck)}
-              </p>
-              
-
+      {isOpen && (
+        <div className="md:hidden">
+          <div className="fixed inset-0 z-[100] bg-black/60" onClick={() => setIsOpen(false)} aria-hidden />
+          <div className="fixed inset-0 z-[101] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
+            <div
+              className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-2xl dark:border-zinc-600 dark:bg-[#242428]"
+              role="dialog"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="overflow-y-auto overflow-x-hidden min-h-0 flex-1">
+                <SystemStatusPanel {...panelProps} />
+              </div>
             </div>
           </div>
-          {/* Tooltip arrow */}
-          <div className="absolute bottom-full right-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-200 dark:border-b-gray-700" />
         </div>
       )}
+
+      <HeaderDropdownPanel
+        open={isOpen}
+        widthClass="w-[min(20rem,calc(100vw-2rem))]"
+        className="!py-0 hidden md:flex md:flex-col max-h-[min(32rem,calc(100vh-5rem))] overflow-hidden"
+      >
+        <div className="overflow-y-auto overflow-x-hidden min-h-0">
+          <SystemStatusPanel {...panelProps} />
+        </div>
+      </HeaderDropdownPanel>
     </div>
   );
 }

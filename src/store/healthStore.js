@@ -1,65 +1,99 @@
 import { create } from 'zustand';
 
-const API_HEALTH_TIMEOUT = 5000; // 5 seconds
+import {
+  appendHistoryEntry,
+  loadHealthHistory,
+  saveHealthHistory,
+  statusToSegment,
+} from '@/utils/healthHistory';
+
+const HEALTH_TIMEOUT_MS = 10000;
+
+const initialCheckState = () => ({
+  status: 'unknown',
+  message: null,
+  responseTime: null,
+});
 
 export const useHealthStore = create((set, get) => ({
-  localHealth: 'unknown',
-  apiHealth: 'unknown',
+  platformHealth: initialCheckState(),
+  connectionHealth: initialCheckState(),
+  backendHealth: initialCheckState(),
   lastCheck: null,
-  error: null,
   currentApiKey: null,
   checkingHealth: false,
+  historyLoaded: false,
+  platformHistory: [],
 
-  // Reset health when API key changes
+  loadHistory: () => {
+    if (get().historyLoaded) {
+      return;
+    }
+    set({
+      historyLoaded: true,
+      platformHistory: loadHealthHistory(),
+    });
+  },
+
+  recordPlatformSnapshot: () => {
+    const { platformHealth, platformHistory } = get();
+    const nextPlatform = appendHistoryEntry(
+      platformHistory,
+      statusToSegment(platformHealth.status, platformHealth.responseTime),
+    );
+
+    saveHealthHistory(nextPlatform);
+    set({ platformHistory: nextPlatform });
+  },
+
   setApiKey: (apiKey) => {
     const { currentApiKey } = get();
     if (currentApiKey !== apiKey) {
       set({
         currentApiKey: apiKey,
-        apiHealth: 'unknown',
-        error: null,
+        connectionHealth: initialCheckState(),
       });
     }
   },
 
-  // Check local application health
-  checkLocalHealth: async () => {
+  checkPlatformHealth: async () => {
     try {
-      const response = await fetch('/api/health', {
+      const response = await fetch('/api/health/platform', {
         method: 'GET',
-        signal: AbortSignal.timeout(API_HEALTH_TIMEOUT),
+        signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        set({
-          localHealth: data.status === 'healthy' ? 'healthy' : 'unhealthy',
-          error: null,
-        });
-      } else {
-        set({
-          localHealth: 'unhealthy',
-          error: 'Local health check failed',
-        });
-      }
+      const data = await response.json().catch(() => ({}));
+      set({
+        platformHealth: {
+          status: data.status === 'healthy' ? 'healthy' : 'unhealthy',
+          message: data.status === 'healthy' ? null : data.message,
+          responseTime: data.responseTime ?? null,
+        },
+      });
     } catch (err) {
       set({
-        localHealth: 'unhealthy',
-        error: err.message,
+        platformHealth: {
+          status: 'unhealthy',
+          message: err.message,
+          responseTime: null,
+        },
       });
     }
   },
 
-  // Check TorBox API health (only if we have an API key)
-  checkApiHealth: async (apiKey) => {
+  checkConnectionHealth: async (apiKey) => {
     if (!apiKey) {
-      set({ apiHealth: 'no-key' });
+      set({
+        connectionHealth: {
+          status: 'no-key',
+          message: null,
+          responseTime: null,
+        },
+      });
       return;
     }
 
-    const { currentApiKey } = get();
-
-    // Update API key in store (this will reset apiHealth if changed)
     get().setApiKey(apiKey);
 
     try {
@@ -68,40 +102,78 @@ export const useHealthStore = create((set, get) => ({
         headers: {
           'x-api-key': apiKey,
         },
-        signal: AbortSignal.timeout(API_HEALTH_TIMEOUT),
+        signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
+
       if (get().currentApiKey !== apiKey) {
         return;
       }
 
-      if (response.ok) {
-        const data = await response.json();
-        set({
-          apiHealth: data.status,
-          error: data.status === 'healthy' ? null : data.message,
-        });
-      } else {
-        set({
-          apiHealth: 'unhealthy',
-          error: 'Failed to check TorBox API health',
-        });
-      }
+      const data = await response.json().catch(() => ({}));
+      const status = data.status || 'unhealthy';
+
+      set({
+        connectionHealth: {
+          status,
+          message: status === 'healthy' ? null : data.message,
+          responseTime: data.responseTime ?? null,
+        },
+      });
     } catch (err) {
       if (get().currentApiKey !== apiKey) {
         return;
       }
       set({
-        apiHealth: 'unhealthy',
-        error: err.message,
+        connectionHealth: {
+          status: 'unhealthy',
+          message: err.message,
+          responseTime: null,
+        },
       });
     }
   },
 
-  // Combined health check
+  checkBackendHealth: async () => {
+    try {
+      const response = await fetch('/api/backend/status', {
+        method: 'GET',
+        signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (data.available) {
+        set({
+          backendHealth: {
+            status: 'healthy',
+            message: null,
+            responseTime: null,
+          },
+        });
+        return;
+      }
+
+      set({
+        backendHealth: {
+          status: 'unavailable',
+          message: null,
+          responseTime: null,
+        },
+      });
+    } catch (err) {
+      set({
+        backendHealth: {
+          status: 'unavailable',
+          message: err.message,
+          responseTime: null,
+        },
+      });
+    }
+  },
+
   performHealthCheck: async (apiKey) => {
     const { checkingHealth } = get();
 
-    // Prevent duplicate concurrent calls
     if (checkingHealth) {
       return;
     }
@@ -109,12 +181,13 @@ export const useHealthStore = create((set, get) => ({
     set({ lastCheck: new Date(), checkingHealth: true });
 
     try {
-      // Check both local and API health in parallel
       await Promise.all([
-        get().checkLocalHealth(),
-        get().checkApiHealth(apiKey),
+        get().checkPlatformHealth(),
+        get().checkConnectionHealth(apiKey),
+        get().checkBackendHealth(),
       ]);
     } finally {
+      get().recordPlatformSnapshot();
       set({ checkingHealth: false });
     }
   },
