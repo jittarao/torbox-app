@@ -10,40 +10,40 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1c3017', // Main menu bg
-          border: '#374832', // Main menu border
-          hover: '#243d1d',
+          DEFAULT: '#18181b',
+          border: '#e4e4e7',
+          hover: '#27272a',
           text: {
-            DEFAULT: '#1F321A', // Normal text
-            dark: '#E5E7EB', // Dark mode text - lighter gray
+            DEFAULT: '#18181b',
+            dark: '#e4e4e7',
           },
         },
         accent: {
           DEFAULT: '#f2761e', // Action buttons/links
-          dark: '#60A5FA', // Dark mode accent - nice blue
+          dark: '#f59e0b', // Dark mode accent - amber (matches landing)
         },
         surface: {
-          DEFAULT: '#FFFBEF', // Main layout bg
-          dark: '#111827', // Dark mode bg - deep gray
+          DEFAULT: '#fafafa',
+          dark: '#0f0f10',
           alt: {
-            DEFAULT: '#EEE8D5', // Table header bg
-            dark: '#0c141e', // Dark mode alt bg - slightly lighter
+            DEFAULT: '#f4f4f5',
+            dark: '#161618',
             hover: {
-              DEFAULT: '#f5f1e5',
-              dark: '#151f32',
+              DEFAULT: '#e4e4e7',
+              dark: '#1c1c1f',
             },
             selected: {
-              DEFAULT: '#efeadc',
-              dark: '#090f18',
+              DEFAULT: '#e4e4e7',
+              dark: '#121214',
               hover: {
-                DEFAULT: '#efe8d7',
-                dark: '#0c1420',
+                DEFAULT: '#d4d4d8',
+                dark: '#18181b',
               },
             },
           },
           hover: {
-            DEFAULT: '#f2761e07', // Changed to warm cream color
-            dark: '#111827', // Dark mode hover - medium gray
+            DEFAULT: '#f2761e07',
+            dark: '#0f0f10',
           },
         },
         border: {

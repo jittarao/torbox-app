@@ -166,7 +166,7 @@ export default function LandingPage({ onKeyChange }) {
             >
               {t('apiKeyInput.title')}
             </h2>
-            <ApiKeyInput onKeyChange={onKeyChange} />
+            <ApiKeyInput onKeyChange={onKeyChange} variant="landing" />
             <p className="mt-5 text-sm text-zinc-500 text-center">
               {t('apiKeyInput.description')}{' '}
               <a
@@ -227,7 +227,7 @@ export default function LandingPage({ onKeyChange }) {
                 setShowCopied(true);
                 setTimeout(() => setShowCopied(false), 2000);
               }}
-              className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+              className="ui-btn-ghost !inline-flex !py-1.5 !px-3 !text-xs align-middle ml-1"
             >
               {showCopied ? referralT('copied') : referralT('copyCode')}
             </button>

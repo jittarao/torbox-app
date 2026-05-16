@@ -11,7 +11,9 @@ export default function ApiKeyInput({
   value,
   onKeyChange,
   allowKeyManager = false,
+  variant = 'default',
 }) {
+  const isLanding = variant === 'landing';
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const [showManager, setShowManager] = useState(false);
@@ -88,21 +90,26 @@ export default function ApiKeyInput({
             value={displayValue}
             onChange={handleInputChange}
             placeholder={t('placeholder')}
-            className="w-full px-3 py-2 pr-12 md:p-3 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
+            className={
+              isLanding
+                ? 'ui-input-landing pr-12 md:p-3 md:text-base'
+                : `w-full px-3 py-2 pr-12 md:p-3 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
               bg-transparent text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
               focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
               focus:border-accent dark:focus:border-accent-dark
-              transition-colors"
+              transition-colors`
+            }
             autoComplete="off"
           />
           <button
             type="button"
             onClick={() => setShowKey(!showKey)}
-            className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 text-primary-text/50 
-              dark:text-primary-text-dark/50 hover:text-primary-text 
-              dark:hover:text-primary-text-dark transition-colors
-              p-2 touch-manipulation"
+            className={`absolute right-2 md:right-3 top-1/2 -translate-y-1/2 p-2 touch-manipulation transition-colors ${
+              isLanding
+                ? 'text-zinc-500 hover:text-amber-300'
+                : 'text-primary-text/50 dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark'
+            }`}
             aria-label={showKey ? t('hide') : t('show')}
           >
             {showKey ? <Icons.Eye /> : <Icons.EyeOff />}

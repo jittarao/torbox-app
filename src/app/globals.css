@@ -3,21 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --background: #FFFBEF;
-  --foreground: #1f321a;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c1708;
-    --foreground: #FFFBEF;
-  }
+  --background: #fafafa;
+  --foreground: #18181b;
+  --landing-bg: #0a0a0b;
 }
 
 @layer base {
   .dark {
-    --background: #0c1708;
-    --foreground: #FFFBEF;
+    --background: var(--landing-bg);
+    --foreground: #fafafa;
+    color-scheme: dark;
   }
 }
 
@@ -41,13 +36,13 @@ body {
 
 /* Fix select and option styling for dark mode, especially in Firefox */
 select {
-  background-color: #FFFBEF;
-  color: #1F321A;
+  background-color: #fafafa;
+  color: #18181b;
 }
 
 select option {
-  background-color: #FFFBEF;
-  color: #1F321A;
+  background-color: #fafafa;
+  color: #18181b;
 }
 
 .dark select {
@@ -78,6 +73,208 @@ select option {
   }
   to {
     opacity: 1;
+  }
+}
+
+@layer components {
+  .ui-header-icon-btn {
+    @apply inline-flex items-center justify-center h-9 w-9 min-w-9 shrink-0 rounded-lg
+      border-0 bg-transparent text-zinc-600
+      transition-colors duration-200
+      hover:bg-zinc-200 hover:text-amber-700
+      active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-500/40
+      dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-amber-200;
+  }
+
+  .ui-icon-btn {
+    @apply ui-header-icon-btn;
+  }
+
+  .ui-header-nav {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium
+      text-zinc-600 transition-colors duration-200
+      hover:bg-zinc-100 hover:text-zinc-900
+      lg:gap-2 lg:rounded-xl lg:px-3
+      dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-white;
+  }
+
+  .ui-header-nav-active {
+    @apply ui-header-nav text-amber-700 bg-amber-500/15 lg:border lg:border-amber-500/30
+      dark:text-amber-400 dark:bg-amber-500/10 dark:lg:border-amber-500/25;
+  }
+
+  .ui-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
+      border-0 bg-zinc-100 text-zinc-700
+      transition-colors duration-200
+      hover:bg-zinc-200 hover:text-amber-700
+      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-500/40
+      dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:bg-zinc-700/80 dark:hover:text-amber-200;
+  }
+
+  .ui-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+      text-zinc-950 bg-gradient-to-b from-amber-400 to-amber-500
+      border border-amber-400/50 shadow-[0_0_28px_-6px_rgba(251,191,36,0.5)]
+      transition-all duration-200
+      hover:from-amber-300 hover:to-amber-400 hover:shadow-[0_0_32px_-4px_rgba(251,191,36,0.55)]
+      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-400/50;
+  }
+
+  .ui-input-landing {
+    @apply w-full rounded-xl border border-zinc-700/80 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-100
+      placeholder:text-zinc-600 backdrop-blur-sm
+      transition-all duration-200
+      focus:border-amber-500/50 focus:bg-zinc-950/80 focus:outline-none
+      focus:ring-2 focus:ring-amber-500/20;
+  }
+
+  .ui-theme-toggle {
+    @apply relative inline-flex h-9 w-[3.25rem] shrink-0 items-center rounded-lg
+      border border-zinc-200 bg-zinc-100 p-1
+      transition-colors duration-200
+      hover:bg-zinc-200
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      dark:border-0 dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80;
+  }
+
+  .ui-theme-toggle-knob {
+    @apply inline-flex h-6 w-6 items-center justify-center rounded-md
+      bg-white text-amber-600 shadow-sm transition-transform duration-200
+      translate-x-0
+      dark:translate-x-[1.15rem] dark:bg-zinc-950 dark:text-amber-300;
+  }
+
+  .ui-dropdown-panel {
+    @apply absolute right-0 z-[250] mt-2 origin-top-right isolate overflow-hidden rounded-xl
+      border border-zinc-300 bg-white py-1.5
+      shadow-[0_20px_50px_-16px_rgba(0,0,0,0.55)]
+      pointer-events-auto
+      dark:border-zinc-600 dark:bg-[#1a1a1d]
+      dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.95)];
+  }
+
+  .ui-dropdown-panel--open {
+    animation: ui-dropdown-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .ui-dropdown-panel--closing {
+    animation: ui-dropdown-out 0.18s ease-in forwards;
+    pointer-events: none;
+  }
+
+  .ui-dropdown-item {
+    @apply mx-1.5 flex w-[calc(100%-0.75rem)] items-center gap-3 rounded-lg px-3 py-2.5 text-sm
+      text-zinc-800 transition-colors duration-150
+      dark:text-zinc-200
+      hover:bg-zinc-200 hover:text-zinc-900
+      dark:hover:bg-zinc-700 dark:hover:text-zinc-50;
+  }
+
+  .ui-dropdown-item-active {
+    @apply ui-dropdown-item bg-amber-100 font-medium text-amber-900
+      dark:bg-amber-500/25 dark:text-amber-100;
+  }
+
+  .ui-dropdown-header {
+    @apply border-b border-zinc-200 bg-zinc-50 px-4 py-3
+      dark:border-zinc-600 dark:bg-[#222226];
+  }
+
+  .ui-dropdown-body {
+    @apply bg-white p-3 dark:bg-[#1a1a1d];
+  }
+
+  .ui-dropdown-panel-compact {
+    @apply ui-dropdown-panel w-64 !py-0;
+  }
+
+  .ui-dropdown-icon-btn {
+    @apply ui-header-icon-btn;
+  }
+
+  .ui-notification-item {
+    @apply border-l-2 px-3 py-2.5 transition-colors duration-150
+      hover:bg-zinc-200 dark:hover:bg-zinc-700;
+  }
+
+  .ui-notification-item-unread {
+    @apply ui-notification-item bg-zinc-100 dark:bg-[#2e2e32];
+  }
+
+  .ui-notification-item-read {
+    @apply ui-notification-item bg-white dark:bg-[#242428] opacity-75;
+  }
+
+  .status-uptime-bar {
+    display: flex;
+    gap: 1px;
+    height: 24px;
+    width: 100%;
+    min-width: 0;
+    align-items: stretch;
+  }
+
+  @media (min-width: 640px) {
+    .status-uptime-bar {
+      gap: 2px;
+      height: 28px;
+    }
+  }
+
+  .status-uptime-segment {
+    flex: 1 1 0;
+    min-width: 1px;
+    border-radius: 2px;
+  }
+
+  .status-uptime-segment--up {
+    @apply bg-emerald-500;
+  }
+
+  .status-uptime-segment--degraded {
+    @apply bg-amber-500;
+  }
+
+  .status-uptime-segment--down {
+    @apply bg-red-500;
+  }
+
+  .status-uptime-segment--nodata {
+    @apply bg-blue-500/70;
+  }
+
+  .status-uptime-segment--unknown {
+    @apply bg-zinc-500;
+  }
+
+  .status-uptime-segment--empty {
+    @apply bg-zinc-300 dark:bg-zinc-700/60;
+  }
+}
+
+@keyframes ui-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ui-dropdown-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
   }
 }
 

@@ -45,7 +45,8 @@ export function RootDocumentShell({ locale, children }) {
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-gray-900 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-zinc-50 dark:bg-[#0a0a0b] text-zinc-900 dark:text-zinc-100 antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>
