@@ -1,4 +1,5 @@
-import { parsePagination, sendSuccess, asyncHandler, getUserDatabaseSafe } from './helpers.js';
+import { parsePagination, sendSuccess, asyncHandler } from './helpers.js';
+import { mapUserDatabaseWork } from './concurrency.js';
 import logger from '../../utils/logger.js';
 
 /**
@@ -10,12 +11,8 @@ export function setupAutomationRoutes(router, backend) {
     '/automation/rules',
     asyncHandler(async (req, res) => {
       const activeUsers = backend.masterDatabase.getActiveUsers();
-      const allRules = [];
 
-      for (const user of activeUsers) {
-        const userDb = await getUserDatabaseSafe(backend, user.auth_id);
-        if (!userDb) continue;
-
+      const chunks = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
         try {
           const rules = userDb.db
             .prepare(
@@ -27,22 +24,21 @@ export function setupAutomationRoutes(router, backend) {
             )
             .all();
 
-          for (const rule of rules) {
-            allRules.push({
-              ...rule,
-              auth_id: user.auth_id,
-              key_name: user.key_name,
-            });
-          }
+          return rules.map((rule) => ({
+            ...rule,
+            auth_id: user.auth_id,
+            key_name: user.key_name,
+          }));
         } catch (error) {
           logger.warn('Error getting rules for user', {
             authId: user.auth_id,
             error: error.message,
           });
-        } finally {
-          backend.userDatabaseManager.releaseConnection(user.auth_id);
+          return [];
         }
-      }
+      });
+
+      const allRules = chunks.flatMap((c) => (Array.isArray(c) ? c : []));
 
       sendSuccess(res, { rules: allRules });
     })
@@ -63,12 +59,7 @@ export function setupAutomationRoutes(router, backend) {
           )
         : backend.masterDatabase.getActiveUsers();
 
-      const allExecutions = [];
-
-      for (const user of activeUsers) {
-        const userDb = await getUserDatabaseSafe(backend, user.auth_id);
-        if (!userDb) continue;
-
+      const chunks = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
         try {
           let query = `
           SELECT id, rule_id, rule_name, execution_type, items_processed, 
@@ -92,22 +83,21 @@ export function setupAutomationRoutes(router, backend) {
 
           const executions = userDb.db.prepare(query).all(...params);
 
-          for (const exec of executions) {
-            allExecutions.push({
-              ...exec,
-              auth_id: user.auth_id,
-              key_name: user.key_name,
-            });
-          }
+          return executions.map((exec) => ({
+            ...exec,
+            auth_id: user.auth_id,
+            key_name: user.key_name,
+          }));
         } catch (error) {
           logger.warn('Error getting executions for user', {
             authId: user.auth_id,
             error: error.message,
           });
-        } finally {
-          backend.userDatabaseManager.releaseConnection(user.auth_id);
+          return [];
         }
-      }
+      });
+
+      const allExecutions = chunks.flatMap((c) => (Array.isArray(c) ? c : []));
 
       // Sort by executed_at descending and limit
       allExecutions.sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
@@ -123,12 +113,8 @@ export function setupAutomationRoutes(router, backend) {
     asyncHandler(async (req, res) => {
       const { limit } = parsePagination(req);
       const activeUsers = backend.masterDatabase.getActiveUsers();
-      const errors = [];
 
-      for (const user of activeUsers) {
-        const userDb = await getUserDatabaseSafe(backend, user.auth_id);
-        if (!userDb) continue;
-
+      const chunks = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
         try {
           const errorLogs = userDb.db
             .prepare(
@@ -143,22 +129,21 @@ export function setupAutomationRoutes(router, backend) {
             )
             .all(limit);
 
-          for (const error of errorLogs) {
-            errors.push({
-              ...error,
-              auth_id: user.auth_id,
-              key_name: user.key_name,
-            });
-          }
+          return errorLogs.map((error) => ({
+            ...error,
+            auth_id: user.auth_id,
+            key_name: user.key_name,
+          }));
         } catch (error) {
           logger.warn('Error getting errors for user', {
             authId: user.auth_id,
             error: error.message,
           });
-        } finally {
-          backend.userDatabaseManager.releaseConnection(user.auth_id);
+          return [];
         }
-      }
+      });
+
+      const errors = chunks.flatMap((c) => (Array.isArray(c) ? c : []));
 
       // Sort by executed_at descending and limit
       errors.sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
@@ -174,17 +159,7 @@ export function setupAutomationRoutes(router, backend) {
     asyncHandler(async (req, res) => {
       const activeUsers = backend.masterDatabase.getActiveUsers();
 
-      let totalRules = 0;
-      let enabledRules = 0;
-      let totalExecutions = 0;
-      let successfulExecutions = 0;
-      let failedExecutions = 0;
-      let totalItemsProcessed = 0;
-
-      for (const user of activeUsers) {
-        const userDb = await getUserDatabaseSafe(backend, user.auth_id);
-        if (!userDb) continue;
-
+      const partials = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
         try {
           const ruleStats = userDb.db
             .prepare(
@@ -196,9 +171,6 @@ export function setupAutomationRoutes(router, backend) {
         `
             )
             .get();
-
-          totalRules += ruleStats?.total || 0;
-          enabledRules += ruleStats?.enabled || 0;
 
           const execStats = userDb.db
             .prepare(
@@ -214,18 +186,45 @@ export function setupAutomationRoutes(router, backend) {
             )
             .get();
 
-          totalExecutions += execStats?.total || 0;
-          successfulExecutions += execStats?.successful || 0;
-          failedExecutions += execStats?.failed || 0;
-          totalItemsProcessed += execStats?.items || 0;
+          return {
+            totalRules: ruleStats?.total || 0,
+            enabledRules: ruleStats?.enabled || 0,
+            totalExecutions: execStats?.total || 0,
+            successfulExecutions: execStats?.successful || 0,
+            failedExecutions: execStats?.failed || 0,
+            totalItemsProcessed: execStats?.items || 0,
+          };
         } catch (error) {
           logger.warn('Error getting automation stats for user', {
             authId: user.auth_id,
             error: error.message,
           });
-        } finally {
-          backend.userDatabaseManager.releaseConnection(user.auth_id);
+          return {
+            totalRules: 0,
+            enabledRules: 0,
+            totalExecutions: 0,
+            successfulExecutions: 0,
+            failedExecutions: 0,
+            totalItemsProcessed: 0,
+          };
         }
+      });
+
+      let totalRules = 0;
+      let enabledRules = 0;
+      let totalExecutions = 0;
+      let successfulExecutions = 0;
+      let failedExecutions = 0;
+      let totalItemsProcessed = 0;
+
+      for (const p of partials) {
+        if (!p) continue;
+        totalRules += p.totalRules;
+        enabledRules += p.enabledRules;
+        totalExecutions += p.totalExecutions;
+        successfulExecutions += p.successfulExecutions;
+        failedExecutions += p.failedExecutions;
+        totalItemsProcessed += p.totalItemsProcessed;
       }
 
       sendSuccess(res, {

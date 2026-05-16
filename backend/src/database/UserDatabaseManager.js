@@ -238,13 +238,26 @@ class DatabasePool {
       }
     }
 
-    // If still no candidate (shouldn't happen), evict oldest
+    // If still no candidate, pick oldest among entries that are not actively in use
     if (!lruKey) {
       for (const [key, entry] of this.cache.entries()) {
+        if (entry.activeOperations > 0) {
+          continue;
+        }
         if (entry.lastAccess < lruTime) {
           lruKey = key;
           lruTime = entry.lastAccess;
         }
+      }
+      if (!lruKey) {
+        logger.error(
+          'Database pool at capacity: no evictable connection (all entries have active operations)',
+          {
+            poolSize: this.cache.size,
+            maxSize: this.maxSize,
+          }
+        );
+        return;
       }
     }
 

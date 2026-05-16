@@ -4,6 +4,7 @@ import {
   validateNumericId,
 } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
+import { serverErrorPayload } from '../utils/httpErrors.js';
 import {
   deleteUploadFile,
   saveUploadFile,
@@ -131,7 +132,7 @@ export function setupUploadsRoutes(app, backend) {
         endpoint: '/api/uploads/file',
         method: 'POST',
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     }
   });
 
@@ -171,7 +172,7 @@ export function setupUploadsRoutes(app, backend) {
         endpoint: '/api/uploads/file',
         method: 'DELETE',
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     }
   });
 
@@ -363,7 +364,7 @@ export function setupUploadsRoutes(app, backend) {
         endpoint: '/api/uploads/batch',
         method: 'POST',
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -520,7 +521,7 @@ export function setupUploadsRoutes(app, backend) {
         method: 'POST',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -669,7 +670,7 @@ export function setupUploadsRoutes(app, backend) {
         method: 'GET',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -723,7 +724,7 @@ export function setupUploadsRoutes(app, backend) {
           method: 'GET',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -810,7 +811,7 @@ export function setupUploadsRoutes(app, backend) {
           method: 'GET',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -942,7 +943,7 @@ export function setupUploadsRoutes(app, backend) {
           method: 'POST',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -1047,7 +1048,7 @@ export function setupUploadsRoutes(app, backend) {
           method: 'POST',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -1194,7 +1195,7 @@ export function setupUploadsRoutes(app, backend) {
         method: 'PATCH',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -1313,7 +1314,7 @@ export function setupUploadsRoutes(app, backend) {
         method: 'DELETE',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -1388,7 +1389,7 @@ export function setupUploadsRoutes(app, backend) {
           method: 'DELETE',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);

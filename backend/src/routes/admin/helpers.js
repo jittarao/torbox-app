@@ -1,5 +1,6 @@
 import fs from 'fs';
 import logger from '../../utils/logger.js';
+import { serverErrorPayload } from '../../utils/httpErrors.js';
 
 /**
  * Validate authId format (64-character hex string)
@@ -97,7 +98,7 @@ export function sendSuccess(res, data, statusCode = 200) {
 /**
  * Send error response
  * @param {Object} res - Express response object
- * @param {string} error - Error message
+ * @param {string|Error} error - Error message or Error instance
  * @param {number} statusCode - HTTP status code (default: 500)
  * @param {Object} context - Additional context for logging
  */
@@ -106,9 +107,22 @@ export function sendError(res, error, statusCode = 500, context = {}) {
     logger.error(`Error in ${context.endpoint}`, error, context);
   }
 
+  if (typeof error === 'string') {
+    res.status(statusCode).json({
+      success: false,
+      error,
+    });
+    return;
+  }
+
+  if (statusCode >= 500) {
+    res.status(statusCode).json(serverErrorPayload(error));
+    return;
+  }
+
   res.status(statusCode).json({
     success: false,
-    error: typeof error === 'string' ? error : error.message,
+    error: error?.message || 'Request failed',
   });
 }
 

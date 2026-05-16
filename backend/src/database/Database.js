@@ -516,6 +516,46 @@ class Database {
   }
 
   /**
+   * Get consecutive PLAN_RESTRICTED_FEATURE responses for a user.
+   * @param {string} authId
+   * @returns {number}
+   */
+  getConsecutivePlanRestrictedFailures(authId) {
+    const row = this.getQuery(
+      'SELECT consecutive_plan_restricted_failures FROM user_registry WHERE auth_id = ?',
+      [authId]
+    );
+    if (!row || row.consecutive_plan_restricted_failures == null) return 0;
+    return Math.max(0, parseInt(row.consecutive_plan_restricted_failures, 10));
+  }
+
+  /**
+   * Increment consecutive plan-restricted count (TorBox 403 PLAN_RESTRICTED_FEATURE).
+   * @param {string} authId
+   * @returns {number} New count after increment
+   */
+  incrementConsecutivePlanRestrictedFailures(authId) {
+    this.runQuery(
+      `UPDATE user_registry SET consecutive_plan_restricted_failures = COALESCE(consecutive_plan_restricted_failures, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?`,
+      [authId]
+    );
+    cache.invalidateUserRegistry(authId);
+    return this.getConsecutivePlanRestrictedFailures(authId);
+  }
+
+  /**
+   * Reset plan-restricted streak after a successful poll / successful API interaction.
+   * @param {string} authId
+   */
+  resetConsecutivePlanRestrictedFailures(authId) {
+    this.runQuery(
+      'UPDATE user_registry SET consecutive_plan_restricted_failures = 0, updated_at = CURRENT_TIMESTAMP WHERE auth_id = ?',
+      [authId]
+    );
+    cache.invalidateUserRegistry(authId);
+  }
+
+  /**
    * Insert a pending automation action (persisted so it survives restarts).
    * Multiple rows per rule_id are allowed; drain merges by (authId, rule_id) and deduplicates by torrent ID.
    * @param {string} authId
@@ -1019,9 +1059,13 @@ class Database {
       `
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
-      LEFT JOIN api_keys ak ON ur.auth_id = ak.auth_id
+      INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id
+        AND ak.is_active = 1
+        AND ak.rowid = (
+          SELECT MAX(ak2.rowid) FROM api_keys ak2
+          WHERE ak2.auth_id = ur.auth_id AND ak2.is_active = 1
+        )
       WHERE ur.status = 'active'
-        AND (ak.is_active = 1 OR ak.is_active IS NULL)
         AND ur.has_active_rules = 1
         AND (ur.next_poll_at IS NULL OR ur.next_poll_at = '' OR ur.next_poll_at <= datetime('now'))
       ORDER BY ur.next_poll_at ASC

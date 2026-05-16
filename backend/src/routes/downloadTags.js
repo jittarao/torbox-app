@@ -1,5 +1,6 @@
 import { validateAuthIdMiddleware, validateNumericId } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
+import { serverErrorPayload } from '../utils/httpErrors.js';
 
 /**
  * Download tags routes
@@ -59,7 +60,7 @@ export function setupDownloadTagsRoutes(app, backend) {
         method: 'GET',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -253,7 +254,7 @@ export function setupDownloadTagsRoutes(app, backend) {
         method: 'POST',
         authId: req.validatedAuthId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (req.validatedAuthId && backend.userDatabaseManager) {
         backend.userDatabaseManager.releaseConnection(req.validatedAuthId);

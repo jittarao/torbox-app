@@ -1,6 +1,6 @@
 {
   "name": "torbox",
-  "version": "0.1.81",
+  "version": "0.1.82",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -21,6 +21,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@sentry/nextjs": "^10.43.0",
+    "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-virtual": "3.13.23",
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
@@ -35,6 +36,7 @@
     "react-dom": "19.2.4",
     "react-dropzone": "^14.4.0",
     "shaka-player": "^4.16.15",
+    "zod": "^4.4.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

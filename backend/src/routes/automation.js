@@ -1,5 +1,6 @@
 import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
+import { serverErrorPayload } from '../utils/httpErrors.js';
 import RuleRepository from '../automation/helpers/RuleRepository.js';
 import AutomationEngine from '../automation/AutomationEngine.js';
 
@@ -91,7 +92,7 @@ export function setupAutomationRoutes(app, backend) {
         method: 'GET',
         authId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     } finally {
       if (authId && userDatabaseManager) {
         userDatabaseManager.releaseConnection(authId);
@@ -120,7 +121,7 @@ export function setupAutomationRoutes(app, backend) {
         method: 'POST',
         authId,
       });
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json(serverErrorPayload(error));
     }
   });
 
@@ -151,7 +152,7 @@ export function setupAutomationRoutes(app, backend) {
           ruleId,
           authId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       }
     }
   );
@@ -182,7 +183,7 @@ export function setupAutomationRoutes(app, backend) {
           ruleId,
           authId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       }
     }
   );
@@ -210,7 +211,7 @@ export function setupAutomationRoutes(app, backend) {
           ruleId,
           authId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       }
     }
   );
@@ -241,7 +242,7 @@ export function setupAutomationRoutes(app, backend) {
           ruleId,
           authId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       }
     }
   );
@@ -262,7 +263,11 @@ export function setupAutomationRoutes(app, backend) {
         }
         const runRule = () => engine.runRuleManually(ruleId);
         const result = backend.pollingScheduler
-          ? await backend.pollingScheduler.runWithPipelineLock(authId, runRule)
+          ? await backend.pollingScheduler.runWithPipelineLock(
+              authId,
+              runRule,
+              backend.pollingScheduler.pollKickoutMs
+            )
           : await runRule();
         res.json({ success: true, result });
       } catch (error) {
@@ -272,7 +277,7 @@ export function setupAutomationRoutes(app, backend) {
           ruleId,
           authId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       }
     }
   );

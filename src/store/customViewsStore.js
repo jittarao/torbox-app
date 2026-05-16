@@ -1,15 +1,5 @@
 import { create } from 'zustand';
-import { useBackendModeStore } from '@/store/backendModeStore';
-
-/**
- * Check if backend is available (not disabled)
- * Uses Zustand store for centralized state management
- */
-function isBackendAvailable() {
-  if (typeof window === 'undefined') return false;
-  const { mode } = useBackendModeStore.getState();
-  return mode === 'backend';
-}
+import { isBackendAvailable } from '@/store/backendModeStore';
 
 export const useCustomViewsStore = create((set, get) => ({
   views: [],
