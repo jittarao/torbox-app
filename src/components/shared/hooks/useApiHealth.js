@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useHealthStore } from '@/store/healthStore';
 
@@ -29,9 +29,9 @@ export function useApiHealth(apiKey) {
     }
   }, [apiKey, setApiKey]);
 
-  const refreshHealth = () => {
+  const refreshHealth = useCallback(() => {
     performHealthCheck(apiKey);
-  };
+  }, [apiKey, performHealthCheck]);
 
   const getOverallStatus = () => {
     if (connectionHealth.status === 'invalid-key') {

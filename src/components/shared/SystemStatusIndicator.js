@@ -26,11 +26,12 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
     showBackend,
     platformHistory,
   } = useApiHealth(apiKey);
-  const { performHealthCheck } = useHealthStore();
+  const performHealthCheck = useHealthStore((state) => state.performHealthCheck);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
     Object.values(state.pauseReasons).some((isPaused) => isPaused === true),
   );
+  const refreshOnOpenRef = useRef(false);
 
   useEffect(() => {
     performHealthCheck(apiKey);
@@ -122,13 +123,19 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const IconComponent = config.icon;
 
   const handleToggle = useCallback(() => {
-    setIsOpen((open) => !open);
+    setIsOpen((open) => {
+      if (!open) {
+        refreshOnOpenRef.current = true;
+      }
+      return !open;
+    });
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
-    refreshHealth();
-  }, [isOpen, refreshHealth]);
+    if (!isOpen || !refreshOnOpenRef.current) return;
+    refreshOnOpenRef.current = false;
+    performHealthCheck(apiKey);
+  }, [isOpen, apiKey, performHealthCheck]);
 
   const panelProps = {
     apiKey,
