@@ -45,6 +45,24 @@ class AdminApiClient {
   }
 
   /**
+   * Parse response body (JSON when possible; avoids throw on HTML error pages).
+   */
+  async parseAdminResponse(response) {
+    const text = await response.text();
+    if (!text) {
+      return {};
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      return {
+        error: 'Invalid response',
+        message: text.slice(0, 500),
+      };
+    }
+  }
+
+  /**
    * Make authenticated request
    */
   async request(endpoint, options = {}) {
@@ -65,7 +83,7 @@ class AdminApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      const data = await this.parseAdminResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || data.message || `HTTP ${response.status}`);

@@ -113,6 +113,74 @@ class ApiClient {
     }
   }
 
+  /**
+   * POST multipart/form-data to a Next.js API route with timeout and consistent error handling.
+   */
+  async requestMultipart(endpoint, formData, options = {}) {
+    const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
+    const timeout = options.timeout || 30000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    const headers = {
+      'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+      ...(this.apiKey && { 'x-api-key': this.apiKey }),
+      ...options.headers,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: options.signal || controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = { error: `HTTP ${response.status}`, detail: 'Invalid response format' };
+      }
+
+      if (!response.ok) {
+        if (data.error === 'AUTH_ERROR' || data.error === 'NO_AUTH' || data.error?.includes('auth')) {
+          throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
+        }
+        if (response.status === 422) {
+          throw new Error(`AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`);
+        }
+        if (response.status === 404) {
+          throw new Error(`AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`);
+        }
+        if (response.status === 408) {
+          const timeoutError = new Error(data.detail || data.error || data.message || 'Request timeout');
+          timeoutError.isTimeout = true;
+          throw timeoutError;
+        }
+        const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        const timeoutError = new Error('Request timeout - connection to TorBox API failed');
+        timeoutError.isTimeout = true;
+        throw timeoutError;
+      }
+      if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || error.message?.includes('timeout')) {
+        const timeoutError = new Error('Connection timeout - TorBox API is unreachable');
+        timeoutError.isTimeout = true;
+        throw timeoutError;
+      }
+      console.error(`API multipart request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
   // GET request helper
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -158,14 +226,7 @@ class ApiClient {
   }
 
   async createTorrent(formData) {
-    const response = await fetch('/api/torrents', {
-      method: 'POST',
-      headers: {
-        'x-api-key': this.apiKey,
-      },
-      body: formData,
-    });
-    return response.json();
+    return this.requestMultipart('/api/torrents', formData);
   }
 
   async controlTorrent(torrentId, operation) {
@@ -219,14 +280,7 @@ class ApiClient {
   }
 
   async createUsenetDownload(formData) {
-    const response = await fetch('/api/usenet', {
-      method: 'POST',
-      headers: {
-        'x-api-key': this.apiKey,
-      },
-      body: formData,
-    });
-    return response.json();
+    return this.requestMultipart('/api/usenet', formData);
   }
 
   async controlUsenetDownload(usenetId, operation) {
@@ -249,14 +303,7 @@ class ApiClient {
   }
 
   async createWebDownload(formData) {
-    const response = await fetch('/api/webdl', {
-      method: 'POST',
-      headers: {
-        'x-api-key': this.apiKey,
-      },
-      body: formData,
-    });
-    return response.json();
+    return this.requestMultipart('/api/webdl', formData);
   }
 
   async controlWebDownload(webdlId, operation) {

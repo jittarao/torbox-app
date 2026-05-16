@@ -25,6 +25,8 @@ export async function GET(request) {
     if (searchParams.get('page')) params.append('page', searchParams.get('page'));
     if (searchParams.get('limit')) params.append('limit', searchParams.get('limit'));
     if (searchParams.get('search')) params.append('search', searchParams.get('search'));
+    if (searchParams.get('keyset')) params.append('keyset', searchParams.get('keyset'));
+    if (searchParams.get('cursor')) params.append('cursor', searchParams.get('cursor'));
 
     const url = new URL(`${BACKEND_URL}/api/link-history`);
     params.forEach((value, key) => url.searchParams.append(key, value));

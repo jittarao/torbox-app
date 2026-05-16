@@ -3,6 +3,7 @@ import {
   validateNumericIdMiddleware,
 } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
+import { serverErrorPayload } from '../utils/httpErrors.js';
 
 /**
  * Archived downloads routes
@@ -69,7 +70,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           method: 'GET',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -148,7 +149,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           method: 'POST',
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
@@ -213,7 +214,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
           archiveId: req.validatedIds?.id,
           authId: req.validatedAuthId,
         });
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json(serverErrorPayload(error));
       } finally {
         if (req.validatedAuthId && backend.userDatabaseManager) {
           backend.userDatabaseManager.releaseConnection(req.validatedAuthId);

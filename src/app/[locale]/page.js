@@ -83,33 +83,6 @@ export default function Home() {
       }
     }
 
-    // Set up file handling
-    if ('launchQueue' in window && 'LaunchParams' in window) {
-      window.launchQueue.setConsumer(async (launchParams) => {
-        if (!launchParams.files.length) return;
-
-        const fileHandles = launchParams.files;
-        for (const fileHandle of fileHandles) {
-          try {
-            const file = await fileHandle.getFile();
-            if (file.name.endsWith('.torrent') || file.name.endsWith('.nzb')) {
-              window.dispatchEvent(
-                new CustomEvent('fileReceived', {
-                  detail: {
-                    name: file.name,
-                    type: file.type,
-                    data: await file.arrayBuffer(),
-                  },
-                }),
-              );
-            }
-          } catch (error) {
-            console.error('Error handling file:', error);
-          }
-        }
-      });
-    }
-
     // Handle magnet links
     const urlParams = new URLSearchParams(window.location.search);
     const magnetLink = urlParams.get('magnet');

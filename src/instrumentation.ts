@@ -1,5 +1,8 @@
 // Only load Sentry if explicitly enabled
 export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./env.js');
+  }
   if (process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
       await import('../sentry.server.config');

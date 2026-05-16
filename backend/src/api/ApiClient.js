@@ -253,6 +253,7 @@ class ApiClient {
         error.response?.status === 403 &&
         error.response?.data?.error === 'PLAN_RESTRICTED_FEATURE';
       if (isPlanRestricted) {
+        error.isPlanRestrictedFeature = true;
         logger.info(`Error ${operation || 'in API call'}`, {
           endpoint,
           ...context,

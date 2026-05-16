@@ -1,16 +1,6 @@
 import { create } from 'zustand';
-import { useBackendModeStore } from '@/store/backendModeStore';
+import { isBackendAvailable } from '@/store/backendModeStore';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
-
-/**
- * Check if backend is available (not disabled)
- * Uses Zustand store for centralized state management
- */
-function isBackendAvailable() {
-  if (typeof window === 'undefined') return false;
-  const { mode } = useBackendModeStore.getState();
-  return mode === 'backend';
-}
 
 /**
  * Download history store
@@ -59,54 +49,81 @@ export const useDownloadHistoryStore = create((set, get) => ({
       });
 
       try {
-        // Fetch all link history (no pagination for highlighting)
-        const response = await fetch('/api/link-history?limit=1000', {
-          headers: {
-            'x-api-key': apiKey,
-          },
-        });
+        // Fetch link history in keyset pages for highlighting (avoids a single huge request)
+        const PAGE_SIZE = 250;
+        const MAX_ROWS = 8000;
+        const merged = [];
+        let cursor = null;
 
-        if (response.ok) {
+        while (merged.length < MAX_ROWS) {
+          const qs = new URLSearchParams({
+            keyset: '1',
+            limit: String(PAGE_SIZE),
+          });
+          if (cursor) {
+            qs.set('cursor', cursor);
+          }
+
+          const response = await fetch(`/api/link-history?${qs.toString()}`, {
+            headers: {
+              'x-api-key': apiKey,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Error fetching link history from backend:', {
+              status: response.status,
+              error: errorData.error || 'Unknown error',
+              detail: errorData.detail,
+            });
+            if (get().activeRequestId === requestId && get().currentApiKey === apiKey) {
+              set({
+                downloadHistory: [],
+                isLoading: false,
+                error: errorData.error || 'Failed to fetch link history',
+              });
+            }
+            return [];
+          }
+
           const data = await response.json();
           const state = get();
           if (state.activeRequestId !== requestId || state.currentApiKey !== apiKey) {
             return [];
           }
-          // Transform backend format to frontend format
-          const transformedHistory = (data.data || []).map((item) => ({
-            id: item.file_id ? `${item.item_id}-${item.file_id}` : item.item_id,
-            itemId: item.item_id,
-            fileId: item.file_id || null,
-            url: item.url,
-            assetType: item.asset_type,
-            generatedAt: item.generated_at,
-            itemName: item.item_name || null,
-            fileName: item.file_name || null,
-          }));
 
-          set({
-            downloadHistory: transformedHistory,
-            isLoading: false,
-            error: null,
-            lastFetched: new Date(),
-          });
-          return transformedHistory;
+          const batch = data.data || [];
+          for (const item of batch) {
+            merged.push({
+              id: item.file_id ? `${item.item_id}-${item.file_id}` : item.item_id,
+              itemId: item.item_id,
+              fileId: item.file_id || null,
+              url: item.url,
+              assetType: item.asset_type,
+              generatedAt: item.generated_at,
+              itemName: item.item_name || null,
+              fileName: item.file_name || null,
+            });
+          }
+
+          cursor = data.pagination?.nextCursor;
+          if (!cursor || batch.length < PAGE_SIZE) {
+            break;
+          }
         }
 
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error fetching link history from backend:', {
-          status: response.status,
-          error: errorData.error || 'Unknown error',
-          detail: errorData.detail,
+        if (get().activeRequestId !== requestId || get().currentApiKey !== apiKey) {
+          return [];
+        }
+
+        set({
+          downloadHistory: merged,
+          isLoading: false,
+          error: null,
+          lastFetched: new Date(),
         });
-        if (get().activeRequestId === requestId && get().currentApiKey === apiKey) {
-          set({
-            downloadHistory: [],
-            isLoading: false,
-            error: errorData.error || 'Failed to fetch link history',
-          });
-        }
-        return [];
+        return merged;
       } catch (error) {
         console.error('Error fetching link history from backend:', error);
         if (get().activeRequestId === requestId && get().currentApiKey === apiKey) {

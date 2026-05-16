@@ -15,6 +15,8 @@ import cache from './utils/cache.js';
 import Semaphore from './utils/semaphore.js';
 import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
+import { serverErrorPayload } from './utils/httpErrors.js';
+import { validateEnv } from './config/validateEnv.js';
 import { setupAdminRoutes } from './routes/admin.js';
 import { setupHealthRoutes } from './routes/health.js';
 import { setupApiKeyRoutes } from './routes/apiKeys.js';
@@ -170,11 +172,7 @@ class TorBoxBackend {
 
       logger.error('Unhandled error in request handler', error, context);
 
-      res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
+      res.status(500).json(serverErrorPayload(error));
     });
 
     // 404 handler
@@ -221,6 +219,16 @@ class TorBoxBackend {
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
       logger.info('Upload counter sync completed');
 
+      // Sync has_active_rules before the scheduler starts so spreadOverdueUsersOnStartup() and
+      // the first poll tick see corrected flags (admin: POST /api/admin/automation/sync-rules-flags).
+      const syncResult = await this.syncHasActiveRulesFromUserDbs();
+      const syncStats = {
+        synced: syncResult.synced,
+        errors: syncResult.errors,
+        skipped: syncResult.skipped,
+      };
+      logger.info('has_active_rules sync completed before scheduler start', { ...syncStats });
+
       // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(
         this.userDatabaseManager,
@@ -239,14 +247,6 @@ class TorBoxBackend {
       await this.pollingScheduler.start();
       this.eventNotifier.startHeartbeat();
       logger.info('Polling scheduler started');
-
-      // Sync has_active_rules flags at startup by querying user DBs directly (no engine creation).
-      const syncResult = await this.syncHasActiveRulesFromUserDbs();
-      const syncStats = {
-        synced: syncResult.synced,
-        errors: syncResult.errors,
-        skipped: syncResult.skipped,
-      };
 
       const refreshedActiveUsers = this.masterDatabase.getActiveUsers();
       const usersWithActiveRules = refreshedActiveUsers.filter(
@@ -467,6 +467,7 @@ class TorBoxBackend {
 let backend;
 (async () => {
   try {
+    validateEnv();
     await initSentry();
 
     // Create the backend instance

@@ -14,7 +14,7 @@ RUN apk add --no-cache libc6-compat python3 make g++
 
 # Copy package files first for better Docker layer caching
 # This allows dependency installation to be cached if package.json hasn't changed
-COPY package.json ./
+COPY package.json bun.lock ./
 
 # Install only production dependencies to reduce image size
 # --frozen-lockfile: Use exact versions from lockfile (ensures reproducible builds)
@@ -31,7 +31,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat python3 make g++
 
 # Copy package files first for better Docker layer caching
-COPY package.json ./
+COPY package.json bun.lock ./
 
 # Install all dependencies including dev dependencies
 # Dev dependencies may be needed for type checking, linting, or other build tools

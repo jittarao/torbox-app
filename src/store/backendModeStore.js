@@ -1,5 +1,16 @@
 import { create } from 'zustand';
 
+let backendModeLoggedOnce = false;
+
+/**
+ * True when the app is using the TorBox Manager backend (not local-only mode).
+ * Safe on the server: always false (no persisted backend mode during SSR).
+ */
+export function isBackendAvailable() {
+  if (typeof window === 'undefined') return false;
+  return useBackendModeStore.getState().mode === 'backend';
+}
+
 /**
  * Zustand store for backend mode state
  * Centralizes backend availability detection and avoids duplicate API calls
@@ -53,9 +64,9 @@ export const useBackendModeStore = create((set, get) => ({
       }
     } catch (err) {
       // Only log once to avoid console spam
-      if (typeof window !== 'undefined' && !window.backendModeLogged) {
+      if (typeof window !== 'undefined' && !backendModeLoggedOnce) {
         console.log('Backend not available, using local storage mode');
-        window.backendModeLogged = true;
+        backendModeLoggedOnce = true;
       }
       set({
         mode: 'local',
