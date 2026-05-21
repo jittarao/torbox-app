@@ -134,7 +134,7 @@ jobs:
       # Inline cache (BUILDKIT_INLINE_CACHE=1) still provides layer caching via image metadata
       - name: Build and push Docker image (frontend)
         id: build-frontend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         continue-on-error: false
         with:
           context: .                    # Build context (root directory)
@@ -169,7 +169,7 @@ jobs:
       - name: Build and push Docker image (backend)
         id: build-backend
         if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         continue-on-error: false
         with:
           context: ./backend             # Build context (backend directory)
