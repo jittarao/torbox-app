@@ -7,8 +7,7 @@ export const USER_NAV_ITEM = {
   Icon: Icons.User,
 };
 
-/** Core TorBox: downloads & search */
-const MAIN_NAV = [
+const NAV_ITEMS = [
   { href: '/', labelKey: 'downloads', Icon: Icons.Download },
   {
     href: '/search',
@@ -16,16 +15,8 @@ const MAIN_NAV = [
     Icon: Icons.MagnifyingGlass,
     visible: ({ searchPageDisabled }) => !searchPageDisabled,
   },
-];
-
-/** TorBox platform features */
-const TORBOX_NAV = [
   { href: '/rss', labelKey: 'rss', Icon: Icons.Rss },
   { href: '/automation', labelKey: 'automation', Icon: Icons.Bolt },
-];
-
-/** TorBox Manager–only features (not in stock TorBox UI) */
-const MANAGER_NAV = [
   { href: '/link-history', labelKey: 'linkHistory', Icon: Icons.History },
   { href: '/uploads', labelKey: 'uploads', Icon: Icons.Upload },
   { href: '/archived', labelKey: 'archived', Icon: Icons.Archive },
@@ -37,8 +28,6 @@ function filterVisible(items, ctx) {
 
 export function buildNavItems(ctx = {}) {
   return {
-    main: filterVisible(MAIN_NAV, ctx),
-    torbox: filterVisible(TORBOX_NAV, ctx),
-    manager: filterVisible(MANAGER_NAV, ctx),
+    items: filterVisible(NAV_ITEMS, ctx),
   };
 }
