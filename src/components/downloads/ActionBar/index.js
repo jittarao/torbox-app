@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, Fragment } from 'react';
+import { useState, useRef, useEffect, useCallback, Fragment } from 'react';
 import ColumnManager from '../ColumnManager';
 import { COLUMNS } from '@/components/constants';
 import { getItemTypeName } from './utils/statusHelpers';
@@ -54,6 +54,8 @@ export default function ActionBar({
   const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
   const [spacerHeight, setSpacerHeight] = useState(0);
+  /** Viewport-aligned left/width when sticky (matches scroll column, incl. filter sidebar offset) */
+  const [stickyBounds, setStickyBounds] = useState(null);
   const stickyRef = useRef(null);
   const isStickyRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
@@ -64,6 +66,44 @@ export default function ActionBar({
   const { statusCounts, statusOptions, isStatusSelected } = useStatusCounts(itemsForStatusCounts);
 
   const t = useTranslations('Columns');
+
+  const updateStickyBounds = useCallback(() => {
+    const column = scrollContainerRef?.current;
+    if (!column) {
+      setStickyBounds(null);
+      return;
+    }
+    const rect = column.getBoundingClientRect();
+    setStickyBounds({ left: rect.left, width: rect.width });
+  }, [scrollContainerRef]);
+
+  // Keep fixed ActionBar aligned with the downloads table column (nav + filter sidebars)
+  useEffect(() => {
+    if (!isSticky || isFullscreen) {
+      setStickyBounds(null);
+      return;
+    }
+
+    updateStickyBounds();
+
+    window.addEventListener('resize', updateStickyBounds);
+
+    const column = scrollContainerRef?.current;
+    const resizeObserver =
+      column && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => updateStickyBounds())
+        : null;
+    resizeObserver?.observe(column);
+
+    // App nav sidebar width animates ~300ms
+    const transitionTimer = setTimeout(updateStickyBounds, 320);
+
+    return () => {
+      window.removeEventListener('resize', updateStickyBounds);
+      resizeObserver?.disconnect();
+      clearTimeout(transitionTimer);
+    };
+  }, [isSticky, isFullscreen, scrollContainerRef, updateStickyBounds]);
 
   // Reset sticky state when switching modes (fullscreen, view mode, etc.)
   useEffect(() => {
@@ -176,6 +216,9 @@ export default function ActionBar({
 
       scrollTimeoutRef.current = requestAnimationFrame(() => {
         checkSticky();
+        if (isStickyRef.current && !isFullscreen) {
+          updateStickyBounds();
+        }
         scrollTimeoutRef.current = null;
       });
     };
@@ -199,7 +242,7 @@ export default function ActionBar({
       }
       scrollElement.removeEventListener('scroll', handleScroll);
     };
-  }, [isFullscreen, scrollContainerRef]);
+  }, [isFullscreen, scrollContainerRef, updateStickyBounds]);
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;
@@ -217,15 +260,24 @@ export default function ActionBar({
         ref={stickyRef}
         className={
           isSticky
-            ? `fixed top-0 z-50 border-b border-border dark:border-border-dark shadow-lg bg-surface dark:bg-surface-dark
-              ${isFullscreen ? 'left-0 right-0' : 'left-0 right-0 md:left-[var(--sidebar-width,0px)]'}
-              transition-[left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`
+            ? `fixed top-0 z-50 border-b border-border dark:border-border-dark shadow-lg bg-surface dark:bg-surface-dark ${
+                isFullscreen
+                  ? 'left-0 right-0'
+                  : stickyBounds
+                    ? ''
+                    : 'left-0 right-0 md:left-[var(--sidebar-width,0px)]'
+              }`
+            : undefined
+        }
+        style={
+          isSticky && !isFullscreen && stickyBounds
+            ? { left: stickyBounds.left, width: stickyBounds.width, right: 'auto' }
             : undefined
         }
       >
         <div
           className={`flex flex-col lg:flex-row gap-4 justify-between transition-all duration-200
-            ${isFullscreen ? 'px-4' : isSticky ? 'container mx-auto px-4' : ''}
+            ${isFullscreen ? 'px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container mx-auto px-4') : ''}
             ${isSticky ? 'py-2' : 'pb-4'}`}
         >
         <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
