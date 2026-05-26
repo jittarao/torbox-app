@@ -120,6 +120,23 @@ Rules are evaluated on each polling cycle:
 6. Execute actions for matching torrents
 7. Log execution results
 
+## Configuration
+
+### Rate limiting
+
+The backend applies two layers of rate limits (15-minute windows):
+
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `IP_RATE_LIMIT_MAX` | Max requests per IP on `/api/*` (public/direct access) | `1000` |
+| `USER_RATE_LIMIT_MAX` | Max requests per authenticated user (`authId`) | `500` |
+| `ADMIN_RATE_LIMIT_MAX` | Max requests per IP on admin routes | `100` |
+| `TRUST_PROXY` | Set to `true` when behind a reverse proxy that sets `X-Forwarded-For` | unset |
+
+When the Next.js frontend proxies to the backend (typical Docker Compose setup), traffic arrives from a private container IP. Those addresses are **not** counted against the IP limit, so normal app use does not share one global bucket. The IP limit mainly protects the backend if port `3001` is exposed directly on the internet.
+
+Override via environment variables (see `.env.example` in the repo root or `backend/.env.local.example` for local dev).
+
 ## Performance
 
 - **Connection Pooling**: LRU cache prevents connection exhaustion
