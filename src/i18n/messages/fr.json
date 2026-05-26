@@ -395,6 +395,31 @@
     "updating": "Mise à jour...",
     "viewNamePlaceholder": "Nom de la vue..."
   },
+  "DownloadsFilters": {
+    "sidebarLabel": "Filtres",
+    "viewsSection": "Vues",
+    "tagsSection": "Étiquettes",
+    "noViews": "Aucune vue enregistrée.",
+    "noTags": "Aucune étiquette.",
+    "newFilter": "Nouveau filtre",
+    "manageTags": "Gérer les étiquettes",
+    "modalTitle": "Modifier les filtres",
+    "applyFilters": "Appliquer les filtres",
+    "clearAll": "Tout effacer",
+    "close": "Fermer",
+    "editFilters": "Modifier",
+    "activeView": "Vue : {name}",
+    "activeTag": "Étiquette : {name}",
+    "activeConditions": "{count, plural, one {# filtre} other {# filtres}} actifs",
+    "menuApply": "Appliquer",
+    "menuEdit": "Modifier",
+    "menuRename": "Renommer",
+    "menuDelete": "Supprimer",
+    "confirmDeleteView": "Supprimer la vue « {name} » ?",
+    "confirmDeleteTag": "Supprimer l'étiquette « {name} » ? Elle sera retirée de tous les téléchargements.",
+    "deleteViewFailed": "Impossible de supprimer la vue : {error}",
+    "deleteTagFailed": "Impossible de supprimer l'étiquette : {error}"
+  },
   "DownloadPanel": {
     "actions": {
       "clearAll": "Tout effacer",

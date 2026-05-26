@@ -395,6 +395,31 @@
     "updating": "Actualizando...",
     "viewNamePlaceholder": "Nombre de la vista..."
   },
+  "DownloadsFilters": {
+    "sidebarLabel": "Filtros",
+    "viewsSection": "Vistas",
+    "tagsSection": "Etiquetas",
+    "noViews": "Aún no hay vistas guardadas.",
+    "noTags": "Aún no hay etiquetas.",
+    "newFilter": "Nuevo filtro",
+    "manageTags": "Gestionar etiquetas",
+    "modalTitle": "Editar filtros",
+    "applyFilters": "Aplicar filtros",
+    "clearAll": "Borrar todo",
+    "close": "Cerrar",
+    "editFilters": "Editar",
+    "activeView": "Vista: {name}",
+    "activeTag": "Etiqueta: {name}",
+    "activeConditions": "{count, plural, one {# filtro} other {# filtros}} activos",
+    "menuApply": "Aplicar",
+    "menuEdit": "Editar",
+    "menuRename": "Renombrar",
+    "menuDelete": "Eliminar",
+    "confirmDeleteView": "¿Eliminar la vista \"{name}\"?",
+    "confirmDeleteTag": "¿Eliminar la etiqueta \"{name}\"? Se quitará de todas las descargas.",
+    "deleteViewFailed": "No se pudo eliminar la vista: {error}",
+    "deleteTagFailed": "No se pudo eliminar la etiqueta: {error}"
+  },
   "DownloadPanel": {
     "actions": {
       "clearAll": "Borrar todo",

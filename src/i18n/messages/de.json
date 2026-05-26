@@ -395,6 +395,31 @@
     "updating": "Aktualisieren...",
     "viewNamePlaceholder": "Ansichtname..."
   },
+  "DownloadsFilters": {
+    "sidebarLabel": "Filter",
+    "viewsSection": "Ansichten",
+    "tagsSection": "Schlagwörter",
+    "noViews": "Noch keine gespeicherten Ansichten.",
+    "noTags": "Noch keine Schlagwörter.",
+    "newFilter": "Neuer Filter",
+    "manageTags": "Schlagwörter verwalten",
+    "modalTitle": "Filter bearbeiten",
+    "applyFilters": "Filter anwenden",
+    "clearAll": "Alle löschen",
+    "close": "Schließen",
+    "editFilters": "Bearbeiten",
+    "activeView": "Ansicht: {name}",
+    "activeTag": "Schlagwort: {name}",
+    "activeConditions": "{count, plural, one {# Filter} other {# Filter}} aktiv",
+    "menuApply": "Anwenden",
+    "menuEdit": "Bearbeiten",
+    "menuRename": "Umbenennen",
+    "menuDelete": "Löschen",
+    "confirmDeleteView": "Ansicht \"{name}\" löschen?",
+    "confirmDeleteTag": "Schlagwort \"{name}\" löschen? Es wird von allen Downloads entfernt.",
+    "deleteViewFailed": "Ansicht konnte nicht gelöscht werden: {error}",
+    "deleteTagFailed": "Schlagwort konnte nicht gelöscht werden: {error}"
+  },
   "DownloadPanel": {
     "actions": {
       "clearAll": "Alles löschen",

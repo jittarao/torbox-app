@@ -409,6 +409,31 @@
     "updating": "Updating...",
     "viewNamePlaceholder": "View name..."
   },
+  "DownloadsFilters": {
+    "sidebarLabel": "Filters",
+    "viewsSection": "Views",
+    "tagsSection": "Tags",
+    "noViews": "No saved views yet.",
+    "noTags": "No tags yet.",
+    "newFilter": "New filter",
+    "manageTags": "Manage tags",
+    "modalTitle": "Edit filters",
+    "applyFilters": "Apply filters",
+    "clearAll": "Clear all",
+    "close": "Close",
+    "editFilters": "Edit",
+    "activeView": "View: {name}",
+    "activeTag": "Tag: {name}",
+    "activeConditions": "{count, plural, one {# filter} other {# filters}} active",
+    "menuApply": "Apply",
+    "menuEdit": "Edit",
+    "menuRename": "Rename",
+    "menuDelete": "Delete",
+    "confirmDeleteView": "Delete view \"{name}\"?",
+    "confirmDeleteTag": "Delete tag \"{name}\"? It will be removed from all downloads.",
+    "deleteViewFailed": "Failed to delete view: {error}",
+    "deleteTagFailed": "Failed to delete tag: {error}"
+  },
   "DownloadPanel": {
     "actions": {
       "clearAll": "Clear All",
