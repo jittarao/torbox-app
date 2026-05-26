@@ -646,16 +646,71 @@
     "copyAll": "Alles kopieren",
     "copyCode": "Code kopieren",
     "copyLink": "Link kopieren",
-    "description": "Verwenden Sie den Code unten, um zusätzliche 7 Tage für jeden Monat zu erhalten, den Sie kaufen.",
+    "description": "7 Extra-Tage pro Monat bei Ihrem ersten bezahlten TorBox-Abo.",
     "developerNote": "Dies ist der Empfehlungscode des Entwicklers.",
     "error": "Fehler beim Kopieren in die Zwischenablage",
-    "landingDescription": "Benötigen Sie ein TorBox-Konto? Verwenden Sie unseren Empfehlungslink, um sich zu registrieren und zu beginnen!",
+    "landingDescription": "Neu bei TorBox? Nutzen Sie unseren Empfehlungslink beim Abo und erhalten Sie Bonustage beim ersten Kauf.",
     "referral": "Empfehlungen",
     "referralCode": "Empfehlungscode",
     "referralLink": "Empfehlungslink",
     "signUp": "Bei TorBox registrieren",
     "title": "Zusätzliche Premium-Zeit erhalten",
-    "visitLink": "Link besuchen"
+    "visitLink": "Link besuchen",
+    "examples": {
+      "oneMonth": "1 Mon. → +7 Tage",
+      "threeMonths": "3 Mon. → +21 Tage",
+      "twelveMonths": "12 Mon. → +84 Tage"
+    },
+    "panel": {
+      "heroTitle": "Extra-Tage beim ersten Abo",
+      "heroSubtitle": "7 Bonustage pro gekauftem Monat (für Sie und den Werber).",
+      "openSubscription": "TorBox-Abo öffnen",
+      "helpLink": "So funktionieren Empfehlungen"
+    },
+    "apply": {
+      "button": "Auf mein Konto anwenden",
+      "confirmTitle": "Empfehlungscode anwenden?",
+      "confirmBody": "Der TorBox-Manager-Empfehlungscode wird Ihrem TorBox-Konto vor dem Abo hinzugefügt.",
+      "confirmBullet1": "Bonus gilt nur beim ersten bezahlten Abo.",
+      "confirmBullet2": "7 Extra-Tage pro Monat (z. B. 12 Monate = 84 Tage).",
+      "confirmBullet3": "Bestehende Empfehlung kann hier nicht geändert werden.",
+      "cancel": "Abbrechen",
+      "confirm": "Code anwenden",
+      "applying": "Wird angewendet…",
+      "success": "Empfehlungscode auf Ihr TorBox-Konto angewendet.",
+      "error": "Code konnte nicht angewendet werden. Versuchen Sie den Abo-Link.",
+      "alreadyHasReferrer": "Ihr Konto hat bereits einen Empfehlungscode.",
+      "needApiKey": "Bitte zuerst Ihren TorBox-API-Schlüssel hinzufügen."
+    },
+    "callout": {
+      "slimMessage": "7 Extra-Tage pro Monat beim ersten TorBox-Abo — Empfehlung vor dem Kauf nutzen.",
+      "compactMessage": "Bonustage beim ersten Abo — Code anwenden, dann auf TorBox abonnieren.",
+      "rssHint": "Mit unserer Empfehlung erhalten Sie Bonustage beim ersten TorBox-Abo.",
+      "apply": "Code anwenden",
+      "subscribe": "Abonnieren",
+      "dismiss": "30 Tage ausblenden"
+    },
+    "upgradeCard": {
+      "title": "Upgrade mit Bonustagen",
+      "description": "Code anwenden und erstes bezahltes Abo auf TorBox abschließen — 7 Extra-Tage pro Monat."
+    },
+    "steps": {
+      "title": "So funktioniert es",
+      "step1": "Code auf Ihr TorBox-Konto anwenden (Button oben oder auf der Abo-Seite einfügen).",
+      "step2": "Auf torbox.app abonnieren — Popups erlauben bei Link-Nutzung.",
+      "step3": "Ersten bezahlten Kauf abschließen; Bonustage werden gutgeschrieben.",
+      "popupNote": "Bei Link-Nutzung: Popup auf TorBox bestätigen, bevor Sie kaufen."
+    },
+    "disclaimer": {
+      "supportsDevelopment": "Dieser Code unterstützt auch die Entwicklung von TorBox Manager.",
+      "firstPurchase": "Bonus gilt nur beim ersten bezahlten Kauf.",
+      "giftCards": "Geschenkkarten und Gutscheine zählen nicht."
+    },
+    "settings": {
+      "snoozeReminders": "Erinnerungen 30 Tage ausblenden",
+      "resetSnooze": "Erinnerungen wieder anzeigen",
+      "applyOnKeyLabel": "TBM-Empfehlung beim Speichern des API-Schlüssels anwenden"
+    }
   },
   "RssFeeds": {
     "actions": "Aktionen",

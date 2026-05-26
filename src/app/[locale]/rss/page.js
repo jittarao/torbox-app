@@ -9,6 +9,7 @@ import RssItemsManager from '@/components/rss/RssItemsManager';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
+import ReferralInlineHint from '@/components/referral/ReferralInlineHint';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -204,6 +205,7 @@ export default function RssPage() {
                   <p className="text-primary-text/70 dark:text-primary-text-dark/70">
                     {t('proUserRequired')}
                   </p>
+                  <ReferralInlineHint apiKey={apiKey} />
                 </div>
               </div>
             </div>

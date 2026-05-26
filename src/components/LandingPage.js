@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { Syne } from 'next/font/google';
 import ApiKeyInput from './downloads/ApiKeyInput';
-import { GITHUB_REPO_URL, REFERRAL_CODE, REFERRAL_LINK } from '@/components/constants';
+import {
+  GITHUB_REPO_URL,
+  REFERRAL_CODE,
+  REFERRAL_LINK,
+  REFERRAL_HELP_URL,
+} from '@/components/constants';
+import ReferralBenefitChips from '@/components/referral/ReferralBenefitChips';
 import { useTranslations } from 'next-intl';
 
 const syne = Syne({
@@ -184,28 +190,39 @@ export default function LandingPage({ onKeyChange }) {
             opacity: 0,
           }}
         >
-          <div className="text-sm text-zinc-500">
+          <div className="text-sm text-zinc-500 space-y-3">
             <p>{referralT('landingDescription')}</p>
+            <ReferralBenefitChips className="justify-center" />
+            <div>
+              <a
+                href={REFERRAL_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+              >
+                {referralT('signUp')}
+              </a>{' '}
+              or{' '}
+              <button
+                type="button"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(REFERRAL_CODE);
+                  setShowCopied(true);
+                  setTimeout(() => setShowCopied(false), 2000);
+                }}
+                className="ui-btn-ghost !inline-flex !py-1.5 !px-3 !text-xs align-middle ml-1"
+              >
+                {showCopied ? referralT('copied') : referralT('copyCode')}
+              </button>
+            </div>
             <a
-              href={REFERRAL_LINK}
+              href={REFERRAL_HELP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+              className="text-xs text-zinc-600 hover:text-amber-400 underline"
             >
-              {referralT('signUp')}
-            </a>{' '}
-            or{' '}
-            <button
-              type="button"
-              onClick={async () => {
-                await navigator.clipboard.writeText(REFERRAL_CODE);
-                setShowCopied(true);
-                setTimeout(() => setShowCopied(false), 2000);
-              }}
-              className="ui-btn-ghost !inline-flex !py-1.5 !px-3 !text-xs align-middle ml-1"
-            >
-              {showCopied ? referralT('copied') : referralT('copyCode')}
-            </button>
+              {referralT('panel.helpLink')}
+            </a>
           </div>
         </div>
 

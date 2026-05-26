@@ -646,16 +646,71 @@
     "copyAll": "Skopiuj wszystkie",
     "copyCode": "Skopiuj kod",
     "copyLink": "Skopiuj link",
-    "description": "Użyj kodu poniżej, aby uzyskać dodatkowe 7 dni za każdy zakupiony miesiąc.",
+    "description": "7 dodatkowych dni za każdy miesiąc pierwszej płatnej subskrypcji TorBox.",
     "developerNote": "To jest kod referalny twórcy.",
     "error": "Błąd skopiowania do schowka",
-    "landingDescription": "Potrzebujesz konta TorBox? Użyj naszego linku referalnego, aby zarejestrować się i zacząć!",
+    "landingDescription": "Pierwszy raz w TorBox? Użyj naszego linku przy subskrypcji i zyskaj dni bonusu przy pierwszym zakupie.",
     "referral": "Referral",
     "referralCode": "Kod referalny",
     "referralLink": "Link referalny",
     "signUp": "Zarejestruj się w TorBox",
     "title": "Uzyskaj darmowy czas premium",
-    "visitLink": "Odwiedź link"
+    "visitLink": "Odwiedź link",
+    "examples": {
+      "oneMonth": "1 mies. → +7 dni",
+      "threeMonths": "3 mies. → +21 dni",
+      "twelveMonths": "12 mies. → +84 dni"
+    },
+    "panel": {
+      "heroTitle": "Dodatkowe dni przy pierwszej subskrypcji",
+      "heroSubtitle": "7 dni bonusu za każdy kupiony miesiąc (dla Ciebie i polecającego).",
+      "openSubscription": "Otwórz subskrypcję TorBox",
+      "helpLink": "Jak działają polecenia"
+    },
+    "apply": {
+      "button": "Zastosuj na koncie",
+      "confirmTitle": "Zastosować kod polecenia?",
+      "confirmBody": "Kod TorBox Manager zostanie dodany do konta TorBox przed subskrypcją.",
+      "confirmBullet1": "Bonus dotyczy tylko pierwszej płatnej subskrypcji.",
+      "confirmBullet2": "7 dodatkowych dni za miesiąc (np. 12 mies. = 84 dni).",
+      "confirmBullet3": "Istniejącego polecenia nie można tu zmienić.",
+      "cancel": "Anuluj",
+      "confirm": "Zastosuj kod",
+      "applying": "Stosowanie…",
+      "success": "Kod polecenia zastosowany na koncie TorBox.",
+      "error": "Nie udało się zastosować kodu. Spróbuj linku subskrypcji.",
+      "alreadyHasReferrer": "Twoje konto ma już kod polecenia.",
+      "needApiKey": "Najpierw dodaj klucz API TorBox."
+    },
+    "callout": {
+      "slimMessage": "7 dodatkowych dni za miesiąc przy pierwszej subskrypcji TorBox — użyj polecenia przed płatnością.",
+      "compactMessage": "Dni bonusu przy pierwszej subskrypcji — zastosuj kod, potem subskrybuj na TorBox.",
+      "rssHint": "Przejdź na Pro w TorBox i zyskaj dni bonusu z naszym poleceniem.",
+      "apply": "Zastosuj kod",
+      "subscribe": "Subskrybuj",
+      "dismiss": "Ukryj na 30 dni"
+    },
+    "upgradeCard": {
+      "title": "Ulepsz z dniami bonusu",
+      "description": "Zastosuj kod i dokończ pierwszą płatną subskrypcję na TorBox — 7 dodatkowych dni za miesiąc."
+    },
+    "steps": {
+      "title": "Jak to działa",
+      "step1": "Zastosuj kod na koncie TorBox (przycisk powyżej lub wklej na stronie subskrypcji).",
+      "step2": "Subskrybuj na torbox.app — zezwól na wyskakujące okna przy użyciu linku.",
+      "step3": "Dokończ pierwszy płatny zakup; dni bonusu dodadzą się automatycznie.",
+      "popupNote": "Przy użyciu linku potwierdź okno na TorBox przed zakupem."
+    },
+    "disclaimer": {
+      "supportsDevelopment": "Ten kod wspiera też rozwój TorBox Manager.",
+      "firstPurchase": "Bonus dotyczy tylko pierwszego płatnego zakupu.",
+      "giftCards": "Karty podarunkowe i vouchery nie kwalifikują się."
+    },
+    "settings": {
+      "snoozeReminders": "Ukryj przypomnienia na 30 dni",
+      "resetSnooze": "Pokaż przypomnienia ponownie",
+      "applyOnKeyLabel": "Zastosuj polecenie TBM przy zapisie klucza API"
+    }
   },
   "RssFeeds": {
     "actions": "Akcje",

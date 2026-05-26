@@ -11,6 +11,7 @@ import { locales } from '@/i18n/settings';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
 import ReferralDropdown from '@/components/ReferralDropdown';
+import ReferralHeaderBanner from '@/components/referral/ReferralHeaderBanner';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import { headerDropdownItemClass } from '@/components/shared/headerDropdownClasses';
 import { GITHUB_REPO_URL } from '@/components/constants';
@@ -221,7 +222,7 @@ export default function Header({ apiKey }) {
 
             {/* Tier 1: Utility Items */}
             <div className="relative z-[260] flex items-center gap-0.5 lg:gap-1 shrink-0">
-              <ReferralDropdown />
+              <ReferralDropdown apiKey={apiKey} />
               {apiKey && <NotificationBell apiKey={apiKey} />}
               <SystemStatusIndicator apiKey={apiKey} />
             </div>
@@ -361,7 +362,7 @@ export default function Header({ apiKey }) {
                 <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                   {t('menu.referrals')}
                 </span>
-                <ReferralDropdown />
+                <ReferralDropdown apiKey={apiKey} />
               </div>
               {apiKey && (
                 <div className="flex items-center justify-between py-2">
@@ -417,6 +418,8 @@ export default function Header({ apiKey }) {
             </div>
           </div>
         )}
+
+        <ReferralHeaderBanner apiKey={apiKey} />
       </div>
     </div>
   );

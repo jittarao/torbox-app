@@ -646,16 +646,71 @@
     "copyAll": "すべてコピー",
     "copyCode": "コードをコピー",
     "copyLink": "リンクをコピー",
-    "description": "紹介リンクを使用してサインアップし、始めましょう！",
+    "description": "初回の有料TorBoxサブスクで購入月ごとに7日間のボーナス。",
     "developerNote": "これは開発者の紹介コードです",
     "error": "コピーに失敗しました",
-    "landingDescription": "TorBoxアカウントが必要ですか？紹介リンクを使用してサインアップし、始めましょう！",
+    "landingDescription": "TorBoxは初めて？紹介リンクで登録し、初回購入でボーナス日数を獲得。",
     "referral": "紹介",
     "referralCode": "紹介コード",
     "referralLink": "紹介リンク",
     "signUp": "TorBoxにサインアップ",
     "title": "無料のプレミアム時間を取得",
-    "visitLink": "リンクを訪問"
+    "visitLink": "リンクを訪問",
+    "examples": {
+      "oneMonth": "1ヶ月 → +7日",
+      "threeMonths": "3ヶ月 → +21日",
+      "twelveMonths": "12ヶ月 → +84日"
+    },
+    "panel": {
+      "heroTitle": "初回サブスクでボーナス日数",
+      "heroSubtitle": "購入月ごとに7日のボーナス（あなたと紹介者の双方）。",
+      "openSubscription": "TorBoxサブスクを開く",
+      "helpLink": "紹介の仕組み"
+    },
+    "apply": {
+      "button": "アカウントに適用",
+      "confirmTitle": "紹介コードを適用しますか？",
+      "confirmBody": "TorBox Managerの紹介コードを、サブスク前にTorBoxアカウントに追加します。",
+      "confirmBullet1": "ボーナスは初回の有料サブスクのみ対象です。",
+      "confirmBullet2": "購入月ごとに7日（例：12ヶ月＝84日）。",
+      "confirmBullet3": "既に紹介がある場合、ここでは変更できません。",
+      "cancel": "キャンセル",
+      "confirm": "コードを適用",
+      "applying": "適用中…",
+      "success": "紹介コードをTorBoxアカウントに適用しました。",
+      "error": "適用できませんでした。サブスクリプションリンクをお試しください。",
+      "alreadyHasReferrer": "アカウントには既に紹介コードがあります。",
+      "needApiKey": "先にTorBox APIキーを追加してください。"
+    },
+    "callout": {
+      "slimMessage": "初回TorBoxサブスクで月ごとに7日ボーナス — 支払い前に紹介をご利用ください。",
+      "compactMessage": "初回サブスクのボーナス日数 — コード適用後、TorBoxで登録。",
+      "rssHint": "TorBoxでProにアップグレードし、紹介で初回ボーナス日数を獲得。",
+      "apply": "コードを適用",
+      "subscribe": "登録する",
+      "dismiss": "30日間非表示"
+    },
+    "upgradeCard": {
+      "title": "ボーナス日数付きでアップグレード",
+      "description": "コードを適用し、TorBoxで初回有料サブスクを完了 — 月ごとに7日のボーナス。"
+    },
+    "steps": {
+      "title": "手順",
+      "step1": "TorBoxアカウントにコードを適用（上のボタンまたはサブスクページに貼り付け）。",
+      "step2": "torbox.appで登録 — リンク利用時はポップアップを許可。",
+      "step3": "初回有料購入を完了すると、ボーナス日数が自動付与されます。",
+      "popupNote": "リンク利用時は、購入前にTorBoxのポップアップを確認してください。"
+    },
+    "disclaimer": {
+      "supportsDevelopment": "このコードはTorBox Managerの開発も支援します。",
+      "firstPurchase": "ボーナスは初回有料購入のみです。",
+      "giftCards": "ギフトカードとバウチャーは対象外です。"
+    },
+    "settings": {
+      "snoozeReminders": "リマインダーを30日間非表示",
+      "resetSnooze": "リマインダーを再表示",
+      "applyOnKeyLabel": "APIキー保存時にTBM紹介を適用"
+    }
   },
   "RssFeeds": {
     "actions": "アクション",

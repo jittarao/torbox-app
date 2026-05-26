@@ -1,5 +1,8 @@
-export const REFERRAL_CODE = '7908ea44-023c-45f5-86ce-564bc6edaf34';
+export const REFERRAL_CODE =
+  process.env.NEXT_PUBLIC_TORBOX_REFERRAL_CODE || '7908ea44-023c-45f5-86ce-564bc6edaf34';
 export const REFERRAL_LINK = `https://torbox.app/subscription?referral=${REFERRAL_CODE}`;
+export const REFERRAL_HELP_URL =
+  'https://support.torbox.app/en/articles/9875657-how-does-the-torbox-referral-system-work';
 export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
 
 export const API_BASE = 'https://api.torbox.app';
