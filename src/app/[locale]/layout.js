@@ -2,6 +2,8 @@ import { FileHandler } from '@/components/shared/FileHandler';
 import { ErrorHandlerInitializer } from '@/components/shared/ErrorHandlerInitializer';
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
+import { isSearchPageDisabled } from '@/utils/featureFlags';
 import { Suspense } from 'react';
 
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -68,23 +70,27 @@ export default async function LocaleLayout({ children, params }) {
     notFound();
   }
 
+  const searchPageDisabled = isSearchPageDisabled();
+
   return (
     <ThemeProvider>
-      <Suspense
-        fallback={
-          <div className="flex justify-center items-center min-h-screen">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
-          </div>
-        }
-      >
-        <MessagesLoader locale={locale}>
-          <PostHogProvider>
-            <ErrorHandlerInitializer />
-            <FileHandler />
-            {children}
-          </PostHogProvider>
-        </MessagesLoader>
-      </Suspense>
+      <FeatureFlagsProvider searchPageDisabled={searchPageDisabled}>
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center min-h-screen">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+            </div>
+          }
+        >
+          <MessagesLoader locale={locale}>
+            <PostHogProvider>
+              <ErrorHandlerInitializer />
+              <FileHandler />
+              {children}
+            </PostHogProvider>
+          </MessagesLoader>
+        </Suspense>
+      </FeatureFlagsProvider>
     </ThemeProvider>
   );
 }

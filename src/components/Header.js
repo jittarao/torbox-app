@@ -18,9 +18,11 @@ import { headerDropdownItemClass } from '@/components/shared/headerDropdownClass
 import { GITHUB_REPO_URL } from '@/components/constants';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getVersion } from '@/utils/version';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 // import CloudUploadManager from '@/components/downloads/CloudUploadManager';
 
 export default function Header({ apiKey }) {
+  const { searchPageDisabled } = useFeatureFlags();
   const t = useTranslations('Header');
   const pathname = usePathname();
   const { toggleDarkMode } = useTheme();
@@ -115,14 +117,16 @@ export default function Header({ apiKey }) {
                 <span className="hidden lg:inline">{t('menu.downloads')}</span>
               </Link>
 
-              <Link
-                href="/search"
-                className={navLinkClass(isActive('/search'))}
-                title={t('menu.search')}
-              >
-                <Icons.MagnifyingGlass className="w-5 h-5 shrink-0" />
-                <span className="hidden lg:inline">{t('menu.search')}</span>
-              </Link>
+              {!searchPageDisabled && (
+                <Link
+                  href="/search"
+                  className={navLinkClass(isActive('/search'))}
+                  title={t('menu.search')}
+                >
+                  <Icons.MagnifyingGlass className="w-5 h-5 shrink-0" />
+                  <span className="hidden lg:inline">{t('menu.search')}</span>
+                </Link>
+              )}
 
               {/* More Menu Dropdown */}
               <div className="relative z-[260]" ref={moreMenuRef}>
@@ -278,18 +282,20 @@ export default function Header({ apiKey }) {
                 </div>
               </Link>
 
-              <Link
-                href="/search"
-                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+              {!searchPageDisabled && (
+                <Link
+                  href="/search"
+                  className={`block text-zinc-900 dark:text-zinc-100 font-medium 
                   hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
                   ${isActive('/search') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <Icons.MagnifyingGlass className="w-5 h-5" />
-                  {t('menu.search')}
-                </div>
-              </Link>
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icons.MagnifyingGlass className="w-5 h-5" />
+                    {t('menu.search')}
+                  </div>
+                </Link>
+              )}
             </div>
 
             {/* Tier 1: Secondary Navigation */}
