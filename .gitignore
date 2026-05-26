@@ -172,9 +172,6 @@ temp/
 # Local development
 .local/
 
-# Scripts (ignore build scripts)
-/scripts/
-
 # Audiobook
 .ffprobe/
 .audiobook-cache/
