@@ -1035,6 +1035,18 @@
     },
     "title": "Global Upload Options"
   },
+  "Usage": {
+    "danger": {
+      "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Reduce usage soon to avoid warnings or restrictions.",
+      "title": "Very high bandwidth usage"
+    },
+    "learnMore": "How TorBox usage limits work",
+    "viewUsage": "View usage graph",
+    "warning": {
+      "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Staying near this range may attract TorBox abuse monitoring.",
+      "title": "High bandwidth usage"
+    }
+  },
   "UploadProgress": {
     "approachingRateLimit": "Approaching rate limit:",
     "approachingRateLimitDetails": "{perMinute}/10 per minute, {perHour}/60 per hour",
