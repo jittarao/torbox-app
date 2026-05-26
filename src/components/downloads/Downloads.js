@@ -24,7 +24,6 @@ import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import VideoPlayerModal from './VideoPlayerModal';
 import AudioPlayer from './AudioPlayer';
-import AutomationRules from './AutomationRules';
 import FiltersSection from './FiltersSection';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
@@ -696,11 +695,8 @@ export default function Downloads({ apiKey }) {
         </div>
       ) : (
         <>
-          {/* Upload & Automation Section - Compact Grouping */}
-          <div className="space-y-2">
-            {renderUploaders()}
-            {(activeType === 'torrents' || activeType === 'all') && <AutomationRules />}
-          </div>
+          {/* Upload section */}
+          <div className="space-y-2">{renderUploaders()}</div>
 
           {/* Speed Chart - Collapsible by default */}
           <SpeedChart items={items} />

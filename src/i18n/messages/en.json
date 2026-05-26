@@ -214,6 +214,17 @@
     "ruleEvaluatedNoActions": "Rule was evaluated but no actions were performed.",
     "noLogs": "No logs available",
     "noRules": "No automation rules",
+    "emptyState": {
+      "title": "No automation rules yet",
+      "description": "Create rules to automatically stop seeding, archive, delete, tag, or force-start downloads when conditions match.",
+      "howItWorks": "How it works:",
+      "step1": "Define conditions (ratio, status, tags, and more) and choose an action",
+      "step2": "With the backend connected, rules run on a schedule around the clock",
+      "step3": "View execution logs or run a rule manually from its card",
+      "createFirstRule": "Create your first rule",
+      "backendRequired": "Backend required for 24/7 automation",
+      "backendRequiredDescription": "Connect the TorBox Manager backend so rules are saved and evaluated automatically. Without it, rules cannot run in the background."
+    },
     "operators": {
       "eq": "is equal to",
       "gt": "is greater than",
@@ -430,6 +441,7 @@
     "logo": "TorBox Manager Logo",
     "menu": {
       "archived": "Archived",
+      "automation": "Automation Rules",
       "downloads": "Downloads",
       "language": "Language",
       "linkHistory": "Link History",

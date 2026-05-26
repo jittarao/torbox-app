@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAutomationRules } from '@/components/shared/hooks/useAutomationRules';
 import { useBackendMode } from '@/hooks/useBackendMode';
-import useIsMobile from '@/hooks/useIsMobile';
+import Spinner from '@/components/shared/Spinner';
 import {
   TRIGGER_TYPES,
   CONDITION_TYPES,
@@ -15,6 +15,7 @@ import {
 import RuleCard from './components/RuleCard';
 import RuleForm from './components/RuleForm';
 import PresetRulesSection from './components/PresetRulesSection';
+import EmptyState from './components/EmptyState';
 import RuleLogsModal from './components/RuleLogsModal';
 
 // Default new rule structure (using groups)
@@ -43,24 +44,26 @@ const getDefaultNewRule = () => ({
   },
 });
 
-export default function AutomationRules() {
+export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
   const t = useTranslations('AutomationRules');
   const commonT = useTranslations('Common');
   const { mode: backendMode } = useBackendMode();
   const [isAddingRule, setIsAddingRule] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
   const [viewingLogsRuleId, setViewingLogsRuleId] = useState(null);
   const [ruleLogs, setRuleLogs] = useState({});
   const [runningRuleId, setRunningRuleId] = useState(null);
   const [executionResult, setExecutionResult] = useState(null);
-  const isMobile = useIsMobile();
-  const [apiKey, setApiKey] = useState(null);
+  const [apiKey, setApiKey] = useState(apiKeyProp || null);
   useEffect(() => {
+    if (apiKeyProp) {
+      setApiKey(apiKeyProp);
+      return;
+    }
     setApiKey(typeof window !== 'undefined' ? localStorage.getItem('torboxApiKey') : null);
-  }, []);
+  }, [apiKeyProp]);
   const [newRule, setNewRule] = useState(() => getDefaultNewRule());
-  const { rules, saveRules } = useAutomationRules(apiKey);
+  const { rules, saveRules, loading } = useAutomationRules(apiKey);
 
   // Backend mode indicator
   const isBackendMode = backendMode === 'backend';
@@ -560,10 +563,8 @@ export default function AutomationRules() {
   const activeRules = rules.filter((rule) => rule.enabled);
   const viewingRule = rules.find((r) => r.id === viewingLogsRuleId);
 
-  return (
-    <div className="px-2 py-2 lg:p-4 mt-4 mb-4 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
-      {/* Execution Result Info Box */}
-      {executionResult && (
+  const renderExecutionResult = () =>
+    executionResult && (
         <div
           className={`mb-4 p-4 border rounded-lg ${
             executionResult.rateLimited
@@ -682,12 +683,15 @@ export default function AutomationRules() {
             </button>
           </div>
         </div>
-      )}
-      <div className="flex justify-between items-center gap-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
-            {isMobile ? t('mobileTitle') : t('title')}
-          </h3>
+    );
+
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-md lg:text-xl font-medium text-primary-text dark:text-primary-text-dark">
+            {t('title')}
+          </h1>
           <span className="text-xs text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 px-1.5 py-0.5 rounded-md">
             Beta
           </span>
@@ -700,93 +704,67 @@ export default function AutomationRules() {
             ({activeRules.length} rule{activeRules.length === 1 ? '' : 's'} active)
           </span>
         </div>
-        <div className="flex items-center gap-2 lg:gap-4">
+        {!isAddingRule && rules.length > 0 && (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
+            type="button"
+            onClick={() => setIsAddingRule(true)}
+            className="shrink-0 inline-flex items-center gap-1 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
           >
-            {isExpanded ? t('section.hide') : t('section.show')}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
+            + {t('addRule')}
           </button>
-        </div>
+        )}
       </div>
 
-      {isExpanded && (
-        <div className="mt-4">
-          {/* Rules List */}
-          <div className="space-y-4">
-            {rules.length === 0 && (
-              <div className="text-center text-primary-text/70 dark:text-primary-text-dark/70 py-8">
-                {t('noRules')}
-              </div>
-            )}
-            {rules.map((rule, index) => (
-              <RuleCard
-                key={rule.id || `temp-${index}`}
-                rule={rule}
-                onToggle={handleToggleRule}
-                onEdit={handleEditRule}
-                onDelete={handleDeleteRule}
-                onViewLogs={handleViewLogs}
-                onRun={handleRunRule}
-                isRunning={runningRuleId === rule.id}
-                t={t}
-                commonT={commonT}
-              />
-            ))}
+      {renderExecutionResult()}
 
-            {!isAddingRule && (
-              <div className="space-y-4">
-                {/* Preset Rules */}
-                <PresetRulesSection onApplyPreset={applyPreset} t={t} />
-
-                {/* Add Custom Rule */}
-                <div className="flex justify-center items-center">
-                  <button
-                    onClick={() => setIsAddingRule(true)}
-                    className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
-                  >
-                    + {t('addRule')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Add/Edit Rule Form */}
-          {isAddingRule && (
-            <RuleForm
-              rule={newRule}
-              onRuleChange={setNewRule}
-              onSubmit={handleAddRule}
-              onCancel={handleCancelForm}
-              onAddGroup={handleAddGroup}
-              onRemoveGroup={handleRemoveGroup}
-              onUpdateGroup={handleUpdateGroup}
-              onAddCondition={handleAddCondition}
-              onRemoveCondition={handleRemoveCondition}
-              onUpdateCondition={handleUpdateCondition}
-              editingRuleId={editingRuleId}
+      {loading && rules.length === 0 ? (
+        <div className="flex justify-center items-center py-12">
+          <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
+        </div>
+      ) : isAddingRule ? (
+        <RuleForm
+          rule={newRule}
+          onRuleChange={setNewRule}
+          onSubmit={handleAddRule}
+          onCancel={handleCancelForm}
+          onAddGroup={handleAddGroup}
+          onRemoveGroup={handleRemoveGroup}
+          onUpdateGroup={handleUpdateGroup}
+          onAddCondition={handleAddCondition}
+          onRemoveCondition={handleRemoveCondition}
+          onUpdateCondition={handleUpdateCondition}
+          editingRuleId={editingRuleId}
+          t={t}
+          commonT={commonT}
+          apiKey={apiKey}
+        />
+      ) : rules.length === 0 ? (
+        <EmptyState
+          isBackendMode={isBackendMode}
+          onCreateRule={() => setIsAddingRule(true)}
+          onApplyPreset={applyPreset}
+          presetT={t}
+        />
+      ) : (
+        <div className="space-y-4">
+          {rules.map((rule, index) => (
+            <RuleCard
+              key={rule.id || `temp-${index}`}
+              rule={rule}
+              onToggle={handleToggleRule}
+              onEdit={handleEditRule}
+              onDelete={handleDeleteRule}
+              onViewLogs={handleViewLogs}
+              onRun={handleRunRule}
+              isRunning={runningRuleId === rule.id}
               t={t}
               commonT={commonT}
-              apiKey={apiKey}
             />
-          )}
+          ))}
+          <PresetRulesSection onApplyPreset={applyPreset} t={t} />
         </div>
       )}
 
-      {/* Rule Logs Modal */}
       <RuleLogsModal
         ruleId={viewingLogsRuleId}
         ruleName={viewingRule?.name}

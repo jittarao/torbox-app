@@ -202,6 +202,17 @@
     "noConditionsInGroup": "Keine Bedingungen in dieser Gruppe. Klicken Sie auf '+ Bedingung' um eine hinzuzufügen.",
     "noLogs": "Keine Protokolle verfügbar",
     "noRules": "Keine Automatisierungsregeln",
+    "emptyState": {
+      "title": "Noch keine Automatisierungsregeln",
+      "description": "Erstellen Sie Regeln, um automatisch das Seeding zu stoppen, zu archivieren, zu löschen, Tags zu setzen oder Downloads zu starten, wenn Bedingungen erfüllt sind.",
+      "howItWorks": "So funktioniert es:",
+      "step1": "Bedingungen definieren (Ratio, Status, Tags usw.) und eine Aktion wählen",
+      "step2": "Mit verbundenem Backend laufen Regeln rund um die Uhr nach Zeitplan",
+      "step3": "Ausführungsprotokolle anzeigen oder eine Regel manuell von der Karte aus starten",
+      "createFirstRule": "Erste Regel erstellen",
+      "backendRequired": "Backend für 24/7-Automatisierung erforderlich",
+      "backendRequiredDescription": "Verbinden Sie das TorBox Manager Backend, damit Regeln gespeichert und automatisch ausgewertet werden. Ohne Backend können Regeln nicht im Hintergrund laufen."
+    },
     "operators": {
       "eq": "ist gleich",
       "gt": "ist größer als",
@@ -414,6 +425,7 @@
     "logo": "TorBox Manager Logo",
     "menu": {
       "archived": "Archiviert",
+      "automation": "Automatisierungsregeln",
       "downloads": "Downloads",
       "language": "Sprache",
       "linkHistory": "Link-Verlauf",
