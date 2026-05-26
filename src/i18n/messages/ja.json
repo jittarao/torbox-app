@@ -1012,6 +1012,18 @@
     },
     "title": "グローバルアップロードオプション"
   },
+  "Usage": {
+    "danger": {
+      "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。警告や制限を避けるため、すぐに使用量を減らしてください。",
+      "title": "帯域使用量が非常に多い"
+    },
+    "learnMore": "TorBoxの利用制限について",
+    "viewUsage": "使用状況グラフを表示",
+    "warning": {
+      "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。この範囲に近い利用は、TorBoxの不正利用監視の対象になる可能性があります。",
+      "title": "帯域使用量が多い"
+    }
+  },
   "UploadProgress": {
     "approachingRateLimit": "レート制限に近づいています:",
     "approachingRateLimitDetails": "分あたり {perMinute}/10、時間あたり {perHour}/60",

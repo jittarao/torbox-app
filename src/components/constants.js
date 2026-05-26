@@ -3,6 +3,8 @@ export const REFERRAL_CODE =
 export const REFERRAL_LINK = `https://torbox.app/subscription?referral=${REFERRAL_CODE}`;
 export const REFERRAL_HELP_URL =
   'https://support.torbox.app/en/articles/9875657-how-does-the-torbox-referral-system-work';
+export const ABUSE_POLICY_URL =
+  'https://support.torbox.app/en/articles/10336778-the-torbox-abuse-system';
 export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
 
 export const API_BASE = 'https://api.torbox.app';

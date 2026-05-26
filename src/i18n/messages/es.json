@@ -1012,6 +1012,18 @@
     },
     "title": "Opciones de carga global"
   },
+  "Usage": {
+    "danger": {
+      "message": "Has usado {used} de tu mínimo de plan de {limit} ({percent} %) en los últimos 30 días. Reduce el uso pronto para evitar advertencias o restricciones.",
+      "title": "Uso de ancho de banda muy alto"
+    },
+    "learnMore": "Cómo funcionan los límites de uso de TorBox",
+    "viewUsage": "Ver gráfico de uso",
+    "warning": {
+      "message": "Has usado {used} de tu mínimo de plan de {limit} ({percent} %) en los últimos 30 días. Mantenerse cerca de este rango puede activar el monitoreo de abuso de TorBox.",
+      "title": "Uso de ancho de banda alto"
+    }
+  },
   "UploadProgress": {
     "approachingRateLimit": "Límite de velocidad aproximándose:",
     "approachingRateLimitDetails": "{perMinute}/10 por minuto, {perHour}/60 por hora",

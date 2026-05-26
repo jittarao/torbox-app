@@ -37,6 +37,7 @@ import { formatSize } from './utils/formatters';
 import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import ReferralCallout from '@/components/referral/ReferralCallout';
+import UsageCallout from '@/components/downloads/UsageCallout';
 
 export default function Downloads({ apiKey }) {
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
@@ -707,6 +708,8 @@ export default function Downloads({ apiKey }) {
             setIsDownloadPanelOpen={setIsDownloadPanelOpen}
             setToast={setToast}
           />
+
+          {apiKey && <UsageCallout apiKey={apiKey} planId={permissions?.planId} />}
 
           <ReferralCallout apiKey={apiKey} variant="compact" onToast={setToast} />
 

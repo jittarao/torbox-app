@@ -1012,6 +1012,18 @@
     },
     "title": "Globalne opcje przesyłania"
   },
+  "Usage": {
+    "danger": {
+      "message": "W ciągu ostatnich 30 dni wykorzystałeś {used} z minimalnego limitu planu {limit} ({percent} %). Wkrótce zmniejsz zużycie, aby uniknąć ostrzeżeń lub ograniczeń.",
+      "title": "Bardzo wysokie zużycie pasma"
+    },
+    "learnMore": "Jak działają limity użytkowania TorBox",
+    "viewUsage": "Zobacz wykres zużycia",
+    "warning": {
+      "message": "W ciągu ostatnich 30 dni wykorzystałeś {used} z minimalnego limitu planu {limit} ({percent} %). Utrzymywanie się w tym zakresie może uruchomić monitoring nadużyć TorBox.",
+      "title": "Wysokie zużycie pasma"
+    }
+  },
   "UploadProgress": {
     "approachingRateLimit": "Zbliżanie się do limitu:",
     "approachingRateLimitDetails": "{perMinute}/10 na minutę, {perHour}/60 na godzinę",

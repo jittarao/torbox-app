@@ -1012,6 +1012,18 @@
     },
     "title": "Globale Upload-Optionen"
   },
+  "Usage": {
+    "danger": {
+      "message": "Sie haben {used} von Ihrem Plan-Minimum von {limit} ({percent} %) in den letzten 30 Tagen verbraucht. Reduzieren Sie die Nutzung bald, um Warnungen oder Einschränkungen zu vermeiden.",
+      "title": "Sehr hohe Bandbreitennutzung"
+    },
+    "learnMore": "So funktionieren TorBox-Nutzungslimits",
+    "viewUsage": "Nutzungsdiagramm anzeigen",
+    "warning": {
+      "message": "Sie haben {used} von Ihrem Plan-Minimum von {limit} ({percent} %) in den letzten 30 Tagen verbraucht. Eine Nutzung in diesem Bereich kann TorBox-Missbrauchsüberwachung auslösen.",
+      "title": "Hohe Bandbreitennutzung"
+    }
+  },
   "UploadProgress": {
     "approachingRateLimit": "Rate-Limit wird erreicht:",
     "approachingRateLimitDetails": "{perMinute}/10 pro Minute, {perHour}/60 pro Stunde",

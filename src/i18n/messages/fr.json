@@ -1012,6 +1012,18 @@
     },
     "title": "Options de téléchargement globales"
   },
+  "Usage": {
+    "danger": {
+      "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Réduisez votre utilisation rapidement pour éviter des avertissements ou des restrictions.",
+      "title": "Utilisation de bande passante très élevée"
+    },
+    "learnMore": "Comment fonctionnent les limites d'utilisation TorBox",
+    "viewUsage": "Voir le graphique d'utilisation",
+    "warning": {
+      "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Rester proche de cette plage peut déclencher la surveillance des abus TorBox.",
+      "title": "Utilisation de bande passante élevée"
+    }
+  },
   "UploadProgress": {
     "approachingRateLimit": "Limite de débit approchée:",
     "approachingRateLimitDetails": "{perMinute}/10 par minute, {perHour}/60 par heure",
