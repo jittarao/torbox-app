@@ -395,6 +395,31 @@
     "updating": "更新中...",
     "viewNamePlaceholder": "ビュー名..."
   },
+  "DownloadsFilters": {
+    "sidebarLabel": "フィルター",
+    "viewsSection": "ビュー",
+    "tagsSection": "タグ",
+    "noViews": "保存されたビューはありません。",
+    "noTags": "タグはありません。",
+    "newFilter": "新しいフィルター",
+    "manageTags": "タグを管理",
+    "modalTitle": "フィルターを編集",
+    "applyFilters": "フィルターを適用",
+    "clearAll": "すべてクリア",
+    "close": "閉じる",
+    "editFilters": "編集",
+    "activeView": "ビュー: {name}",
+    "activeTag": "タグ: {name}",
+    "activeConditions": "{count}件のフィルターが有効",
+    "menuApply": "適用",
+    "menuEdit": "編集",
+    "menuRename": "名前を変更",
+    "menuDelete": "削除",
+    "confirmDeleteView": "ビュー「{name}」を削除しますか？",
+    "confirmDeleteTag": "タグ「{name}」を削除しますか？すべてのダウンロードから削除されます。",
+    "deleteViewFailed": "ビューの削除に失敗しました: {error}",
+    "deleteTagFailed": "タグの削除に失敗しました: {error}"
+  },
   "DownloadPanel": {
     "actions": {
       "clearAll": "すべてクリア",

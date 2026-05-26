@@ -24,7 +24,16 @@ import ActionBar from './ActionBar/index';
 import CardList from './CardList';
 import VideoPlayerModal from './VideoPlayerModal';
 import AudioPlayer from './AudioPlayer';
-import FiltersSection from './FiltersSection';
+import FiltersSidebar, { filtersFromView } from './FiltersSidebar';
+import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
+import FilterEditorModal from './FilterEditorModal';
+import ActiveFiltersBar from './ActiveFiltersBar';
+import {
+  EMPTY_FILTERS,
+  buildTagFilter,
+  normalizeFilters,
+  getActiveTagIds,
+} from './filters/filterHelpers';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useTags } from '@/components/shared/hooks/useTags';
@@ -37,8 +46,10 @@ import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils
 import { useBackendMode } from '@/hooks/useBackendMode';
 import ReferralCallout from '@/components/referral/ReferralCallout';
 import UsageCallout from '@/components/downloads/UsageCallout';
+import { useTranslations } from 'next-intl';
 
 export default function Downloads({ apiKey }) {
+  const downloadsFiltersT = useTranslations('DownloadsFilters');
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
@@ -154,7 +165,7 @@ export default function Downloads({ apiKey }) {
   const { loading, items, setItems, fetchItems } = useFetchData(apiKey, activeType);
 
   // Load tags (only if backend is available)
-  const { loadTags, tags, loading: tagsLoading } = useTags(apiKey);
+  const { loadTags, tags, loading: tagsLoading, updateTag: updateTagName } = useTags(apiKey);
 
   // Load tags once when component mounts (only if backend is available)
   useEffect(() => {
@@ -220,24 +231,14 @@ export default function Downloads({ apiKey }) {
   const { activeColumns, handleColumnChange } = useColumnManager(activeType);
   const { sortField, sortDirection, handleSort, setSort, sortTorrents } = useSort();
 
-  const [columnFilters, setColumnFilters] = useState({
-    logicOperator: 'and',
-    groups: [
-      {
-        logicOperator: 'and',
-        filters: [],
-      },
-    ],
-  });
-  const [appliedFilters, setAppliedFilters] = useState({
-    logicOperator: 'and',
-    groups: [
-      {
-        logicOperator: 'and',
-        filters: [],
-      },
-    ],
-  });
+  const [columnFilters, setColumnFilters] = useState(() =>
+    JSON.parse(JSON.stringify(EMPTY_FILTERS))
+  );
+  const [appliedFilters, setAppliedFilters] = useState(() =>
+    JSON.parse(JSON.stringify(EMPTY_FILTERS))
+  );
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } = useFilter(
     itemsWithTags,
     '',
@@ -252,8 +253,11 @@ export default function Downloads({ apiKey }) {
     applyView,
     clearView,
     loadViews,
+    updateView,
     loading: viewsLoading,
   } = useCustomViews(apiKey);
+
+  const activeTagIds = useMemo(() => getActiveTagIds(appliedFilters), [appliedFilters]);
 
   // Load custom views once when component mounts (only if backend is available)
   useEffect(() => {
@@ -578,66 +582,26 @@ export default function Downloads({ apiKey }) {
     return <ItemUploader apiKey={apiKey} activeType={activeType} />;
   };
 
-  // Handle view application with proper filter normalization
   const handleApplyView = (view) => {
     applyView(view);
-
-    // Reset status filter to 'all' when applying a view
     setStatusFilter('all');
 
-    // Parse filters if they're stored as JSON string (defensive)
-    let filters = view.filters;
-    if (typeof filters === 'string') {
-      try {
-        filters = JSON.parse(filters);
-      } catch (e) {
-        console.error('Error parsing view filters:', e);
-        filters = null;
-      }
-    }
-
-    // Normalize filters structure
-    let normalizedFilters = {
-      logicOperator: 'and',
-      groups: [
-        {
-          logicOperator: 'and',
-          filters: [],
-        },
-      ],
-    };
-
-    if (filters) {
-      if (filters.groups && Array.isArray(filters.groups)) {
-        // New group structure - deep copy to ensure React detects change
-        normalizedFilters = JSON.parse(JSON.stringify(filters));
-      } else if (Array.isArray(filters)) {
-        // Old flat structure - convert to groups
-        normalizedFilters = {
-          logicOperator: 'and',
-          groups: [
-            {
-              logicOperator: 'and',
-              filters: filters,
-            },
-          ],
-        };
-      }
-    }
-
-    // Apply filters - set both draft and applied
+    const normalizedFilters = normalizeFilters(view.filters);
     setColumnFilters(normalizedFilters);
     setAppliedFilters(normalizedFilters);
 
-    // Apply sort if specified
+    if (view.asset_type) {
+      setActiveType(view.asset_type);
+      localStorage.setItem(ASSET_TYPE_STORAGE_KEY, view.asset_type);
+      setSelectedItems({ items: new Set(), files: new Map() });
+    }
+
     if (view.sort_field) {
       setSort(view.sort_field, view.sort_direction || 'desc');
     }
 
-    // Apply visible columns if specified
     let visibleColumns = view.visible_columns;
     if (visibleColumns) {
-      // Parse visible_columns if it's a JSON string (defensive)
       if (typeof visibleColumns === 'string') {
         try {
           visibleColumns = JSON.parse(visibleColumns);
@@ -650,23 +614,255 @@ export default function Downloads({ apiKey }) {
         handleColumnChange(visibleColumns);
       }
     }
+
+    setMobileFiltersOpen(false);
   };
 
-  // Handle clearing view
-  const handleClearView = () => {
+  const handleClearFilters = () => {
     clearView();
-    const emptyFilters = {
-      logicOperator: 'and',
-      groups: [
-        {
-          logicOperator: 'and',
-          filters: [],
-        },
-      ],
-    };
-    setColumnFilters(emptyFilters);
-    setAppliedFilters(emptyFilters);
+    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    setColumnFilters(empty);
+    setAppliedFilters(empty);
   };
+
+  const handleClearView = handleClearFilters;
+
+  const handleApplyTag = (tagId) => {
+    const id = Number(tagId);
+    const isActive =
+      activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
+
+    if (isActive) {
+      handleClearFilters();
+      return;
+    }
+
+    clearView();
+    setStatusFilter('all');
+    const tagFilter = buildTagFilter(id);
+    setColumnFilters(tagFilter);
+    setAppliedFilters(tagFilter);
+    setMobileFiltersOpen(false);
+  };
+
+  const handleEditView = (view) => {
+    applyView(view);
+    setColumnFilters(filtersFromView(view));
+    setFilterModalOpen(true);
+    setMobileFiltersOpen(false);
+  };
+
+  const handleRenameView = async (view) => {
+    const newName = window.prompt('Rename view:', view.name);
+    if (!newName?.trim() || newName.trim() === view.name) return;
+    try {
+      await updateView(view.id, { name: newName.trim() });
+    } catch (error) {
+      alert(`Failed to rename view: ${error.message}`);
+    }
+  };
+
+  const handleRenameTag = async (tag) => {
+    const newName = window.prompt('Rename tag:', tag.name);
+    if (!newName?.trim() || newName.trim() === tag.name) return;
+    try {
+      await updateTagName(tag.id, newName.trim());
+    } catch (error) {
+      alert(`Failed to rename tag: ${error.message}`);
+    }
+  };
+
+  const handleTagDeleted = (tagId) => {
+    if (activeTagIds?.includes(Number(tagId))) {
+      handleClearFilters();
+    }
+  };
+
+  const handleOpenNewFilter = () => {
+    setFilterModalOpen(true);
+    setMobileFiltersOpen(false);
+  };
+
+  const handleApplyFiltersFromModal = (filters) => {
+    setAppliedFilters(normalizeFilters(filters));
+  };
+
+  const sidebarProps = {
+    apiKey,
+    views,
+    activeView,
+    tags,
+    itemsWithTags,
+    activeTagIds,
+    onApplyView: handleApplyView,
+    onClearView: handleClearFilters,
+    onApplyTag: handleApplyTag,
+    onEditView: handleEditView,
+    onRenameView: handleRenameView,
+    onRenameTag: handleRenameTag,
+    onDeleteTag: handleTagDeleted,
+    onNewFilter: handleOpenNewFilter,
+  };
+
+  const downloadsTableContent = (
+    <>
+      {isBackendAvailable && (
+        <ActiveFiltersBar
+          appliedFilters={appliedFilters}
+          activeView={activeView}
+          tags={tags}
+          onClear={handleClearFilters}
+          onEdit={handleOpenNewFilter}
+        />
+      )}
+      <ActionBar
+        unfilteredItems={itemsWithTags}
+        filteredItems={filteredItems}
+        selectedItems={selectedItems}
+        setSelectedItems={setSelectedItems}
+        hasSelectedFiles={hasSelectedFiles}
+        activeColumns={activeColumns}
+        onColumnChange={handleColumnChange}
+        search={search}
+        setSearch={setSearch}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        isDownloading={isDownloading}
+        onBulkDownload={() => handleBulkDownload(selectedItems, sortedItems)}
+        isDeleting={isDeleting}
+        onBulkDelete={(includeParentDownloads) =>
+          deleteItems(selectedItems, includeParentDownloads, itemsWithTags)
+        }
+        isExporting={isExporting}
+        onBulkExport={handleBulkExport}
+        activeType={activeType}
+        isBlurred={isBlurred}
+        onBlurToggle={() => setIsBlurred(!isBlurred)}
+        isFullscreen={isFullscreen}
+        onFullscreenToggle={onFullscreenToggle}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        sortField={sortField}
+        sortDir={sortDirection}
+        handleSort={handleSort}
+        getTotalDownloadSize={getTotalDownloadSize}
+        isDownloadPanelOpen={isDownloadPanelOpen}
+        setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+        apiKey={apiKey}
+        setToast={setToast}
+        expandAllFiles={expandAllFiles}
+        collapseAllFiles={collapseAllFiles}
+        expandedItems={expandedItems}
+        scrollContainerRef={scrollContainerRef}
+      />
+
+      {viewMode === 'table' ? (
+        <ItemsTable
+          apiKey={apiKey}
+          activeType={activeType}
+          activeColumns={activeColumns}
+          setItems={setItems}
+          selectedItems={selectedItems}
+          handleSelectAll={handleSelectAll}
+          handleFileSelect={handleFileSelect}
+          handleRowSelect={handleRowSelect}
+          setSelectedItems={setSelectedItems}
+          downloadHistory={downloadHistory}
+          isBlurred={isBlurred}
+          deleteItem={deleteItem}
+          sortedItems={sortedItems}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          handleSort={handleSort}
+          setToast={setToast}
+          expandedItems={expandedItems}
+          toggleFiles={toggleFiles}
+          isFullscreen={isFullscreen}
+          scrollContainerRef={scrollContainerRef}
+          onOpenVideoPlayer={(
+            streamUrl,
+            fileName,
+            subtitles,
+            audios,
+            metadata,
+            itemId,
+            fileId,
+            streamType,
+            introInformation,
+            initialAudioIndex,
+            initialSubtitleIndex
+          ) => {
+            setVideoPlayerState({
+              isOpen: true,
+              streamUrl,
+              fileName,
+              subtitles,
+              audios,
+              metadata: metadata || {},
+              itemId,
+              fileId,
+              streamType,
+              introInformation: introInformation || null,
+              initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
+              initialSubtitleIndex:
+                initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
+            });
+          }}
+          onAudioPlay={handleAudioPlay}
+        />
+      ) : (
+        <CardList
+          items={sortedItems}
+          selectedItems={selectedItems}
+          setSelectedItems={setSelectedItems}
+          setItems={setItems}
+          apiKey={apiKey}
+          activeColumns={activeColumns}
+          onFileSelect={handleFileSelect}
+          downloadHistory={downloadHistory}
+          onDelete={deleteItem}
+          expandedItems={expandedItems}
+          toggleFiles={toggleFiles}
+          setToast={setToast}
+          activeType={activeType}
+          isBlurred={isBlurred}
+          isFullscreen={isFullscreen}
+          viewMode={viewMode}
+          scrollContainerRef={scrollContainerRef}
+          onOpenVideoPlayer={(
+            streamUrl,
+            fileName,
+            subtitles,
+            audios,
+            metadata,
+            itemId,
+            fileId,
+            streamType,
+            introInformation,
+            initialAudioIndex,
+            initialSubtitleIndex
+          ) => {
+            setVideoPlayerState({
+              isOpen: true,
+              streamUrl,
+              fileName,
+              subtitles,
+              audios,
+              metadata: metadata || {},
+              itemId,
+              fileId,
+              streamType,
+              introInformation: introInformation || null,
+              initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
+              initialSubtitleIndex:
+                initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
+            });
+          }}
+          onAudioPlay={handleAudioPlay}
+        />
+      )}
+    </>
+  );
 
   return (
     <div className="space-y-2 mt-1.5">
@@ -716,179 +912,67 @@ export default function Downloads({ apiKey }) {
 
           <ReferralCallout apiKey={apiKey} variant="compact" onToast={setToast} />
 
-          {/* Filters Section */}
-          <FiltersSection
-            apiKey={apiKey}
-            activeType={activeType}
-            columnFilters={columnFilters}
-            setColumnFilters={setColumnFilters}
-            activeView={isBackendAvailable ? activeView : null}
-            views={isBackendAvailable ? views : null}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            activeColumns={activeColumns}
-            onApplyView={handleApplyView}
-            onClearView={handleClearView}
-            onFiltersChange={(filters) => {
-              // Apply the filters to the table
-              setAppliedFilters(filters);
-            }}
-          />
+          {isBackendAvailable && isMobile && (
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-border dark:border-border-dark rounded-md hover:bg-surface-alt dark:hover:bg-surface-alt-dark md:hidden"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+              {downloadsFiltersT('sidebarLabel')}
+            </button>
+          )}
 
           <div
-            ref={scrollContainerRef}
-            className={`${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
-              downloadLinks.length > 0 ? 'mb-12' : ''
-            }`}
+            className={
+              isBackendAvailable
+                ? 'flex gap-3 lg:gap-4'
+                : undefined
+            }
           >
-            {/* ActionBar - becomes fixed when scrolled past */}
-            <ActionBar
-              unfilteredItems={itemsWithTags}
-              filteredItems={filteredItems}
-              selectedItems={selectedItems}
-              setSelectedItems={setSelectedItems}
-              hasSelectedFiles={hasSelectedFiles}
-              activeColumns={activeColumns}
-              onColumnChange={handleColumnChange}
-              search={search}
-              setSearch={setSearch}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-              isDownloading={isDownloading}
-              onBulkDownload={() => handleBulkDownload(selectedItems, sortedItems)}
-              isDeleting={isDeleting}
-              onBulkDelete={(includeParentDownloads) =>
-                deleteItems(selectedItems, includeParentDownloads, itemsWithTags)
-              }
-              isExporting={isExporting}
-              onBulkExport={handleBulkExport}
-              activeType={activeType}
-              isBlurred={isBlurred}
-              onBlurToggle={() => setIsBlurred(!isBlurred)}
-              isFullscreen={isFullscreen}
-              onFullscreenToggle={onFullscreenToggle}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              sortField={sortField}
-              sortDir={sortDirection}
-              handleSort={handleSort}
-              getTotalDownloadSize={getTotalDownloadSize}
-              isDownloadPanelOpen={isDownloadPanelOpen}
-              setIsDownloadPanelOpen={setIsDownloadPanelOpen}
-              apiKey={apiKey}
-              setToast={setToast}
-              expandAllFiles={expandAllFiles}
-              collapseAllFiles={collapseAllFiles}
-              expandedItems={expandedItems}
-              scrollContainerRef={scrollContainerRef}
-            />
+            {isBackendAvailable && !isMobile && (
+              <FiltersSidebar {...sidebarProps} className="hidden md:flex" />
+            )}
 
-            {viewMode === 'table' ? (
-              <ItemsTable
+            <div
+              ref={scrollContainerRef}
+              className={`flex-1 min-w-0 ${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
+                downloadLinks.length > 0 ? 'mb-12' : ''
+              }`}
+            >
+              {downloadsTableContent}
+            </div>
+          </div>
+
+          {isBackendAvailable && (
+            <>
+              <MobileFiltersDrawer
+                isOpen={mobileFiltersOpen}
+                onClose={() => setMobileFiltersOpen(false)}
+                sidebarProps={sidebarProps}
+              />
+              <FilterEditorModal
+                isOpen={filterModalOpen}
+                onClose={() => setFilterModalOpen(false)}
                 apiKey={apiKey}
                 activeType={activeType}
-                activeColumns={activeColumns}
-                setItems={setItems}
-                selectedItems={selectedItems}
-                handleSelectAll={handleSelectAll}
-                handleFileSelect={handleFileSelect}
-                handleRowSelect={handleRowSelect}
-                setSelectedItems={setSelectedItems}
-                downloadHistory={downloadHistory}
-                isBlurred={isBlurred}
-                deleteItem={deleteItem}
-                sortedItems={sortedItems}
+                columnFilters={columnFilters}
+                setColumnFilters={setColumnFilters}
+                activeView={activeView}
+                onApply={handleApplyFiltersFromModal}
                 sortField={sortField}
                 sortDirection={sortDirection}
-                handleSort={handleSort}
-                setToast={setToast}
-                expandedItems={expandedItems}
-                toggleFiles={toggleFiles}
-                isFullscreen={isFullscreen}
-                scrollContainerRef={scrollContainerRef}
-                onOpenVideoPlayer={(
-                  streamUrl,
-                  fileName,
-                  subtitles,
-                  audios,
-                  metadata,
-                  itemId,
-                  fileId,
-                  streamType,
-                  introInformation,
-                  initialAudioIndex,
-                  initialSubtitleIndex
-                ) => {
-                  setVideoPlayerState({
-                    isOpen: true,
-                    streamUrl,
-                    fileName,
-                    subtitles,
-                    audios,
-                    metadata: metadata || {},
-                    itemId,
-                    fileId,
-                    streamType,
-                    introInformation: introInformation || null,
-                    initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
-                    initialSubtitleIndex:
-                      initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
-                  });
-                }}
-                onAudioPlay={handleAudioPlay}
-              />
-            ) : (
-              <CardList
-                items={sortedItems}
-                selectedItems={selectedItems}
-                setSelectedItems={setSelectedItems}
-                setItems={setItems}
-                apiKey={apiKey}
                 activeColumns={activeColumns}
-                onFileSelect={handleFileSelect}
-                downloadHistory={downloadHistory}
-                onDelete={deleteItem}
-                expandedItems={expandedItems}
-                toggleFiles={toggleFiles}
-                setToast={setToast}
-                activeType={activeType}
-                isBlurred={isBlurred}
-                isFullscreen={isFullscreen}
-                viewMode={viewMode}
-                scrollContainerRef={scrollContainerRef}
-                onOpenVideoPlayer={(
-                  streamUrl,
-                  fileName,
-                  subtitles,
-                  audios,
-                  metadata,
-                  itemId,
-                  fileId,
-                  streamType,
-                  introInformation,
-                  initialAudioIndex,
-                  initialSubtitleIndex
-                ) => {
-                  setVideoPlayerState({
-                    isOpen: true,
-                    streamUrl,
-                    fileName,
-                    subtitles,
-                    audios,
-                    metadata: metadata || {},
-                    itemId,
-                    fileId,
-                    streamType,
-                    introInformation: introInformation || null,
-                    initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
-                    initialSubtitleIndex:
-                      initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
-                  });
-                }}
-                onAudioPlay={handleAudioPlay}
               />
-            )}
-          </div>
+            </>
+          )}
           <VideoPlayerModal
             isOpen={videoPlayerState.isOpen}
             onClose={() =>

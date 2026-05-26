@@ -13,6 +13,7 @@
   --z-overlay-backdrop: 300;
   --z-overlay-panel: 301;
   --z-overlay-dialog: 310;
+  --downloads-sidebar-width: 14rem;
 }
 
 @layer base {
