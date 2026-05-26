@@ -26,8 +26,12 @@ const evaluateFilter = (filter, item) => {
   const operator = filter.operator;
   const filterValue = filter.value;
 
-  // Handle null/undefined values (skip for download_state: queued items have no raw value, status is derived via getMatchingStatus)
-  if (filter.column !== 'download_state' && (columnValue === null || columnValue === undefined)) {
+  // Handle null/undefined values (skip for download_state: queued items have no raw value, status is derived via getMatchingStatus; asset_type uses item.assetType below)
+  if (
+    filter.column !== 'download_state' &&
+    filter.column !== 'asset_type' &&
+    (columnValue === null || columnValue === undefined)
+  ) {
     return false;
   }
 
@@ -165,8 +169,7 @@ const evaluateFilter = (filter, item) => {
           return true;
       }
     } else if (filter.column === 'asset_type') {
-      // For asset_type, match directly
-      const itemValue = String(columnValue || '').toLowerCase();
+      const itemValue = String(item.assetType || item.asset_type || '').toLowerCase();
       const filterValues = Array.isArray(filterValue)
         ? filterValue.map((v) => String(v).toLowerCase())
         : [];
