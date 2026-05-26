@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
@@ -135,8 +135,10 @@ export default function Home() {
   }
 
   return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
-      <Header apiKey={apiKey} />
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
       <div className="container mx-auto px-4 pt-2 pb-4">
         <ApiKeyInput
           value={apiKey}
@@ -146,6 +148,6 @@ export default function Home() {
         />
         <Downloads apiKey={apiKey} />
       </div>
-    </main>
+    </AppShell>
   );
 }

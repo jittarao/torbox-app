@@ -1,7 +1,7 @@
 'use client';
 
 import ArchivedDownloads from '@/components/ArchivedDownloads';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import { Inter } from 'next/font/google';
 import { useState, useEffect } from 'react';
 
@@ -40,11 +40,13 @@ export default function ArchivedDownloadsPage() {
   if (loading) return null;
 
   return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
-      <Header apiKey={apiKey} />
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
       <div className="container mx-auto p-4">
         <ArchivedDownloads apiKey={apiKey} />
       </div>
-    </main>
+    </AppShell>
   );
 }
