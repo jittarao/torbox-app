@@ -213,14 +213,17 @@ export default function ActionBar({
     <Fragment>
       {/* Spacer to prevent layout shift when ActionBar becomes fixed */}
       {isSticky && spacerHeight > 0 && <div style={{ height: `${spacerHeight}px` }} />}
-      <div ref={stickyRef} className={isSticky ? 'fixed top-0 left-0 right-0 z-50' : undefined}>
+      <div
+        ref={stickyRef}
+        className={
+          isSticky
+            ? 'fixed top-0 left-0 right-0 z-50 border-b border-border dark:border-border-dark shadow-lg bg-surface dark:bg-surface-dark'
+            : undefined
+        }
+      >
         <div
           className={`flex flex-col lg:flex-row gap-4 justify-between transition-all duration-200
-            ${
-              isSticky
-                ? `${isFullscreen ? 'px-4' : 'container mx-auto px-4'} py-2 border-b border-border dark:border-border-dark shadow-lg bg-surface dark:bg-surface-dark`
-                : 'pb-4'
-            }`}
+            ${isSticky ? `${isFullscreen ? 'px-4' : 'container mx-auto px-4'} py-2` : 'pb-4'}`}
         >
         <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
           <StatusSection
