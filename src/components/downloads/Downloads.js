@@ -737,7 +737,7 @@ export default function Downloads({ apiKey }) {
 
           <div
             ref={scrollContainerRef}
-            className={`${isFullscreen ? 'fixed inset-0 z-20 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
+            className={`${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
               downloadLinks.length > 0 ? 'mb-12' : ''
             }`}
           >
