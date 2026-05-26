@@ -202,6 +202,17 @@
     "noConditionsInGroup": "Aucune condition dans ce groupe. Cliquez sur '+ Condition' pour en ajouter une.",
     "noLogs": "Aucun journal disponible",
     "noRules": "Aucune règle d'automatisation",
+    "emptyState": {
+      "title": "Aucune règle d'automatisation pour l'instant",
+      "description": "Créez des règles pour arrêter le seeding, archiver, supprimer, étiqueter ou forcer le démarrage des téléchargements lorsque les conditions sont remplies.",
+      "howItWorks": "Comment ça marche :",
+      "step1": "Définissez des conditions (ratio, statut, tags, etc.) et choisissez une action",
+      "step2": "Avec le backend connecté, les règles s'exécutent selon un planning 24h/24",
+      "step3": "Consultez les journaux d'exécution ou lancez une règle manuellement depuis sa carte",
+      "createFirstRule": "Créer votre première règle",
+      "backendRequired": "Backend requis pour l'automatisation 24/7",
+      "backendRequiredDescription": "Connectez le backend TorBox Manager pour que les règles soient enregistrées et évaluées automatiquement. Sans lui, les règles ne peuvent pas s'exécuter en arrière-plan."
+    },
     "operators": {
       "eq": "est égal à",
       "gt": "est supérieur à",
@@ -414,6 +425,7 @@
     "logo": "Logo TorBox Manager",
     "menu": {
       "archived": "Archivés",
+      "automation": "Règles d'automatisation",
       "downloads": "Téléchargements",
       "language": "Langue",
       "linkHistory": "Historique des liens",

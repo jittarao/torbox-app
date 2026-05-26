@@ -130,6 +130,7 @@ export default function Header({ apiKey }) {
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
                   className={`${navLinkClass(
                     isActive('/archived') ||
+                      isActive('/automation') ||
                       isActive('/link-history') ||
                       isActive('/rss') ||
                       isActive('/user') ||
@@ -195,6 +196,16 @@ export default function Header({ apiKey }) {
                   >
                     <Icons.Rss className="w-4 h-4 shrink-0 opacity-80" />
                     <span>{t('menu.rss')}</span>
+                  </Link>
+
+                  <Link
+                    href="/automation"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className={headerDropdownItemClass(isActive('/automation'))}
+                    role="menuitem"
+                  >
+                    <Icons.Bolt className="w-4 h-4 shrink-0 opacity-80" />
+                    <span>{t('menu.automation')}</span>
                   </Link>
 
                   <Link
@@ -332,6 +343,19 @@ export default function Header({ apiKey }) {
                 <div className="flex items-center gap-2">
                   <Icons.Rss className="w-5 h-5" />
                   {t('menu.rss')}
+                </div>
+              </Link>
+
+              <Link
+                href="/automation"
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/automation') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icons.Bolt className="w-5 h-5" />
+                  {t('menu.automation')}
                 </div>
               </Link>
 

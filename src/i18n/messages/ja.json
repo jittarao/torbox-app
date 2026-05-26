@@ -202,6 +202,17 @@
     "noConditionsInGroup": "このグループに条件がありません。 '条件を追加' をクリックして追加してください。",
     "noLogs": "ログがありません",
     "noRules": "自動化ルールがありません",
+    "emptyState": {
+      "title": "自動化ルールはまだありません",
+      "description": "条件に一致したときに、シード停止、アーカイブ、削除、タグ付け、強制開始を自動で行うルールを作成します。",
+      "howItWorks": "仕組み:",
+      "step1": "条件（比率、ステータス、タグなど）を定義し、アクションを選択",
+      "step2": "バックエンド接続時、ルールはスケジュールに従って24時間実行されます",
+      "step3": "実行ログを表示するか、カードから手動でルールを実行",
+      "createFirstRule": "最初のルールを作成",
+      "backendRequired": "24時間自動化にはバックエンドが必要です",
+      "backendRequiredDescription": "TorBox Manager バックエンドを接続して、ルールを保存し自動評価します。接続しないとバックグラウンドで実行できません。"
+    },
     "operators": {
       "eq": "等しい",
       "gt": "より大きい",
@@ -414,6 +425,7 @@
     "logo": "TorBox Manager Logo",
     "menu": {
       "archived": "アーカイブ",
+      "automation": "自動化ルール",
       "downloads": "ダウンロード",
       "language": "言語",
       "linkHistory": "リンク履歴",
