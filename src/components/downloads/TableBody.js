@@ -58,42 +58,46 @@ export default function TableBody({
   );
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
-  const scrollElementRef = useRef(null);
   const tableOffsetTopRef = useRef(0);
   const [tableOffsetTop, setTableOffsetTop] = useState(0);
+  // State (not ref) so binding the fullscreen scroll container triggers a re-render
+  const [fullscreenScrollEl, setFullscreenScrollEl] = useState(null);
 
-  // In fullscreen mode, use the provided scroll container ref
+  // Bind scroll container before paint when entering fullscreen
+  useLayoutEffect(() => {
+    if (isFullscreen) {
+      const el = scrollContainerRef?.current ?? null;
+      setFullscreenScrollEl(el);
+    } else {
+      setFullscreenScrollEl(null);
+    }
+  }, [isFullscreen, scrollContainerRef]);
+
   // In normal mode, track table position for window scroll
   useEffect(() => {
     if (isFullscreen) {
-      // Use the provided scroll container ref
-      if (scrollContainerRef?.current) {
-        scrollElementRef.current = scrollContainerRef.current;
-      }
-    } else {
-      // Track the table's position in the document for window scroll
-      const updateTableOffset = () => {
-        if (tbodyRef.current) {
-          const rect = tbodyRef.current.getBoundingClientRect();
-          const scrollTop = window.scrollY || document.documentElement.scrollTop;
-          const offset = rect.top + scrollTop;
-          tableOffsetTopRef.current = offset;
-          setTableOffsetTop(offset);
-        }
-      };
-
-      // Calculate immediately and after DOM is ready
-      updateTableOffset();
-      requestAnimationFrame(updateTableOffset);
-
-      // Only listen to resize, not scroll, to avoid constant updates
-      window.addEventListener('resize', updateTableOffset);
-
-      return () => {
-        window.removeEventListener('resize', updateTableOffset);
-      };
+      return;
     }
-  }, [isFullscreen, scrollContainerRef]);
+
+    const updateTableOffset = () => {
+      if (tbodyRef.current) {
+        const rect = tbodyRef.current.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const offset = rect.top + scrollTop;
+        tableOffsetTopRef.current = offset;
+        setTableOffsetTop(offset);
+      }
+    };
+
+    updateTableOffset();
+    requestAnimationFrame(updateTableOffset);
+
+    window.addEventListener('resize', updateTableOffset);
+
+    return () => {
+      window.removeEventListener('resize', updateTableOffset);
+    };
+  }, [isFullscreen]);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -189,8 +193,7 @@ export default function TableBody({
     };
   }, [flattenedRows, isMobile]);
 
-  // Memoize getScrollElement to ensure stable reference
-  const getScrollElement = useCallback(() => scrollElementRef.current, []);
+  const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
 
   // Use different virtualizers based on fullscreen mode
   // In fullscreen: use useVirtualizer with scroll container
@@ -381,8 +384,9 @@ export default function TableBody({
     []
   );
 
-  // Track view mode changes to prevent flushSync errors
+  // Track view mode / fullscreen changes to prevent flushSync errors
   const prevViewModeRef = useRef(viewMode);
+  const prevIsFullscreenRef = useRef(isFullscreen);
   const isTransitioningRef = useRef(false);
   const [virtualRows, setVirtualRows] = useState([]);
   // Ref to latest virtualizer so effects don't depend on it (virtualizer reference changes every render)
@@ -412,26 +416,37 @@ export default function TableBody({
     }
   }, []);
 
+  const remeasureAndSync = useCallback(() => {
+    try {
+      virtualizerRef.current.measure?.();
+    } catch (error) {
+      // ignore
+    }
+    syncVirtualRows();
+  }, [syncVirtualRows]);
+
   // Update virtual rows after render completes to prevent flushSync errors
-  // This is critical when switching from Card to Table view
+  // This is critical when switching from Card to Table view or entering fullscreen
   useLayoutEffect(() => {
     const viewModeChanged = prevViewModeRef.current !== viewMode;
+    const fullscreenChanged = prevIsFullscreenRef.current !== isFullscreen;
     prevViewModeRef.current = viewMode;
-    if (viewModeChanged) {
+    prevIsFullscreenRef.current = isFullscreen;
+
+    if (viewModeChanged || fullscreenChanged) {
       isTransitioningRef.current = true;
       setVirtualRows([]);
     }
 
-    // Use requestAnimationFrame to ensure we're outside the render phase
     const rafId = requestAnimationFrame(() => {
-      syncVirtualRows();
+      remeasureAndSync();
       isTransitioningRef.current = false;
     });
     return () => cancelAnimationFrame(rafId);
-  }, [viewMode, flattenedRows.length, isFullscreen, syncVirtualRows]);
+  }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
   useEffect(() => {
-    const scrollTarget = isFullscreen ? scrollElementRef.current : window;
+    const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
     if (!scrollTarget) {
       return;
     }
@@ -459,7 +474,21 @@ export default function TableBody({
       scrollTarget.removeEventListener('scroll', scheduleSync);
       window.removeEventListener('resize', scheduleSync);
     };
-  }, [isFullscreen, flattenedRows.length, syncVirtualRows]);
+  }, [isFullscreen, fullscreenScrollEl, flattenedRows.length, syncVirtualRows]);
+
+  // Re-measure when the fullscreen scroll container resizes (e.g. fixed layout settling)
+  useEffect(() => {
+    if (!isFullscreen || !fullscreenScrollEl) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      remeasureAndSync();
+    });
+    observer.observe(fullscreenScrollEl);
+
+    return () => observer.disconnect();
+  }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
   // Get virtual rows - always use state to prevent flushSync errors
   // State is updated in effects to keep it in sync with scroll

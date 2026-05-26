@@ -62,42 +62,43 @@ export default function CardList({
   );
   const { createStream } = useStream(apiKey);
   const isMobile = useIsMobile();
-  const scrollElementRef = useRef(null);
   const containerOffsetTopRef = useRef(0);
   const [containerOffsetTop, setContainerOffsetTop] = useState(0);
+  const [fullscreenScrollEl, setFullscreenScrollEl] = useState(null);
 
-  // In fullscreen mode, use the provided scroll container ref
+  useLayoutEffect(() => {
+    if (isFullscreen) {
+      setFullscreenScrollEl(scrollContainerRef?.current ?? null);
+    } else {
+      setFullscreenScrollEl(null);
+    }
+  }, [isFullscreen, scrollContainerRef]);
+
   // In normal mode, track container position for window scroll
   useEffect(() => {
     if (isFullscreen) {
-      // Use the provided scroll container ref
-      if (scrollContainerRef?.current) {
-        scrollElementRef.current = scrollContainerRef.current;
-      }
-    } else {
-      // Track the container's position in the document for window scroll
-      const updateContainerOffset = () => {
-        if (parentRef.current) {
-          const rect = parentRef.current.getBoundingClientRect();
-          const scrollTop = window.scrollY || document.documentElement.scrollTop;
-          const offset = rect.top + scrollTop;
-          containerOffsetTopRef.current = offset;
-          setContainerOffsetTop(offset);
-        }
-      };
-
-      // Calculate immediately and after DOM is ready
-      updateContainerOffset();
-      requestAnimationFrame(updateContainerOffset);
-
-      // Only listen to resize, not scroll, to avoid constant updates
-      window.addEventListener('resize', updateContainerOffset);
-
-      return () => {
-        window.removeEventListener('resize', updateContainerOffset);
-      };
+      return;
     }
-  }, [isFullscreen, scrollContainerRef]);
+
+    const updateContainerOffset = () => {
+      if (parentRef.current) {
+        const rect = parentRef.current.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const offset = rect.top + scrollTop;
+        containerOffsetTopRef.current = offset;
+        setContainerOffsetTop(offset);
+      }
+    };
+
+    updateContainerOffset();
+    requestAnimationFrame(updateContainerOffset);
+
+    window.addEventListener('resize', updateContainerOffset);
+
+    return () => {
+      window.removeEventListener('resize', updateContainerOffset);
+    };
+  }, [isFullscreen]);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -138,9 +139,11 @@ export default function CardList({
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
+  const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
+
   const containerVirtualizer = useVirtualizer({
     count: flattenedRows.length,
-    getScrollElement: () => scrollElementRef.current,
+    getScrollElement,
     estimateSize,
     measureElement,
     overscan: 30,
@@ -476,16 +479,18 @@ export default function CardList({
     );
   };
 
-  // Track view mode changes to prevent flushSync errors
   const prevViewModeRef = useRef(viewMode);
+  const prevIsFullscreenRef = useRef(isFullscreen);
   const isTransitioningRef = useRef(false);
   const [virtualRows, setVirtualRows] = useState([]);
   const [totalSize, setTotalSize] = useState(0);
+  const virtualizerRef = useRef(virtualizer);
+  virtualizerRef.current = virtualizer;
 
   const syncVirtualRows = useCallback(() => {
     try {
-      const rows = virtualizer.getVirtualItems();
-      const size = virtualizer.getTotalSize();
+      const rows = virtualizerRef.current.getVirtualItems();
+      const size = virtualizerRef.current.getTotalSize();
       setVirtualRows((previousRows) => {
         if (
           previousRows.length === rows.length &&
@@ -505,29 +510,38 @@ export default function CardList({
     } catch (error) {
       // Silently handle errors and retry on the next sync event
     }
-  }, [virtualizer]);
+  }, []);
 
-  // Update virtual rows after render completes to prevent flushSync errors
-  // This is critical when switching from Table to Card view
+  const remeasureAndSync = useCallback(() => {
+    try {
+      virtualizerRef.current.measure?.();
+    } catch (error) {
+      // ignore
+    }
+    syncVirtualRows();
+  }, [syncVirtualRows]);
+
   useLayoutEffect(() => {
     const viewModeChanged = prevViewModeRef.current !== viewMode;
+    const fullscreenChanged = prevIsFullscreenRef.current !== isFullscreen;
     prevViewModeRef.current = viewMode;
-    if (viewModeChanged) {
+    prevIsFullscreenRef.current = isFullscreen;
+
+    if (viewModeChanged || fullscreenChanged) {
       isTransitioningRef.current = true;
       setVirtualRows([]);
       setTotalSize(0);
     }
 
-    // Use requestAnimationFrame to ensure we're outside the render phase
     const rafId = requestAnimationFrame(() => {
-      syncVirtualRows();
+      remeasureAndSync();
       isTransitioningRef.current = false;
     });
     return () => cancelAnimationFrame(rafId);
-  }, [viewMode, flattenedRows.length, syncVirtualRows]);
+  }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
   useEffect(() => {
-    const scrollTarget = isFullscreen ? scrollElementRef.current : window;
+    const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
     if (!scrollTarget) {
       return;
     }
@@ -555,7 +569,20 @@ export default function CardList({
       scrollTarget.removeEventListener('scroll', scheduleSync);
       window.removeEventListener('resize', scheduleSync);
     };
-  }, [isFullscreen, flattenedRows.length, syncVirtualRows]);
+  }, [isFullscreen, fullscreenScrollEl, flattenedRows.length, syncVirtualRows]);
+
+  useEffect(() => {
+    if (!isFullscreen || !fullscreenScrollEl) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      remeasureAndSync();
+    });
+    observer.observe(fullscreenScrollEl);
+
+    return () => observer.disconnect();
+  }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
   return (
     <>
