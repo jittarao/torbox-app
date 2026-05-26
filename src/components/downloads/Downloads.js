@@ -47,9 +47,10 @@ import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils
 import { useBackendMode } from '@/hooks/useBackendMode';
 import ReferralCallout from '@/components/referral/ReferralCallout';
 import UsageCallout from '@/components/downloads/UsageCallout';
+import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import { useTranslations } from 'next-intl';
 
-export default function Downloads({ apiKey }) {
+export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
@@ -894,6 +895,15 @@ export default function Downloads({ apiKey }) {
         showDesktopFiltersSidebar ? 'md:pl-[var(--downloads-sidebar-width)]' : ''
       }`}
     >
+      {onApiKeyChange && (
+        <ApiKeyInput
+          value={apiKey}
+          onKeyChange={onApiKeyChange}
+          allowKeyManager={true}
+          variant="compact"
+        />
+      )}
+
       {/* Asset Type Tabs */}
       <AssetTypeTabs
         activeType={activeType}
