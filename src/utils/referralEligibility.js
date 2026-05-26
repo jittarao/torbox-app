@@ -1,3 +1,4 @@
+import { REFERRAL_CODE } from '@/components/constants';
 import { isReferralAppliedForKey } from '@/utils/referralApplied';
 import { isReferralReminderDismissed, REFERRAL_CALLOUT_DISMISS_KEY } from '@/utils/referralDismissal';
 
@@ -23,6 +24,39 @@ export function userHasReferrerAttached(userData) {
       userData.using_referral ||
       userData.has_referral
   );
+}
+
+/**
+ * Account owns the configured app referral code (e.g. developer using their own code).
+ * @param {Object|null} userData
+ * @param {string} [referralCode]
+ * @returns {boolean}
+ */
+export function isOwnReferralCode(userData, referralCode = REFERRAL_CODE) {
+  if (!userData?.user_referral || !referralCode) return false;
+  return String(userData.user_referral).toLowerCase() === String(referralCode).toLowerCase();
+}
+
+/**
+ * @param {Object} data - TorBox addreferral error payload
+ * @returns {{ alreadyHasReferrer: boolean, isSelfReferral: boolean }}
+ */
+export function classifyReferralApplyError(data) {
+  const detail = String(data.detail || data.error || '').toLowerCase();
+  const errorCode = String(data.error || '').toUpperCase();
+
+  const isSelfReferral =
+    errorCode === 'WHY_ARE_YOU_LIKE_THIS' ||
+    detail.includes('cannot refer yourself') ||
+    detail.includes("can't refer yourself");
+
+  const alreadyHasReferrer =
+    !isSelfReferral &&
+    (detail.includes('already') ||
+      detail.includes('existing referrer') ||
+      errorCode === 'DUPLICATE_ITEM');
+
+  return { alreadyHasReferrer, isSelfReferral };
 }
 
 /**
@@ -56,6 +90,10 @@ export function getReferralEligibilityCore({ apiKey, userData, subscriptions }) 
 
   if (isReferralAppliedForKey(apiKey)) {
     return { eligible: false, canAutoApply: false, reason: 'applied_locally' };
+  }
+
+  if (isOwnReferralCode(userData)) {
+    return { eligible: false, canAutoApply: false, reason: 'own_referral_code' };
   }
 
   if (userHasReferrerAttached(userData)) {
@@ -122,7 +160,7 @@ export function markReferralCalloutShownThisSession() {
 /**
  * @param {string} apiKey
  * @param {string} referralCode
- * @returns {Promise<{ success: boolean, error?: string, detail?: string, alreadyHasReferrer?: boolean }>}
+ * @returns {Promise<{ success: boolean, error?: string, detail?: string, alreadyHasReferrer?: boolean, isSelfReferral?: boolean, skipFutureAttempts?: boolean }>}
  */
 export async function applyReferralToAccount(apiKey, referralCode) {
   const response = await fetch('/api/user/addreferral', {
@@ -140,17 +178,16 @@ export async function applyReferralToAccount(apiKey, referralCode) {
     return { success: true };
   }
 
-  const detail = String(data.detail || data.error || '').toLowerCase();
-  const alreadyHasReferrer =
-    detail.includes('already') ||
-    detail.includes('referral') ||
-    response.status === 409 ||
-    data.error === 'DUPLICATE_ITEM';
+  const { alreadyHasReferrer, isSelfReferral } = classifyReferralApplyError(data);
+  const skipFutureAttempts =
+    alreadyHasReferrer || isSelfReferral || response.status === 409;
 
   return {
     success: false,
     error: data.detail || data.error || 'Failed to apply referral code',
     detail: data.detail,
     alreadyHasReferrer,
+    isSelfReferral,
+    skipFutureAttempts,
   };
 }

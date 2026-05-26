@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { fetchUserProfile } from '@/utils/userProfile';
-import { getReferralEligibility, getReferralEligibilityCore } from '@/utils/referralEligibility';
+import {
+  getReferralEligibility,
+  getReferralEligibilityCore,
+  isOwnReferralCode,
+} from '@/utils/referralEligibility';
+import { markReferralAppliedForKey } from '@/utils/referralApplied';
 
 /**
  * @param {string} apiKey
@@ -39,6 +44,10 @@ export function useReferralEligibility(apiKey, options = {}) {
       const subs = subsResponse?.success ? subsResponse.data : null;
       setUserData(profile);
       setSubscriptions(subs);
+
+      if (isOwnReferralCode(profile)) {
+        markReferralAppliedForKey(apiKey);
+      }
 
       const next = getReferralEligibility({
         apiKey,

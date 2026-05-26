@@ -55,9 +55,11 @@ export function useReferralActions({ apiKey, onToast, onApplied, t }) {
         notify(t('apply.success'), 'success');
         setShowConfirm(false);
         onApplied?.();
-      } else if (result.alreadyHasReferrer) {
+      } else if (result.skipFutureAttempts) {
         markReferralAppliedForKey(apiKey);
-        notify(t('apply.alreadyHasReferrer'), 'info');
+        if (!result.isSelfReferral) {
+          notify(t('apply.alreadyHasReferrer'), 'info');
+        }
         setShowConfirm(false);
         onApplied?.();
       } else {
