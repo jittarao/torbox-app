@@ -73,7 +73,7 @@ export default function DownloadPanel({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50">
+    <div className="fixed inset-x-0 bottom-[calc(var(--mobile-bottom-nav-height,0px)+env(safe-area-inset-bottom,0px))] z-50 md:bottom-0">
       {/* Minimized State */}
       {!isDownloadPanelOpen && (
         <div className="max-w-4xl mx-auto px-4">

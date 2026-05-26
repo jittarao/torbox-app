@@ -31,3 +31,23 @@ export function buildNavItems(ctx = {}) {
     items: filterVisible(NAV_ITEMS, ctx),
   };
 }
+
+/** Primary destinations for the mobile bottom tab bar (max 3 + More). */
+function getMobileTabHrefs(ctx) {
+  if (ctx.searchPageDisabled) {
+    return ['/', '/rss', '/uploads'];
+  }
+  return ['/', '/search', '/uploads'];
+}
+
+export function buildMobileNav(ctx = {}) {
+  const items = filterVisible(NAV_ITEMS, ctx);
+  const tabHrefs = new Set(getMobileTabHrefs(ctx));
+  const tabs = getMobileTabHrefs(ctx)
+    .map((href) => items.find((item) => item.href === href))
+    .filter(Boolean);
+  const moreItems = items.filter((item) => !tabHrefs.has(item.href));
+
+  return { tabs, moreItems };
+}
+

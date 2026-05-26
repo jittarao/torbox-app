@@ -6,8 +6,10 @@
   --background: #fafafa;
   --foreground: #18181b;
   --landing-bg: #0a0a0b;
-  /* App shell layering (mobile drawer < header overlays < confirm dialogs) */
+  /* App shell layering (mobile chrome < header overlays < confirm dialogs) */
+  --mobile-bottom-nav-height: 3.25rem;
   --z-mobile-header: 50;
+  --z-mobile-bottom-nav: 48;
   --z-mobile-drawer-backdrop: 255;
   --z-mobile-drawer: 260;
   --z-overlay-backdrop: 300;
@@ -126,6 +128,29 @@ select option {
   .ui-sidebar-nav-active {
     @apply ui-sidebar-nav text-amber-700 bg-amber-500/15 border border-amber-500/20
       dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/25;
+  }
+
+  .ui-mobile-tab {
+    @apply flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5
+      text-[10px] font-medium leading-tight text-zinc-500 transition-colors duration-150
+      hover:text-zinc-800 active:scale-[0.97]
+      dark:text-zinc-400 dark:hover:text-zinc-200;
+  }
+
+  .ui-mobile-tab-active {
+    @apply ui-mobile-tab text-amber-700 dark:text-amber-400;
+  }
+
+  .ui-mobile-more-link {
+    @apply flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium
+      text-zinc-700 transition-colors duration-150
+      hover:bg-zinc-100/80 active:bg-zinc-100
+      dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:active:bg-white/[0.08];
+  }
+
+  .ui-mobile-more-link-active {
+    @apply ui-mobile-more-link text-amber-700 bg-amber-500/15
+      dark:text-amber-400 dark:bg-amber-500/10;
   }
 
   .ui-sidebar-section-label {
@@ -405,6 +430,16 @@ select option {
 @layer utilities {
   .z-mobile-header {
     z-index: var(--z-mobile-header);
+  }
+
+  .z-mobile-bottom-nav {
+    z-index: var(--z-mobile-bottom-nav);
+  }
+
+  .pb-mobile-nav {
+    padding-bottom: calc(
+      var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+    );
   }
 
   .z-mobile-drawer-backdrop {
