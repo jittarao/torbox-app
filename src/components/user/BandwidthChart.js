@@ -90,7 +90,6 @@ export default function BandwidthChart({ apiKey }) {
 
     try {
       const params = new URLSearchParams({
-        general: 'false',
         bandwidth: 'true',
         bandwidth_grouping: grouping,
       });
