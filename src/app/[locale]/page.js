@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/navigation/AppShell';
-import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
 
@@ -140,13 +139,7 @@ export default function Home() {
       className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
     >
       <div className="container mx-auto px-4 pt-2 pb-4">
-        <ApiKeyInput
-          value={apiKey}
-          onKeyChange={handleKeyChange}
-          allowKeyManager={true}
-          variant="compact"
-        />
-        <Downloads apiKey={apiKey} />
+        <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
       </div>
     </AppShell>
   );
