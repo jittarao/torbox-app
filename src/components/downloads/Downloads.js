@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDelete } from '../shared/hooks/useDelete';
@@ -306,6 +306,13 @@ export default function Downloads({ apiKey }) {
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
   };
+
+  // Reset scroll when entering fullscreen so virtualization starts from the top
+  useLayoutEffect(() => {
+    if (isFullscreen && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [isFullscreen]);
 
   // Bulk export torrent files
   const handleBulkExport = async () => {
