@@ -1,68 +1,60 @@
 'use client';
 
 import NextError from 'next/error';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { isChunkOrStaleCacheError, scheduleChunkRecoveryReload } from '@/utils/errorHandler';
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
+  const recoveryAttempted = useRef(false);
+
   useEffect(() => {
-    // Check if this is a chunk loading or service worker error
-    const isChunkError =
-      error?.message?.includes('ChunkLoadError') ||
-      error?.message?.includes('Loading chunk') ||
-      error?.message?.includes('Failed to fetch dynamically imported module') ||
-      error?.message?.includes('returnNaN') ||
-      error?.message?.includes('is not defined') ||
-      error?.name === 'ChunkLoadError';
-
-    // If it's a chunk/service worker error, attempt recovery
-    if (isChunkError && typeof window !== 'undefined') {
-      console.warn(
-        'Chunk loading error detected in global error boundary. Attempting recovery...',
-        error
-      );
-
-      // Clear service worker cache and reload
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          registrations.forEach((registration) => {
-            registration.unregister();
-          });
+    if (
+      recoveryAttempted.current ||
+      typeof window === 'undefined' ||
+      !isChunkOrStaleCacheError(error)
+    ) {
+      if (
+        process.env.SENTRY_ENABLED === 'true' ||
+        process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true'
+      ) {
+        import('@sentry/nextjs').then((Sentry) => {
+          Sentry.captureException(error);
         });
       }
-
-      // Clear caches
-      if ('caches' in window) {
-        caches.keys().then((cacheNames) => {
-          return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
-        });
-      }
-
-      // Reload after a short delay
-      const reloadTimer = setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-
-      return () => clearTimeout(reloadTimer);
+      return;
     }
 
-    // Only capture exception if Sentry is enabled
-    if (
-      process.env.SENTRY_ENABLED === 'true' ||
-      process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true'
-    ) {
-      import('@sentry/nextjs').then((Sentry) => {
-        Sentry.captureException(error);
+    recoveryAttempted.current = true;
+
+    console.warn(
+      'Chunk loading error detected in global error boundary. Attempting recovery...',
+      error
+    );
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
+        });
       });
     }
+
+    if ('caches' in window) {
+      caches.keys().then((cacheNames) => {
+        return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      });
+    }
+
+    const reloadTimer = setTimeout(() => {
+      scheduleChunkRecoveryReload(0);
+    }, 1000);
+
+    return () => clearTimeout(reloadTimer);
   }, [error]);
 
   return (
     <html lang="en">
       <body>
-        {/* `NextError` is the default Next.js error page component. Its type
-        definition requires a `statusCode` prop. However, since the App Router
-        does not expose status codes for errors, we simply pass 0 to render a
-        generic error message. */}
         <NextError statusCode={0} />
       </body>
     </html>
