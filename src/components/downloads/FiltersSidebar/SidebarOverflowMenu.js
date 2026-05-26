@@ -86,6 +86,18 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
 
   if (!isOpen || !portalTarget || !menuLayout) return null;
 
+  const stopMenuEvent = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleItemActivate = (item) => {
+    item.onClick();
+    // Keep menu mounted until after the click finishes so the browser does not
+    // retarget the click to whatever sits under the removed portal node.
+    queueMicrotask(onClose);
+  };
+
   return createPortal(
     <div
       ref={menuRef}
@@ -96,15 +108,18 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
         width: menuLayout.width,
       }}
       role="menu"
+      onClick={stopMenuEvent}
+      onMouseDown={stopMenuEvent}
     >
       {items.map((item) => (
         <button
           key={item.id}
           type="button"
           role="menuitem"
-          onClick={() => {
-            item.onClick();
-            onClose();
+          onMouseDown={stopMenuEvent}
+          onClick={(e) => {
+            stopMenuEvent(e);
+            handleItemActivate(item);
           }}
           disabled={item.disabled}
           className={`w-full px-3 py-1.5 text-left text-xs transition-colors disabled:opacity-50 ${

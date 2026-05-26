@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
 import SidebarListItem from './SidebarListItem';
+import SidebarOverflowMenu from './SidebarOverflowMenu';
 import { countDownloadsPerTag, countDownloadsPerView } from '../filters/filterHelpers';
 
 function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
@@ -69,6 +70,15 @@ export default function FiltersSidebar({
   const { deleteView } = useCustomViews(apiKey);
   const { deleteTag } = useTags(apiKey);
   const isFixed = variant === 'fixed';
+  const [overflowMenu, setOverflowMenu] = useState(null);
+
+  const closeOverflowMenu = () => setOverflowMenu(null);
+
+  const openOverflowMenu = (key, anchorRef, items) => {
+    setOverflowMenu((current) =>
+      current?.key === key ? null : { key, anchorRef, items }
+    );
+  };
 
   const tagCounts = useMemo(() => countDownloadsPerTag(enrichedDownloads), [enrichedDownloads]);
   const viewCounts = useMemo(
@@ -119,38 +129,50 @@ export default function FiltersSidebar({
           addLabel={t('newView')}
           tall={isFixed}
         >
-          {views.map((view) => (
+          {views.map((view) => {
+            const menuKey = `view-${view.id}`;
+            const viewMenuItems = [
+              {
+                id: 'apply',
+                label: t('menuApply'),
+                onClick: () => onApplyView(view),
+              },
+              {
+                id: 'edit',
+                label: t('menuEdit'),
+                onClick: () => onEditView(view),
+              },
+              {
+                id: 'rename',
+                label: t('menuRename'),
+                onClick: () => onRenameView(view),
+              },
+              {
+                id: 'delete',
+                label: t('menuDelete'),
+                destructive: true,
+                onClick: () => handleDeleteView(view.id, view.name),
+              },
+            ];
+
+            return (
               <SidebarListItem
                 key={view.id}
                 label={view.name}
                 count={viewCounts[view.id]}
                 isActive={activeView?.id === view.id}
                 onClick={() => onApplyView(view)}
-                menuItems={[
-                  {
-                    id: 'apply',
-                    label: t('menuApply'),
-                    onClick: () => onApplyView(view),
-                  },
-                  {
-                    id: 'edit',
-                    label: t('menuEdit'),
-                    onClick: () => onEditView(view),
-                  },
-                  {
-                    id: 'rename',
-                    label: t('menuRename'),
-                    onClick: () => onRenameView(view),
-                  },
-                  {
-                    id: 'delete',
-                    label: t('menuDelete'),
-                    destructive: true,
-                    onClick: () => handleDeleteView(view.id, view.name),
-                  },
-                ]}
+                isMenuOpen={overflowMenu?.key === menuKey}
+                onMenuToggle={(open, anchorRef) => {
+                  if (!open) {
+                    closeOverflowMenu();
+                    return;
+                  }
+                  openOverflowMenu(menuKey, anchorRef, viewMenuItems);
+                }}
               />
-          ))}
+            );
+          })}
         </SidebarSection>
 
         <SidebarSection
@@ -160,33 +182,45 @@ export default function FiltersSidebar({
           addLabel={t('newTag')}
           tall={isFixed}
         >
-          {tags.map((tag) => (
-            <SidebarListItem
-              key={tag.id}
-              label={tag.name}
-              count={tagCounts[tag.id]}
-              isActive={activeTagSet.has(Number(tag.id)) && !activeView}
-              onClick={() => onApplyTag(tag.id)}
-              menuItems={[
-                {
-                  id: 'apply',
-                  label: t('menuApply'),
-                  onClick: () => onApplyTag(tag.id),
-                },
-                {
-                  id: 'rename',
-                  label: t('menuRename'),
-                  onClick: () => onRenameTag(tag),
-                },
-                {
-                  id: 'delete',
-                  label: t('menuDelete'),
-                  destructive: true,
-                  onClick: () => handleDeleteTagItem(tag.id, tag.name),
-                },
-              ]}
-            />
-          ))}
+          {tags.map((tag) => {
+            const menuKey = `tag-${tag.id}`;
+            const tagMenuItems = [
+              {
+                id: 'apply',
+                label: t('menuApply'),
+                onClick: () => onApplyTag(tag.id),
+              },
+              {
+                id: 'rename',
+                label: t('menuRename'),
+                onClick: () => onRenameTag(tag),
+              },
+              {
+                id: 'delete',
+                label: t('menuDelete'),
+                destructive: true,
+                onClick: () => handleDeleteTagItem(tag.id, tag.name),
+              },
+            ];
+
+            return (
+              <SidebarListItem
+                key={tag.id}
+                label={tag.name}
+                count={tagCounts[tag.id]}
+                isActive={activeTagSet.has(Number(tag.id)) && !activeView}
+                onClick={() => onApplyTag(tag.id)}
+                isMenuOpen={overflowMenu?.key === menuKey}
+                onMenuToggle={(open, anchorRef) => {
+                  if (!open) {
+                    closeOverflowMenu();
+                    return;
+                  }
+                  openOverflowMenu(menuKey, anchorRef, tagMenuItems);
+                }}
+              />
+            );
+          })}
         </SidebarSection>
       </div>
 
@@ -213,8 +247,17 @@ export default function FiltersSidebar({
           {t('manageTags')}
         </button>
       </div>
+
+      {overflowMenu && (
+        <SidebarOverflowMenu
+          isOpen
+          onClose={closeOverflowMenu}
+          anchorRef={overflowMenu.anchorRef}
+          items={overflowMenu.items}
+        />
+      )}
     </aside>
   );
 }
 
-export { filtersFromView };
+export { filtersFromView } from '../filters/filterHelpers';
