@@ -970,6 +970,19 @@
     "waitingBeforeNext": "Attente de {time} avant le prochain téléversement"
   },
   "User": {
+    "bandwidth": {
+      "title": "Bande passante (30 derniers jours)",
+      "grouping": "Regroupement",
+      "groupingOptions": {
+        "hour": "Horaire",
+        "day": "Quotidien",
+        "week": "Hebdomadaire",
+        "month": "Mensuel"
+      },
+      "empty": "Aucune donnée de bande passante pour cette période",
+      "loadError": "Échec du chargement des statistiques de bande passante",
+      "retry": "Réessayer"
+    },
     "copyLink": "Copier le lien",
     "copyLinkFailed": "Échec de la copie du lien",
     "description": "Gérez votre compte et consultez vos statistiques",

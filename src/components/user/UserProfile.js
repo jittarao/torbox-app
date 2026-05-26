@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
+import BandwidthChart from '@/components/user/BandwidthChart';
 import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
 
 export default function UserProfile({ apiKey, setToast }) {
@@ -372,6 +373,8 @@ export default function UserProfile({ apiKey, setToast }) {
             </div>
           </div>
         </div>
+
+        <BandwidthChart apiKey={apiKey} />
       </div>
     );
   } catch (err) {

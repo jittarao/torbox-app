@@ -970,6 +970,19 @@
     "waitingBeforeNext": "Warte {time} vor dem nächsten Upload"
   },
   "User": {
+    "bandwidth": {
+      "title": "Bandbreite (letzte 30 Tage)",
+      "grouping": "Gruppierung",
+      "groupingOptions": {
+        "hour": "Stündlich",
+        "day": "Täglich",
+        "week": "Wöchentlich",
+        "month": "Monatlich"
+      },
+      "empty": "Keine Bandbreitendaten für diesen Zeitraum",
+      "loadError": "Bandbreitenstatistiken konnten nicht geladen werden",
+      "retry": "Wiederholen"
+    },
     "copyLink": "Link kopieren",
     "copyLinkFailed": "Link konnte nicht kopiert werden",
     "description": "Verwalten Sie Ihr Konto und sehen Sie Ihre Statistiken",

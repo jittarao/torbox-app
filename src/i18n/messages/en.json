@@ -993,6 +993,19 @@
     "waitingBeforeNext": "Waiting {time} before next upload"
   },
   "User": {
+    "bandwidth": {
+      "title": "Bandwidth (last 30 days)",
+      "grouping": "Grouping",
+      "groupingOptions": {
+        "hour": "Hourly",
+        "day": "Daily",
+        "week": "Weekly",
+        "month": "Monthly"
+      },
+      "empty": "No bandwidth data for this period",
+      "loadError": "Failed to load bandwidth stats",
+      "retry": "Retry"
+    },
     "copyLink": "Copy Link",
     "copyLinkFailed": "Failed to copy link",
     "description": "Manage your account and view your statistics",

@@ -970,6 +970,19 @@
     "waitingBeforeNext": "Oczekiwanie {time} przed następnym przesyłaniem"
   },
   "User": {
+    "bandwidth": {
+      "title": "Przepustowość (ostatnie 30 dni)",
+      "grouping": "Grupowanie",
+      "groupingOptions": {
+        "hour": "Godzinowo",
+        "day": "Dziennie",
+        "week": "Tygodniowo",
+        "month": "Miesięcznie"
+      },
+      "empty": "Brak danych o przepustowości w tym okresie",
+      "loadError": "Nie udało się załadować statystyk przepustowości",
+      "retry": "Ponów"
+    },
     "copyLink": "Skopiuj link",
     "copyLinkFailed": "Nie udało się skopiować linku",
     "description": "Zarządzaj swoim kontem i przeglądaj statystyki",

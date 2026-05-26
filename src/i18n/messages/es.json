@@ -970,6 +970,19 @@
     "waitingBeforeNext": "Esperando {time} antes de la próxima subida"
   },
   "User": {
+    "bandwidth": {
+      "title": "Ancho de banda (últimos 30 días)",
+      "grouping": "Agrupación",
+      "groupingOptions": {
+        "hour": "Por hora",
+        "day": "Diario",
+        "week": "Semanal",
+        "month": "Mensual"
+      },
+      "empty": "No hay datos de ancho de banda para este período",
+      "loadError": "Error al cargar las estadísticas de ancho de banda",
+      "retry": "Reintentar"
+    },
     "copyLink": "Copiar enlace",
     "copyLinkFailed": "Error al copiar el enlace",
     "description": "Gestiona tu cuenta y ve tus estadísticas",

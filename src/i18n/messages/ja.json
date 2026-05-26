@@ -970,6 +970,19 @@
     "waitingBeforeNext": "次のアップロードまで {time} 待機中"
   },
   "User": {
+    "bandwidth": {
+      "title": "帯域幅（過去30日間）",
+      "grouping": "グループ化",
+      "groupingOptions": {
+        "hour": "時間ごと",
+        "day": "日ごと",
+        "week": "週ごと",
+        "month": "月ごと"
+      },
+      "empty": "この期間の帯域幅データはありません",
+      "loadError": "帯域幅統計の読み込みに失敗しました",
+      "retry": "再試行"
+    },
     "copyLink": "リンクをコピー",
     "copyLinkFailed": "リンクのコピーに失敗しました",
     "description": "アカウントを管理し、統計を確認",
