@@ -33,11 +33,11 @@ module.exports = {
               dark: '#1c1c1f',
             },
             selected: {
-              DEFAULT: '#e4e4e7',
-              dark: '#121214',
+              DEFAULT: '#fef3eb',
+              dark: '#252019',
               hover: {
-                DEFAULT: '#d4d4d8',
-                dark: '#18181b',
+                DEFAULT: '#fde6d4',
+                dark: '#2e2822',
               },
             },
           },
@@ -96,11 +96,11 @@ module.exports = {
           },
         },
         downloaded: {
-          DEFAULT: '#e8f1e8',
-          dark: '#0e222b',
+          DEFAULT: '#f1f3f6',
+          dark: '#171a1e',
           hover: {
-            DEFAULT: '#e1f0e1',
-            dark: '#101f26',
+            DEFAULT: '#e8ebf0',
+            dark: '#1c2026',
           },
         },
       },
