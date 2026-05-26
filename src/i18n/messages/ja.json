@@ -316,6 +316,7 @@
     "file_count": "ファイル数",
     "hash": "ハッシュ",
     "id": "ID",
+    "is_downloaded": "ダウンロード済み",
     "name": "名前",
     "original_url": "ソースURL",
     "peers": "ピア",

@@ -48,7 +48,7 @@ export default function FiltersSidebar({
   views,
   activeView,
   tags,
-  itemsWithTags,
+  enrichedDownloads,
   activeAssetType = 'all',
   activeTagIds,
   onApplyView,
@@ -70,10 +70,10 @@ export default function FiltersSidebar({
   const { deleteTag } = useTags(apiKey);
   const isFixed = variant === 'fixed';
 
-  const tagCounts = useMemo(() => countDownloadsPerTag(itemsWithTags), [itemsWithTags]);
+  const tagCounts = useMemo(() => countDownloadsPerTag(enrichedDownloads), [enrichedDownloads]);
   const viewCounts = useMemo(
-    () => countDownloadsPerView(views, itemsWithTags, activeAssetType),
-    [views, itemsWithTags, activeAssetType]
+    () => countDownloadsPerView(views, enrichedDownloads, activeAssetType),
+    [views, enrichedDownloads, activeAssetType]
   );
 
   const activeTagSet = useMemo(
