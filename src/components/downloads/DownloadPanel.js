@@ -35,6 +35,10 @@ export default function DownloadPanel({
       });
   };
 
+  const handleDownloadFile = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const handleCopyLink = (link) => {
     navigator.clipboard
       .writeText(link.url)
@@ -142,16 +146,16 @@ export default function DownloadPanel({
                         >
                           <Icons.Copy className="w-5 h-5" />
                         </button>
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(link.url)}
                           className="p-1.5 rounded-full text-accent dark:text-accent-dark 
                             hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors select-none"
                           title={t('actions.downloadFile')}
+                          aria-label={t('actions.downloadFile')}
                         >
                           <Icons.Download className="w-5 h-5" />
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}

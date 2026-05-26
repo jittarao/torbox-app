@@ -871,22 +871,59 @@
   },
   "SystemStatus": {
     "error": "Fehler",
+    "fullStatusPage": "Vollständiger Status",
     "hoursAgo": "vor {hours} Stunden",
     "justNow": "Gerade eben",
     "lastCheck": "Letzte Prüfung",
     "minutesAgo": "vor {minutes} Minuten",
     "never": "Nie",
-    "refreshStatus": "Systemstatus aktualisieren",
+    "refreshStatus": "Zum Aktualisieren klicken",
+    "responseTime": "{ms} ms",
+    "uptime": {
+      "barLabel": "{label} Verlauf, {percent}% betriebsbereit",
+      "collecting": "Daten werden gesammelt…",
+      "daysAgo": "vor {days} T.",
+      "historyNote": "Balken zeigen Prüfungen in diesem Browser (~1 Min.). Offizielle TorBox-Historie auf der Statusseite.",
+      "percent": "{percent}% Verfügbarkeit",
+      "segment": {
+        "degraded": "Langsame Antwort",
+        "down": "Ausfall",
+        "empty": "Noch keine Daten",
+        "nodata": "Nicht geprüft",
+        "unknown": "Unbekannt",
+        "up": "Betriebsbereit"
+      }
+    },
+    "rows": {
+      "app": { "label": "Diese App" },
+      "backend": { "label": "Self-hosted Backend" },
+      "connection": { "label": "Ihr API-Schlüssel" },
+      "platform": { "label": "TorBox-Plattform" },
+      "status": {
+        "checking": "Prüfe…",
+        "invalidKey": "Ungültiger API-Schlüssel",
+        "issue": "Problem erkannt",
+        "notConfigured": "Nicht konfiguriert",
+        "operational": "Betriebsbereit",
+        "unavailable": "Nicht verfügbar"
+      }
+    },
     "status": {
-      "apiUnhealthy": "API-Verbindungsproblem",
-      "apiUnhealthyDescription": "TorBox API antwortet nicht ordnungsgemäß",
-      "healthy": "System Gesund",
-      "healthyDescription": "Alle Systeme funktionieren normal",
+      "apiUnhealthy": "Verbindungsproblem",
+      "apiUnhealthyDescription": "TorBox mit Ihrem API-Schlüssel nicht erreichbar",
+      "backendUnhealthy": "Backend-Problem",
+      "backendUnhealthyDescription": "Self-hosted Backend antwortet nicht",
+      "healthy": "Alle Systeme betriebsbereit",
+      "healthyDescription": "App, Plattform und API-Schlüssel sind verbunden",
+      "invalidKey": "Ungültiger API-Schlüssel",
+      "invalidKeyDescription": "API-Schlüssel wurde abgelehnt. In den Einstellungen aktualisieren",
       "noApiKey": "Kein API-Schlüssel",
-      "noApiKeyDescription": "API-Schlüssel ist erforderlich, um TorBox-Konnektivität zu prüfen",
-      "unhealthy": "System Ungesund",
-      "unhealthyDescription": "Lokale Anwendung hat Probleme",
-      "unknown": "Status Unbekannt",
+      "noApiKeyDescription": "Mit TorBox-API-Schlüssel anmelden, um die Verbindung zu prüfen",
+      "platformUnhealthy": "TorBox-Plattformproblem",
+      "platformUnhealthyDescription": "TorBox-Dienste sind möglicherweise ausgefallen",
+      "unhealthy": "App-Problem",
+      "unhealthyDescription": "Diese App antwortet nicht korrekt",
+      "unknown": "Status unbekannt",
       "unknownDescription": "Systemstatus kann nicht bestimmt werden"
     }
   },

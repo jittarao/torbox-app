@@ -3,9 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
-
-const REFERRAL_CODE = '7908ea44-023c-45f5-86ce-564bc6edaf34';
-const REFERRAL_LINK = 'https://torbox.app/subscription?referral=7908ea44-023c-45f5-86ce-564bc6edaf34';
+import { REFERRAL_CODE, REFERRAL_LINK } from '@/components/constants';
+import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 
 export default function ReferralDropdown() {
   const t = useTranslations('Referral');
@@ -15,27 +14,23 @@ export default function ReferralDropdown() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current?.contains(event.target)) return;
+      if (event.target.closest('[data-header-dropdown-panel]')) return;
+      setIsOpen(false);
     };
 
     const handleResize = () => {
-      if (isOpen) {
-        setIsOpen(false);
-      }
+      if (isOpen) setIsOpen(false);
     };
 
     const handleScroll = () => {
-      if (isOpen) {
-        setIsOpen(false);
-      }
+      if (isOpen) setIsOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll, true);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('resize', handleResize);
@@ -53,20 +48,18 @@ export default function ReferralDropdown() {
     }
   };
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-  };
-
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-[260] shrink-0" ref={dropdownRef}>
       <button
-        onClick={handleToggle}
-        className="flex items-center gap-2 text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+        className="ui-btn-ghost !gap-2"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
       >
         <Icons.Gift className="w-4 h-4" />
-        <span className="text-sm hidden sm:inline">{t('referral')}</span>
+        <span className="text-sm hidden lg:inline">{t('referral')}</span>
         <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -80,73 +73,73 @@ export default function ReferralDropdown() {
         </svg>
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 py-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-surface-alt-dark rounded-md shadow-lg border border-primary-border dark:border-border-dark">
-          <div className="px-4 py-3 border-b border-border dark:border-border-dark">
-            <h3 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
-              {t('title')}
-            </h3>
-            <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 mt-1">
-              {t('description')}
-            </p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
-              {t('developerNote')}
-            </p>
+      <HeaderDropdownPanel
+        open={isOpen}
+        widthClass="w-80 max-w-[calc(100vw-2rem)]"
+        className="!py-0"
+        onBackdropClick={() => setIsOpen(false)}
+      >
+        <div className="ui-dropdown-header">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {t('title')}
+          </h3>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('description')}</p>
+          <p className="text-xs text-amber-700 dark:text-amber-400 mt-2 font-medium">
+            {t('developerNote')}
+          </p>
+        </div>
+
+        <div className="ui-dropdown-body space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              {t('referralCode')}
+            </label>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                value={REFERRAL_CODE}
+                readOnly
+                className="flex-1 min-w-0 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-mono text-zinc-800 dark:border-zinc-600 dark:bg-[#232326] dark:text-zinc-200"
+              />
+              <button
+                type="button"
+                onClick={() => copyToClipboard(REFERRAL_CODE, 'code')}
+                className="ui-header-icon-btn shrink-0"
+                title={t('copyCode')}
+              >
+                {copiedItem === 'code' ? (
+                  <Icons.Check className="w-4 h-4" />
+                ) : (
+                  <Icons.Copy className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="p-4 space-y-3">
-            {/* Referral Code */}
-            <div>
-              <label className="block text-xs font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                {t('referralCode')}
-              </label>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <input
-                  type="text"
-                  value={REFERRAL_CODE}
-                  readOnly
-                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono min-w-0"
-                />
-                <button
-                  onClick={() => copyToClipboard(REFERRAL_CODE, 'code')}
-                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors flex-shrink-0"
-                  title={t('copyCode')}
-                >
-                  {copiedItem === 'code' ? (
-                    <Icons.Check className="w-4 h-4" />
-                  ) : (
-                    <Icons.Copy className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Referral Link */}
-            <div>
-              <label className="block text-xs font-medium text-primary-text dark:text-primary-text-dark mb-2">
-                {t('referralLink')}
-              </label>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <input
-                  type="text"
-                  value={REFERRAL_LINK}
-                  readOnly
-                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-border dark:border-border-dark rounded-md text-primary-text dark:text-primary-text-dark font-mono min-w-0 break-all"
-                />
-                <a
-                  href={REFERRAL_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 rounded-md transition-colors flex-shrink-0"
-                  title={t('visitLink')}
-                >
-                  <Icons.ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              {t('referralLink')}
+            </label>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                value={REFERRAL_LINK}
+                readOnly
+                className="flex-1 min-w-0 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-mono text-zinc-800 break-all dark:border-zinc-600 dark:bg-[#232326] dark:text-zinc-200"
+              />
+              <a
+                href={REFERRAL_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ui-header-icon-btn shrink-0"
+                title={t('visitLink')}
+              >
+                <Icons.ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </div>
-      )}
+      </HeaderDropdownPanel>
     </div>
   );
 }

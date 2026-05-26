@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import http from 'http';
 
+import { isBackendDisabled } from '@/utils/backendCheck';
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function POST(request) {
+  if (isBackendDisabled()) {
+    return NextResponse.json({
+      success: true,
+      wasCreated: false,
+      dbExists: false,
+    });
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');

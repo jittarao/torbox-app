@@ -1,46 +1,86 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+
 import { useHealthStore } from '@/store/healthStore';
+
+function isCheckPending(check) {
+  return check.status === 'unknown';
+}
 
 export function useApiHealth(apiKey) {
   const {
-    localHealth,
-    apiHealth,
+    platformHealth,
+    connectionHealth,
+    backendHealth,
     lastCheck,
-    error,
     performHealthCheck,
     setApiKey,
+    checkingHealth,
+    platformHistory,
+    loadHistory,
   } = useHealthStore();
 
-  // Update API key in store when it changes (this will reset apiHealth if changed)
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
   useEffect(() => {
     if (apiKey) {
       setApiKey(apiKey);
     }
   }, [apiKey, setApiKey]);
 
-  // Manual health check function
-  const refreshHealth = () => {
-    if (apiKey) {
-      performHealthCheck(apiKey);
-    }
-  };
+  const refreshHealth = useCallback(() => {
+    performHealthCheck(apiKey);
+  }, [apiKey, performHealthCheck]);
 
-  // Determine overall system status
   const getOverallStatus = () => {
-    if (localHealth === 'unhealthy') return 'unhealthy';
-    if (apiHealth === 'unhealthy') return 'api-unhealthy';
-    if (apiHealth === 'no-key') return 'no-api-key';
-    if (localHealth === 'healthy' && apiHealth === 'healthy') return 'healthy';
+    if (connectionHealth.status === 'invalid-key') {
+      return 'invalid-key';
+    }
+    if (connectionHealth.status === 'unhealthy') {
+      return 'api-unhealthy';
+    }
+    if (connectionHealth.status === 'no-key') {
+      return 'no-api-key';
+    }
+    if (platformHealth.status === 'unhealthy') {
+      return 'platform-unhealthy';
+    }
+    if (backendHealth.status === 'unhealthy') {
+      return 'backend-unhealthy';
+    }
+
+    const platformOk = platformHealth.status === 'healthy';
+    const connectionOk = apiKey
+      ? connectionHealth.status === 'healthy'
+      : connectionHealth.status === 'no-key';
+    const backendOk =
+      backendHealth.status === 'healthy' || backendHealth.status === 'unavailable';
+
+    if (platformOk && connectionOk && backendOk) {
+      return 'healthy';
+    }
+
     return 'unknown';
   };
 
+  const primaryError = connectionHealth.message || platformHealth.message || backendHealth.message;
+
+  const isLoading =
+    checkingHealth ||
+    isCheckPending(platformHealth) ||
+    (apiKey && isCheckPending(connectionHealth));
+
   return {
-    localHealth,
-    apiHealth,
+    platformHealth,
+    connectionHealth,
+    backendHealth,
     overallStatus: getOverallStatus(),
     lastCheck,
-    error,
+    error: primaryError,
     refreshHealth,
-    isLoading: localHealth === 'unknown' || apiHealth === 'unknown',
+    isLoading,
+    showBackend: backendHealth.status === 'healthy',
+    platformHistory,
   };
 }

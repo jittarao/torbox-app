@@ -11,6 +11,9 @@ import { locales } from '@/i18n/settings';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
 import ReferralDropdown from '@/components/ReferralDropdown';
+import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
+import { headerDropdownItemClass } from '@/components/shared/headerDropdownClasses';
+import { GITHUB_REPO_URL } from '@/components/constants';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getVersion } from '@/utils/version';
 // import CloudUploadManager from '@/components/downloads/CloudUploadManager';
@@ -54,17 +57,20 @@ export default function Header({ apiKey }) {
     return pathname === path || locales.some((locale) => pathname === `/${locale}${path}`);
   };
 
+  const navLinkClass = (active) =>
+    active ? 'ui-header-nav-active' : 'ui-header-nav';
+
   return (
-    <div className="bg-primary dark:bg-surface-alt-dark border-b border-primary-border dark:border-border-dark">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/images/TBM-logo.png" alt={t('logo')} width={24} height={24} />
-            <div className="flex flex-col">
-              <h1 className="text-xl text-white dark:text-primary-text-dark font-medium">
+    <div className="relative z-40 bg-white dark:bg-[#0f0f10] border-b border-zinc-200 dark:border-zinc-800/80 overflow-x-clip">
+      <div className="container mx-auto px-3 py-3 sm:px-4 sm:py-4">
+        <div className="flex justify-between items-center gap-2 min-w-0">
+          <Link href="/" className="flex min-w-0 shrink items-center gap-2">
+            <Image src="/images/TBM-logo.png" alt={t('logo')} width={24} height={24} className="shrink-0" />
+            <div className="flex min-w-0 flex-col">
+              <h1 className="text-base sm:text-xl text-zinc-900 dark:text-zinc-100 font-medium truncate">
                 {t('title')}
               </h1>
-              <span className="text-xs text-white/70 dark:text-primary-text-dark/70 font-normal">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal truncate">
                 v{getVersion()}
               </span>
             </div>
@@ -74,7 +80,7 @@ export default function Header({ apiKey }) {
           <button
             onClick={toggleMenu}
             aria-label={t('menu.toggle')}
-            className="md:hidden text-white dark:text-primary-text-dark"
+            className="ui-header-icon-btn md:hidden"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -102,47 +108,36 @@ export default function Header({ apiKey }) {
           </button>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-1 lg:gap-3 min-w-0 flex-1 justify-end">
             {/* Tier 1: Primary Navigation */}
-            <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                  ${isActive('/') ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
-              >
-                <Icons.Download />
-                {t('menu.downloads')}
+            <div className="flex items-center gap-0.5 lg:gap-2 shrink-0">
+              <Link href="/" className={navLinkClass(isActive('/'))} title={t('menu.downloads')}>
+                <Icons.Download className="w-5 h-5 shrink-0" />
+                <span className="hidden lg:inline">{t('menu.downloads')}</span>
               </Link>
 
-              <Link
-                href="/search"
-                className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                  ${isActive('/search') ? 'border-b-2 border-accent dark:border-accent-dark' : ''}`}
-              >
-                <Icons.MagnifyingGlass />
-                {t('menu.search')}
+              <Link href="/search" className={navLinkClass(isActive('/search'))} title={t('menu.search')}>
+                <Icons.MagnifyingGlass className="w-5 h-5 shrink-0" />
+                <span className="hidden lg:inline">{t('menu.search')}</span>
               </Link>
 
               {/* More Menu Dropdown */}
-              <div className="relative" ref={moreMenuRef}>
+              <div className="relative z-[260]" ref={moreMenuRef}>
                 <button
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                  className={`text-white dark:text-primary-text-dark font-medium flex items-center gap-2
-                    hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors -mb-2 pb-2
-                    ${
-                      isActive('/archived') ||
+                  className={`${navLinkClass(
+                    isActive('/archived') ||
                       isActive('/link-history') ||
                       isActive('/rss') ||
                       isActive('/user') ||
-                      isActive('/uploads')
-                        ? 'border-b-2 border-accent dark:border-accent-dark'
-                        : ''
-                    }`}
+                      isActive('/uploads'),
+                  )}`}
+                  aria-expanded={isMoreMenuOpen}
+                  aria-haspopup="menu"
+                  title={t('menu.more') || 'More'}
                 >
                   <Icons.VerticalEllipsis className="w-5 h-5" />
-                  <span>{t('menu.more') || 'More'}</span>
+                  <span className="hidden lg:inline">{t('menu.more') || 'More'}</span>
                   <svg
                     className={`w-4 h-4 transition-transform ${isMoreMenuOpen ? 'rotate-180' : ''}`}
                     fill="none"
@@ -158,111 +153,92 @@ export default function Header({ apiKey }) {
                   </svg>
                 </button>
 
-                {isMoreMenuOpen && (
-                  <div className="absolute right-0 z-20 mt-2 py-2 w-48 bg-white dark:bg-surface-alt-dark rounded-md shadow-lg border border-primary-border dark:border-border-dark">
-                    <Link
-                      href="/user"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/user')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.User className="w-4 h-4" />
-                      <span>{t('menu.user')}</span>
-                    </Link>
+                <HeaderDropdownPanel open={isMoreMenuOpen}>
+                  <Link
+                    href="/user"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className={headerDropdownItemClass(isActive('/user'))}
+                    role="menuitem"
+                  >
+                    <Icons.User className="w-4 h-4 shrink-0 opacity-80" />
+                    <span>{t('menu.user')}</span>
+                  </Link>
 
-                    <Link
-                      href="/link-history"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/link-history')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.History className="w-4 h-4" />
-                      <span>{t('menu.linkHistory')}</span>
-                    </Link>
+                  <Link
+                    href="/link-history"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className={headerDropdownItemClass(isActive('/link-history'))}
+                    role="menuitem"
+                  >
+                    <Icons.History className="w-4 h-4 shrink-0 opacity-80" />
+                    <span>{t('menu.linkHistory')}</span>
+                  </Link>
 
-                    <Link
-                      href="/archived"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/archived')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.Archive className="w-4 h-4" />
-                      <span>{t('menu.archived')}</span>
-                    </Link>
+                  <Link
+                    href="/archived"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className={headerDropdownItemClass(isActive('/archived'))}
+                    role="menuitem"
+                  >
+                    <Icons.Archive className="w-4 h-4 shrink-0 opacity-80" />
+                    <span>{t('menu.archived')}</span>
+                  </Link>
 
-                    <Link
-                      href="/rss"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/rss')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.Rss className="w-4 h-4" />
-                      <span>{t('menu.rss')}</span>
-                    </Link>
+                  <Link
+                    href="/rss"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className={headerDropdownItemClass(isActive('/rss'))}
+                    role="menuitem"
+                  >
+                    <Icons.Rss className="w-4 h-4 shrink-0 opacity-80" />
+                    <span>{t('menu.rss')}</span>
+                  </Link>
 
-                    <Link
-                      href="/uploads"
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isActive('/uploads')
-                          ? 'text-accent dark:text-accent-dark bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-                          : 'text-primary-text dark:text-primary-text-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
-                      }`}
-                    >
-                      <Icons.Upload className="w-4 h-4" />
-                      <span>{t('menu.uploads')}</span>
-                    </Link>
-                  </div>
-                )}
+                  <Link
+                    href="/uploads"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className={headerDropdownItemClass(isActive('/uploads'))}
+                    role="menuitem"
+                  >
+                    <Icons.Upload className="w-4 h-4 shrink-0 opacity-80" />
+                    <span>{t('menu.uploads')}</span>
+                  </Link>
+                </HeaderDropdownPanel>
               </div>
             </div>
 
             {/* Divider */}
-            <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
+            <div className="hidden lg:block h-4 w-px bg-zinc-200 dark:bg-zinc-800 shrink-0" />
 
             {/* Tier 1: Utility Items */}
-            <div className="flex items-center gap-3">
+            <div className="relative z-[260] flex items-center gap-0.5 lg:gap-1 shrink-0">
               <ReferralDropdown />
               {apiKey && <NotificationBell apiKey={apiKey} />}
               <SystemStatusIndicator apiKey={apiKey} />
             </div>
 
             {/* Divider */}
-            <div className="h-4 w-px bg-primary-border dark:bg-border-dark"></div>
+            <div className="hidden lg:block h-4 w-px shrink-0 bg-zinc-200 dark:bg-zinc-800"></div>
 
             {/* Settings: Dark mode toggle and Language Switcher */}
-            <div className="flex items-center gap-3">
+            <div className="relative z-[260] flex items-center gap-1 lg:gap-2 shrink-0">
               <button
                 onClick={toggleDarkMode}
                 aria-label={t('theme.toggle')}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
+                className="ui-theme-toggle shrink-0"
               >
-                {/* CSS-based positioning to avoid hydration mismatch */}
-                <span className="translate-x-1 dark:translate-x-6 inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800">
-                  {/* Show both icons, use CSS to toggle visibility */}
-                  <Icons.Sun className="block dark:hidden" />
-                  <Icons.Moon className="hidden dark:block" />
+                <span className="ui-theme-toggle-knob">
+                  <Icons.Sun className="block dark:hidden w-4 h-4" />
+                  <Icons.Moon className="hidden dark:block w-4 h-4" />
                 </span>
               </button>
               <LanguageSwitcher compact={true} />
               <a
-                href="https://github.com/jittarao/torbox-app"
+                href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub Repository"
-                className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+                className="ui-header-icon-btn"
               >
                 <Icons.GitHub className="w-5 h-5" />
               </a>
@@ -274,12 +250,12 @@ export default function Header({ apiKey }) {
         {isMenuOpen && (
           <div className="md:hidden mt-4 space-y-4">
             {/* Tier 1: Primary Navigation */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
+            <div className="space-y-2 pb-4 border-b border-zinc-200 dark:border-zinc-800">
               <Link
                 href="/"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -290,9 +266,9 @@ export default function Header({ apiKey }) {
 
               <Link
                 href="/search"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/search') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/search') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -303,12 +279,12 @@ export default function Header({ apiKey }) {
             </div>
 
             {/* Tier 1: Secondary Navigation */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
+            <div className="space-y-2 pb-4 border-b border-zinc-200 dark:border-zinc-800">
               <Link
                 href="/user"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/user') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/user') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -319,9 +295,9 @@ export default function Header({ apiKey }) {
 
               <Link
                 href="/link-history"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/link-history') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/link-history') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -332,9 +308,9 @@ export default function Header({ apiKey }) {
 
               <Link
                 href="/archived"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/archived') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/archived') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -345,9 +321,9 @@ export default function Header({ apiKey }) {
 
               <Link
                 href="/rss"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/rss') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/rss') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -358,9 +334,9 @@ export default function Header({ apiKey }) {
 
               <Link
                 href="/uploads"
-                className={`block text-white dark:text-primary-text-dark font-medium 
-                  hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors py-2
-                  ${isActive('/uploads') ? 'border-l-2 pl-2 border-accent dark:border-accent-dark' : ''}`}
+                className={`block text-zinc-900 dark:text-zinc-100 font-medium 
+                  hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2
+                  ${isActive('/uploads') ? 'border-l-2 pl-2 border-amber-500 text-amber-400' : ''}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
@@ -371,23 +347,23 @@ export default function Header({ apiKey }) {
             </div>
 
             {/* Tier 2: Utility Items */}
-            <div className="space-y-2 pb-4 border-b border-primary-border dark:border-border-dark">
+            <div className="space-y-2 pb-4 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center justify-between py-2">
-                <span className="text-white dark:text-primary-text-dark font-medium">
+                <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                   {t('menu.referrals')}
                 </span>
                 <ReferralDropdown />
               </div>
               {apiKey && (
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-white dark:text-primary-text-dark font-medium">
+                  <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                     {t('menu.notifications')}
                   </span>
                   <NotificationBell apiKey={apiKey} />
                 </div>
               )}
               <div className="flex items-center justify-between py-2">
-                <span className="text-white dark:text-primary-text-dark font-medium">
+                <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                   {t('menu.systemStatus')}
                 </span>
                 <SystemStatusIndicator apiKey={apiKey} />
@@ -397,36 +373,34 @@ export default function Header({ apiKey }) {
             {/* Settings */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-white dark:text-primary-text-dark font-medium">
+                <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                   {t('theme.toggle')}
                 </span>
                 <button
                   onClick={toggleDarkMode}
                   aria-label={t('theme.toggle')}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-200 dark:bg-gray-700"
+                  className="ui-theme-toggle"
                 >
-                  {/* CSS-based positioning to avoid hydration mismatch */}
-                  <span className="translate-x-1 dark:translate-x-6 inline-flex items-center justify-center h-4 w-4 transform rounded-full transition-transform bg-white dark:bg-gray-800">
-                    {/* Show both icons, use CSS to toggle visibility */}
-                    <Icons.Sun className="block dark:hidden" />
-                    <Icons.Moon className="hidden dark:block" />
+                  <span className="ui-theme-toggle-knob">
+                    <Icons.Sun className="block dark:hidden w-4 h-4" />
+                    <Icons.Moon className="hidden dark:block w-4 h-4" />
                   </span>
                 </button>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white dark:text-primary-text-dark font-medium">
+                <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                   {t('menu.language') || 'Language'}
                 </span>
                 <LanguageSwitcher />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white dark:text-primary-text-dark font-medium">GitHub</span>
+                <span className="text-zinc-900 dark:text-zinc-100 font-medium">GitHub</span>
                 <a
-                  href="https://github.com/jittarao/torbox-app"
+                  href={GITHUB_REPO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="GitHub Repository"
-                  className="text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+                  className="ui-header-icon-btn"
                 >
                   <Icons.GitHub className="w-5 h-5" />
                 </a>

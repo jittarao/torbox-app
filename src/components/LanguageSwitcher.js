@@ -4,6 +4,8 @@ import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
+import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
+import { headerDropdownItemClass } from '@/components/shared/headerDropdownClasses';
 
 const languages = {
   en: { name: 'English', flag: '/images/flags/flag-en.png' },
@@ -21,11 +23,9 @@ export default function LanguageSwitcher({ compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Load saved language preference on mount
   useEffect(() => {
     const savedLanguage = localStorage.getItem('preferredLanguage');
     if (savedLanguage && savedLanguage !== locale) {
-      // Redirect to the saved language if it's different from current
       const newPath = pathname.replace(locale, savedLanguage);
       router.push(newPath);
     }
@@ -33,27 +33,23 @@ export default function LanguageSwitcher({ compact = false }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current?.contains(event.target)) return;
+      if (event.target.closest('[data-header-dropdown-panel]')) return;
+      setIsOpen(false);
     };
 
     const handleResize = () => {
-      if (isOpen) {
-        setIsOpen(false);
-      }
+      if (isOpen) setIsOpen(false);
     };
 
     const handleScroll = () => {
-      if (isOpen) {
-        setIsOpen(false);
-      }
+      if (isOpen) setIsOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll, true);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('resize', handleResize);
@@ -63,30 +59,36 @@ export default function LanguageSwitcher({ compact = false }) {
 
   const handleLanguageChange = (newLocale) => {
     setIsOpen(false);
-    // Store the language preference in localStorage
     localStorage.setItem('preferredLanguage', newLocale);
     router.push(pathname.replace(locale, newLocale));
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-[260] shrink-0" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-white dark:text-primary-text-dark hover:text-white/80 dark:hover:text-primary-text-dark/80 transition-colors"
+        className={
+          compact
+            ? 'ui-btn-ghost !gap-2'
+            : 'flex items-center gap-2 text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors'
+        }
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
       >
         <Image
           src={languages[locale].flag}
           alt={languages[locale].name}
           width={24}
           height={16}
+          className="rounded-sm"
         />
         {compact ? (
-          <span className="text-sm font-medium uppercase">{locale}</span>
+          <span className="hidden xl:inline text-sm font-medium uppercase">{locale}</span>
         ) : (
           <span className="text-sm">{languages[locale].name}</span>
         )}
         <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -100,24 +102,20 @@ export default function LanguageSwitcher({ compact = false }) {
         </svg>
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 z-10 mt-2 py-2 w-48 bg-white dark:bg-surface-alt-dark rounded-md shadow-lg border border-primary-border dark:border-border-dark">
-          {Object.entries(languages).map(([code, { name, flag }]) => (
-            <button
-              key={code}
-              onClick={() => handleLanguageChange(code)}
-              className={`flex w-full items-center gap-3 px-4 py-2 text-sm bg-surface-alt-selected dark:bg-surface-alt-selected-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark ${
-                locale === code
-                  ? 'text-accent dark:text-accent-dark'
-                  : 'text-primary-text dark:text-primary-text-dark'
-              }`}
-            >
-              <Image src={flag} alt={name} width={24} height={16} />
-              <span>{name}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <HeaderDropdownPanel open={isOpen} onBackdropClick={() => setIsOpen(false)}>
+        {Object.entries(languages).map(([code, { name, flag }]) => (
+          <button
+            key={code}
+            type="button"
+            onClick={() => handleLanguageChange(code)}
+            className={headerDropdownItemClass(locale === code)}
+            role="menuitem"
+          >
+            <Image src={flag} alt={name} width={24} height={16} className="rounded-sm shrink-0" />
+            <span>{name}</span>
+          </button>
+        ))}
+      </HeaderDropdownPanel>
     </div>
   );
 }
