@@ -46,6 +46,11 @@ body {
   max-width: 1600px;
 }
 
+/* Downloads home: wider table on ultrawide; respects app nav sidebar */
+.container-downloads {
+  max-width: min(2400px, calc(100vw - var(--sidebar-width, 0px) - 2rem));
+}
+
 /* Fix select and option styling for dark mode, especially in Firefox */
 select {
   background-color: #fafafa;

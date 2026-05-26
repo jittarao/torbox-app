@@ -280,7 +280,7 @@ export default function ActionBar({
       >
         <div
           className={`flex flex-col lg:flex-row gap-4 justify-between transition-all duration-200
-            ${isFullscreen ? 'px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container mx-auto px-4') : ''}
+            ${isFullscreen ? 'px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container-downloads mx-auto px-4') : ''}
             ${isSticky ? 'py-2' : 'pb-4'}`}
         >
         <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
