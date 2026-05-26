@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTags } from '@/components/shared/hooks/useTags';
+import OverlayPortal from '@/components/shared/OverlayPortal';
 
 /**
  * TagManager component - modal for managing tags (create, edit, delete)
@@ -10,13 +11,26 @@ import { useTags } from '@/components/shared/hooks/useTags';
  * @param {Function} props.onClose - Callback to close modal
  * @param {string} props.apiKey - API key for authentication
  */
-export default function TagManager({ isOpen, onClose, apiKey }) {
+export default function TagManager({ isOpen, onClose, apiKey, initialCreating = false }) {
   const { tags, loading, createTag, updateTag, deleteTag } = useTags(apiKey);
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsCreating(false);
+      setNewTagName('');
+      setEditingId(null);
+      setEditName('');
+      return;
+    }
+    if (initialCreating) {
+      setIsCreating(true);
+    }
+  }, [isOpen, initialCreating]);
 
   if (!isOpen) return null;
 
@@ -65,20 +79,20 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
     }
   };
 
-  return (
+  const modalContent = (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
 
-      {/* Modal */}
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70]
           bg-surface dark:bg-surface-dark
           border border-border dark:border-border-dark
           rounded-lg shadow-xl
           w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[80vh]
           overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark">
@@ -308,4 +322,6 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
       </div>
     </>
   );
+
+  return <OverlayPortal open={isOpen}>{modalContent}</OverlayPortal>;
 }

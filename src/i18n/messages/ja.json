@@ -393,7 +393,9 @@
     "selectTagsPlaceholder": "タグを選択...",
     "updateView": "ビューを更新",
     "updating": "更新中...",
-    "viewNamePlaceholder": "ビュー名..."
+    "viewNamePlaceholder": "ビュー名...",
+    "createView": "ビューを作成",
+    "creating": "作成中..."
   },
   "DownloadsFilters": {
     "sidebarLabel": "フィルター",
@@ -408,6 +410,11 @@
     "createTagFailed": "タグの作成に失敗しました: {error}",
     "manageTags": "タグを管理",
     "modalTitle": "フィルターを編集",
+    "modalTitleCreate": "ビューを作成",
+    "modalTitleEdit": "ビューを編集",
+    "modalTitleEditNamed": "「{name}」を編集",
+    "viewCreated": "ビュー「{name}」を作成しました",
+    "viewUpdated": "ビュー「{name}」を更新しました",
     "applyFilters": "フィルターを適用",
     "clearAll": "すべてクリア",
     "close": "閉じる",

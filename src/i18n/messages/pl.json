@@ -393,7 +393,9 @@
     "selectTagsPlaceholder": "Wybierz tagi...",
     "updateView": "Aktualizuj widok",
     "updating": "Aktualizacja...",
-    "viewNamePlaceholder": "Nazwa widoku..."
+    "viewNamePlaceholder": "Nazwa widoku...",
+    "createView": "Utwórz widok",
+    "creating": "Tworzenie..."
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filtry",
@@ -408,6 +410,11 @@
     "createTagFailed": "Nie udało się utworzyć tagu: {error}",
     "manageTags": "Zarządzaj tagami",
     "modalTitle": "Edytuj filtry",
+    "modalTitleCreate": "Utwórz widok",
+    "modalTitleEdit": "Edytuj widok",
+    "modalTitleEditNamed": "Edytuj „{name}”",
+    "viewCreated": "Utworzono widok „{name}”",
+    "viewUpdated": "Zaktualizowano widok „{name}”",
     "applyFilters": "Zastosuj filtry",
     "clearAll": "Wyczyść wszystko",
     "close": "Zamknij",

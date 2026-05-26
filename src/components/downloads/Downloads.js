@@ -27,6 +27,7 @@ import AudioPlayer from './AudioPlayer';
 import FiltersSidebar, { filtersFromView } from './FiltersSidebar';
 import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
 import FilterEditorModal from './FilterEditorModal';
+import TagManager from './Tags/TagManager';
 import ActiveFiltersBar from './ActiveFiltersBar';
 import {
   EMPTY_FILTERS,
@@ -172,7 +173,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     tags,
     loading: tagsLoading,
     updateTag: updateTagName,
-    createTag,
   } = useTags(apiKey);
 
   // Load tags once when component mounts (only if backend is available)
@@ -246,6 +246,11 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     JSON.parse(JSON.stringify(EMPTY_FILTERS))
   );
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  /** @type {[null | 'create' | 'edit' | 'filter', Function]} */
+  const [filterModalMode, setFilterModalMode] = useState(null);
+  const [editingView, setEditingView] = useState(null);
+  const [tagManagerOpen, setTagManagerOpen] = useState(false);
+  const [tagManagerAutoCreate, setTagManagerAutoCreate] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } = useFilter(
     itemsWithTags,
@@ -647,11 +652,36 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     setMobileFiltersOpen(false);
   };
 
+  const handleCloseFilterModal = useCallback(() => {
+    setFilterModalOpen(false);
+    setFilterModalMode(null);
+    setEditingView(null);
+  }, []);
+
   const handleEditView = (view) => {
-    applyView(view);
+    setEditingView(view);
     setColumnFilters(filtersFromView(view));
+    setFilterModalMode('edit');
     setFilterModalOpen(true);
     setMobileFiltersOpen(false);
+  };
+
+  const handleViewCreated = (view) => {
+    handleApplyView(view);
+    setToast({
+      message: downloadsFiltersT('viewCreated', { name: view.name }),
+      type: 'success',
+    });
+  };
+
+  const handleViewUpdated = (view) => {
+    if (activeView?.id === view.id) {
+      handleApplyView(view);
+    }
+    setToast({
+      message: downloadsFiltersT('viewUpdated', { name: view.name }),
+      type: 'success',
+    });
   };
 
   const handleRenameView = async (view) => {
@@ -681,25 +711,31 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   };
 
   const handleOpenNewFilter = () => {
+    setEditingView(null);
+    setColumnFilters(normalizeFilters(appliedFilters));
+    setFilterModalMode('filter');
     setFilterModalOpen(true);
     setMobileFiltersOpen(false);
   };
 
   const handleOpenNewView = () => {
-    handleClearFilters();
+    clearView();
+    setEditingView(null);
+    setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+    setFilterModalMode('create');
     setFilterModalOpen(true);
     setMobileFiltersOpen(false);
   };
 
-  const handleNewTag = async () => {
-    const name = window.prompt(downloadsFiltersT('newTagPrompt'));
-    if (!name?.trim()) return;
-    try {
-      await createTag(name.trim());
-    } catch (error) {
-      alert(downloadsFiltersT('createTagFailed', { error: error.message }));
-    }
+  const handleOpenTagManager = (autoCreate = false) => {
+    setTagManagerAutoCreate(autoCreate);
+    setTagManagerOpen(true);
+    setMobileFiltersOpen(false);
   };
+
+  const handleNewTag = () => handleOpenTagManager(true);
+
+  const handleManageTags = () => handleOpenTagManager(false);
 
   const showDesktopFiltersSidebar =
     isBackendAvailable && !isMobile && !isFullscreen;
@@ -726,6 +762,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     onNewFilter: handleOpenNewFilter,
     onNewView: handleOpenNewView,
     onNewTag: handleNewTag,
+    onManageTags: handleManageTags,
   };
 
   const downloadsTableContent = (
@@ -990,16 +1027,28 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               />
               <FilterEditorModal
                 isOpen={filterModalOpen}
-                onClose={() => setFilterModalOpen(false)}
+                onClose={handleCloseFilterModal}
+                mode={filterModalMode || 'filter'}
+                editingView={editingView}
                 apiKey={apiKey}
                 activeType={activeType}
                 columnFilters={columnFilters}
                 setColumnFilters={setColumnFilters}
-                activeView={activeView}
                 onApply={handleApplyFiltersFromModal}
+                onViewCreated={handleViewCreated}
+                onViewUpdated={handleViewUpdated}
                 sortField={sortField}
                 sortDirection={sortDirection}
                 activeColumns={activeColumns}
+              />
+              <TagManager
+                isOpen={tagManagerOpen}
+                onClose={() => {
+                  setTagManagerOpen(false);
+                  setTagManagerAutoCreate(false);
+                }}
+                apiKey={apiKey}
+                initialCreating={tagManagerAutoCreate}
               />
             </>
           )}

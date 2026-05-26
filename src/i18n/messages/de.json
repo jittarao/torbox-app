@@ -393,7 +393,9 @@
     "selectTagsPlaceholder": "Schlagwörter auswählen...",
     "updateView": "Ansicht aktualisieren",
     "updating": "Aktualisieren...",
-    "viewNamePlaceholder": "Ansichtname..."
+    "viewNamePlaceholder": "Ansichtname...",
+    "createView": "Ansicht erstellen",
+    "creating": "Erstellen..."
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filter",
@@ -408,6 +410,11 @@
     "createTagFailed": "Schlagwort konnte nicht erstellt werden: {error}",
     "manageTags": "Schlagwörter verwalten",
     "modalTitle": "Filter bearbeiten",
+    "modalTitleCreate": "Ansicht erstellen",
+    "modalTitleEdit": "Ansicht bearbeiten",
+    "modalTitleEditNamed": "„{name}“ bearbeiten",
+    "viewCreated": "Ansicht „{name}“ erstellt",
+    "viewUpdated": "Ansicht „{name}“ aktualisiert",
     "applyFilters": "Filter anwenden",
     "clearAll": "Alle löschen",
     "close": "Schließen",

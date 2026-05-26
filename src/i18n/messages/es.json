@@ -393,7 +393,9 @@
     "selectTagsPlaceholder": "Seleccionar etiquetas...",
     "updateView": "Actualizar vista",
     "updating": "Actualizando...",
-    "viewNamePlaceholder": "Nombre de la vista..."
+    "viewNamePlaceholder": "Nombre de la vista...",
+    "createView": "Crear vista",
+    "creating": "Creando..."
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filtros",
@@ -408,6 +410,11 @@
     "createTagFailed": "No se pudo crear la etiqueta: {error}",
     "manageTags": "Gestionar etiquetas",
     "modalTitle": "Editar filtros",
+    "modalTitleCreate": "Crear vista",
+    "modalTitleEdit": "Editar vista",
+    "modalTitleEditNamed": "Editar \"{name}\"",
+    "viewCreated": "Vista \"{name}\" creada",
+    "viewUpdated": "Vista \"{name}\" actualizada",
     "applyFilters": "Aplicar filtros",
     "clearAll": "Borrar todo",
     "close": "Cerrar",

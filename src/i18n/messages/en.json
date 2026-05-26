@@ -407,7 +407,9 @@
     "selectTagsPlaceholder": "Select tags...",
     "updateView": "Update view",
     "updating": "Updating...",
-    "viewNamePlaceholder": "View name..."
+    "viewNamePlaceholder": "View name...",
+    "createView": "Create view",
+    "creating": "Creating..."
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filters",
@@ -422,6 +424,11 @@
     "createTagFailed": "Failed to create tag: {error}",
     "manageTags": "Manage tags",
     "modalTitle": "Edit filters",
+    "modalTitleCreate": "Create view",
+    "modalTitleEdit": "Edit view",
+    "modalTitleEditNamed": "Edit \"{name}\"",
+    "viewCreated": "View \"{name}\" created",
+    "viewUpdated": "View \"{name}\" updated",
     "applyFilters": "Apply filters",
     "clearAll": "Clear all",
     "close": "Close",
