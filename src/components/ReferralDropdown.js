@@ -17,7 +17,7 @@ import {
 } from '@/utils/referralDismissal';
 import { REFERRAL_HELP_URL } from '@/components/constants';
 
-export default function ReferralDropdown({ apiKey, onToast, iconOnly = false }) {
+export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, variant = 'default' }) {
   const t = useTranslations('Referral');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -51,23 +51,41 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false }) 
   };
 
   return (
-    <div className="relative z-[260] shrink-0" ref={dropdownRef}>
+    <div
+      className={`relative z-[260] shrink-0 ${variant === 'sidebar' ? 'w-full' : ''}`}
+      ref={dropdownRef}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={iconOnly ? 'ui-header-icon-btn' : 'ui-btn-ghost !gap-2'}
+        className={
+          iconOnly
+            ? 'ui-header-icon-btn'
+            : variant === 'sidebar'
+              ? 'ui-sidebar-utility-trigger'
+              : 'ui-btn-ghost !gap-2'
+        }
         aria-expanded={isOpen}
         aria-haspopup="menu"
         title={iconOnly ? t('referral') : undefined}
       >
-        <Icons.Gift className="w-4 h-4" />
+        <Icons.Gift className="h-[18px] w-[18px] shrink-0 opacity-90" aria-hidden />
         {!iconOnly ? (
           <>
-            <span className="text-sm hidden lg:inline">{t('referral')}</span>
+            <span
+              className={`flex-1 truncate text-left ${
+                variant === 'sidebar' ? 'text-sm' : 'hidden text-sm lg:inline'
+              }`}
+            >
+              {t('referral')}
+            </span>
             <svg
-              className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              className={`h-4 w-4 shrink-0 opacity-60 transition-transform duration-200 ${
+                isOpen ? 'rotate-180' : ''
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden
             >
               <path
                 strokeLinecap="round"

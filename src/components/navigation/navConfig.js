@@ -1,6 +1,14 @@
 import Icons from '@/components/icons';
 
-const PRIMARY_NAV = [
+/** Profile link — rendered in the sidebar header, not the main nav list */
+export const USER_NAV_ITEM = {
+  href: '/user',
+  labelKey: 'user',
+  Icon: Icons.User,
+};
+
+/** Core TorBox: downloads & search */
+const MAIN_NAV = [
   { href: '/', labelKey: 'downloads', Icon: Icons.Download },
   {
     href: '/search',
@@ -10,13 +18,17 @@ const PRIMARY_NAV = [
   },
 ];
 
-const SECONDARY_NAV = [
-  { href: '/user', labelKey: 'user', Icon: Icons.User },
-  { href: '/link-history', labelKey: 'linkHistory', Icon: Icons.History },
-  { href: '/archived', labelKey: 'archived', Icon: Icons.Archive },
+/** TorBox platform features */
+const TORBOX_NAV = [
   { href: '/rss', labelKey: 'rss', Icon: Icons.Rss },
   { href: '/automation', labelKey: 'automation', Icon: Icons.Bolt },
+];
+
+/** TorBox Manager–only features (not in stock TorBox UI) */
+const MANAGER_NAV = [
+  { href: '/link-history', labelKey: 'linkHistory', Icon: Icons.History },
   { href: '/uploads', labelKey: 'uploads', Icon: Icons.Upload },
+  { href: '/archived', labelKey: 'archived', Icon: Icons.Archive },
 ];
 
 function filterVisible(items, ctx) {
@@ -25,7 +37,8 @@ function filterVisible(items, ctx) {
 
 export function buildNavItems(ctx = {}) {
   return {
-    primary: filterVisible(PRIMARY_NAV, ctx),
-    secondary: filterVisible(SECONDARY_NAV, ctx),
+    main: filterVisible(MAIN_NAV, ctx),
+    torbox: filterVisible(TORBOX_NAV, ctx),
+    manager: filterVisible(MANAGER_NAV, ctx),
   };
 }
