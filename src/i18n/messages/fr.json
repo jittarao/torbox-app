@@ -708,8 +708,7 @@
     },
     "settings": {
       "snoozeReminders": "Masquer les rappels 30 jours",
-      "resetSnooze": "Réafficher les rappels",
-      "applyOnKeyLabel": "Appliquer le parrainage TBM à l'enregistrement de ma clé API"
+      "resetSnooze": "Réafficher les rappels"
     }
   },
   "RssFeeds": {

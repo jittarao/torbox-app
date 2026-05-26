@@ -708,8 +708,7 @@
     },
     "settings": {
       "snoozeReminders": "Erinnerungen 30 Tage ausblenden",
-      "resetSnooze": "Erinnerungen wieder anzeigen",
-      "applyOnKeyLabel": "TBM-Empfehlung beim Speichern des API-Schlüssels anwenden"
+      "resetSnooze": "Erinnerungen wieder anzeigen"
     }
   },
   "RssFeeds": {

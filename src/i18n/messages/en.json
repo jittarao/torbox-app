@@ -725,8 +725,7 @@
     },
     "settings": {
       "snoozeReminders": "Snooze reminders for 30 days",
-      "resetSnooze": "Show reminders again",
-      "applyOnKeyLabel": "Apply TBM referral when I save my API key (extra days on first subscription)"
+      "resetSnooze": "Show reminders again"
     }
   },
   "RssFeeds": {
