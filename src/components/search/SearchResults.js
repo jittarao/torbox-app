@@ -81,9 +81,7 @@ export default function SearchResults({ apiKey }) {
   const displayResults = useMemo(() => {
     let tempResults = sortedResults;
     if (hideTorBoxIndexers) {
-      tempResults = tempResults.filter(
-        (t) => !TORBOX_NATIVE_TRACKERS.includes(t.tracker),
-      );
+      tempResults = tempResults.filter((t) => !TORBOX_NATIVE_TRACKERS.includes(t.tracker));
     }
     return showCachedOnly ? tempResults.filter((t) => t.cached) : tempResults;
   }, [sortedResults, showCachedOnly, hideTorBoxIndexers]);
@@ -92,9 +90,7 @@ export default function SearchResults({ apiKey }) {
     const link = searchType === 'usenet' ? item.nzb : item.magnet;
     await navigator.clipboard.writeText(link);
     setToast({
-      message: t(
-        `toast.${searchType === 'usenet' ? 'nzbCopied' : 'magnetCopied'}`,
-      ),
+      message: t(`toast.${searchType === 'usenet' ? 'nzbCopied' : 'magnetCopied'}`),
       type: 'success',
     });
   };
@@ -109,12 +105,12 @@ export default function SearchResults({ apiKey }) {
           data: item.nzb,
           asQueued: false,
         };
-        
+
         // Only add name for TorBox API search results - removed a ! before item.nzb
         if (item.nzb.includes('api')) {
           uploadData.name = item.raw_title;
         }
-        
+
         result = await uploadItem(uploadData);
       } else {
         result = await uploadItem({
@@ -134,17 +130,14 @@ export default function SearchResults({ apiKey }) {
       setAddedItems((prev) => [...prev, item]);
 
       setToast({
-        message: t(
-          `toast.${searchType === 'usenet' ? 'nzbAdded' : 'torrentAdded'}`,
-        ),
+        message: t(`toast.${searchType === 'usenet' ? 'nzbAdded' : 'torrentAdded'}`),
         type: 'success',
       });
     } catch (err) {
       setToast({
-        message: t(
-          `toast.${searchType === 'usenet' ? 'nzbAddFailed' : 'torrentAddFailed'}`,
-          { error: err.message },
-        ),
+        message: t(`toast.${searchType === 'usenet' ? 'nzbAddFailed' : 'torrentAddFailed'}`, {
+          error: err.message,
+        }),
         type: 'error',
       });
     } finally {
@@ -172,12 +165,7 @@ export default function SearchResults({ apiKey }) {
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
                 <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -237,9 +225,7 @@ export default function SearchResults({ apiKey }) {
                   className="w-full md:w-40"
                 />
                 <button
-                  onClick={() =>
-                    setSortDir(sortDir === 'desc' ? 'asc' : 'desc')
-                  }
+                  onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
                   className="p-2 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
                 >
                   {sortDir === 'desc' ? '↓' : '↑'}
@@ -296,8 +282,7 @@ export default function SearchResults({ apiKey }) {
                       <div className="flex items-center gap-1.5">
                         <Icons.UpArrow />
                         {item.last_known_seeders}
-                        {item.last_known_peers > 0 &&
-                          ` / ${item.last_known_peers}`}
+                        {item.last_known_peers > 0 && ` / ${item.last_known_peers}`}
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
@@ -329,9 +314,7 @@ export default function SearchResults({ apiKey }) {
                               dark:bg-accent-dark dark:hover:bg-accent-dark/90
                               text-white rounded-md transition-colors"
                       >
-                        {t(
-                          `actions.${searchType === 'usenet' ? 'copyLink' : 'copyMagnet'}`,
-                        )}
+                        {t(`actions.${searchType === 'usenet' ? 'copyLink' : 'copyMagnet'}`)}
                       </button>
                     )}
 
@@ -339,17 +322,13 @@ export default function SearchResults({ apiKey }) {
                       onClick={() => handleUpload(item)}
                       disabled={
                         isUploading[item.hash] ||
-                        addedItems.some(
-                          (addedItem) => addedItem.hash === item.hash,
-                        )
+                        addedItems.some((addedItem) => addedItem.hash === item.hash)
                       }
                       className={`shrink-0 px-3 py-1 text-sm text-white rounded-md transition-colors
                         ${
                           isUploading[item.hash]
                             ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                            : addedItems.some(
-                                  (addedItem) => addedItem.hash === item.hash,
-                                )
+                            : addedItems.some((addedItem) => addedItem.hash === item.hash)
                               ? 'bg-label-default-text dark:bg-label-default-text-dark cursor-not-allowed'
                               : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
                         }`}
@@ -359,9 +338,7 @@ export default function SearchResults({ apiKey }) {
                           <Spinner size="sm" className="text-white" />
                           {t('actions.adding')}
                         </span>
-                      ) : addedItems.some(
-                          (addedItem) => addedItem.hash === item.hash,
-                        ) ? (
+                      ) : addedItems.some((addedItem) => addedItem.hash === item.hash) ? (
                         t('actions.added')
                       ) : (
                         t('actions.addToTorBox')
@@ -375,11 +352,7 @@ export default function SearchResults({ apiKey }) {
         </>
       )}
 
-      {error && (
-        <div className="text-center py-4 text-red-500 dark:text-red-400">
-          {error}
-        </div>
-      )}
+      {error && <div className="text-center py-4 text-red-500 dark:text-red-400">{error}</div>}
 
       {!results.length && !loading && !error && (
         <div className="text-center py-4">
@@ -393,13 +366,7 @@ export default function SearchResults({ apiKey }) {
         </div>
       )}
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

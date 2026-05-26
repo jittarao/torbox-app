@@ -144,9 +144,7 @@ class AdminApiClient {
   async reactivateApiKeys(authIds = null) {
     return this.request('/users/reactivate-api-keys', {
       method: 'POST',
-      body: JSON.stringify(
-        authIds && authIds.length > 0 ? { authIds } : {}
-      ),
+      body: JSON.stringify(authIds && authIds.length > 0 ? { authIds } : {}),
     });
   }
 

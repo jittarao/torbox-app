@@ -75,9 +75,10 @@ class RuleEvaluator {
     const rows = [];
     for (let i = 0; i < ids.length; i += IN_CLAUSE_BATCH_SIZE) {
       const chunk = ids.slice(i, i + IN_CLAUSE_BATCH_SIZE);
-      const padded = chunk.length < IN_CLAUSE_BATCH_SIZE
-        ? [...chunk, ...Array(IN_CLAUSE_BATCH_SIZE - chunk.length).fill(null)]
-        : chunk;
+      const padded =
+        chunk.length < IN_CLAUSE_BATCH_SIZE
+          ? [...chunk, ...Array(IN_CLAUSE_BATCH_SIZE - chunk.length).fill(null)]
+          : chunk;
       const batchRows = stmt.all(...padded, ...extraParams);
       rows.push(...batchRows.filter((r) => r[idColumn] != null));
     }
@@ -795,12 +796,7 @@ class RuleEvaluator {
       return false;
     }
     const uploadHours = condition.hours || DEFAULT_AVG_SPEED_HOURS;
-    const avgUploadSpeed = this.getAverageSpeed(
-      torrent.id,
-      uploadHours,
-      'upload',
-      speedHistoryMap
-    );
+    const avgUploadSpeed = this.getAverageSpeed(torrent.id, uploadHours, 'upload', speedHistoryMap);
     const conditionValue = (avgUploadSpeed || 0) / BYTES_PER_MB;
     return this.compareValues(conditionValue, condition.operator, condition.value);
   }

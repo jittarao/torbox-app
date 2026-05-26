@@ -13,7 +13,7 @@ export function useDelete(
   setSelectedItems,
   setToast,
   fetchItems,
-  assetType = 'torrents',
+  assetType = 'torrents'
 ) {
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
@@ -57,23 +57,23 @@ export function useDelete(
   const batchDelete = async (ids, items = []) => {
     try {
       let successfulIds = [];
-      
+
       // For 'all' type, we need to group items by their asset type and delete them separately
       if (assetType === 'all' && items.length > 0) {
         const groupedItems = {
           torrents: [],
           usenet: [],
-          webdl: []
+          webdl: [],
         };
-        
+
         // Group items by their asset type
-        items.forEach(item => {
+        items.forEach((item) => {
           const itemAssetType = item.assetType || 'torrents';
           if (groupedItems[itemAssetType]) {
             groupedItems[itemAssetType].push(item.id);
           }
         });
-        
+
         // Delete each group separately
         for (const [type, typeIds] of Object.entries(groupedItems)) {
           if (typeIds.length > 0) {
@@ -96,14 +96,8 @@ export function useDelete(
           return prev.filter((t) => !successfulIds.includes(t.id));
         });
         setSelectedItems((prev) => ({
-          items: new Set(
-            [...prev.items].filter((id) => !successfulIds.includes(id)),
-          ),
-          files: new Map(
-            [...prev.files].filter(
-              ([itemId]) => !successfulIds.includes(itemId),
-            ),
-          ),
+          items: new Set([...prev.items].filter((id) => !successfulIds.includes(id))),
+          files: new Map([...prev.files].filter(([itemId]) => !successfulIds.includes(itemId))),
         }));
       }
 
@@ -143,11 +137,7 @@ export function useDelete(
   };
 
   const deleteItems = async (selectedItems, deleteParentDownloads = false, allItems = []) => {
-    if (
-      !apiKey ||
-      (selectedItems.items.size === 0 && selectedItems.files.size === 0)
-    )
-      return;
+    if (!apiKey || (selectedItems.items.size === 0 && selectedItems.files.size === 0)) return;
 
     try {
       setIsDeleting(true);
@@ -163,7 +153,7 @@ export function useDelete(
       }
 
       // Filter the items to only include the ones being deleted
-      const itemsToDeleteList = allItems.filter(item => itemsToDelete.has(item.id));
+      const itemsToDeleteList = allItems.filter((item) => itemsToDelete.has(item.id));
 
       return await batchDelete(Array.from(itemsToDelete), itemsToDeleteList);
     } catch (error) {

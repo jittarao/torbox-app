@@ -13,7 +13,7 @@ export default function UserPage() {
   const [toast, setToast] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [isClient, setIsClient] = useState(false);
-  
+
   // Move translations hook to top level - always call it
   const t = useTranslations('User');
 
@@ -45,13 +45,15 @@ export default function UserPage() {
     // Ensure user database exists for loaded API key
     if (loadedKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey).then((result) => {
-          if (result.success && result.wasCreated) {
-            console.log('User database created for existing API key');
-          }
-        }).catch((error) => {
-          console.error('Error ensuring user database on load:', error);
-        });
+        ensureUserDb(loadedKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
       });
     }
   }, []);
@@ -72,43 +74,25 @@ export default function UserPage() {
   }
 
   return (
-    <main
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
-    >
-      <Header 
-        apiKey={apiKey} 
-        onApiKeyChange={handleKeyChange}
-      />
-      
+    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
+      <Header apiKey={apiKey} onApiKeyChange={handleKeyChange} />
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-text dark:text-text-dark mb-2">
-            {t('title')}
-          </h1>
-          <p className="text-muted dark:text-muted-dark">
-            {t('description')}
-          </p>
+          <h1 className="text-3xl font-bold text-text dark:text-text-dark mb-2">{t('title')}</h1>
+          <p className="text-muted dark:text-muted-dark">{t('description')}</p>
         </div>
 
         {/* User Profile Content */}
         <div>
           <ErrorBoundary>
-            <UserProfile 
-              apiKey={apiKey} 
-              setToast={setToast}
-            />
+            <UserProfile apiKey={apiKey} setToast={setToast} />
           </ErrorBoundary>
         </div>
       </div>
 
       {/* Toast Notifications */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </main>
   );
 }
@@ -122,13 +106,20 @@ function ErrorBoundary({ children }) {
       <div className="p-6">
         <div className="text-center py-8">
           <div className="w-12 h-12 text-red-500 mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <p className="text-red-600 dark:text-red-400 mb-4">Something went wrong with this component</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">
+            Something went wrong with this component
+          </p>
           <button
             onClick={() => setHasError(false)}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"

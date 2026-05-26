@@ -295,11 +295,7 @@ class UserPoller {
       deactivateThreshold: threshold,
     });
 
-    if (
-      consecutiveAuthFailures >= threshold &&
-      this.masterDb &&
-      this.masterDb.updateUserStatus
-    ) {
+    if (consecutiveAuthFailures >= threshold && this.masterDb && this.masterDb.updateUserStatus) {
       try {
         this.masterDb.updateUserStatus(this.authId, 'inactive');
         logger.warn('Marked user as inactive due to consecutive authentication errors', {
@@ -708,10 +704,10 @@ class UserPoller {
     try {
       await this.ensureDatabaseConnection();
     } catch (error) {
-        logger.error('Failed to ensure database connection', error, {
-          authId: this.authId,
-          errorMessage: error.message,
-        });
+      logger.error('Failed to ensure database connection', error, {
+        authId: this.authId,
+        errorMessage: error.message,
+      });
       if (this.userDatabaseManager) {
         this.userDatabaseManager.closeConnection(this.authId);
       }
@@ -836,13 +832,16 @@ class UserPoller {
           try {
             const disabledCount = await this.automationEngine.disableAllRules();
             this.masterDb.resetConsecutivePlanRestrictedFailures(this.authId);
-            logger.warn('Poll failed (plan restricted); disabled all automation rules after threshold', {
-              authId: this.authId,
-              duration: `${duration}s`,
-              disabledCount,
-              consecutivePlanRestrictedFailures: count,
-              threshold,
-            });
+            logger.warn(
+              'Poll failed (plan restricted); disabled all automation rules after threshold',
+              {
+                authId: this.authId,
+                duration: `${duration}s`,
+                disabledCount,
+                consecutivePlanRestrictedFailures: count,
+                threshold,
+              }
+            );
           } catch (disableErr) {
             logger.error('Failed to disable rules after plan restricted threshold', disableErr, {
               authId: this.authId,

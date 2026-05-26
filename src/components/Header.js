@@ -57,15 +57,20 @@ export default function Header({ apiKey }) {
     return pathname === path || locales.some((locale) => pathname === `/${locale}${path}`);
   };
 
-  const navLinkClass = (active) =>
-    active ? 'ui-header-nav-active' : 'ui-header-nav';
+  const navLinkClass = (active) => (active ? 'ui-header-nav-active' : 'ui-header-nav');
 
   return (
     <div className="relative z-40 bg-white dark:bg-[#0f0f10] border-b border-zinc-200 dark:border-zinc-800/80 overflow-x-clip">
       <div className="container mx-auto px-3 py-3 sm:px-4 sm:py-4">
         <div className="flex justify-between items-center gap-2 min-w-0">
           <Link href="/" className="flex min-w-0 shrink items-center gap-2">
-            <Image src="/images/TBM-logo.png" alt={t('logo')} width={24} height={24} className="shrink-0" />
+            <Image
+              src="/images/TBM-logo.png"
+              alt={t('logo')}
+              width={24}
+              height={24}
+              className="shrink-0"
+            />
             <div className="flex min-w-0 flex-col">
               <h1 className="text-base sm:text-xl text-zinc-900 dark:text-zinc-100 font-medium truncate">
                 {t('title')}
@@ -116,7 +121,11 @@ export default function Header({ apiKey }) {
                 <span className="hidden lg:inline">{t('menu.downloads')}</span>
               </Link>
 
-              <Link href="/search" className={navLinkClass(isActive('/search'))} title={t('menu.search')}>
+              <Link
+                href="/search"
+                className={navLinkClass(isActive('/search'))}
+                title={t('menu.search')}
+              >
                 <Icons.MagnifyingGlass className="w-5 h-5 shrink-0" />
                 <span className="hidden lg:inline">{t('menu.search')}</span>
               </Link>
@@ -130,7 +139,7 @@ export default function Header({ apiKey }) {
                       isActive('/link-history') ||
                       isActive('/rss') ||
                       isActive('/user') ||
-                      isActive('/uploads'),
+                      isActive('/uploads')
                   )}`}
                   aria-expanded={isMoreMenuOpen}
                   aria-haspopup="menu"

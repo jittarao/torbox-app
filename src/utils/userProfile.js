@@ -62,7 +62,7 @@ export function getUserPermissions(userData) {
   const isPro = hasProPlan(userData);
 
   return {
-    planId: typeof userData?.plan === 'object' ? userData.plan?.id : userData?.plan ?? null,
+    planId: typeof userData?.plan === 'object' ? userData.plan?.id : (userData?.plan ?? null),
     isPro,
     downloads: {
       torrents: true,

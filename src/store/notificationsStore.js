@@ -56,7 +56,9 @@ export const useNotificationsStore = create((set, get) => ({
     const backoffTime = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000); // Max 5 minutes
 
     if (consecutiveErrors >= 3 && timeSinceLastError < backoffTime) {
-      console.log(`Skipping notification fetch due to consecutive errors. Backoff: ${backoffTime}ms`);
+      console.log(
+        `Skipping notification fetch due to consecutive errors. Backoff: ${backoffTime}ms`
+      );
       return;
     }
 
@@ -106,7 +108,7 @@ export const useNotificationsStore = create((set, get) => ({
         }
 
         const filteredNotifications = notificationData.filter(
-          (notification) => !clearedNotifications.includes(notification.id),
+          (notification) => !clearedNotifications.includes(notification.id)
         );
 
         // Get read notifications from localStorage
@@ -123,7 +125,9 @@ export const useNotificationsStore = create((set, get) => ({
           read: notification.read || readNotifications.includes(notification.id),
         }));
 
-        const unread = notificationsWithReadStatus.filter((notification) => !notification.read).length;
+        const unread = notificationsWithReadStatus.filter(
+          (notification) => !notification.read
+        ).length;
 
         set({
           notifications: notificationsWithReadStatus,
@@ -202,8 +206,12 @@ export const useNotificationsStore = create((set, get) => ({
         // Store all current notification IDs as cleared to prevent them from showing up again
         try {
           const currentNotificationIds = notifications.map((n) => n.id);
-          const clearedNotifications = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
-          const updatedClearedNotifications = [...new Set([...clearedNotifications, ...currentNotificationIds])];
+          const clearedNotifications = JSON.parse(
+            localStorage.getItem('clearedNotifications') || '[]'
+          );
+          const updatedClearedNotifications = [
+            ...new Set([...clearedNotifications, ...currentNotificationIds]),
+          ];
           localStorage.setItem('clearedNotifications', JSON.stringify(updatedClearedNotifications));
         } catch (error) {
           console.error('Error storing cleared notifications in localStorage:', error);
@@ -246,7 +254,9 @@ export const useNotificationsStore = create((set, get) => ({
       if (response && response.success) {
         // Store cleared notifications in localStorage to prevent them from showing up again
         try {
-          const clearedNotifications = JSON.parse(localStorage.getItem('clearedNotifications') || '[]');
+          const clearedNotifications = JSON.parse(
+            localStorage.getItem('clearedNotifications') || '[]'
+          );
           if (!clearedNotifications.includes(notificationId)) {
             clearedNotifications.push(notificationId);
             localStorage.setItem('clearedNotifications', JSON.stringify(clearedNotifications));
@@ -313,7 +323,7 @@ export const useNotificationsStore = create((set, get) => ({
   markAsRead: (notificationId) => {
     const { notifications, unreadCount } = get();
     const updatedNotifications = notifications.map((notification) =>
-      notification.id === notificationId ? { ...notification, read: true } : notification,
+      notification.id === notificationId ? { ...notification, read: true } : notification
     );
     const updatedUnreadCount = Math.max(0, unreadCount - 1);
 
@@ -337,7 +347,10 @@ export const useNotificationsStore = create((set, get) => ({
   // Mark all notifications as read
   markAllAsRead: () => {
     const { notifications } = get();
-    const updatedNotifications = notifications.map((notification) => ({ ...notification, read: true }));
+    const updatedNotifications = notifications.map((notification) => ({
+      ...notification,
+      read: true,
+    }));
 
     set({
       notifications: updatedNotifications,

@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET(request, { params }) {
   const { provider } = await params;
@@ -16,9 +12,9 @@ export async function GET(request, { params }) {
   // Map our provider IDs to the API's expected format
   // Only these providers support OAuth
   const providerMapping = {
-    'google_drive': 'google',
-    'dropbox': 'dropbox',
-    'onedrive': 'onedrive',
+    google_drive: 'google',
+    dropbox: 'dropbox',
+    onedrive: 'onedrive',
   };
 
   const apiProvider = providerMapping[provider];
@@ -47,7 +43,7 @@ export async function GET(request, { params }) {
         headers: {
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
-      },
+      }
     );
 
     if (!response.ok) {
@@ -58,7 +54,7 @@ export async function GET(request, { params }) {
     }
 
     const data = await response.json();
-    
+
     if (data.success) {
       // According to the API docs, the callback should redirect to torbox.app
       // But we'll redirect back to our app with success status

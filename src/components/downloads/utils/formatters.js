@@ -1,27 +1,22 @@
 export const formatSize = (bytes, locale = 'en') => {
   // Handle all edge cases: null, undefined, NaN, negative values
-  if (
-    bytes === null ||
-    bytes === undefined ||
-    isNaN(bytes) ||
-    bytes < 0
-  ) {
+  if (bytes === null || bytes === undefined || isNaN(bytes) || bytes < 0) {
     return 'Unknown';
   }
-  
+
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 B';
-  
+
   try {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    
+
     // Ensure i is within valid range for the sizes array
     if (i < 0 || i >= sizes.length) {
       return 'Unknown';
     }
-    
+
     const value = bytes / Math.pow(1024, i);
-    
+
     return (
       new Intl.NumberFormat(locale, {
         maximumFractionDigits: 1,
@@ -110,14 +105,13 @@ export const formatEta = (seconds, t) => {
 
   // Round to nearest second to avoid long decimal values
   const roundedSeconds = Math.round(seconds);
-  
+
   const hours = Math.floor(roundedSeconds / 3600);
   const minutes = Math.floor((roundedSeconds % 3600) / 60);
   const remainingSeconds = roundedSeconds % 60;
 
   if (hours > 0) return `${hours}${t('time.h')} ${minutes}${t('time.m')}`;
-  if (minutes > 0)
-    return `${minutes}${t('time.m')} ${remainingSeconds}${t('time.s')}`;
+  if (minutes > 0) return `${minutes}${t('time.m')} ${remainingSeconds}${t('time.s')}`;
   return `${remainingSeconds}${t('time.s')}`;
 };
 

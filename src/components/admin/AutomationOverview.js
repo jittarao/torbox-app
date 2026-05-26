@@ -5,21 +5,33 @@ export default function AutomationOverview({ stats, rules, executions, errors })
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Rules</label>
-            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stats.rules?.total || 0}</p>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Total Rules
+            </span>
+            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              {stats.rules?.total || 0}
+            </p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Enabled Rules</label>
-            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stats.rules?.enabled || 0}</p>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Enabled Rules
+            </span>
+            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              {stats.rules?.enabled || 0}
+            </p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Executions (7d)</label>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Executions (7d)
+            </span>
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {stats.executions_last_7_days?.total || 0}
             </p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Success Rate</label>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Success Rate
+            </span>
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {stats.executions_last_7_days?.success_rate || '0%'}
             </p>

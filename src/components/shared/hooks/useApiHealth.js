@@ -54,8 +54,7 @@ export function useApiHealth(apiKey) {
     const connectionOk = apiKey
       ? connectionHealth.status === 'healthy'
       : connectionHealth.status === 'no-key';
-    const backendOk =
-      backendHealth.status === 'healthy' || backendHealth.status === 'unavailable';
+    const backendOk = backendHealth.status === 'healthy' || backendHealth.status === 'unavailable';
 
     if (platformOk && connectionOk && backendOk) {
       return 'healthy';

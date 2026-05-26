@@ -1,6 +1,6 @@
 'use client';
 
-import { 
+import {
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
@@ -28,24 +28,28 @@ import { useTranslations } from 'next-intl';
 
 // Map STATUS_OPTIONS labels to backend status values
 const getStatusOptions = () => {
-  return STATUS_OPTIONS
-    .filter(opt => !opt.hidden && opt.label !== 'All' && opt.label !== 'Meta_DL' && opt.label !== 'Checking_Resume_Data')
-    .map(opt => {
-      const labelToValue = {
-        'Queued': 'queued',
-        'Downloading': 'downloading',
-        'Seeding': 'seeding',
-        'Completed': 'completed',
-        'Uploading': 'uploading',
-        'Stalled': 'stalled',
-        'Inactive': 'inactive',
-        'Failed': 'failed',
-      };
-      return {
-        label: opt.label,
-        value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
-      };
-    });
+  return STATUS_OPTIONS.filter(
+    (opt) =>
+      !opt.hidden &&
+      opt.label !== 'All' &&
+      opt.label !== 'Meta_DL' &&
+      opt.label !== 'Checking_Resume_Data'
+  ).map((opt) => {
+    const labelToValue = {
+      Queued: 'queued',
+      Downloading: 'downloading',
+      Seeding: 'seeding',
+      Completed: 'completed',
+      Uploading: 'uploading',
+      Stalled: 'stalled',
+      Inactive: 'inactive',
+      Failed: 'failed',
+    };
+    return {
+      label: opt.label,
+      value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
+    };
+  });
 };
 
 // Get asset type options
@@ -58,11 +62,11 @@ const getAssetTypeOptions = () => {
   ];
 };
 
-export default function FilterInput({ 
-  filter, 
-  index, 
+export default function FilterInput({
+  filter,
+  index,
   totalFilters,
-  onUpdate, 
+  onUpdate,
   onRemove,
   availableColumns,
   apiKey,
@@ -88,7 +92,11 @@ export default function FilterInput({
       // For boolean conditions, automatically update operator based on value
       const boolValue = value === true || value === 'true' || value === 1;
       onUpdate(index, 'value', boolValue);
-      onUpdate(index, 'operator', boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE);
+      onUpdate(
+        index,
+        'operator',
+        boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE
+      );
     } else {
       onUpdate(index, field, value);
     }
@@ -108,7 +116,7 @@ export default function FilterInput({
 
   // Get tag options for MultiSelect
   const getTagOptions = () => {
-    return tags.map(tag => ({
+    return tags.map((tag) => ({
       label: tag.name,
       value: tag.id,
     }));
@@ -117,7 +125,7 @@ export default function FilterInput({
   const columnGroups = getGroupedFilterableColumns(activeType, columnT, customViewsT);
 
   const operators = filter.column ? getOperatorsForColumn(filter.column) : [];
-  const operatorOptions = operators.map(op => {
+  const operatorOptions = operators.map((op) => {
     let label = op;
     if (isNumberColumn(filter.column) || isTimestampColumn(filter.column)) {
       const labels = {
@@ -177,10 +185,7 @@ export default function FilterInput({
         {columnGroups.map((group, groupIdx) => (
           <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
             {group.options.map((opt, optIdx) => (
-              <option 
-                key={`col-${groupIdx}-${optIdx}-${opt.value}`} 
-                value={String(opt.value)}
-              >
+              <option key={`col-${groupIdx}-${optIdx}-${opt.value}`} value={String(opt.value)}>
                 {opt.label}
               </option>
             ))}
@@ -217,7 +222,9 @@ export default function FilterInput({
             <MultiSelect
               value={getStatusValue()}
               onChange={(values) => handleFieldChange('value', values)}
-              options={filter.column === 'download_state' ? getStatusOptions() : getAssetTypeOptions()}
+              options={
+                filter.column === 'download_state' ? getStatusOptions() : getAssetTypeOptions()
+              }
               placeholder={customViewsT('selectPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
@@ -231,7 +238,11 @@ export default function FilterInput({
             />
           ) : isBooleanColumn(filter.column) ? (
             <Select
-              value={filter.value === true || filter.value === 'true' || filter.value === 1 ? 'true' : 'false'}
+              value={
+                filter.value === true || filter.value === 'true' || filter.value === 1
+                  ? 'true'
+                  : 'false'
+              }
               onChange={(e) => handleFieldChange('value', e.target.value === 'true')}
               className="w-full sm:min-w-[100px] sm:w-auto"
             >

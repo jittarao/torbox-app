@@ -287,7 +287,6 @@ export const API_RESPONSE_TYPES = {
     updated_at: 'string',
     usage_count: 'number',
   },
-
 };
 
 // API Error types

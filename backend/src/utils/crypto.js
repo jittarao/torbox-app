@@ -23,7 +23,9 @@ function getEncryptionKey() {
   if (!key) {
     // Fallback for backward compatibility when ENCRYPTION_KEY is not set
     if (process.env.NODE_ENV === 'production') {
-      logger.warn('ENCRYPTION_KEY not set. Using default key. Set ENCRYPTION_KEY in production for stronger security.');
+      logger.warn(
+        'ENCRYPTION_KEY not set. Using default key. Set ENCRYPTION_KEY in production for stronger security.'
+      );
     } else {
       logger.warn('Using default encryption key. Set ENCRYPTION_KEY in production!');
     }

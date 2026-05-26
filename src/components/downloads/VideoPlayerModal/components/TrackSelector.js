@@ -26,7 +26,15 @@ export default function TrackSelector({
   if (!hasTracks) return null;
 
   const Icon = isAudio ? (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+    >
       <path d="M2 10v3" />
       <path d="M6 6v11" />
       <path d="M10 3v18" />
@@ -35,7 +43,15 @@ export default function TrackSelector({
       <path d="M22 10v3" />
     </svg>
   ) : (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+    >
       <path d="M3 20V4h18v16H3Zm1.5 -1.5h15V5.5H4.5v13Zm1.5 -3.525h5.05v-1.8h-1.25v0.55h-2.55v-3.45h2.55v0.55h1.25v-1.8H6v5.95Zm6.975 0h5.05v-1.8h-1.25v0.55h-2.55v-3.45h2.55v0.55h1.25v-1.8h-5.05v5.95Z" />
     </svg>
   );

@@ -3,7 +3,8 @@
  * Stores derived fields computed from state diffs
  */
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS torrent_telemetry (
       torrent_id TEXT PRIMARY KEY,
       last_download_activity_at DATETIME,
@@ -14,13 +15,16 @@ export const up = (db) => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (torrent_id) REFERENCES torrent_shadow (torrent_id) ON DELETE CASCADE
     )
-  `).run();
+  `
+  ).run();
 
   // Indexes for time-based queries
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_torrent_telemetry_stalled_since 
     ON torrent_telemetry(stalled_since)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {

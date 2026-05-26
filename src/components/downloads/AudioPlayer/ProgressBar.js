@@ -3,12 +3,14 @@
 import { useState, useCallback } from 'react';
 import { formatTime } from '../utils/formatters';
 
+const EMPTY_ARRAY = [];
+
 export default function ProgressBar({
   seekValue,
   buffered,
   currentTime,
   chapterRemaining,
-  chapters = [],
+  chapters = EMPTY_ARRAY,
   duration = 0,
   onSeek,
   onSeekStart,
@@ -63,6 +65,7 @@ export default function ProgressBar({
           e.preventDefault(); // suppress synthetic click to avoid double seek
         }}
         role="slider"
+        tabIndex={0}
         aria-valuenow={seekValue}
         aria-valuemin={0}
         aria-valuemax={100}

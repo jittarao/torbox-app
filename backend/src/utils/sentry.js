@@ -60,9 +60,7 @@ export async function initSentry() {
       integrations: [
         ...(Sentry.defaultIntegrations || []),
         // Express integration provides automatic request/tracing instrumentation
-        ...(typeof Sentry.expressIntegration === 'function'
-          ? [Sentry.expressIntegration()]
-          : []),
+        ...(typeof Sentry.expressIntegration === 'function' ? [Sentry.expressIntegration()] : []),
       ],
 
       // Filter out health check endpoints and other noise

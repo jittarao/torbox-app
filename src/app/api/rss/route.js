@@ -1,9 +1,5 @@
 import { headers } from 'next/headers';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { NextResponse } from 'next/server';
 
 // Get all RSS feeds
@@ -13,42 +9,49 @@ export async function GET() {
     const apiKey = headersList.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'API key is required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'API key is required',
+        },
+        { status: 400 }
+      );
     }
 
-    const response = await fetch(
-      `${API_BASE}/${API_VERSION}/api/rss/getfeeds`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
+    const response = await fetch(`${API_BASE}/${API_VERSION}/api/rss/getfeeds`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('RSS API error:', errorData);
-      return NextResponse.json({ 
-        success: false,
-        error: errorData.error || errorData.detail || `API responded with status: ${response.status}` 
-      }, { status: response.status });
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            errorData.error || errorData.detail || `API responded with status: ${response.status}`,
+        },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
     return NextResponse.json({
       success: true,
-      data: data.data || data || []
+      data: data.data || data || [],
     });
   } catch (error) {
     console.error('Error fetching RSS feeds:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: error.message 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -59,10 +62,13 @@ export async function POST(request) {
     const apiKey = headersList.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'API key is required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'API key is required',
+        },
+        { status: 400 }
+      );
     }
 
     const body = await request.json();
@@ -75,17 +81,17 @@ export async function POST(request) {
       endpoint = `${API_BASE}/${API_VERSION}/api/rss/modifyrss`;
     } else {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'Invalid action. Use "add" or "modify"' 
+          error: 'Invalid action. Use "add" or "modify"',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Process data based on endpoint
     const processedFeedData = { ...feedData };
-    
+
     if (action === 'add') {
       // For add endpoint: try both array and single value formats
       if (Array.isArray(processedFeedData.scan_interval)) {
@@ -103,7 +109,7 @@ export async function POST(request) {
         processedFeedData.rss_type = processedFeedData.rss_type[0];
       }
     }
-    
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -118,40 +124,42 @@ export async function POST(request) {
 
     if (!response.ok) {
       console.error('RSS API error:', data);
-      
+
       // Handle validation error format
       let errorMessage = 'Failed to process RSS feed';
       if (data.detail && Array.isArray(data.detail)) {
-        errorMessage = data.detail.map(err => {
-          const fieldPath = err.loc?.join('.') || 'unknown';
-          const fieldValue = JSON.stringify(err.input);
-          return `${fieldPath}: ${err.msg} (got: ${fieldValue})`;
-        }).join(', ');
+        errorMessage = data.detail
+          .map((err) => {
+            const fieldPath = err.loc?.join('.') || 'unknown';
+            const fieldValue = JSON.stringify(err.input);
+            return `${fieldPath}: ${err.msg} (got: ${fieldValue})`;
+          })
+          .join(', ');
       } else if (data.error) {
         errorMessage = data.error;
       }
-      
+
       return NextResponse.json(
         {
           success: false,
           error: errorMessage,
         },
-        { status: response.status },
+        { status: response.status }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: data.data || data
+      data: data.data || data,
     });
   } catch (error) {
     console.error('Error processing RSS feed:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error.message 
+        error: error.message,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -99,7 +99,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
     { label: 'Year Search', example: 'Inception (2010)' },
   ];
 
-  const handleChange = (e) => {
+  const handleSearchChange = (e) => {
     setLocalQuery(e.target.value);
   };
 
@@ -144,17 +144,13 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
       {/* Main Search Bar */}
       <div className="relative flex gap-2">
         <div className="w-32">
-          <Dropdown
-            options={SEARCH_OPTIONS}
-            value={searchType}
-            onChange={setSearchType}
-          />
+          <Dropdown options={SEARCH_OPTIONS} value={searchType} onChange={setSearchType} />
         </div>
         <div className="relative flex-1">
           <input
             type="text"
             value={localQuery}
-            onChange={handleChange}
+            onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
             onFocus={() => {
               if (searchHistory.length > 0) setShowHistory(true);
@@ -279,7 +275,9 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
             className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
           >
             <Icons.Filter className="h-4 w-4" />
-            {showAdvancedOptions ? (t('hideAdvanced') || 'Hide Advanced') : (t('showAdvanced') || 'Show Advanced')}
+            {showAdvancedOptions
+              ? t('hideAdvanced') || 'Hide Advanced'
+              : t('showAdvanced') || 'Show Advanced'}
           </button>
         </div>
       </div>
@@ -334,11 +332,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
             <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
               {t('quality') || 'Quality'}
             </label>
-            <Dropdown
-              options={QUALITY_OPTIONS}
-              value={qualityFilter}
-              onChange={setQualityFilter}
-            />
+            <Dropdown options={QUALITY_OPTIONS} value={qualityFilter} onChange={setQualityFilter} />
           </div>
 
           <div>

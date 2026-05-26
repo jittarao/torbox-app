@@ -6,7 +6,7 @@
 export async function safeJsonParse(response) {
   try {
     const contentType = response.headers.get('content-type');
-    
+
     // Check if response is actually JSON
     if (contentType && !contentType.includes('application/json')) {
       // Try to get text for error messages
@@ -14,19 +14,19 @@ export async function safeJsonParse(response) {
       return {
         error: text || `HTTP ${response.status}`,
         detail: 'Response is not JSON',
-        _rawResponse: text
+        _rawResponse: text,
       };
     }
-    
+
     // Try to parse as JSON
     const text = await response.text();
     if (!text) {
       return {
         error: `HTTP ${response.status}`,
-        detail: 'Empty response body'
+        detail: 'Empty response body',
       };
     }
-    
+
     try {
       return JSON.parse(text);
     } catch (parseError) {
@@ -34,13 +34,13 @@ export async function safeJsonParse(response) {
       return {
         error: text || `HTTP ${response.status}`,
         detail: 'Invalid JSON response',
-        _rawResponse: text
+        _rawResponse: text,
       };
     }
   } catch (error) {
     return {
       error: `HTTP ${response.status}`,
-      detail: error.message || 'Failed to parse response'
+      detail: error.message || 'Failed to parse response',
     };
   }
 }

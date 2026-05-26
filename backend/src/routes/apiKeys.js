@@ -45,11 +45,9 @@ async function registerAndRollbackOnFailure(backend, apiKey, keyName, pollInterv
       try {
         backend.masterDatabase.deleteApiKey(authId);
       } catch (rollbackError) {
-        logger.error(
-          'Failed to rollback API key after user registration failure',
-          rollbackError,
-          { authId }
-        );
+        logger.error('Failed to rollback API key after user registration failure', rollbackError, {
+          authId,
+        });
       }
     }
     throw error;

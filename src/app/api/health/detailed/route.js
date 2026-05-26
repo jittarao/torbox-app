@@ -11,7 +11,7 @@ export async function GET() {
       {
         status: 'forbidden',
         error: 'This endpoint is only available in development environment',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 403 }
     );
@@ -23,7 +23,7 @@ export async function GET() {
       {
         status: 'unavailable',
         message: 'Backend is disabled',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 503 }
     );
@@ -44,7 +44,7 @@ export async function GET() {
       const errorData = await response.json().catch(() => ({
         status: 'unhealthy',
         error: `Backend returned status ${response.status}`,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }));
 
       return NextResponse.json(errorData, { status: response.status });
@@ -60,7 +60,7 @@ export async function GET() {
           status: 'unhealthy',
           error: 'Backend health check request timed out',
           timestamp: new Date().toISOString(),
-          backendUrl: BACKEND_URL
+          backendUrl: BACKEND_URL,
         },
         { status: 504 }
       );
@@ -71,7 +71,7 @@ export async function GET() {
         status: 'unhealthy',
         error: error.message || 'Failed to connect to backend',
         timestamp: new Date().toISOString(),
-        backendUrl: BACKEND_URL
+        backendUrl: BACKEND_URL,
       },
       { status: 503 }
     );

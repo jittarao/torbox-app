@@ -52,7 +52,7 @@ export function useNotifications(apiKey) {
       }
       return await clearNotificationStore(apiKey, notificationId);
     },
-    [apiKey, clearNotificationStore],
+    [apiKey, clearNotificationStore]
   );
 
   const testNotification = useCallback(async () => {

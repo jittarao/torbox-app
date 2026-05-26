@@ -14,22 +14,19 @@ export async function GET() {
       return NextResponse.json({
         success: false,
         ip: 'unknown',
-        error: 'Headers not available during build'
+        error: 'Headers not available during build',
       });
     }
-    
+
     // Try to get IP from various headers (common in proxy setups)
     const forwardedFor = headersList.get('x-forwarded-for');
     const realIp = headersList.get('x-real-ip');
     const clientIp = headersList.get('x-client-ip');
     const cfConnectingIp = headersList.get('cf-connecting-ip'); // Cloudflare
-    
+
     // Get the first IP from x-forwarded-for (it can contain multiple IPs)
-    const ip = forwardedFor?.split(',')[0]?.trim() || 
-               realIp || 
-               clientIp || 
-               cfConnectingIp || 
-               'unknown';
+    const ip =
+      forwardedFor?.split(',')[0]?.trim() || realIp || clientIp || cfConnectingIp || 'unknown';
 
     return NextResponse.json({
       success: true,
@@ -39,15 +36,15 @@ export async function GET() {
         'x-real-ip': realIp,
         'x-client-ip': clientIp,
         'cf-connecting-ip': cfConnectingIp,
-      }
+      },
     });
   } catch (error) {
     console.error('Error getting IP:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: error.message,
-        ip: 'unknown'
+        ip: 'unknown',
       },
       { status: 500 }
     );

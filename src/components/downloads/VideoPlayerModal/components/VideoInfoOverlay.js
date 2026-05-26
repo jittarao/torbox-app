@@ -3,6 +3,8 @@
 import Icons from '@/components/icons';
 import { formatSize } from '../../utils/formatters';
 
+const EMPTY_ARRAY = [];
+
 /**
  * VideoInfoOverlay - Modal displaying video metadata and technical information
  * @param {Object} props
@@ -13,17 +15,24 @@ import { formatSize } from '../../utils/formatters';
  * @param {Array} props.audios - Array of audio tracks
  * @param {Array} props.subtitles - Array of subtitle tracks
  */
-export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, audios = [], subtitles = [] }) {
+export default function VideoInfoOverlay({
+  isOpen,
+  onClose,
+  metadata,
+  fileName,
+  audios = EMPTY_ARRAY,
+  subtitles = EMPTY_ARRAY,
+}) {
   if (!isOpen) return null;
 
   const videoInfo = metadata?.video || {};
 
   return (
-    <div 
+    <div
       className="absolute inset-0 z-30 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-black/90 backdrop-blur-md rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-white/20 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -53,13 +62,19 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
                 {metadata.search_metadata.title && (
                   <div className="md:col-span-2">
                     <span className="text-xs text-white/60 uppercase tracking-wide">Title</span>
-                    <p className="text-lg font-medium text-white mt-1">{metadata.search_metadata.title}</p>
+                    <p className="text-lg font-medium text-white mt-1">
+                      {metadata.search_metadata.title}
+                    </p>
                   </div>
                 )}
                 {metadata.search_metadata.description && (
                   <div className="md:col-span-2">
-                    <span className="text-xs text-white/60 uppercase tracking-wide">Description</span>
-                    <p className="text-sm text-white/80 mt-1 leading-relaxed">{metadata.search_metadata.description}</p>
+                    <span className="text-xs text-white/60 uppercase tracking-wide">
+                      Description
+                    </span>
+                    <p className="text-sm text-white/80 mt-1 leading-relaxed">
+                      {metadata.search_metadata.description}
+                    </p>
                   </div>
                 )}
                 {metadata.search_metadata.genres && metadata.search_metadata.genres.length > 0 && (
@@ -67,25 +82,34 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
                     <span className="text-xs text-white/60 uppercase tracking-wide">Genres</span>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {metadata.search_metadata.genres.map((genre, idx) => (
-                        <span key={idx} className="px-3 py-1 rounded-full bg-accent/20 dark:bg-accent-dark/20 text-accent dark:text-accent-dark text-xs font-medium border border-accent/30 dark:border-accent-dark/30">
+                        <span
+                          key={idx}
+                          className="px-3 py-1 rounded-full bg-accent/20 dark:bg-accent-dark/20 text-accent dark:text-accent-dark text-xs font-medium border border-accent/30 dark:border-accent-dark/30"
+                        >
                           {genre}
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
-                {metadata.search_metadata.keywords && metadata.search_metadata.keywords.length > 0 && (
-                  <div>
-                    <span className="text-xs text-white/60 uppercase tracking-wide">Keywords</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {metadata.search_metadata.keywords.slice(0, 8).map((keyword, idx) => (
-                        <span key={idx} className="px-2 py-1 rounded bg-white/5 text-white/70 text-xs">
-                          {keyword}
-                        </span>
-                      ))}
+                {metadata.search_metadata.keywords &&
+                  metadata.search_metadata.keywords.length > 0 && (
+                    <div>
+                      <span className="text-xs text-white/60 uppercase tracking-wide">
+                        Keywords
+                      </span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {metadata.search_metadata.keywords.slice(0, 8).map((keyword, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 rounded bg-white/5 text-white/70 text-xs"
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 {metadata.search_metadata.rating && (
                   <div>
                     <span className="text-xs text-white/60 uppercase tracking-wide">Rating</span>
@@ -97,44 +121,64 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
                 )}
                 {metadata.search_metadata.releaseYears && (
                   <div>
-                    <span className="text-xs text-white/60 uppercase tracking-wide">Release Year</span>
-                    <p className="text-lg font-medium text-white mt-1">{metadata.search_metadata.releaseYears}</p>
+                    <span className="text-xs text-white/60 uppercase tracking-wide">
+                      Release Year
+                    </span>
+                    <p className="text-lg font-medium text-white mt-1">
+                      {metadata.search_metadata.releaseYears}
+                    </p>
                   </div>
                 )}
                 {metadata.search_metadata.runtime && (
                   <div>
                     <span className="text-xs text-white/60 uppercase tracking-wide">Runtime</span>
-                    <p className="text-lg font-medium text-white mt-1">{metadata.search_metadata.runtime}</p>
+                    <p className="text-lg font-medium text-white mt-1">
+                      {metadata.search_metadata.runtime}
+                    </p>
                   </div>
                 )}
                 {metadata.search_metadata.contentRating && (
                   <div>
-                    <span className="text-xs text-white/60 uppercase tracking-wide">Content Rating</span>
-                    <p className="text-lg font-medium text-white mt-1">{metadata.search_metadata.contentRating}</p>
+                    <span className="text-xs text-white/60 uppercase tracking-wide">
+                      Content Rating
+                    </span>
+                    <p className="text-lg font-medium text-white mt-1">
+                      {metadata.search_metadata.contentRating}
+                    </p>
                   </div>
                 )}
                 {metadata.search_metadata.mediaType && (
                   <div>
                     <span className="text-xs text-white/60 uppercase tracking-wide">Type</span>
-                    <p className="text-lg font-medium text-white mt-1 capitalize">{metadata.search_metadata.mediaType}</p>
+                    <p className="text-lg font-medium text-white mt-1 capitalize">
+                      {metadata.search_metadata.mediaType}
+                    </p>
                   </div>
                 )}
-                {metadata.search_metadata.languages && metadata.search_metadata.languages.length > 0 && (
-                  <div>
-                    <span className="text-xs text-white/60 uppercase tracking-wide">Languages</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {metadata.search_metadata.languages.map((lang, idx) => (
-                        <span key={idx} className="px-2 py-1 rounded bg-white/5 text-white/80 text-xs font-medium">
-                          {lang}
-                        </span>
-                      ))}
+                {metadata.search_metadata.languages &&
+                  metadata.search_metadata.languages.length > 0 && (
+                    <div>
+                      <span className="text-xs text-white/60 uppercase tracking-wide">
+                        Languages
+                      </span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {metadata.search_metadata.languages.map((lang, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 rounded bg-white/5 text-white/80 text-xs font-medium"
+                          >
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 {metadata.search_metadata.imdb_id && (
                   <div>
                     <span className="text-xs text-white/60 uppercase tracking-wide">IMDb ID</span>
-                    <p className="text-sm font-mono text-white/80 mt-1">{metadata.search_metadata.imdb_id}</p>
+                    <p className="text-sm font-mono text-white/80 mt-1">
+                      {metadata.search_metadata.imdb_id}
+                    </p>
                   </div>
                 )}
               </div>
@@ -172,7 +216,9 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
               {videoInfo.codec && (
                 <div>
                   <span className="text-xs text-white/60 uppercase tracking-wide">Video Codec</span>
-                  <p className="text-sm font-medium text-white mt-1">{videoInfo.codec.toUpperCase()}</p>
+                  <p className="text-sm font-medium text-white mt-1">
+                    {videoInfo.codec.toUpperCase()}
+                  </p>
                 </div>
               )}
               {videoInfo.frame_rate && (
@@ -184,24 +230,34 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
               {videoInfo.bitrate && (
                 <div>
                   <span className="text-xs text-white/60 uppercase tracking-wide">Bitrate</span>
-                  <p className="text-sm font-medium text-white mt-1">{Math.round(parseInt(videoInfo.bitrate) / 1000)}kbps</p>
+                  <p className="text-sm font-medium text-white mt-1">
+                    {Math.round(parseInt(videoInfo.bitrate) / 1000)}kbps
+                  </p>
                 </div>
               )}
               {videoInfo.size && (
                 <div>
                   <span className="text-xs text-white/60 uppercase tracking-wide">File Size</span>
-                  <p className="text-sm font-medium text-white mt-1">{formatSize(videoInfo.size)}</p>
+                  <p className="text-sm font-medium text-white mt-1">
+                    {formatSize(videoInfo.size)}
+                  </p>
                 </div>
               )}
               {videoInfo.pixel_format && (
                 <div>
-                  <span className="text-xs text-white/60 uppercase tracking-wide">Pixel Format</span>
-                  <p className="text-sm font-medium text-white mt-1 font-mono text-xs">{videoInfo.pixel_format}</p>
+                  <span className="text-xs text-white/60 uppercase tracking-wide">
+                    Pixel Format
+                  </span>
+                  <p className="text-sm font-medium text-white mt-1 font-mono text-xs">
+                    {videoInfo.pixel_format}
+                  </p>
                 </div>
               )}
               {videoInfo.total_chunks && (
                 <div>
-                  <span className="text-xs text-white/60 uppercase tracking-wide">Total Chunks</span>
+                  <span className="text-xs text-white/60 uppercase tracking-wide">
+                    Total Chunks
+                  </span>
                   <p className="text-sm font-medium text-white mt-1">{videoInfo.total_chunks}</p>
                 </div>
               )}
@@ -212,7 +268,15 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
           {audios.length > 0 && (
             <div className="bg-white/5 rounded-lg p-5 border border-white/10">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <svg
+                  className="w-5 h-5 text-white/60"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  viewBox="0 0 24 24"
+                >
                   <path d="M2 10v3" />
                   <path d="M6 6v11" />
                   <path d="M10 3v18" />
@@ -238,18 +302,24 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <span className="text-white/60">Language:</span>
-                            <span className="text-white ml-2">{audio.language_full || audio.language || 'Unknown'}</span>
+                            <span className="text-white ml-2">
+                              {audio.language_full || audio.language || 'Unknown'}
+                            </span>
                           </div>
                           {audio.codec && (
                             <div>
                               <span className="text-white/60">Codec:</span>
-                              <span className="text-white ml-2 font-mono">{audio.codec.toUpperCase()}</span>
+                              <span className="text-white ml-2 font-mono">
+                                {audio.codec.toUpperCase()}
+                              </span>
                             </div>
                           )}
                           {audio.channels && (
                             <div>
                               <span className="text-white/60">Channels:</span>
-                              <span className="text-white ml-2">{audio.channels} ({audio.channel_layout || 'N/A'})</span>
+                              <span className="text-white ml-2">
+                                {audio.channels} ({audio.channel_layout || 'N/A'})
+                              </span>
                             </div>
                           )}
                           {audio.sample_rate && (
@@ -279,7 +349,9 @@ export default function VideoInfoOverlay({ isOpen, onClose, metadata, fileName, 
                   <div key={idx} className="bg-white/5 rounded-lg p-3 border border-white/10">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-white">Track {idx + 1}</span>
-                      <span className="text-sm text-white/80">{subtitle.language_full || subtitle.language || 'Unknown'}</span>
+                      <span className="text-sm text-white/80">
+                        {subtitle.language_full || subtitle.language || 'Unknown'}
+                      </span>
                     </div>
                   </div>
                 ))}

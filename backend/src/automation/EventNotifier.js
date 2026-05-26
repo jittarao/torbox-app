@@ -18,9 +18,7 @@ class EventNotifier {
    */
   startHeartbeat(intervalMs) {
     if (this._heartbeatId) return;
-    const ms =
-      intervalMs ??
-      parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '25000', 10);
+    const ms = intervalMs ?? parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '25000', 10);
     this._heartbeatId = setInterval(() => {
       for (const [authId, set] of this.connections) {
         for (const res of set) {
@@ -87,7 +85,10 @@ class EventNotifier {
       try {
         res.write(`data: ${data}\n\n`);
       } catch (err) {
-        logger.debug('SSE write failed, removing connection', { authId, errorMessage: err.message });
+        logger.debug('SSE write failed, removing connection', {
+          authId,
+          errorMessage: err.message,
+        });
         set.delete(res);
       }
     }

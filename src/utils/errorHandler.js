@@ -17,8 +17,11 @@ export function handleChunkError(error, retryCount = 0) {
     error?.name === 'ChunkLoadError';
 
   if (isChunkError && retryCount < maxRetries) {
-    console.warn(`Chunk loading error detected (attempt ${retryCount + 1}/${maxRetries}). Retrying...`, error);
-    
+    console.warn(
+      `Chunk loading error detected (attempt ${retryCount + 1}/${maxRetries}). Retrying...`,
+      error
+    );
+
     // Wait and reload the page to get fresh chunks
     setTimeout(() => {
       // Clear service worker cache if available
@@ -29,11 +32,11 @@ export function handleChunkError(error, retryCount = 0) {
           });
         });
       }
-      
+
       // Reload the page to get fresh chunks
       window.location.reload();
     }, retryDelay);
-    
+
     return true; // Error handled
   }
 
@@ -48,7 +51,7 @@ export function handleServiceWorkerError(error) {
     error?.message?.includes('returnNaN') // Could be from cached SW
   ) {
     console.warn('Service worker error detected. Attempting to unregister and reload...', error);
-    
+
     // Unregister all service workers and reload
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -57,17 +60,18 @@ export function handleServiceWorkerError(error) {
             console.log('Service worker unregistered');
             // Clear all caches
             if ('caches' in window) {
-              caches.keys().then((cacheNames) => {
-                return Promise.all(
-                  cacheNames.map((cacheName) => caches.delete(cacheName))
-                );
-              }).then(() => {
-                console.log('All caches cleared');
-                // Reload after a short delay
-                setTimeout(() => {
-                  window.location.reload();
-                }, 500);
-              });
+              caches
+                .keys()
+                .then((cacheNames) => {
+                  return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+                })
+                .then(() => {
+                  console.log('All caches cleared');
+                  // Reload after a short delay
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 500);
+                });
             } else {
               window.location.reload();
             }
@@ -75,7 +79,7 @@ export function handleServiceWorkerError(error) {
         });
       });
     }
-    
+
     return true; // Error handled
   }
 
@@ -87,19 +91,19 @@ export function setupGlobalErrorHandler() {
   // Handle unhandled promise rejections (common with chunk loading)
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
-    
+
     // Try to handle chunk errors
     if (handleChunkError(error)) {
       event.preventDefault(); // Prevent default error logging
       return;
     }
-    
+
     // Try to handle service worker errors
     if (handleServiceWorkerError(error)) {
       event.preventDefault();
       return;
     }
-    
+
     // Log other unhandled rejections
     console.error('Unhandled promise rejection:', error);
   });
@@ -107,21 +111,24 @@ export function setupGlobalErrorHandler() {
   // Handle general errors
   window.addEventListener('error', (event) => {
     const error = event.error || new Error(event.message);
-    
+
     // Check for the specific returnNaN error
     if (
       error?.message?.includes('returnNaN') ||
       error?.message?.includes('is not defined') ||
       error?.message?.includes('ReferenceError')
     ) {
-      console.warn('Reference error detected (possibly from cached code). Attempting recovery...', error);
-      
+      console.warn(
+        'Reference error detected (possibly from cached code). Attempting recovery...',
+        error
+      );
+
       // Try chunk error handling first
       if (handleChunkError(error)) {
         event.preventDefault();
         return;
       }
-      
+
       // Try service worker error handling
       if (handleServiceWorkerError(error)) {
         event.preventDefault();

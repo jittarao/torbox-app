@@ -35,16 +35,20 @@ export default function AdminDatabasesPage() {
 
         {poolStats && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Connection Pool</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Connection Pool
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Size</label>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Current Size
+                </span>
                 <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
                   {poolStats.size ?? poolStats.currentSize} / {poolStats.maxSize}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
                 <p
                   className={`mt-1 text-sm font-medium ${
                     poolStats.status === 'healthy'
@@ -60,12 +64,16 @@ export default function AdminDatabasesPage() {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Hits</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">{poolStats.hits || 0}</p>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Hits</span>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
+                  {poolStats.hits || 0}
+                </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Misses</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">{poolStats.misses || 0}</p>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Misses</span>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
+                  {poolStats.misses || 0}
+                </p>
               </div>
             </div>
           </div>
@@ -74,7 +82,7 @@ export default function AdminDatabasesPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading databases...</p>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading databases…</p>
           </div>
         ) : (
           <DatabaseList databases={databases} />

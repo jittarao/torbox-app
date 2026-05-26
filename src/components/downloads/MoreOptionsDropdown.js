@@ -62,7 +62,7 @@ export default function MoreOptionsDropdown({
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll, true);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('resize', handleResize);
@@ -78,13 +78,13 @@ export default function MoreOptionsDropdown({
       const rect = buttonRef.current.getBoundingClientRect();
       const menuWidth = 192; // w-48 = 12rem = 192px
       const menuHeight = 200; // Approximate height of the menu
-      
+
       // Calculate available space in all directions
       const spaceOnRight = window.innerWidth - rect.right;
       const spaceOnLeft = rect.left;
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      
+
       // Determine horizontal position
       let left;
       if (spaceOnRight >= menuWidth) {
@@ -97,7 +97,7 @@ export default function MoreOptionsDropdown({
         // Not enough space on either side, position to avoid overflow
         left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, rect.left));
       }
-      
+
       // Determine vertical position
       let top;
       if (spaceBelow >= menuHeight) {
@@ -110,7 +110,7 @@ export default function MoreOptionsDropdown({
         // Not enough space above or below, position to avoid overflow
         top = Math.max(8, Math.min(window.innerHeight - menuHeight - 8, rect.bottom));
       }
-      
+
       setMenuPosition({ top, left });
     }
 
@@ -180,14 +180,11 @@ export default function MoreOptionsDropdown({
     if (isExporting) return;
     setIsExporting(true);
     try {
-      const response = await fetch(
-        `/api/torrents/export?torrent_id=${item.id}&type=magnet`,
-        {
-          headers: {
-            'x-api-key': apiKey,
-          },
+      const response = await fetch(`/api/torrents/export?torrent_id=${item.id}&type=magnet`, {
+        headers: {
+          'x-api-key': apiKey,
         },
-      );
+      });
       const data = await response.json();
 
       if (data.success && data.data) {
@@ -218,14 +215,11 @@ export default function MoreOptionsDropdown({
     if (isExporting) return;
     setIsExporting(true);
     try {
-      const response = await fetch(
-        `/api/torrents/export?torrent_id=${item.id}&type=torrent`,
-        {
-          headers: {
-            'x-api-key': apiKey,
-          },
+      const response = await fetch(`/api/torrents/export?torrent_id=${item.id}&type=torrent`, {
+        headers: {
+          'x-api-key': apiKey,
         },
-      );
+      });
 
       if (response.ok) {
         // Create a blob from the response and download it
@@ -362,9 +356,15 @@ export default function MoreOptionsDropdown({
       }
     } catch (error) {
       console.error('Error uploading to cloud:', error);
-      
+
       // Check if it's an authentication error
-      if (error.message && (error.message.includes('AUTH_ERROR') || error.message.includes('NO_AUTH') || error.message.includes('Authentication required') || error.message.includes('Provider not connected'))) {
+      if (
+        error.message &&
+        (error.message.includes('AUTH_ERROR') ||
+          error.message.includes('NO_AUTH') ||
+          error.message.includes('Authentication required') ||
+          error.message.includes('Provider not connected'))
+      ) {
         setToast({
           message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
           type: 'error',
@@ -424,7 +424,7 @@ export default function MoreOptionsDropdown({
       >
         <Icons.Copy />
         <span className="ml-2">{t('copyId')}</span>
-      </button>,
+      </button>
     );
 
     items.push(
@@ -435,7 +435,7 @@ export default function MoreOptionsDropdown({
       >
         <Icons.Copy />
         <span className="ml-2">{t('copyHash')}</span>
-      </button>,
+      </button>
     );
 
     // Cloud upload option - HIDDEN FOR NOW
@@ -504,7 +504,7 @@ export default function MoreOptionsDropdown({
         >
           <Icons.Copy />
           <span className="ml-2">{t('copyShortMagnet')}</span>
-        </button>,
+        </button>
       );
 
       if (item.active) {
@@ -517,7 +517,7 @@ export default function MoreOptionsDropdown({
           >
             {isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
             <span className="ml-2">{t('copyFullMagnet')}</span>
-          </button>,
+          </button>
         );
 
         items.push(
@@ -529,7 +529,7 @@ export default function MoreOptionsDropdown({
           >
             {isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
             <span className="ml-2">{t('reannounce')}</span>
-          </button>,
+          </button>
         );
       }
 
@@ -542,7 +542,7 @@ export default function MoreOptionsDropdown({
         >
           {isExporting ? <Spinner size="xs" /> : <Icons.Download />}
           <span className="ml-2">{t('exportTorrent')}</span>
-        </button>,
+        </button>
       );
     }
 
@@ -556,7 +556,7 @@ export default function MoreOptionsDropdown({
         >
           <Icons.Copy />
           <span className="ml-2">{t('copySourceUrl')}</span>
-        </button>,
+        </button>
       );
     }
 
@@ -590,9 +590,9 @@ export default function MoreOptionsDropdown({
           >
             <div className="py-1">{renderMenuItems()}</div>
           </div>,
-          document.body,
+          document.body
         )}
-      
+
       {/* Tag Assignment Modal */}
       <TagAssignmentModal
         isOpen={showTagAssignment}

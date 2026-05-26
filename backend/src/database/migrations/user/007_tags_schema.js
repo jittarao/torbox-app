@@ -4,20 +4,24 @@
  * Stores user-defined tags for organizing downloads
  */
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS tags (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `).run();
+  `
+  ).run();
 
   // Create index for name lookups (case-insensitive uniqueness handled in application layer)
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_tags_name 
     ON tags(name)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {

@@ -32,11 +32,7 @@ export default function StatusSection({
 
     // If already all, clear it first
     const currentFilters =
-      statusFilter === 'all'
-        ? []
-        : Array.isArray(statusFilter)
-          ? statusFilter
-          : [statusFilter];
+      statusFilter === 'all' ? [] : Array.isArray(statusFilter) ? statusFilter : [statusFilter];
 
     const filterIndex = currentFilters.indexOf(newValue);
 
@@ -62,10 +58,7 @@ export default function StatusSection({
         itemCount,
         type: itemCount === 1 ? itemTypeName : itemTypePlural,
         fileCount,
-        fileType:
-          fileCount === 1
-            ? commonT('itemTypes.file')
-            : commonT('itemTypes.files'),
+        fileType: fileCount === 1 ? commonT('itemTypes.file') : commonT('itemTypes.files'),
         size: downloadSize,
       });
     } else if (itemCount > 0) {
@@ -85,7 +78,7 @@ export default function StatusSection({
       const displayItems = filteredItems || unfilteredItems;
       const totalCount = unfilteredItems.length;
       const filteredCount = filteredItems?.length;
-      
+
       // If filters are applied and count differs, show "X of Y" format
       if (filteredItems && filteredCount !== totalCount && filteredCount !== undefined) {
         const baseText = t('total', {
@@ -94,7 +87,7 @@ export default function StatusSection({
         });
         return `${baseText} (of ${totalCount})`;
       }
-      
+
       return t('total', {
         count: displayItems.length,
         type: itemTypePlural,
@@ -133,9 +126,7 @@ export default function StatusSection({
             }, [])
             .map(([status, count]) => {
               const isSelected = Array.isArray(statusFilter)
-                ? statusFilter.some((filter) =>
-                    isStatusSelected(status, filter),
-                  )
+                ? statusFilter.some((filter) => isStatusSelected(status, filter))
                 : isStatusSelected(status, statusFilter);
 
               return (

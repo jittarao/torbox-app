@@ -39,9 +39,7 @@ export default function AdminLayout({ children }) {
       <AdminHeader />
       <div className="flex">
         <AdminSidebar locale={locale} />
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );

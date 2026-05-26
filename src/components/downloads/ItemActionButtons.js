@@ -27,7 +27,7 @@ export default function ItemActionButtons({
 
   const handleStopSeeding = async (e) => {
     e.stopPropagation();
-    
+
     // Check if this is a private tracker torrent
     if (item.private && !privateTrackerWarning) {
       setPrivateTrackerWarning(true);
@@ -35,7 +35,7 @@ export default function ItemActionButtons({
       setTimeout(() => setPrivateTrackerWarning(false), 3000);
       return;
     }
-    
+
     setIsStopping(true);
     try {
       await onStopSeeding();
@@ -86,12 +86,16 @@ export default function ItemActionButtons({
             onClick={handleStopSeeding}
             disabled={isStopping}
             className={`${
-              privateTrackerWarning 
-                ? 'text-orange-500 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/10' 
+              privateTrackerWarning
+                ? 'text-orange-500 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/10'
                 : 'text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500'
             } transition-colors
             disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
-            title={privateTrackerWarning ? 'Click again to confirm stopping private tracker seeding' : t('stop.title')}
+            title={
+              privateTrackerWarning
+                ? 'Click again to confirm stopping private tracker seeding'
+                : t('stop.title')
+            }
           >
             <span className="pointer-events-none inline-flex items-center justify-center">
               {isStopping ? <Spinner size="sm" /> : <Icons.Stop />}
@@ -131,11 +135,7 @@ export default function ItemActionButtons({
             ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
         >
-          {expandedItems.has(item.id) ? (
-            <Icons.ChevronUp />
-          ) : (
-            <Icons.ChevronDown />
-          )}
+          {expandedItems.has(item.id) ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
           {isMobile && (
             <span className="ml-2 text-xs">
               {expandedItems.has(item.id) ? t('files.hide') : t('files.label')}
@@ -155,9 +155,7 @@ export default function ItemActionButtons({
           title={t('download.title')}
         >
           {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
-          {isMobile && (
-            <span className="ml-2 text-xs">{t('download.label')}</span>
-          )}
+          {isMobile && <span className="ml-2 text-xs">{t('download.label')}</span>}
         </button>
       )}
 
@@ -172,9 +170,7 @@ export default function ItemActionButtons({
           title={t('export.title')}
         >
           {isExporting ? <Spinner size="sm" /> : <Icons.Link />}
-          {isMobile && (
-            <span className="ml-2 text-xs">{t('export.label')}</span>
-          )}
+          {isMobile && <span className="ml-2 text-xs">{t('export.label')}</span>}
         </button>
       )}
 

@@ -38,7 +38,7 @@ export function DropZone({
     e.target.value = '';
   };
 
-  const handleClick = () => {
+  const handleDropZoneClick = () => {
     if (disabled) return;
     fileInputRef.current?.click();
   };
@@ -58,7 +58,7 @@ export function DropZone({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={handleClick}
+      onClick={handleDropZoneClick}
     >
       <input
         type="file"

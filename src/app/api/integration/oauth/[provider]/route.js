@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET(request, { params }) {
   const { provider } = await params;
@@ -18,17 +14,14 @@ export async function GET(request, { params }) {
   // Map our provider IDs to the API's expected format
   // Only these providers support OAuth
   const providerMapping = {
-    'google_drive': 'google',
-    'dropbox': 'dropbox',
-    'onedrive': 'onedrive',
+    google_drive: 'google',
+    dropbox: 'dropbox',
+    onedrive: 'onedrive',
   };
 
   const apiProvider = providerMapping[provider];
   if (!apiProvider) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid provider' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'Invalid provider' }, { status: 400 });
   }
 
   try {
@@ -37,9 +30,6 @@ export async function GET(request, { params }) {
     return NextResponse.redirect(oauthUrl);
   } catch (error) {
     console.error('Error starting OAuth flow:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

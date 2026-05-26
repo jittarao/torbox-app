@@ -5,7 +5,10 @@ const GLOBAL_ACTION_QUEUE_CONCURRENCY = Math.min(
   8,
   Math.max(1, parseInt(process.env.GLOBAL_ACTION_QUEUE_CONCURRENCY || '4', 10))
 );
-const MAX_ACTION_BATCH_RETRIES = Math.max(1, parseInt(process.env.MAX_ACTION_BATCH_RETRIES || '3', 10));
+const MAX_ACTION_BATCH_RETRIES = Math.max(
+  1,
+  parseInt(process.env.MAX_ACTION_BATCH_RETRIES || '3', 10)
+);
 const ACTION_RETRY_BACKOFF_BASE_MS = 5000;
 
 /**
@@ -35,7 +38,10 @@ class GlobalActionQueue {
           d.pendingId = id;
           this.pending.push(d);
         } catch (err) {
-          logger.warn('Failed to persist pending action', { authId: d.authId, errorMessage: err.message });
+          logger.warn('Failed to persist pending action', {
+            authId: d.authId,
+            errorMessage: err.message,
+          });
         }
       } else {
         this.pending.push(d);
@@ -64,7 +70,10 @@ class GlobalActionQueue {
           d.pendingId = row.id;
           this.pending.push(d);
         } catch (err) {
-          logger.warn('Failed to parse pending action, removing', { id: row.id, errorMessage: err.message });
+          logger.warn('Failed to parse pending action, removing', {
+            id: row.id,
+            errorMessage: err.message,
+          });
           masterDb.deletePendingAction(row.id);
         }
       }
@@ -169,27 +178,40 @@ class GlobalActionQueue {
           const { merged, pendingIds } = this._mergeBatchForSameRule(sameRule);
           if (!merged || merged.torrentsToProcess.length === 0) {
             for (const id of pendingIds) {
-              if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
+              if (masterDb?.deletePendingAction)
+                try {
+                  masterDb.deletePendingAction(id);
+                } catch (_) {}
             }
             continue;
           }
           try {
             await this.scheduler.runActionBatch(merged);
             for (const id of pendingIds) {
-              if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
+              if (masterDb?.deletePendingAction)
+                try {
+                  masterDb.deletePendingAction(id);
+                } catch (_) {}
             }
           } catch (err) {
             const retryCount = (merged.retryCount ?? 0) + 1;
             if (retryCount > MAX_ACTION_BATCH_RETRIES) {
-              logger.error('GlobalActionQueue action batch failed after max retries, dropping', err, {
-                errorMessage: err.message,
-                authId: merged.authId,
-                ruleId: merged.rule?.id,
-                ruleName: merged.rule?.name,
-                retryCount,
-              });
+              logger.error(
+                'GlobalActionQueue action batch failed after max retries, dropping',
+                err,
+                {
+                  errorMessage: err.message,
+                  authId: merged.authId,
+                  ruleId: merged.rule?.id,
+                  ruleName: merged.rule?.name,
+                  retryCount,
+                }
+              );
               for (const id of pendingIds) {
-                if (masterDb?.deletePendingAction) try { masterDb.deletePendingAction(id); } catch (_) {}
+                if (masterDb?.deletePendingAction)
+                  try {
+                    masterDb.deletePendingAction(id);
+                  } catch (_) {}
               }
             } else {
               const backoffMs = ACTION_RETRY_BACKOFF_BASE_MS * Math.pow(2, retryCount - 1);

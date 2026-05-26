@@ -19,13 +19,10 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { useTranslations } from 'next-intl';
 
 function SortableItem({ id, label }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
   const style = {
-    transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-      : undefined,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
   };
 
@@ -38,9 +35,7 @@ function SortableItem({ id, label }) {
       className="p-2 bg-surface-alt dark:bg-surface-alt-dark rounded 
         flex items-center justify-between cursor-move group"
     >
-      <span className="text-sm text-primary-text dark:text-primary-text-dark">
-        {label}
-      </span>
+      <span className="text-sm text-primary-text dark:text-primary-text-dark">{label}</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         className="h-4 w-4 text-primary-text/30 dark:text-primary-text-dark/30
@@ -50,12 +45,7 @@ function SortableItem({ id, label }) {
         viewBox="0 0 24 24"
         stroke="currentColor"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8 9h8M8 15h8"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9h8M8 15h8" />
       </svg>
     </div>
   );
@@ -98,7 +88,7 @@ export default function ColumnManager({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragEnd = (event) => {
@@ -127,8 +117,8 @@ export default function ColumnManager({
       // For "all" tab, include columns that are either universal or specifically allowed for "all"
       if (activeType === 'all') {
         return (
-          !column.assetTypes || 
-          column.assetTypes.includes('all') || 
+          !column.assetTypes ||
+          column.assetTypes.includes('all') ||
           column.assetTypes.includes(activeType)
         );
       }
@@ -177,16 +167,17 @@ export default function ColumnManager({
                   onDragEnd={handleDragEnd}
                   modifiers={[restrictToVerticalAxis]}
                 >
-                  <SortableContext
-                    items={activeColumns}
-                    strategy={verticalListSortingStrategy}
-                  >
+                  <SortableContext items={activeColumns} strategy={verticalListSortingStrategy}>
                     <div className="flex flex-col gap-2 pb-2">
                       {activeColumns.map((columnId) => (
                         <SortableItem
                           key={columnId}
                           id={columnId}
-                          label={columns[columnId].displayName ? columns[columnId].displayName : columnT(columns[columnId].key)}
+                          label={
+                            columns[columnId].displayName
+                              ? columns[columnId].displayName
+                              : columnT(columns[columnId].key)
+                          }
                         />
                       ))}
                     </div>

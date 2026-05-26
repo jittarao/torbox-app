@@ -16,9 +16,7 @@ export default function ErrorOverlay({ error, onRetry }) {
           <Icons.AlertCircle className="w-10 h-10 text-red-400" />
         </div>
         <p className="text-lg font-medium text-white mb-2">{error}</p>
-        <p className="text-sm text-white/70 mb-4">
-          Please try again or check your connection.
-        </p>
+        <p className="text-sm text-white/70 mb-4">Please try again or check your connection.</p>
         {onRetry && (
           <button
             onClick={onRetry}

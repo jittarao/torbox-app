@@ -22,11 +22,12 @@ export default function PresetRulesSection({ onApplyPreset, t }) {
             </div>
             <div className="text-gray-600 dark:text-gray-400 text-[10px]">
               {(() => {
-                const conditions = (preset.groups || []).flatMap(group => group.conditions || []);
-                return conditions.length === 1 
+                const conditions = (preset.groups || []).flatMap((group) => group.conditions || []);
+                return conditions.length === 1
                   ? `${conditions[0].type} ${conditions[0].operator} ${conditions[0].value}`
                   : `${conditions.length} conditions`;
-              })()} → {preset.action.type}
+              })()}{' '}
+              → {preset.action.type}
             </div>
           </button>
         ))}
@@ -34,4 +35,3 @@ export default function PresetRulesSection({ onApplyPreset, t }) {
     </div>
   );
 }
-

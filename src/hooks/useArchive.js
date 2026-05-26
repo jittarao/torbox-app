@@ -8,52 +8,55 @@ export function useArchive(apiKey) {
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
 
-  const fetchArchivedDownloads = useCallback(async (page = 1, limit = 50) => {
-    if (!apiKey) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`/api/archived-downloads?page=${page}&limit=${limit}`, {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch archived downloads');
+  const fetchArchivedDownloads = useCallback(
+    async (page = 1, limit = 50) => {
+      if (!apiKey) {
+        setLoading(false);
+        return;
       }
 
-      const data = await response.json();
-      
-      if (data.success) {
-        // Transform backend data to match frontend format
-        const transformed = data.data.map(item => ({
-          id: item.torrent_id,
-          hash: item.hash,
-          tracker: item.tracker,
-          name: item.name,
-          archivedAt: new Date(item.archived_at).getTime(),
-          archiveId: item.id, // Store the archive database ID for deletion
-        }));
-        
-        setArchivedDownloads(transformed);
-        setPagination(data.pagination || { page, limit, total: 0, totalPages: 0 });
-      } else {
-        throw new Error(data.error || 'Failed to fetch archived downloads');
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`/api/archived-downloads?page=${page}&limit=${limit}`, {
+          headers: {
+            'x-api-key': apiKey,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch archived downloads');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Transform backend data to match frontend format
+          const transformed = data.data.map((item) => ({
+            id: item.torrent_id,
+            hash: item.hash,
+            tracker: item.tracker,
+            name: item.name,
+            archivedAt: new Date(item.archived_at).getTime(),
+            archiveId: item.id, // Store the archive database ID for deletion
+          }));
+
+          setArchivedDownloads(transformed);
+          setPagination(data.pagination || { page, limit, total: 0, totalPages: 0 });
+        } else {
+          throw new Error(data.error || 'Failed to fetch archived downloads');
+        }
+      } catch (err) {
+        console.error('Error fetching archived downloads:', err);
+        setError(err.message);
+        setArchivedDownloads([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error fetching archived downloads:', err);
-      setError(err.message);
-      setArchivedDownloads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [apiKey]);
+    },
+    [apiKey]
+  );
 
   useEffect(() => {
     fetchArchivedDownloads();
@@ -89,7 +92,7 @@ export function useArchive(apiKey) {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Refresh the list
         await fetchArchivedDownloads(pagination.page, pagination.limit);
@@ -109,7 +112,7 @@ export function useArchive(apiKey) {
     }
 
     // Find the archive entry to get the archive database ID
-    const archiveEntry = archivedDownloads.find(item => item.id === downloadId);
+    const archiveEntry = archivedDownloads.find((item) => item.id === downloadId);
     if (!archiveEntry || !archiveEntry.archiveId) {
       throw new Error('Archive entry not found');
     }
@@ -128,11 +131,11 @@ export function useArchive(apiKey) {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Refresh the list
         await fetchArchivedDownloads(pagination.page, pagination.limit);
-        return archivedDownloads.filter(item => item.id !== downloadId);
+        return archivedDownloads.filter((item) => item.id !== downloadId);
       } else {
         throw new Error(data.error || 'Failed to remove from archive');
       }
@@ -145,7 +148,7 @@ export function useArchive(apiKey) {
   const clearArchive = async () => {
     // Clear all archived downloads one by one
     // Note: We could add a bulk delete endpoint if needed
-    const deletePromises = archivedDownloads.map(item => removeFromArchive(item.id));
+    const deletePromises = archivedDownloads.map((item) => removeFromArchive(item.id));
     await Promise.all(deletePromises);
     return [];
   };

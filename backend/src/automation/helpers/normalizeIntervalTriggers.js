@@ -21,9 +21,7 @@ export function normalizeIntervalTriggerOnRule(rule) {
   const n = raw == null ? NaN : typeof raw === 'number' ? raw : Number(raw);
   const floored = Number.isFinite(n) ? Math.floor(n) : NaN;
   const clamped =
-    Number.isFinite(floored) && floored >= MIN_INTERVAL_MINUTES
-      ? floored
-      : MIN_INTERVAL_MINUTES;
+    Number.isFinite(floored) && floored >= MIN_INTERVAL_MINUTES ? floored : MIN_INTERVAL_MINUTES;
 
   if (clamped === trigger.value && typeof trigger.value === 'number') {
     return rule;

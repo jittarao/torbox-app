@@ -487,7 +487,9 @@ class UserDatabaseManager {
     this.userDbDir = userDbDir;
     // Pool sized for concurrent polls + sync + API; connections closed after poll/sync so we don't hold 100s
     const defaultPoolSize = 50; // maxConcurrentPolls (12) + REFRESH_SYNC_CONCURRENCY (5) + API headroom
-    this.pool = new DatabasePool(parseInt(process.env.MAX_DB_CONNECTIONS || String(defaultPoolSize), 10));
+    this.pool = new DatabasePool(
+      parseInt(process.env.MAX_DB_CONNECTIONS || String(defaultPoolSize), 10)
+    );
     // Mutex map to prevent race conditions when creating connections for the same user
     this.connectionLocks = new Map(); // Map<authId, Promise>
   }

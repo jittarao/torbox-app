@@ -19,7 +19,7 @@ export async function GET() {
         message: 'API key is required to verify your TorBox connection',
         timestamp: new Date().toISOString(),
       },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -52,11 +52,7 @@ export async function GET() {
       NON_RETRYABLE_ERRORS.NO_AUTH,
     ];
 
-    if (
-      authErrors.includes(data.error) ||
-      response.status === 401 ||
-      response.status === 403
-    ) {
+    if (authErrors.includes(data.error) || response.status === 401 || response.status === 403) {
       return NextResponse.json({
         status: 'invalid-key',
         message: data.detail || 'Invalid or expired API key',

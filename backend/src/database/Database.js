@@ -326,9 +326,10 @@ class Database {
         );
       } catch (error) {
         // If insert fails (e.g., race condition), check if user was created by another request
-        const userAfterError = this.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [
-          authId,
-        ]);
+        const userAfterError = this.getQuery(
+          'SELECT auth_id FROM user_registry WHERE auth_id = ?',
+          [authId]
+        );
         if (!userAfterError) {
           // User still doesn't exist, re-throw the error
           logger.error('Failed to create user_registry entry before registering API key', error, {
@@ -440,9 +441,7 @@ class Database {
       );
       updatedAuthIds = authIds;
     } else {
-      const rows = this.allQuery(
-        'SELECT auth_id FROM api_keys WHERE is_active = 0'
-      );
+      const rows = this.allQuery('SELECT auth_id FROM api_keys WHERE is_active = 0');
       updatedAuthIds = rows.map((r) => r.auth_id);
       if (updatedAuthIds.length === 0) {
         cache.invalidateActiveUsers();
@@ -667,11 +666,14 @@ class Database {
       doUpdate();
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
-        logger.warn('Database connection closed during updateActiveRulesFlag, refreshing and retrying', {
-          errorName: error.name,
-          errorMessage: error.message,
-          authId,
-        });
+        logger.warn(
+          'Database connection closed during updateActiveRulesFlag, refreshing and retrying',
+          {
+            errorName: error.name,
+            errorMessage: error.message,
+            authId,
+          }
+        );
         this._reopenConnection();
         try {
           doUpdate();
@@ -1050,10 +1052,7 @@ class Database {
    * @returns {Array} - Array of users where has_active_rules = 1 AND (next_poll_at <= NOW() OR next_poll_at IS NULL/empty/0) AND status = 'active'
    */
   getUsersDueForPolling() {
-    const limit = Math.max(
-      1,
-      parseInt(process.env.MAX_USERS_DUE_FOR_POLLING || '100', 10)
-    );
+    const limit = Math.max(1, parseInt(process.env.MAX_USERS_DUE_FOR_POLLING || '100', 10));
     // next_poll_at is stored as SQLite datetime (YYYY-MM-DD HH:MM:SS) so index is used
     const result = this.allQuery(
       `

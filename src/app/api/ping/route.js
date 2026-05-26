@@ -3,17 +3,14 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
   try {
     const { domain, region, serverName } = await request.json();
-    
+
     if (!domain) {
-      return NextResponse.json(
-        { success: false, error: 'Domain is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Domain is required' }, { status: 400 });
     }
 
     // Server-side ping test
     const startTime = Date.now();
-    
+
     try {
       // Special handling for different server types
       let headers = {
@@ -39,21 +36,21 @@ export async function POST(request) {
         // Add timeout for better error handling
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
-      
+
       const endTime = Date.now();
       const pingTime = endTime - startTime;
-      
+
       return NextResponse.json({
         success: true,
         ping: pingTime,
         status: response.status,
         domain: domain,
-        serverType: serverName
+        serverType: serverName,
       });
     } catch (error) {
       // Handle specific error types
       let errorMessage = 'Ping failed';
-      
+
       if (error.name === 'AbortError') {
         errorMessage = 'Ping timeout';
       } else if (error.message.includes('CORS')) {
@@ -67,13 +64,10 @@ export async function POST(request) {
         error: errorMessage,
         domain: domain,
         details: error.message,
-        serverType: serverName
+        serverType: serverName,
       });
     }
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

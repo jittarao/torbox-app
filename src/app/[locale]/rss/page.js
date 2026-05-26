@@ -50,13 +50,15 @@ export default function RssPage() {
       // Ensure user database exists for loaded API key
       if (loadedKey) {
         import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-          ensureUserDb(loadedKey).then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for existing API key');
-            }
-          }).catch((error) => {
-            console.error('Error ensuring user database on load:', error);
-          });
+          ensureUserDb(loadedKey)
+            .then((result) => {
+              if (result.success && result.wasCreated) {
+                console.log('User database created for existing API key');
+              }
+            })
+            .catch((error) => {
+              console.error('Error ensuring user database on load:', error);
+            });
         });
       }
     } catch (err) {
@@ -86,7 +88,7 @@ export default function RssPage() {
         }
 
         const data = await response.json();
-        
+
         // Response structure: { success: true, data: { plan: ... } }
         if (data.success && data.data) {
           setUserPlan(data.data.plan);
@@ -157,9 +159,7 @@ export default function RssPage() {
   }
 
   return (
-    <main
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
-    >
+    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
       {!apiKey ? (
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
@@ -231,7 +231,7 @@ export default function RssPage() {
                     {tabs.map((tab) => {
                       const IconComponent = tab.icon;
                       const isActive = activeTab === tab.id;
-                      
+
                       return (
                         <button
                           key={tab.id}
@@ -255,7 +255,7 @@ export default function RssPage() {
               <div className="bg-surface dark:bg-surface-dark rounded-lg">
                 {tabs.map((tab) => {
                   if (activeTab !== tab.id) return null;
-                  
+
                   const TabComponent = tab.component;
                   return (
                     <div key={tab.id} className="p-6">
@@ -268,14 +268,8 @@ export default function RssPage() {
           </div>
         </>
       )}
-      
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </main>
   );
 }

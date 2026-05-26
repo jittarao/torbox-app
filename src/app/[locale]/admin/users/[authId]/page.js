@@ -31,7 +31,7 @@ export default function UserDetailPage() {
       <AdminLayout>
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Loading user details...</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Loading user details…</p>
         </div>
       </AdminLayout>
     );
@@ -75,13 +75,7 @@ export default function UserDetailPage() {
         <UserDetail user={selectedUserData} />
       </div>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </AdminLayout>
   );
 }

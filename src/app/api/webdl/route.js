@@ -88,10 +88,7 @@ export async function GET(request) {
     }
 
     const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
-    return NextResponse.json(
-      { ...mergedData, cursor: newCursor },
-      { headers: cacheHeaders }
-    );
+    return NextResponse.json({ ...mergedData, cursor: newCursor }, { headers: cacheHeaders });
   } catch (error) {
     console.error('Error fetching web download data:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

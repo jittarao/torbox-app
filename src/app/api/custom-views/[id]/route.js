@@ -24,23 +24,20 @@ export async function GET(request, { params }) {
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const authId = hashApiKey(apiKey);
     const { id } = await params;
     const url = new URL(`${BACKEND_URL}/api/custom-views/${id}`);
     url.searchParams.set('authId', authId);
-    
+
     const response = await new Promise((resolve, reject) => {
       const req = http.get(url, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           try {
             const jsonData = JSON.parse(data);
@@ -50,7 +47,7 @@ export async function GET(request, { params }) {
           }
         });
       });
-      
+
       req.on('error', reject);
       req.setTimeout(5000, () => {
         req.destroy();
@@ -65,10 +62,7 @@ export async function GET(request, { params }) {
     }
   } catch (error) {
     console.error('Error fetching custom view from backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
@@ -80,24 +74,21 @@ export async function PUT(request, { params }) {
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const body = await request.json();
     const authId = hashApiKey(apiKey);
     const { id } = await params;
-    
+
     // Add authId to the request body
     const requestBody = {
       ...body,
-      authId
+      authId,
     };
-    
+
     const response = await fetch(`${BACKEND_URL}/api/custom-views/${id}`, {
       method: 'PUT',
       headers: {
@@ -115,10 +106,7 @@ export async function PUT(request, { params }) {
     }
   } catch (error) {
     console.error('Error updating custom view in backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
@@ -130,19 +118,16 @@ export async function DELETE(request, { params }) {
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const authId = hashApiKey(apiKey);
     const { id } = await params;
     const url = new URL(`${BACKEND_URL}/api/custom-views/${id}`);
     url.searchParams.set('authId', authId);
-    
+
     const response = await fetch(url, {
       method: 'DELETE',
     });
@@ -156,9 +141,6 @@ export async function DELETE(request, { params }) {
     }
   } catch (error) {
     console.error('Error deleting custom view from backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

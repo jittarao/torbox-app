@@ -15,18 +15,18 @@ const STALL_THRESHOLD_SECONDS = 300; // 5 minutes
  */
 function formatDateForSQL(date) {
   if (!date) return null;
-  
+
   // If already in SQL datetime format (YYYY-MM-DD HH:MM:SS), return as is
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(date)) {
     return date;
   }
-  
+
   // Convert Date object or ISO string to SQL datetime format
   const dateObj = date instanceof Date ? date : new Date(date);
   if (isNaN(dateObj.getTime())) {
     return null;
   }
-  
+
   // Convert ISO format (2026-01-17T00:14:03.471Z) to SQL format (2026-01-17 00:14:03)
   return dateObj.toISOString().replace('T', ' ').substring(0, 19);
 }

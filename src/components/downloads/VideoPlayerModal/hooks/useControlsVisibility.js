@@ -46,7 +46,8 @@ export function useControlsVisibility({
     if (!isOpen) return;
 
     // Check if any menu is open
-    const hasOpenMenu = showVolumeSlider || showAudioMenu || showSubtitleMenu || showPlaybackSpeedMenu;
+    const hasOpenMenu =
+      showVolumeSlider || showAudioMenu || showSubtitleMenu || showPlaybackSpeedMenu;
 
     const resetControlsTimeout = () => {
       if (controlsTimeoutRef.current) {
@@ -65,15 +66,15 @@ export function useControlsVisibility({
 
     const handleMouseMove = (e) => {
       const { clientX, clientY } = e;
-      
+
       // Check if mouse is over the controls bar (bottom section with buttons) or any open menu
       let isOverControls = false;
-      
+
       // First check if mouse is over the controls bar itself
       if (controlsBarRef?.current) {
         isOverControls = isPointInElement(controlsBarRef.current, clientX, clientY);
       }
-      
+
       // Also check if mouse is over any open menu (menus may extend outside controls bar)
       if (!isOverControls) {
         if (showVolumeSlider && volumeRef?.current) {
@@ -89,9 +90,9 @@ export function useControlsVisibility({
           isOverControls = isPointInElement(playbackSpeedMenuRef.current, clientX, clientY);
         }
       }
-      
+
       isHoveringControlsRef.current = isOverControls;
-      
+
       // If hovering over controls bar or menus, don't auto-hide
       if (isOverControls) {
         if (controlsTimeoutRef.current) {
@@ -100,7 +101,7 @@ export function useControlsVisibility({
         setShowControls(true);
         return;
       }
-      
+
       // Only reset timeout if not hovering over controls bar
       if (!isHoveringControlsRef.current) {
         resetControlsTimeout();
@@ -131,5 +132,19 @@ export function useControlsVisibility({
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [isOpen, isPlaying, showControls, setShowControls, controlsBarRef, showVolumeSlider, showAudioMenu, showSubtitleMenu, showPlaybackSpeedMenu, volumeRef, audioMenuRef, subtitleMenuRef, playbackSpeedMenuRef]);
+  }, [
+    isOpen,
+    isPlaying,
+    showControls,
+    setShowControls,
+    controlsBarRef,
+    showVolumeSlider,
+    showAudioMenu,
+    showSubtitleMenu,
+    showPlaybackSpeedMenu,
+    volumeRef,
+    audioMenuRef,
+    subtitleMenuRef,
+    playbackSpeedMenuRef,
+  ]);
 }

@@ -5,8 +5,7 @@ export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
 export const API_BASE = 'https://api.torbox.app';
 export const API_SEARCH_BASE = 'https://search-api.torbox.app';
 export const API_VERSION = 'v1';
-export const TORBOX_MANAGER_VERSION =
-  process.env.NEXT_PUBLIC_TORBOX_MANAGER_VERSION || '0.0.0';
+export const TORBOX_MANAGER_VERSION = process.env.NEXT_PUBLIC_TORBOX_MANAGER_VERSION || '0.0.0';
 
 // Non-retryable errors for the API
 export const NON_RETRYABLE_ERRORS = {
@@ -70,7 +69,12 @@ export const COLUMNS = {
     sortable: true,
     assetTypes: ['webdl', 'usenet'],
   },
-  tracker: { key: 'tracker', sortable: true, assetTypes: ['torrents', 'all'], displayName: 'Tracker URL' },
+  tracker: {
+    key: 'tracker',
+    sortable: true,
+    assetTypes: ['torrents', 'all'],
+    displayName: 'Tracker URL',
+  },
   expires_at: { key: 'expires_at', sortable: true },
   asset_type: { key: 'asset_type', sortable: true, assetTypes: ['all'] },
   private: { key: 'private', sortable: true, assetTypes: ['torrents', 'all'] },

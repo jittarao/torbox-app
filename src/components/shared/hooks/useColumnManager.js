@@ -6,7 +6,15 @@ export function useColumnManager(activeType = 'torrents') {
   const [activeColumns, setActiveColumns] = useState(() => {
     // Default columns for each type - used for initial server-side rendering
     const defaultColumns = {
-      all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
+      all: [
+        'id',
+        'name',
+        'size',
+        'created_at',
+        'download_state',
+        'asset_type',
+        'download_progress',
+      ],
       torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
@@ -30,12 +38,19 @@ export function useColumnManager(activeType = 'torrents') {
 
     // Get columns from localStorage based on asset type
     const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
-    const stored =
-      typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+    const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
 
     // Default columns for each type
     const defaultColumns = {
-      all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
+      all: [
+        'id',
+        'name',
+        'size',
+        'created_at',
+        'download_state',
+        'asset_type',
+        'download_progress',
+      ],
       torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
@@ -63,16 +78,13 @@ export function useColumnManager(activeType = 'torrents') {
         if (activeType === 'all') {
           return (
             column &&
-            (!column.assetTypes || 
-             column.assetTypes.includes('all') || 
-             column.assetTypes.includes(activeType))
+            (!column.assetTypes ||
+              column.assetTypes.includes('all') ||
+              column.assetTypes.includes(activeType))
           );
         }
         // For specific tabs, include column if it exists and either has no assetTypes restriction or includes the current type
-        return (
-          column &&
-          (!column.assetTypes || column.assetTypes.includes(activeType))
-        );
+        return column && (!column.assetTypes || column.assetTypes.includes(activeType));
       });
 
       // If no valid columns, return defaults
@@ -98,7 +110,15 @@ export function useColumnManager(activeType = 'torrents') {
     const stored = localStorage.getItem(storageKey);
 
     const defaultColumns = {
-      all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
+      all: [
+        'id',
+        'name',
+        'size',
+        'created_at',
+        'download_state',
+        'asset_type',
+        'download_progress',
+      ],
       torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
       webdl: [
@@ -126,15 +146,12 @@ export function useColumnManager(activeType = 'torrents') {
         if (activeType === 'all') {
           return (
             column &&
-            (!column.assetTypes || 
-             column.assetTypes.includes('all') || 
-             column.assetTypes.includes(activeType))
+            (!column.assetTypes ||
+              column.assetTypes.includes('all') ||
+              column.assetTypes.includes(activeType))
           );
         }
-        return (
-          column &&
-          (!column.assetTypes || column.assetTypes.includes(activeType))
-        );
+        return column && (!column.assetTypes || column.assetTypes.includes(activeType));
       });
 
       // If no valid columns, use defaults
@@ -159,14 +176,12 @@ export function useColumnManager(activeType = 'torrents') {
       if (activeType === 'all') {
         return (
           column &&
-          (!column.assetTypes || 
-           column.assetTypes.includes('all') || 
-           column.assetTypes.includes(activeType))
+          (!column.assetTypes ||
+            column.assetTypes.includes('all') ||
+            column.assetTypes.includes(activeType))
         );
       }
-      return (
-        column && (!column.assetTypes || column.assetTypes.includes(activeType))
-      );
+      return column && (!column.assetTypes || column.assetTypes.includes(activeType));
     });
 
     setActiveColumns(validColumns);

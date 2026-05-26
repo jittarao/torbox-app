@@ -361,35 +361,35 @@ export function setupUserRoutes(router, backend) {
       }
 
       try {
-      // Get automation rules
-      const rules = userDb.db
-        .prepare(
-          `
+        // Get automation rules
+        const rules = userDb.db
+          .prepare(
+            `
       SELECT id, name, enabled, trigger_config, conditions, action_config, 
              metadata, last_executed_at, execution_count, created_at, updated_at
       FROM automation_rules
       ORDER BY created_at DESC
     `
-        )
-        .all();
+          )
+          .all();
 
-      // Get recent execution logs (last 100)
-      const logs = userDb.db
-        .prepare(
-          `
+        // Get recent execution logs (last 100)
+        const logs = userDb.db
+          .prepare(
+            `
       SELECT id, rule_id, rule_name, execution_type, items_processed, 
              success, error_message, executed_at
       FROM rule_execution_log
       ORDER BY executed_at DESC
       LIMIT 100
     `
-        )
-        .all();
+          )
+          .all();
 
-      // Get execution statistics
-      const stats = userDb.db
-        .prepare(
-          `
+        // Get execution statistics
+        const stats = userDb.db
+          .prepare(
+            `
       SELECT 
         COUNT(*) as total_executions,
         SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_executions,
@@ -398,24 +398,24 @@ export function setupUserRoutes(router, backend) {
       FROM rule_execution_log
       WHERE executed_at >= datetime('now', '-7 days')
     `
-        )
-        .get();
+          )
+          .get();
 
-      sendSuccess(res, {
-        rules: rules.map((rule) => ({
-          ...rule,
-          trigger_config: JSON.parse(rule.trigger_config || '{}'),
-          conditions: JSON.parse(rule.conditions || '{}'),
-          action_config: JSON.parse(rule.action_config || '{}'),
-          metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
-        })),
-        recent_logs: logs,
-        statistics: {
-          total_rules: rules.length,
-          enabled_rules: rules.filter((r) => r.enabled).length,
-          ...stats,
-        },
-      });
+        sendSuccess(res, {
+          rules: rules.map((rule) => ({
+            ...rule,
+            trigger_config: JSON.parse(rule.trigger_config || '{}'),
+            conditions: JSON.parse(rule.conditions || '{}'),
+            action_config: JSON.parse(rule.action_config || '{}'),
+            metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
+          })),
+          recent_logs: logs,
+          statistics: {
+            total_rules: rules.length,
+            enabled_rules: rules.filter((r) => r.enabled).length,
+            ...stats,
+          },
+        });
       } finally {
         backend.userDatabaseManager.releaseConnection(authId);
       }

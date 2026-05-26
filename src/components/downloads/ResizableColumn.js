@@ -29,7 +29,7 @@ export default function ResizableColumn({
       };
       setIsResizing(true);
     },
-    [width],
+    [width]
   );
 
   const handleMouseMove = useCallback(
@@ -44,7 +44,7 @@ export default function ResizableColumn({
       const newWidth = Math.max(startWidth + diff, 50);
       onWidthChange(newWidth);
     },
-    [isResizing, onWidthChange],
+    [isResizing, onWidthChange]
   );
 
   const handleMouseUp = useCallback(
@@ -54,7 +54,7 @@ export default function ResizableColumn({
       setWasResizing(isResizing);
       setIsResizing(false);
     },
-    [isResizing],
+    [isResizing]
   );
 
   useEffect(() => {
@@ -84,9 +84,7 @@ export default function ResizableColumn({
   return (
     <th
       className={`relative group select-none ${className} ${
-        sortable
-          ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark'
-          : ''
+        sortable ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark' : ''
       }`}
       style={
         isMobile && columnId === 'name'

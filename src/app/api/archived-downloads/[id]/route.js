@@ -19,37 +19,38 @@ export async function DELETE(request, { params }) {
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const authId = hashApiKey(apiKey);
     const { id: archiveId } = await params;
-    
+
     const url = new URL(`${BACKEND_URL}/api/archived-downloads/${archiveId}`);
     url.searchParams.set('authId', authId);
-    
+
     const response = await new Promise((resolve, reject) => {
-      const req = http.request(url, {
-        method: 'DELETE',
-        timeout: 10000
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          try {
-            const jsonData = JSON.parse(data);
-            resolve({ ok: res.statusCode === 200, data: jsonData, status: res.statusCode });
-          } catch (parseError) {
-            reject(parseError);
-          }
-        });
-      });
-      
+      const req = http.request(
+        url,
+        {
+          method: 'DELETE',
+          timeout: 10000,
+        },
+        (res) => {
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => {
+            try {
+              const jsonData = JSON.parse(data);
+              resolve({ ok: res.statusCode === 200, data: jsonData, status: res.statusCode });
+            } catch (parseError) {
+              reject(parseError);
+            }
+          });
+        }
+      );
+
       req.on('error', reject);
       req.setTimeout(10000, () => {
         req.destroy();
@@ -68,9 +69,6 @@ export async function DELETE(request, { params }) {
     }
   } catch (error) {
     console.error('Error deleting archived download from backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

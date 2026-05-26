@@ -5,11 +5,7 @@ import { RootDocumentAsync, RootDocumentShell } from './RootDocument';
 
 export default function RootLayout({ children }) {
   return (
-    <Suspense
-      fallback={
-        <RootDocumentShell locale={defaultLocale}>{children}</RootDocumentShell>
-      }
-    >
+    <Suspense fallback={<RootDocumentShell locale={defaultLocale}>{children}</RootDocumentShell>}>
       <RootDocumentAsync>{children}</RootDocumentAsync>
     </Suspense>
   );

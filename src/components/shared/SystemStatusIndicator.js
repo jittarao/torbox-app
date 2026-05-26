@@ -30,7 +30,7 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const performHealthCheck = useHealthStore((state) => state.performHealthCheck);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
-    Object.values(state.pauseReasons).some((isPaused) => isPaused === true),
+    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
   );
   const refreshOnOpenRef = useRef(false);
 
@@ -170,7 +170,11 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
 
       <HeaderOverlayPortal open={isOpen}>
         <div className="md:hidden">
-          <div className="fixed inset-0 z-[200] bg-black/60" onClick={() => setIsOpen(false)} aria-hidden />
+          <div
+            className="fixed inset-0 z-[200] bg-black/60"
+            onClick={() => setIsOpen(false)}
+            aria-hidden
+          />
           <div className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
             <div
               className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-2xl dark:border-zinc-600 dark:bg-[#242428]"

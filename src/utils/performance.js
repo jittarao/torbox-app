@@ -9,7 +9,7 @@ export class PerformanceMonitor {
     this.metrics.set(label, {
       startTime: performance.now(),
       endTime: null,
-      duration: null
+      duration: null,
     });
   }
 
@@ -18,12 +18,12 @@ export class PerformanceMonitor {
     if (metric) {
       metric.endTime = performance.now();
       metric.duration = metric.endTime - metric.startTime;
-      
+
       // Log slow requests (>3 seconds)
       if (metric.duration > 3000) {
         console.warn(`Slow API call: ${label} took ${metric.duration.toFixed(2)}ms`);
       }
-      
+
       return metric.duration;
     }
     return null;

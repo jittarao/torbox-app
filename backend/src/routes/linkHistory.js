@@ -62,9 +62,7 @@ export function setupLinkHistoryRoutes(app, backend) {
           params.push(searchParam, searchParam, searchParam);
         }
         if (cursor) {
-          whereParts.push(
-            '(generated_at < ? OR (generated_at = ? AND id < ?))'
-          );
+          whereParts.push('(generated_at < ? OR (generated_at = ? AND id < ?))');
           params.push(cursor.generated_at, cursor.generated_at, cursor.id);
         }
 
@@ -78,8 +76,7 @@ export function setupLinkHistoryRoutes(app, backend) {
         `;
         const history = userDb.db.prepare(dataQuery).all(...params, limit);
         const last = history[history.length - 1];
-        const nextCursor =
-          history.length === limit && last ? encodeLinkHistoryCursor(last) : null;
+        const nextCursor = history.length === limit && last ? encodeLinkHistoryCursor(last) : null;
 
         return res.json({
           success: true,

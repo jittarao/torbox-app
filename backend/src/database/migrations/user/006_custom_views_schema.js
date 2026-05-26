@@ -4,7 +4,8 @@
  * Stores saved filter views with filters, sorting, and column preferences
  */
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS custom_views (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -16,19 +17,24 @@ export const up = (db) => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `).run();
+  `
+  ).run();
 
   // Create index for name lookups
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_custom_views_name 
     ON custom_views(name)
-  `).run();
+  `
+  ).run();
 
   // Create index for asset type queries
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_custom_views_asset_type 
     ON custom_views(asset_type)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {

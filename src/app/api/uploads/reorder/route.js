@@ -15,10 +15,7 @@ export async function PATCH(request) {
     const apiKey = headersList.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -48,9 +45,6 @@ export async function PATCH(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reordering uploads:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

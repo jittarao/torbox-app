@@ -4,6 +4,8 @@ import { useState } from 'react';
 import MultiSelect from '@/components/shared/MultiSelect';
 import { useTags } from '@/components/shared/hooks/useTags';
 
+const EMPTY_ARRAY = [];
+
 /**
  * TagSelector component - multi-select dropdown for assigning tags
  * @param {Object} props
@@ -15,7 +17,7 @@ import { useTags } from '@/components/shared/hooks/useTags';
  * @param {boolean} props.allowCreate - Whether to allow creating new tags inline
  */
 export default function TagSelector({
-  value = [],
+  value = EMPTY_ARRAY,
   onChange,
   apiKey,
   className = '',
@@ -26,7 +28,7 @@ export default function TagSelector({
   const [isCreating, setIsCreating] = useState(false);
   const [newTagName, setNewTagName] = useState('');
 
-  const tagOptions = tags.map(tag => ({
+  const tagOptions = tags.map((tag) => ({
     label: tag.name,
     value: tag.id,
   }));
@@ -68,7 +70,7 @@ export default function TagSelector({
         disabled={disabled || loading}
         className="w-full"
       />
-      
+
       {allowCreate && !disabled && (
         <div className="mt-2">
           {!isCreating ? (
@@ -91,7 +93,6 @@ export default function TagSelector({
                   bg-surface dark:bg-surface-dark
                   text-primary-text dark:text-primary-text-dark
                   focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-                autoFocus
               />
               <button
                 type="button"

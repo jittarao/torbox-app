@@ -30,7 +30,7 @@ export default function AdminSettingsPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading configuration...</p>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading configuration…</p>
           </div>
         ) : config ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
@@ -41,25 +41,25 @@ export default function AdminSettingsPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Max Concurrent Polls
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {config.polling?.max_concurrent_polls}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Poll Timeout (ms)
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {config.polling?.poll_timeout_ms}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Cleanup Interval (hours)
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {config.polling?.poller_cleanup_interval_hours}
                     </p>
@@ -73,17 +73,17 @@ export default function AdminSettingsPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       User Rate Limit
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {config.rate_limiting?.user_rate_limit_max}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Admin Rate Limit
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {config.rate_limiting?.admin_rate_limit_max}
                     </p>
@@ -97,17 +97,17 @@ export default function AdminSettingsPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Max Connections
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                       {config.database?.max_db_connections}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Master DB Path
-                    </label>
+                    </span>
                     <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">
                       {config.database?.master_db_path}
                     </p>

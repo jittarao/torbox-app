@@ -16,17 +16,16 @@ export function useSelection(items) {
         return {
           items: new Set(Array.isArray(storedItems) ? storedItems : []),
           files: new Map(
-            Object.entries(storedFiles && typeof storedFiles === 'object' ? storedFiles : {}).map(([key, value]) => [
-              parseInt(key),
-              new Set(Array.isArray(value) ? value : []),
-            ]),
+            Object.entries(storedFiles && typeof storedFiles === 'object' ? storedFiles : {}).map(
+              ([key, value]) => [parseInt(key), new Set(Array.isArray(value) ? value : [])]
+            )
           ),
         };
       }
 
       // Validate items and files separately
       const validItems = new Set(
-        storedItems.filter((id) => currentItems.some((item) => item.id === id)),
+        storedItems.filter((id) => currentItems.some((item) => item.id === id))
       );
 
       const validFiles = new Map();
@@ -47,7 +46,7 @@ export function useSelection(items) {
           fileIds.filter((fileId) => {
             const isValid = item.files?.some((file) => file.id === fileId);
             return isValid;
-          }),
+          })
         );
 
         if (validFileIds.size > 0) {
@@ -67,9 +66,7 @@ export function useSelection(items) {
   };
 
   // Initial load without validation
-  const [selectedItems, setSelectedItems] = useState(() =>
-    loadStoredSelections(),
-  );
+  const [selectedItems, setSelectedItems] = useState(() => loadStoredSelections());
 
   // Validate when items become available
   useEffect(() => {
@@ -86,10 +83,7 @@ export function useSelection(items) {
       const serialized = JSON.stringify({
         items: Array.from(selectedItems.items),
         files: Object.fromEntries(
-          Array.from(selectedItems.files).map(([key, value]) => [
-            key,
-            Array.from(value),
-          ]),
+          Array.from(selectedItems.files).map(([key, value]) => [key, Array.from(value)])
         ),
       });
       localStorage.setItem(STORAGE_KEY, serialized);
@@ -99,9 +93,7 @@ export function useSelection(items) {
   }, [selectedItems]);
 
   const hasSelectedFiles = () => {
-    return Array.from(selectedItems.files.values()).some(
-      (files) => files.size > 0,
-    );
+    return Array.from(selectedItems.files.values()).some((files) => files.size > 0);
   };
 
   const handleRowSelect = (itemId, selectedFiles) => {

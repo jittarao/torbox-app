@@ -1,12 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 
-export default function StatusFilterDropdown({
-  options,
-  value,
-  onChange,
-  className = '',
-}) {
+export default function StatusFilterDropdown({ options, value, onChange, className = '' }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -22,8 +17,7 @@ export default function StatusFilterDropdown({
   }, []);
 
   const selectedOption = options.find(
-    (option) =>
-      option.value === value || JSON.stringify(option.value) === value,
+    (option) => option.value === value || JSON.stringify(option.value) === value
   );
 
   // Extract count from label (assumes format "Label (count)")
@@ -53,12 +47,7 @@ export default function StatusFilterDropdown({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
@@ -74,9 +63,7 @@ export default function StatusFilterDropdown({
                 key={option.label}
                 onClick={() => {
                   const newValue =
-                    typeof option.value === 'object'
-                      ? JSON.stringify(option.value)
-                      : option.value;
+                    typeof option.value === 'object' ? JSON.stringify(option.value) : option.value;
                   onChange(newValue);
                   setIsOpen(false);
                 }}
@@ -85,8 +72,7 @@ export default function StatusFilterDropdown({
                   hover:bg-surface-alt/90 dark:hover:bg-accent-dark/10
                   transition-colors
                   ${
-                    option.value === value ||
-                    JSON.stringify(option.value) === value
+                    option.value === value || JSON.stringify(option.value) === value
                       ? 'bg-surface-hover dark:bg-surface-hover-dark'
                       : ''
                   }`}

@@ -7,8 +7,12 @@ import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
 
 const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
-  loading: () => <div className="flex justify-center items-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/30 border-t-amber-500"></div></div>,
-  ssr: false
+  loading: () => (
+    <div className="flex justify-center items-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/30 border-t-amber-500"></div>
+    </div>
+  ),
+  ssr: false,
 });
 
 const landingShell = <div className="min-h-screen bg-[#0a0a0b]" aria-hidden />;
@@ -57,13 +61,15 @@ export default function Home() {
     // Ensure user database exists for loaded API key
     if (loadedKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey).then((result) => {
-          if (result.success && result.wasCreated) {
-            console.log('User database created for existing API key');
-          }
-        }).catch((error) => {
-          console.error('Error ensuring user database on load:', error);
-        });
+        ensureUserDb(loadedKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
       });
     }
 
@@ -79,7 +85,7 @@ export default function Home() {
         navigator.registerProtocolHandler(
           'magnet',
           `${window.location.origin}/?magnet=%s`,
-          'TorBox Manager',
+          'TorBox Manager'
         );
       } catch (error) {
         console.error('Failed to register protocol handler:', error);
@@ -121,12 +127,7 @@ export default function Home() {
   };
 
   if (!isClient || loading) {
-    return (
-      <div
-        className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`}
-        aria-hidden
-      />
-    );
+    return <div className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`} aria-hidden />;
   }
 
   if (!apiKey) {
@@ -134,16 +135,10 @@ export default function Home() {
   }
 
   return (
-    <main
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
-    >
+    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
       <Header apiKey={apiKey} />
       <div className="container mx-auto p-4">
-        <ApiKeyInput
-          value={apiKey}
-          onKeyChange={handleKeyChange}
-          allowKeyManager={true}
-        />
+        <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />
         <Downloads apiKey={apiKey} />
       </div>
     </main>

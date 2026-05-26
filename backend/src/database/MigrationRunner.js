@@ -33,10 +33,10 @@ class MigrationRunner {
 
     const files = await fsPromises.readdir(this.migrationsDir);
     const migrationFiles = files.filter((file) => file.endsWith('.js')).sort();
-    
+
     // Validate migration file naming and detect gaps
     this._validateMigrationFiles(migrationFiles);
-    
+
     this._migrationFilesCache = migrationFiles;
     return migrationFiles;
   }
@@ -69,9 +69,12 @@ class MigrationRunner {
       const sortedVersions = [...versions].sort((a, b) => a - b);
       for (let i = 1; i < sortedVersions.length; i++) {
         if (sortedVersions[i] !== sortedVersions[i - 1] + 1) {
-          logger.warn(`Gap detected in migration versions: ${sortedVersions[i - 1]} -> ${sortedVersions[i]}`, {
-            dbType: this.dbType,
-          });
+          logger.warn(
+            `Gap detected in migration versions: ${sortedVersions[i - 1]} -> ${sortedVersions[i]}`,
+            {
+              dbType: this.dbType,
+            }
+          );
         }
       }
     }
@@ -202,7 +205,7 @@ class MigrationRunner {
 
         // Run migration - support both sync and async migrations
         const migrationResult = migration.up(this.db);
-        
+
         // If migration returns a promise, wait for it
         if (migrationResult && typeof migrationResult.then === 'function') {
           await migrationResult;
@@ -322,7 +325,7 @@ class MigrationRunner {
       if (!result) {
         // Import and run the migrations table creation
         const migrationsTablePath = path.join(this.migrationsDir, '000_migrations_table.js');
-        
+
         try {
           await fsPromises.access(migrationsTablePath);
         } catch (error) {
@@ -331,17 +334,19 @@ class MigrationRunner {
             dbType: this.dbType,
             path: migrationsTablePath,
           });
-          
-          this.db.prepare(
-            `
+
+          this.db
+            .prepare(
+              `
             CREATE TABLE IF NOT EXISTS schema_migrations (
               version TEXT PRIMARY KEY,
               name TEXT NOT NULL,
               applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
           `
-          ).run();
-          
+            )
+            .run();
+
           logger.debug(`Created schema_migrations table for ${this.dbType} database`);
           return;
         }
@@ -350,7 +355,7 @@ class MigrationRunner {
         const migrationUrl = pathToFileURL(migrationsTablePath).href;
 
         const migrationsTable = await import(migrationUrl);
-        
+
         if (!migrationsTable.up || typeof migrationsTable.up !== 'function') {
           throw new Error('Migrations table creation file does not export an "up" function');
         }

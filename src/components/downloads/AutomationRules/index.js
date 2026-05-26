@@ -59,7 +59,7 @@ export default function AutomationRules() {
   useEffect(() => {
     setApiKey(typeof window !== 'undefined' ? localStorage.getItem('torboxApiKey') : null);
   }, []);
-  const [newRule, setNewRule] = useState(getDefaultNewRule());
+  const [newRule, setNewRule] = useState(() => getDefaultNewRule());
   const { rules, saveRules } = useAutomationRules(apiKey);
 
   // Backend mode indicator

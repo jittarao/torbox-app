@@ -138,7 +138,9 @@ export default function SystemStatusPanel({
           </p>
         )}
 
-        <p className="mt-2 text-[11px] text-zinc-500">{t('lastCheck')}: {formatLastCheck(lastCheck)}</p>
+        <p className="mt-2 text-[11px] text-zinc-500">
+          {t('lastCheck')}: {formatLastCheck(lastCheck)}
+        </p>
       </div>
 
       <div className="ui-dropdown-body !py-2 !px-3 shrink-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">

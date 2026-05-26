@@ -10,7 +10,7 @@ export const useSearchStore = create((set, get) => ({
   includeCustomEngines: false,
   searchHistory: [],
   showAdvancedOptions: false,
-  
+
   // Filter states
   seasonFilter: '',
   episodeFilter: '',
@@ -93,7 +93,7 @@ export const useSearchStore = create((set, get) => ({
 
   addToHistory: (query) => {
     const { searchHistory } = get();
-    const newHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 10);
+    const newHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 10);
     set({ searchHistory: newHistory });
     localStorage.setItem('torboxSearchHistory', JSON.stringify(newHistory));
   },
@@ -116,19 +116,41 @@ export const useSearchStore = create((set, get) => ({
 
   // Apply filters to results
   applyFilters: () => {
-    const { results, seasonFilter, episodeFilter, yearFilter, qualityFilter, sizeFilter, seedersFilter } = get();
-    
+    const {
+      results,
+      seasonFilter,
+      episodeFilter,
+      yearFilter,
+      qualityFilter,
+      sizeFilter,
+      seedersFilter,
+    } = get();
+
     let filtered = [...results];
 
     // Debug logging
-    if (seasonFilter || episodeFilter || yearFilter || qualityFilter || sizeFilter || seedersFilter) {
-      console.log('Applying filters:', { seasonFilter, episodeFilter, yearFilter, qualityFilter, sizeFilter, seedersFilter });
+    if (
+      seasonFilter ||
+      episodeFilter ||
+      yearFilter ||
+      qualityFilter ||
+      sizeFilter ||
+      seedersFilter
+    ) {
+      console.log('Applying filters:', {
+        seasonFilter,
+        episodeFilter,
+        yearFilter,
+        qualityFilter,
+        sizeFilter,
+        seedersFilter,
+      });
       console.log('Original results count:', results.length);
     }
 
     // Season filter
     if (seasonFilter) {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const title = (item.raw_title || item.title || '').toLowerCase();
         const seasonPatterns = [
           new RegExp(`s${seasonFilter.padStart(2, '0')}`, 'i'),
@@ -136,7 +158,7 @@ export const useSearchStore = create((set, get) => ({
           new RegExp(`\\b${seasonFilter}x\\d+`, 'i'),
           new RegExp(`season\\s*${seasonFilter.padStart(2, '0')}`, 'i'),
         ];
-        const matches = seasonPatterns.some(pattern => pattern.test(title));
+        const matches = seasonPatterns.some((pattern) => pattern.test(title));
         if (matches) {
           console.log('Season filter match:', title);
         }
@@ -146,7 +168,7 @@ export const useSearchStore = create((set, get) => ({
 
     // Episode filter
     if (episodeFilter) {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const title = (item.raw_title || item.title || '').toLowerCase();
         const episodePatterns = [
           new RegExp(`e${episodeFilter.padStart(2, '0')}`, 'i'),
@@ -154,7 +176,7 @@ export const useSearchStore = create((set, get) => ({
           new RegExp(`\\b\\d+x${episodeFilter.padStart(2, '0')}`, 'i'),
           new RegExp(`episode\\s*${episodeFilter.padStart(2, '0')}`, 'i'),
         ];
-        const matches = episodePatterns.some(pattern => pattern.test(title));
+        const matches = episodePatterns.some((pattern) => pattern.test(title));
         if (matches) {
           console.log('Episode filter match:', title);
         }
@@ -164,7 +186,7 @@ export const useSearchStore = create((set, get) => ({
 
     // Year filter
     if (yearFilter) {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const title = item.raw_title || item.title || '';
         // Check both title and parsed data
         const titleMatch = title.includes(yearFilter);
@@ -179,17 +201,18 @@ export const useSearchStore = create((set, get) => ({
 
     // Quality filter
     if (qualityFilter) {
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const title = (item.raw_title || item.title || '').toLowerCase();
         const quality = qualityFilter.toLowerCase();
-        
+
         // Check title for quality keywords
         const titleMatch = title.includes(quality);
-        
+
         // Check parsed data for quality
-        const parsedMatch = item.title_parsed_data?.quality?.toLowerCase() === quality ||
-                           item.title_parsed_data?.resolution?.toLowerCase() === quality;
-        
+        const parsedMatch =
+          item.title_parsed_data?.quality?.toLowerCase() === quality ||
+          item.title_parsed_data?.resolution?.toLowerCase() === quality;
+
         const matches = titleMatch || parsedMatch;
         if (matches) {
           console.log('Quality filter match:', title);
@@ -201,7 +224,7 @@ export const useSearchStore = create((set, get) => ({
     // Size filter (min size in GB)
     if (sizeFilter) {
       const minSizeBytes = parseFloat(sizeFilter) * 1024 * 1024 * 1024;
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const matches = item.size >= minSizeBytes;
         if (matches) {
           console.log('Size filter match:', item.raw_title || item.title, 'Size:', item.size);
@@ -213,10 +236,15 @@ export const useSearchStore = create((set, get) => ({
     // Seeders filter (min seeders) - use correct field name
     if (seedersFilter) {
       const minSeeders = parseInt(seedersFilter);
-      filtered = filtered.filter(item => {
+      filtered = filtered.filter((item) => {
         const matches = (item.last_known_seeders || 0) >= minSeeders;
         if (matches) {
-          console.log('Seeders filter match:', item.raw_title || item.title, 'Seeders:', item.last_known_seeders);
+          console.log(
+            'Seeders filter match:',
+            item.raw_title || item.title,
+            'Seeders:',
+            item.last_known_seeders
+          );
         }
         return matches;
       });
@@ -264,10 +292,7 @@ export const useSearchStore = create((set, get) => ({
         return;
       }
 
-      const results =
-        searchType === 'usenet'
-          ? data.data?.nzbs || []
-          : data.data?.torrents || [];
+      const results = searchType === 'usenet' ? data.data?.nzbs || [] : data.data?.torrents || [];
 
       set({
         results,

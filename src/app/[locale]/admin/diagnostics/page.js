@@ -77,7 +77,7 @@ export default function AdminDiagnosticsPage() {
       <AdminLayout>
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Running diagnostics...</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Running diagnostics…</p>
         </div>
       </AdminLayout>
     );
@@ -120,9 +120,9 @@ export default function AdminDiagnosticsPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Total Issues
-              </label>
+              </span>
               <p
                 className={`mt-1 text-2xl font-bold ${
                   summary.totalIssues === 0
@@ -134,15 +134,15 @@ export default function AdminDiagnosticsPage() {
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
               <p className={`mt-1 text-lg font-medium ${getStatusColor(summary.status)}`}>
                 {summary.status}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Last Checked
-              </label>
+              </span>
               <p className="mt-1 text-sm text-gray-900 dark:text-white">
                 {new Date(timestamp).toLocaleString()}
               </p>

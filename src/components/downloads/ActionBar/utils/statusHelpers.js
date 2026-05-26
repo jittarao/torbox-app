@@ -1,8 +1,7 @@
 import { STATUS_OPTIONS } from '@/components/constants';
 
 export const getMatchingStatus = (item) => {
-  const isQueued =
-    !item.download_state && !item.download_finished && !item.active;
+  const isQueued = !item.download_state && !item.download_finished && !item.active;
   if (isQueued)
     return {
       label: 'Queued',
@@ -21,11 +20,10 @@ export const getMatchingStatus = (item) => {
       : [option.value.download_state];
 
     const stateMatches = states.some((state) =>
-      item.download_state?.toLowerCase().includes(state.toLowerCase()),
+      item.download_state?.toLowerCase().includes(state.toLowerCase())
     );
 
-    const activeMatches =
-      option.value.active === undefined || option.value.active === item.active;
+    const activeMatches = option.value.active === undefined || option.value.active === item.active;
 
     return stateMatches && activeMatches;
   });
@@ -34,16 +32,10 @@ export const getMatchingStatus = (item) => {
 
   // Then check for other status conditions
   const status = STATUS_OPTIONS.find((option) => {
-    if (
-      option.value === 'all' ||
-      option.value.is_queued ||
-      option.value.download_state
-    )
+    if (option.value === 'all' || option.value.is_queued || option.value.download_state)
       return false;
 
-    return Object.entries(option.value).every(
-      ([key, value]) => item[key] === value,
-    );
+    return Object.entries(option.value).every(([key, value]) => item[key] === value);
   });
 
   if (status) return status;
@@ -83,8 +75,5 @@ export const getItemTypeName = (activeType) => {
 };
 
 export const getTotalSelectedFiles = (selectedItems) => {
-  return Array.from(selectedItems.files.values()).reduce(
-    (total, files) => total + files.size,
-    0,
-  );
+  return Array.from(selectedItems.files.values()).reduce((total, files) => total + files.size, 0);
 };

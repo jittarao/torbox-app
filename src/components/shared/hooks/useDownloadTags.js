@@ -41,7 +41,7 @@ export function useDownloadTags(apiKey) {
     (downloadId) => {
       return tagMappings[downloadId] || [];
     },
-    [tagMappings],
+    [tagMappings]
   );
 
   /**
@@ -57,28 +57,34 @@ export function useDownloadTags(apiKey) {
       }
       return await assignTagsStore(apiKey, downloadIds, tagIds, operation);
     },
-    [apiKey, assignTagsStore],
+    [apiKey, assignTagsStore]
   );
 
   /**
    * Map tags to download items
    * Takes an array of download items and adds tags property to each
    */
-  const mapTagsToDownloads = useCallback((downloads) => {
-    if (!downloads || !Array.isArray(downloads)) {
-      return downloads;
-    }
+  const mapTagsToDownloads = useCallback(
+    (downloads) => {
+      if (!downloads || !Array.isArray(downloads)) {
+        return downloads;
+      }
 
-    return downloads.map(download => {
-      const downloadId = download.id?.toString() || download.torrent_id?.toString() || 
-                        download.usenet_id?.toString() || download.web_id?.toString();
-      const tags = getDownloadTags(downloadId);
-      return {
-        ...download,
-        tags: tags || [],
-      };
-    });
-  }, [getDownloadTags]);
+      return downloads.map((download) => {
+        const downloadId =
+          download.id?.toString() ||
+          download.torrent_id?.toString() ||
+          download.usenet_id?.toString() ||
+          download.web_id?.toString();
+        const tags = getDownloadTags(downloadId);
+        return {
+          ...download,
+          tags: tags || [],
+        };
+      });
+    },
+    [getDownloadTags]
+  );
 
   /**
    * Create a lookup map for efficient filter evaluation
@@ -87,7 +93,7 @@ export function useDownloadTags(apiKey) {
   const createTagLookupMap = useMemo(() => {
     const map = {};
     for (const [downloadId, tags] of Object.entries(tagMappings)) {
-      map[downloadId] = new Set(tags.map(tag => tag.id));
+      map[downloadId] = new Set(tags.map((tag) => tag.id));
     }
     return map;
   }, [tagMappings]);
@@ -96,29 +102,38 @@ export function useDownloadTags(apiKey) {
    * Check if a download has any of the specified tags
    * Used for filter evaluation
    */
-  const hasAnyTag = useCallback((downloadId, tagIds) => {
-    const downloadTagIds = createTagLookupMap[downloadId];
-    if (!downloadTagIds) return false;
-    return tagIds.some(tagId => downloadTagIds.has(tagId));
-  }, [createTagLookupMap]);
+  const hasAnyTag = useCallback(
+    (downloadId, tagIds) => {
+      const downloadTagIds = createTagLookupMap[downloadId];
+      if (!downloadTagIds) return false;
+      return tagIds.some((tagId) => downloadTagIds.has(tagId));
+    },
+    [createTagLookupMap]
+  );
 
   /**
    * Check if a download has all of the specified tags
    */
-  const hasAllTags = useCallback((downloadId, tagIds) => {
-    const downloadTagIds = createTagLookupMap[downloadId];
-    if (!downloadTagIds) return false;
-    return tagIds.every(tagId => downloadTagIds.has(tagId));
-  }, [createTagLookupMap]);
+  const hasAllTags = useCallback(
+    (downloadId, tagIds) => {
+      const downloadTagIds = createTagLookupMap[downloadId];
+      if (!downloadTagIds) return false;
+      return tagIds.every((tagId) => downloadTagIds.has(tagId));
+    },
+    [createTagLookupMap]
+  );
 
   /**
    * Check if a download has none of the specified tags
    */
-  const hasNoneTags = useCallback((downloadId, tagIds) => {
-    const downloadTagIds = createTagLookupMap[downloadId];
-    if (!downloadTagIds) return true;
-    return !tagIds.some(tagId => downloadTagIds.has(tagId));
-  }, [createTagLookupMap]);
+  const hasNoneTags = useCallback(
+    (downloadId, tagIds) => {
+      const downloadTagIds = createTagLookupMap[downloadId];
+      if (!downloadTagIds) return true;
+      return !tagIds.some((tagId) => downloadTagIds.has(tagId));
+    },
+    [createTagLookupMap]
+  );
 
   return {
     tagMappings,

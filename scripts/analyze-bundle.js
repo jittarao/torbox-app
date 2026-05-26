@@ -12,19 +12,20 @@ const THRESHOLDS = {
 // Analyze bundle sizes
 function analyzeBundleSizes() {
   const buildDir = path.join(process.cwd(), '.next/static/chunks');
-  
+
   if (!fs.existsSync(buildDir)) {
     console.log('Build directory not found. Run "bun run build" first.');
     return;
   }
 
-  const chunks = fs.readdirSync(buildDir)
-    .filter(file => file.endsWith('.js'))
-    .map(file => {
+  const chunks = fs
+    .readdirSync(buildDir)
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => {
       const filePath = path.join(buildDir, file);
       const stats = fs.statSync(filePath);
       const sizeKB = Math.round(stats.size / 1024);
-      
+
       return {
         name: file,
         size: sizeKB,
@@ -35,24 +36,24 @@ function analyzeBundleSizes() {
 
   console.log('\nBundle Size Analysis:');
   console.log('========================');
-  
+
   let totalSize = 0;
   let hasWarnings = false;
-  
-  chunks.forEach(chunk => {
+
+  chunks.forEach((chunk) => {
     totalSize += chunk.size;
-    const status = chunk.size > THRESHOLDS.ERROR ? '❌' : 
-                   chunk.size > THRESHOLDS.WARNING ? '⚠️' : '✅';
-    
+    const status =
+      chunk.size > THRESHOLDS.ERROR ? '❌' : chunk.size > THRESHOLDS.WARNING ? '⚠️' : '✅';
+
     console.log(`${status} ${chunk.name}: ${chunk.size} KB`);
-    
+
     if (chunk.size > THRESHOLDS.WARNING) {
       hasWarnings = true;
     }
   });
-  
+
   console.log(`\nTotal Bundle Size: ${totalSize} KB`);
-  
+
   if (hasWarnings) {
     console.log('\nOptimization Suggestions:');
     console.log('- Consider code splitting for large chunks');

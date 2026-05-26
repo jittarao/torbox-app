@@ -39,7 +39,7 @@ export const useHealthStore = create((set, get) => ({
     const { platformHealth, platformHistory } = get();
     const nextPlatform = appendHistoryEntry(
       platformHistory,
-      statusToSegment(platformHealth.status, platformHealth.responseTime),
+      statusToSegment(platformHealth.status, platformHealth.responseTime)
     );
 
     saveHealthHistory(nextPlatform);

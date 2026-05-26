@@ -2,10 +2,7 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  calculateUptimePercent,
-  padHistoryForDisplay,
-} from '@/utils/healthHistory';
+import { calculateUptimePercent, padHistoryForDisplay } from '@/utils/healthHistory';
 import Icons from '@/components/icons';
 
 const SEGMENT_CLASS = {
@@ -51,7 +48,7 @@ export default function UptimeBar({ label, history, currentStatus }) {
 
   const padded = useMemo(
     () => padHistoryForDisplay(history, currentStatus),
-    [history, currentStatus],
+    [history, currentStatus]
   );
   const uptime = useMemo(() => {
     const recorded = history.filter((e) => e.at != null);

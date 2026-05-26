@@ -12,6 +12,8 @@ import VideoInfoOverlay from './components/VideoInfoOverlay';
 import { useVideoPlayerKeyboard } from './hooks/useVideoPlayerKeyboard';
 import { useControlsVisibility } from './hooks/useControlsVisibility';
 
+const EMPTY_ARRAY = [];
+
 /**
  * VideoPlayerModal - Full-screen edge-to-edge video player with themed UI
  * @param {Object} props
@@ -36,8 +38,8 @@ export default function VideoPlayerModal({
   onClose,
   streamUrl: initialStreamUrl,
   fileName,
-  subtitles = [],
-  audios = [],
+  subtitles = EMPTY_ARRAY,
+  audios = EMPTY_ARRAY,
   metadata = {},
   apiKey,
   itemId,
@@ -122,14 +124,14 @@ export default function VideoPlayerModal({
       setShowPlaybackSpeedMenu(false);
       setShowInfo(false);
       setPlaybackSpeed(1.0);
-      
+
       setSelectedStreamData({
         video_track_idx: 0,
         audio_track_idx: initialAudioIndex,
         subtitle_track_idx: initialSubtitleIndex,
         intro_info: introInformation,
       });
-      
+
       setSelectedSubtitleIndex(initialSubtitleIndex);
       setSelectedAudioIndex(initialAudioIndex);
     } else if (!isOpen) {
@@ -262,13 +264,13 @@ export default function VideoPlayerModal({
     if (e.target.closest('[data-seekbar]') || e.target.closest('.pointer-events-auto')) {
       return;
     }
-    
+
     e.preventDefault();
     e.stopPropagation();
-    
+
     const now = Date.now();
     const timeSinceLastClick = now - lastClickTimeRef.current;
-    
+
     if (timeSinceLastClick < 300) {
       handleFullscreen();
       lastClickTimeRef.current = 0;
@@ -368,7 +370,7 @@ export default function VideoPlayerModal({
   // Handle fullscreen
   const handleFullscreen = () => {
     if (!containerRef.current) return;
-    
+
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
@@ -400,20 +402,21 @@ export default function VideoPlayerModal({
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const capturedTime = videoRef.current?.currentTime || 0;
       const wasPlaying = isPlaying;
       setCapturedSeekTime(capturedTime);
       setWasPlayingBeforeTrackChange(wasPlaying);
-      
+
       if (videoRef.current && wasPlaying) {
         videoRef.current.pause();
       }
-      
+
       const audioRelativeIndex = index;
-      const currentSubtitleRelativeIndex = selectedSubtitleIndex !== null && selectedSubtitleIndex !== undefined 
-        ? selectedSubtitleIndex 
-        : selectedStreamData.subtitle_track_idx;
+      const currentSubtitleRelativeIndex =
+        selectedSubtitleIndex !== null && selectedSubtitleIndex !== undefined
+          ? selectedSubtitleIndex
+          : selectedStreamData.subtitle_track_idx;
 
       const streamMetadata = await createStream(
         itemId,
@@ -430,21 +433,21 @@ export default function VideoPlayerModal({
         throw new Error('No stream URL in response');
       }
 
-      setSelectedStreamData(prev => ({
+      setSelectedStreamData((prev) => ({
         ...prev,
         audio_track_idx: index,
       }));
-      
+
       setCapturedSeekTime(capturedTime);
       setWasPlayingBeforeTrackChange(wasPlaying);
-      
+
       isManualStreamUpdateRef.current = true;
-      
+
       setStreamUrl(newStreamUrl);
       if (onStreamUrlChange) {
         onStreamUrlChange(newStreamUrl);
       }
-      
+
       setTimeout(() => {
         isManualStreamUpdateRef.current = false;
       }, 500);
@@ -470,16 +473,16 @@ export default function VideoPlayerModal({
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const capturedTime = videoRef.current?.currentTime || 0;
       const wasPlaying = isPlaying;
       setCapturedSeekTime(capturedTime);
       setWasPlayingBeforeTrackChange(wasPlaying);
-      
+
       if (videoRef.current && wasPlaying) {
         videoRef.current.pause();
       }
-      
+
       const audioRelativeIndex = selectedAudioIndex;
       const subtitleRelativeIndex = index;
 
@@ -498,22 +501,22 @@ export default function VideoPlayerModal({
         throw new Error('No stream URL in response');
       }
 
-      setSelectedStreamData(prev => ({
+      setSelectedStreamData((prev) => ({
         ...prev,
         subtitle_track_idx: index,
       }));
       setSelectedSubtitleIndex(index);
-      
+
       setCapturedSeekTime(capturedTime);
       setWasPlayingBeforeTrackChange(wasPlaying);
-      
+
       isManualStreamUpdateRef.current = true;
-      
+
       setStreamUrl(newStreamUrl);
       if (onStreamUrlChange) {
         onStreamUrlChange(newStreamUrl);
       }
-      
+
       setTimeout(() => {
         isManualStreamUpdateRef.current = false;
       }, 500);
@@ -541,7 +544,7 @@ export default function VideoPlayerModal({
   const handleErrorRetry = async () => {
     setError(null);
     setIsLoading(true);
-    
+
     try {
       // Try to reload the current stream URL
       if (streamUrl) {
@@ -563,20 +566,21 @@ export default function VideoPlayerModal({
   // Use seekTime for smooth dragging, otherwise use currentTime
   const displayTime = isSeeking && seekTime !== null ? seekTime : currentTime;
   const progress = duration > 0 ? (displayTime / duration) * 100 : 0;
-  
+
   // Check if we're in intro time range
   const introInfo = introInformation || selectedStreamData.intro_info;
-  const isInIntroRange = introInfo && 
-    introInfo.start_time !== undefined && 
+  const isInIntroRange =
+    introInfo &&
+    introInfo.start_time !== undefined &&
     introInfo.end_time !== undefined &&
     introInfo.end_time > 0 &&
-    currentTime >= introInfo.start_time && 
+    currentTime >= introInfo.start_time &&
     currentTime <= introInfo.end_time;
 
   return (
     <div className="fixed inset-0 z-50 bg-black" ref={containerRef}>
       {/* Video Container */}
-      <div 
+      <div
         className="relative w-full h-full flex items-center justify-center"
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => {
@@ -618,9 +622,7 @@ export default function VideoPlayerModal({
         )}
 
         {/* Skip Intro Button */}
-        {isInIntroRange && !isLoading && !error && (
-          <SkipIntroButton onSkip={handleSkipIntro} />
-        )}
+        {isInIntroRange && !isLoading && !error && <SkipIntroButton onSkip={handleSkipIntro} />}
 
         {/* Loading Overlay */}
         {isLoading && !error && <LoadingOverlay />}
@@ -690,10 +692,16 @@ export default function VideoPlayerModal({
             onVolumeSliderHide={() => setShowVolumeSlider(false)}
             onAudioSelect={handleAudioTrackSelect}
             onSubtitleSelect={handleSubtitleTrackSelect}
-            onAudioMenuToggle={(open) => setShowAudioMenu(open !== undefined ? open : !showAudioMenu)}
-            onSubtitleMenuToggle={(open) => setShowSubtitleMenu(open !== undefined ? open : !showSubtitleMenu)}
+            onAudioMenuToggle={(open) =>
+              setShowAudioMenu(open !== undefined ? open : !showAudioMenu)
+            }
+            onSubtitleMenuToggle={(open) =>
+              setShowSubtitleMenu(open !== undefined ? open : !showSubtitleMenu)
+            }
             onPlaybackSpeedChange={handlePlaybackSpeedChange}
-            onPlaybackSpeedMenuToggle={(open) => setShowPlaybackSpeedMenu(open !== undefined ? open : !showPlaybackSpeedMenu)}
+            onPlaybackSpeedMenuToggle={(open) =>
+              setShowPlaybackSpeedMenu(open !== undefined ? open : !showPlaybackSpeedMenu)
+            }
             onInfoToggle={() => setShowInfo(!showInfo)}
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
@@ -707,9 +715,11 @@ export default function VideoPlayerModal({
 
         {/* Video Title Overlay */}
         {showControls && fileName && (
-          <div className="absolute top-4 left-4 z-20 px-4 py-2 mr-2 rounded-lg
+          <div
+            className="absolute top-4 left-4 z-20 px-4 py-2 mr-2 rounded-lg
             bg-black/60 backdrop-blur-md text-white
-            border border-white/20">
+            border border-white/20"
+          >
             <p className="text-sm font-medium">{fileName}</p>
           </div>
         )}

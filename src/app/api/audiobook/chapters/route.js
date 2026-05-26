@@ -60,10 +60,7 @@ export async function POST(request) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   if (!apiKey || !apiKey.trim()) {
-    return NextResponse.json(
-      { success: false, error: 'API key is required' },
-      { status: 401 }
-    );
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
   }
 
   let body;
@@ -83,7 +80,7 @@ export async function POST(request) {
       { status: 400 }
     );
   }
-  if (!cdnUrl || !cdnUrl.startsWith('http://') && !cdnUrl.startsWith('https://')) {
+  if (!cdnUrl || (!cdnUrl.startsWith('http://') && !cdnUrl.startsWith('https://'))) {
     return NextResponse.json(
       { success: false, error: 'url must be a valid HTTP(s) URL' },
       { status: 400 }
@@ -175,8 +172,7 @@ export async function POST(request) {
     if (code !== 'TIMEOUT') {
       console.error('Audiobook chapters: ffprobe error', { id, fileId, code, message: msg });
     }
-    const status =
-      code === 'ACCESS_DENIED' ? 401 : code === 'FFPROBE_NOT_FOUND' ? 503 : 500;
+    const status = code === 'ACCESS_DENIED' ? 401 : code === 'FFPROBE_NOT_FOUND' ? 503 : 500;
     return NextResponse.json(
       {
         success: false,

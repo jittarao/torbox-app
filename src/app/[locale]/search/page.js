@@ -30,13 +30,15 @@ export default function SearchPage() {
     // Ensure user database exists for loaded API key
     if (loadedKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey).then((result) => {
-          if (result.success && result.wasCreated) {
-            console.log('User database created for existing API key');
-          }
-        }).catch((error) => {
-          console.error('Error ensuring user database on load:', error);
-        });
+        ensureUserDb(loadedKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
       });
     }
 
@@ -67,10 +69,7 @@ export default function SearchPage() {
     const torrents = { value: 'torrents', labelKey: 'itemTypes.Torrents' };
     const usenet = { value: 'usenet', labelKey: 'itemTypes.Usenet' };
     const canUsenet = hasDownloadAccess('usenet', permissions);
-    return [
-      torrents,
-      ...(canUsenet ? [usenet] : []),
-    ];
+    return [torrents, ...(canUsenet ? [usenet] : [])];
   }, [permissions]);
 
   const handleKeyChange = (newKey) => {
@@ -87,11 +86,7 @@ export default function SearchPage() {
     >
       <Header apiKey={apiKey} />
       <div className="max-w-7xl mx-auto p-4">
-        <ApiKeyInput
-          value={apiKey}
-          onKeyChange={handleKeyChange}
-          allowKeyManager={true}
-        />
+        <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />
         <SearchBar searchTypeOptions={searchTypeOptions} />
         <SearchResults apiKey={apiKey} />
       </div>

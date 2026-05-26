@@ -5,7 +5,8 @@
 import * as Sentry from '@sentry/nextjs';
 
 // Only initialize Sentry if explicitly enabled and DSN is provided
-const isEnabled = process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true';
+const isEnabled =
+  process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true';
 const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (isEnabled && dsn) {
@@ -22,5 +23,7 @@ if (isEnabled && dsn) {
     environment: process.env.NODE_ENV || 'development',
   });
 } else if (isEnabled && !dsn) {
-  console.warn('[Sentry] Sentry is enabled but DSN is not configured. Please set SENTRY_DSN or NEXT_PUBLIC_SENTRY_DSN.');
+  console.warn(
+    '[Sentry] Sentry is enabled but DSN is not configured. Please set SENTRY_DSN or NEXT_PUBLIC_SENTRY_DSN.'
+  );
 }

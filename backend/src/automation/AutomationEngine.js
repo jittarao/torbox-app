@@ -28,7 +28,13 @@ import {
  * Evaluates and executes automation rules for a single user
  */
 class AutomationEngine {
-  constructor(authId, encryptedApiKey, userDatabaseManager, masterDb = null, sharedApiClient = null) {
+  constructor(
+    authId,
+    encryptedApiKey,
+    userDatabaseManager,
+    masterDb = null,
+    sharedApiClient = null
+  ) {
     this.authId = authId;
     this.encryptedApiKey = encryptedApiKey;
     this.userDatabaseManager = userDatabaseManager;
@@ -410,7 +416,6 @@ class AutomationEngine {
    */
   stopRule(_ruleId) {}
 
-
   /**
    * Build torrent subset for changed-only scope (new + state transitions). Used when a rule can be evaluated on the delta.
    * @param {Array} torrents - Full torrent list
@@ -423,7 +428,9 @@ class AutomationEngine {
     for (const t of changes.new || []) {
       if (t?.id != null) byId.set(String(t.id), t);
     }
-    const transitionIds = new Set((changes.stateTransitions || []).map((t) => String(t.torrent_id)));
+    const transitionIds = new Set(
+      (changes.stateTransitions || []).map((t) => String(t.torrent_id))
+    );
     for (const t of torrents) {
       if (t?.id != null && transitionIds.has(String(t.id)) && !byId.has(String(t.id))) {
         byId.set(String(t.id), t);
@@ -559,10 +566,7 @@ class AutomationEngine {
           : new Map(),
     };
 
-    const concurrency = Math.max(
-      1,
-      parseInt(process.env.RULE_EVAL_CONCURRENCY || '2', 10)
-    );
+    const concurrency = Math.max(1, parseInt(process.env.RULE_EVAL_CONCURRENCY || '2', 10));
 
     const queue = [...enabledRules];
 
@@ -577,7 +581,12 @@ class AutomationEngine {
             : torrents;
 
         try {
-          const result = await this.evaluateSingleRule(rule, torrentList, sharedMaps, ruleEvaluator);
+          const result = await this.evaluateSingleRule(
+            rule,
+            torrentList,
+            sharedMaps,
+            ruleEvaluator
+          );
           if (result.ruleId != null) {
             evaluatedRuleIds.push(result.ruleId);
           }
@@ -877,8 +886,12 @@ class AutomationEngine {
       const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
       const analysis = ruleEvaluator.analyzeRule(rule);
       const sharedMaps = {
-        telemetryMap: analysis.needsTelemetry ? ruleEvaluator.loadTelemetryData(torrentIds) : new Map(),
-        tagsByDownloadId: analysis.needsTags ? ruleEvaluator.loadTagsData(torrents, { rule }) : new Map(),
+        telemetryMap: analysis.needsTelemetry
+          ? ruleEvaluator.loadTelemetryData(torrentIds)
+          : new Map(),
+        tagsByDownloadId: analysis.needsTags
+          ? ruleEvaluator.loadTagsData(torrents, { rule })
+          : new Map(),
         speedHistoryMap:
           analysis.needsSpeed && torrentIds.length > 0
             ? ruleEvaluator.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
@@ -924,9 +937,13 @@ class AutomationEngine {
       });
 
       // Filter torrents based on action type (pass pre-loaded tags to avoid duplicate SELECT)
-      const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action, {
-        tagsByDownloadId,
-      });
+      const torrentsToProcess = await this.ruleFilter.filterTorrents(
+        matchingTorrents,
+        rule.action,
+        {
+          tagsByDownloadId,
+        }
+      );
 
       if (torrentsToProcess.length === 0) {
         const result = {

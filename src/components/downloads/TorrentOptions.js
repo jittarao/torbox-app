@@ -4,11 +4,7 @@ import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
-export default function TorrentOptions({
-  showOptions,
-  globalOptions,
-  updateGlobalOptions,
-}) {
+export default function TorrentOptions({ showOptions, globalOptions, updateGlobalOptions }) {
   const t = useTranslations('TorrentOptions');
 
   return (
@@ -37,9 +33,7 @@ export default function TorrentOptions({
                 </label>
                 <select
                   value={globalOptions.seed}
-                  onChange={(e) =>
-                    updateGlobalOptions({ seed: Number(e.target.value) })
-                  }
+                  onChange={(e) => updateGlobalOptions({ seed: Number(e.target.value) })}
                   className="w-full px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md 
                       bg-transparent text-primary-text dark:text-primary-text-dark 
                       focus:ring-1 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
@@ -56,9 +50,7 @@ export default function TorrentOptions({
                   <input
                     type="checkbox"
                     checked={globalOptions.allowZip}
-                    onChange={(e) =>
-                      updateGlobalOptions({ allowZip: e.target.checked })
-                    }
+                    onChange={(e) => updateGlobalOptions({ allowZip: e.target.checked })}
                     className="w-4 h-4 accent-accent dark:accent-accent-dark"
                   />
                   <div>
@@ -78,9 +70,7 @@ export default function TorrentOptions({
                   <input
                     type="checkbox"
                     checked={globalOptions.asQueued}
-                    onChange={(e) =>
-                      updateGlobalOptions({ asQueued: e.target.checked })
-                    }
+                    onChange={(e) => updateGlobalOptions({ asQueued: e.target.checked })}
                     className="w-4 h-4 accent-accent dark:accent-accent-dark"
                   />
                   <div>
@@ -121,9 +111,7 @@ export default function TorrentOptions({
                 <input
                   type="checkbox"
                   checked={globalOptions.autoStart}
-                  onChange={(e) =>
-                    updateGlobalOptions({ autoStart: e.target.checked })
-                  }
+                  onChange={(e) => updateGlobalOptions({ autoStart: e.target.checked })}
                   className="w-4 h-4 accent-accent dark:accent-accent-dark"
                 />
                 <span
@@ -144,10 +132,7 @@ export default function TorrentOptions({
                   max="10"
                   value={globalOptions.autoStartLimit ?? 3}
                   onChange={(e) => {
-                    const value = Math.max(
-                      1,
-                      Math.min(999, parseInt(e.target.value) || 1),
-                    );
+                    const value = Math.max(1, Math.min(999, parseInt(e.target.value) || 1));
                     updateGlobalOptions({ autoStartLimit: value });
                   }}
                   disabled={!globalOptions.autoStart}

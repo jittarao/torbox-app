@@ -250,32 +250,32 @@ export function setupDatabaseRoutes(router, backend) {
       }
 
       try {
-      // Get size before
-      const statsBefore = fs.statSync(user.db_path);
-      const sizeBefore = statsBefore.size;
+        // Get size before
+        const statsBefore = fs.statSync(user.db_path);
+        const sizeBefore = statsBefore.size;
 
-      // Run VACUUM
-      userDb.db.prepare('VACUUM').run();
+        // Run VACUUM
+        userDb.db.prepare('VACUUM').run();
 
-      // Get size after
-      const statsAfter = fs.statSync(user.db_path);
-      const sizeAfter = statsAfter.size;
+        // Get size after
+        const statsAfter = fs.statSync(user.db_path);
+        const sizeAfter = statsAfter.size;
 
-      const spaceFreed = sizeBefore - sizeAfter;
+        const spaceFreed = sizeBefore - sizeAfter;
 
-      sendSuccess(res, {
-        message: 'Database vacuum completed',
-        before: {
-          size: sizeBefore,
-          size_formatted: formatBytes(sizeBefore),
-        },
-        after: {
-          size: sizeAfter,
-          size_formatted: formatBytes(sizeAfter),
-        },
-        space_freed: spaceFreed,
-        space_freed_formatted: formatBytes(spaceFreed),
-      });
+        sendSuccess(res, {
+          message: 'Database vacuum completed',
+          before: {
+            size: sizeBefore,
+            size_formatted: formatBytes(sizeBefore),
+          },
+          after: {
+            size: sizeAfter,
+            size_formatted: formatBytes(sizeAfter),
+          },
+          space_freed: spaceFreed,
+          space_freed_formatted: formatBytes(spaceFreed),
+        });
       } finally {
         backend.userDatabaseManager.releaseConnection(authId);
       }

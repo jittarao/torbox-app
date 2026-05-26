@@ -166,7 +166,8 @@ const withPWAConfig = withPWA({
       },
     },
     {
-      urlPattern: ({ request }) => request.destination === 'script' || request.destination === 'style',
+      urlPattern: ({ request }) =>
+        request.destination === 'script' || request.destination === 'style',
       handler: 'NetworkFirst',
       options: {
         cacheName: 'static-js-css',

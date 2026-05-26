@@ -1,24 +1,21 @@
 'use client';
 
-import { 
-  LOGIC_OPERATORS,
-  ACTION_TYPES 
-} from '../constants';
+import { LOGIC_OPERATORS, ACTION_TYPES } from '../constants';
 import ConditionFilterGroup from './ConditionFilterGroup';
 import Select from '@/components/shared/Select';
 import TagSelector from '@/components/downloads/Tags/TagSelector';
 import { useTranslations } from 'next-intl';
 
-export default function RuleForm({ 
-  rule, 
+export default function RuleForm({
+  rule,
   onRuleChange,
-  onSubmit, 
-  onCancel, 
+  onSubmit,
+  onCancel,
   onAddGroup,
   onRemoveGroup,
   onUpdateGroup,
-  onAddCondition, 
-  onRemoveCondition, 
+  onAddCondition,
+  onRemoveCondition,
   onUpdateCondition,
   editingRuleId,
   t,
@@ -100,8 +97,12 @@ export default function RuleForm({
                   })
                 }
               >
-                <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.andGroups')}</option>
-                <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.orGroups')}</option>
+                <option value={LOGIC_OPERATORS.AND}>
+                  {automationRulesT('logicOperators.andGroups')}
+                </option>
+                <option value={LOGIC_OPERATORS.OR}>
+                  {automationRulesT('logicOperators.orGroups')}
+                </option>
               </Select>
             </div>
           )}
@@ -155,8 +156,14 @@ export default function RuleForm({
                 // Preserve tagIds when switching between add_tag and remove_tag
                 // Initialize as empty array when switching to tag actions from non-tag actions
                 let tagIds;
-                if (newActionType === ACTION_TYPES.ADD_TAG || newActionType === ACTION_TYPES.REMOVE_TAG) {
-                  if (rule.action.type === ACTION_TYPES.ADD_TAG || rule.action.type === ACTION_TYPES.REMOVE_TAG) {
+                if (
+                  newActionType === ACTION_TYPES.ADD_TAG ||
+                  newActionType === ACTION_TYPES.REMOVE_TAG
+                ) {
+                  if (
+                    rule.action.type === ACTION_TYPES.ADD_TAG ||
+                    rule.action.type === ACTION_TYPES.REMOVE_TAG
+                  ) {
                     // Preserve existing tagIds when switching between tag actions
                     tagIds = rule.action.tagIds || [];
                   } else {
@@ -164,7 +171,7 @@ export default function RuleForm({
                     tagIds = [];
                   }
                 }
-                
+
                 onRuleChange({
                   ...rule,
                   action: {
@@ -195,7 +202,8 @@ export default function RuleForm({
             </Select>
           </div>
           {/* Tag Selector for add_tag and remove_tag actions */}
-          {(rule.action.type === ACTION_TYPES.ADD_TAG || rule.action.type === ACTION_TYPES.REMOVE_TAG) && (
+          {(rule.action.type === ACTION_TYPES.ADD_TAG ||
+            rule.action.type === ACTION_TYPES.REMOVE_TAG) && (
             <div className="mt-2">
               <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
                 {t('actions.selectTags')}
@@ -236,4 +244,3 @@ export default function RuleForm({
     </div>
   );
 }
-

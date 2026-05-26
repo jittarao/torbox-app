@@ -31,8 +31,9 @@ if (!fs.existsSync(migrationsDir)) {
 }
 
 // Get existing migration files to determine next version
-const existingFiles = fs.readdirSync(migrationsDir)
-  .filter(file => file.endsWith('.js') && file.match(/^\d+_/))
+const existingFiles = fs
+  .readdirSync(migrationsDir)
+  .filter((file) => file.endsWith('.js') && file.match(/^\d+_/))
   .sort();
 
 let nextVersion = '001';
@@ -79,4 +80,3 @@ console.log(`\nNext steps:`);
 console.log(`  1. Edit ${filename} and implement the 'up' and 'down' functions`);
 console.log(`  2. Test the migration locally`);
 console.log(`  3. The migration will run automatically on next database initialization`);
-

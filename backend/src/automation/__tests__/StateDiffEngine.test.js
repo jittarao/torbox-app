@@ -55,7 +55,9 @@ describe('StateDiffEngine', () => {
     expect(changes.updated[0].diff.hasChanges).toBe(true);
     expect(changes.updated[0].diff.downloadChanged).toBe(true);
 
-    const row = db.prepare('SELECT last_total_downloaded FROM torrent_shadow WHERE torrent_id = ?').get('7');
+    const row = db
+      .prepare('SELECT last_total_downloaded FROM torrent_shadow WHERE torrent_id = ?')
+      .get('7');
     expect(row.last_total_downloaded).toBe(200);
   });
 

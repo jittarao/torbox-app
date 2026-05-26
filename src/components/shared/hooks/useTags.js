@@ -4,7 +4,8 @@ import { useEffect, useCallback } from 'react';
 import { useTagsStore } from '@/store/tagsStore';
 
 export function useTags(apiKey) {
-  const { tags, loading, error, loadTags, createTag, updateTag, deleteTag, setApiKey } = useTagsStore();
+  const { tags, loading, error, loadTags, createTag, updateTag, deleteTag, setApiKey } =
+    useTagsStore();
 
   // Update API key in store when it changes (this will reset tags if changed)
   useEffect(() => {
@@ -20,26 +21,35 @@ export function useTags(apiKey) {
     }
   }, [apiKey, loadTags]);
 
-  const createTagWithKey = useCallback(async (name) => {
-    if (!apiKey) {
-      throw new Error('API key is required');
-    }
-    return await createTag(apiKey, name);
-  }, [apiKey, createTag]);
+  const createTagWithKey = useCallback(
+    async (name) => {
+      if (!apiKey) {
+        throw new Error('API key is required');
+      }
+      return await createTag(apiKey, name);
+    },
+    [apiKey, createTag]
+  );
 
-  const updateTagWithKey = useCallback(async (id, name) => {
-    if (!apiKey) {
-      throw new Error('API key is required');
-    }
-    return await updateTag(apiKey, id, name);
-  }, [apiKey, updateTag]);
+  const updateTagWithKey = useCallback(
+    async (id, name) => {
+      if (!apiKey) {
+        throw new Error('API key is required');
+      }
+      return await updateTag(apiKey, id, name);
+    },
+    [apiKey, updateTag]
+  );
 
-  const deleteTagWithKey = useCallback(async (id) => {
-    if (!apiKey) {
-      throw new Error('API key is required');
-    }
-    return await deleteTag(apiKey, id);
-  }, [apiKey, deleteTag]);
+  const deleteTagWithKey = useCallback(
+    async (id) => {
+      if (!apiKey) {
+        throw new Error('API key is required');
+      }
+      return await deleteTag(apiKey, id);
+    },
+    [apiKey, deleteTag]
+  );
 
   return {
     tags,

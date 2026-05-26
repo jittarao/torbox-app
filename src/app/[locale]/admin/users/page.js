@@ -9,7 +9,8 @@ import Toast from '@/components/shared/Toast';
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const { users, usersLoading, usersPagination, userFilters, fetchUsers, setUserFilter } = useAdminStore();
+  const { users, usersLoading, usersPagination, userFilters, fetchUsers, setUserFilter } =
+    useAdminStore();
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -55,13 +56,7 @@ export default function AdminUsersPage() {
         />
       </div>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </AdminLayout>
   );
 }

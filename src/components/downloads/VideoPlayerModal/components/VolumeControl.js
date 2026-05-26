@@ -71,8 +71,8 @@ export default function VolumeControl({
   };
 
   return (
-    <div 
-      className="relative" 
+    <div
+      className="relative"
       ref={volumeRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -107,7 +107,7 @@ export default function VolumeControl({
         )}
       </button>
       {showSlider && (
-        <div 
+        <div
           className="absolute bottom-full right-0 mb-2 w-12 h-32 bg-black/90 backdrop-blur-md rounded-lg border border-white/20 p-2 cursor-pointer pointer-events-auto"
           onClick={handleVolumeChange}
           onMouseMove={(e) => {
@@ -118,11 +118,11 @@ export default function VolumeControl({
           onMouseEnter={handleMouseEnter}
         >
           <div className="relative h-full w-2 bg-white/20 rounded-full mx-auto">
-            <div 
+            <div
               className="absolute bottom-0 w-full bg-accent dark:bg-accent-dark rounded-full transition-all"
               style={{ height: `${(isMuted ? 0 : volume) * 100}%` }}
             />
-            <div 
+            <div
               className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2
                 w-4 h-4 rounded-full bg-accent dark:bg-accent-dark cursor-grab active:cursor-grabbing pointer-events-auto"
               style={{ bottom: `${(isMuted ? 0 : volume) * 100}%` }}

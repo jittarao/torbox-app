@@ -3,11 +3,7 @@
 import NextError from 'next/error';
 import { useEffect } from 'react';
 
-export default function GlobalError({
-  error,
-}: {
-  error: Error & { digest?: string };
-}) {
+export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
     // Check if this is a chunk loading or service worker error
     const isChunkError =
@@ -20,8 +16,11 @@ export default function GlobalError({
 
     // If it's a chunk/service worker error, attempt recovery
     if (isChunkError && typeof window !== 'undefined') {
-      console.warn('Chunk loading error detected in global error boundary. Attempting recovery...', error);
-      
+      console.warn(
+        'Chunk loading error detected in global error boundary. Attempting recovery...',
+        error
+      );
+
       // Clear service worker cache and reload
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -30,24 +29,27 @@ export default function GlobalError({
           });
         });
       }
-      
+
       // Clear caches
       if ('caches' in window) {
         caches.keys().then((cacheNames) => {
           return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
         });
       }
-      
+
       // Reload after a short delay
-      setTimeout(() => {
+      const reloadTimer = setTimeout(() => {
         window.location.reload();
       }, 1000);
-      
-      return; // Don't log to Sentry for recoverable errors
+
+      return () => clearTimeout(reloadTimer);
     }
 
     // Only capture exception if Sentry is enabled
-    if (process.env.SENTRY_ENABLED === 'true' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true') {
+    if (
+      process.env.SENTRY_ENABLED === 'true' ||
+      process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true'
+    ) {
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(error);
       });
@@ -55,7 +57,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         {/* `NextError` is the default Next.js error page component. Its type
         definition requires a `statusCode` prop. However, since the App Router

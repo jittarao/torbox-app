@@ -61,15 +61,17 @@ export default function UserDetail({ user }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Auth ID</label>
-            <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">{user.auth_id}</p>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Auth ID</span>
+            <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">
+              {user.auth_id}
+            </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Key Name</label>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Key Name</span>
             <p className="mt-1 text-sm text-gray-900 dark:text-white">{user.key_name || 'N/A'}</p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
             <p className="mt-1">
               <span
                 className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -83,17 +85,21 @@ export default function UserDetail({ user }) {
             </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Has Active Rules</label>
-            <p className="mt-1 text-sm text-gray-900 dark:text-white">{user.has_active_rules ? 'Yes' : 'No'}</p>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Has Active Rules
+            </span>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {user.has_active_rules ? 'Yes' : 'No'}
+            </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</label>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</span>
             <p className="mt-1 text-sm text-gray-900 dark:text-white">
               {new Date(user.created_at).toLocaleString()}
             </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Updated At</label>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Updated At</span>
             <p className="mt-1 text-sm text-gray-900 dark:text-white">
               {new Date(user.updated_at).toLocaleString()}
             </p>
@@ -104,29 +110,41 @@ export default function UserDetail({ user }) {
       {/* Database Info */}
       {loading ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <p className="text-gray-600 dark:text-gray-400">Loading database information...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading database information…</p>
         </div>
       ) : databaseInfo ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Database Information</h3>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Database Information
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Database Path</label>
-              <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">{databaseInfo.path}</p>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Database Path
+              </span>
+              <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">
+                {databaseInfo.path}
+              </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Exists</label>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">{databaseInfo.exists ? 'Yes' : 'No'}</p>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Exists</span>
+              <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                {databaseInfo.exists ? 'Yes' : 'No'}
+              </p>
             </div>
             {databaseInfo.exists && (
               <>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Size</label>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{databaseInfo.size_formatted}</p>
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Size</span>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {databaseInfo.size_formatted}
+                  </p>
                 </div>
                 {databaseInfo.table_counts && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Tables</label>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Tables
+                    </span>
                     <div className="mt-1 space-y-1">
                       {Object.entries(databaseInfo.table_counts).map(([table, count]) => (
                         <p key={table} className="text-sm text-gray-900 dark:text-white">
@@ -148,19 +166,25 @@ export default function UserDetail({ user }) {
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Automation</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Rules</label>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Total Rules
+              </span>
               <p className="mt-1 text-sm text-gray-900 dark:text-white">
                 {automationInfo.statistics?.total_rules || 0}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Enabled Rules</label>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Enabled Rules
+              </span>
               <p className="mt-1 text-sm text-gray-900 dark:text-white">
                 {automationInfo.statistics?.enabled_rules || 0}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Executions (7 days)</label>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Executions (7 days)
+              </span>
               <p className="mt-1 text-sm text-gray-900 dark:text-white">
                 {automationInfo.statistics?.total_executions || 0}
               </p>

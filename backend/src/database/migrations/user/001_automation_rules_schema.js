@@ -3,7 +3,8 @@
  * Creates the base automation_rules table for per-user databases
  */
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS automation_rules (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -18,22 +19,28 @@ export const up = (db) => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `).run();
+  `
+  ).run();
 
   // Create index for enabled rules lookup
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_automation_rules_enabled 
     ON automation_rules(enabled)
-  `).run();
+  `
+  ).run();
 
   // Create index for cooldown queries
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_automation_rules_cooldown 
     ON automation_rules(enabled, last_executed_at)
-  `).run();
+  `
+  ).run();
 
   // Rule execution log table
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS rule_execution_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       rule_id INTEGER NOT NULL,
@@ -45,13 +52,16 @@ export const up = (db) => {
       executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (rule_id) REFERENCES automation_rules (id) ON DELETE CASCADE
     )
-  `).run();
+  `
+  ).run();
 
   // Create index for rule execution history queries
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_rule_execution_log_rule_id 
     ON rule_execution_log(rule_id, executed_at)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {
@@ -61,4 +71,3 @@ export const down = (db) => {
   db.prepare('DROP INDEX IF EXISTS idx_automation_rules_enabled').run();
   db.prepare('DROP TABLE IF EXISTS automation_rules').run();
 };
-

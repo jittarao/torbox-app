@@ -51,9 +51,7 @@ export default function UploadPagination({ pagination, setPagination }) {
       </div>
       <div className="flex gap-2 items-center">
         <button
-          onClick={() =>
-            setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))
-          }
+          onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
           disabled={pagination.page === 1}
           className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg disabled:opacity-50 hover:bg-surface dark:hover:bg-surface-dark transition-colors"
         >
