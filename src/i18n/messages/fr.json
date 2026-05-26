@@ -24,6 +24,7 @@
   },
   "ApiKeyInput": {
     "hide": "Masquer la clé API",
+    "label": "Clé API",
     "manageKeys": "Gérer les clés API",
     "placeholder": "Entrer la clé API TorBox",
     "show": "Afficher la clé API"

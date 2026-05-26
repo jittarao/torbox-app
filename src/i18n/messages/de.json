@@ -24,6 +24,7 @@
   },
   "ApiKeyInput": {
     "hide": "API-Schlüssel ausblenden",
+    "label": "API-Schlüssel",
     "manageKeys": "API-Schlüssel verwalten",
     "placeholder": "Geben Sie den TorBox-API-Schlüssel ein ",
     "show": "API-Schlüssel anzeigen"

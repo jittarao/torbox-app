@@ -17,6 +17,7 @@ export default function ApiKeyInput({
   variant = 'default',
 }) {
   const isLanding = variant === 'landing';
+  const isCompact = variant === 'compact';
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const lastAutoApplyKeyRef = useRef('');
@@ -101,50 +102,76 @@ export default function ApiKeyInput({
     }
   };
 
+  const inputClassName = isLanding
+    ? 'ui-input-landing pr-12 md:p-3 md:text-base'
+    : isCompact
+      ? `w-full h-8 px-2.5 pr-8 text-xs sm:text-sm rounded-md border-0
+              bg-transparent text-primary-text dark:text-primary-text-dark
+              placeholder-primary-text/45 dark:placeholder-primary-text-dark/45
+              focus:outline-none focus:ring-1 focus:ring-accent/30 dark:focus:ring-accent-dark/30
+              transition-colors`
+      : `w-full px-3 py-2 pr-12 md:p-3 text-sm md:text-base border border-border dark:border-border-dark rounded-lg
+              bg-transparent text-primary-text dark:text-primary-text-dark
+              placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
+              focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20
+              focus:border-accent dark:focus:border-accent-dark
+              transition-colors`;
+
+  const eyeButtonClassName = isCompact
+    ? 'absolute right-1 top-1/2 -translate-y-1/2 p-1 touch-manipulation transition-colors text-primary-text/45 dark:text-primary-text-dark/45 hover:text-primary-text dark:hover:text-primary-text-dark'
+    : `absolute right-2 md:right-3 top-1/2 -translate-y-1/2 p-2 touch-manipulation transition-colors ${
+        isLanding
+          ? 'text-zinc-500 hover:text-amber-300'
+          : 'text-primary-text/50 dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark'
+      }`;
+
+  const manageButtonClassName = isCompact
+    ? `shrink-0 h-8 px-2 sm:px-2.5 text-xs text-primary-text/80 dark:text-primary-text-dark/80 rounded-md
+            hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors
+            flex items-center gap-1.5 ${showManager ? 'bg-surface-hover dark:bg-surface-hover-dark text-primary-text dark:text-primary-text-dark' : ''}`
+    : `px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark rounded-lg border border-border dark:border-border-dark
+            hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors
+            flex items-center gap-2 ${showManager ? 'bg-surface-alt dark:bg-surface-alt-dark' : ''}`;
+
+  const rowClassName = isCompact
+    ? 'flex items-center gap-1 rounded-lg border border-border/60 dark:border-border-dark/60 bg-surface-alt/30 dark:bg-surface-alt-dark/30 p-0.5 sm:p-1'
+    : 'relative flex gap-2';
+
   return (
-    <div className="space-y-4">
-      <div className="relative flex gap-2">
-        <div className="relative flex-1">
+    <div className={isCompact ? 'space-y-1.5' : 'space-y-4'}>
+      <div className={rowClassName}>
+        {isCompact && (
+          <span className="hidden sm:flex shrink-0 items-center pl-2 text-[11px] font-medium uppercase tracking-wide text-primary-text/45 dark:text-primary-text-dark/45">
+            {t('label')}
+          </span>
+        )}
+        <div className="relative flex-1 min-w-0">
           <input
             type={showKey ? 'text' : 'password'}
             value={displayValue}
             onChange={handleInputChange}
             placeholder={t('placeholder')}
-            className={
-              isLanding
-                ? 'ui-input-landing pr-12 md:p-3 md:text-base'
-                : `w-full px-3 py-2 pr-12 md:p-3 text-sm md:text-base border border-border dark:border-border-dark rounded-lg 
-              bg-transparent text-primary-text dark:text-primary-text-dark 
-              placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
-              focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
-              focus:border-accent dark:focus:border-accent-dark
-              transition-colors`
-            }
+            className={inputClassName}
             autoComplete="off"
           />
           <button
             type="button"
             onClick={() => setShowKey(!showKey)}
-            className={`absolute right-2 md:right-3 top-1/2 -translate-y-1/2 p-2 touch-manipulation transition-colors ${
-              isLanding
-                ? 'text-zinc-500 hover:text-amber-300'
-                : 'text-primary-text/50 dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark'
-            }`}
+            className={eyeButtonClassName}
             aria-label={showKey ? t('hide') : t('show')}
           >
-            {showKey ? <Icons.Eye /> : <Icons.EyeOff />}
+            {showKey ? <Icons.Eye className={isCompact ? 'w-3.5 h-3.5' : undefined} /> : <Icons.EyeOff className={isCompact ? 'w-3.5 h-3.5' : undefined} />}
           </button>
         </div>
 
         {allowKeyManager && (
           <button
             onClick={() => setShowManager(!showManager)}
-            className={`px-4 py-2 text-sm text-primary-text dark:text-primary-text-dark rounded-lg border border-border dark:border-border-dark
-            hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors
-            flex items-center gap-2 ${showManager ? 'bg-surface-alt dark:bg-surface-alt-dark' : ''}`}
+            className={manageButtonClassName}
             aria-label={t('manageKeys')}
+            aria-expanded={showManager}
           >
-            <Icons.Preferences className="w-4 h-4" />
+            <Icons.Preferences className={isCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
             <span className="hidden md:inline">{t('manageKeys')}</span>
           </button>
         )}
@@ -157,6 +184,7 @@ export default function ApiKeyInput({
           onClose={() => setShowManager(false)}
           keepOpen={keepManagerOpen}
           onKeepOpenToggle={handleKeepManagerToggle}
+          compact={isCompact}
         />
       )}
     </div>

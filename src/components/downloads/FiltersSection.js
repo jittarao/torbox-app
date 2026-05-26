@@ -417,7 +417,7 @@ export default function FiltersSection({
   );
 
   return (
-    <div className="mb-4">
+    <div className="mb-1">
       {/* Header */}
       <div
         className={`flex sm:justify-between gap-2 sm:gap-3 ${isExpanded ? 'flex-col sm:flex-row' : 'flex-col'}`}

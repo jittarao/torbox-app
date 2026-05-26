@@ -669,7 +669,7 @@ export default function Downloads({ apiKey }) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 mt-1.5">
       {/* Asset Type Tabs */}
       <AssetTypeTabs
         activeType={activeType}
@@ -734,9 +734,6 @@ export default function Downloads({ apiKey }) {
               setAppliedFilters(filters);
             }}
           />
-
-          {/* Divider */}
-          <div className="h-px w-full border-t border-border dark:border-border-dark"></div>
 
           <div
             ref={scrollContainerRef}
