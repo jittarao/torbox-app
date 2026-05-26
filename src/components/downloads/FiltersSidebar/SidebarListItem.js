@@ -1,17 +1,16 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import SidebarOverflowMenu from './SidebarOverflowMenu';
+import { useRef } from 'react';
 
 export default function SidebarListItem({
   label,
   count,
   isActive,
   onClick,
-  menuItems = [],
+  isMenuOpen = false,
+  onMenuToggle,
   ariaLabel,
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
 
   return (
@@ -37,30 +36,24 @@ export default function SidebarListItem({
         )}
       </button>
 
-      {menuItems.length > 0 && (
+      {onMenuToggle && (
         <div className="relative shrink-0 pr-0.5">
           <button
             ref={menuButtonRef}
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setMenuOpen((open) => !open);
+              onMenuToggle(!isMenuOpen, menuButtonRef);
             }}
             className="p-1 rounded opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 text-primary-text/60 hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-opacity"
             aria-label="Options"
-            aria-expanded={menuOpen}
+            aria-expanded={isMenuOpen}
             aria-haspopup="menu"
           >
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
             </svg>
           </button>
-          <SidebarOverflowMenu
-            isOpen={menuOpen}
-            onClose={() => setMenuOpen(false)}
-            anchorRef={menuButtonRef}
-            items={menuItems}
-          />
         </div>
       )}
     </div>

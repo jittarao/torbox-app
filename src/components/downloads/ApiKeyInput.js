@@ -166,6 +166,7 @@ export default function ApiKeyInput({
 
         {allowKeyManager && (
           <button
+            type="button"
             onClick={() => setShowManager(!showManager)}
             className={manageButtonClassName}
             aria-label={t('manageKeys')}
