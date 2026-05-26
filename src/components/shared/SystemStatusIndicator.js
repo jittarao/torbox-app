@@ -4,15 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useApiHealth } from './hooks/useApiHealth';
 import { useHealthStore } from '@/store/healthStore';
-import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
 import SystemStatusPanel from '@/components/shared/SystemStatusPanel';
 import Icons from '@/components/icons';
 import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import useIsMobile from '@/hooks/useIsMobile';
-
-const HEALTH_CHECK_INTERVAL = 60000;
 
 export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const t = useTranslations('SystemStatus');
@@ -30,23 +27,15 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
     showBackend,
     platformHistory,
   } = useApiHealth(apiKey);
+  const startHealthPolling = useHealthStore((state) => state.startHealthPolling);
+  const stopHealthPolling = useHealthStore((state) => state.stopHealthPolling);
   const performHealthCheck = useHealthStore((state) => state.performHealthCheck);
-  const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
-  const pollingPaused = usePollingPauseStore((state) =>
-    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
-  );
   const refreshOnOpenRef = useRef(false);
 
   useEffect(() => {
-    performHealthCheck(apiKey);
-
-    const interval = setInterval(() => {
-      if (isPollingPaused()) return;
-      performHealthCheck(apiKey);
-    }, HEALTH_CHECK_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [apiKey, performHealthCheck, pollingPaused, isPollingPaused]);
+    startHealthPolling(apiKey);
+    return () => stopHealthPolling();
+  }, [apiKey, startHealthPolling, stopHealthPolling]);
 
   const closePanel = useCallback(() => setIsOpen(false), []);
   useHeaderDropdownDismiss({ isOpen, onClose: closePanel, anchorRef: rootRef });

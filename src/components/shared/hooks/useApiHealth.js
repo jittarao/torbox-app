@@ -30,7 +30,7 @@ export function useApiHealth(apiKey) {
   }, [apiKey, setApiKey]);
 
   const refreshHealth = useCallback(() => {
-    performHealthCheck(apiKey);
+    performHealthCheck(apiKey, { force: true });
   }, [apiKey, performHealthCheck]);
 
   const getOverallStatus = () => {
