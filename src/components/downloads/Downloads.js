@@ -166,7 +166,13 @@ export default function Downloads({ apiKey }) {
   const { loading, items, setItems, fetchItems } = useFetchData(apiKey, activeType);
 
   // Load tags (only if backend is available)
-  const { loadTags, tags, loading: tagsLoading, updateTag: updateTagName } = useTags(apiKey);
+  const {
+    loadTags,
+    tags,
+    loading: tagsLoading,
+    updateTag: updateTagName,
+    createTag,
+  } = useTags(apiKey);
 
   // Load tags once when component mounts (only if backend is available)
   useEffect(() => {
@@ -678,6 +684,25 @@ export default function Downloads({ apiKey }) {
     setMobileFiltersOpen(false);
   };
 
+  const handleOpenNewView = () => {
+    handleClearFilters();
+    setFilterModalOpen(true);
+    setMobileFiltersOpen(false);
+  };
+
+  const handleNewTag = async () => {
+    const name = window.prompt(downloadsFiltersT('newTagPrompt'));
+    if (!name?.trim()) return;
+    try {
+      await createTag(name.trim());
+    } catch (error) {
+      alert(downloadsFiltersT('createTagFailed', { error: error.message }));
+    }
+  };
+
+  const showDesktopFiltersSidebar =
+    isBackendAvailable && !isMobile && !isFullscreen;
+
   const handleApplyFiltersFromModal = (filters) => {
     setAppliedFilters(normalizeFilters(filters));
   };
@@ -698,6 +723,8 @@ export default function Downloads({ apiKey }) {
     onRenameTag: handleRenameTag,
     onDeleteTag: handleTagDeleted,
     onNewFilter: handleOpenNewFilter,
+    onNewView: handleOpenNewView,
+    onNewTag: handleNewTag,
   };
 
   const downloadsTableContent = (
@@ -750,6 +777,7 @@ export default function Downloads({ apiKey }) {
         collapseAllFiles={collapseAllFiles}
         expandedItems={expandedItems}
         scrollContainerRef={scrollContainerRef}
+        hasFiltersSidebar={showDesktopFiltersSidebar}
       />
 
       {viewMode === 'table' ? (
@@ -861,7 +889,11 @@ export default function Downloads({ apiKey }) {
   );
 
   return (
-    <div className="space-y-2 mt-1.5">
+    <div
+      className={`space-y-2 mt-1.5 ${
+        showDesktopFiltersSidebar ? 'md:pl-[var(--downloads-sidebar-width)]' : ''
+      }`}
+    >
       {/* Asset Type Tabs */}
       <AssetTypeTabs
         activeType={activeType}
@@ -926,25 +958,17 @@ export default function Downloads({ apiKey }) {
             </button>
           )}
 
-          <div
-            className={
-              isBackendAvailable
-                ? 'flex gap-3 lg:gap-4'
-                : undefined
-            }
-          >
-            {isBackendAvailable && !isMobile && (
-              <FiltersSidebar {...sidebarProps} className="hidden md:flex" />
-            )}
+          {showDesktopFiltersSidebar && (
+            <FiltersSidebar {...sidebarProps} variant="fixed" className="hidden md:flex" />
+          )}
 
-            <div
-              ref={scrollContainerRef}
-              className={`flex-1 min-w-0 ${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
-                downloadLinks.length > 0 ? 'mb-12' : ''
-              }`}
-            >
-              {downloadsTableContent}
-            </div>
+          <div
+            ref={scrollContainerRef}
+            className={`min-w-0 ${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
+              downloadLinks.length > 0 ? 'mb-12' : ''
+            }`}
+          >
+            {downloadsTableContent}
           </div>
 
           {isBackendAvailable && (

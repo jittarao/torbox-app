@@ -14,8 +14,8 @@
   --z-overlay-panel: 301;
   --z-overlay-dialog: 310;
   --downloads-sidebar-width: 14rem;
-  /* gap-3 between filter sidebar and table column; used when measuring fallback */
-  --downloads-sidebar-gap: 0.75rem;
+  /* Left edge of main downloads column when fixed filters sidebar is shown (desktop) */
+  --downloads-content-left: calc(var(--sidebar-width, 0px) + var(--downloads-sidebar-width, 0px));
 }
 
 @layer base {

@@ -50,6 +50,7 @@ export default function ActionBar({
   collapseAllFiles,
   expandedItems,
   scrollContainerRef,
+  hasFiltersSidebar = false,
 }) {
   const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
@@ -265,7 +266,9 @@ export default function ActionBar({
                   ? 'left-0 right-0'
                   : stickyBounds
                     ? ''
-                    : 'left-0 right-0 md:left-[var(--sidebar-width,0px)]'
+                    : hasFiltersSidebar
+                      ? 'left-0 right-0 md:left-[var(--downloads-content-left)]'
+                      : 'left-0 right-0 md:left-[var(--sidebar-width,0px)]'
               }`
             : undefined
         }
