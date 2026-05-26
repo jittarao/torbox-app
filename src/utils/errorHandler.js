@@ -3,137 +3,190 @@
  * Handles chunk loading failures, service worker errors, and other runtime errors
  */
 
+const CHUNK_RECOVERY_RELOAD_KEY = 'torbox-chunk-recovery-reloads';
+const MAX_CHUNK_RECOVERY_RELOADS = 3;
+
+const STALE_CHUNK_INDICATORS = ['_next/static', 'chunk', 'webpack', '__webpack'];
+
+/**
+ * True only for deployment/cache mismatch errors — not ordinary app ReferenceErrors
+ * (e.g. "collapsed is not defined").
+ */
+export function isChunkOrStaleCacheError(error) {
+  const message = error?.message || String(error || '');
+  const name = error?.name || '';
+  const stack = error?.stack || '';
+
+  if (
+    name === 'ChunkLoadError' ||
+    message.includes('ChunkLoadError') ||
+    message.includes('Loading chunk') ||
+    message.includes('Failed to fetch dynamically imported module')
+  ) {
+    return true;
+  }
+
+  // Legacy artifact from stale service worker / cached bundles
+  if (message.includes('returnNaN')) {
+    return true;
+  }
+
+  // Stale hashed chunks can surface as ReferenceError in _next/static code, not app variables
+  if (name === 'ReferenceError' || message.includes('ReferenceError')) {
+    const haystack = `${message}\n${stack}`;
+    return STALE_CHUNK_INDICATORS.some((indicator) => haystack.includes(indicator));
+  }
+
+  return false;
+}
+
+function canAttemptChunkRecovery() {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
+    return true;
+  }
+
+  try {
+    const count = Number(sessionStorage.getItem(CHUNK_RECOVERY_RELOAD_KEY) || 0);
+    if (count >= MAX_CHUNK_RECOVERY_RELOADS) {
+      console.error(
+        `Chunk recovery stopped after ${MAX_CHUNK_RECOVERY_RELOADS} reloads in this tab. ` +
+          'Fix the underlying error or clear site data before retrying.'
+      );
+      return false;
+    }
+    sessionStorage.setItem(CHUNK_RECOVERY_RELOAD_KEY, String(count + 1));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/** Reload with a session cap so recovery cannot loop forever on a real bug. */
+export function scheduleChunkRecoveryReload(delayMs = 0) {
+  if (!canAttemptChunkRecovery()) {
+    return false;
+  }
+
+  setTimeout(() => {
+    window.location.reload();
+  }, delayMs);
+
+  return true;
+}
+
+function scheduleReload(delayMs) {
+  scheduleChunkRecoveryReload(delayMs);
+}
+
 // Handle chunk loading errors (common during deployments)
 export function handleChunkError(error, retryCount = 0) {
   const maxRetries = 3;
   const retryDelay = 1000 * (retryCount + 1); // Exponential backoff
 
-  // Check if it's a chunk loading error
-  const isChunkError =
-    error?.message?.includes('ChunkLoadError') ||
-    error?.message?.includes('Loading chunk') ||
-    error?.message?.includes('Failed to fetch dynamically imported module') ||
-    error?.message?.includes('returnNaN') || // Handle the specific error
-    error?.name === 'ChunkLoadError';
-
-  if (isChunkError && retryCount < maxRetries) {
-    console.warn(
-      `Chunk loading error detected (attempt ${retryCount + 1}/${maxRetries}). Retrying...`,
-      error
-    );
-
-    // Wait and reload the page to get fresh chunks
-    setTimeout(() => {
-      // Clear service worker cache if available
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          registrations.forEach((registration) => {
-            registration.update(); // Force service worker update
-          });
-        });
-      }
-
-      // Reload the page to get fresh chunks
-      window.location.reload();
-    }, retryDelay);
-
-    return true; // Error handled
+  if (!isChunkOrStaleCacheError(error) || retryCount >= maxRetries) {
+    return false;
   }
 
-  return false; // Error not handled
-}
+  console.warn(
+    `Chunk loading error detected (attempt ${retryCount + 1}/${maxRetries}). Retrying...`,
+    error
+  );
 
-// Handle service worker errors
-export function handleServiceWorkerError(error) {
-  if (
-    error?.message?.includes('service worker') ||
-    error?.message?.includes('ServiceWorker') ||
-    error?.message?.includes('returnNaN') // Could be from cached SW
-  ) {
-    console.warn('Service worker error detected. Attempting to unregister and reload...', error);
-
-    // Unregister all service workers and reload
-    if ('serviceWorker' in navigator) {
+  setTimeout(() => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => {
-          registration.unregister().then(() => {
-            console.log('Service worker unregistered');
-            // Clear all caches
-            if ('caches' in window) {
-              caches
-                .keys()
-                .then((cacheNames) => {
-                  return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
-                })
-                .then(() => {
-                  console.log('All caches cleared');
-                  // Reload after a short delay
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 500);
-                });
-            } else {
-              window.location.reload();
-            }
-          });
+          registration.update();
         });
       });
     }
 
-    return true; // Error handled
-  }
+    scheduleReload(0);
+  }, retryDelay);
 
-  return false; // Error not handled
+  return true;
 }
 
-// Global error handler
+// Handle service worker errors
+export function handleServiceWorkerError(error) {
+  const message = error?.message || String(error || '');
+
+  if (
+    !message.includes('service worker') &&
+    !message.includes('ServiceWorker') &&
+    !message.includes('returnNaN')
+  ) {
+    return false;
+  }
+
+  console.warn('Service worker error detected. Attempting to unregister and reload...', error);
+
+  if (!('serviceWorker' in navigator)) {
+    return false;
+  }
+
+  if (!canAttemptChunkRecovery()) {
+    return true;
+  }
+
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister().then(() => {
+        console.log('Service worker unregistered');
+        if ('caches' in window) {
+          caches
+            .keys()
+            .then((cacheNames) => {
+              return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+            })
+            .then(() => {
+              console.log('All caches cleared');
+              scheduleReload(500);
+            });
+        } else {
+          scheduleReload(500);
+        }
+      });
+    });
+  });
+
+  return true;
+}
+
+// Global error handler (legacy; prefer ErrorHandlerInitializer)
 export function setupGlobalErrorHandler() {
-  // Handle unhandled promise rejections (common with chunk loading)
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
 
-    // Try to handle chunk errors
     if (handleChunkError(error)) {
-      event.preventDefault(); // Prevent default error logging
+      event.preventDefault();
       return;
     }
 
-    // Try to handle service worker errors
     if (handleServiceWorkerError(error)) {
       event.preventDefault();
       return;
     }
 
-    // Log other unhandled rejections
     console.error('Unhandled promise rejection:', error);
   });
 
-  // Handle general errors
   window.addEventListener('error', (event) => {
     const error = event.error || new Error(event.message);
 
-    // Check for the specific returnNaN error
-    if (
-      error?.message?.includes('returnNaN') ||
-      error?.message?.includes('is not defined') ||
-      error?.message?.includes('ReferenceError')
-    ) {
-      console.warn(
-        'Reference error detected (possibly from cached code). Attempting recovery...',
-        error
-      );
+    if (!isChunkOrStaleCacheError(error)) {
+      return;
+    }
 
-      // Try chunk error handling first
-      if (handleChunkError(error)) {
-        event.preventDefault();
-        return;
-      }
+    console.warn('Stale chunk/cache error detected. Attempting recovery...', error);
 
-      // Try service worker error handling
-      if (handleServiceWorkerError(error)) {
-        event.preventDefault();
-        return;
-      }
+    if (handleChunkError(error)) {
+      event.preventDefault();
+      return;
+    }
+
+    if (handleServiceWorkerError(error)) {
+      event.preventDefault();
     }
   });
 }
