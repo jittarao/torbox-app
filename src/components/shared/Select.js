@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { Children, isValidElement, Fragment } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Custom Select component with mobile-responsive design
@@ -25,9 +26,48 @@ export default function Select({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState('');
+  const [dropdownLayout, setDropdownLayout] = useState(null);
   const selectRef = useRef(null);
   const dropdownRef = useRef(null);
   const optionsRef = useRef([]);
+
+  const updateDropdownPosition = useCallback(() => {
+    const el = selectRef.current;
+    if (!el || !isOpen) return;
+
+    const rect = el.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const margin = 8;
+    const gap = 4;
+    const preferredMax = Math.min(320, Math.round(vh * 0.55));
+    const minUsable = 140;
+
+    const spaceBelow = vh - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+
+    let top;
+    let maxHeight;
+
+    if (spaceBelow >= minUsable || spaceBelow >= spaceAbove) {
+      top = rect.bottom + gap;
+      maxHeight = Math.min(preferredMax, spaceBelow);
+    } else {
+      maxHeight = Math.min(preferredMax, spaceAbove - gap);
+      top = rect.top - gap - maxHeight;
+    }
+
+    maxHeight = Math.max(maxHeight, minUsable);
+
+    let left = rect.left;
+    const minWidth = rect.width;
+    if (left + minWidth > vw - margin) {
+      left = Math.max(margin, vw - minWidth - margin);
+    }
+    if (left < margin) left = margin;
+
+    setDropdownLayout({ top, left, minWidth, maxHeight });
+  }, [isOpen]);
 
   // Parse children to extract options and optgroups
   const parseOptions = (children) => {
@@ -102,6 +142,20 @@ export default function Select({
     () => [...options, ...optgroups.flatMap((group) => group.options)],
     [options, optgroups]
   );
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setDropdownLayout(null);
+      return;
+    }
+    updateDropdownPosition();
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    window.addEventListener('resize', updateDropdownPosition);
+    return () => {
+      window.removeEventListener('scroll', updateDropdownPosition, true);
+      window.removeEventListener('resize', updateDropdownPosition);
+    };
+  }, [isOpen, updateDropdownPosition, allOptions.length]);
 
   // Find selected option label
   useEffect(() => {
@@ -263,6 +317,35 @@ export default function Select({
     return items;
   };
 
+  const portalTarget = typeof document !== 'undefined' ? document.body : null;
+
+  const dropdownContent =
+    isOpen && dropdownLayout && portalTarget ? (
+      <>
+        <div
+          className="fixed inset-0 bg-black/20 z-[90] sm:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+        <div
+          ref={dropdownRef}
+          className="fixed z-[100] bg-surface dark:bg-surface-dark
+              border border-border dark:border-border-dark rounded-md shadow-lg
+              overflow-y-auto overscroll-contain"
+          style={{
+            top: dropdownLayout.top,
+            left: dropdownLayout.left,
+            minWidth: dropdownLayout.minWidth,
+            maxHeight: dropdownLayout.maxHeight,
+            maxWidth: `calc(100vw - ${dropdownLayout.left}px - 8px)`,
+          }}
+          role="listbox"
+        >
+          {renderOptions()}
+        </div>
+      </>
+    ) : null;
+
   return (
     <div className="relative">
       <button
@@ -297,25 +380,7 @@ export default function Select({
         </svg>
       </button>
 
-      {isOpen && (
-        <>
-          {/* Mobile overlay */}
-          <div
-            className="fixed inset-0 bg-black/20 z-40 sm:hidden"
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
-          <div
-            ref={dropdownRef}
-            className="absolute z-50 w-full mt-1 bg-surface dark:bg-surface-dark
-              border border-border dark:border-border-dark rounded-md shadow-lg
-              w-max max-h-64 md:max-h-[50vh] z-50 overflow-y-auto overscroll-contain"
-            role="listbox"
-          >
-            {renderOptions()}
-          </div>
-        </>
-      )}
+      {portalTarget && dropdownContent ? createPortal(dropdownContent, portalTarget) : null}
     </div>
   );
 }
