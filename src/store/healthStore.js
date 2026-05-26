@@ -6,8 +6,20 @@ import {
   saveHealthHistory,
   statusToSegment,
 } from '@/utils/healthHistory';
+import { useBackendModeStore } from '@/store/backendModeStore';
+import { usePollingPauseStore } from '@/store/pollingPauseStore';
+
+/** Interval between automatic platform / TorBox / backend status checks */
+export const HEALTH_CHECK_INTERVAL_MS = 180000; // 3 minutes
+
+/** Minimum time between non-forced health checks (e.g. opening the status panel) */
+const MIN_HEALTH_CHECK_GAP_MS = 60000; // 1 minute
 
 const HEALTH_TIMEOUT_MS = 10000;
+
+let healthPollTimer = null;
+let healthPollApiKey = null;
+let healthPollSubscribers = 0;
 
 const initialCheckState = () => ({
   status: 'unknown',
@@ -134,6 +146,33 @@ export const useHealthStore = create((set, get) => ({
   },
 
   checkBackendHealth: async () => {
+    const backendStore = useBackendModeStore.getState();
+
+    const applyBackendMode = (mode) => {
+      set({
+        backendHealth: {
+          status: mode === 'backend' ? 'healthy' : 'unavailable',
+          message: null,
+          responseTime: null,
+        },
+      });
+    };
+
+    if (backendStore.hasChecked) {
+      applyBackendMode(backendStore.mode);
+      return;
+    }
+
+    if (!backendStore.isChecking) {
+      await backendStore.checkBackend();
+    }
+
+    const { mode, hasChecked } = useBackendModeStore.getState();
+    if (hasChecked) {
+      applyBackendMode(mode);
+      return;
+    }
+
     try {
       const response = await fetch('/api/backend/status', {
         method: 'GET',
@@ -141,25 +180,7 @@ export const useHealthStore = create((set, get) => ({
       });
 
       const data = await response.json().catch(() => ({}));
-
-      if (data.available) {
-        set({
-          backendHealth: {
-            status: 'healthy',
-            message: null,
-            responseTime: null,
-          },
-        });
-        return;
-      }
-
-      set({
-        backendHealth: {
-          status: 'unavailable',
-          message: null,
-          responseTime: null,
-        },
-      });
+      applyBackendMode(data.available ? 'backend' : 'local');
     } catch (err) {
       set({
         backendHealth: {
@@ -171,10 +192,15 @@ export const useHealthStore = create((set, get) => ({
     }
   },
 
-  performHealthCheck: async (apiKey) => {
-    const { checkingHealth } = get();
+  performHealthCheck: async (apiKey, options = {}) => {
+    const { force = false } = options;
+    const { checkingHealth, lastCheck } = get();
 
     if (checkingHealth) {
+      return;
+    }
+
+    if (!force && lastCheck && Date.now() - lastCheck.getTime() < MIN_HEALTH_CHECK_GAP_MS) {
       return;
     }
 
@@ -190,5 +216,35 @@ export const useHealthStore = create((set, get) => ({
       get().recordPlatformSnapshot();
       set({ checkingHealth: false });
     }
+  },
+
+  startHealthPolling: (apiKey) => {
+    healthPollSubscribers += 1;
+    healthPollApiKey = apiKey;
+
+    if (healthPollTimer) {
+      return;
+    }
+
+    get().performHealthCheck(apiKey, { force: true });
+
+    healthPollTimer = setInterval(() => {
+      if (usePollingPauseStore.getState().isPollingPaused()) {
+        return;
+      }
+      get().performHealthCheck(healthPollApiKey, { force: true });
+    }, HEALTH_CHECK_INTERVAL_MS);
+  },
+
+  stopHealthPolling: () => {
+    healthPollSubscribers = Math.max(0, healthPollSubscribers - 1);
+    if (healthPollSubscribers > 0) {
+      return;
+    }
+    if (healthPollTimer) {
+      clearInterval(healthPollTimer);
+      healthPollTimer = null;
+    }
+    healthPollApiKey = null;
   },
 }));
