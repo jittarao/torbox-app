@@ -3,6 +3,7 @@ import {
   MULTI_SELECT_OPERATORS,
 } from '../AutomationRules/constants';
 import { isTagsColumn } from '../CustomViews/utils';
+import { itemMatchesFilters } from './filterEvaluation';
 
 export const EMPTY_FILTERS = {
   logicOperator: LOGIC_OPERATORS.AND,
@@ -146,6 +147,47 @@ export function countDownloadsPerTag(itemsWithTags) {
       counts[tag.id] = (counts[tag.id] || 0) + 1;
     }
   }
+  return counts;
+}
+
+/** Whether a saved view can match items on the current asset tab. */
+export function isViewCompatibleWithAssetTab(viewAssetType, activeAssetType) {
+  if (!activeAssetType || activeAssetType === 'all') return true;
+  if (!viewAssetType || viewAssetType === 'all') return true;
+  return viewAssetType === activeAssetType;
+}
+
+/**
+ * Count downloads matching each saved view for the current tab's items only.
+ * Uses the same filters as apply (including view asset_type). Skips views scoped to another tab.
+ */
+export function countDownloadsPerView(views, itemsWithTags, activeAssetType = 'all') {
+  const counts = {};
+  if (!views?.length) return counts;
+
+  const items = itemsWithTags || [];
+
+  for (const view of views) {
+    if (!isViewCompatibleWithAssetTab(view.asset_type, activeAssetType)) {
+      counts[view.id] = 0;
+      continue;
+    }
+
+    const filters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
+    if (!hasActiveFilters(filters)) {
+      counts[view.id] = 0;
+      continue;
+    }
+
+    let matchCount = 0;
+    for (const item of items) {
+      if (item && itemMatchesFilters(item, filters)) {
+        matchCount += 1;
+      }
+    }
+    counts[view.id] = matchCount;
+  }
+
   return counts;
 }
 

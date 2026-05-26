@@ -6,7 +6,7 @@ import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
 import TagManager from '../Tags/TagManager';
 import SidebarListItem from './SidebarListItem';
-import { countActiveConditions, countDownloadsPerTag, filtersFromView } from '../filters/filterHelpers';
+import { countDownloadsPerTag, countDownloadsPerView } from '../filters/filterHelpers';
 
 function SidebarSection({ title, children, emptyMessage, emptyAction }) {
   return (
@@ -33,6 +33,7 @@ export default function FiltersSidebar({
   activeView,
   tags,
   itemsWithTags,
+  activeAssetType = 'all',
   activeTagIds,
   onApplyView,
   onClearView,
@@ -50,6 +51,10 @@ export default function FiltersSidebar({
   const [showTagManager, setShowTagManager] = useState(false);
 
   const tagCounts = useMemo(() => countDownloadsPerTag(itemsWithTags), [itemsWithTags]);
+  const viewCounts = useMemo(
+    () => countDownloadsPerView(views, itemsWithTags, activeAssetType),
+    [views, itemsWithTags, activeAssetType]
+  );
 
   const activeTagSet = useMemo(
     () => new Set((activeTagIds || []).map((id) => Number(id))),
@@ -86,18 +91,11 @@ export default function FiltersSidebar({
           title={t('viewsSection')}
           emptyMessage={views.length === 0 ? t('noViews') : null}
         >
-          {views.map((view) => {
-            const filterCount = view.filters?.groups
-              ? view.filters.groups.reduce((sum, g) => sum + (g.filters?.length || 0), 0)
-              : Array.isArray(view.filters)
-                ? view.filters.length
-                : countActiveConditions(view.filters);
-
-            return (
+          {views.map((view) => (
               <SidebarListItem
                 key={view.id}
                 label={view.name}
-                count={filterCount || undefined}
+                count={viewCounts[view.id]}
                 isActive={activeView?.id === view.id}
                 onClick={() => onApplyView(view)}
                 menuItems={[
@@ -124,8 +122,7 @@ export default function FiltersSidebar({
                   },
                 ]}
               />
-            );
-          })}
+          ))}
         </SidebarSection>
 
         <SidebarSection
