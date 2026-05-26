@@ -12,13 +12,14 @@ import useNavActive from './useNavActive';
 import SidebarHeader from './SidebarHeader';
 import SidebarNav from './SidebarNav';
 import SidebarUtilitiesFooter from './SidebarUtilitiesFooter';
-import { SidebarContext } from './SidebarContext';
+import { SidebarContext, useSidebar } from './SidebarContext';
 import useSidebarCollapsed from './useSidebarCollapsed';
 
 const SIDEBAR_EXPANDED = '16rem';
 const SIDEBAR_COLLAPSED = '4.5rem';
 
 function DesktopSidebar({ apiKey, nav, isActive, getLabel, t, toggleDarkMode }) {
+  const { collapsed } = useSidebar();
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
   return (
