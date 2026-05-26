@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
@@ -64,32 +64,6 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
   const panelRef = useRef(null);
   const t = useTranslations('Notifications');
 
-  useEffect(() => {
-    if (isDesktop) return;
-
-    const handleClickOutside = (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) {
-        const bellButton = event.target.closest('[data-notification-bell]');
-        if (!bellButton) {
-          onClose();
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose, isDesktop]);
-
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -300,7 +274,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
   }
 
   return (
-    <>
+    <div data-header-overlay>
       <div className="fixed inset-0 bg-black/60 z-[200]" onClick={onClose} aria-hidden />
       <div className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none">
         <div
@@ -310,6 +284,6 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
           {panelInner}
         </div>
       </div>
-    </>
+    </div>
   );
 }

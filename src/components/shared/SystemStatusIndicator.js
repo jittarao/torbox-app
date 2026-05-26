@@ -9,6 +9,8 @@ import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
 import SystemStatusPanel from '@/components/shared/SystemStatusPanel';
 import Icons from '@/components/icons';
+import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
+import useIsMobile from '@/hooks/useIsMobile';
 
 const HEALTH_CHECK_INTERVAL = 60000;
 
@@ -16,6 +18,7 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
   const t = useTranslations('SystemStatus');
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef(null);
+  const isMobile = useIsMobile();
   const {
     overallStatus,
     lastCheck,
@@ -45,28 +48,8 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
     return () => clearInterval(interval);
   }, [apiKey, performHealthCheck, pollingPaused, isPollingPaused]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen]);
+  const closePanel = useCallback(() => setIsOpen(false), []);
+  useHeaderDropdownDismiss({ isOpen, onClose: closePanel, anchorRef: rootRef });
 
   const statusConfig = {
     healthy: {
@@ -168,37 +151,35 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
         )}
       </button>
 
-      <HeaderOverlayPortal open={isOpen}>
-        <div className="md:hidden">
-          <div
-            className="fixed inset-0 z-[200] bg-black/60"
-            onClick={() => setIsOpen(false)}
-            aria-hidden
-          />
-          <div className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-            <div
-              className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-2xl dark:border-zinc-600 dark:bg-[#242428]"
-              role="dialog"
-              aria-modal="true"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="overflow-y-auto overflow-x-hidden min-h-0 flex-1">
-                <SystemStatusPanel {...panelProps} />
+      {isMobile ? (
+        <HeaderOverlayPortal open={isOpen}>
+          <div data-header-overlay>
+            <div className="fixed inset-0 z-[200] bg-black/60" onClick={closePanel} aria-hidden />
+            <div className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
+              <div
+                className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-2xl dark:border-zinc-600 dark:bg-[#242428]"
+                role="dialog"
+                aria-modal="true"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="overflow-y-auto overflow-x-hidden min-h-0 flex-1">
+                  <SystemStatusPanel {...panelProps} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </HeaderOverlayPortal>
-
-      <HeaderDropdownPanel
-        open={isOpen}
-        widthClass="w-[min(20rem,calc(100vw-2rem))]"
-        className="!py-0 hidden md:flex md:flex-col max-h-[min(32rem,calc(100vh-5rem))] overflow-hidden"
-      >
-        <div className="overflow-y-auto overflow-x-hidden min-h-0">
-          <SystemStatusPanel {...panelProps} />
-        </div>
-      </HeaderDropdownPanel>
+        </HeaderOverlayPortal>
+      ) : (
+        <HeaderDropdownPanel
+          open={isOpen}
+          widthClass="w-[min(20rem,calc(100vw-2rem))]"
+          className="!py-0 flex flex-col max-h-[min(32rem,calc(100vh-5rem))] overflow-hidden"
+        >
+          <div className="overflow-y-auto overflow-x-hidden min-h-0">
+            <SystemStatusPanel {...panelProps} />
+          </div>
+        </HeaderDropdownPanel>
+      )}
     </div>
   );
 }
