@@ -40,7 +40,7 @@ export function RootDocumentShell({ locale, children }) {
         <Script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-zinc-50 dark:bg-[#0a0a0b] text-zinc-900 dark:text-zinc-100 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark antialiased`}
         suppressHydrationWarning
       >
         {children}

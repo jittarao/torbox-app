@@ -229,13 +229,13 @@ export default function ItemsTable({
     <>
       {/* Mobile notice - only show if isClient (client-side) to prevent hydration mismatch */}
       {isClient && showMobileNotice && (
-        <div className="md:hidden p-3 mb-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex justify-between items-center">
+        <div className="md:hidden p-3 mb-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark text-primary-text/80 dark:text-primary-text-dark/80 rounded-lg text-sm flex justify-between items-center">
           <p>
             Viewing simplified table on mobile. Rotate device or use larger screen for full view.
           </p>
           <button
             onClick={handleDismissMobileNotice}
-            className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+            className="ml-2 text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary-text dark:hover:text-primary-text-dark"
             aria-label="Dismiss notice"
           >
             <svg

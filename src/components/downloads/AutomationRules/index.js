@@ -567,8 +567,8 @@ export default function AutomationRules() {
         <div
           className={`mb-4 p-4 border rounded-lg ${
             executionResult.rateLimited
-              ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-              : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+              ? 'bg-label-warning-bg dark:bg-label-warning-bg-dark border-label-warning-text/25'
+              : 'bg-label-active-bg dark:bg-label-active-bg-dark border-label-active-text/25'
           }`}
         >
           <div className="flex justify-between items-start">
@@ -577,8 +577,8 @@ export default function AutomationRules() {
                 <svg
                   className={`w-5 h-5 ${
                     executionResult.rateLimited
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-blue-600 dark:text-blue-400'
+                      ? 'text-label-warning-text dark:text-label-warning-text-dark'
+                      : 'text-label-active-text dark:text-label-active-text-dark'
                   }`}
                   fill="none"
                   stroke="currentColor"
@@ -603,8 +603,8 @@ export default function AutomationRules() {
                 <h4
                   className={`font-semibold ${
                     executionResult.rateLimited
-                      ? 'text-yellow-900 dark:text-yellow-100'
-                      : 'text-blue-900 dark:text-blue-100'
+                      ? 'text-label-warning-text dark:text-label-warning-text-dark'
+                      : 'text-label-active-text dark:text-label-active-text-dark'
                   }`}
                 >
                   {executionResult.rateLimited
@@ -613,11 +613,7 @@ export default function AutomationRules() {
                 </h4>
               </div>
               <div
-                className={`text-sm space-y-1 ${
-                  executionResult.rateLimited
-                    ? 'text-yellow-800 dark:text-yellow-200'
-                    : 'text-blue-800 dark:text-blue-200'
-                }`}
+                className="text-sm space-y-1 text-primary-text/80 dark:text-primary-text-dark/80"
               >
                 {executionResult.rateLimited ? (
                   <p>{executionResult.reason || t('ruleRateLimitedDescription')}</p>
@@ -672,7 +668,7 @@ export default function AutomationRules() {
             </div>
             <button
               onClick={() => setExecutionResult(null)}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
+              className="text-primary-text/50 dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
               aria-label={t('close') || 'Close'}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -696,7 +692,7 @@ export default function AutomationRules() {
             Beta
           </span>
           {isBackendMode && (
-            <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-1.5 py-0.5 rounded-md">
+            <span className="text-xs text-label-success-text dark:text-label-success-text-dark bg-label-success-bg dark:bg-label-success-bg-dark px-1.5 py-0.5 rounded-md">
               24/7
             </span>
           )}

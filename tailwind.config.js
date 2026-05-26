@@ -42,8 +42,14 @@ module.exports = {
             },
           },
           hover: {
-            DEFAULT: '#f2761e07',
-            dark: '#0f0f10',
+            DEFAULT: '#f2761e12',
+            dark: '#1a1a1d',
+          },
+        },
+        progress: {
+          track: {
+            DEFAULT: '#e4e4e7',
+            dark: '#2a2a2e',
           },
         },
         border: {
@@ -55,7 +61,7 @@ module.exports = {
           dark: '#9ca3af', // Dark mode muted text - gray-400
         },
         text: {
-          DEFAULT: '#1F321A', // Light mode text
+          DEFAULT: '#18181b', // Light mode text (aligned with primary)
           dark: '#E5E7EB', // Dark mode text
         },
         label: {

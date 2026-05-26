@@ -260,7 +260,7 @@ export default function ActionButtons({
         <button
           onClick={handleBulkExport}
           disabled={isExporting}
-          className="bg-blue-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-blue-600 
+          className="bg-primary hover:bg-primary-hover text-white text-xs lg:text-sm px-4 py-1.5 rounded
           disabled:opacity-50 transition-colors"
         >
           {isExporting ? t('exporting') : t('exportSelected')}
@@ -271,7 +271,7 @@ export default function ActionButtons({
       {selectedItems.items?.size > 0 && (
         <button
           onClick={() => setShowTagAssignment(true)}
-          className="bg-purple-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-purple-600 
+          className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark 
           transition-colors"
         >
           Assign Tags

@@ -1,8 +1,12 @@
 export const STATUS_COLORS = {
-  queued: 'bg-blue-500/20 text-blue-500 dark:bg-blue-400/20 dark:text-blue-400',
-  processing: 'bg-yellow-500/20 text-yellow-500 dark:bg-yellow-400/20 dark:text-yellow-400',
-  completed: 'bg-green-500/20 text-green-500 dark:bg-green-400/20 dark:text-green-400',
-  failed: 'bg-red-500/20 text-red-500 dark:bg-red-400/20 dark:text-red-400',
+  queued:
+    'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark',
+  processing:
+    'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark',
+  completed:
+    'bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark',
+  failed:
+    'bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark',
 };
 
 export const TYPE_LABELS = {

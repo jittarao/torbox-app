@@ -47,7 +47,7 @@ const THEME_COLORS = {
     dark: 'rgba(60, 60, 60, 0.2)', // border-dark color with opacity
   },
   text: {
-    light: '#1F321A', // primary.text
+    light: '#18181b', // primary.text
     dark: '#e5e7ebb3', // primary.text.dark
   },
 };
@@ -302,7 +302,7 @@ export default function SpeedChart({ items }) {
           },
         },
         titleColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#161618' : '#fafafa',
         borderColor: isDarkMode ? THEME_COLORS.grid.dark : THEME_COLORS.grid.light,
         borderWidth: 1,
         bodyColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,

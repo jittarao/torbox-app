@@ -414,11 +414,11 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
 
           {/* Help section for common issues */}
           {activeType === 'usenet' && !nzbTipsHidden && (
-            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="mt-3 p-3 bg-accent/10 dark:bg-accent-dark/10 border border-accent/25 dark:border-accent-dark/25 rounded-lg">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2 flex-1">
                   <svg
-                    className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
+                    className="w-5 h-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -428,7 +428,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <div className="text-sm text-primary-text dark:text-primary-text-dark">
                     <p className="font-medium">{t('help.nzbTips')}</p>
                     <ul className="mt-1 text-xs space-y-1">
                       <li>• {t('help.validLinks')}</li>
@@ -441,7 +441,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 </div>
                 <button
                   onClick={() => setNzbTipsHidden(true)}
-                  className="ml-2 p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                  className="ml-2 p-1 text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
                   aria-label="Hide tips"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -462,7 +462,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             <div className="mt-3 flex justify-center">
               <button
                 onClick={() => setNzbTipsHidden(false)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-lg transition-all duration-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

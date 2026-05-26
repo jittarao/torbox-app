@@ -253,7 +253,7 @@ select option {
   }
 
   .status-uptime-segment--nodata {
-    @apply bg-blue-500/70;
+    @apply bg-zinc-400/70 dark:bg-zinc-600/70;
   }
 
   .status-uptime-segment--unknown {
