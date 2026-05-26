@@ -567,9 +567,6 @@
       "link": "torbox.app/settings",
       "title": "Connect Your TorBox Account"
     },
-    "forkNoticeLine": "This build is a community-maintained fork and may differ from the upstream app.",
-    "forkNoticeThisFork": "This fork on GitHub",
-    "forkNoticeUpstream": "Upstream project",
     "features": {
       "batchUpload": {
         "description": "Add multiple torrents, NZB files, magnets, and hoster links in one go.",

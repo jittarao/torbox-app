@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
-import { FORK_REFERRAL_CODE, FORK_REFERRAL_LINK } from '@/components/constants';
+import { REFERRAL_CODE, REFERRAL_LINK } from '@/components/constants';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 
 export default function ReferralDropdown() {
@@ -97,13 +97,13 @@ export default function ReferralDropdown() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
-                value={FORK_REFERRAL_CODE}
+                value={REFERRAL_CODE}
                 readOnly
                 className="flex-1 min-w-0 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-mono text-zinc-800 dark:border-zinc-600 dark:bg-[#232326] dark:text-zinc-200"
               />
               <button
                 type="button"
-                onClick={() => copyToClipboard(FORK_REFERRAL_CODE, 'code')}
+                onClick={() => copyToClipboard(REFERRAL_CODE, 'code')}
                 className="ui-header-icon-btn shrink-0"
                 title={t('copyCode')}
               >
@@ -123,12 +123,12 @@ export default function ReferralDropdown() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
-                value={FORK_REFERRAL_LINK}
+                value={REFERRAL_LINK}
                 readOnly
                 className="flex-1 min-w-0 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-mono text-zinc-800 break-all dark:border-zinc-600 dark:bg-[#232326] dark:text-zinc-200"
               />
               <a
-                href={FORK_REFERRAL_LINK}
+                href={REFERRAL_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ui-header-icon-btn shrink-0"
