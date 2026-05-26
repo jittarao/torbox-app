@@ -32,6 +32,7 @@ import {
   EMPTY_FILTERS,
   buildTagFilter,
   normalizeFilters,
+  mergeViewAssetTypeFilter,
   getActiveTagIds,
 } from './filters/filterHelpers';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
@@ -586,15 +587,9 @@ export default function Downloads({ apiKey }) {
     applyView(view);
     setStatusFilter('all');
 
-    const normalizedFilters = normalizeFilters(view.filters);
+    const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
     setColumnFilters(normalizedFilters);
     setAppliedFilters(normalizedFilters);
-
-    if (view.asset_type) {
-      setActiveType(view.asset_type);
-      localStorage.setItem(ASSET_TYPE_STORAGE_KEY, view.asset_type);
-      setSelectedItems({ items: new Set(), files: new Map() });
-    }
 
     if (view.sort_field) {
       setSort(view.sort_field, view.sort_direction || 'desc');

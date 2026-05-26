@@ -156,3 +156,38 @@ export function filtersFromView(view) {
   if (!view?.filters) return JSON.parse(JSON.stringify(EMPTY_FILTERS));
   return normalizeFilters(view.filters);
 }
+
+/**
+ * Apply a saved view's asset_type as an in-memory filter (does not change the asset tab).
+ */
+export function mergeViewAssetTypeFilter(filters, assetType) {
+  if (!assetType || assetType === 'all') {
+    return normalizeFilters(filters);
+  }
+
+  const normalized = normalizeFilters(filters);
+  const assetTypeFilter = {
+    column: 'asset_type',
+    operator: MULTI_SELECT_OPERATORS.IS_ANY_OF,
+    value: [assetType],
+  };
+
+  const groups =
+    normalized.groups?.length > 0
+      ? normalized.groups
+      : [{ logicOperator: LOGIC_OPERATORS.AND, filters: [] }];
+
+  const firstGroup = groups[0];
+  const withoutAssetType = (firstGroup.filters || []).filter((f) => f.column !== 'asset_type');
+
+  return {
+    ...normalized,
+    groups: [
+      {
+        ...firstGroup,
+        filters: [...withoutAssetType, assetTypeFilter],
+      },
+      ...groups.slice(1),
+    ],
+  };
+}
