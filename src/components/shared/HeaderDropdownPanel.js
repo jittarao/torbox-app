@@ -11,6 +11,7 @@ export default function HeaderDropdownPanel({
   className = '',
   widthClass = 'w-48',
   onBackdropClick,
+  placement = 'default',
 }) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -46,6 +47,9 @@ export default function HeaderDropdownPanel({
 
   const animationClass = visible ? 'ui-dropdown-panel--open' : 'ui-dropdown-panel--closing';
 
+  const placementClass =
+    placement === 'sidebar' ? 'ui-dropdown-panel--sidebar' : 'ui-dropdown-panel';
+
   const panel = (
     <div
       role="menu"
@@ -53,7 +57,7 @@ export default function HeaderDropdownPanel({
       className={
         isMobile
           ? `ui-dropdown-panel-floating w-full max-w-sm max-h-[min(90vh,32rem)] overflow-auto ${className} ${animationClass}`
-          : `ui-dropdown-panel ${widthClass} ${className} ${animationClass}`
+          : `${placementClass} ${widthClass} ${className} ${animationClass}`
       }
     >
       {children}

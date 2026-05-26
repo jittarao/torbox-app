@@ -75,8 +75,9 @@ export default function NotificationBell({ apiKey }) {
       ) : (
         <HeaderDropdownPanel
           open={isOpen}
+          placement="sidebar"
           widthClass="w-80 max-w-[calc(100vw-2rem)]"
-          className="!py-0 flex flex-col max-h-[min(28rem,calc(100vh-5rem))] overflow-hidden"
+          className="!py-0 flex flex-col max-h-[min(28rem,calc(100vh-1.5rem))] overflow-hidden"
         >
           <NotificationPanel apiKey={apiKey} onClose={closePanel} variant="desktop" />
         </HeaderDropdownPanel>

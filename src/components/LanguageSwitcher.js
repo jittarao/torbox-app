@@ -75,7 +75,11 @@ export default function LanguageSwitcher({ compact = false }) {
         </svg>
       </button>
 
-      <HeaderDropdownPanel open={isOpen} onBackdropClick={() => setIsOpen(false)}>
+      <HeaderDropdownPanel
+        open={isOpen}
+        placement="sidebar"
+        onBackdropClick={() => setIsOpen(false)}
+      >
         {Object.entries(languages).map(([code, { name, flag }]) => (
           <button
             key={code}
