@@ -15,12 +15,12 @@ export default function PresetRulesSection({ onApplyPreset, t }) {
           <button
             key={index}
             onClick={() => onApplyPreset(preset)}
-            className="text-left p-3 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
+            className="text-left p-3 text-xs bg-surface-alt dark:bg-surface-alt-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors border border-border dark:border-border-dark"
           >
             <div className="font-medium text-primary-text dark:text-primary-text-dark mb-1">
               {preset.name}
             </div>
-            <div className="text-gray-600 dark:text-gray-400 text-[10px]">
+            <div className="text-primary-text/70 dark:text-primary-text-dark/70 text-[10px]">
               {(() => {
                 const conditions = (preset.groups || []).flatMap((group) => group.conditions || []);
                 return conditions.length === 1
