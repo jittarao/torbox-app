@@ -4,76 +4,85 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
+import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
+import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
 import NotificationPanel from './NotificationPanel';
 
 export default function NotificationBell({ apiKey }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { unreadCount, loading, error, setIsPolling, retryFetch, consecutiveErrors } = useNotifications(apiKey);
+  const { unreadCount, loading, error, setIsPolling, retryFetch, consecutiveErrors } =
+    useNotifications(apiKey);
   const t = useTranslations('Notifications');
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-  };
-
-  // Pause polling when dropdown is open
   useEffect(() => {
     setIsPolling(!isOpen);
   }, [isOpen, setIsPolling]);
 
-  // Don't render if no API key
   if (!apiKey) {
     return null;
   }
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
-        onClick={handleToggle}
-        className="relative p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors duration-200"
+        onClick={() => setIsOpen(!isOpen)}
+        className="ui-dropdown-icon-btn relative"
         aria-label={t('notifications')}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
         data-notification-bell
         disabled={loading}
       >
-        <Icons.Bell className={`h-6 w-6 ${unreadCount > 0 ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-        
-        {/* Notification badge - Hidden */}
-        {/* {unreadCount > 0 && !loading && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )} */}
-        
-        {/* Loading indicator */}
-        {loading && (
-          <div className="absolute -top-1 -right-1 h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <Icons.Bell className="h-5 w-5" />
+
+        {unreadCount > 0 && !loading && !error && (
+          <span
+            className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#0f0f10]"
+            aria-hidden
+          />
         )}
 
-        {/* Error indicator */}
+        {loading && (
+          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+        )}
+
         {error && !loading && (
-          <div 
-            className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-600"
+          <span
+            className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-600"
             title={`Connection error (${consecutiveErrors} attempts) - Click to retry`}
             onClick={(e) => {
               e.stopPropagation();
               retryFetch();
             }}
+            role="presentation"
           >
-            <Icons.Times className="h-3 w-3 text-white" />
-          </div>
+            <Icons.Times className="h-2.5 w-2.5 text-white" />
+          </span>
         )}
       </button>
 
-      {/* Notification panel */}
-      {isOpen && (
-        <NotificationPanel 
-          apiKey={apiKey} 
-          onClose={handleClose}
+      <HeaderOverlayPortal open={isOpen}>
+        <div className="md:hidden">
+          <NotificationPanel
+            apiKey={apiKey}
+            onClose={() => setIsOpen(false)}
+            variant="mobile"
+          />
+        </div>
+      </HeaderOverlayPortal>
+
+      {/* Desktop dropdown */}
+      <HeaderDropdownPanel
+        open={isOpen}
+        widthClass="w-80 max-w-[calc(100vw-2rem)]"
+        className="!py-0 hidden md:flex md:flex-col max-h-[min(28rem,calc(100vh-5rem))] overflow-hidden"
+      >
+        <NotificationPanel
+          apiKey={apiKey}
+          onClose={() => setIsOpen(false)}
+          variant="desktop"
         />
-      )}
+      </HeaderDropdownPanel>
     </div>
   );
 }

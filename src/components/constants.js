@@ -1,3 +1,7 @@
+export const REFERRAL_CODE = '7908ea44-023c-45f5-86ce-564bc6edaf34';
+export const REFERRAL_LINK = `https://torbox.app/subscription?referral=${REFERRAL_CODE}`;
+export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
+
 export const API_BASE = 'https://api.torbox.app';
 export const API_SEARCH_BASE = 'https://search-api.torbox.app';
 export const API_VERSION = 'v1';

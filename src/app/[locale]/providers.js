@@ -9,7 +9,9 @@ import { PostHogProvider as PHProvider } from 'posthog-js/react';
 
 export function PostHogProvider({ children }) {
   useEffect(() => {
-    // Only initialize PostHog if the key is available
+    if (typeof window !== 'undefined' && window.__TBM_RYBBIT__) {
+      return;
+    }
     if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host:
@@ -34,6 +36,9 @@ function PostHogPageView() {
   const posthog = usePostHog();
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.__TBM_RYBBIT__) {
+      return;
+    }
     if (pathname && posthog && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       let url = window.origin + pathname;
       if (searchParams.toString()) {

@@ -871,21 +871,58 @@
   },
   "SystemStatus": {
     "error": "エラー",
+    "fullStatusPage": "詳細ステータス",
     "hoursAgo": "{hours}時間前",
     "justNow": "今",
     "lastCheck": "最終チェック",
     "minutesAgo": "{minutes}分前",
     "never": "なし",
-    "refreshStatus": "システムステータスを更新",
+    "refreshStatus": "クリックで更新",
+    "responseTime": "{ms} ms",
+    "uptime": {
+      "barLabel": "{label}の履歴、稼働率{percent}%",
+      "collecting": "データ収集中…",
+      "daysAgo": "{days}日前",
+      "historyNote": "バーはこのブラウザのチェック（約1分間隔）です。公式の履歴はステータスページを参照してください。",
+      "percent": "稼働率{percent}%",
+      "segment": {
+        "degraded": "応答遅延",
+        "down": "ダウン",
+        "empty": "データなし",
+        "nodata": "未確認",
+        "unknown": "不明",
+        "up": "正常"
+      }
+    },
+    "rows": {
+      "app": { "label": "このアプリ" },
+      "backend": { "label": "セルフホストバックエンド" },
+      "connection": { "label": "APIキー" },
+      "platform": { "label": "TorBoxプラットフォーム" },
+      "status": {
+        "checking": "確認中…",
+        "invalidKey": "無効なAPIキー",
+        "issue": "問題を検出",
+        "notConfigured": "未設定",
+        "operational": "正常",
+        "unavailable": "利用不可"
+      }
+    },
     "status": {
-      "apiUnhealthy": "API接続の問題",
-      "apiUnhealthyDescription": "TorBox APIが正常に応答していません",
-      "healthy": "システム正常",
-      "healthyDescription": "すべてのシステムが正常に動作しています",
+      "apiUnhealthy": "接続の問題",
+      "apiUnhealthyDescription": "APIキーでTorBoxに接続できません",
+      "backendUnhealthy": "バックエンドの問題",
+      "backendUnhealthyDescription": "セルフホストバックエンドが応答しません",
+      "healthy": "すべて正常",
+      "healthyDescription": "アプリ、プラットフォーム、APIキーが接続済み",
+      "invalidKey": "無効なAPIキー",
+      "invalidKeyDescription": "APIキーが拒否されました。設定で更新してください",
       "noApiKey": "APIキーなし",
-      "noApiKeyDescription": "TorBox接続を確認するにはAPIキーが必要です",
-      "unhealthy": "システム異常",
-      "unhealthyDescription": "ローカルアプリケーションに問題が発生しています",
+      "noApiKeyDescription": "TorBox APIキーでサインインしてください",
+      "platformUnhealthy": "TorBoxプラットフォームの問題",
+      "platformUnhealthyDescription": "TorBoxサービスが停止している可能性があります",
+      "unhealthy": "アプリの問題",
+      "unhealthyDescription": "このアプリが正しく応答していません",
       "unknown": "ステータス不明",
       "unknownDescription": "システムステータスを確認できません"
     }

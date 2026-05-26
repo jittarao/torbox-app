@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Syne } from 'next/font/google';
 import ApiKeyInput from './downloads/ApiKeyInput';
+import { GITHUB_REPO_URL, REFERRAL_CODE, REFERRAL_LINK } from '@/components/constants';
 import { useTranslations } from 'next-intl';
 
 const syne = Syne({
@@ -160,7 +161,7 @@ export default function LandingPage({ onKeyChange }) {
             >
               {t('apiKeyInput.title')}
             </h2>
-            <ApiKeyInput onKeyChange={onKeyChange} />
+            <ApiKeyInput onKeyChange={onKeyChange} variant="landing" />
             <p className="mt-5 text-sm text-zinc-500 text-center">
               {t('apiKeyInput.description')}{' '}
               <a
@@ -186,7 +187,7 @@ export default function LandingPage({ onKeyChange }) {
           <div className="text-sm text-zinc-500">
             <p>{referralT('landingDescription')}</p>
             <a
-              href="https://torbox.app/subscription?referral=7908ea44-023c-45f5-86ce-564bc6edaf34"
+              href={REFERRAL_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
@@ -197,11 +198,11 @@ export default function LandingPage({ onKeyChange }) {
             <button
               type="button"
               onClick={async () => {
-                await navigator.clipboard.writeText('7908ea44-023c-45f5-86ce-564bc6edaf34');
+                await navigator.clipboard.writeText(REFERRAL_CODE);
                 setShowCopied(true);
                 setTimeout(() => setShowCopied(false), 2000);
               }}
-              className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+              className="ui-btn-ghost !inline-flex !py-1.5 !px-3 !text-xs align-middle ml-1"
             >
               {showCopied ? referralT('copied') : referralT('copyCode')}
             </button>
@@ -219,7 +220,7 @@ export default function LandingPage({ onKeyChange }) {
           <p>
             {t('footer.description')}{' '}
             <a
-              href="https://github.com/jittarao/torbox-app"
+              href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400/90 hover:text-amber-400 underline underline-offset-2 transition-colors"

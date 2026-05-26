@@ -888,21 +888,64 @@
   },
   "SystemStatus": {
     "error": "Error",
+    "fullStatusPage": "Full status",
     "hoursAgo": "{hours} hours ago",
     "justNow": "Just now",
     "lastCheck": "Last check",
     "minutesAgo": "{minutes} minutes ago",
     "never": "Never",
-    "refreshStatus": "Refresh system status",
+    "refreshStatus": "Click to refresh",
+    "responseTime": "{ms} ms",
+    "uptime": {
+      "barLabel": "{label} uptime history, {percent}% operational",
+      "collecting": "Collecting data…",
+      "daysAgo": "{days}d ago",
+      "historyNote": "Platform bar: checks from this browser (~1 min). Official TorBox history is on the status page.",
+      "percent": "{percent}% uptime",
+      "segment": {
+        "degraded": "Slow response",
+        "down": "Down",
+        "empty": "No data yet",
+        "nodata": "Not checked",
+        "unknown": "Unknown",
+        "up": "Operational"
+      }
+    },
+    "rows": {
+      "app": {
+        "label": "This app"
+      },
+      "backend": {
+        "label": "Self-hosted backend"
+      },
+      "connection": {
+        "label": "Your API key"
+      },
+      "platform": {
+        "label": "TorBox platform"
+      },
+      "status": {
+        "checking": "Checking…",
+        "invalidKey": "Invalid API key",
+        "issue": "Issue detected",
+        "notConfigured": "Not configured",
+        "operational": "Operational",
+        "unavailable": "Unavailable"
+      }
+    },
     "status": {
-      "apiUnhealthy": "API Connection Issue",
-      "apiUnhealthyDescription": "TorBox API is not responding properly",
-      "healthy": "System Healthy",
-      "healthyDescription": "All systems are operating normally",
+      "apiUnhealthy": "Connection Issue",
+      "apiUnhealthyDescription": "Could not reach TorBox with your API key",
+      "backendUnhealthy": "Backend Issue",
+      "backendUnhealthyDescription": "Self-hosted backend is not responding",
+      "healthy": "All Systems Operational",
+      "healthyDescription": "TorBox is up and your API key is valid",
+      "invalidKey": "Invalid API Key",
+      "invalidKeyDescription": "Your API key was rejected. Update it in settings",
       "noApiKey": "No API Key",
-      "noApiKeyDescription": "API key is required to check TorBox connectivity",
-      "unhealthy": "System Unhealthy",
-      "unhealthyDescription": "Local application is experiencing issues",
+      "noApiKeyDescription": "Sign in with your TorBox API key to verify your connection",
+      "platformUnhealthy": "TorBox Platform Issue",
+      "platformUnhealthyDescription": "TorBox services may be down. See status page for details",
       "unknown": "Status Unknown",
       "unknownDescription": "Unable to determine system status"
     }

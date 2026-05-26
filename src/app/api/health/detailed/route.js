@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { isBackendDisabled } from '@/utils/backendCheck';
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET() {
@@ -16,7 +18,7 @@ export async function GET() {
   }
 
   // Check if backend is explicitly disabled
-  if (process.env.BACKEND_DISABLED === 'true') {
+  if (isBackendDisabled()) {
     return NextResponse.json(
       {
         status: 'unavailable',

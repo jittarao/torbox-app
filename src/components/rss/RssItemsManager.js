@@ -125,6 +125,10 @@ export default function RssItemsManager({ apiKey, setToast }) {
     }
   };
 
+  const handleOpenLink = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   // Filter and sort items
   const filteredAndSortedItems = (items || [])
     .filter(item => {
@@ -384,14 +388,13 @@ export default function RssItemsManager({ apiKey, setToast }) {
                       </button>
                       
                       {item.link && (
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLink(item.link)}
                           className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         >
                           <Icons.ExternalLink className="w-3 h-3" />
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>

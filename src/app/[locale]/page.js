@@ -7,12 +7,15 @@ import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
 
 const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
-  loading: () => <div className="flex justify-center items-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div></div>,
+  loading: () => <div className="flex justify-center items-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/30 border-t-amber-500"></div></div>,
   ssr: false
 });
 
+const landingShell = <div className="min-h-screen bg-[#0a0a0b]" aria-hidden />;
+
 const LandingPage = dynamic(() => import('@/components/LandingPage'), {
-  ssr: false
+  loading: () => landingShell,
+  ssr: false,
 });
 import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
@@ -117,35 +120,32 @@ export default function Home() {
     }
   };
 
-  // Don't render anything until client-side hydration is complete
-  if (!isClient)
+  if (!isClient || loading) {
     return (
       <div
-        className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
-      ></div>
+        className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`}
+        aria-hidden
+      />
     );
+  }
 
-  if (loading) return null;
+  if (!apiKey) {
+    return <LandingPage onKeyChange={handleKeyChange} />;
+  }
 
   return (
     <main
       className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
     >
-      {!apiKey ? (
-        <LandingPage onKeyChange={handleKeyChange} />
-      ) : (
-        <>
-          <Header apiKey={apiKey} />
-          <div className="container mx-auto p-4">
-            <ApiKeyInput
-              value={apiKey}
-              onKeyChange={handleKeyChange}
-              allowKeyManager={true}
-            />
-            <Downloads apiKey={apiKey} />
-          </div>
-        </>
-      )}
+      <Header apiKey={apiKey} />
+      <div className="container mx-auto p-4">
+        <ApiKeyInput
+          value={apiKey}
+          onKeyChange={handleKeyChange}
+          allowKeyManager={true}
+        />
+        <Downloads apiKey={apiKey} />
+      </div>
     </main>
   );
 }

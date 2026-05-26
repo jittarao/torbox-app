@@ -5,7 +5,8 @@ import { NextResponse } from 'next/server';
  * @returns {boolean} True if backend is disabled
  */
 export function isBackendDisabled() {
-  return process.env.BACKEND_DISABLED === 'true';
+  const v = process.env.BACKEND_DISABLED?.trim().toLowerCase();
+  return v === 'true' || v === '1' || v === 'yes';
 }
 
 /**
