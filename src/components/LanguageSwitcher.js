@@ -3,7 +3,8 @@
 import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import { headerDropdownItemClass } from '@/components/shared/headerDropdownClasses';
 
@@ -31,31 +32,8 @@ export default function LanguageSwitcher({ compact = false }) {
     }
   }, [locale, pathname, router]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current?.contains(event.target)) return;
-      if (event.target.closest('[data-header-dropdown-panel]')) return;
-      setIsOpen(false);
-    };
-
-    const handleResize = () => {
-      if (isOpen) setIsOpen(false);
-    };
-
-    const handleScroll = () => {
-      if (isOpen) setIsOpen(false);
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, true);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [isOpen]);
+  const closeDropdown = useCallback(() => setIsOpen(false), []);
+  useHeaderDropdownDismiss({ isOpen, onClose: closeDropdown, anchorRef: dropdownRef });
 
   const handleLanguageChange = (newLocale) => {
     setIsOpen(false);

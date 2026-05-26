@@ -1,18 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
 import NotificationPanel from './NotificationPanel';
+import useIsMobile from '@/hooks/useIsMobile';
+import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 
 export default function NotificationBell({ apiKey }) {
   const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef(null);
+  const isMobile = useIsMobile();
   const { unreadCount, loading, error, setIsPolling, retryFetch, consecutiveErrors } =
     useNotifications(apiKey);
   const t = useTranslations('Notifications');
+
+  const closePanel = useCallback(() => setIsOpen(false), []);
+  useHeaderDropdownDismiss({ isOpen, onClose: closePanel, anchorRef: rootRef });
 
   useEffect(() => {
     setIsPolling(!isOpen);
@@ -23,7 +30,7 @@ export default function NotificationBell({ apiKey }) {
   }
 
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0" ref={rootRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="ui-dropdown-icon-btn relative"
@@ -61,20 +68,19 @@ export default function NotificationBell({ apiKey }) {
         )}
       </button>
 
-      <HeaderOverlayPortal open={isOpen}>
-        <div className="md:hidden">
-          <NotificationPanel apiKey={apiKey} onClose={() => setIsOpen(false)} variant="mobile" />
-        </div>
-      </HeaderOverlayPortal>
-
-      {/* Desktop dropdown */}
-      <HeaderDropdownPanel
-        open={isOpen}
-        widthClass="w-80 max-w-[calc(100vw-2rem)]"
-        className="!py-0 hidden md:flex md:flex-col max-h-[min(28rem,calc(100vh-5rem))] overflow-hidden"
-      >
-        <NotificationPanel apiKey={apiKey} onClose={() => setIsOpen(false)} variant="desktop" />
-      </HeaderDropdownPanel>
+      {isMobile ? (
+        <HeaderOverlayPortal open={isOpen}>
+          <NotificationPanel apiKey={apiKey} onClose={closePanel} variant="mobile" />
+        </HeaderOverlayPortal>
+      ) : (
+        <HeaderDropdownPanel
+          open={isOpen}
+          widthClass="w-80 max-w-[calc(100vw-2rem)]"
+          className="!py-0 flex flex-col max-h-[min(28rem,calc(100vh-5rem))] overflow-hidden"
+        >
+          <NotificationPanel apiKey={apiKey} onClose={closePanel} variant="desktop" />
+        </HeaderDropdownPanel>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -31,21 +32,13 @@ export default function Header({ apiKey }) {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Close more menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
-        setIsMoreMenuOpen(false);
-      }
-    };
-
-    if (isMoreMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [isMoreMenuOpen]);
+  const closeMoreMenu = useCallback(() => setIsMoreMenuOpen(false), []);
+  useHeaderDropdownDismiss({
+    isOpen: isMoreMenuOpen,
+    onClose: closeMoreMenu,
+    anchorRef: moreMenuRef,
+    closeOnScroll: false,
+  });
 
   const isActive = (path) => {
     // Handle root path specially - it can be `/` or `/${locale}`
