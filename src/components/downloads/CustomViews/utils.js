@@ -39,6 +39,7 @@ export const COLUMN_FILTER_TYPES = {
   allow_zip: 'boolean',
   private: 'boolean',
   seed_torrent: 'boolean',
+  is_downloaded: 'boolean',
 
   // Status/Multi-select columns
   download_state: 'status',
@@ -211,6 +212,10 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
     key: 'seed_torrent',
     label: 'Seeding Enabled',
   });
+  allColumns.push({
+    key: 'is_downloaded',
+    label: columnT ? columnT('is_downloaded') : 'Downloaded',
+  });
 
   // Create a map for quick column lookup
   const columnMap = new Map(allColumns.map((col) => [col.key, col]));
@@ -251,8 +256,8 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   const groups = [
     {
       label: getGroupLabel('lifecycle'),
-      // Order: download_state, asset_type
-      options: getOrderedOptions(['download_state', 'asset_type']),
+      // Order: download_state, asset_type, is_downloaded
+      options: getOrderedOptions(['download_state', 'asset_type', 'is_downloaded']),
     },
     {
       label: getGroupLabel('seeding'),

@@ -136,13 +136,13 @@ export function getActiveTagIds(filters) {
 }
 
 /**
- * Count downloads per tag ID from items with tags attached.
+ * Count downloads per tag ID from TBM-enriched download items.
  */
-export function countDownloadsPerTag(itemsWithTags) {
+export function countDownloadsPerTag(enrichedDownloads) {
   const counts = {};
-  if (!itemsWithTags?.length) return counts;
+  if (!enrichedDownloads?.length) return counts;
 
-  for (const item of itemsWithTags) {
+  for (const item of enrichedDownloads) {
     for (const tag of item.tags || []) {
       counts[tag.id] = (counts[tag.id] || 0) + 1;
     }
@@ -158,14 +158,14 @@ export function isViewCompatibleWithAssetTab(viewAssetType, activeAssetType) {
 }
 
 /**
- * Count downloads matching each saved view for the current tab's items only.
+ * Count downloads matching each saved view (uses TBM-enriched items for filters).
  * Uses the same filters as apply (including view asset_type). Skips views scoped to another tab.
  */
-export function countDownloadsPerView(views, itemsWithTags, activeAssetType = 'all') {
+export function countDownloadsPerView(views, enrichedDownloads, activeAssetType = 'all') {
   const counts = {};
   if (!views?.length) return counts;
 
-  const items = itemsWithTags || [];
+  const items = enrichedDownloads || [];
 
   for (const view of views) {
     if (!isViewCompatibleWithAssetTab(view.asset_type, activeAssetType)) {

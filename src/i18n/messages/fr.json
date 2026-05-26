@@ -316,6 +316,7 @@
     "file_count": "Nombre de fichiers",
     "hash": "Hash",
     "id": "ID",
+    "is_downloaded": "Téléchargé",
     "name": "Nom",
     "original_url": "URL source",
     "peers": "Pairs",

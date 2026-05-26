@@ -44,6 +44,7 @@ import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
+import { enrichDownloadsWithTbm } from './utils/tbmDownloadEnrichment';
 import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import ReferralCallout from '@/components/referral/ReferralCallout';
@@ -153,13 +154,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     }
   }, [canUseUsenet, activeType]);
 
-  // Function to expand all items with files
-  const expandAllFiles = () => {
-    const itemsWithFiles = itemsWithTags.filter((item) => item.files && item.files.length > 0);
-    const itemIds = itemsWithFiles.map((item) => item.id);
-    setExpandedItems(new Set(itemIds));
-  };
-
   // Function to collapse all files
   const collapseAllFiles = () => {
     setExpandedItems(new Set());
@@ -204,11 +198,17 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
 
-  // Map tags to items whenever items or tagMappings change
-  const itemsWithTags = useMemo(() => {
-    if (!items || items.length === 0) return items;
-    return mapTagsToDownloads(items);
-  }, [items, tagMappings, mapTagsToDownloads]);
+  /** TorBox API downloads merged with TBM backend data (tags, link-history flags). */
+  const enrichedDownloads = useMemo(
+    () => enrichDownloadsWithTbm(items, mapTagsToDownloads, downloadHistory),
+    [items, tagMappings, mapTagsToDownloads, downloadHistory]
+  );
+
+  const expandAllFiles = () => {
+    const itemsWithFiles = enrichedDownloads.filter((item) => item.files && item.files.length > 0);
+    const itemIds = itemsWithFiles.map((item) => item.id);
+    setExpandedItems(new Set(itemIds));
+  };
 
   const {
     selectedItems,
@@ -217,7 +217,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     hasSelectedFiles,
     handleRowSelect,
     setSelectedItems,
-  } = useSelection(itemsWithTags);
+  } = useSelection(enrichedDownloads);
   const {
     downloadLinks,
     isDownloading,
@@ -253,7 +253,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const [tagManagerAutoCreate, setTagManagerAutoCreate] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { search, setSearch, statusFilter, setStatusFilter, filteredItems } = useFilter(
-    itemsWithTags,
+    enrichedDownloads,
     '',
     'all',
     appliedFilters
@@ -347,7 +347,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
       // Export each selected torrent
       for (const itemId of selectedItemIds) {
-        const item = itemsWithTags.find((i) => i.id === itemId);
+        const item = enrichedDownloads.find((i) => i.id === itemId);
         if (!item) continue;
 
         try {
@@ -396,7 +396,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
       const metadata = {
         assetType: activeType,
-        item: itemsWithTags.find((i) => i.id === itemId),
+        item: enrichedDownloads.find((i) => i.id === itemId),
       };
       const result = await requestDownloadLink(
         itemId,
@@ -421,7 +421,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         });
       }
     },
-    [activeType, itemsWithTags, requestDownloadLink, setToast, apiKey]
+    [activeType, enrichedDownloads, requestDownloadLink, setToast, apiKey]
   );
 
   const handleAudioRefreshUrl = useCallback(async () => {
@@ -432,7 +432,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     const idField = at === 'usenet' ? 'usenet_id' : at === 'webdl' ? 'web_id' : 'torrent_id';
     const metadata = {
       assetType: at,
-      item: itemsWithTags.find((i) => i.id === itemId),
+      item: enrichedDownloads.find((i) => i.id === itemId),
     };
     const result = await requestDownloadLink(itemId, { fileId }, idField, metadata);
     if (result.success && result.data?.url) {
@@ -440,7 +440,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       return result.data.url;
     }
     throw new Error(result.error || 'Failed to refresh link');
-  }, [audioPlayerState, itemsWithTags, requestDownloadLink]);
+  }, [audioPlayerState, enrichedDownloads, requestDownloadLink]);
 
   const toggleFiles = (itemId) => {
     setExpandedItems((prev) => {
@@ -558,7 +558,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const getTotalDownloadSize = useCallback(() => {
     // Calculate size of selected files
     const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [itemId, fileIds]) => {
-      const item = itemsWithTags.find((i) => i.id === itemId);
+      const item = enrichedDownloads.find((i) => i.id === itemId);
       if (!item) return acc;
 
       return (
@@ -572,12 +572,12 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
     // Calculate size of selected items
     const itemsSize = Array.from(selectedItems.items).reduce((acc, itemId) => {
-      const item = itemsWithTags.find((i) => i.id === itemId);
+      const item = enrichedDownloads.find((i) => i.id === itemId);
       return acc + (item?.size || 0);
     }, 0);
 
     return formatSize(filesSize + itemsSize);
-  }, [itemsWithTags, selectedItems]);
+  }, [enrichedDownloads, selectedItems]);
 
   // Render uploaders based on active type (permissions control which types are allowed)
   const renderUploaders = () => {
@@ -749,7 +749,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     views,
     activeView,
     tags,
-    itemsWithTags,
+    enrichedDownloads,
     activeAssetType: activeType,
     activeTagIds,
     onApplyView: handleApplyView,
@@ -777,7 +777,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         />
       )}
       <ActionBar
-        unfilteredItems={itemsWithTags}
+        unfilteredItems={enrichedDownloads}
         filteredItems={filteredItems}
         selectedItems={selectedItems}
         setSelectedItems={setSelectedItems}
@@ -792,7 +792,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         onBulkDownload={() => handleBulkDownload(selectedItems, sortedItems)}
         isDeleting={isDeleting}
         onBulkDelete={(includeParentDownloads) =>
-          deleteItems(selectedItems, includeParentDownloads, itemsWithTags)
+          deleteItems(selectedItems, includeParentDownloads, enrichedDownloads)
         }
         isExporting={isExporting}
         onBulkExport={handleBulkExport}

@@ -26,6 +26,7 @@ export function evaluateFilter(filter, item) {
   if (
     filter.column !== 'download_state' &&
     filter.column !== 'asset_type' &&
+    filter.column !== 'is_downloaded' &&
     (columnValue === null || columnValue === undefined)
   ) {
     return false;

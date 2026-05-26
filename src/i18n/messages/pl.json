@@ -316,6 +316,7 @@
     "file_count": "Liczba plików",
     "hash": "Hash",
     "id": "ID",
+    "is_downloaded": "Pobrane",
     "name": "Nazwa",
     "original_url": "Oryginalny URL",
     "peers": "Peery",

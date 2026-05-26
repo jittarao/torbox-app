@@ -330,6 +330,7 @@
     "file_count": "File Count",
     "hash": "Hash",
     "id": "ID",
+    "is_downloaded": "Downloaded",
     "name": "Name",
     "original_url": "Source URL",
     "peers": "Peers",
