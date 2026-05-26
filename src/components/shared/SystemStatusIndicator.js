@@ -157,7 +157,7 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
             <div className="fixed inset-0 z-[200] bg-black/60" onClick={closePanel} aria-hidden />
             <div className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
               <div
-                className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-2xl dark:border-zinc-600 dark:bg-[#242428]"
+                className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl dark:border-border-dark dark:bg-surface-alt-dark"
                 role="dialog"
                 aria-modal="true"
                 onClick={(e) => e.stopPropagation()}

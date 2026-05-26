@@ -54,7 +54,7 @@ export default function Header({ apiKey }) {
   const navLinkClass = (active) => (active ? 'ui-header-nav-active' : 'ui-header-nav');
 
   return (
-    <div className="relative z-40 bg-white dark:bg-[#0f0f10] border-b border-zinc-200 dark:border-zinc-800/80 overflow-x-clip">
+    <div className="relative z-40 bg-surface dark:bg-surface-dark border-b border-border dark:border-border-dark overflow-x-clip">
       <div className="container mx-auto px-3 py-3 sm:px-4 sm:py-4">
         <div className="flex justify-between items-center gap-2 min-w-0">
           <Link href="/" className="flex min-w-0 shrink items-center gap-2">
@@ -66,7 +66,7 @@ export default function Header({ apiKey }) {
               className="shrink-0"
             />
             <div className="flex min-w-0 flex-col">
-              <h1 className="text-base sm:text-xl text-zinc-900 dark:text-zinc-100 font-medium truncate">
+              <h1 className="text-base sm:text-xl text-primary-text dark:text-primary-text-dark font-medium truncate">
                 {t('title')}
               </h1>
               <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal truncate">

@@ -165,7 +165,7 @@ export default function ItemActionButtons({
           onClick={handleExport}
           disabled={isExporting}
           className={`p-1.5 rounded-full text-blue-500 dark:text-blue-400 
-          hover:bg-blue-500/5 dark:hover:bg-blue-400/5 transition-colors
+          hover:bg-label-active-text/5 dark:hover:bg-label-active-text-dark/5 transition-colors
           ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={t('export.title')}
         >

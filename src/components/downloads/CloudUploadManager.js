@@ -23,8 +23,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       name: 'Google Drive',
       icon: Icons.GoogleDrive,
       color: 'text-green-600',
-      bgColor: 'bg-white dark:bg-gray-800',
-      borderColor: 'border-gray-200 dark:border-gray-700',
+      bgColor: 'bg-surface dark:bg-surface-dark',
+      borderColor: 'border-border dark:border-border-dark',
       supportsOAuth: true,
     },
     {
@@ -32,8 +32,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       name: 'Dropbox',
       icon: Icons.Dropbox,
       color: 'text-blue-600',
-      bgColor: 'bg-white dark:bg-gray-800',
-      borderColor: 'border-gray-200 dark:border-gray-700',
+      bgColor: 'bg-surface dark:bg-surface-dark',
+      borderColor: 'border-border dark:border-border-dark',
       supportsOAuth: true,
     },
     {
@@ -41,8 +41,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       name: 'OneDrive',
       icon: Icons.OneDrive,
       color: 'text-blue-500',
-      bgColor: 'bg-white dark:bg-gray-800',
-      borderColor: 'border-gray-200 dark:border-gray-700',
+      bgColor: 'bg-surface dark:bg-surface-dark',
+      borderColor: 'border-border dark:border-border-dark',
       supportsOAuth: true,
     },
     {
@@ -50,8 +50,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       name: 'GoFile',
       icon: Icons.GoFile,
       color: 'text-purple-600',
-      bgColor: 'bg-white dark:bg-gray-800',
-      borderColor: 'border-gray-200 dark:border-gray-700',
+      bgColor: 'bg-surface dark:bg-surface-dark',
+      borderColor: 'border-border dark:border-border-dark',
       supportsOAuth: false,
     },
     {
@@ -59,8 +59,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       name: '1Fichier',
       icon: Icons.Fichier,
       color: 'text-orange-600',
-      bgColor: 'bg-white dark:bg-gray-800',
-      borderColor: 'border-gray-200 dark:border-gray-700',
+      bgColor: 'bg-surface dark:bg-surface-dark',
+      borderColor: 'border-border dark:border-border-dark',
       supportsOAuth: false,
     },
     {
@@ -68,8 +68,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       name: 'Pixeldrain',
       icon: Icons.Pixeldrain,
       color: 'text-indigo-600',
-      bgColor: 'bg-white dark:bg-gray-800',
-      borderColor: 'border-gray-200 dark:border-gray-700',
+      bgColor: 'bg-surface dark:bg-surface-dark',
+      borderColor: 'border-border dark:border-border-dark',
       supportsOAuth: false,
     },
   ];
@@ -309,19 +309,19 @@ export default function CloudUploadManager({ apiKey, setToast }) {
 
                 {/* Help message when no providers are connected */}
                 {Object.keys(connectedProviders).length === 0 && (
-                  <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="mb-4 p-4 bg-accent/10 dark:bg-accent-dark/10 border border-accent/25 dark:border-accent-dark/25 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <Icons.AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <Icons.AlertCircle className="w-5 h-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        <p className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
                           No cloud providers configured
                         </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        <p className="text-sm text-primary-text/80 dark:text-primary-text-dark/80 mt-1">
                           Configure cloud storage providers in your TorBox settings to start
                           uploading your downloads. TBM will automatically detect configured
                           providers.
                           <br />
-                          <span className="text-xs text-blue-600 dark:text-blue-400 mt-2 block">
+                          <span className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 mt-2 block">
                             Note: Only Google Drive, Dropbox, and OneDrive support OAuth
                             authentication. GoFile, 1Fichier, and Pixeldrain require API keys to be
                             configured in TorBox settings.
@@ -430,7 +430,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                         </div>
                         {job.progress && (
                           <div className="mt-3">
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div className="w-full bg-progress-track dark:bg-progress-track-dark rounded-full h-2">
                               <div
                                 className="bg-accent h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${job.progress}%` }}

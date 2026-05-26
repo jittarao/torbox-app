@@ -13,9 +13,12 @@ export default function Toast({ message, type = 'success', onClose }) {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50
-      ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} 
-      text-white`}
+      className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 border
+      ${
+        type === 'success'
+          ? 'bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark border-label-success-text/25'
+          : 'bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark border-label-danger-text/25'
+      }`}
     >
       {message}
       <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">

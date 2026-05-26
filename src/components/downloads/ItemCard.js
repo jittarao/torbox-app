@@ -168,7 +168,7 @@ function ItemCard({
     return (
       <div className="flex flex-col gap-1 min-w-0">
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div className="w-full bg-progress-track dark:bg-progress-track-dark rounded-full h-2">
           <div
             className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-all duration-300"
             style={{ width: `${Math.min(100, progress)}%` }}
@@ -236,12 +236,12 @@ function ItemCard({
             <span
               className={`inline-block w-2 h-2 rounded-full ${
                 item.assetType === 'torrents'
-                  ? 'bg-blue-500'
+                  ? 'bg-label-active-text dark:bg-label-active-text-dark'
                   : item.assetType === 'usenet'
-                    ? 'bg-green-500'
+                    ? 'bg-label-success-text dark:bg-label-success-text-dark'
                     : item.assetType === 'webdl'
-                      ? 'bg-purple-500'
-                      : 'bg-gray-500'
+                      ? 'bg-accent dark:bg-accent-dark'
+                      : 'bg-label-default-text dark:bg-label-default-text-dark'
               }`}
             ></span>
             <span className="capitalize">
@@ -427,7 +427,7 @@ function ItemCard({
         <div className="absolute bottom-0 left-0 w-full">
           {item.progress !== undefined && (
             <div
-              className="bg-blue-600/40 dark:bg-blue-500/40 h-1 rounded-full"
+              className="bg-accent/40 dark:bg-accent-dark/40 h-1 rounded-full"
               style={{ width: `${(item.progress || 0) * 100}%` }}
             ></div>
           )}

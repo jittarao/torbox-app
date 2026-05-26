@@ -145,56 +145,56 @@ export default function UserStats({ apiKey, setToast }) {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <div className="bg-label-active-bg dark:bg-label-active-bg-dark p-4 rounded-lg border border-label-active-text/10">
                 <div className="flex items-center">
-                  <Icons.Download className="w-8 h-8 text-blue-600 dark:text-blue-400 mr-3" />
+                  <Icons.Download className="w-8 h-8 text-label-active-text dark:text-label-active-text-dark mr-3" />
                   <div>
-                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                    <p className="text-sm text-label-active-text dark:text-label-active-text-dark">
                       {t('stats.totalDownloads')}
                     </p>
-                    <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                    <p className="text-2xl font-bold text-label-active-text dark:text-label-active-text-dark">
                       {formatNumber(statsData.total_downloads)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <div className="bg-label-success-bg dark:bg-label-success-bg-dark p-4 rounded-lg border border-label-success-text/10">
                 <div className="flex items-center">
-                  <Icons.HardDrive className="w-8 h-8 text-green-600 dark:text-green-400 mr-3" />
+                  <Icons.HardDrive className="w-8 h-8 text-label-success-text dark:text-label-success-text-dark mr-3" />
                   <div>
-                    <p className="text-sm text-green-600 dark:text-green-400">
+                    <p className="text-sm text-label-success-text dark:text-label-success-text-dark">
                       {t('stats.totalSize')}
                     </p>
-                    <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                    <p className="text-2xl font-bold text-label-success-text dark:text-label-success-text-dark">
                       {formatBytes(statsData.total_size)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+              <div className="bg-accent/10 dark:bg-accent-dark/10 p-4 rounded-lg border border-accent/20">
                 <div className="flex items-center">
-                  <Icons.Activity className="w-8 h-8 text-purple-600 dark:text-purple-400 mr-3" />
+                  <Icons.Activity className="w-8 h-8 text-accent dark:text-accent-dark mr-3" />
                   <div>
-                    <p className="text-sm text-purple-600 dark:text-purple-400">
+                    <p className="text-sm text-accent dark:text-accent-dark">
                       {t('stats.activeDownloads')}
                     </p>
-                    <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                    <p className="text-2xl font-bold text-accent dark:text-accent-dark">
                       {formatNumber(statsData.active_downloads)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+              <div className="bg-label-warning-bg dark:bg-label-warning-bg-dark p-4 rounded-lg border border-label-warning-text/10">
                 <div className="flex items-center">
-                  <Icons.Clock className="w-8 h-8 text-orange-600 dark:text-orange-400 mr-3" />
+                  <Icons.Clock className="w-8 h-8 text-label-warning-text dark:text-label-warning-text-dark mr-3" />
                   <div>
-                    <p className="text-sm text-orange-600 dark:text-orange-400">
+                    <p className="text-sm text-label-warning-text dark:text-label-warning-text-dark">
                       {t('stats.avgSpeed')}
                     </p>
-                    <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">
+                    <p className="text-2xl font-bold text-label-warning-text dark:text-label-warning-text-dark">
                       {formatBytes(statsData.avg_speed || 0)}/s
                     </p>
                   </div>

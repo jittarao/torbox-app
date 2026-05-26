@@ -55,8 +55,8 @@ export default function UploadStatistics({ uploadStatistics }) {
           <div
             className={`px-3 py-1.5 rounded text-xs font-medium ${
               uploadStatistics.lastHour.total >= uploadStatistics.rateLimit.perHour
-                ? 'bg-yellow-500/20 text-yellow-600 dark:bg-yellow-400/20 dark:text-yellow-400'
-                : 'bg-blue-500/20 text-blue-600 dark:bg-blue-400/20 dark:text-blue-400'
+                ? 'bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark'
+                : 'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark'
             }`}
           >
             {uploadStatistics.lastHour.total >= uploadStatistics.rateLimit.perHour

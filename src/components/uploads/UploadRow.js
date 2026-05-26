@@ -46,7 +46,9 @@ export default function UploadRow({
     <tr
       {...rowProps}
       className={`border-b border-border dark:border-border-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark ${
-        selected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+        selected
+          ? 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
+          : ''
       }`}
     >
       <td className="p-3 text-sm text-primary-text dark:text-primary-text-dark w-12">
@@ -165,7 +167,7 @@ export default function UploadRow({
             <button
               onClick={() => onRetry(upload.id)}
               disabled={retrying.has(upload.id)}
-              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+              className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50"
             >
               {retrying.has(upload.id) ? 'Retrying...' : 'Retry'}
             </button>
@@ -173,7 +175,7 @@ export default function UploadRow({
           <button
             onClick={() => onDelete(upload.id)}
             disabled={deleting.has(upload.id)}
-            className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+            className="px-3 py-1 text-xs bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded hover:opacity-90 disabled:opacity-50"
           >
             {deleting.has(upload.id) ? 'Deleting...' : 'Delete'}
           </button>

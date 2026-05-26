@@ -117,19 +117,19 @@ const LinkHistory = ({ apiKey }) => {
       </div>
 
       {!backendIsLoading && !isBackendAvailable && (
-        <div className="p-4 bg-yellow-500/20 text-yellow-600 dark:bg-yellow-400/20 dark:text-yellow-400 rounded-lg mb-4">
+        <div className="p-4 bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark border border-label-warning-text/20 rounded-lg mb-4">
           Link history feature is disabled when backend is disabled.
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-500/20 text-red-500 dark:bg-red-400/20 dark:text-red-400 rounded-lg mb-4">
+        <div className="p-4 bg-label-danger-bg dark:bg-label-danger-bg-dark text-label-danger-text dark:text-label-danger-text-dark border border-label-danger-text/20 rounded-lg mb-4">
           {error}
         </div>
       )}
 
       {copySuccess && (
-        <div className="p-2 bg-green-500/20 text-green-500 dark:bg-green-400/20 dark:text-green-400 rounded-lg text-sm mb-4">
+        <div className="p-2 bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark border border-label-success-text/20 rounded-lg text-sm mb-4">
           Link copied to clipboard!
         </div>
       )}
