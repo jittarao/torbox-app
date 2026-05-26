@@ -1,10 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
-import TagManager from '../Tags/TagManager';
 import SidebarListItem from './SidebarListItem';
 import { countDownloadsPerTag, countDownloadsPerView } from '../filters/filterHelpers';
 
@@ -62,6 +61,7 @@ export default function FiltersSidebar({
   onNewFilter,
   onNewView,
   onNewTag,
+  onManageTags,
   variant = 'inline',
   className = '',
 }) {
@@ -69,7 +69,6 @@ export default function FiltersSidebar({
   const { deleteView } = useCustomViews(apiKey);
   const { deleteTag } = useTags(apiKey);
   const isFixed = variant === 'fixed';
-  const [showTagManager, setShowTagManager] = useState(false);
 
   const tagCounts = useMemo(() => countDownloadsPerTag(itemsWithTags), [itemsWithTags]);
   const viewCounts = useMemo(
@@ -208,14 +207,12 @@ export default function FiltersSidebar({
         </button>
         <button
           type="button"
-          onClick={() => setShowTagManager(true)}
+          onClick={onManageTags}
           className="w-full px-2 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
         >
           {t('manageTags')}
         </button>
       </div>
-
-      <TagManager isOpen={showTagManager} onClose={() => setShowTagManager(false)} apiKey={apiKey} />
     </aside>
   );
 }

@@ -6,18 +6,24 @@ import { getFilterableColumns } from './CustomViews/utils';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
 import Select from '@/components/shared/Select';
+import OverlayPortal from '@/components/shared/OverlayPortal';
 import { useTranslations } from 'next-intl';
 import { EMPTY_FILTERS, hasActiveFilters, normalizeFilters } from './filters/filterHelpers';
+
+/** @typedef {'create' | 'edit' | 'filter'} FilterModalMode */
 
 export default function FilterEditorModal({
   isOpen,
   onClose,
+  mode = 'filter',
+  editingView = null,
   apiKey,
   activeType,
   columnFilters,
   setColumnFilters,
-  activeView,
   onApply,
+  onViewCreated,
+  onViewUpdated,
   sortField,
   sortDirection,
   activeColumns,
@@ -28,6 +34,9 @@ export default function FilterEditorModal({
   const downloadsFiltersT = useTranslations('DownloadsFilters');
   const columnsT = useTranslations('Columns');
 
+  const isCreateMode = mode === 'create';
+  const isEditMode = mode === 'edit' && !!editingView;
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveViewName, setSaveViewName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
@@ -36,16 +45,40 @@ export default function FilterEditorModal({
 
   const availableColumns = getFilterableColumns(columnsT, activeType);
 
+  const modalTitle = (() => {
+    if (isCreateMode) return downloadsFiltersT('modalTitleCreate');
+    if (isEditMode) return downloadsFiltersT('modalTitleEditNamed', { name: editingView.name });
+    return downloadsFiltersT('modalTitle');
+  })();
+
   useEffect(() => {
-    if (!isOpen) return;
-    if (activeView) {
-      setSaveSort(!!activeView.sort_field);
-      setSaveColumns(!!activeView.visible_columns);
-    } else {
+    if (!isOpen) {
+      setSaveViewName('');
+      setShowSaveInput(false);
       setSaveSort(false);
       setSaveColumns(false);
+      return;
     }
-  }, [activeView, isOpen]);
+
+    if (isCreateMode) {
+      setSaveViewName('');
+      setShowSaveInput(true);
+      setSaveSort(false);
+      setSaveColumns(false);
+      return;
+    }
+
+    if (isEditMode) {
+      setSaveSort(!!editingView.sort_field);
+      setSaveColumns(!!editingView.visible_columns);
+      setShowSaveInput(false);
+      return;
+    }
+
+    setSaveSort(false);
+    setSaveColumns(false);
+    setShowSaveInput(false);
+  }, [isOpen, isCreateMode, isEditMode, editingView]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,7 +136,9 @@ export default function FilterEditorModal({
 
   const filterGroups =
     columnFilters?.groups ||
-    (Array.isArray(columnFilters) ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: columnFilters }] : EMPTY_FILTERS.groups);
+    (Array.isArray(columnFilters)
+      ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: columnFilters }]
+      : EMPTY_FILTERS.groups);
 
   const groupLogicOperator = columnFilters?.logicOperator || LOGIC_OPERATORS.AND;
   const filtersActive = hasActiveFilters(columnFilters);
@@ -203,7 +238,7 @@ export default function FilterEditorModal({
     if (!apiKey || !saveViewName.trim()) return;
     setIsSaving(true);
     try {
-      await saveView(
+      const view = await saveView(
         saveViewName.trim(),
         filtersToSave(),
         saveSort ? { field: sortField, direction: sortDirection } : null,
@@ -214,6 +249,8 @@ export default function FilterEditorModal({
       setShowSaveInput(false);
       setSaveSort(false);
       setSaveColumns(false);
+      onViewCreated?.(view);
+      onClose();
     } catch (error) {
       console.error('Error saving view:', error);
       alert(`Failed to save view: ${error.message}`);
@@ -222,8 +259,10 @@ export default function FilterEditorModal({
     }
   };
 
+  const handleCreateView = () => handleSaveAsView();
+
   const handleUpdateView = async () => {
-    if (!apiKey || !activeView) return;
+    if (!apiKey || !editingView) return;
     setIsSaving(true);
     try {
       const updates = { filters: filtersToSave() };
@@ -239,7 +278,9 @@ export default function FilterEditorModal({
       } else {
         updates.visible_columns = null;
       }
-      await updateView(activeView.id, updates);
+      const view = await updateView(editingView.id, updates);
+      onViewUpdated?.(view);
+      onClose();
     } catch (error) {
       console.error('Error updating view:', error);
       alert(`Failed to update view: ${error.message}`);
@@ -260,11 +301,34 @@ export default function FilterEditorModal({
     onClose();
   };
 
-  return (
+  const saveOptionsRow = (
+    <div className="flex items-center gap-3 text-xs flex-wrap">
+      <label className="flex items-center gap-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={saveSort}
+          onChange={(e) => setSaveSort(e.target.checked)}
+          className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+        />
+        <span>{customViewsT('includeSort')}</span>
+      </label>
+      <label className="flex items-center gap-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={saveColumns}
+          onChange={(e) => setSaveColumns(e.target.checked)}
+          className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+        />
+        <span>{customViewsT('includeColumns')}</span>
+      </label>
+    </div>
+  );
+
+  const modalContent = (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:w-[min(92vw,56rem)] lg:w-[min(88vw,64rem)] max-h-[min(90vh,52rem)] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -275,7 +339,7 @@ export default function FilterEditorModal({
             id="filter-editor-title"
             className="text-lg font-semibold text-primary-text dark:text-primary-text-dark"
           >
-            {downloadsFiltersT('modalTitle')}
+            {modalTitle}
           </h2>
           <button
             type="button"
@@ -290,6 +354,38 @@ export default function FilterEditorModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {isCreateMode && (
+            <div className="flex flex-col gap-2 pb-3 border-b border-border dark:border-border-dark">
+              {saveOptionsRow}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={saveViewName}
+                  onChange={(e) => setSaveViewName(e.target.value)}
+                  placeholder={customViewsT('viewNamePlaceholder')}
+                  className="flex-1 px-3 py-2 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && filtersActive) handleCreateView();
+                  }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateView}
+                  disabled={isSaving || !saveViewName.trim() || !filtersActive}
+                  className="px-4 py-2 text-sm font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
+                >
+                  {isSaving ? customViewsT('creating') : customViewsT('createView')}
+                </button>
+              </div>
+              {!filtersActive && (
+                <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+                  {customViewsT('noFilters')}
+                </p>
+              )}
+            </div>
+          )}
+
           {filterGroups.length === 0 ? (
             <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 italic text-center py-6">
               {customViewsT('noFilters')}
@@ -323,34 +419,13 @@ export default function FilterEditorModal({
             ))
           )}
 
-          {apiKey && filtersActive && (
+          {apiKey && filtersActive && !isCreateMode && (
             <div className="pt-3 border-t border-border dark:border-border-dark">
               {!showSaveInput ? (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  {activeView && (
-                    <div className="flex items-center gap-3 text-xs flex-wrap">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={saveSort}
-                          onChange={(e) => setSaveSort(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
-                        />
-                        <span>{customViewsT('includeSort')}</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={saveColumns}
-                          onChange={(e) => setSaveColumns(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
-                        />
-                        <span>{customViewsT('includeColumns')}</span>
-                      </label>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {activeView && (
+                  {isEditMode && saveOptionsRow}
+                  <div className="flex items-center gap-2 flex-wrap sm:ml-auto">
+                    {isEditMode && (
                       <button
                         type="button"
                         onClick={handleUpdateView}
@@ -360,17 +435,29 @@ export default function FilterEditorModal({
                         {isSaving ? customViewsT('updating') : customViewsT('updateView')}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setShowSaveInput(true)}
-                      className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
-                    >
-                      {customViewsT('saveAsNew')}
-                    </button>
+                    {!isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSaveInput(true)}
+                        className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+                      >
+                        {customViewsT('saveAsNew')}
+                      </button>
+                    )}
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSaveInput(true)}
+                        className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+                      >
+                        {customViewsT('saveAsNew')}
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
+                  {saveOptionsRow}
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -385,6 +472,7 @@ export default function FilterEditorModal({
                           setSaveViewName('');
                         }
                       }}
+                      autoFocus
                     />
                     <button
                       type="button"
@@ -412,7 +500,7 @@ export default function FilterEditorModal({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 p-4 border-t border-border dark:border-border-dark shrink-0">
-          {filtersActive && (
+          {filtersActive && !isCreateMode && (
             <>
               <button
                 type="button"
@@ -454,4 +542,6 @@ export default function FilterEditorModal({
       </div>
     </>
   );
+
+  return <OverlayPortal open={isOpen}>{modalContent}</OverlayPortal>;
 }

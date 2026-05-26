@@ -393,7 +393,9 @@
     "selectTagsPlaceholder": "Sélectionner des étiquettes...",
     "updateView": "Mettre à jour la vue",
     "updating": "Mise à jour...",
-    "viewNamePlaceholder": "Nom de la vue..."
+    "viewNamePlaceholder": "Nom de la vue...",
+    "createView": "Créer une vue",
+    "creating": "Création..."
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filtres",
@@ -408,6 +410,11 @@
     "createTagFailed": "Impossible de créer l'étiquette : {error}",
     "manageTags": "Gérer les étiquettes",
     "modalTitle": "Modifier les filtres",
+    "modalTitleCreate": "Créer une vue",
+    "modalTitleEdit": "Modifier la vue",
+    "modalTitleEditNamed": "Modifier « {name} »",
+    "viewCreated": "Vue « {name} » créée",
+    "viewUpdated": "Vue « {name} » mise à jour",
     "applyFilters": "Appliquer les filtres",
     "clearAll": "Tout effacer",
     "close": "Fermer",
