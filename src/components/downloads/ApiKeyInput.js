@@ -52,7 +52,7 @@ export default function ApiKeyInput({
     lastAutoApplyKeyRef.current = committedValue;
 
     applyReferralToAccount(committedValue, REFERRAL_CODE).then((result) => {
-      if (result.success || result.alreadyHasReferrer) {
+      if (result.success || result.skipFutureAttempts) {
         markReferralAppliedForKey(committedValue);
       }
     });
