@@ -1,33 +1,20 @@
 import { NextResponse } from 'next/server';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function POST(request) {
   try {
     const { apiKey, action, id } = await request.json();
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API key is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'API key is required' }, { status: 400 });
     }
 
     if (!action) {
-      return NextResponse.json(
-        { error: 'Action is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Action is required' }, { status: 400 });
     }
 
     if (!id && action !== 'create') {
-      return NextResponse.json(
-        { error: 'Web download ID is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Web download ID is required' }, { status: 400 });
     }
 
     const apiUrl = `${API_BASE}/${API_VERSION}/api/webdl/controlwebdownload`;
@@ -47,9 +34,7 @@ export async function POST(request) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.detail || `API responded with status: ${response.status}`,
-      );
+      throw new Error(errorData.detail || `API responded with status: ${response.status}`);
     }
 
     const data = await response.json();

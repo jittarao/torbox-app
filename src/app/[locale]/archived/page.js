@@ -18,29 +18,29 @@ export default function ArchivedDownloadsPage() {
       loadedKey = storedKey;
       setApiKey(storedKey);
     }
-    
+
     // Ensure user database exists for loaded API key
     if (loadedKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey).then((result) => {
-          if (result.success && result.wasCreated) {
-            console.log('User database created for existing API key');
-          }
-        }).catch((error) => {
-          console.error('Error ensuring user database on load:', error);
-        });
+        ensureUserDb(loadedKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
       });
     }
-    
+
     setLoading(false);
   }, []);
 
   if (loading) return null;
 
   return (
-    <main
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
-    >
+    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
       <Header apiKey={apiKey} />
       <div className="container mx-auto p-4">
         <ArchivedDownloads apiKey={apiKey} />

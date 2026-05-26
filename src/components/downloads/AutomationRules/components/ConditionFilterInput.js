@@ -1,6 +1,6 @@
 'use client';
 
-import { 
+import {
   CONDITION_TYPES,
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
@@ -9,8 +9,8 @@ import {
   TAG_OPERATORS,
 } from '../constants';
 import { useTags } from '@/components/shared/hooks/useTags';
-import { 
-  isTimeBasedCondition, 
+import {
+  isTimeBasedCondition,
   isTimestampBasedCondition,
   isBooleanCondition,
   isStringCondition,
@@ -27,31 +27,35 @@ import { STATUS_OPTIONS } from '@/components/constants';
 
 // Map STATUS_OPTIONS labels to backend status values
 const getStatusOptions = () => {
-  return STATUS_OPTIONS
-    .filter(opt => !opt.hidden && opt.label !== 'All' && opt.label !== 'Meta_DL' && opt.label !== 'Checking_Resume_Data')
-    .map(opt => {
-      const labelToValue = {
-        'Queued': 'queued',
-        'Downloading': 'downloading',
-        'Seeding': 'seeding',
-        'Completed': 'completed',
-        'Uploading': 'uploading',
-        'Stalled': 'stalled',
-        'Inactive': 'inactive',
-        'Failed': 'failed',
-      };
-      return {
-        label: opt.label,
-        value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
-      };
-    });
+  return STATUS_OPTIONS.filter(
+    (opt) =>
+      !opt.hidden &&
+      opt.label !== 'All' &&
+      opt.label !== 'Meta_DL' &&
+      opt.label !== 'Checking_Resume_Data'
+  ).map((opt) => {
+    const labelToValue = {
+      Queued: 'queued',
+      Downloading: 'downloading',
+      Seeding: 'seeding',
+      Completed: 'completed',
+      Uploading: 'uploading',
+      Stalled: 'stalled',
+      Inactive: 'inactive',
+      Failed: 'failed',
+    };
+    return {
+      label: opt.label,
+      value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
+    };
+  });
 };
 
-export default function ConditionFilterInput({ 
-  condition, 
-  index, 
+export default function ConditionFilterInput({
+  condition,
+  index,
   totalConditions,
-  onUpdate, 
+  onUpdate,
   onRemove,
   t,
   apiKey,
@@ -63,11 +67,11 @@ export default function ConditionFilterInput({
       // When changing condition type, update operator and value to appropriate defaults
       const newOperator = getDefaultOperatorForConditionType(value);
       const newValue = getDefaultValueForConditionType(value);
-      
+
       onUpdate(index, 'type', value);
       onUpdate(index, 'operator', newOperator);
       onUpdate(index, 'value', newValue);
-      
+
       // Initialize hours for speed average conditions
       if (isSpeedAverageCondition(value)) {
         onUpdate(index, 'hours', 1);
@@ -79,7 +83,11 @@ export default function ConditionFilterInput({
       // For boolean conditions, automatically update operator based on value
       const boolValue = value === true || value === 'true' || value === 1;
       onUpdate(index, 'value', boolValue);
-      onUpdate(index, 'operator', boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE);
+      onUpdate(
+        index,
+        'operator',
+        boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE
+      );
     } else if (field === 'type' && value === CONDITION_TYPES.TAGS) {
       // When changing to TAGS type, set default operator and value
       onUpdate(index, 'type', value);
@@ -104,7 +112,7 @@ export default function ConditionFilterInput({
 
   // Get tag options for MultiSelect
   const getTagOptions = () => {
-    return tags.map(tag => ({
+    return tags.map((tag) => ({
       label: tag.name,
       value: tag.id,
     }));
@@ -113,12 +121,19 @@ export default function ConditionFilterInput({
   const conditionTypeOptions = getConditionTypeOptions(t);
 
   const operators = condition.type ? getOperatorsForConditionType(condition.type) : [];
-  const operatorOptions = operators.map(op => {
+  const operatorOptions = operators.map((op) => {
     let label = op;
     const isTimeBased = isTimeBasedCondition(condition.type);
     const isTimestampBased = isTimestampBasedCondition(condition.type);
 
-    if (isTimeBased || isTimestampBased || (!isBooleanCondition(condition.type) && !isStringCondition(condition.type) && condition.type !== CONDITION_TYPES.STATUS && condition.type !== CONDITION_TYPES.TAGS)) {
+    if (
+      isTimeBased ||
+      isTimestampBased ||
+      (!isBooleanCondition(condition.type) &&
+        !isStringCondition(condition.type) &&
+        condition.type !== CONDITION_TYPES.STATUS &&
+        condition.type !== CONDITION_TYPES.TAGS)
+    ) {
       // Numeric/time comparison operators
       const labels = {
         [COMPARISON_OPERATORS.GT]: t('operators.gt'),
@@ -177,9 +192,9 @@ export default function ConditionFilterInput({
         {conditionTypeOptions.map((group, groupIdx) => (
           <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
             {group.options.map((opt, optIdx) => (
-              <option 
-                key={`opt-${groupIdx}-${optIdx}-${opt.value}`} 
-                value={String(opt.value)} 
+              <option
+                key={`opt-${groupIdx}-${optIdx}-${opt.value}`}
+                value={String(opt.value)}
                 title={opt.description}
               >
                 {opt.label}
@@ -196,7 +211,7 @@ export default function ConditionFilterInput({
           onChange={(e) => handleFieldChange('operator', e.target.value)}
           className="w-full sm:min-w-[100px] sm:w-auto"
         >
-          {operatorOptions.map(opt => (
+          {operatorOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -232,7 +247,11 @@ export default function ConditionFilterInput({
             />
           ) : isBooleanCondition(condition.type) ? (
             <Select
-              value={condition.value === true || condition.value === 'true' || condition.value === 1 ? 'true' : 'false'}
+              value={
+                condition.value === true || condition.value === 'true' || condition.value === 1
+                  ? 'true'
+                  : 'false'
+              }
               onChange={(e) => handleFieldChange('value', e.target.value === 'true')}
               className="w-full sm:min-w-[100px] sm:w-auto"
             >
@@ -259,7 +278,12 @@ export default function ConditionFilterInput({
                 onChange={(e) => handleFieldChange('value', parseFloat(e.target.value) || 0)}
                 className="flex-1 min-w-0 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
                 min="0"
-                step={condition.type === CONDITION_TYPES.RATIO || condition.type === CONDITION_TYPES.AVAILABILITY ? '0.1' : '1'}
+                step={
+                  condition.type === CONDITION_TYPES.RATIO ||
+                  condition.type === CONDITION_TYPES.AVAILABILITY
+                    ? '0.1'
+                    : '1'
+                }
               />
               {getConditionUnit(condition.type) && (
                 <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap flex-shrink-0">

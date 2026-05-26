@@ -16,10 +16,7 @@ export async function GET(request, { params }) {
     const apiKey = headersList.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
     }
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/${id}/download`, {
@@ -44,7 +41,7 @@ export async function GET(request, { params }) {
     // Get the filename from Content-Disposition header or use a default
     const contentDisposition = response.headers.get('Content-Disposition');
     const contentType = response.headers.get('Content-Type') || 'application/octet-stream';
-    
+
     const fileBuffer = await response.arrayBuffer();
 
     return new NextResponse(fileBuffer, {
@@ -56,9 +53,6 @@ export async function GET(request, { params }) {
     });
   } catch (error) {
     console.error('Error downloading upload file:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

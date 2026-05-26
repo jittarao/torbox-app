@@ -40,26 +40,25 @@ export async function ensureUserDb(apiKey) {
       // Mark as ensured
       markDbEnsured(apiKey);
       setEnsuringDb(apiKey, false);
-      return { 
-        success: true, 
+      return {
+        success: true,
         wasCreated: data.wasCreated || false,
-        dbExists: data.dbExists || false
+        dbExists: data.dbExists || false,
       };
     } else {
       const errorData = await response.json().catch(() => ({}));
       setEnsuringDb(apiKey, false);
-      return { 
-        success: false, 
-        error: errorData.error || `HTTP ${response.status}` 
+      return {
+        success: false,
+        error: errorData.error || `HTTP ${response.status}`,
       };
     }
   } catch (error) {
     console.error('Error ensuring user database:', error);
     setEnsuringDb(apiKey, false);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to ensure user database' 
+    return {
+      success: false,
+      error: error.message || 'Failed to ensure user database',
     };
   }
 }
-

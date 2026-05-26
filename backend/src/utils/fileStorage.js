@@ -257,7 +257,10 @@ export async function calculateUserUploadDirSize(authId) {
         await Promise.all(dirs.map((entry) => calculateDirSize(path.join(dirPath, entry.name))));
 
         const statPromises = files.map((entry) =>
-          stat(path.join(dirPath, entry.name)).then((s) => s.size, () => 0)
+          stat(path.join(dirPath, entry.name)).then(
+            (s) => s.size,
+            () => 0
+          )
         );
         const sizes = await Promise.all(statPromises);
         totalSize += sizes.reduce((sum, n) => sum + n, 0);

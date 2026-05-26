@@ -13,7 +13,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
   const t = useTranslations('RssItems');
   const { feeds, getFeedItems } = useRssFeeds(apiKey);
   const { uploadItem } = useUpload(apiKey);
-  
+
   const [selectedFeed, setSelectedFeed] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,26 +31,29 @@ export default function RssItemsManager({ apiKey, setToast }) {
   }, [apiKey]);
 
   // Fetch items for selected feed
-  const fetchItems = useCallback(async (feedId) => {
-    if (!feedId) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const result = await getFeedItems(feedId, 0, 1000);
-      if (result.success) {
-        setItems(result.data || []);
-      } else {
-        setError(result.error);
+  const fetchItems = useCallback(
+    async (feedId) => {
+      if (!feedId) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await getFeedItems(feedId, 0, 1000);
+        if (result.success) {
+          setItems(result.data || []);
+        } else {
+          setError(result.error);
+        }
+      } catch (err) {
+        console.error('Error fetching RSS items:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error fetching RSS items:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [getFeedItems]);
+    },
+    [getFeedItems]
+  );
 
   // Handle feed selection
   const handleFeedSelect = (feedId) => {
@@ -73,12 +76,12 @@ export default function RssItemsManager({ apiKey, setToast }) {
       return;
     }
 
-    setDownloadingItems(prev => new Set([...prev, item.id]));
+    setDownloadingItems((prev) => new Set([...prev, item.id]));
 
     try {
-      const feed = feeds.find(f => f.id === selectedFeed);
+      const feed = feeds.find((f) => f.id === selectedFeed);
       const downloadType = feed?.type || 'torrent';
-      
+
       let uploadData = {
         type: downloadType,
         data: item.link,
@@ -117,7 +120,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
         type: 'error',
       });
     } finally {
-      setDownloadingItems(prev => {
+      setDownloadingItems((prev) => {
         const newSet = new Set(prev);
         newSet.delete(item.id);
         return newSet;
@@ -131,30 +134,36 @@ export default function RssItemsManager({ apiKey, setToast }) {
 
   // Filter and sort items
   const filteredAndSortedItems = (items || [])
-    .filter(item => {
+    .filter((item) => {
       if (!item || typeof item !== 'object') return false;
-      
+
       // Search filter
-      if (searchTerm && !(item.name || item.title)?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (
+        searchTerm &&
+        !(item.name || item.title)?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) {
         return false;
       }
-      
+
       // Type filter
       if (filterType !== 'all') {
-        const itemType = item.link?.includes('magnet:') ? 'torrent' : 
-                        item.link?.includes('.nzb') ? 'usenet' : 'webdl';
+        const itemType = item.link?.includes('magnet:')
+          ? 'torrent'
+          : item.link?.includes('.nzb')
+            ? 'usenet'
+            : 'webdl';
         if (itemType !== filterType) {
           return false;
         }
       }
-      
+
       return true;
     })
     .sort((a, b) => {
       if (!a || !b) return 0;
-      
+
       let aValue, bValue;
-      
+
       switch (sortBy) {
         case 'date':
           aValue = new Date(a.pubDate || a.date || 0);
@@ -172,7 +181,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
           aValue = a.title || '';
           bValue = b.title || '';
       }
-      
+
       if (sortOrder === 'desc') {
         return aValue > bValue ? -1 : 1;
       } else {
@@ -351,28 +360,32 @@ export default function RssItemsManager({ apiKey, setToast }) {
                         <h3 className="font-medium text-primary-text dark:text-primary-text-dark truncate">
                           {item.name || item.title}
                         </h3>
-                        <span
-                          className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                        >
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
                           {getItemType(item.link)}
                         </span>
                       </div>
-                      
+
                       <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mb-2 line-clamp-2">
                         {item.description || item.summary || t('noDescription')}
                       </p>
-                      
+
                       <div className="flex gap-4 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
-                        <span>{t('published')}: {formatDate(item.pubDate || item.date)}</span>
+                        <span>
+                          {t('published')}: {formatDate(item.pubDate || item.date)}
+                        </span>
                         {item.size && (
-                          <span>{t('size')}: {formatSize(item.size)}</span>
+                          <span>
+                            {t('size')}: {formatSize(item.size)}
+                          </span>
                         )}
                         {item.category && (
-                          <span>{t('category')}: {item.category}</span>
+                          <span>
+                            {t('category')}: {item.category}
+                          </span>
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleDownload(item)}
@@ -386,7 +399,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                         )}
                         {t('download')}
                       </button>
-                      
+
                       {item.link && (
                         <button
                           type="button"

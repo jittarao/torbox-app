@@ -30,6 +30,7 @@ export default function FiltersSection({
   const views = viewsProp !== undefined ? viewsProp : viewsFromHook;
   const customViewsT = useTranslations('CustomViews');
   const automationRulesT = useTranslations('AutomationRules');
+  const columnsT = useTranslations('Columns');
 
   // When updating a view, set checkboxes based on existing view data
   useEffect(() => {
@@ -86,7 +87,7 @@ export default function FiltersSection({
   const [saveColumns, setSaveColumns] = useState(false);
   const [showTagManager, setShowTagManager] = useState(false);
 
-  const availableColumns = getFilterableColumns(activeType);
+  const availableColumns = getFilterableColumns(columnsT, activeType);
 
   // Initialize filter groups structure if needed (only once on mount)
   useEffect(() => {
@@ -754,7 +755,6 @@ export default function FiltersSection({
                             }
                           }
                         }}
-                        autoFocus
                       />
                       <button
                         type="button"

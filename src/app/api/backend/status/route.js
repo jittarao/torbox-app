@@ -8,21 +8,21 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 export async function GET() {
   // Check if backend is explicitly disabled
   if (isBackendDisabled()) {
-    return NextResponse.json({ 
-      available: false, 
+    return NextResponse.json({
+      available: false,
       mode: 'local',
       version: '0.1.0',
-      uptime: 0
+      uptime: 0,
     });
   }
 
   try {
     const url = new URL(`${BACKEND_URL}/api/backend/status`);
-    
+
     const response = await new Promise((resolve, reject) => {
       const req = http.get(url, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           try {
             const jsonData = JSON.parse(data);
@@ -32,7 +32,7 @@ export async function GET() {
           }
         });
       });
-      
+
       req.on('error', reject);
       req.setTimeout(5000, () => {
         req.destroy();
@@ -44,11 +44,11 @@ export async function GET() {
       return NextResponse.json(response.data);
     } else {
       // Backend not available, return local mode
-      return NextResponse.json({ 
-        available: false, 
+      return NextResponse.json({
+        available: false,
         mode: 'local',
         version: '0.1.0',
-        uptime: 0
+        uptime: 0,
       });
     }
   } catch (error) {
@@ -58,11 +58,11 @@ export async function GET() {
       global.backendStatusLogged = true;
     }
     // Backend not available, return local mode
-    return NextResponse.json({ 
-      available: false, 
+    return NextResponse.json({
+      available: false,
       mode: 'local',
       version: '0.1.0',
-      uptime: 0
+      uptime: 0,
     });
   }
 }

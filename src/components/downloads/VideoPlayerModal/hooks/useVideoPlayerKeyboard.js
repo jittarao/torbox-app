@@ -31,7 +31,11 @@ export function useVideoPlayerKeyboard({
 
     const handleKeyDown = (e) => {
       // Don't handle keyboard shortcuts if user is typing in an input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+      if (
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.isContentEditable
+      ) {
         return;
       }
 
@@ -77,12 +81,26 @@ export function useVideoPlayerKeyboard({
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         if (videoRef.current) {
-          videoRef.current.currentTime = Math.min(videoRef.current.duration || 0, videoRef.current.currentTime + 10);
+          videoRef.current.currentTime = Math.min(
+            videoRef.current.duration || 0,
+            videoRef.current.currentTime + 10
+          );
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isPlaying, isFullscreen, showInfo, videoRef, onPlayPause, onFullscreen, onMuteToggle, onInfoClose, onVolumeChange]);
+  }, [
+    isOpen,
+    isPlaying,
+    isFullscreen,
+    showInfo,
+    videoRef,
+    onPlayPause,
+    onFullscreen,
+    onMuteToggle,
+    onInfoClose,
+    onVolumeChange,
+  ]);
 }

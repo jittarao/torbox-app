@@ -10,7 +10,7 @@ const getErrorMessage = (error, status, url) => {
   if (error.message === 'NetworkError when attempting to fetch resource.') {
     return 'Network connection failed. Please check your internet connection and try again.';
   }
-  
+
   if (error.message.includes('Failed to fetch')) {
     return 'Unable to connect to TorBox servers. Please check your internet connection and try again.';
   }
@@ -112,7 +112,8 @@ export async function retryFetch(url, options = {}) {
             success: false,
             error: data.error,
             detail: data.detail,
-            userMessage: 'TorBox database is temporarily unavailable. Please try again in a few minutes.',
+            userMessage:
+              'TorBox database is temporarily unavailable. Please try again in a few minutes.',
           };
         }
       }
@@ -139,8 +140,8 @@ export async function retryFetch(url, options = {}) {
     }
   }
 
-  return { 
-    success: false, 
+  return {
+    success: false,
     error: `Failed after ${maxRetries} retries`,
     userMessage: getErrorMessage(lastError, lastStatus, url),
   };

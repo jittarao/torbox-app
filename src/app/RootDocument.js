@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { Geist, Geist_Mono } from 'next/font/google';
+import Script from 'next/script';
 import { RybbitHeadScripts } from '@/components/RybbitHeadScripts';
 import { defaultLocale } from '@/i18n/settings';
 
@@ -34,15 +35,9 @@ export function RootDocumentShell({ locale, children }) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#000000" />
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: themeScript }}
-        />
+        <Script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-zinc-50 dark:bg-[#0a0a0b] text-zinc-900 dark:text-zinc-100 antialiased`}

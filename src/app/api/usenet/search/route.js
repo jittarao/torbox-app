@@ -1,8 +1,5 @@
 import { headers } from 'next/headers';
-import {
-  API_SEARCH_BASE,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_SEARCH_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET(req) {
   const headersList = await headers();
@@ -12,10 +9,7 @@ export async function GET(req) {
   const searchUserEngines = searchParams.get('search_user_engines') === 'true';
 
   if (!query) {
-    return new Response(
-      JSON.stringify({ error: 'Query parameter is required' }),
-      { status: 400 },
-    );
+    return new Response(JSON.stringify({ error: 'Query parameter is required' }), { status: 400 });
   }
 
   if (!apiKey) {
@@ -54,22 +48,29 @@ export async function GET(req) {
     return new Response(JSON.stringify(data), { status: 200 });
   } catch (error) {
     console.error('Usenet search error:', error);
-    
+
     // Provide more specific error messages based on the error type
     let errorMessage = 'Failed to search usenet';
     let statusCode = 500;
-    
+
     if (error.message.includes('502')) {
-      errorMessage = 'TorBox search servers are temporarily unavailable. Please try again in a few minutes.';
+      errorMessage =
+        'TorBox search servers are temporarily unavailable. Please try again in a few minutes.';
       statusCode = 502;
     } else if (error.message.includes('503')) {
-      errorMessage = 'TorBox search servers are temporarily overloaded. Please try again in a few minutes.';
+      errorMessage =
+        'TorBox search servers are temporarily overloaded. Please try again in a few minutes.';
       statusCode = 503;
     } else if (error.message.includes('504')) {
-      errorMessage = 'TorBox search servers are taking too long to respond. Please try again in a few minutes.';
+      errorMessage =
+        'TorBox search servers are taking too long to respond. Please try again in a few minutes.';
       statusCode = 504;
-    } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-      errorMessage = 'Unable to connect to TorBox search servers. Please check your internet connection and try again.';
+    } else if (
+      error.message.includes('NetworkError') ||
+      error.message.includes('Failed to fetch')
+    ) {
+      errorMessage =
+        'Unable to connect to TorBox search servers. Please check your internet connection and try again.';
       statusCode = 503;
     } else if (error.message.includes('401')) {
       errorMessage = 'Authentication failed. Please check your API key.';
@@ -81,10 +82,13 @@ export async function GET(req) {
       errorMessage = 'Too many search requests. Please wait a moment and try again.';
       statusCode = 429;
     }
-    
-    return new Response(JSON.stringify({ 
-      error: errorMessage,
-      originalError: error.message 
-    }), { status: statusCode });
+
+    return new Response(
+      JSON.stringify({
+        error: errorMessage,
+        originalError: error.message,
+      }),
+      { status: statusCode }
+    );
   }
 }

@@ -3,7 +3,8 @@
  * Stores archived torrent information (id, hash, tracker) for later restoration
  */
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS archived_downloads (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       torrent_id TEXT NOT NULL,
@@ -13,25 +14,32 @@ export const up = (db) => {
       archived_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `).run();
+  `
+  ).run();
 
   // Index for efficient lookups by torrent_id
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_archived_downloads_torrent_id 
     ON archived_downloads(torrent_id)
-  `).run();
+  `
+  ).run();
 
   // Index for efficient lookups by hash
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_archived_downloads_hash 
     ON archived_downloads(hash)
-  `).run();
+  `
+  ).run();
 
   // Index for pagination queries (most recent first)
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_archived_downloads_archived_at 
     ON archived_downloads(archived_at DESC)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {

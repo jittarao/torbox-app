@@ -3,7 +3,13 @@ import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { ensureUserDb } from '@/utils/ensureUserDb';
 
-export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpen, onKeepOpenToggle }) {
+export default function ApiKeyManager({
+  onKeySelect,
+  activeKey,
+  onClose,
+  keepOpen,
+  onKeepOpenToggle,
+}) {
   const t = useTranslations('ApiKeyManager');
   const [keys, setKeys] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -53,11 +59,7 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpe
           <label className="flex items-center gap-2 cursor-pointer">
             <div
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
-                ${
-                  keepOpen
-                    ? 'bg-accent dark:bg-accent-dark'
-                    : 'bg-border dark:bg-border-dark'
-                }`}
+                ${keepOpen ? 'bg-accent dark:bg-accent-dark' : 'bg-border dark:bg-border-dark'}`}
               onClick={() => onKeepOpenToggle(!keepOpen)}
             >
               <span
@@ -69,7 +71,7 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpe
               {t('toggleOpen')}
             </span>
           </label>
-          
+
           <button
             onClick={() => setShowAddForm(true)}
             className="text-sm bg-accent dark:bg-accent-dark text-white px-3 py-1.5 rounded-lg
@@ -101,7 +103,6 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpe
         </div>
       </div>
 
-
       {keys.length > 0 ? (
         <div className="space-y-2">
           {keys.map((keyItem, index) => (
@@ -129,7 +130,7 @@ export default function ApiKeyManager({ onKeySelect, activeKey, onClose, keepOpe
                     if (result.success && result.wasCreated) {
                       console.log('User database created for API key');
                     }
-                    
+
                     onKeySelect(keyItem.key);
                   }}
                   className="flex-1 text-left"

@@ -192,7 +192,7 @@ class SpeedAggregator {
     try {
       const cutoff = this._getHoursAgo(this.retentionHours);
       const result = this.stmtDeleteOld.run(cutoff.toISOString());
-      
+
       if (result.changes > 0) {
         logger.debug('Pruned old speed samples', {
           deletedCount: result.changes,

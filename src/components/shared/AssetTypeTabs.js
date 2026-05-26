@@ -14,11 +14,7 @@ function getStoredAssetType() {
 
 export { getStoredAssetType };
 
-export default function AssetTypeTabs({
-  activeType,
-  onTypeChange,
-  isTypeAvailable = () => true,
-}) {
+export default function AssetTypeTabs({ activeType, onTypeChange, isTypeAvailable = () => true }) {
   const t = useTranslations('Common');
 
   const tabs = [
@@ -50,10 +46,10 @@ export default function AssetTypeTabs({
         {tabs
           .filter((tab) => isTypeAvailable(tab.id))
           .map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTypeChange(tab.id)}
-            className={`
+            <button
+              key={tab.id}
+              onClick={() => onTypeChange(tab.id)}
+              className={`
               whitespace-nowrap py-3 md:py-4 px-3 md:px-1 border-b-2 font-medium text-sm flex items-center gap-2 md:gap-1 flex-1 md:flex-initial justify-center
               ${
                 activeType === tab.id
@@ -61,10 +57,10 @@ export default function AssetTypeTabs({
                   : 'border-transparent text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:border-border dark:hover:border-border-dark'
               }
             `}
-          >
-            {tab.icon}
-            <span className="w-max">{tab.label}</span>
-          </button>
+            >
+              {tab.icon}
+              <span className="w-max">{tab.label}</span>
+            </button>
           ))}
       </nav>
     </div>

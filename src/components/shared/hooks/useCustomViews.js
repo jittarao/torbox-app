@@ -39,7 +39,7 @@ export function useCustomViews(apiKey) {
       }
       return await saveViewStore(apiKey, name, filters, sort, columns, assetType);
     },
-    [apiKey, saveViewStore],
+    [apiKey, saveViewStore]
   );
 
   const updateView = useCallback(
@@ -49,7 +49,7 @@ export function useCustomViews(apiKey) {
       }
       return await updateViewStore(apiKey, id, updates);
     },
-    [apiKey, updateViewStore],
+    [apiKey, updateViewStore]
   );
 
   const deleteView = useCallback(
@@ -59,7 +59,7 @@ export function useCustomViews(apiKey) {
       }
       return await deleteViewStore(apiKey, id);
     },
-    [apiKey, deleteViewStore],
+    [apiKey, deleteViewStore]
   );
 
   return {

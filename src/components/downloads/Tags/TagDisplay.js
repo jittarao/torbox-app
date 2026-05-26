@@ -1,5 +1,7 @@
 'use client';
 
+const EMPTY_ARRAY = [];
+
 /**
  * TagDisplay component - displays tags as chips/badges
  * @param {Object} props
@@ -7,7 +9,7 @@
  * @param {Function} props.onTagClick - Optional callback when tag is clicked
  * @param {string} props.className - Additional CSS classes
  */
-export default function TagDisplay({ tags = [], onTagClick, className = '' }) {
+export default function TagDisplay({ tags = EMPTY_ARRAY, onTagClick, className = '' }) {
   if (!tags || tags.length === 0) {
     return null;
   }

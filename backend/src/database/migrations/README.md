@@ -21,11 +21,13 @@ migrations/
 ## Migration Types
 
 ### Master Migrations (`master/`)
+
 - Applied to the **master database** (PostgreSQL)
 - Manages user registry, API key storage, and system-wide data
 - Examples: user registry, API key encryption
 
 ### User Migrations (`user/`)
+
 - Applied to **each user's database** (SQLite)
 - Manages user-specific data: automation rules, telemetry, archives
 - Examples: automation rules, torrent shadow state, speed history
@@ -33,11 +35,13 @@ migrations/
 ## Migration File Format
 
 Migration files should follow this naming convention:
+
 ```
 {version}_{description}.js
 ```
 
 Where:
+
 - `{version}` is a zero-padded 3-digit number (e.g., `001`, `002`, `003`)
 - `{description}` is a snake_case description of what the migration does
 
@@ -67,7 +71,7 @@ export const down = (db) => {
 
 2. **Reversibility**: Always provide a `down` function that can reverse the migration. This is useful for development and rollbacks.
 
-3. **Data Safety**: 
+3. **Data Safety**:
    - Never drop columns/tables without careful consideration
    - Consider data migration when changing column types
    - Test migrations on a copy of production data first
@@ -76,7 +80,7 @@ export const down = (db) => {
 
 5. **Atomicity**: SQLite doesn't support transactions for DDL operations, but try to keep migrations focused and atomic.
 
-6. **Database-Specific**: 
+6. **Database-Specific**:
    - Master migrations use PostgreSQL syntax
    - User migrations use SQLite syntax
    - Be aware of differences (e.g., `SERIAL` vs `INTEGER PRIMARY KEY AUTOINCREMENT`)
@@ -86,14 +90,17 @@ export const down = (db) => {
 ### For Master Database
 
 1. Create a new file in `master/` directory:
+
    ```bash
    # Example: master/002_add_user_preferences.js
    ```
 
 2. Implement both `up` and `down` functions using PostgreSQL syntax:
+
    ```javascript
    export const up = (db) => {
-     db.prepare(`
+     db.prepare(
+       `
        CREATE TABLE IF NOT EXISTS user_preferences (
          id SERIAL PRIMARY KEY,
          auth_id TEXT NOT NULL REFERENCES user_registry(auth_id),
@@ -102,12 +109,15 @@ export const down = (db) => {
          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
          UNIQUE(auth_id, preference_key)
        )
-     `).run();
-     
-     db.prepare(`
+     `
+     ).run();
+
+     db.prepare(
+       `
        CREATE INDEX IF NOT EXISTS idx_user_preferences_auth_id 
        ON user_preferences(auth_id)
-     `).run();
+     `
+     ).run();
    };
 
    export const down = (db) => {
@@ -119,14 +129,17 @@ export const down = (db) => {
 ### For User Database
 
 1. Create a new file in `user/` directory:
+
    ```bash
    # Example: user/006_add_user_settings.js
    ```
 
 2. Implement both `up` and `down` functions using SQLite syntax:
+
    ```javascript
    export const up = (db) => {
-     db.prepare(`
+     db.prepare(
+       `
        CREATE TABLE IF NOT EXISTS user_settings (
          id INTEGER PRIMARY KEY AUTOINCREMENT,
          setting_key TEXT NOT NULL UNIQUE,
@@ -134,12 +147,15 @@ export const down = (db) => {
          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
        )
-     `).run();
-     
-     db.prepare(`
+     `
+     ).run();
+
+     db.prepare(
+       `
        CREATE INDEX IF NOT EXISTS idx_user_settings_key 
        ON user_settings(setting_key)
-     `).run();
+     `
+     ).run();
    };
 
    export const down = (db) => {
@@ -153,11 +169,13 @@ export const down = (db) => {
 ## Migration Execution
 
 ### Master Database
+
 - Migrations are executed when `Database.initialize()` is called
 - Applied once to the master database
 - Tracked in `schema_migrations` table
 
 ### User Databases
+
 - Migrations are executed when `UserDatabaseManager.getUserDatabase()` is called
 - Applied to each user's database when first accessed
 - Each user database has its own `schema_migrations` table
@@ -167,6 +185,7 @@ export const down = (db) => {
 You can check migration status programmatically:
 
 ### Master Database
+
 ```javascript
 const status = masterDatabase.getMigrationStatus();
 console.log(status);
@@ -177,6 +196,7 @@ console.log(status);
 ```
 
 ### User Database
+
 ```javascript
 const userDb = await userDbManager.getUserDatabase(authId);
 const status = userDb.migrationRunner.getMigrationStatus();
@@ -188,11 +208,13 @@ console.log(status);
 To rollback a specific migration:
 
 ### Master Database
+
 ```javascript
 await masterDatabase.rollbackMigration('002');
 ```
 
 ### User Database
+
 ```javascript
 const userDb = await userDbManager.getUserDatabase(authId);
 await userDb.migrationRunner.rollbackMigration('002');
@@ -213,6 +235,7 @@ CREATE TABLE schema_migrations (
 ```
 
 The migration system:
+
 1. Checks which migrations have been applied
 2. Runs only unapplied migrations in order
 3. Records applied migrations in the tracking table
@@ -220,21 +243,26 @@ The migration system:
 ## Common Patterns
 
 ### Adding a New Table
+
 ```javascript
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS new_table (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       -- columns
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `).run();
-  
+  `
+  ).run();
+
   // Add indexes
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_new_table_column 
     ON new_table(column)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {
@@ -244,25 +272,31 @@ export const down = (db) => {
 ```
 
 ### Adding a Foreign Key
+
 ```javascript
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS related_table (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       parent_id TEXT NOT NULL,
       FOREIGN KEY (parent_id) REFERENCES parent_table(id) ON DELETE CASCADE
     )
-  `).run();
+  `
+  ).run();
 };
 ```
 
 ### Adding an Index
+
 ```javascript
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_table_column 
     ON table_name(column_name)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {
@@ -282,18 +316,21 @@ Before deploying migrations:
 ## Troubleshooting
 
 ### Migration Fails
+
 - Check database connection
 - Verify SQL syntax for your database type (PostgreSQL vs SQLite)
 - Check for conflicting migrations
 - Review error logs for specific issues
 
 ### Migration Not Applied
+
 - Verify migration file is in correct directory (`master/` or `user/`)
 - Check migration version number is sequential
 - Ensure migration file exports both `up` and `down` functions
 - Verify database has write permissions
 
 ### Rollback Issues
+
 - Ensure `down` function properly reverses `up` function
 - Check for data dependencies that prevent rollback
 - Consider creating a new migration instead of rolling back in production

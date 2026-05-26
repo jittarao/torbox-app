@@ -15,7 +15,7 @@ class ApiClient {
   async request(endpoint, options = {}) {
     // For client-side requests, use relative URLs to go through Next.js API routes
     const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
-    
+
     const headers = {
       ...this.baseHeaders,
       ...options.headers,
@@ -32,8 +32,8 @@ class ApiClient {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const config = { 
-      ...options, 
+    const config = {
+      ...options,
       headers,
       signal: options.signal || controller.signal,
     };
@@ -41,7 +41,7 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
-      
+
       // Store ETag for future requests
       const responseETag = response.headers.get('ETag');
       if (responseETag) {
@@ -52,7 +52,7 @@ class ApiClient {
       if (response.status === 304) {
         return { success: true, data: [], cached: true };
       }
-      
+
       // Try to parse JSON response
       let data;
       try {
@@ -64,27 +64,37 @@ class ApiClient {
 
       if (!response.ok) {
         // Check for specific error types
-        if (data.error === 'AUTH_ERROR' || data.error === 'NO_AUTH' || data.error?.includes('auth')) {
+        if (
+          data.error === 'AUTH_ERROR' ||
+          data.error === 'NO_AUTH' ||
+          data.error?.includes('auth')
+        ) {
           throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
         }
-        
+
         // Handle 422 validation errors (provider not connected)
         if (response.status === 422) {
-          throw new Error(`AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`);
+          throw new Error(
+            `AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`
+          );
         }
-        
+
         // Handle 404 errors (endpoint not found)
         if (response.status === 404) {
-          throw new Error(`AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`);
+          throw new Error(
+            `AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`
+          );
         }
-        
+
         // Handle 408 timeout errors
         if (response.status === 408) {
-          const timeoutError = new Error(data.detail || data.error || data.message || 'Request timeout');
+          const timeoutError = new Error(
+            data.detail || data.error || data.message || 'Request timeout'
+          );
           timeoutError.isTimeout = true;
           throw timeoutError;
         }
-        
+
         // Handle different error formats
         const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
         throw new Error(errorMessage);
@@ -93,21 +103,21 @@ class ApiClient {
       return data;
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       // Handle AbortError (timeout)
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         const timeoutError = new Error('Request timeout - connection to TorBox API failed');
         timeoutError.isTimeout = true;
         throw timeoutError;
       }
-      
+
       // Handle network errors
       if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || error.message?.includes('timeout')) {
         const timeoutError = new Error('Connection timeout - TorBox API is unreachable');
         timeoutError.isTimeout = true;
         throw timeoutError;
       }
-      
+
       console.error(`API request failed for ${endpoint}:`, error);
       throw error;
     }
@@ -145,17 +155,27 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        if (data.error === 'AUTH_ERROR' || data.error === 'NO_AUTH' || data.error?.includes('auth')) {
+        if (
+          data.error === 'AUTH_ERROR' ||
+          data.error === 'NO_AUTH' ||
+          data.error?.includes('auth')
+        ) {
           throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
         }
         if (response.status === 422) {
-          throw new Error(`AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`);
+          throw new Error(
+            `AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`
+          );
         }
         if (response.status === 404) {
-          throw new Error(`AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`);
+          throw new Error(
+            `AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`
+          );
         }
         if (response.status === 408) {
-          const timeoutError = new Error(data.detail || data.error || data.message || 'Request timeout');
+          const timeoutError = new Error(
+            data.detail || data.error || data.message || 'Request timeout'
+          );
           timeoutError.isTimeout = true;
           throw timeoutError;
         }
@@ -185,7 +205,7 @@ class ApiClient {
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    
+
     return this.request(url, { method: 'GET' });
   }
 
@@ -219,9 +239,9 @@ class ApiClient {
   }
 
   async getQueuedTorrents(bypassCache = false) {
-    return this.get('/api/queued/getqueued', { 
+    return this.get('/api/queued/getqueued', {
       type: 'torrent',
-      bypass_cache: bypassCache 
+      bypass_cache: bypassCache,
     });
   }
 
@@ -273,9 +293,9 @@ class ApiClient {
   }
 
   async getQueuedUsenet(bypassCache = false) {
-    return this.get('/api/queued/getqueued', { 
+    return this.get('/api/queued/getqueued', {
       type: 'usenet',
-      bypass_cache: bypassCache 
+      bypass_cache: bypassCache,
     });
   }
 
@@ -296,9 +316,9 @@ class ApiClient {
   }
 
   async getQueuedWebDownloads(bypassCache = false) {
-    return this.get('/api/queued/getqueued', { 
+    return this.get('/api/queued/getqueued', {
       type: 'webdl',
-      bypass_cache: bypassCache 
+      bypass_cache: bypassCache,
     });
   }
 
@@ -428,7 +448,6 @@ class ApiClient {
   async getStats30Days() {
     return this.get('/api/stats/30days');
   }
-
 
   // Health check
   async getHealth() {

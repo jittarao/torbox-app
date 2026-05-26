@@ -201,9 +201,11 @@ class RuleRepository {
     try {
       const userDb = await this.getUserDb();
       const placeholders = ruleIds.map(() => '?').join(',');
-      userDb.prepare(
-        `UPDATE automation_rules SET last_evaluated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
-      ).run(...ruleIds);
+      userDb
+        .prepare(
+          `UPDATE automation_rules SET last_evaluated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+        )
+        .run(...ruleIds);
     } catch (error) {
       logger.debug('Failed to batch update last_evaluated_at (non-critical)', {
         authId: this.authId,
@@ -399,7 +401,9 @@ class RuleRepository {
       const toDelete = existingRows.filter((r) => !incomingIds.has(r.id)).map((r) => r.id);
       if (toDelete.length > 0) {
         const placeholders = toDelete.map(() => '?').join(',');
-        userDb.prepare(`DELETE FROM automation_rules WHERE id IN (${placeholders})`).run(...toDelete);
+        userDb
+          .prepare(`DELETE FROM automation_rules WHERE id IN (${placeholders})`)
+          .run(...toDelete);
       }
     });
 
@@ -525,16 +529,17 @@ class RuleRepository {
 
       // Rule may have been deleted or replaced (e.g. saveRules) between execution and logging.
       // FK constraint would fail; skip log when rule no longer exists.
-      const ruleExists = userDb
-        .prepare('SELECT 1 FROM automation_rules WHERE id = ?')
-        .get(ruleId);
+      const ruleExists = userDb.prepare('SELECT 1 FROM automation_rules WHERE id = ?').get(ruleId);
       if (!ruleExists) {
-        logger.debug('Skipping execution log: rule no longer exists (may have been deleted or replaced)', {
-          authId: this.authId,
-          ruleId,
-          ruleName,
-          executionType,
-        });
+        logger.debug(
+          'Skipping execution log: rule no longer exists (may have been deleted or replaced)',
+          {
+            authId: this.authId,
+            ruleId,
+            ruleName,
+            executionType,
+          }
+        );
         return;
       }
 

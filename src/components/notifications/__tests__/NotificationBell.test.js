@@ -24,7 +24,7 @@ describe('NotificationBell', () => {
 
   it('renders notification bell with no unread notifications', () => {
     render(<NotificationBell apiKey={mockApiKey} />);
-    
+
     const bellButton = screen.getByRole('button');
     expect(bellButton).toBeInTheDocument();
     expect(screen.queryByText('0')).not.toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('NotificationBell', () => {
     });
 
     render(<NotificationBell apiKey={mockApiKey} />);
-    
+
     expect(screen.getByText('5')).toBeInTheDocument();
   });
 
@@ -52,23 +52,23 @@ describe('NotificationBell', () => {
     });
 
     render(<NotificationBell apiKey={mockApiKey} />);
-    
+
     const bellButton = screen.getByRole('button');
     expect(bellButton).toBeDisabled();
   });
 
   it('does not render when no API key is provided', () => {
     render(<NotificationBell apiKey={null} />);
-    
+
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('toggles notification panel when clicked', async () => {
     render(<NotificationBell apiKey={mockApiKey} />);
-    
+
     const bellButton = screen.getByRole('button');
     fireEvent.click(bellButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('notifications')).toBeInTheDocument();
     });

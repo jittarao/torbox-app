@@ -50,9 +50,7 @@ export const useStatusCounts = (unfilteredItems) => {
   const isStatusSelected = (status, statusFilter) => {
     if (statusFilter === 'all') return false;
 
-    const targetValue = STATUS_OPTIONS.find(
-      (opt) => opt.label === status,
-    )?.value;
+    const targetValue = STATUS_OPTIONS.find((opt) => opt.label === status)?.value;
     if (!targetValue) return false;
 
     const stringifiedTarget = JSON.stringify(targetValue);

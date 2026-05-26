@@ -42,7 +42,7 @@ export default function SpeedMenu({
         >
           <circle cx="12" cy="18" r="3" />
           <path d="M12 15V10" />
-          <path d="M22 13C22 7.47715 17.5228 3 12 3C6.47715 3 2 7.47715 2 13" />
+          <path d="M22 13C22 7.48 17.52 3 12 3C6.48 3 2 7.48 2 13" />
         </svg>
         <span className="text-xs">{playbackSpeed}x</span>
       </button>

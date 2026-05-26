@@ -17,14 +17,10 @@ export default function UploadRow({
   copySuccess,
   isSortable = false,
 }) {
-  const sortableProps = isSortable
-    ? useSortable({
-        id: upload.id,
-      })
-    : null;
-
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    sortableProps || {};
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: upload.id,
+    disabled: !isSortable,
+  });
 
   const style = isSortable
     ? {

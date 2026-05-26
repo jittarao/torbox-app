@@ -82,34 +82,39 @@ export default function ViewControls({
       </button>
 
       {/* Expand/Collapse all files button */}
-      {unfilteredItems && unfilteredItems.length > 0 && (() => {
-        const itemsWithFiles = unfilteredItems.filter(item => item.files && item.files.length > 0);
-        const hasItemsWithFiles = itemsWithFiles.length > 0;
-        const allExpanded = hasItemsWithFiles && itemsWithFiles.every(item => expandedItems.has(item.id));
-        
-        if (!hasItemsWithFiles) return null;
-        
-        return (
-          <button
-            onClick={() => {
-              if (allExpanded) {
-                collapseAllFiles();
-              } else {
-                expandAllFiles();
-              }
-            }}
-            className={`px-3 py-1.5 text-sm border rounded-md transition-colors
+      {unfilteredItems &&
+        unfilteredItems.length > 0 &&
+        (() => {
+          const itemsWithFiles = unfilteredItems.filter(
+            (item) => item.files && item.files.length > 0
+          );
+          const hasItemsWithFiles = itemsWithFiles.length > 0;
+          const allExpanded =
+            hasItemsWithFiles && itemsWithFiles.every((item) => expandedItems.has(item.id));
+
+          if (!hasItemsWithFiles) return null;
+
+          return (
+            <button
+              onClick={() => {
+                if (allExpanded) {
+                  collapseAllFiles();
+                } else {
+                  expandAllFiles();
+                }
+              }}
+              className={`px-3 py-1.5 text-sm border rounded-md transition-colors
               ${
                 allExpanded
                   ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
                   : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
               }`}
-            title={allExpanded ? t('collapseAllFiles') : t('expandAllFiles')}
-          >
-            {allExpanded ? <Icons.CollapseAll /> : <Icons.ExpandAll />}
-          </button>
-        );
-      })()}
+              title={allExpanded ? t('collapseAllFiles') : t('expandAllFiles')}
+            >
+              {allExpanded ? <Icons.CollapseAll /> : <Icons.ExpandAll />}
+            </button>
+          );
+        })()}
     </div>
   );
 }

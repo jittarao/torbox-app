@@ -21,7 +21,7 @@ export function useSort() {
         setSortDirection('asc');
       }
     },
-    [sortField],
+    [sortField]
   );
 
   // Status priority mapping (higher = higher priority)
@@ -35,7 +35,7 @@ export function useSort() {
       Stalled: 1,
       Uploading: 0,
     }),
-    [],
+    []
   );
 
   const getStatusPriority = useCallback(
@@ -48,7 +48,7 @@ export function useSort() {
         return Object.entries(option.value).every(([key, value]) => {
           if (key === 'download_state') {
             return (Array.isArray(value) ? value : [value]).some((state) =>
-              torrent.download_state?.includes(state),
+              torrent.download_state?.includes(state)
             );
           }
           return torrent[key] === value;
@@ -57,23 +57,20 @@ export function useSort() {
 
       return statusPriorityMap[status?.label] ?? -1;
     },
-    [statusPriorityMap],
+    [statusPriorityMap]
   );
 
   // Sort comparator functions
   const comparators = useMemo(
     () => ({
-      numeric: (a, b, field) =>
-        (Number(a[field]) || 0) - (Number(b[field]) || 0),
+      numeric: (a, b, field) => (Number(a[field]) || 0) - (Number(b[field]) || 0),
       text: (a, b, field) =>
-        (a[field] || '')
-          .toLowerCase()
-          .localeCompare((b[field] || '').toLowerCase()),
+        (a[field] || '').toLowerCase().localeCompare((b[field] || '').toLowerCase()),
       date: (a, b, field) => new Date(a[field] || 0) - new Date(b[field] || 0),
       status: (a, b) => getStatusPriority(b) - getStatusPriority(a),
       file_count: (a, b) => (a.files?.length || 0) - (b.files?.length || 0),
     }),
-    [getStatusPriority],
+    [getStatusPriority]
   );
 
   // Field type mapping for comparator selection
@@ -98,26 +95,23 @@ export function useSort() {
       download_state: 'status',
       file_count: 'file_count',
     }),
-    [],
+    []
   );
 
   const sortTorrents = useCallback(
     (torrents) => {
       if (!torrents?.length) return torrents;
 
-      const comparator =
-        comparators[fieldTypeMap[sortField]] || comparators.text;
+      const comparator = comparators[fieldTypeMap[sortField]] || comparators.text;
       const compare =
-        fieldTypeMap[sortField] === 'status'
-          ? comparator
-          : (a, b) => comparator(a, b, sortField);
+        fieldTypeMap[sortField] === 'status' ? comparator : (a, b) => comparator(a, b, sortField);
 
       return [...torrents].sort((a, b) => {
         if (!a || !b) return 0;
         return sortDirection === 'desc' ? compare(b, a) : compare(a, b);
       });
     },
-    [sortField, sortDirection, comparators, fieldTypeMap],
+    [sortField, sortDirection, comparators, fieldTypeMap]
   );
 
   const setSort = useCallback((field, direction = 'asc') => {

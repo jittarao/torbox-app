@@ -13,14 +13,14 @@ export default function ArchivedDownloads({ apiKey }) {
   const archivedT = useTranslations('ArchivedDownloads');
   const isMobile = useIsMobile();
   const [toast, setToast] = useState(null);
-  const { 
-    getArchivedDownloads, 
-    removeFromArchive, 
+  const {
+    getArchivedDownloads,
+    removeFromArchive,
     restoreFromArchive,
     loading,
     error,
     pagination,
-    fetchPage
+    fetchPage,
   } = useArchive(apiKey);
   const archivedItems = getArchivedDownloads();
 
@@ -91,9 +91,7 @@ export default function ArchivedDownloads({ apiKey }) {
         </h1>
         <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
           <div className="text-center">
-            <p className="text-md text-red-500 dark:text-red-400">
-              {error}
-            </p>
+            <p className="text-md text-red-500 dark:text-red-400">{error}</p>
           </div>
         </div>
       </>
@@ -223,12 +221,14 @@ export default function ArchivedDownloads({ apiKey }) {
           </table>
         </div>
       )}
-      
+
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-            {t('showing') || 'Showing'} {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} {t('of') || 'of'} {pagination.total}
+            {t('showing') || 'Showing'} {(pagination.page - 1) * pagination.limit + 1} -{' '}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} {t('of') || 'of'}{' '}
+            {pagination.total}
           </div>
           <div className="flex gap-2">
             <button
@@ -248,14 +248,8 @@ export default function ArchivedDownloads({ apiKey }) {
           </div>
         </div>
       )}
-      
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   );
 }

@@ -1,8 +1,5 @@
 import { headers } from 'next/headers';
-import {
-  API_SEARCH_BASE,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_SEARCH_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 const SEARCH_PREFIXES = ['imdb', 'tvdb', 'jikan'];
 
@@ -18,10 +15,7 @@ export async function GET(req) {
   const quality = searchParams.get('quality');
 
   if (!query) {
-    return new Response(
-      JSON.stringify({ error: 'Query parameter is required' }),
-      { status: 400 },
-    );
+    return new Response(JSON.stringify({ error: 'Query parameter is required' }), { status: 400 });
   }
 
   if (!apiKey) {
@@ -43,9 +37,9 @@ export async function GET(req) {
 
     let endpoint;
     console.log(`Query: ${query}`);
-    
+
     // Check for supported search engine prefixes
-    const searchEngine = SEARCH_PREFIXES.find((prefix) => query.startsWith(prefix + ":"));
+    const searchEngine = SEARCH_PREFIXES.find((prefix) => query.startsWith(prefix + ':'));
     if (searchEngine) {
       const systemId = query.substring(searchEngine.length + 1);
       console.log(`Fetching ${searchEngine} ID: ${systemId}`);

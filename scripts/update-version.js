@@ -19,15 +19,9 @@ import { join } from 'path';
 
 const ROOT = join(import.meta.dir, '..');
 
-const PACKAGE_FILES = [
-  join(ROOT, 'package.json'),
-  join(ROOT, 'backend', 'package.json'),
-];
+const PACKAGE_FILES = [join(ROOT, 'package.json'), join(ROOT, 'backend', 'package.json')];
 
-const LOCK_FILES = [
-  join(ROOT, 'package-lock.json'),
-  join(ROOT, 'backend', 'package-lock.json'),
-];
+const LOCK_FILES = [join(ROOT, 'package-lock.json'), join(ROOT, 'backend', 'package-lock.json')];
 
 const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 

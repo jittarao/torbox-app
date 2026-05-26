@@ -13,7 +13,11 @@ export default function DatabaseList({ databases }) {
     try {
       const result = await adminApiClient.backupDatabase(authId);
       // Show success message with option to download
-      if (confirm(`Backup created successfully!\n\nSize: ${result.backup.size_formatted}\n\nWould you like to download it now?`)) {
+      if (
+        confirm(
+          `Backup created successfully!\n\nSize: ${result.backup.size_formatted}\n\nWould you like to download it now?`
+        )
+      ) {
         handleDownload(authId, result.backup.filename);
       }
     } catch (error) {
@@ -31,7 +35,11 @@ export default function DatabaseList({ databases }) {
       // If no filename provided, get the latest backup
       if (!backupFilename) {
         const backupsResult = await adminApiClient.listBackups(authId);
-        if (!backupsResult.success || !backupsResult.backups || backupsResult.backups.length === 0) {
+        if (
+          !backupsResult.success ||
+          !backupsResult.backups ||
+          backupsResult.backups.length === 0
+        ) {
           alert('No backups found for this user. Create a backup first.');
           setDownloading(null);
           return;

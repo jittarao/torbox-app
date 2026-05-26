@@ -4,6 +4,22 @@ import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
+const PanelTitle = ({ downloadLinks, isDownloading, downloadProgress, t }) => {
+  return (
+    <>
+      <span>{downloadLinks.length > 1 ? t('title.multiple') : t('title.single')}</span>
+      {isDownloading && (
+        <span className="block lg:inline text-sm text-primary-text/70 dark:text-primary-text-dark/70 lg:ml-2">
+          {t('status.fetching', {
+            current: downloadProgress.current,
+            total: downloadProgress.total,
+          })}
+        </span>
+      )}
+    </>
+  );
+};
+
 export default function DownloadPanel({
   downloadLinks,
   isDownloading,
@@ -56,24 +72,6 @@ export default function DownloadPanel({
       });
   };
 
-  const PanelTitle = () => {
-    return (
-      <>
-        <span>
-          {downloadLinks.length > 1 ? t('title.multiple') : t('title.single')}
-        </span>
-        {isDownloading && (
-          <span className="block lg:inline text-sm text-primary-text/70 dark:text-primary-text-dark/70 lg:ml-2">
-            {t('status.fetching', {
-              current: downloadProgress.current,
-              total: downloadProgress.total,
-            })}
-          </span>
-        )}
-      </>
-    );
-  };
-
   return (
     <div className="fixed inset-x-0 bottom-0 z-50">
       {/* Minimized State */}
@@ -89,7 +87,12 @@ export default function DownloadPanel({
                   <Icons.Download className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                  <PanelTitle />
+                  <PanelTitle
+                    downloadLinks={downloadLinks}
+                    isDownloading={isDownloading}
+                    downloadProgress={downloadProgress}
+                    t={t}
+                  />
                 </h3>
               </div>
               <button className="text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors">
@@ -112,7 +115,12 @@ export default function DownloadPanel({
               >
                 <div className="flex items-center gap-2">
                   <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
-                    <PanelTitle />
+                    <PanelTitle
+                      downloadLinks={downloadLinks}
+                      isDownloading={isDownloading}
+                      downloadProgress={downloadProgress}
+                      t={t}
+                    />
                   </h3>
                 </div>
                 <button className="text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors">
@@ -159,14 +167,13 @@ export default function DownloadPanel({
                       </div>
                     </div>
                   ))}
-                  {isDownloading &&
-                    downloadLinks.length < downloadProgress.total && (
-                      <div className="text-primary-text dark:text-primary-text-dark/50 text-sm py-2 animate-pulse">
-                        {downloadLinks.length > 0
-                          ? t('status.generatingMore')
-                          : t('status.generating')}
-                      </div>
-                    )}
+                  {isDownloading && downloadLinks.length < downloadProgress.total && (
+                    <div className="text-primary-text dark:text-primary-text-dark/50 text-sm py-2 animate-pulse">
+                      {downloadLinks.length > 0
+                        ? t('status.generatingMore')
+                        : t('status.generating')}
+                    </div>
+                  )}
                 </div>
 
                 {isDownloading && (

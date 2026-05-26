@@ -1,10 +1,6 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -17,24 +13,15 @@ export async function GET(request) {
   const chosenAudioIndex = searchParams.get('chosen_audio_index') || '0';
 
   if (!apiKey) {
-    return NextResponse.json(
-      { success: false, error: 'API key is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
   }
 
   if (!id) {
-    return NextResponse.json(
-      { success: false, error: 'Download ID is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'Download ID is required' }, { status: 400 });
   }
 
   if (!fileId) {
-    return NextResponse.json(
-      { success: false, error: 'File ID is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'File ID is required' }, { status: 400 });
   }
 
   try {
@@ -42,10 +29,11 @@ export async function GET(request) {
       id: id,
       file_id: fileId,
       type: type,
-      ...(chosenSubtitleIndex !== null && chosenSubtitleIndex !== undefined && { chosen_subtitle_index: chosenSubtitleIndex }),
+      ...(chosenSubtitleIndex !== null &&
+        chosenSubtitleIndex !== undefined && { chosen_subtitle_index: chosenSubtitleIndex }),
       chosen_audio_index: chosenAudioIndex,
     });
-    
+
     const apiUrl = `${API_BASE}/${API_VERSION}/api/stream/createstream?${queryParams}`;
     const response = await fetch(apiUrl, {
       headers: {
@@ -63,9 +51,6 @@ export async function GET(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error creating stream:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

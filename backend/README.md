@@ -51,10 +51,12 @@ For deployment instructions, see [DEPLOYMENT.md](../DEPLOYMENT.md).
 ### API Endpoints
 
 #### User Management
+
 - `POST /api/backend/api-key/ensure-db` - Ensure user database exists
 - `GET /api/backend/status` - Backend status and statistics
 
 #### Automation Rules
+
 - `GET /api/automation/rules` - Get all automation rules for user
 - `POST /api/automation/rules` - Create or update automation rules
 - `GET /api/automation/rules/:id` - Get specific rule
@@ -63,12 +65,14 @@ For deployment instructions, see [DEPLOYMENT.md](../DEPLOYMENT.md).
 - `GET /api/automation/rules/:id/logs` - Get rule execution logs
 
 #### Archived Downloads
+
 - `GET /api/archived-downloads` - List archived downloads
 - `POST /api/archived-downloads` - Archive a download
 - `GET /api/archived-downloads/:id` - Get archived download details
 - `DELETE /api/archived-downloads/:id` - Restore archived download
 
 #### Health
+
 - `GET /health` - Health check endpoint
 
 ## Database Migrations
@@ -107,6 +111,7 @@ Automation rules allow users to automatically manage their torrents based on con
 ### Rule Evaluation
 
 Rules are evaluated on each polling cycle:
+
 1. Fetch current torrent state from TorBox API
 2. Compute state diffs to detect changes
 3. Derive fields (stalled time, activity timestamps)
@@ -148,6 +153,7 @@ bun test
 ### Database Management
 
 User databases are automatically created when:
+
 - A user enters an API key in the frontend
 - The `/api/backend/api-key/ensure-db` endpoint is called
 

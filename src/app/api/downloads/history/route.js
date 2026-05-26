@@ -19,17 +19,14 @@ export async function GET() {
     }
   } catch (error) {
     console.error('Error fetching download history from backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    
+
     const response = await fetch(`${BACKEND_URL}/api/downloads/history`, {
       method: 'POST',
       headers: {
@@ -46,9 +43,6 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Error saving download history to backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

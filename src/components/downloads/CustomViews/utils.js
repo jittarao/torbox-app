@@ -1,11 +1,10 @@
 import { COLUMNS } from '@/components/constants';
-import { 
+import {
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
 } from '../AutomationRules/constants';
-import { useTranslations } from 'next-intl';
 
 // Map column keys to filter types
 export const COLUMN_FILTER_TYPES = {
@@ -22,29 +21,29 @@ export const COLUMN_FILTER_TYPES = {
   total_uploaded: 'number',
   total_downloaded: 'number',
   availability: 'number',
-  
+
   // Text columns
   name: 'text',
   hash: 'text',
   original_url: 'text',
   tracker: 'text',
-  
+
   // Time/Timestamp columns
   created_at: 'timestamp',
   cached_at: 'timestamp',
   updated_at: 'timestamp',
   expires_at: 'timestamp',
-  
+
   // Boolean columns
   cached: 'boolean',
   allow_zip: 'boolean',
   private: 'boolean',
   seed_torrent: 'boolean',
-  
+
   // Status/Multi-select columns
   download_state: 'status',
   asset_type: 'status',
-  
+
   // Tag columns
   tags: 'tags',
 };
@@ -87,7 +86,7 @@ export const isTagsColumn = (columnKey) => {
 // Get available operators for a column type
 export const getOperatorsForColumn = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
-  
+
   switch (filterType) {
     case 'number':
       return Object.values(COMPARISON_OPERATORS);
@@ -109,7 +108,7 @@ export const getOperatorsForColumn = (columnKey) => {
 // Get default operator for a column type
 export const getDefaultOperator = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
-  
+
   switch (filterType) {
     case 'number':
       return COMPARISON_OPERATORS.GT;
@@ -131,7 +130,7 @@ export const getDefaultOperator = (columnKey) => {
 // Get default value for a column type
 export const getDefaultValue = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
-  
+
   switch (filterType) {
     case 'number':
       return 0;
@@ -150,11 +149,8 @@ export const getDefaultValue = (columnKey) => {
   }
 };
 
-  // Get available columns for filtering (excluding id)
-export const getFilterableColumns = (activeType = 'all') => {
-  // Get translations for columns
-  const columnT = useTranslations('Columns');
-
+// Get available columns for filtering (excluding id)
+export const getFilterableColumns = (columnT, activeType = 'all') => {
   // Columns to exclude from filtering
   const columnKeysToExclude = ['id', 'hash', 'download_progress'];
 
@@ -186,7 +182,7 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   // Helper to get column label
   const getColumnLabel = (key, column) => {
     if (key === 'tags') return 'Tags';
-    return column.displayName ? column.displayName : (columnT ? columnT(key) : key);
+    return column.displayName ? column.displayName : columnT ? columnT(key) : key;
   };
 
   // Build base columns from COLUMNS
@@ -217,7 +213,7 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   });
 
   // Create a map for quick column lookup
-  const columnMap = new Map(allColumns.map(col => [col.key, col]));
+  const columnMap = new Map(allColumns.map((col) => [col.key, col]));
 
   // Helper to get column option by key
   const getColumnOption = (key) => {
@@ -228,9 +224,7 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
 
   // Helper to get ordered options for a group
   const getOrderedOptions = (orderedKeys) => {
-    return orderedKeys
-      .map(key => getColumnOption(key))
-      .filter(opt => opt !== null); // Filter out any keys that don't exist
+    return orderedKeys.map((key) => getColumnOption(key)).filter((opt) => opt !== null); // Filter out any keys that don't exist
   };
 
   // Helper to get group label with fallback
@@ -263,7 +257,14 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
     {
       label: getGroupLabel('seeding'),
       // Order: ratio, seeds, peers, upload_speed, total_uploaded, seeding_enabled
-      options: getOrderedOptions(['ratio', 'seed_torrent','seeds', 'peers', 'upload_speed', 'total_uploaded']),
+      options: getOrderedOptions([
+        'ratio',
+        'seed_torrent',
+        'seeds',
+        'peers',
+        'upload_speed',
+        'total_uploaded',
+      ]),
     },
     {
       label: getGroupLabel('downloading'),
@@ -273,7 +274,17 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
     {
       label: getGroupLabel('metadata'),
       // Order: name, size, file_count, tags, tracker, availability, private, cached, allow_zip
-      options: getOrderedOptions(['tracker', 'availability', 'size', 'file_count', 'name', 'private', 'cached', 'allow_zip', 'tags']),
+      options: getOrderedOptions([
+        'tracker',
+        'availability',
+        'size',
+        'file_count',
+        'name',
+        'private',
+        'cached',
+        'allow_zip',
+        'tags',
+      ]),
     },
     {
       label: getGroupLabel('timestamps'),
@@ -283,7 +294,7 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   ];
 
   // Filter out empty groups
-  return groups.filter(group => group.options.length > 0);
+  return groups.filter((group) => group.options.length > 0);
 };
 
 // Get unit for a column (for display)

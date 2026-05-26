@@ -113,11 +113,15 @@ class DatabaseConnectionManager {
           this._markInactive();
           // If retry also fails with closed database error, log and re-throw
           if (isClosedDatabaseError(retryError)) {
-            logger.error(`Database connection still closed after refresh during ${operationName}`, retryError, {
-              authId: this.authId,
-              errorName: retryError.name,
-              errorMessage: retryError.message,
-            });
+            logger.error(
+              `Database connection still closed after refresh during ${operationName}`,
+              retryError,
+              {
+                authId: this.authId,
+                errorName: retryError.name,
+                errorMessage: retryError.message,
+              }
+            );
           }
           throw retryError;
         }

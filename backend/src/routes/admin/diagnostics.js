@@ -351,7 +351,10 @@ export function setupDiagnosticsRoutes(router, backend) {
         masterDb.updateUserStatus(row.auth_id, newStatus);
         repaired++;
       }
-      logger.info('Repaired status mismatches', { repaired, authIds: mismatches.map((m) => m.auth_id) });
+      logger.info('Repaired status mismatches', {
+        repaired,
+        authIds: mismatches.map((m) => m.auth_id),
+      });
       sendSuccess(res, {
         message: `Repaired ${repaired} status mismatch(es).`,
         repaired,

@@ -98,10 +98,7 @@ export function useSpeedData(items, timeRange = '10m') {
         // Create new arrays with the latest data point added
         const newLabels = [...prevData.labels, timeLabel];
         const newTimestamps = [...prevData.timestamps, now];
-        const newDownload = [
-          ...prevData.download,
-          Math.round(totalDownloadSpeed),
-        ];
+        const newDownload = [...prevData.download, Math.round(totalDownloadSpeed)];
         const newUpload = [...prevData.upload, Math.round(totalUploadSpeed)];
 
         // Apply MAX_DATA_POINTS limit to all data
@@ -131,9 +128,7 @@ export function useSpeedData(items, timeRange = '10m') {
   // Filter data based on time range for display
   const now = Date.now();
   const cutoffTime = now - TIME_RANGES[timeRange];
-  const filteredData = speedData.timestamps.map(
-    (timestamp) => timestamp >= cutoffTime,
-  );
+  const filteredData = speedData.timestamps.map((timestamp) => timestamp >= cutoffTime);
 
   return {
     labels: speedData.labels.filter((_, i) => filteredData[i]),

@@ -24,10 +24,7 @@ export async function GET(request) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   if (!apiKey) {
-    return NextResponse.json(
-      { success: false, error: 'API key is required' },
-      { status: 401 }
-    );
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
   }
 
   const authId = hashApiKey(apiKey);

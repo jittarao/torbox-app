@@ -19,23 +19,20 @@ export async function GET(request) {
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const authId = hashApiKey(apiKey);
-    
+
     const url = new URL(`${BACKEND_URL}/api/downloads/tags`);
     url.searchParams.set('authId', authId);
-    
+
     const response = await new Promise((resolve, reject) => {
       const req = http.get(url, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           try {
             const jsonData = JSON.parse(data);
@@ -45,7 +42,7 @@ export async function GET(request) {
           }
         });
       });
-      
+
       req.on('error', reject);
       req.setTimeout(5000, () => {
         req.destroy();
@@ -60,10 +57,7 @@ export async function GET(request) {
     }
   } catch (error) {
     console.error('Error fetching download tags from backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
@@ -71,23 +65,20 @@ export async function POST(request) {
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const body = await request.json();
     const authId = hashApiKey(apiKey);
-    
+
     // Add authId to the request body
     const requestBody = {
       ...body,
-      authId
+      authId,
     };
-    
+
     const response = await fetch(`${BACKEND_URL}/api/downloads/tags`, {
       method: 'POST',
       headers: {
@@ -105,9 +96,6 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Error assigning tags to downloads in backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

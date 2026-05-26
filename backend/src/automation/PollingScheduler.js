@@ -119,7 +119,9 @@ class PollingScheduler {
     );
     this.pollKickoutMs = Math.max(
       1000,
-      options.pollKickoutMs ?? options.pollTimeoutMs ?? parseInt(process.env.POLL_KICKOUT_MS || String(DEFAULT_POLL_KICKOUT_MS), 10)
+      options.pollKickoutMs ??
+        options.pollTimeoutMs ??
+        parseInt(process.env.POLL_KICKOUT_MS || String(DEFAULT_POLL_KICKOUT_MS), 10)
     );
     this.maxConcurrentPolls = Math.max(
       1,
@@ -382,8 +384,7 @@ class PollingScheduler {
     try {
       const count = (this.userConsecutiveTimeoutCount.get(authId) || 0) + 1;
       this.userConsecutiveTimeoutCount.set(authId, count);
-      const retryMs =
-        count >= 2 ? TIMEOUT_BACKOFF_RETRY_MS : ERROR_RETRY_INTERVAL_MS;
+      const retryMs = count >= 2 ? TIMEOUT_BACKOFF_RETRY_MS : ERROR_RETRY_INTERVAL_MS;
       const nextPollAt = new Date(Date.now() + retryMs);
       this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
 
@@ -716,7 +717,11 @@ class PollingScheduler {
       }
       const offset = (Math.abs(hash % 100) / 100) * MIN_POLL_INTERVAL_MS;
       const nextPollAt = new Date(now + offset);
-      this.masterDb.updateNextPollAt(user.auth_id, nextPollAt, user.non_terminal_torrent_count ?? 0);
+      this.masterDb.updateNextPollAt(
+        user.auth_id,
+        nextPollAt,
+        user.non_terminal_torrent_count ?? 0
+      );
     }
     logger.info('Spread overdue users across poll window on startup', {
       spreadCount: dueUsers.length,
@@ -763,7 +768,6 @@ class PollingScheduler {
       this.cachedEngines.delete(authId);
     }
   }
-
 
   /**
    * Clean up pollers that haven't been polled recently
@@ -974,7 +978,13 @@ class PollingScheduler {
       if (this.masterDb && this.masterDb.resetConsecutiveAuthFailures) {
         this.masterDb.resetConsecutiveAuthFailures(auth_id);
       }
-      if (this.eventNotifier && result.changes && (result.changes.new?.length || result.changes.updated?.length || result.changes.removed?.length)) {
+      if (
+        this.eventNotifier &&
+        result.changes &&
+        (result.changes.new?.length ||
+          result.changes.updated?.length ||
+          result.changes.removed?.length)
+      ) {
         setImmediate(() => this.eventNotifier.notify(auth_id));
       }
       poller.lastPollAt = new Date();
@@ -1027,10 +1037,7 @@ class PollingScheduler {
 
     if (this._pollCheckInProgress) {
       const maxCycleMs = this._getMaxPollCycleMs();
-      if (
-        this._pollCycleStartedAt != null &&
-        Date.now() - this._pollCycleStartedAt > maxCycleMs
-      ) {
+      if (this._pollCycleStartedAt != null && Date.now() - this._pollCycleStartedAt > maxCycleMs) {
         logger.error('CRITICAL: pollDueUsers cycle exceeded max duration; resetting lock', {
           maxCycleMs,
           stuckForMs: Date.now() - this._pollCycleStartedAt,
@@ -1129,7 +1136,10 @@ class PollingScheduler {
                 } else if (result.error.isPlanRestrictedFeature === true) {
                   await this.handlePlanRestrictedPollFailure(result.user.auth_id);
                   this.handlePollError(result.user.auth_id, result.error, 0);
-                } else if (result.error.isAuthError || result.error.name === 'AuthenticationError') {
+                } else if (
+                  result.error.isAuthError ||
+                  result.error.name === 'AuthenticationError'
+                ) {
                   this.handlePollError(result.user.auth_id, result.error, 0);
                 } else {
                   this.handlePollError(result.user.auth_id, result.error, 0);
@@ -1203,10 +1213,7 @@ class PollingScheduler {
     if (!Number.isNaN(fromEnv) && fromEnv > 0) {
       return fromEnv;
     }
-    return Math.max(
-      this.pollKickoutMs * 2,
-      this.maxConcurrentPolls * this.pollKickoutMs
-    );
+    return Math.max(this.pollKickoutMs * 2, this.maxConcurrentPolls * this.pollKickoutMs);
   }
 
   /**

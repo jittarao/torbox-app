@@ -16,14 +16,7 @@ import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const THEME_COLORS = {
   download: {
@@ -159,10 +152,7 @@ export default function BandwidthChart({ apiKey }) {
 
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (
-          mutation.type === 'attributes' &&
-          mutation.attributeName === 'class'
-        ) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
           updateChartTheme();
         }
       });
@@ -179,20 +169,17 @@ export default function BandwidthChart({ apiKey }) {
   }, []);
 
   const hasData = useMemo(() => {
-    return (
-      bandwidthData.length > 0 &&
-      bandwidthData.some((point) => point.bytes_downloaded > 0)
-    );
+    return bandwidthData.length > 0 && bandwidthData.some((point) => point.bytes_downloaded > 0);
   }, [bandwidthData]);
 
   const chartLabels = useMemo(
     () => bandwidthData.map((point) => formatDateLabel(point.date, grouping)),
-    [bandwidthData, grouping],
+    [bandwidthData, grouping]
   );
 
   const chartValues = useMemo(
     () => bandwidthData.map((point) => point.bytes_downloaded || 0),
-    [bandwidthData],
+    [bandwidthData]
   );
 
   const chartData = useMemo(
@@ -209,7 +196,7 @@ export default function BandwidthChart({ apiKey }) {
         },
       ],
     }),
-    [chartLabels, chartValues, t],
+    [chartLabels, chartValues, t]
   );
 
   const chartOptions = useMemo(
@@ -249,17 +236,11 @@ export default function BandwidthChart({ apiKey }) {
           callbacks: {
             label: (context) => formatBytes(context.parsed.y),
           },
-          titleColor: isDarkMode
-            ? THEME_COLORS.text.dark
-            : THEME_COLORS.text.light,
+          titleColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
           backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
-          borderColor: isDarkMode
-            ? THEME_COLORS.grid.dark
-            : THEME_COLORS.grid.light,
+          borderColor: isDarkMode ? THEME_COLORS.grid.dark : THEME_COLORS.grid.light,
           borderWidth: 1,
-          bodyColor: isDarkMode
-            ? THEME_COLORS.text.dark
-            : THEME_COLORS.text.light,
+          bodyColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
           padding: 10,
         },
       },
@@ -267,7 +248,7 @@ export default function BandwidthChart({ apiKey }) {
         duration: 400,
       },
     }),
-    [isDarkMode, grouping],
+    [isDarkMode, grouping]
   );
 
   if (!isClient) {
@@ -285,10 +266,7 @@ export default function BandwidthChart({ apiKey }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <label
-            htmlFor="bandwidth-grouping"
-            className="text-sm text-muted dark:text-muted-dark"
-          >
+          <label htmlFor="bandwidth-grouping" className="text-sm text-muted dark:text-muted-dark">
             {t('grouping')}
           </label>
           <select

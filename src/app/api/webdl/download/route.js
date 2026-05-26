@@ -1,10 +1,6 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -13,23 +9,21 @@ export async function GET(request) {
   const webId = searchParams.get('web_id');
   const fileId = searchParams.get('file_id');
   const zipLink = searchParams.get('zip_link') === 'true';
-  
+
   // Get user's IP address for CDN optimization
   const forwardedFor = headersList.get('x-forwarded-for');
   const realIp = headersList.get('x-real-ip');
-  const userIp = forwardedFor?.split(',')[0] || realIp || headersList.get('x-client-ip') || 'unknown';
+  const userIp =
+    forwardedFor?.split(',')[0] || realIp || headersList.get('x-client-ip') || 'unknown';
 
   if (!apiKey) {
-    return NextResponse.json(
-      { success: false, error: 'API key is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
   }
 
   if (!webId) {
     return NextResponse.json(
       { success: false, error: 'Web download ID is required' },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -57,9 +51,6 @@ export async function GET(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching web download link:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

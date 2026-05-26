@@ -11,7 +11,8 @@ function getStorage() {
     if (!raw) return { volume: 1, byFile: {} };
     const data = JSON.parse(raw);
     return {
-      volume: typeof data.volume === 'number' && data.volume >= 0 && data.volume <= 1 ? data.volume : 1,
+      volume:
+        typeof data.volume === 'number' && data.volume >= 0 && data.volume <= 1 ? data.volume : 1,
       byFile: data.byFile && typeof data.byFile === 'object' ? data.byFile : {},
     };
   } catch {

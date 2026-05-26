@@ -28,7 +28,7 @@ export default function UserProfile({ apiKey, setToast }) {
     try {
       const { fetchUserProfile: fetchProfile } = await import('@/utils/userProfile');
       const profileData = await fetchProfile(apiKey);
-      
+
       if (profileData) {
         setUserData(profileData);
       } else {
@@ -68,14 +68,14 @@ export default function UserProfile({ apiKey, setToast }) {
 
   const copyReferralLink = async () => {
     if (!userData?.user_referral) return;
-    
+
     const referralLink = `https://torbox.app/subscription?referral=${userData.user_referral}`;
-    
+
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
-      
+
       if (setToast) {
         setToast({
           message: t('copyLink'),
@@ -128,23 +128,23 @@ export default function UserProfile({ apiKey, setToast }) {
       const expiryDate = new Date(userData.premium_expires_at);
       const now = new Date();
       if (expiryDate > now) {
-        return { 
-          status: t('status.active'), 
+        return {
+          status: t('status.active'),
           color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-          icon: Icons.CheckCircle 
+          icon: Icons.CheckCircle,
         };
       } else {
-        return { 
-          status: t('status.expired'), 
+        return {
+          status: t('status.expired'),
           color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-          icon: Icons.AlertCircle 
+          icon: Icons.AlertCircle,
         };
       }
     } else {
-      return { 
-        status: t('status.free'), 
+      return {
+        status: t('status.free'),
         color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-        icon: Icons.User 
+        icon: Icons.User,
       };
     }
   };
@@ -166,7 +166,9 @@ export default function UserProfile({ apiKey, setToast }) {
         <div className="p-6">
           <div className="max-w-md mx-auto text-center py-12">
             <Icons.AlertCircle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
-            <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">{t('errors.loadError') || 'Error loading profile'}</p>
+            <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">
+              {t('errors.loadError') || 'Error loading profile'}
+            </p>
             <p className="text-muted dark:text-muted-dark mb-6">{error}</p>
             <button
               onClick={fetchUserProfile}
@@ -229,23 +231,33 @@ export default function UserProfile({ apiKey, setToast }) {
                 {t('profile.basicInfo')}
               </h3>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.email')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium break-all">{userData.email || 'N/A'}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.email')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-medium break-all">
+                  {userData.email || 'N/A'}
+                </span>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.referralCode')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium font-mono text-sm">{userData.user_referral || 'N/A'}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.referralCode')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-medium font-mono text-sm">
+                  {userData.user_referral || 'N/A'}
+                </span>
               </div>
-              
+
               {/* Referral Link */}
               {userData.user_referral && (
                 <div className="pt-2 border-t border-border dark:border-border-dark">
                   <div className="flex flex-col gap-2">
-                    <span className="text-sm text-muted dark:text-muted-dark">{t('referralLink')}</span>
+                    <span className="text-sm text-muted dark:text-muted-dark">
+                      {t('referralLink')}
+                    </span>
                     <div className="flex items-center gap-2 p-3 bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark">
                       <span className="text-primary-text dark:text-primary-text-dark font-mono text-xs break-all flex-1">
                         https://torbox.app/subscription?referral={userData.user_referral}
@@ -266,15 +278,23 @@ export default function UserProfile({ apiKey, setToast }) {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.createdAt')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium">{formatDate(userData.created_at)}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.createdAt')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-medium">
+                  {formatDate(userData.created_at)}
+                </span>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.lastLogin')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium">{formatDate(userData.updated_at)}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.lastLogin')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-medium">
+                  {formatDate(userData.updated_at)}
+                </span>
               </div>
             </div>
           </div>
@@ -287,17 +307,23 @@ export default function UserProfile({ apiKey, setToast }) {
                 {t('profile.accountStatus')}
               </h3>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                 <span className="text-sm text-muted dark:text-muted-dark">{t('profile.plan')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">{getPlanName(userData.plan)}</span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
+                  {getPlanName(userData.plan)}
+                </span>
               </div>
-              
+
               {userData.plan > 0 && (
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                  <span className="text-sm text-muted dark:text-muted-dark">{t('profile.planExpiry')}</span>
-                  <span className="text-primary-text dark:text-primary-text-dark font-medium">{formatDate(userData.premium_expires_at)}</span>
+                  <span className="text-sm text-muted dark:text-muted-dark">
+                    {t('profile.planExpiry')}
+                  </span>
+                  <span className="text-primary-text dark:text-primary-text-dark font-medium">
+                    {formatDate(userData.premium_expires_at)}
+                  </span>
                 </div>
               )}
             </div>
@@ -311,27 +337,41 @@ export default function UserProfile({ apiKey, setToast }) {
                 {t('profile.usage')}
               </h3>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.totalDownloads')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold text-lg">{userData.total_downloaded || 0}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.totalDownloads')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold text-lg">
+                  {userData.total_downloaded || 0}
+                </span>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.totalSize')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">{formatBytes(userData.total_bytes_downloaded || 0)}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.totalSize')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
+                  {formatBytes(userData.total_bytes_downloaded || 0)}
+                </span>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.totalUploaded')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">{formatBytes(userData.total_bytes_uploaded || 0)}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.totalUploaded')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
+                  {formatBytes(userData.total_bytes_uploaded || 0)}
+                </span>
               </div>
-              
+
               {/* Ratio Calculation */}
               <div className="pt-2 border-t border-border dark:border-border-dark">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                  <span className="text-sm text-muted dark:text-muted-dark">{t('profile.ratio')}</span>
+                  <span className="text-sm text-muted dark:text-muted-dark">
+                    {t('profile.ratio')}
+                  </span>
                   <span className="text-primary-text dark:text-primary-text-dark font-semibold text-lg">
                     {(() => {
                       const downloaded = userData.total_bytes_downloaded || 0;
@@ -354,21 +394,33 @@ export default function UserProfile({ apiKey, setToast }) {
                 {t('profile.downloadBreakdown')}
               </h3>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.torrentDownloads')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">{userData.torrents_downloaded || 0}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.torrentDownloads')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
+                  {userData.torrents_downloaded || 0}
+                </span>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.webDownloads')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">{userData.web_downloads_downloaded || 0}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.webDownloads')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
+                  {userData.web_downloads_downloaded || 0}
+                </span>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.usenetDownloads')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">{userData.usenet_downloads_downloaded || 0}</span>
+                <span className="text-sm text-muted dark:text-muted-dark">
+                  {t('profile.usenetDownloads')}
+                </span>
+                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
+                  {userData.usenet_downloads_downloaded || 0}
+                </span>
               </div>
             </div>
           </div>
@@ -383,7 +435,9 @@ export default function UserProfile({ apiKey, setToast }) {
       <div className="p-6">
         <div className="max-w-md mx-auto text-center py-12">
           <Icons.AlertCircle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
-          <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">{t('errors.renderError') || 'Render Error'}</p>
+          <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">
+            {t('errors.renderError') || 'Render Error'}
+          </p>
           <p className="text-muted dark:text-muted-dark mb-6">{err.message}</p>
           <button
             onClick={() => window.location.reload()}

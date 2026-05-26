@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import Dropdown from '@/components/shared/Dropdown';
 
+const EMPTY_ARRAY = [];
+
 export default function CustomViews({
-  views = [],
+  views = EMPTY_ARRAY,
   activeView,
   onSelectView,
   onClearView,
@@ -13,7 +15,7 @@ export default function CustomViews({
 }) {
   const [isManageOpen, setIsManageOpen] = useState(false);
 
-  const viewOptions = views.map(view => ({
+  const viewOptions = views.map((view) => ({
     label: view.name,
     value: view.id,
   }));
@@ -28,10 +30,7 @@ export default function CustomViews({
         View:
       </span>
       <Dropdown
-        options={[
-          { label: 'Default', value: null },
-          ...viewOptions,
-        ]}
+        options={[{ label: 'Default', value: null }, ...viewOptions]}
         value={activeView?.id ?? null}
         onChange={(value) => {
           // Handle null value (string or actual null)
@@ -39,11 +38,11 @@ export default function CustomViews({
             onClearView();
             return;
           }
-          
+
           // Convert to number if it's a string
           const viewId = typeof value === 'string' && !isNaN(value) ? parseInt(value, 10) : value;
-          const view = views.find(v => v.id === viewId);
-          
+          const view = views.find((v) => v.id === viewId);
+
           if (view) {
             onSelectView(view);
           } else {
@@ -80,10 +79,7 @@ export default function CustomViews({
       {/* Manage Views Modal */}
       {isManageOpen && (
         <>
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setIsManageOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsManageOpen(false)} />
           <div
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -135,8 +131,10 @@ export default function CustomViews({
                 {views.map((view) => {
                   const filterCount = view.filters?.groups
                     ? view.filters.groups.reduce((sum, g) => sum + (g.filters?.length || 0), 0)
-                    : (Array.isArray(view.filters) ? view.filters.length : 0);
-                  
+                    : Array.isArray(view.filters)
+                      ? view.filters.length
+                      : 0;
+
                   return (
                     <div
                       key={view.id}

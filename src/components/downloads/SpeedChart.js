@@ -29,7 +29,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
-  LogarithmicScale,
+  LogarithmicScale
 );
 
 // Theme colors from tailwind config
@@ -60,7 +60,7 @@ const ensureValidData = (data) => {
   return data.map((value) =>
     value === null || value === undefined || isNaN(value) || value < 1024
       ? 1024 // Use 1 KB/s as minimum value for logarithmic scale
-      : value,
+      : value
   );
 };
 
@@ -174,10 +174,7 @@ export default function SpeedChart({ items }) {
     // Set up observer for dark mode changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (
-          mutation.type === 'attributes' &&
-          mutation.attributeName === 'class'
-        ) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
           updateChartTheme();
         }
       });
@@ -198,15 +195,11 @@ export default function SpeedChart({ items }) {
 
   // Get current speeds (last data point)
   const currentDownloadSpeed = useMemo(() => {
-    return speedData.download.length > 0
-      ? speedData.download[speedData.download.length - 1]
-      : 0;
+    return speedData.download.length > 0 ? speedData.download[speedData.download.length - 1] : 0;
   }, [speedData.download]);
 
   const currentUploadSpeed = useMemo(() => {
-    return speedData.upload.length > 0
-      ? speedData.upload[speedData.upload.length - 1]
-      : 0;
+    return speedData.upload.length > 0 ? speedData.upload[speedData.upload.length - 1] : 0;
   }, [speedData.upload]);
 
   // Check if there's any activity (non-zero speeds)
@@ -217,10 +210,7 @@ export default function SpeedChart({ items }) {
     const recentDownloads = speedData.download.slice(-3);
     const recentUploads = speedData.upload.slice(-3);
 
-    return (
-      recentDownloads.some((speed) => speed > 0) ||
-      recentUploads.some((speed) => speed > 0)
-    );
+    return recentDownloads.some((speed) => speed > 0) || recentUploads.some((speed) => speed > 0);
   }, [speedData]);
 
   // If no activity and no data points yet, don't render the chart
@@ -305,28 +295,17 @@ export default function SpeedChart({ items }) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
             // Ensure value is a number and handle zero case properly
-            if (
-              value === null ||
-              value === undefined ||
-              isNaN(value) ||
-              value <= 0
-            ) {
+            if (value === null || value === undefined || isNaN(value) || value <= 0) {
               return `${label}: 0 B/s`;
             }
             return `${label}: ${formatSpeed(value)}`;
           },
         },
-        titleColor: isDarkMode
-          ? THEME_COLORS.text.dark
-          : THEME_COLORS.text.light,
+        titleColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
         backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
-        borderColor: isDarkMode
-          ? THEME_COLORS.grid.dark
-          : THEME_COLORS.grid.light,
+        borderColor: isDarkMode ? THEME_COLORS.grid.dark : THEME_COLORS.grid.light,
         borderWidth: 1,
-        bodyColor: isDarkMode
-          ? THEME_COLORS.text.dark
-          : THEME_COLORS.text.light,
+        bodyColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
         padding: 10,
       },
       legend: {

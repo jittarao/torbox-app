@@ -396,19 +396,13 @@ export function useFetchData(apiKey, type = 'torrents') {
           // Update the appropriate state based on the type
           switch (activeType) {
             case 'usenet':
-              setUsenetItems(
-                sortedItems.map((item) => ({ ...item, assetType: 'usenet' }))
-              );
+              setUsenetItems(sortedItems.map((item) => ({ ...item, assetType: 'usenet' })));
               break;
             case 'webdl':
-              setWebdlItems(
-                sortedItems.map((item) => ({ ...item, assetType: 'webdl' }))
-              );
+              setWebdlItems(sortedItems.map((item) => ({ ...item, assetType: 'webdl' })));
               break;
             default:
-              setTorrents(
-                sortedItems.map((item) => ({ ...item, assetType: 'torrents' }))
-              );
+              setTorrents(sortedItems.map((item) => ({ ...item, assetType: 'torrents' })));
               // Only check auto-start for torrents if 30 seconds have elapsed
               if (now - lastAutoStartCheckRef.current >= AUTO_START_CHECK_INTERVAL) {
                 await checkAndAutoStartTorrents(sortedItems);
@@ -737,26 +731,29 @@ export function useFetchData(apiKey, type = 'torrents') {
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
           const read = () => {
-            reader.read().then(({ done, value }) => {
-              if (ac.signal.aborted) return;
-              if (done) {
-                retryCount = 0; // graceful close — reset before reconnecting
-                reconnect();
-                return;
-              }
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n');
-              buffer = lines.pop() || '';
-              for (const line of lines) {
-                if (line.startsWith('data:')) {
-                  fetchLocalItems(true, 'torrents', 0, true);
-                  break;
+            reader
+              .read()
+              .then(({ done, value }) => {
+                if (ac.signal.aborted) return;
+                if (done) {
+                  retryCount = 0; // graceful close — reset before reconnecting
+                  reconnect();
+                  return;
                 }
-              }
-              read();
-            }).catch((err) => {
-              if (err?.name !== 'AbortError' && !ac.signal.aborted) reconnect();
-            });
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                  if (line.startsWith('data:')) {
+                    fetchLocalItems(true, 'torrents', 0, true);
+                    break;
+                  }
+                }
+                read();
+              })
+              .catch((err) => {
+                if (err?.name !== 'AbortError' && !ac.signal.aborted) reconnect();
+              });
           };
           read();
         })

@@ -10,7 +10,7 @@ export async function GET() {
     const response = await new Promise((resolve, reject) => {
       const req = http.get(url, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           try {
             const jsonData = JSON.parse(data);
@@ -38,9 +38,6 @@ export async function GET() {
     }
   } catch (error) {
     console.error('Error checking API key status:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

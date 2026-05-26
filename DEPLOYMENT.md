@@ -63,11 +63,11 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 
 ### Environment Variables
 
-| Variable            | Description                                                                                    | Default                 | Required |
-| ------------------- | ---------------------------------------------------------------------------------------------- | ----------------------- | -------- |
-| `BACKEND_URL`       | URL of the backend API server                                                                  | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED`  | Disable backend usage (set to `true`/`false`)                                                  | `false`                 | No       |
-| `FFPROBE_PATH`      | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
+| Variable           | Description                                                                                    | Default                 | Required |
+| ------------------ | ---------------------------------------------------------------------------------------------- | ----------------------- | -------- |
+| `BACKEND_URL`      | URL of the backend API server                                                                  | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED` | Disable backend usage (set to `true`/`false`)                                                  | `false`                 | No       |
+| `FFPROBE_PATH`     | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
 | `FFPROBE_AUTO_DIR` | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set). | `<project>/.ffprobe`    | No       |
 
 ### Backend

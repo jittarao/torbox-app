@@ -206,8 +206,7 @@ export class HealthCheckService {
       const hasErrors =
         health.database.status !== 'healthy' ||
         (health.api && health.api.status === 'unhealthy') ||
-        (health.connectionPool &&
-          ['critical', 'emergency'].includes(health.connectionPool.status));
+        (health.connectionPool && ['critical', 'emergency'].includes(health.connectionPool.status));
 
       if (hasErrors) {
         health.status = 'degraded';

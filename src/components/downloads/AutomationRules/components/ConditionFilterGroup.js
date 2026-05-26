@@ -111,7 +111,9 @@ export default function ConditionFilterGroup({
                   )}
                   {conditionIndex > 0 && (
                     <div className="absolute left-4 -top-2 text-xs text-primary-text/50 dark:text-primary-text-dark/50 bg-surface-alt dark:bg-surface-alt-dark px-1">
-                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND ? automationRulesT('logicOperators.and') : automationRulesT('logicOperators.or')}
+                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
+                        ? automationRulesT('logicOperators.and')
+                        : automationRulesT('logicOperators.or')}
                     </div>
                   )}
                   <ConditionFilterInput

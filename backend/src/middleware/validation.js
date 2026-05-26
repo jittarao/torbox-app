@@ -114,7 +114,8 @@ export function extractAuthIdMiddleware(req, res, next) {
     if (!validateApiKeyFormat(apiKey)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid API key format. API key must be at least 16 characters and use allowed characters.',
+        error:
+          'Invalid API key format. API key must be at least 16 characters and use allowed characters.',
       });
     }
     req.validatedAuthId = hashApiKey(apiKey);

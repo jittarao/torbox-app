@@ -34,11 +34,7 @@ import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
-import {
-  fetchUserProfile,
-  getUserPermissions,
-  hasDownloadAccess,
-} from '@/utils/userProfile';
+import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function Downloads({ apiKey }) {

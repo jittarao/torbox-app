@@ -257,9 +257,7 @@ export function setupAutomationRoutes(router, backend) {
       if (backend.pollingScheduler) {
         await backend.pollingScheduler.refreshPollers();
       }
-      const status = backend.pollingScheduler
-        ? backend.pollingScheduler.getStatus()
-        : null;
+      const status = backend.pollingScheduler ? backend.pollingScheduler.getStatus() : null;
       sendSuccess(res, {
         message: 'Sync completed; pollers refreshed',
         sync: syncResult,

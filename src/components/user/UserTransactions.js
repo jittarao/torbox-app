@@ -188,7 +188,9 @@ export default function UserTransactions({ apiKey, setToast }) {
                     <p className="font-semibold text-text dark:text-text-dark">
                       {formatCurrency(transaction.amount, transaction.currency)}
                     </p>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}
+                    >
                       {transaction.status || 'unknown'}
                     </span>
                   </div>
@@ -196,15 +198,21 @@ export default function UserTransactions({ apiKey, setToast }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-muted dark:text-muted-dark">{t('transactions.transactionId')}: </span>
+                    <span className="text-muted dark:text-muted-dark">
+                      {t('transactions.transactionId')}:{' '}
+                    </span>
                     <span className="font-medium">{transaction.transaction_id || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-muted dark:text-muted-dark">{t('transactions.type')}: </span>
+                    <span className="text-muted dark:text-muted-dark">
+                      {t('transactions.type')}:{' '}
+                    </span>
                     <span className="font-medium capitalize">{transaction.type || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-muted dark:text-muted-dark">{t('transactions.paymentMethod')}: </span>
+                    <span className="text-muted dark:text-muted-dark">
+                      {t('transactions.paymentMethod')}:{' '}
+                    </span>
                     <span className="font-medium">{transaction.payment_method || 'N/A'}</span>
                   </div>
                 </div>
@@ -212,7 +220,8 @@ export default function UserTransactions({ apiKey, setToast }) {
                 {transaction.notes && (
                   <div className="mt-3 pt-3 border-t border-border dark:border-border-dark">
                     <p className="text-sm text-muted dark:text-muted-dark">
-                      <span className="font-medium">{t('transactions.notes')}:</span> {transaction.notes}
+                      <span className="font-medium">{t('transactions.notes')}:</span>{' '}
+                      {transaction.notes}
                     </p>
                   </div>
                 )}
@@ -233,7 +242,9 @@ export default function UserTransactions({ apiKey, setToast }) {
       <div className="p-6">
         <div className="text-center py-8">
           <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">An error occurred while rendering transactions</p>
+          <p className="text-red-600 dark:text-red-400">
+            An error occurred while rendering transactions
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"

@@ -30,7 +30,9 @@ export default function SystemHealth({ metrics, onRefresh }) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Database Health */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Database Health</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Database Health
+        </h3>
         {metrics.database?.master_database && (
           <div className="space-y-3">
             <div>
@@ -45,12 +47,16 @@ export default function SystemHealth({ metrics, onRefresh }) {
               <>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600 dark:text-gray-400" title="Open SQLite connections to per-user databases (not the same as Active Pollers)">
+                    <span
+                      className="text-gray-600 dark:text-gray-400"
+                      title="Open SQLite connections to per-user databases (not the same as Active Pollers)"
+                    >
                       Pool size (user DB connections)
                     </span>
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {metrics.database.connection_pool.size ?? metrics.database.connection_pool.currentSize} /{' '}
-                      {metrics.database.connection_pool.maxSize}
+                      {metrics.database.connection_pool.size ??
+                        metrics.database.connection_pool.currentSize}{' '}
+                      / {metrics.database.connection_pool.maxSize}
                     </span>
                   </div>
                 </div>
@@ -81,11 +87,15 @@ export default function SystemHealth({ metrics, onRefresh }) {
                       {metrics.database.connection_pool.status}
                     </span>
                   </div>
-                    {!['healthy', 'warning'].includes(metrics.database.connection_pool.status) && (
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Many user DBs have an open connection. Consider increasing <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">MAX_DB_CONNECTIONS</code> for 1000+ users.
-                      </p>
-                    )}
+                  {!['healthy', 'warning'].includes(metrics.database.connection_pool.status) && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Many user DBs have an open connection. Consider increasing{' '}
+                      <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">
+                        MAX_DB_CONNECTIONS
+                      </code>{' '}
+                      for 1000+ users.
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -96,14 +106,18 @@ export default function SystemHealth({ metrics, onRefresh }) {
       {/* Polling Scheduler */}
       {metrics.polling && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Polling Scheduler</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Polling Scheduler
+          </h3>
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-600 dark:text-gray-400">Status</span>
                 <span
                   className={`font-medium ${
-                    metrics.polling.isRunning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    metrics.polling.isRunning
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {metrics.polling.isRunning ? 'Running' : 'Stopped'}
@@ -118,7 +132,8 @@ export default function SystemHealth({ metrics, onRefresh }) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Users with at least one enabled automation rule (separate from pool connections above).
+                Users with at least one enabled automation rule (separate from pool connections
+                above).
               </p>
             </div>
             <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
@@ -133,7 +148,9 @@ export default function SystemHealth({ metrics, onRefresh }) {
               {syncMessage && (
                 <p
                   className={`mt-2 text-sm ${
-                    syncMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    syncMessage.type === 'success'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {syncMessage.text}

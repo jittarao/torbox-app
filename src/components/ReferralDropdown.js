@@ -64,12 +64,7 @@ export default function ReferralDropdown() {
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
@@ -80,9 +75,7 @@ export default function ReferralDropdown() {
         onBackdropClick={() => setIsOpen(false)}
       >
         <div className="ui-dropdown-header">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {t('title')}
-          </h3>
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{t('title')}</h3>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('description')}</p>
           <p className="text-xs text-amber-700 dark:text-amber-400 mt-2 font-medium">
             {t('developerNote')}

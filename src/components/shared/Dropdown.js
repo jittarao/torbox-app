@@ -3,13 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Icons from '@/components/icons';
 
-export default function Dropdown({
-  options,
-  value,
-  onChange,
-  className = '',
-  sortDir,
-}) {
+export default function Dropdown({ options, value, onChange, className = '', sortDir }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -25,18 +19,16 @@ export default function Dropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedOption = options.find(
-    (option) => {
-      // Handle null/undefined comparison
-      if (option.value === null && (value === null || value === 'null')) return true;
-      if (option.value === null || value === null) return false;
-      // Handle number comparison
-      if (typeof option.value === 'number' && typeof value === 'string') {
-        return option.value === parseInt(value, 10);
-      }
-      return option.value === value || JSON.stringify(option.value) === String(value);
+  const selectedOption = options.find((option) => {
+    // Handle null/undefined comparison
+    if (option.value === null && (value === null || value === 'null')) return true;
+    if (option.value === null || value === null) return false;
+    // Handle number comparison
+    if (typeof option.value === 'number' && typeof value === 'string') {
+      return option.value === parseInt(value, 10);
     }
-  );
+    return option.value === value || JSON.stringify(option.value) === String(value);
+  });
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -55,12 +47,7 @@ export default function Dropdown({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
@@ -74,9 +61,7 @@ export default function Dropdown({
               key={option.label}
               onClick={() => {
                 const newValue =
-                  typeof option.value === 'object'
-                    ? JSON.stringify(option.value)
-                    : option.value;
+                  typeof option.value === 'object' ? JSON.stringify(option.value) : option.value;
                 onChange(newValue);
                 setIsOpen(false);
               }}
@@ -85,19 +70,20 @@ export default function Dropdown({
                 transition-colors flex justify-between items-center
                 ${
                   (option.value === null && (value === null || value === 'null')) ||
-                  (option.value !== null && value !== null && (
-                    option.value === value ||
-                    (typeof option.value === 'number' && typeof value === 'string' && option.value === parseInt(value, 10)) ||
-                    JSON.stringify(option.value) === String(value)
-                  ))
+                  (option.value !== null &&
+                    value !== null &&
+                    (option.value === value ||
+                      (typeof option.value === 'number' &&
+                        typeof value === 'string' &&
+                        option.value === parseInt(value, 10)) ||
+                      JSON.stringify(option.value) === String(value)))
                     ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
                     : 'text-primary-text dark:text-primary-text-dark'
                 }`}
             >
               <span>{option.label}</span>
               {sortDir &&
-                (option.value === value ||
-                  JSON.stringify(option.value) === value) &&
+                (option.value === value || JSON.stringify(option.value) === value) &&
                 (sortDir === 'asc' ? <Icons.UpArrow /> : <Icons.DownArrow />)}
             </button>
           ))}

@@ -41,7 +41,11 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
   };
 
   const handleDelete = async (tagId) => {
-    if (window.confirm('Are you sure you want to delete this tag? It will be removed from all downloads.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this tag? It will be removed from all downloads.'
+      )
+    ) {
       try {
         await deleteTag(tagId);
       } catch (error) {
@@ -64,11 +68,8 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40"
-        onClick={onClose}
-      />
-      
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+
       {/* Modal */}
       <div
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50
@@ -91,12 +92,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
               text-primary-text dark:text-primary-text-dark
               transition-colors"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -122,7 +118,12 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                   transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 Create New Tag
               </button>
@@ -146,7 +147,6 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                     bg-surface dark:bg-surface-dark
                     text-primary-text dark:text-primary-text-dark
                     focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-                  autoFocus
                 />
                 <button
                   type="button"
@@ -177,7 +177,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
           {/* Tags list */}
           {loading && tags.length === 0 ? (
             <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-              Loading tags...
+              Loading tags…
             </div>
           ) : tags.length === 0 ? (
             <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
@@ -209,7 +209,6 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                           bg-surface dark:bg-surface-dark
                           text-primary-text dark:text-primary-text-dark
                           focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-                        autoFocus
                       />
                       <button
                         type="button"
@@ -249,8 +248,18 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                           transition-colors"
                         title="Edit tag"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
                         </svg>
                       </button>
                       <button
@@ -261,8 +270,18 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                           transition-colors"
                         title="Delete tag"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </>

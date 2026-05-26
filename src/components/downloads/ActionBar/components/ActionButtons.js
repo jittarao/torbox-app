@@ -45,14 +45,14 @@ export default function ActionButtons({
         if (response && response.jobs) {
           // Extract unique provider types from active jobs
           const providers = new Set();
-          response.jobs.forEach(job => {
+          response.jobs.forEach((job) => {
             if (job.provider) {
               providers.add(job.provider);
             }
           });
-          
+
           const connected = {};
-          providers.forEach(provider => {
+          providers.forEach((provider) => {
             connected[provider] = true;
           });
           setConnectedProviders(connected);
@@ -107,19 +107,20 @@ export default function ActionButtons({
 
   const handleBulkCloudUpload = async (providerId) => {
     if (isUploading || !selectedItems.items?.size) return;
-    
+
     // Check if any providers are connected
     if (Object.keys(connectedProviders).length === 0) {
       setToast({
-        message: 'Please connect to a cloud provider first in the Cloud Storage Manager. Only Google Drive, Dropbox, and OneDrive support OAuth authentication.',
+        message:
+          'Please connect to a cloud provider first in the Cloud Storage Manager. Only Google Drive, Dropbox, and OneDrive support OAuth authentication.',
         type: 'info',
       });
       setShowCloudUpload(false);
       return;
     }
-    
+
     setIsUploading(true);
-    
+
     try {
       const selectedItemsArray = Array.from(selectedItems.items);
       let successCount = 0;
@@ -166,9 +167,13 @@ export default function ActionButtons({
           }
         } catch (error) {
           console.error(`Error uploading item ${itemId}:`, error);
-          
+
           // Check if it's an authentication error
-          if (error.message && (error.message.includes('AUTH_ERROR') || error.message.includes('Provider not connected'))) {
+          if (
+            error.message &&
+            (error.message.includes('AUTH_ERROR') ||
+              error.message.includes('Provider not connected'))
+          ) {
             setToast({
               message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
               type: 'error',
@@ -177,9 +182,12 @@ export default function ActionButtons({
             setShowCloudUpload(false);
             return;
           }
-          
+
           // Check for other specific error types
-          if (error.message && (error.message.includes('NO_AUTH') || error.message.includes('Authentication required'))) {
+          if (
+            error.message &&
+            (error.message.includes('NO_AUTH') || error.message.includes('Authentication required'))
+          ) {
             setToast({
               message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
               type: 'error',
@@ -188,14 +196,17 @@ export default function ActionButtons({
             setShowCloudUpload(false);
             return;
           }
-          
+
           errorCount++;
         }
       }
 
       if (successCount > 0) {
         setToast({
-          message: t('bulkUploadSuccess', { count: successCount, provider: getProviderName(providerId) }),
+          message: t('bulkUploadSuccess', {
+            count: successCount,
+            provider: getProviderName(providerId),
+          }),
           type: 'success',
         });
         phEvent('bulk_cloud_upload', { provider: providerId, count: successCount });
@@ -277,9 +288,7 @@ export default function ActionButtons({
             className="bg-red-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-red-600 
             disabled:opacity-50 transition-colors"
           >
-            {isDeleting
-              ? t('deleteConfirm.deleting')
-              : t('deleteConfirm.confirm')}
+            {isDeleting ? t('deleteConfirm.deleting') : t('deleteConfirm.confirm')}
           </button>
 
           {showDeleteConfirm && (
@@ -293,10 +302,7 @@ export default function ActionButtons({
                     count:
                       selectedItems.items?.size +
                       (deleteParentDownloads ? selectedItems.files?.size : 0),
-                    type:
-                      selectedItems.items?.size === 1
-                        ? itemTypeName
-                        : itemTypePlural,
+                    type: selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural,
                   })}
                 </p>
 
@@ -305,15 +311,11 @@ export default function ActionButtons({
                     <input
                       type="checkbox"
                       checked={deleteParentDownloads}
-                      onChange={(e) =>
-                        setDeleteParentDownloads(e.target.checked)
-                      }
+                      onChange={(e) => setDeleteParentDownloads(e.target.checked)}
                       className="rounded border-gray-300 text-accent focus:ring-accent"
                     />
                     {t('deleteConfirm.includeParentDownloads')}
-                    <Tooltip
-                      content={t('deleteConfirm.includeParentDownloadsTooltip')}
-                    >
+                    <Tooltip content={t('deleteConfirm.includeParentDownloadsTooltip')}>
                       <Icons.Question />
                     </Tooltip>
                   </label>

@@ -44,8 +44,7 @@ export default function ChaptersPanel({
       const elRect = el.getBoundingClientRect();
       const padding = 48;
       const isInView =
-        elRect.top >= listRect.top - padding &&
-        elRect.bottom <= listRect.bottom + padding;
+        elRect.top >= listRect.top - padding && elRect.bottom <= listRect.bottom + padding;
       if (!isInView) {
         el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       }
@@ -96,7 +95,6 @@ export default function ChaptersPanel({
         <ul
           ref={listRef}
           className="flex-1 min-h-0 overflow-auto overflow-x-hidden space-y-1 pr-1 scroll-smooth rounded-xl bg-white/[0.02] py-1.5"
-          role="list"
         >
           {filteredEntries.map(({ ch, i }) => {
             const isCurrent = i === currentChapterIndex;
@@ -112,9 +110,10 @@ export default function ChaptersPanel({
                     w-full text-left px-3 py-2.5 rounded-lg text-sm
                     transition-[background-color,color,box-shadow] duration-300 ease-out
                     flex items-center gap-3 min-w-0
-                    ${isCurrent
-                      ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30 shadow-[0_0_0_1px_rgba(251,191,36,0.08)]'
-                      : 'text-gray-400 hover:bg-white/8 hover:text-gray-200 ring-1 ring-transparent'
+                    ${
+                      isCurrent
+                        ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30 shadow-[0_0_0_1px_rgba(251,191,36,0.08)]'
+                        : 'text-gray-400 hover:bg-white/8 hover:text-gray-200 ring-1 ring-transparent'
                     }
                   `}
                 >

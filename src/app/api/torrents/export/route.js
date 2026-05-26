@@ -1,36 +1,25 @@
 import { headers } from 'next/headers';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   const headersList = await headers();
-  const apiKey =
-    headersList.get('x-api-key') || request.nextUrl.searchParams.get('api_key');
+  const apiKey = headersList.get('x-api-key') || request.nextUrl.searchParams.get('api_key');
   const torrentId = request.nextUrl.searchParams.get('torrent_id');
   const type = request.nextUrl.searchParams.get('type');
 
   if (!apiKey) {
-    return NextResponse.json(
-      { success: false, error: 'API key is required' },
-      { status: 401 },
-    );
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
   }
 
   if (!torrentId) {
-    return NextResponse.json(
-      { success: false, error: 'Torrent ID is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'Torrent ID is required' }, { status: 400 });
   }
 
   if (!type || (type !== 'magnet' && type !== 'torrent')) {
     return NextResponse.json(
       { success: false, error: 'Valid type (magnet or torrent) is required' },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -42,7 +31,7 @@ export async function GET(request) {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
-      },
+      }
     );
 
     // For magnet links, return JSON
@@ -64,9 +53,6 @@ export async function GET(request) {
       });
     }
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

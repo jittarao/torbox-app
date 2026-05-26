@@ -38,6 +38,43 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
+    const handleTimeUpdate = () => {
+      if (video && !isSeekingRef.current) {
+        onTimeUpdate?.(video.currentTime);
+      }
+      if (video && video.duration > 0) {
+        onDurationChange?.(video.duration);
+      }
+    };
+
+    const handlePlay = () => onPlayStateChange?.(true);
+    const handlePause = () => onPlayStateChange?.(false);
+
+    const handleLoadedMetadata = () => {
+      if (video && video.duration > 0) {
+        onDurationChange?.(video.duration);
+        onTimeUpdate?.(video.currentTime || 0);
+      }
+      onLoadingChange?.(false);
+    };
+
+    const handleCanPlay = () => {
+      if (video && video.duration > 0) {
+        onDurationChange?.(video.duration);
+        onTimeUpdate?.(video.currentTime || 0);
+      }
+      onLoadingChange?.(false);
+    };
+
+    const handleVolumeChange = () => {};
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('volumechange', handleVolumeChange);
+
     const initPlayer = async () => {
       try {
         onLoadingChange?.(true);
@@ -55,10 +92,8 @@ export default function VideoPlayer({
         const player = new shaka.Player(video);
         playerRef.current = player;
 
-        // Disable native controls
         video.controls = false;
 
-        // Configure player for HLS streaming
         player.configure({
           streaming: {
             bufferingGoal: 30,
@@ -86,47 +121,6 @@ export default function VideoPlayer({
             },
           },
         });
-
-        // Video event handlers
-        const handleTimeUpdate = () => {
-          if (video && !isSeekingRef.current) {
-            onTimeUpdate?.(video.currentTime);
-          }
-          // Always update duration when available
-          if (video && video.duration > 0) {
-            onDurationChange?.(video.duration);
-          }
-        };
-
-        const handlePlay = () => onPlayStateChange?.(true);
-        const handlePause = () => onPlayStateChange?.(false);
-
-        const handleLoadedMetadata = () => {
-          if (video && video.duration > 0) {
-            onDurationChange?.(video.duration);
-            onTimeUpdate?.(video.currentTime || 0);
-          }
-          onLoadingChange?.(false);
-        };
-
-        const handleCanPlay = () => {
-          if (video && video.duration > 0) {
-            onDurationChange?.(video.duration);
-            onTimeUpdate?.(video.currentTime || 0);
-          }
-          onLoadingChange?.(false);
-        };
-
-        const handleVolumeChange = () => {
-          // Volume changes are handled by parent via videoRef
-        };
-
-        video.addEventListener('timeupdate', handleTimeUpdate);
-        video.addEventListener('play', handlePlay);
-        video.addEventListener('pause', handlePause);
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('canplay', handleCanPlay);
-        video.addEventListener('volumechange', handleVolumeChange);
 
         // Player event handlers
         player.addEventListener('loading', () => {
@@ -190,26 +184,7 @@ export default function VideoPlayer({
           console.error('Shaka Player error:', error);
         });
 
-        // Load the stream
         await player.load(streamUrl);
-
-        // Cleanup function
-        return () => {
-          video.removeEventListener('timeupdate', handleTimeUpdate);
-          video.removeEventListener('play', handlePlay);
-          video.removeEventListener('pause', handlePause);
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('canplay', handleCanPlay);
-          video.removeEventListener('volumechange', handleVolumeChange);
-          if (playerRef.current) {
-            try {
-              playerRef.current.destroy();
-            } catch (e) {
-              console.error('Error destroying player:', e);
-            }
-            playerRef.current = null;
-          }
-        };
       } catch (error) {
         onLoadingChange?.(false);
         const errorMessage = error?.message || error?.toString() || 'Failed to load stream';
@@ -220,8 +195,13 @@ export default function VideoPlayer({
 
     initPlayer();
 
-    // Cleanup on unmount or streamUrl change
     return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('volumechange', handleVolumeChange);
       if (playerRef.current) {
         try {
           playerRef.current.destroy();
@@ -231,7 +211,16 @@ export default function VideoPlayer({
         playerRef.current = null;
       }
     };
-  }, [streamUrl, initialSeekTime, shouldAutoPlay, onTimeUpdate, onDurationChange, onPlayStateChange, onError, onLoadingChange]);
+  }, [
+    streamUrl,
+    initialSeekTime,
+    shouldAutoPlay,
+    onTimeUpdate,
+    onDurationChange,
+    onPlayStateChange,
+    onError,
+    onLoadingChange,
+  ]);
 
   // Expose video ref to parent
   useEffect(() => {

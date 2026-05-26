@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import TagSelector from './TagSelector';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
+const EMPTY_ARRAY = [];
+
 /**
  * TagAssignmentModal - Modal for assigning or removing tags from downloads
  * @param {Object} props
@@ -16,7 +18,7 @@ import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 export default function TagAssignmentModal({
   isOpen,
   onClose,
-  downloadIds = [],
+  downloadIds = EMPTY_ARRAY,
   apiKey,
   onSuccess,
 }) {

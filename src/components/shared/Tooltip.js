@@ -121,7 +121,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
             {content}
             <div style={arrowPosition} />
           </div>,
-          document.body,
+          document.body
         )}
     </div>
   );

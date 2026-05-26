@@ -1,5 +1,5 @@
-import { 
-  CONDITION_TYPES, 
+import {
+  CONDITION_TYPES,
   LOGIC_OPERATORS,
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
@@ -41,18 +41,14 @@ export const isBooleanCondition = (conditionType) => {
 
 // Helper to check if a condition type is string-based
 export const isStringCondition = (conditionType) => {
-  return [
-    CONDITION_TYPES.TRACKER,
-    CONDITION_TYPES.NAME,
-  ].includes(conditionType);
+  return [CONDITION_TYPES.TRACKER, CONDITION_TYPES.NAME].includes(conditionType);
 };
 
 // Helper to check if a condition type requires hours parameter
 export const isSpeedAverageCondition = (conditionType) => {
-  return [
-    CONDITION_TYPES.AVG_DOWNLOAD_SPEED,
-    CONDITION_TYPES.AVG_UPLOAD_SPEED,
-  ].includes(conditionType);
+  return [CONDITION_TYPES.AVG_DOWNLOAD_SPEED, CONDITION_TYPES.AVG_UPLOAD_SPEED].includes(
+    conditionType
+  );
 };
 
 export const getConditionText = (conditions, logicOperator, t, commonT) => {
@@ -147,26 +143,32 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
     } else if (condition.type === CONDITION_TYPES.NAME) {
       return `name ${textOpT} "${condition.value}"`;
     } else if (condition.type === CONDITION_TYPES.PRIVATE) {
-      const isPrivate = condition.value === true || condition.value === 1 || condition.value === 'true';
+      const isPrivate =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
       return `is ${isPrivate ? 'private' : 'public'}`;
     } else if (condition.type === CONDITION_TYPES.CACHED) {
-      const isCached = condition.value === true || condition.value === 1 || condition.value === 'true';
+      const isCached =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
       return `is ${isCached ? 'cached' : 'not cached'}`;
     } else if (condition.type === CONDITION_TYPES.AVAILABILITY) {
       return `availability ${numOpT} ${condition.value}`;
     } else if (condition.type === CONDITION_TYPES.ALLOW_ZIP) {
-      const allowZip = condition.value === true || condition.value === 1 || condition.value === 'true';
+      const allowZip =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
       return `is ${allowZip ? 'zip allowed' : 'zip not allowed'}`;
     }
     // Lifecycle
     else if (condition.type === CONDITION_TYPES.IS_ACTIVE) {
-      const isActive = condition.value === true || condition.value === 1 || condition.value === 'true';
+      const isActive =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
       return `is ${isActive ? 'active' : 'inactive'}`;
     } else if (condition.type === CONDITION_TYPES.SEEDING_ENABLED) {
-      const seedingEnabled = condition.value === true || condition.value === 1 || condition.value === 'true';
+      const seedingEnabled =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
       return `seeding is ${seedingEnabled ? 'enabled' : 'disabled'}`;
     } else if (condition.type === CONDITION_TYPES.LONG_TERM_SEEDING) {
-      const longTermSeeding = condition.value === true || condition.value === 1 || condition.value === 'true';
+      const longTermSeeding =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
       return `long-term seeding is ${longTermSeeding ? 'enabled' : 'disabled'}`;
     } else if (condition.type === CONDITION_TYPES.STATUS) {
       // STATUS value must be an array
@@ -217,40 +219,54 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
 export const getConditionUnit = (conditionType) => {
   if (conditionType === CONDITION_TYPES.SEEDING_TIME || conditionType === CONDITION_TYPES.AGE) {
     return 'hours';
-  } else if (conditionType === CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT || 
-             conditionType === CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT) {
+  } else if (
+    conditionType === CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT ||
+    conditionType === CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT
+  ) {
     return 'minutes ago';
-  } else if (conditionType === CONDITION_TYPES.DOWNLOAD_STALLED_TIME ||
-             conditionType === CONDITION_TYPES.UPLOAD_STALLED_TIME) {
+  } else if (
+    conditionType === CONDITION_TYPES.DOWNLOAD_STALLED_TIME ||
+    conditionType === CONDITION_TYPES.UPLOAD_STALLED_TIME
+  ) {
     return 'minutes';
   } else if (conditionType === CONDITION_TYPES.PROGRESS) {
     return '%';
-  } else if (conditionType === CONDITION_TYPES.DOWNLOAD_SPEED ||
-             conditionType === CONDITION_TYPES.AVG_DOWNLOAD_SPEED) {
+  } else if (
+    conditionType === CONDITION_TYPES.DOWNLOAD_SPEED ||
+    conditionType === CONDITION_TYPES.AVG_DOWNLOAD_SPEED
+  ) {
     return 'MB/s';
-  } else if (conditionType === CONDITION_TYPES.UPLOAD_SPEED ||
-             conditionType === CONDITION_TYPES.AVG_UPLOAD_SPEED) {
+  } else if (
+    conditionType === CONDITION_TYPES.UPLOAD_SPEED ||
+    conditionType === CONDITION_TYPES.AVG_UPLOAD_SPEED
+  ) {
     return 'MB/s';
   } else if (conditionType === CONDITION_TYPES.ETA) {
     return 'minutes';
-  } else if (conditionType === CONDITION_TYPES.SEEDS || 
-             conditionType === CONDITION_TYPES.PEERS ||
-             conditionType === CONDITION_TYPES.FILE_COUNT) {
+  } else if (
+    conditionType === CONDITION_TYPES.SEEDS ||
+    conditionType === CONDITION_TYPES.PEERS ||
+    conditionType === CONDITION_TYPES.FILE_COUNT
+  ) {
     return 'count';
   } else if (conditionType === CONDITION_TYPES.RATIO) {
     return 'ratio';
-  } else if (conditionType === CONDITION_TYPES.FILE_SIZE ||
-             conditionType === CONDITION_TYPES.TOTAL_UPLOADED) {
+  } else if (
+    conditionType === CONDITION_TYPES.FILE_SIZE ||
+    conditionType === CONDITION_TYPES.TOTAL_UPLOADED
+  ) {
     return 'GB';
-  } else if (conditionType === CONDITION_TYPES.STATUS ||
-             conditionType === CONDITION_TYPES.TAGS ||
-             conditionType === CONDITION_TYPES.NAME ||
-             conditionType === CONDITION_TYPES.PRIVATE ||
-             conditionType === CONDITION_TYPES.CACHED ||
-             conditionType === CONDITION_TYPES.IS_ACTIVE ||
-             conditionType === CONDITION_TYPES.SEEDING_ENABLED ||
-             conditionType === CONDITION_TYPES.ALLOW_ZIP ||
-             conditionType === CONDITION_TYPES.LONG_TERM_SEEDING) {
+  } else if (
+    conditionType === CONDITION_TYPES.STATUS ||
+    conditionType === CONDITION_TYPES.TAGS ||
+    conditionType === CONDITION_TYPES.NAME ||
+    conditionType === CONDITION_TYPES.PRIVATE ||
+    conditionType === CONDITION_TYPES.CACHED ||
+    conditionType === CONDITION_TYPES.IS_ACTIVE ||
+    conditionType === CONDITION_TYPES.SEEDING_ENABLED ||
+    conditionType === CONDITION_TYPES.ALLOW_ZIP ||
+    conditionType === CONDITION_TYPES.LONG_TERM_SEEDING
+  ) {
     return '';
   } else if (conditionType === CONDITION_TYPES.AVAILABILITY) {
     return '';
@@ -369,56 +385,176 @@ export const getConditionTypeOptions = (t) => {
     {
       label: t('conditionGroups.lifecycle'),
       options: [
-        { value: CONDITION_TYPES.STATUS, label: t('conditions.status'), description: t('conditions.statusDescription') },
-        { value: CONDITION_TYPES.IS_ACTIVE, label: t('conditions.isActive'), description: t('conditions.isActiveDescription') },
-        { value: CONDITION_TYPES.EXPIRES_AT, label: t('conditions.expiresAt'), description: t('conditions.expiresAtDescription') },
+        {
+          value: CONDITION_TYPES.STATUS,
+          label: t('conditions.status'),
+          description: t('conditions.statusDescription'),
+        },
+        {
+          value: CONDITION_TYPES.IS_ACTIVE,
+          label: t('conditions.isActive'),
+          description: t('conditions.isActiveDescription'),
+        },
+        {
+          value: CONDITION_TYPES.EXPIRES_AT,
+          label: t('conditions.expiresAt'),
+          description: t('conditions.expiresAtDescription'),
+        },
       ],
     },
     {
       label: t('conditionGroups.seeding'),
       options: [
-        { value: CONDITION_TYPES.RATIO, label: t('conditions.seedingRatio'), description: t('conditions.seedingRatioDescription') },
-        { value: CONDITION_TYPES.SEEDING_ENABLED, label: t('conditions.seedingEnabled'), description: t('conditions.seedingEnabledDescription') },
-        { value: CONDITION_TYPES.SEEDING_TIME, label: t('conditions.seedingTime'), description: t('conditions.seedingTimeDescription') },
-        { value: CONDITION_TYPES.SEEDS, label: t('conditions.seeds'), description: t('conditions.seedsDescription') },
-        { value: CONDITION_TYPES.PEERS, label: t('conditions.peers'), description: t('conditions.peersDescription') },
-        { value: CONDITION_TYPES.LONG_TERM_SEEDING, label: t('conditions.longTermSeeding'), description: t('conditions.longTermSeedingDescription') },
-        { value: CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT, label: t('conditions.lastUploadActivity'), description: t('conditions.lastUploadActivityDescription') },
-        { value: CONDITION_TYPES.TOTAL_UPLOADED, label: t('conditions.totalUploaded'), description: t('conditions.totalUploadedDescription') },
-        { value: CONDITION_TYPES.UPLOAD_SPEED, label: t('conditions.uploadSpeed'), description: t('conditions.uploadSpeedDescription') },
-        { value: CONDITION_TYPES.AVG_UPLOAD_SPEED, label: t('conditions.avgUploadSpeed'), description: t('conditions.avgUploadSpeedDescription') },
+        {
+          value: CONDITION_TYPES.RATIO,
+          label: t('conditions.seedingRatio'),
+          description: t('conditions.seedingRatioDescription'),
+        },
+        {
+          value: CONDITION_TYPES.SEEDING_ENABLED,
+          label: t('conditions.seedingEnabled'),
+          description: t('conditions.seedingEnabledDescription'),
+        },
+        {
+          value: CONDITION_TYPES.SEEDING_TIME,
+          label: t('conditions.seedingTime'),
+          description: t('conditions.seedingTimeDescription'),
+        },
+        {
+          value: CONDITION_TYPES.SEEDS,
+          label: t('conditions.seeds'),
+          description: t('conditions.seedsDescription'),
+        },
+        {
+          value: CONDITION_TYPES.PEERS,
+          label: t('conditions.peers'),
+          description: t('conditions.peersDescription'),
+        },
+        {
+          value: CONDITION_TYPES.LONG_TERM_SEEDING,
+          label: t('conditions.longTermSeeding'),
+          description: t('conditions.longTermSeedingDescription'),
+        },
+        {
+          value: CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT,
+          label: t('conditions.lastUploadActivity'),
+          description: t('conditions.lastUploadActivityDescription'),
+        },
+        {
+          value: CONDITION_TYPES.TOTAL_UPLOADED,
+          label: t('conditions.totalUploaded'),
+          description: t('conditions.totalUploadedDescription'),
+        },
+        {
+          value: CONDITION_TYPES.UPLOAD_SPEED,
+          label: t('conditions.uploadSpeed'),
+          description: t('conditions.uploadSpeedDescription'),
+        },
+        {
+          value: CONDITION_TYPES.AVG_UPLOAD_SPEED,
+          label: t('conditions.avgUploadSpeed'),
+          description: t('conditions.avgUploadSpeedDescription'),
+        },
       ],
     },
     {
       label: t('conditionGroups.downloading'),
       options: [
-        { value: CONDITION_TYPES.ETA, label: t('conditions.eta'), description: t('conditions.etaDescription') },
-        { value: CONDITION_TYPES.PROGRESS, label: t('conditions.progress'), description: t('conditions.progressDescription') },
-        { value: CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT, label: t('conditions.lastDownloadActivity'), description: t('conditions.lastDownloadActivityDescription') },
-        { value: CONDITION_TYPES.DOWNLOAD_SPEED, label: t('conditions.downloadSpeed'), description: t('conditions.downloadSpeedDescription') },
-        { value: CONDITION_TYPES.AVG_DOWNLOAD_SPEED, label: t('conditions.avgDownloadSpeed'), description: t('conditions.avgDownloadSpeedDescription') },
+        {
+          value: CONDITION_TYPES.ETA,
+          label: t('conditions.eta'),
+          description: t('conditions.etaDescription'),
+        },
+        {
+          value: CONDITION_TYPES.PROGRESS,
+          label: t('conditions.progress'),
+          description: t('conditions.progressDescription'),
+        },
+        {
+          value: CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT,
+          label: t('conditions.lastDownloadActivity'),
+          description: t('conditions.lastDownloadActivityDescription'),
+        },
+        {
+          value: CONDITION_TYPES.DOWNLOAD_SPEED,
+          label: t('conditions.downloadSpeed'),
+          description: t('conditions.downloadSpeedDescription'),
+        },
+        {
+          value: CONDITION_TYPES.AVG_DOWNLOAD_SPEED,
+          label: t('conditions.avgDownloadSpeed'),
+          description: t('conditions.avgDownloadSpeedDescription'),
+        },
       ],
     },
     {
       label: t('conditionGroups.stalled'),
       options: [
-        { value: CONDITION_TYPES.DOWNLOAD_STALLED_TIME, label: t('conditions.downloadStalledTime'), description: t('conditions.downloadStalledTimeDescription') },
-        { value: CONDITION_TYPES.UPLOAD_STALLED_TIME, label: t('conditions.uploadStalledTime'), description: t('conditions.uploadStalledTimeDescription') },
+        {
+          value: CONDITION_TYPES.DOWNLOAD_STALLED_TIME,
+          label: t('conditions.downloadStalledTime'),
+          description: t('conditions.downloadStalledTimeDescription'),
+        },
+        {
+          value: CONDITION_TYPES.UPLOAD_STALLED_TIME,
+          label: t('conditions.uploadStalledTime'),
+          description: t('conditions.uploadStalledTimeDescription'),
+        },
       ],
     },
     {
       label: t('conditionGroups.metadata'),
       options: [
-        { value: CONDITION_TYPES.AGE, label: t('conditions.age'), description: t('conditions.ageDescription') },
-        { value: CONDITION_TYPES.TRACKER, label: t('conditions.tracker'), description: t('conditions.trackerDescription') },
-        { value: CONDITION_TYPES.AVAILABILITY, label: t('conditions.availability'), description: t('conditions.availabilityDescription') },
-        { value: CONDITION_TYPES.FILE_SIZE, label: t('conditions.fileSize'), description: t('conditions.fileSizeDescription') },
-        { value: CONDITION_TYPES.FILE_COUNT, label: t('conditions.fileCount'), description: t('conditions.fileCountDescription') },
-        { value: CONDITION_TYPES.NAME, label: t('conditions.name'), description: t('conditions.nameDescription') },
-        { value: CONDITION_TYPES.PRIVATE, label: t('conditions.private'), description: t('conditions.privateDescription') },
-        { value: CONDITION_TYPES.CACHED, label: t('conditions.cached'), description: t('conditions.cachedDescription') },
-        { value: CONDITION_TYPES.ALLOW_ZIP, label: t('conditions.allowZip'), description: t('conditions.allowZipDescription') },
-        { value: CONDITION_TYPES.TAGS, label: 'Tags', description: 'Filter by tags assigned to downloads' },
+        {
+          value: CONDITION_TYPES.AGE,
+          label: t('conditions.age'),
+          description: t('conditions.ageDescription'),
+        },
+        {
+          value: CONDITION_TYPES.TRACKER,
+          label: t('conditions.tracker'),
+          description: t('conditions.trackerDescription'),
+        },
+        {
+          value: CONDITION_TYPES.AVAILABILITY,
+          label: t('conditions.availability'),
+          description: t('conditions.availabilityDescription'),
+        },
+        {
+          value: CONDITION_TYPES.FILE_SIZE,
+          label: t('conditions.fileSize'),
+          description: t('conditions.fileSizeDescription'),
+        },
+        {
+          value: CONDITION_TYPES.FILE_COUNT,
+          label: t('conditions.fileCount'),
+          description: t('conditions.fileCountDescription'),
+        },
+        {
+          value: CONDITION_TYPES.NAME,
+          label: t('conditions.name'),
+          description: t('conditions.nameDescription'),
+        },
+        {
+          value: CONDITION_TYPES.PRIVATE,
+          label: t('conditions.private'),
+          description: t('conditions.privateDescription'),
+        },
+        {
+          value: CONDITION_TYPES.CACHED,
+          label: t('conditions.cached'),
+          description: t('conditions.cachedDescription'),
+        },
+        {
+          value: CONDITION_TYPES.ALLOW_ZIP,
+          label: t('conditions.allowZip'),
+          description: t('conditions.allowZipDescription'),
+        },
+        {
+          value: CONDITION_TYPES.TAGS,
+          label: 'Tags',
+          description: 'Filter by tags assigned to downloads',
+        },
       ],
     },
   ];
@@ -427,6 +563,5 @@ export const getConditionTypeOptions = (t) => {
 // Flatten condition type options for simple dropdown
 export const getFlatConditionTypeOptions = (t) => {
   const grouped = getConditionTypeOptions(t);
-  return grouped.flatMap(group => group.options);
+  return grouped.flatMap((group) => group.options);
 };
-

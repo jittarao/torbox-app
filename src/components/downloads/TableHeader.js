@@ -29,9 +29,7 @@ export default function TableHeader({
           <input
             type="checkbox"
             onChange={(e) => onSelectAll(items, e.target.checked)}
-            checked={
-              selectedItems.items?.size === items.length && items.length > 0
-            }
+            checked={selectedItems.items?.size === items.length && items.length > 0}
             className="accent-accent dark:accent-accent-dark"
           />
         </th>

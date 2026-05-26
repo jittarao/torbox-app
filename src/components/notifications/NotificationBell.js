@@ -63,11 +63,7 @@ export default function NotificationBell({ apiKey }) {
 
       <HeaderOverlayPortal open={isOpen}>
         <div className="md:hidden">
-          <NotificationPanel
-            apiKey={apiKey}
-            onClose={() => setIsOpen(false)}
-            variant="mobile"
-          />
+          <NotificationPanel apiKey={apiKey} onClose={() => setIsOpen(false)} variant="mobile" />
         </div>
       </HeaderOverlayPortal>
 
@@ -77,11 +73,7 @@ export default function NotificationBell({ apiKey }) {
         widthClass="w-80 max-w-[calc(100vw-2rem)]"
         className="!py-0 hidden md:flex md:flex-col max-h-[min(28rem,calc(100vh-5rem))] overflow-hidden"
       >
-        <NotificationPanel
-          apiKey={apiKey}
-          onClose={() => setIsOpen(false)}
-          variant="desktop"
-        />
+        <NotificationPanel apiKey={apiKey} onClose={() => setIsOpen(false)} variant="desktop" />
       </HeaderDropdownPanel>
     </div>
   );

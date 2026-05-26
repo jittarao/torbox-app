@@ -106,14 +106,19 @@ export default function CloudUploadManager({ apiKey, setToast }) {
         if (response && response.data) {
           // Extract unique provider types from active jobs only
           const providers = new Set();
-          response.data.forEach(job => {
-            if (job.provider && (job.status === 'pending' || job.status === 'uploading' || job.status === 'in_progress')) {
+          response.data.forEach((job) => {
+            if (
+              job.provider &&
+              (job.status === 'pending' ||
+                job.status === 'uploading' ||
+                job.status === 'in_progress')
+            ) {
               providers.add(job.provider);
             }
           });
-          
+
           const connected = {};
-          providers.forEach(provider => {
+          providers.forEach((provider) => {
             connected[provider] = true;
           });
           setConnectedProviders(connected);
@@ -136,8 +141,9 @@ export default function CloudUploadManager({ apiKey, setToast }) {
       if (response.success) {
         // Filter to only show active jobs (pending, uploading)
         const allJobs = response.data || [];
-        const activeJobsOnly = allJobs.filter(job => 
-          job.status === 'pending' || job.status === 'uploading' || job.status === 'in_progress'
+        const activeJobsOnly = allJobs.filter(
+          (job) =>
+            job.status === 'pending' || job.status === 'uploading' || job.status === 'in_progress'
         );
         setActiveJobs(activeJobsOnly);
       }
@@ -152,8 +158,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
     setIsLoading(true);
     try {
       // Check if this provider supports OAuth
-      const provider = providers.find(p => p.id === providerId);
-      
+      const provider = providers.find((p) => p.id === providerId);
+
       if (provider && provider.supportsOAuth) {
         // Open OAuth popup for the provider
         const popup = window.open(
@@ -189,7 +195,6 @@ export default function CloudUploadManager({ apiKey, setToast }) {
           type: 'info',
         });
       }
-
     } catch (error) {
       console.error('Error connecting provider:', error);
       setToast({
@@ -301,7 +306,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                 <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark mb-4">
                   {t('connectedProviders')}
                 </h3>
-                
+
                 {/* Help message when no providers are connected */}
                 {Object.keys(connectedProviders).length === 0 && (
                   <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -312,22 +317,25 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                           No cloud providers configured
                         </p>
                         <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                          Configure cloud storage providers in your TorBox settings to start uploading your downloads. 
-                          TBM will automatically detect configured providers.
+                          Configure cloud storage providers in your TorBox settings to start
+                          uploading your downloads. TBM will automatically detect configured
+                          providers.
                           <br />
                           <span className="text-xs text-blue-600 dark:text-blue-400 mt-2 block">
-                            Note: Only Google Drive, Dropbox, and OneDrive support OAuth authentication. 
-                            GoFile, 1Fichier, and Pixeldrain require API keys to be configured in TorBox settings.
+                            Note: Only Google Drive, Dropbox, and OneDrive support OAuth
+                            authentication. GoFile, 1Fichier, and Pixeldrain require API keys to be
+                            configured in TorBox settings.
                             <br />
-                            If you've already configured providers in TorBox but they're not showing here, 
-                            try refreshing the page or check if the cloud integration feature is enabled.
+                            If you've already configured providers in TorBox but they're not showing
+                            here, try refreshing the page or check if the cloud integration feature
+                            is enabled.
                           </span>
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {providers.map((provider) => (
                     <div
@@ -347,8 +355,8 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                           </div>
                         </div>
                         <button
-                          onClick={() => 
-                            connectedProviders[provider.id] 
+                          onClick={() =>
+                            connectedProviders[provider.id]
                               ? disconnectProvider(provider.id)
                               : connectProvider(provider.id)
                           }
@@ -387,7 +395,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                     <Icons.Refresh className={`w-4 h-4 ${isLoadingJobs ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
-                
+
                 {isLoadingJobs ? (
                   <div className="flex justify-center py-8">
                     <Spinner />

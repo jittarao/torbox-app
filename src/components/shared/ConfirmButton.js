@@ -77,7 +77,7 @@ export default function ConfirmButton({
     };
   }, []);
 
-  const handleClick = async (e) => {
+  const handleConfirmClick = async (e) => {
     e.stopPropagation();
 
     if (!isConfirming) {
@@ -92,7 +92,7 @@ export default function ConfirmButton({
 
   return (
     <button
-      onClick={handleClick}
+      onClick={handleConfirmClick}
       disabled={isLoading}
       className={`${className} ${isConfirming ? 'scale-110' : ''}`}
       title={isConfirming ? 'Click again to confirm' : title}

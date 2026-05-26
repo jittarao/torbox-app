@@ -18,28 +18,27 @@ function hashApiKey(apiKey) {
 
 export async function GET(request) {
   if (isBackendDisabled()) {
-    return getBackendDisabledResponse('Automation rules feature is disabled when backend is disabled');
+    return getBackendDisabledResponse(
+      'Automation rules feature is disabled when backend is disabled'
+    );
   }
 
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const authId = hashApiKey(apiKey);
     const url = new URL(`${BACKEND_URL}/api/automation/rules`);
     url.searchParams.set('authId', authId);
-    
+
     const response = await new Promise((resolve, reject) => {
       const req = http.get(url, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
           try {
             const jsonData = JSON.parse(data);
@@ -49,7 +48,7 @@ export async function GET(request) {
           }
         });
       });
-      
+
       req.on('error', reject);
       req.setTimeout(5000, () => {
         req.destroy();
@@ -64,27 +63,23 @@ export async function GET(request) {
     }
   } catch (error) {
     console.error('Error fetching automation rules from backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   if (isBackendDisabled()) {
-    return getBackendDisabledResponse('Automation rules feature is disabled when backend is disabled');
+    return getBackendDisabledResponse(
+      'Automation rules feature is disabled when backend is disabled'
+    );
   }
 
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -95,7 +90,7 @@ export async function POST(request) {
       ...body,
       authId,
     };
-    
+
     const response = await fetch(`${BACKEND_URL}/api/automation/rules`, {
       method: 'POST',
       headers: {
@@ -113,9 +108,6 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Error saving automation rules to backend:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

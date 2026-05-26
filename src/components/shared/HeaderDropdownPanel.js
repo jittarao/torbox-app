@@ -63,18 +63,14 @@ export default function HeaderDropdownPanel({
   if (isMobile && portalReady) {
     return createPortal(
       <>
-        <div
-          className="fixed inset-0 z-[200] bg-black/60"
-          onClick={onBackdropClick}
-          aria-hidden
-        />
+        <div className="fixed inset-0 z-[200] bg-black/60" onClick={onBackdropClick} aria-hidden />
         <div className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none">
           <div className="pointer-events-auto w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             {panel}
           </div>
         </div>
       </>,
-      document.body,
+      document.body
     );
   }
 

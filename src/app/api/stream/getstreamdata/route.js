@@ -1,10 +1,6 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -19,22 +15,20 @@ export async function GET(request) {
   const chosenAudioIndex = searchParams.get('chosen_audio_index') || '0';
 
   if (!apiKey) {
-    return NextResponse.json(
-      { success: false, error: 'API key is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
   }
 
   try {
     let queryParams;
-    
+
     // Check if we're using token mode or itemId/fileId mode
     if (presignedToken && token) {
       // Original mode: using presignedToken and token
       queryParams = new URLSearchParams({
         presigned_token: presignedToken,
         token: token,
-        ...(chosenSubtitleIndex !== null && chosenSubtitleIndex !== undefined && { chosen_subtitle_index: chosenSubtitleIndex }),
+        ...(chosenSubtitleIndex !== null &&
+          chosenSubtitleIndex !== undefined && { chosen_subtitle_index: chosenSubtitleIndex }),
         chosen_audio_index: chosenAudioIndex,
       });
     } else if (id && fileId) {
@@ -46,11 +40,14 @@ export async function GET(request) {
       });
     } else {
       return NextResponse.json(
-        { success: false, error: 'Either (presigned_token and token) or (id and file_id) are required' },
-        { status: 400 },
+        {
+          success: false,
+          error: 'Either (presigned_token and token) or (id and file_id) are required',
+        },
+        { status: 400 }
       );
     }
-    
+
     const apiUrl = `${API_BASE}/${API_VERSION}/api/stream/getstreamdata?${queryParams}`;
     const response = await fetch(apiUrl, {
       headers: {
@@ -68,9 +65,6 @@ export async function GET(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error getting stream data:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

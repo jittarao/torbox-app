@@ -16,10 +16,7 @@ export async function POST(request, { params }) {
     const apiKey = headersList.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
     }
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/${id}/retry`, {
@@ -46,9 +43,6 @@ export async function POST(request, { params }) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error retrying upload:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

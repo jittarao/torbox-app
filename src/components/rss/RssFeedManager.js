@@ -10,8 +10,9 @@ import Toast from '@/components/shared/Toast';
 
 export default function RssFeedManager({ apiKey, setToast }) {
   const t = useTranslations('RssFeeds');
-  const { feeds, loading, error, addFeed, modifyFeed, controlFeed, getFeedItems } = useRssFeeds(apiKey);
-  
+  const { feeds, loading, error, addFeed, modifyFeed, controlFeed, getFeedItems } =
+    useRssFeeds(apiKey);
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingFeed, setEditingFeed] = useState(null);
   const [itemCounts, setItemCounts] = useState({});
@@ -30,13 +31,13 @@ export default function RssFeedManager({ apiKey, setToast }) {
   // Fetch item counts for all feeds
   const fetchItemCounts = async () => {
     if (!feeds.length) return;
-    
+
     const counts = {};
     for (const feed of feeds) {
       try {
         // Fetch a reasonable number to get the count
         const result = await getFeedItems(feed.id, 0, 250);
-        counts[feed.id] = result.success ? (result.data?.length || 0) : 0;
+        counts[feed.id] = result.success ? result.data?.length || 0 : 0;
       } catch (error) {
         console.error(`Error fetching items for feed ${feed.id}:`, error);
         counts[feed.id] = 0;
@@ -72,7 +73,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
     dont_regex: '',
     scan_interval: 60,
     dont_older_than: 0,
-    pass_check: false
+    pass_check: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [componentError, setComponentError] = useState(null);
@@ -94,7 +95,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
       }
 
       setIsSubmitting(true);
-      const result = editingFeed 
+      const result = editingFeed
         ? await modifyFeed({ rss_feed_id: editingFeed.id, ...formData })
         : await addFeed(formData);
 
@@ -105,16 +106,16 @@ export default function RssFeedManager({ apiKey, setToast }) {
         });
         setShowAddForm(false);
         setEditingFeed(null);
-        setFormData({ 
-          name: '', 
-          url: '', 
+        setFormData({
+          name: '',
+          url: '',
           rss_type: 'torrent',
           torrent_seeding: 1,
           do_regex: '',
           dont_regex: '',
           scan_interval: 60,
           dont_older_than: 0,
-          pass_check: false
+          pass_check: false,
         });
       } else {
         setToast({
@@ -145,7 +146,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
         dont_regex: feed.dont_regex || '',
         scan_interval: feed.scan_interval || 60,
         dont_older_than: feed.dont_older_than || 0,
-        pass_check: feed.pass_check || false
+        pass_check: feed.pass_check || false,
       });
       setShowAddForm(true);
     } catch (error) {
@@ -167,7 +168,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
         dont_regex: '',
         scan_interval: 60,
         dont_older_than: 0,
-        pass_check: false
+        pass_check: false,
       });
     } catch (error) {
       console.error('Error in handleCancel:', error);
@@ -281,7 +282,11 @@ export default function RssFeedManager({ apiKey, setToast }) {
             disabled={refreshing}
             className="px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {refreshing ? <Icons.Loading className="w-4 h-4 animate-spin" /> : <Icons.Refresh className="w-4 h-4" />}
+            {refreshing ? (
+              <Icons.Loading className="w-4 h-4 animate-spin" />
+            ) : (
+              <Icons.Refresh className="w-4 h-4" />
+            )}
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
@@ -353,7 +358,9 @@ export default function RssFeedManager({ apiKey, setToast }) {
                 </label>
                 <select
                   value={formData.torrent_seeding}
-                  onChange={(e) => setFormData({ ...formData, torrent_seeding: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, torrent_seeding: parseInt(e.target.value) })
+                  }
                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
                 >
                   <option value={1}>{t('options.auto')}</option>
@@ -401,7 +408,9 @@ export default function RssFeedManager({ apiKey, setToast }) {
                   type="number"
                   min="1"
                   value={formData.scan_interval}
-                  onChange={(e) => setFormData({ ...formData, scan_interval: parseInt(e.target.value) || 60 })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, scan_interval: parseInt(e.target.value) || 60 })
+                  }
                   placeholder={t('scanIntervalPlaceholder')}
                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
                 />
@@ -414,7 +423,9 @@ export default function RssFeedManager({ apiKey, setToast }) {
                   type="number"
                   min="0"
                   value={formData.dont_older_than}
-                  onChange={(e) => setFormData({ ...formData, dont_older_than: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, dont_older_than: parseInt(e.target.value) || 0 })
+                  }
                   placeholder={t('dontOlderThanPlaceholder')}
                   className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
                 />
@@ -491,14 +502,22 @@ export default function RssFeedManager({ apiKey, setToast }) {
                     {feed.url}
                   </p>
                   <div className="flex gap-4 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
-                    <span>{t('lastCheck')}: {formatDate(feed.last_check)}</span>
-                    <span>{t('status')}: {feed.status === 'active' ? t('active') : t('inactive')}</span>
-                    <span>{t('items')}: {itemCounts[feed.id] || 0}</span>
+                    <span>
+                      {t('lastCheck')}: {formatDate(feed.last_check)}
+                    </span>
+                    <span>
+                      {t('status')}: {feed.status === 'active' ? t('active') : t('inactive')}
+                    </span>
+                    <span>
+                      {t('items')}: {itemCounts[feed.id] || 0}
+                    </span>
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
                   <button
-                    onClick={() => handleControl(feed.id, feed.status === 'active' ? 'pause' : 'resume')}
+                    onClick={() =>
+                      handleControl(feed.id, feed.status === 'active' ? 'pause' : 'resume')
+                    }
                     className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     {feed.status === 'active' ? t('disable') : t('enable')}

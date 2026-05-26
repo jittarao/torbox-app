@@ -1,9 +1,5 @@
 import { headers } from 'next/headers';
-import {
-  API_BASE,
-  API_VERSION,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
 // Get user notifications
 export async function GET() {
@@ -11,34 +7,28 @@ export async function GET() {
   const apiKey = headersList.get('x-api-key');
 
   if (!apiKey) {
-    return Response.json(
-      { success: false, error: 'API key is required' },
-      { status: 401 },
-    );
+    return Response.json({ success: false, error: 'API key is required' }, { status: 401 });
   }
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-    
-    const response = await fetch(
-      `${API_BASE}/${API_VERSION}/api/notifications/mynotifications`,
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
-        signal: controller.signal,
+
+    const response = await fetch(`${API_BASE}/${API_VERSION}/api/notifications/mynotifications`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-    );
-    
+      signal: controller.signal,
+    });
+
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return Response.json(
         { success: false, error: errorData.detail || `HTTP ${response.status}` },
-        { status: response.status },
+        { status: response.status }
       );
     }
 
@@ -46,26 +36,23 @@ export async function GET() {
     return Response.json(data);
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    
+
     // Handle specific error types
     if (error.name === 'AbortError') {
       return Response.json(
         { success: false, error: 'Request timeout - connection to TorBox API failed' },
-        { status: 408 },
+        { status: 408 }
       );
     }
-    
+
     if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
       return Response.json(
         { success: false, error: 'Connection timeout - TorBox API is unreachable' },
-        { status: 408 },
+        { status: 408 }
       );
     }
-    
-    return Response.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+
+    return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
@@ -76,10 +63,7 @@ export async function POST(request) {
   const { action } = await request.json();
 
   if (!apiKey) {
-    return Response.json(
-      { success: false, error: 'API key is required' },
-      { status: 401 },
-    );
+    return Response.json({ success: false, error: 'API key is required' }, { status: 401 });
   }
 
   try {
@@ -94,16 +78,13 @@ export async function POST(request) {
         endpoint = '/api/notifications/test';
         break;
       default:
-        return Response.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 },
-        );
+        return Response.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
 
     const requestOptions = {
       method,
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
     };
@@ -120,7 +101,7 @@ export async function POST(request) {
       const errorData = await response.json().catch(() => ({}));
       return Response.json(
         { success: false, error: errorData.detail || `HTTP ${response.status}` },
-        { status: response.status },
+        { status: response.status }
       );
     }
 
@@ -128,9 +109,6 @@ export async function POST(request) {
     return Response.json(data);
   } catch (error) {
     console.error('Error with notification action:', error);
-    return Response.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
+    return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }

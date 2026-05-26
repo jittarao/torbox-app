@@ -4,7 +4,8 @@
  * Maps downloads to tags (download IDs are unique across all asset types)
  */
 export const up = (db) => {
-  db.prepare(`
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS download_tags (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       tag_id INTEGER NOT NULL,
@@ -13,19 +14,24 @@ export const up = (db) => {
       FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
       UNIQUE(tag_id, download_id)
     )
-  `).run();
+  `
+  ).run();
 
   // Index for efficient tag lookups
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_download_tags_tag_id 
     ON download_tags(tag_id)
-  `).run();
+  `
+  ).run();
 
   // Index for efficient download lookups
-  db.prepare(`
+  db.prepare(
+    `
     CREATE INDEX IF NOT EXISTS idx_download_tags_download_id 
     ON download_tags(download_id)
-  `).run();
+  `
+  ).run();
 };
 
 export const down = (db) => {

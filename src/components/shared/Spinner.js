@@ -10,7 +10,7 @@ export default function Spinner({ size = 'md', className = '' }) {
       className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${sizeClasses[size]} ${className}`}
       role="status"
     >
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">Loading…</span>
     </div>
   );
 }

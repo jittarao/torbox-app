@@ -1,19 +1,19 @@
 'use client';
 
-import { 
-  CONDITION_TYPES, 
+import {
+  CONDITION_TYPES,
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
 } from '../constants';
-import { 
-  isTimeBasedCondition, 
+import {
+  isTimeBasedCondition,
   isTimestampBasedCondition,
   isBooleanCondition,
   isStringCondition,
   isSpeedAverageCondition,
-  getConditionUnit 
+  getConditionUnit,
 } from '../utils';
 import Select from '@/components/shared/Select';
 import MultiSelect from '@/components/shared/MultiSelect';
@@ -21,34 +21,38 @@ import { STATUS_OPTIONS } from '@/components/constants';
 
 // Map STATUS_OPTIONS labels to backend status values
 const getStatusOptions = () => {
-  return STATUS_OPTIONS
-    .filter(opt => !opt.hidden && opt.label !== 'All' && opt.label !== 'Meta_DL' && opt.label !== 'Checking_Resume_Data')
-    .map(opt => {
-      // Map label to backend status value (lowercase, snake_case)
-      const labelToValue = {
-        'Queued': 'queued',
-        'Downloading': 'downloading',
-        'Seeding': 'seeding',
-        'Completed': 'completed',
-        'Uploading': 'uploading',
-        'Stalled': 'stalled',
-        'Inactive': 'inactive',
-        'Failed': 'failed',
-      };
-      return {
-        label: opt.label,
-        value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
-      };
-    });
+  return STATUS_OPTIONS.filter(
+    (opt) =>
+      !opt.hidden &&
+      opt.label !== 'All' &&
+      opt.label !== 'Meta_DL' &&
+      opt.label !== 'Checking_Resume_Data'
+  ).map((opt) => {
+    // Map label to backend status value (lowercase, snake_case)
+    const labelToValue = {
+      Queued: 'queued',
+      Downloading: 'downloading',
+      Seeding: 'seeding',
+      Completed: 'completed',
+      Uploading: 'uploading',
+      Stalled: 'stalled',
+      Inactive: 'inactive',
+      Failed: 'failed',
+    };
+    return {
+      label: opt.label,
+      value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
+    };
+  });
 };
 
-export default function ConditionInput({ 
-  condition, 
-  index, 
+export default function ConditionInput({
+  condition,
+  index,
   totalConditions,
-  onUpdate, 
+  onUpdate,
   onRemove,
-  t 
+  t,
 }) {
   const handleFieldChange = (field, value) => {
     // When changing condition type, update operator and value to appropriate defaults
@@ -72,7 +76,11 @@ export default function ConditionInput({
         // Other conditions use comparison operators
         onUpdate(index, 'type', value);
         onUpdate(index, 'operator', COMPARISON_OPERATORS.GT);
-        onUpdate(index, 'value', isTimeBasedCondition(value) || isTimestampBasedCondition(value) ? 0 : 1);
+        onUpdate(
+          index,
+          'value',
+          isTimeBasedCondition(value) || isTimestampBasedCondition(value) ? 0 : 1
+        );
         // Initialize hours for speed average conditions
         if (isSpeedAverageCondition(value)) {
           onUpdate(index, 'hours', 1);
@@ -82,7 +90,11 @@ export default function ConditionInput({
       // For boolean conditions, automatically update operator based on value
       const boolValue = value === true || value === 'true' || value === 1;
       onUpdate(index, 'value', boolValue);
-      onUpdate(index, 'operator', boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE);
+      onUpdate(
+        index,
+        'operator',
+        boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE
+      );
     } else {
       onUpdate(index, field, value);
     }
@@ -135,10 +147,16 @@ export default function ConditionInput({
             <option value={CONDITION_TYPES.RATIO} title={t('conditions.seedingRatioDescription')}>
               {t('conditions.seedingRatio')}
             </option>
-            <option value={CONDITION_TYPES.SEEDING_ENABLED} title={t('conditions.seedingEnabledDescription')}>
+            <option
+              value={CONDITION_TYPES.SEEDING_ENABLED}
+              title={t('conditions.seedingEnabledDescription')}
+            >
               {t('conditions.seedingEnabled')}
             </option>
-            <option value={CONDITION_TYPES.SEEDING_TIME} title={t('conditions.seedingTimeDescription')}>
+            <option
+              value={CONDITION_TYPES.SEEDING_TIME}
+              title={t('conditions.seedingTimeDescription')}
+            >
               {t('conditions.seedingTime')}
             </option>
             <option value={CONDITION_TYPES.SEEDS} title={t('conditions.seedsDescription')}>
@@ -147,19 +165,34 @@ export default function ConditionInput({
             <option value={CONDITION_TYPES.PEERS} title={t('conditions.peersDescription')}>
               {t('conditions.peers')}
             </option>
-            <option value={CONDITION_TYPES.LONG_TERM_SEEDING} title={t('conditions.longTermSeedingDescription')}>
+            <option
+              value={CONDITION_TYPES.LONG_TERM_SEEDING}
+              title={t('conditions.longTermSeedingDescription')}
+            >
               {t('conditions.longTermSeeding')}
             </option>
-            <option value={CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT} title={t('conditions.lastUploadActivityDescription')}>
+            <option
+              value={CONDITION_TYPES.LAST_UPLOAD_ACTIVITY_AT}
+              title={t('conditions.lastUploadActivityDescription')}
+            >
               {t('conditions.lastUploadActivity')}
             </option>
-            <option value={CONDITION_TYPES.TOTAL_UPLOADED} title={t('conditions.totalUploadedDescription')}>
+            <option
+              value={CONDITION_TYPES.TOTAL_UPLOADED}
+              title={t('conditions.totalUploadedDescription')}
+            >
               {t('conditions.totalUploaded')}
             </option>
-            <option value={CONDITION_TYPES.UPLOAD_SPEED} title={t('conditions.uploadSpeedDescription')}>
+            <option
+              value={CONDITION_TYPES.UPLOAD_SPEED}
+              title={t('conditions.uploadSpeedDescription')}
+            >
               {t('conditions.uploadSpeed')}
             </option>
-            <option value={CONDITION_TYPES.AVG_UPLOAD_SPEED} title={t('conditions.avgUploadSpeedDescription')}>
+            <option
+              value={CONDITION_TYPES.AVG_UPLOAD_SPEED}
+              title={t('conditions.avgUploadSpeedDescription')}
+            >
               {t('conditions.avgUploadSpeed')}
             </option>
           </optgroup>
@@ -170,21 +203,36 @@ export default function ConditionInput({
             <option value={CONDITION_TYPES.PROGRESS} title={t('conditions.progressDescription')}>
               {t('conditions.progress')}
             </option>
-            <option value={CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT} title={t('conditions.lastDownloadActivityDescription')}>
+            <option
+              value={CONDITION_TYPES.LAST_DOWNLOAD_ACTIVITY_AT}
+              title={t('conditions.lastDownloadActivityDescription')}
+            >
               {t('conditions.lastDownloadActivity')}
             </option>
-            <option value={CONDITION_TYPES.DOWNLOAD_SPEED} title={t('conditions.downloadSpeedDescription')}>
+            <option
+              value={CONDITION_TYPES.DOWNLOAD_SPEED}
+              title={t('conditions.downloadSpeedDescription')}
+            >
               {t('conditions.downloadSpeed')}
             </option>
-            <option value={CONDITION_TYPES.AVG_DOWNLOAD_SPEED} title={t('conditions.avgDownloadSpeedDescription')}>
+            <option
+              value={CONDITION_TYPES.AVG_DOWNLOAD_SPEED}
+              title={t('conditions.avgDownloadSpeedDescription')}
+            >
               {t('conditions.avgDownloadSpeed')}
             </option>
           </optgroup>
           <optgroup label="Stalled">
-            <option value={CONDITION_TYPES.DOWNLOAD_STALLED_TIME} title={t('conditions.downloadStalledTimeDescription')}>
+            <option
+              value={CONDITION_TYPES.DOWNLOAD_STALLED_TIME}
+              title={t('conditions.downloadStalledTimeDescription')}
+            >
               {t('conditions.downloadStalledTime')}
             </option>
-            <option value={CONDITION_TYPES.UPLOAD_STALLED_TIME} title={t('conditions.uploadStalledTimeDescription')}>
+            <option
+              value={CONDITION_TYPES.UPLOAD_STALLED_TIME}
+              title={t('conditions.uploadStalledTimeDescription')}
+            >
               {t('conditions.uploadStalledTime')}
             </option>
           </optgroup>
@@ -195,7 +243,10 @@ export default function ConditionInput({
             <option value={CONDITION_TYPES.TRACKER} title={t('conditions.trackerDescription')}>
               {t('conditions.tracker')}
             </option>
-            <option value={CONDITION_TYPES.AVAILABILITY} title={t('conditions.availabilityDescription')}>
+            <option
+              value={CONDITION_TYPES.AVAILABILITY}
+              title={t('conditions.availabilityDescription')}
+            >
               {t('conditions.availability')}
             </option>
             <option value={CONDITION_TYPES.FILE_SIZE} title={t('conditions.fileSizeDescription')}>
@@ -236,89 +287,51 @@ export default function ConditionInput({
                 </option>
               </>
             ) : isStringCondition(condition.type) ? (
-            <>
-              <option value={STRING_OPERATORS.EQUALS}>
-                {t('stringOperators.equals')}
-              </option>
-              <option value={STRING_OPERATORS.CONTAINS}>
-                {t('stringOperators.contains')}
-              </option>
-              <option value={STRING_OPERATORS.STARTS_WITH}>
-                {t('stringOperators.startsWith')}
-              </option>
-              <option value={STRING_OPERATORS.ENDS_WITH}>
-                {t('stringOperators.endsWith')}
-              </option>
-              <option value={STRING_OPERATORS.NOT_EQUALS}>
-                {t('stringOperators.notEquals')}
-              </option>
-              <option value={STRING_OPERATORS.NOT_CONTAINS}>
-                {t('stringOperators.notContains')}
-              </option>
-            </>
-          ) : isTimeBasedCondition(condition.type) ? (
-            <>
-              <option value={COMPARISON_OPERATORS.GT}>
-                {t('timeOperators.gt')}
-              </option>
-              <option value={COMPARISON_OPERATORS.LT}>
-                {t('timeOperators.lt')}
-              </option>
-              <option value={COMPARISON_OPERATORS.GTE}>
-                {t('timeOperators.gte')}
-              </option>
-              <option value={COMPARISON_OPERATORS.LTE}>
-                {t('timeOperators.lte')}
-              </option>
-              <option value={COMPARISON_OPERATORS.EQ}>
-                {t('timeOperators.eq')}
-              </option>
-            </>
-          ) : isTimestampBasedCondition(condition.type) ? (
-            <>
-              <option value={COMPARISON_OPERATORS.GT}>
-                {t('timestampOperators.gt')}
-              </option>
-              <option value={COMPARISON_OPERATORS.LT}>
-                {t('timestampOperators.lt')}
-              </option>
-              <option value={COMPARISON_OPERATORS.GTE}>
-                {t('timestampOperators.gte')}
-              </option>
-              <option value={COMPARISON_OPERATORS.LTE}>
-                {t('timestampOperators.lte')}
-              </option>
-              <option value={COMPARISON_OPERATORS.EQ}>
-                {t('timestampOperators.eq')}
-              </option>
-            </>
-          ) : (
-            <>
-              <option value={COMPARISON_OPERATORS.GT}>
-                {t('operators.gt')}
-              </option>
-              <option value={COMPARISON_OPERATORS.LT}>
-                {t('operators.lt')}
-              </option>
-              <option value={COMPARISON_OPERATORS.GTE}>
-                {t('operators.gte')}
-              </option>
-              <option value={COMPARISON_OPERATORS.LTE}>
-                {t('operators.lte')}
-              </option>
-              <option value={COMPARISON_OPERATORS.EQ}>
-                {t('operators.eq')}
-              </option>
-            </>
-          )}
+              <>
+                <option value={STRING_OPERATORS.EQUALS}>{t('stringOperators.equals')}</option>
+                <option value={STRING_OPERATORS.CONTAINS}>{t('stringOperators.contains')}</option>
+                <option value={STRING_OPERATORS.STARTS_WITH}>
+                  {t('stringOperators.startsWith')}
+                </option>
+                <option value={STRING_OPERATORS.ENDS_WITH}>{t('stringOperators.endsWith')}</option>
+                <option value={STRING_OPERATORS.NOT_EQUALS}>
+                  {t('stringOperators.notEquals')}
+                </option>
+                <option value={STRING_OPERATORS.NOT_CONTAINS}>
+                  {t('stringOperators.notContains')}
+                </option>
+              </>
+            ) : isTimeBasedCondition(condition.type) ? (
+              <>
+                <option value={COMPARISON_OPERATORS.GT}>{t('timeOperators.gt')}</option>
+                <option value={COMPARISON_OPERATORS.LT}>{t('timeOperators.lt')}</option>
+                <option value={COMPARISON_OPERATORS.GTE}>{t('timeOperators.gte')}</option>
+                <option value={COMPARISON_OPERATORS.LTE}>{t('timeOperators.lte')}</option>
+                <option value={COMPARISON_OPERATORS.EQ}>{t('timeOperators.eq')}</option>
+              </>
+            ) : isTimestampBasedCondition(condition.type) ? (
+              <>
+                <option value={COMPARISON_OPERATORS.GT}>{t('timestampOperators.gt')}</option>
+                <option value={COMPARISON_OPERATORS.LT}>{t('timestampOperators.lt')}</option>
+                <option value={COMPARISON_OPERATORS.GTE}>{t('timestampOperators.gte')}</option>
+                <option value={COMPARISON_OPERATORS.LTE}>{t('timestampOperators.lte')}</option>
+                <option value={COMPARISON_OPERATORS.EQ}>{t('timestampOperators.eq')}</option>
+              </>
+            ) : (
+              <>
+                <option value={COMPARISON_OPERATORS.GT}>{t('operators.gt')}</option>
+                <option value={COMPARISON_OPERATORS.LT}>{t('operators.lt')}</option>
+                <option value={COMPARISON_OPERATORS.GTE}>{t('operators.gte')}</option>
+                <option value={COMPARISON_OPERATORS.LTE}>{t('operators.lte')}</option>
+                <option value={COMPARISON_OPERATORS.EQ}>{t('operators.eq')}</option>
+              </>
+            )}
           </Select>
         )}
 
         {/* "is" text for boolean conditions */}
         {isBooleanCondition(condition.type) && (
-          <span className="text-sm text-primary-text dark:text-primary-text-dark">
-            is
-          </span>
+          <span className="text-sm text-primary-text dark:text-primary-text-dark">is</span>
         )}
 
         {/* Value Input */}
@@ -332,7 +345,11 @@ export default function ConditionInput({
           />
         ) : isBooleanCondition(condition.type) ? (
           <Select
-            value={condition.value === true || condition.value === 'true' || condition.value === 1 ? 'true' : 'false'}
+            value={
+              condition.value === true || condition.value === 'true' || condition.value === 1
+                ? 'true'
+                : 'false'
+            }
             onChange={(e) => handleFieldChange('value', e.target.value === 'true')}
             className="min-w-[100px]"
           >
@@ -359,7 +376,8 @@ export default function ConditionInput({
             className="w-24 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
             min="0"
             step={
-              condition.type === CONDITION_TYPES.RATIO || condition.type === CONDITION_TYPES.AVAILABILITY
+              condition.type === CONDITION_TYPES.RATIO ||
+              condition.type === CONDITION_TYPES.AVAILABILITY
                 ? '0.1'
                 : '1'
             }
@@ -380,7 +398,9 @@ export default function ConditionInput({
             <input
               type="number"
               value={condition.hours || 1}
-              onChange={(e) => handleFieldChange('hours', Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={(e) =>
+                handleFieldChange('hours', Math.max(1, parseInt(e.target.value) || 1))
+              }
               className="w-20 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
               min="1"
               max="24"
@@ -395,4 +415,3 @@ export default function ConditionInput({
     </div>
   );
 }
-

@@ -1,7 +1,4 @@
-import {
-  validateAuthIdMiddleware,
-  validateNumericIdMiddleware,
-} from '../middleware/validation.js';
+import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 

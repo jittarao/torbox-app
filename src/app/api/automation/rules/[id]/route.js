@@ -18,18 +18,17 @@ function hashApiKey(apiKey) {
 
 export async function PUT(request, { params }) {
   if (isBackendDisabled()) {
-    return getBackendDisabledResponse('Automation rules feature is disabled when backend is disabled');
+    return getBackendDisabledResponse(
+      'Automation rules feature is disabled when backend is disabled'
+    );
   }
 
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -40,25 +39,29 @@ export async function PUT(request, { params }) {
 
     const response = await new Promise((resolve, reject) => {
       const putData = JSON.stringify(body);
-      const req = http.request(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(putData)
+      const req = http.request(
+        url,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(putData),
+          },
+          timeout: 5000,
         },
-        timeout: 5000
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          try {
-            const jsonData = JSON.parse(data);
-            resolve({ ok: res.statusCode === 200, data: jsonData });
-          } catch (parseError) {
-            reject(parseError);
-          }
-        });
-      });
+        (res) => {
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => {
+            try {
+              const jsonData = JSON.parse(data);
+              resolve({ ok: res.statusCode === 200, data: jsonData });
+            } catch (parseError) {
+              reject(parseError);
+            }
+          });
+        }
+      );
 
       req.on('error', reject);
       req.setTimeout(5000, () => {
@@ -77,27 +80,23 @@ export async function PUT(request, { params }) {
     }
   } catch (error) {
     console.error('Error updating automation rule:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
   if (isBackendDisabled()) {
-    return getBackendDisabledResponse('Automation rules feature is disabled when backend is disabled');
+    return getBackendDisabledResponse(
+      'Automation rules feature is disabled when backend is disabled'
+    );
   }
 
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
-    
+
     if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -106,21 +105,25 @@ export async function DELETE(request, { params }) {
     url.searchParams.set('authId', authId);
 
     const response = await new Promise((resolve, reject) => {
-      const req = http.request(url, {
-        method: 'DELETE',
-        timeout: 5000
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          try {
-            const jsonData = JSON.parse(data);
-            resolve({ ok: res.statusCode === 200, data: jsonData });
-          } catch (parseError) {
-            reject(parseError);
-          }
-        });
-      });
+      const req = http.request(
+        url,
+        {
+          method: 'DELETE',
+          timeout: 5000,
+        },
+        (res) => {
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => {
+            try {
+              const jsonData = JSON.parse(data);
+              resolve({ ok: res.statusCode === 200, data: jsonData });
+            } catch (parseError) {
+              reject(parseError);
+            }
+          });
+        }
+      );
 
       req.on('error', reject);
       req.setTimeout(5000, () => {
@@ -138,9 +141,6 @@ export async function DELETE(request, { params }) {
     }
   } catch (error) {
     console.error('Error deleting automation rule:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

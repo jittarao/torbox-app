@@ -1,14 +1,9 @@
 'use client';
 
-import {
-  useState,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useCallback,
-} from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+
+const EMPTY_ARRAY = [];
 
 /**
  * Multi-select with optional search; dropdown is portaled with fixed positioning
@@ -25,9 +20,9 @@ import { createPortal } from 'react-dom';
  * @param {string} props.searchPlaceholder - Placeholder for search input
  */
 export default function MultiSelect({
-  value = [],
+  value = EMPTY_ARRAY,
   onChange,
-  options = [],
+  options = EMPTY_ARRAY,
   className = '',
   placeholder = 'Select...',
   disabled = false,
@@ -47,9 +42,7 @@ export default function MultiSelect({
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return options;
-    return options.filter((opt) =>
-      String(opt.label).toLowerCase().includes(q),
-    );
+    return options.filter((opt) => String(opt.label).toLowerCase().includes(q));
   }, [options, searchQuery]);
 
   const selectedOptions = useMemo(() => {
@@ -147,7 +140,7 @@ export default function MultiSelect({
 
       onChange(newValues);
     },
-    [selectedValues, onChange],
+    [selectedValues, onChange]
   );
 
   useEffect(() => {
@@ -161,19 +154,12 @@ export default function MultiSelect({
         return;
       } else if (event.key === 'ArrowDown') {
         event.preventDefault();
-        const currentIndex = optionsRef.current.findIndex(
-          (ref) => ref === document.activeElement,
-        );
-        const nextIndex = Math.min(
-          currentIndex + 1,
-          optionsRef.current.length - 1,
-        );
+        const currentIndex = optionsRef.current.findIndex((ref) => ref === document.activeElement);
+        const nextIndex = Math.min(currentIndex + 1, optionsRef.current.length - 1);
         optionsRef.current[nextIndex]?.focus();
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
-        const currentIndex = optionsRef.current.findIndex(
-          (ref) => ref === document.activeElement,
-        );
+        const currentIndex = optionsRef.current.findIndex((ref) => ref === document.activeElement);
         const prevIndex = Math.max(currentIndex - 1, 0);
         optionsRef.current[prevIndex]?.focus();
       } else if (event.key === 'Enter' || event.key === ' ') {
@@ -225,8 +211,7 @@ export default function MultiSelect({
     return `${selectedOptions.length} selected`;
   }, [selectedOptions, placeholder]);
 
-  const portalTarget =
-    typeof document !== 'undefined' ? document.body : null;
+  const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
   if (isOpen) {
     optionsRef.current = [];
@@ -235,67 +220,67 @@ export default function MultiSelect({
   const dropdownContent =
     isOpen && dropdownLayout && portalTarget ? (
       <div
-          ref={dropdownRef}
-          className="fixed z-[100] bg-surface dark:bg-surface-dark
+        ref={dropdownRef}
+        className="fixed z-[100] bg-surface dark:bg-surface-dark
             border border-border dark:border-border-dark rounded-md shadow-lg
             flex flex-col overflow-hidden"
-          style={{
-            top: dropdownLayout.top,
-            left: dropdownLayout.left,
-            width: dropdownLayout.width,
-            maxHeight: dropdownLayout.maxHeight,
-          }}
-          role="listbox"
-        >
-          {searchable && (
-            <div className="p-2 border-b border-border dark:border-border-dark flex-shrink-0">
-              <input
-                ref={searchInputRef}
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown' && filteredOptions.length > 0) {
-                    e.preventDefault();
-                    optionsRef.current[0]?.focus();
-                  }
-                }}
-                placeholder={searchPlaceholder}
-                className="w-full px-2 py-1.5 text-sm rounded-md border border-border dark:border-border-dark
+        style={{
+          top: dropdownLayout.top,
+          left: dropdownLayout.left,
+          width: dropdownLayout.width,
+          maxHeight: dropdownLayout.maxHeight,
+        }}
+        role="listbox"
+      >
+        {searchable && (
+          <div className="p-2 border-b border-border dark:border-border-dark flex-shrink-0">
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' && filteredOptions.length > 0) {
+                  e.preventDefault();
+                  optionsRef.current[0]?.focus();
+                }
+              }}
+              placeholder={searchPlaceholder}
+              className="w-full px-2 py-1.5 text-sm rounded-md border border-border dark:border-border-dark
                   bg-surface dark:bg-surface-dark
                   text-primary-text dark:text-primary-text-dark
                   placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50
                   focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                aria-label={searchPlaceholder}
-              />
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-label={searchPlaceholder}
+            />
+          </div>
+        )}
+        <div
+          className="overflow-y-auto overscroll-contain flex-1 min-h-0 touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {filteredOptions.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-primary-text/60 dark:text-primary-text-dark/60">
+              {options.length === 0 ? 'No options' : 'No matches'}
             </div>
-          )}
-          <div
-            className="overflow-y-auto overscroll-contain flex-1 min-h-0 touch-pan-y"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
-            {filteredOptions.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-primary-text/60 dark:text-primary-text-dark/60">
-                {options.length === 0 ? 'No options' : 'No matches'}
-              </div>
-            ) : (
-              filteredOptions.map((opt, index) => {
-                const isSelected = selectedValues.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    ref={(el) => {
-                      if (el) optionsRef.current[index] = el;
-                    }}
-                    type="button"
-                    data-value={opt.value}
-                    onClick={() => handleToggleOption(opt.value)}
-                    onMouseEnter={(e) => e.currentTarget.focus()}
-                    className={`flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm transition-colors
+          ) : (
+            filteredOptions.map((opt, index) => {
+              const isSelected = selectedValues.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  ref={(el) => {
+                    if (el) optionsRef.current[index] = el;
+                  }}
+                  type="button"
+                  data-value={opt.value}
+                  onClick={() => handleToggleOption(opt.value)}
+                  onMouseEnter={(e) => e.currentTarget.focus()}
+                  className={`flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm transition-colors
                     ${
                       isSelected
                         ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
@@ -303,36 +288,32 @@ export default function MultiSelect({
                     }
                     focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
                     touch-manipulation`}
-                  >
-                    <span
-                      className={`w-4 h-4 border rounded flex items-center justify-center flex-shrink-0
+                >
+                  <span
+                    className={`w-4 h-4 border rounded flex items-center justify-center flex-shrink-0
                     ${
                       isSelected
                         ? 'border-accent dark:border-accent-dark bg-accent dark:bg-accent-dark'
                         : 'border-border dark:border-border-dark'
                     }`}
-                    >
-                      {isSelected && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
-                    </span>
-                    {opt.label}
-                  </button>
-                );
-              })
-            )}
-          </div>
+                  >
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                  {opt.label}
+                </button>
+              );
+            })
+          )}
         </div>
+      </div>
     ) : null;
 
   return (
@@ -395,18 +376,11 @@ export default function MultiSelect({
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
-      {portalTarget && dropdownContent
-        ? createPortal(dropdownContent, portalTarget)
-        : null}
+      {portalTarget && dropdownContent ? createPortal(dropdownContent, portalTarget) : null}
     </div>
   );
 }

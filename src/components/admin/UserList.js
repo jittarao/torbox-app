@@ -59,7 +59,11 @@ export default function UserList({
   };
 
   const handleReactivateAllInactive = async () => {
-    if (!confirm('Reactivate all inactive API keys? This will set is_active = 1 and status = active for every user with an inactive key.')) {
+    if (
+      !confirm(
+        'Reactivate all inactive API keys? This will set is_active = 1 and status = active for every user with an inactive key.'
+      )
+    ) {
       return;
     }
     setReactivating(true);
@@ -143,7 +147,7 @@ export default function UserList({
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading users...</p>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading users…</p>
           </div>
         ) : users.length === 0 ? (
           <div className="text-center py-12">
@@ -221,7 +225,10 @@ export default function UserList({
                           {new Date(user.created_at).toLocaleDateString()}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={(e) => handleStatusChange(user.auth_id, user.status, e)}
@@ -249,8 +256,9 @@ export default function UserList({
             {pagination && pagination.totalPages > 1 && (
               <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
                 <div className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                  {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
+                  Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                  {pagination.total} users
                 </div>
                 <div className="flex gap-2">
                   <button

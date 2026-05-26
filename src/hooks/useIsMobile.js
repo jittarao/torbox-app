@@ -21,7 +21,7 @@ export default function useIsMobile() {
 
     // Listen for resize events
     window.addEventListener('resize', checkIfMobile);
-    
+
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
