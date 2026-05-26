@@ -452,9 +452,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const items = useMemo(() => {
     switch (type) {
       case 'all':
-        // Combine all types (assetType is already present on each item)
-        const allItems = [...(torrents || []), ...(usenetItems || []), ...(webdlItems || [])];
-        return allItems;
+        return [...(torrents || []), ...(usenetItems || []), ...(webdlItems || [])];
       case 'usenet':
         return usenetItems || [];
       case 'webdl':

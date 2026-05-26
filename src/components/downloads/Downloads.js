@@ -688,6 +688,7 @@ export default function Downloads({ apiKey }) {
     activeView,
     tags,
     itemsWithTags,
+    activeAssetType: activeType,
     activeTagIds,
     onApplyView: handleApplyView,
     onClearView: handleClearFilters,
