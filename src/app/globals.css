@@ -125,6 +125,47 @@ select option {
       dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/25;
   }
 
+  .ui-sidebar-section-label {
+    @apply px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-zinc-500
+      dark:text-zinc-500;
+  }
+
+  .ui-sidebar-utility-trigger {
+    @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
+      text-zinc-600 transition-[color,background] duration-150
+      hover:bg-zinc-100/80 hover:text-zinc-900
+      active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-500/40
+      dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100;
+  }
+
+  .ui-sidebar-utility-row {
+    @apply flex w-full items-center justify-between gap-2 rounded-lg px-2 py-0.5;
+  }
+
+  .ui-sidebar-utility-label {
+    @apply flex min-w-0 flex-1 items-center gap-3 px-1 py-1.5 text-sm font-medium
+      text-zinc-600 dark:text-zinc-400;
+  }
+
+  .ui-sidebar-pref-panel {
+    @apply mx-2 rounded-lg border border-border/50 bg-zinc-100/60 p-2
+      dark:border-border-dark/50 dark:bg-white/[0.03];
+  }
+
+  .ui-sidebar-pref-cell {
+    @apply flex w-full flex-col items-center justify-center gap-1.5 rounded-md px-2 py-2.5
+      text-zinc-600 transition-colors duration-150
+      hover:bg-zinc-200/60 dark:text-zinc-400 dark:hover:bg-white/[0.06];
+  }
+
+  .ui-sidebar-footer-link {
+    @apply mx-2 mt-2 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium
+      text-zinc-500 transition-colors duration-150
+      hover:bg-zinc-100/80 hover:text-zinc-700
+      dark:text-zinc-500 dark:hover:bg-white/[0.04] dark:hover:text-zinc-300;
+  }
+
   .ui-dropdown-panel--sidebar {
     @apply absolute left-full bottom-0 right-auto top-auto z-[250] ml-2 mt-0 mb-0
       max-h-[min(32rem,calc(100vh-1.5rem))] overflow-y-auto overscroll-contain

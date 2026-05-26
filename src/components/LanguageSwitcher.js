@@ -17,7 +17,7 @@ const languages = {
   pl: { name: 'Polski', flag: '/images/flags/flag-pl.png' },
 };
 
-export default function LanguageSwitcher({ compact = false }) {
+export default function LanguageSwitcher({ compact = false, variant = 'default' }) {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -42,13 +42,18 @@ export default function LanguageSwitcher({ compact = false }) {
   };
 
   return (
-    <div className="relative z-[260] shrink-0" ref={dropdownRef}>
+    <div
+      className={`relative z-[260] shrink-0 ${variant === 'sidebar-cell' ? 'w-full' : ''}`}
+      ref={dropdownRef}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={
-          compact
-            ? 'ui-btn-ghost !gap-2'
-            : 'flex items-center gap-2 text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors'
+          variant === 'sidebar-cell'
+            ? 'ui-sidebar-pref-cell'
+            : compact
+              ? 'ui-btn-ghost !gap-2'
+              : 'flex items-center gap-2 text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300'
         }
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -56,23 +61,28 @@ export default function LanguageSwitcher({ compact = false }) {
         <Image
           src={languages[locale].flag}
           alt={languages[locale].name}
-          width={24}
-          height={16}
+          width={variant === 'sidebar-cell' ? 28 : 24}
+          height={variant === 'sidebar-cell' ? 18 : 16}
           className="rounded-sm"
         />
-        {compact ? (
-          <span className="hidden xl:inline text-sm font-medium uppercase">{locale}</span>
+        {variant === 'sidebar-cell' ? (
+          <span className="text-xs font-medium uppercase tracking-wide">{locale}</span>
+        ) : compact ? (
+          <span className="hidden text-sm font-medium uppercase xl:inline">{locale}</span>
         ) : (
           <span className="text-sm">{languages[locale].name}</span>
         )}
-        <svg
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {variant !== 'sidebar-cell' ? (
+          <svg
+            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        ) : null}
       </button>
 
       <HeaderDropdownPanel
