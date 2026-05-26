@@ -143,6 +143,7 @@ docker/
 .agents/
 AGENTS.md
 /prompts
+/docs/superpowers/
 
 # OS generated files
 .DS_Store
