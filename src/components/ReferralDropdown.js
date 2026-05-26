@@ -17,7 +17,7 @@ import {
 } from '@/utils/referralDismissal';
 import { REFERRAL_HELP_URL } from '@/components/constants';
 
-export default function ReferralDropdown({ apiKey, onToast }) {
+export default function ReferralDropdown({ apiKey, onToast, iconOnly = false }) {
   const t = useTranslations('Referral');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -54,24 +54,35 @@ export default function ReferralDropdown({ apiKey, onToast }) {
     <div className="relative z-[260] shrink-0" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="ui-btn-ghost !gap-2"
+        className={iconOnly ? 'ui-header-icon-btn' : 'ui-btn-ghost !gap-2'}
         aria-expanded={isOpen}
         aria-haspopup="menu"
+        title={iconOnly ? t('referral') : undefined}
       >
         <Icons.Gift className="w-4 h-4" />
-        <span className="text-sm hidden lg:inline">{t('referral')}</span>
-        <svg
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {!iconOnly ? (
+          <>
+            <span className="text-sm hidden lg:inline">{t('referral')}</span>
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </>
+        ) : null}
       </button>
 
       <HeaderDropdownPanel
         open={isOpen}
+        placement="sidebar"
         widthClass="w-[min(100vw-2rem,22rem)]"
         className="!py-0"
         onBackdropClick={() => setIsOpen(false)}

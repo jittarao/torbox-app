@@ -118,8 +118,21 @@ select option {
       dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/25;
   }
 
-  .ui-sidebar-flyout-anchor .ui-dropdown-panel {
-    @apply right-auto left-full top-0 ml-2 mt-0 origin-top-left;
+  .ui-dropdown-panel--sidebar {
+    @apply absolute left-full bottom-0 right-auto top-auto z-[250] ml-2 mt-0 mb-0
+      max-h-[min(32rem,calc(100vh-1.5rem))] overflow-y-auto overscroll-contain
+      origin-bottom-left isolate overflow-x-hidden rounded-xl
+      border border-zinc-300 bg-white py-1.5
+      shadow-[0_20px_50px_-16px_rgba(0,0,0,0.55)]
+      pointer-events-auto
+      dark:border-zinc-600 dark:bg-[#1a1a1d]
+      dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.95)];
+  }
+
+  .ui-sidebar-flyout-anchor .ui-dropdown-panel,
+  .ui-sidebar-flyout-anchor .ui-dropdown-panel--sidebar {
+    @apply right-auto left-full bottom-0 top-auto ml-2 mt-0 mb-0 max-h-[min(32rem,calc(100vh-1.5rem))]
+      overflow-y-auto overscroll-contain origin-bottom-left;
   }
 
   .ui-btn-ghost {

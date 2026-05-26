@@ -453,6 +453,8 @@
       "search": "Search",
       "systemStatus": "System Status",
       "toggle": "Toggle menu",
+      "collapseSidebar": "Collapse sidebar",
+      "expandSidebar": "Expand sidebar",
       "uploads": "Uploads",
       "user": "User"
     },
