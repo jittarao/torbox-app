@@ -131,6 +131,9 @@ bun run dev
 | `USER_DB_DIR`          | Directory for user database files                                          | `/app/data/users`        | No       |
 | `MAX_DB_CONNECTIONS`   | Maximum pooled database connections                                        | `200`                    | No       |
 | `SQLITE_CACHE_SIZE_KB` | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB) | `-1000`                  | No       |
+| `IP_RATE_LIMIT_MAX`    | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`           | No       |
+| `USER_RATE_LIMIT_MAX`  | Max API requests per authenticated user per 15 minutes                     | `500`                    | No       |
+| `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)    | unset                    | No       |
 
 ## Full Stack Deployment (Frontend + Backend)
 

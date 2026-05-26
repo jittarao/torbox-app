@@ -17,6 +17,7 @@ import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
 import { serverErrorPayload } from './utils/httpErrors.js';
 import { validateEnv } from './config/validateEnv.js';
+import { isPrivateOrLoopbackIp, parseRateLimitMax } from './utils/ip.js';
 import { setupAdminRoutes } from './routes/admin.js';
 import { setupHealthRoutes } from './routes/health.js';
 import { setupApiKeyRoutes } from './routes/apiKeys.js';
@@ -71,16 +72,34 @@ class TorBoxBackend {
     // Compression
     this.app.use(compression());
 
-    // IP-based rate limiting (global); skip admin routes so they are not limited or counted
+    // Trust X-Forwarded-For when behind a reverse proxy (set TRUST_PROXY=true in production)
+    if (process.env.TRUST_PROXY === 'true') {
+      this.app.set('trust proxy', 1);
+    }
+
+    const rateLimitWindowMs = 15 * 60 * 1000;
+    const ipRateLimitMax = parseRateLimitMax(process.env.IP_RATE_LIMIT_MAX, 1000);
+
+    // IP-based rate limiting (global). Skip admin/health and internal proxy traffic
+    // (Next.js → backend in Docker shares one container IP without per-client forwarding).
     const ipLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 300,
+      windowMs: rateLimitWindowMs,
+      max: ipRateLimitMax,
       standardHeaders: true,
       legacyHeaders: false,
       skip: (req) => {
         const url = (req.originalUrl || '').split('?')[0];
         const path = (req.path || '').split('?')[0];
-        return url.startsWith('/api/admin') || path.startsWith('/admin');
+        if (url.startsWith('/api/admin') || path.startsWith('/admin')) {
+          return true;
+        }
+        if (url.startsWith('/api/health') || path === '/health') {
+          return true;
+        }
+        if (isPrivateOrLoopbackIp(req.ip)) {
+          return true;
+        }
+        return false;
       },
       handler: (req, res) => {
         res.status(429).json({
@@ -94,8 +113,8 @@ class TorBoxBackend {
 
     // Per-user rate limiting (applied after authId validation)
     this.userRateLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.USER_RATE_LIMIT_MAX || '300', 10),
+      windowMs: rateLimitWindowMs,
+      max: parseRateLimitMax(process.env.USER_RATE_LIMIT_MAX, 500),
       standardHeaders: true,
       legacyHeaders: false,
       keyGenerator: (req) => {
