@@ -83,6 +83,8 @@ services:
     environment:
       # Enable backend integration (set to true to use external backend)
       - BACKEND_DISABLED=false
+      # Hide search page and nav link when true (self-host opt-out)
+      - SEARCH_PAGE_DISABLED=${SEARCH_PAGE_DISABLED:-false}
       # Backend API URL (uses service name for internal Docker network communication)
       - BACKEND_URL=http://torbox-backend:3001
       # Node.js environment mode

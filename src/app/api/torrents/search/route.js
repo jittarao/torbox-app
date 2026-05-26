@@ -1,9 +1,14 @@
 import { headers } from 'next/headers';
 import { API_SEARCH_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
 
 const SEARCH_PREFIXES = ['imdb', 'tvdb', 'jikan'];
 
 export async function GET(req) {
+  if (isSearchPageDisabled()) {
+    return getSearchPageDisabledResponse();
+  }
+
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
   const { searchParams } = new URL(req.url);
