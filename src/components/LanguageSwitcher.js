@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -19,6 +19,7 @@ const languages = {
 
 export default function LanguageSwitcher({ compact = false, variant = 'default' }) {
   const locale = useLocale();
+  const t = useTranslations('Header');
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -41,38 +42,46 @@ export default function LanguageSwitcher({ compact = false, variant = 'default' 
     router.push(pathname.replace(locale, newLocale));
   };
 
+  const sidebarCell = variant === 'sidebar-cell';
+  const sidebarControl = variant === 'sidebar-control';
+
   return (
     <div
-      className={`relative z-[260] shrink-0 ${variant === 'sidebar-cell' ? 'w-full' : ''}`}
+      className={`relative z-[260] shrink-0 ${sidebarCell ? 'w-full' : ''} ${
+        sidebarControl ? 'min-w-0 flex-1' : ''
+      }`}
       ref={dropdownRef}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={
-          variant === 'sidebar-cell'
+          sidebarCell
             ? 'ui-sidebar-pref-cell'
-            : compact
-              ? 'ui-btn-ghost !gap-2'
-              : 'flex items-center gap-2 text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300'
+            : sidebarControl
+              ? 'ui-sidebar-language-control'
+              : compact
+                ? 'ui-btn-ghost !gap-2'
+                : 'flex items-center gap-2 text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300'
         }
+        aria-label={sidebarControl ? t('menu.language') : undefined}
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
         <Image
           src={languages[locale].flag}
           alt={languages[locale].name}
-          width={variant === 'sidebar-cell' ? 28 : 24}
-          height={variant === 'sidebar-cell' ? 18 : 16}
+          width={sidebarCell ? 28 : 24}
+          height={sidebarCell ? 18 : 16}
           className="rounded-sm"
         />
-        {variant === 'sidebar-cell' ? (
+        {sidebarCell || sidebarControl ? (
           <span className="text-xs font-medium uppercase tracking-wide">{locale}</span>
         ) : compact ? (
           <span className="hidden text-sm font-medium uppercase xl:inline">{locale}</span>
         ) : (
           <span className="text-sm">{languages[locale].name}</span>
         )}
-        {variant !== 'sidebar-cell' ? (
+        {!sidebarCell && !sidebarControl ? (
           <svg
             className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"

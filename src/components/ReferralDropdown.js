@@ -17,7 +17,12 @@ import {
 } from '@/utils/referralDismissal';
 import { REFERRAL_HELP_URL } from '@/components/constants';
 
-export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, variant = 'default' }) {
+export default function ReferralDropdown({
+  apiKey,
+  onToast,
+  iconOnly = false,
+  variant = 'default',
+}) {
   const t = useTranslations('Referral');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -50,9 +55,11 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, va
     return `${code.slice(0, 8)}…${code.slice(-8)}`;
   };
 
+  const sidebarVariant = variant === 'sidebar' || variant === 'sidebar-subtle';
+
   return (
     <div
-      className={`relative z-[260] shrink-0 ${variant === 'sidebar' ? 'w-full' : ''}`}
+      className={`relative z-[260] shrink-0 ${sidebarVariant ? 'w-full' : ''}`}
       ref={dropdownRef}
     >
       <button
@@ -60,9 +67,11 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, va
         className={
           iconOnly
             ? 'ui-header-icon-btn'
-            : variant === 'sidebar'
-              ? 'ui-sidebar-utility-trigger'
-              : 'ui-btn-ghost !gap-2'
+            : variant === 'sidebar-subtle'
+              ? 'ui-sidebar-referral'
+              : variant === 'sidebar'
+                ? 'ui-sidebar-utility-trigger'
+                : 'ui-btn-ghost !gap-2'
         }
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -73,7 +82,7 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, va
           <>
             <span
               className={`flex-1 truncate text-left ${
-                variant === 'sidebar' ? 'text-sm' : 'hidden text-sm lg:inline'
+                sidebarVariant ? 'text-sm' : 'hidden text-sm lg:inline'
               }`}
             >
               {t('referral')}
@@ -108,7 +117,9 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, va
         <div className="ui-dropdown-header border-t-2 border-amber-500/50">
           <div className="flex items-center gap-2">
             <Icons.Gift className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{t('panel.heroTitle')}</h3>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {t('panel.heroTitle')}
+            </h3>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('panel.heroSubtitle')}</p>
         </div>
@@ -199,8 +210,12 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, va
           </details>
 
           <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700 space-y-2">
-            <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('disclaimer.supportsDevelopment')}</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('disclaimer.firstPurchase')}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">
+              {t('disclaimer.supportsDevelopment')}
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">
+              {t('disclaimer.firstPurchase')}
+            </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('disclaimer.giftCards')}</p>
             <a
               href={REFERRAL_HELP_URL}
@@ -212,7 +227,11 @@ export default function ReferralDropdown({ apiKey, onToast, iconOnly = false, va
               <Icons.ExternalLink className="w-3 h-3" />
             </a>
             <div className="flex flex-wrap gap-3 pt-1">
-              <button type="button" onClick={handleSnooze} className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline">
+              <button
+                type="button"
+                onClick={handleSnooze}
+                className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline"
+              >
                 {t('settings.snoozeReminders')}
               </button>
               <button

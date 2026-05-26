@@ -11,7 +11,7 @@ import Icons from '@/components/icons';
 import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import useIsMobile from '@/hooks/useIsMobile';
 
-export default function SystemStatusIndicator({ apiKey, className = '' }) {
+export default function SystemStatusIndicator({ apiKey, className = '', label, variant = 'icon' }) {
   const t = useTranslations('SystemStatus');
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef(null);
@@ -94,6 +94,40 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
 
   const config = statusConfig[overallStatus] || statusConfig.unknown;
   const IconComponent = config.icon;
+  const sidebarTrigger = variant === 'sidebar';
+  const sidebarStatus = {
+    healthy: {
+      label: t('rows.status.operational'),
+      tone: 'ui-sidebar-status-pill--healthy',
+    },
+    'invalid-key': {
+      label: t('rows.status.invalidKey'),
+      tone: 'ui-sidebar-status-pill--error',
+    },
+    'api-unhealthy': {
+      label: t('rows.status.issue'),
+      tone: 'ui-sidebar-status-pill--warning',
+    },
+    'platform-unhealthy': {
+      label: t('rows.status.issue'),
+      tone: 'ui-sidebar-status-pill--warning',
+    },
+    'backend-unhealthy': {
+      label: t('rows.status.issue'),
+      tone: 'ui-sidebar-status-pill--warning',
+    },
+    'no-api-key': {
+      label: t('rows.status.notConfigured'),
+      tone: 'ui-sidebar-status-pill--neutral',
+    },
+    unknown: {
+      label: t('rows.status.unavailable'),
+      tone: 'ui-sidebar-status-pill--neutral',
+    },
+  }[overallStatus] || {
+    label: t('rows.status.unavailable'),
+    tone: 'ui-sidebar-status-pill--neutral',
+  };
 
   const handleToggle = useCallback(() => {
     setIsOpen((open) => {
@@ -124,16 +158,40 @@ export default function SystemStatusIndicator({ apiKey, className = '' }) {
   };
 
   return (
-    <div ref={rootRef} className={`relative shrink-0 ${className}`}>
+    <div
+      ref={rootRef}
+      className={`relative shrink-0 ${sidebarTrigger ? 'w-full' : ''} ${className}`}
+    >
       <button
         type="button"
         onClick={handleToggle}
-        className={`ui-dropdown-icon-btn ${isLoading ? 'animate-pulse' : ''}`}
+        className={`${sidebarTrigger ? 'ui-sidebar-action' : 'ui-dropdown-icon-btn'} ${
+          isLoading && !sidebarTrigger ? 'animate-pulse' : ''
+        }`}
         aria-label={t('refreshStatus')}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
       >
-        {isLoading ? (
+        {sidebarTrigger ? (
+          <>
+            <span className="ui-sidebar-action-icon">
+              {isLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-500" />
+              ) : (
+                <IconComponent className={`h-[18px] w-[18px] ${config.iconClass}`} />
+              )}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+            <span
+              className={`ui-sidebar-status-pill ${
+                isLoading ? 'ui-sidebar-status-pill--neutral' : sidebarStatus.tone
+              }`}
+              title={config.label}
+            >
+              {isLoading ? t('rows.status.checking') : sidebarStatus.label}
+            </span>
+          </>
+        ) : isLoading ? (
           <span className="h-4 w-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
         ) : (
           <IconComponent className={`h-5 w-5 ${config.iconClass}`} />

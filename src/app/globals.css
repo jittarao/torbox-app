@@ -142,31 +142,86 @@ select option {
       dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100;
   }
 
-  .ui-sidebar-utility-row {
-    @apply flex w-full items-center justify-between gap-2 rounded-lg px-2 py-0.5;
+  .ui-sidebar-dock {
+    @apply space-y-2 px-2 py-3;
   }
 
-  .ui-sidebar-utility-label {
-    @apply flex min-w-0 flex-1 items-center gap-3 px-1 py-1.5 text-sm font-medium
-      text-zinc-600 dark:text-zinc-400;
+  .ui-sidebar-action {
+    @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium
+      text-zinc-700 transition-[color,background,transform] duration-150
+      hover:bg-zinc-100 hover:text-zinc-950
+      active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-500/40 disabled:cursor-wait disabled:opacity-70
+      dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-zinc-50;
   }
 
-  .ui-sidebar-pref-panel {
-    @apply mx-2 rounded-lg border border-border/50 bg-zinc-100/60 p-2
-      dark:border-border-dark/50 dark:bg-white/[0.03];
+  .ui-sidebar-action-icon {
+    @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-md
+      bg-zinc-100 text-zinc-500 dark:bg-white/[0.05] dark:text-zinc-400;
   }
 
-  .ui-sidebar-pref-cell {
-    @apply flex w-full flex-col items-center justify-center gap-1.5 rounded-md px-2 py-2.5
-      text-zinc-600 transition-colors duration-150
-      hover:bg-zinc-200/60 dark:text-zinc-400 dark:hover:bg-white/[0.06];
+  .ui-sidebar-count-badge {
+    @apply min-w-5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-center text-[11px] font-semibold
+      leading-4 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300;
   }
 
-  .ui-sidebar-footer-link {
-    @apply mx-2 mt-2 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium
+  .ui-sidebar-error-dot {
+    @apply h-2 w-2 rounded-full bg-red-500;
+  }
+
+  .ui-sidebar-disclosure {
+    @apply h-1.5 w-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600;
+  }
+
+  .ui-sidebar-status-pill {
+    @apply max-w-[6.5rem] truncate rounded-md px-1.5 py-1 text-[10px] font-medium leading-none;
+  }
+
+  .ui-sidebar-status-pill--healthy {
+    @apply bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300;
+  }
+
+  .ui-sidebar-status-pill--warning {
+    @apply bg-amber-500/10 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300;
+  }
+
+  .ui-sidebar-status-pill--error {
+    @apply bg-red-500/10 text-red-700 dark:bg-red-500/10 dark:text-red-300;
+  }
+
+  .ui-sidebar-status-pill--neutral {
+    @apply bg-zinc-200/80 text-zinc-600 dark:bg-white/[0.07] dark:text-zinc-400;
+  }
+
+  .ui-sidebar-dock-secondary {
+    @apply space-y-1.5 border-t border-border/50 pt-2 dark:border-border-dark/50;
+  }
+
+  .ui-sidebar-referral {
+    @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium
       text-zinc-500 transition-colors duration-150
-      hover:bg-zinc-100/80 hover:text-zinc-700
-      dark:text-zinc-500 dark:hover:bg-white/[0.04] dark:hover:text-zinc-300;
+      hover:bg-zinc-100/80 hover:text-zinc-800
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      dark:text-zinc-500 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200;
+  }
+
+  .ui-sidebar-controls {
+    @apply flex items-center gap-1 rounded-lg bg-zinc-100/60 p-1
+      dark:bg-white/[0.03];
+  }
+
+  .ui-sidebar-control-btn {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500
+      transition-colors duration-150 hover:bg-white hover:text-zinc-800
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-zinc-100;
+  }
+
+  .ui-sidebar-language-control {
+    @apply flex h-8 w-full items-center justify-center gap-2 rounded-md text-zinc-600
+      transition-colors duration-150 hover:bg-white hover:text-zinc-900
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-zinc-100;
   }
 
   .ui-dropdown-panel--sidebar {
