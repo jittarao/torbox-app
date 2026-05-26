@@ -13,9 +13,13 @@ export default function ReferralConfirmDialog({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-[300]" onClick={onClose} aria-hidden />
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[310]
+        className="z-overlay-backdrop fixed inset-0 bg-black/50"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div
+        className="z-overlay-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
           bg-surface dark:bg-surface-dark border border-border dark:border-border-dark
           rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:max-w-md p-6"
         role="dialog"
