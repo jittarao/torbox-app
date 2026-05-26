@@ -708,8 +708,7 @@
     },
     "settings": {
       "snoozeReminders": "Ukryj przypomnienia na 30 dni",
-      "resetSnooze": "Pokaż przypomnienia ponownie",
-      "applyOnKeyLabel": "Zastosuj polecenie TBM przy zapisie klucza API"
+      "resetSnooze": "Pokaż przypomnienia ponownie"
     }
   },
   "RssFeeds": {

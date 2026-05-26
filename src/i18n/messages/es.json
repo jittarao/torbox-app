@@ -708,8 +708,7 @@
     },
     "settings": {
       "snoozeReminders": "Ocultar recordatorios 30 días",
-      "resetSnooze": "Mostrar recordatorios de nuevo",
-      "applyOnKeyLabel": "Aplicar referencia TBM al guardar mi clave API"
+      "resetSnooze": "Mostrar recordatorios de nuevo"
     }
   },
   "RssFeeds": {

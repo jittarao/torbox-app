@@ -708,8 +708,7 @@
     },
     "settings": {
       "snoozeReminders": "リマインダーを30日間非表示",
-      "resetSnooze": "リマインダーを再表示",
-      "applyOnKeyLabel": "APIキー保存時にTBM紹介を適用"
+      "resetSnooze": "リマインダーを再表示"
     }
   },
   "RssFeeds": {
