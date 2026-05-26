@@ -1,9 +1,60 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+const MENU_MIN_WIDTH = 140;
+const MENU_ITEM_HEIGHT = 30;
+const MENU_PADDING = 8;
 
 export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items }) {
   const menuRef = useRef(null);
+  const [menuLayout, setMenuLayout] = useState(null);
+
+  const updateMenuPosition = useCallback(() => {
+    const anchor = anchorRef?.current;
+    if (!anchor || !isOpen) return;
+
+    const rect = anchor.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const margin = 8;
+    const gap = 4;
+    const menuHeight = items.length * MENU_ITEM_HEIGHT + MENU_PADDING;
+    const menuWidth = MENU_MIN_WIDTH;
+
+    const spaceBelow = vh - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+
+    let top;
+    if (spaceBelow >= menuHeight || spaceBelow >= spaceAbove) {
+      top = rect.bottom + gap;
+    } else {
+      top = Math.max(margin, rect.top - gap - menuHeight);
+    }
+
+    let left = rect.right - menuWidth;
+    if (left < margin) left = margin;
+    if (left + menuWidth > vw - margin) {
+      left = vw - menuWidth - margin;
+    }
+
+    setMenuLayout({ top, left, width: menuWidth });
+  }, [anchorRef, isOpen, items.length]);
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setMenuLayout(null);
+      return;
+    }
+    updateMenuPosition();
+    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+    return () => {
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [isOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -31,12 +82,19 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
     };
   }, [isOpen, onClose, anchorRef]);
 
-  if (!isOpen) return null;
+  const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
-  return (
+  if (!isOpen || !portalTarget || !menuLayout) return null;
+
+  return createPortal(
     <div
       ref={menuRef}
-      className="absolute right-0 top-full mt-1 z-50 min-w-[140px] py-1 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
+      className="fixed z-[100] min-w-[140px] py-1 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
+      style={{
+        top: menuLayout.top,
+        left: menuLayout.left,
+        width: menuLayout.width,
+      }}
       role="menu"
     >
       {items.map((item) => (
@@ -58,6 +116,7 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
           {item.label}
         </button>
       ))}
-    </div>
+    </div>,
+    portalTarget
   );
 }
