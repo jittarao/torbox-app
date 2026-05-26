@@ -417,7 +417,7 @@ class ApiClient {
   }
 
   async addReferral(referralCode) {
-    return this.post('/api/user/addreferral', { referral_code: referralCode });
+    return this.post('/api/user/addreferral', { referral: referralCode });
   }
 
   // Search Engine API methods

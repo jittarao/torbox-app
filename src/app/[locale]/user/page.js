@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Header from '@/components/Header';
 import UserProfile from '@/components/user/UserProfile';
+import ReferralUpgradeCard from '@/components/referral/ReferralUpgradeCard';
 import Toast from '@/components/shared/Toast';
 import { Inter } from 'next/font/google';
 
@@ -86,6 +87,7 @@ export default function UserPage() {
         {/* User Profile Content */}
         <div>
           <ErrorBoundary>
+            <ReferralUpgradeCard apiKey={apiKey} onToast={setToast} />
             <UserProfile apiKey={apiKey} setToast={setToast} />
           </ErrorBoundary>
         </div>

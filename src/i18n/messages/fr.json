@@ -646,16 +646,71 @@
     "copyAll": "Tout copier",
     "copyCode": "Copier le code",
     "copyLink": "Copier le lien",
-    "description": "Utilisez le code ci-dessous pour obtenir 7 jours supplémentaires pour chaque mois acheté.",
+    "description": "7 jours supplémentaires par mois sur votre premier abonnement TorBox payant.",
     "developerNote": "Ce est le code de parrainage du développeur.",
     "error": "Erreur de copie dans le presse-papiers",
-    "landingDescription": "Besoin d'un compte TorBox ? Utilisez notre lien de parrainage pour vous inscrire et commencer !",
+    "landingDescription": "Nouveau sur TorBox ? Utilisez notre lien à l'abonnement pour des jours bonus au premier achat.",
     "referral": "Parrainage",
     "referralCode": "Code de parrainage",
     "referralLink": "Lien de parrainage",
     "signUp": "S'inscrire à TorBox",
     "title": "Obtenir du temps premium gratuit",
-    "visitLink": "Visiter le lien"
+    "visitLink": "Visiter le lien",
+    "examples": {
+      "oneMonth": "1 mois → +7 j",
+      "threeMonths": "3 mois → +21 j",
+      "twelveMonths": "12 mois → +84 j"
+    },
+    "panel": {
+      "heroTitle": "Jours bonus sur votre premier abonnement",
+      "heroSubtitle": "7 jours bonus par mois acheté (pour vous et le parrain).",
+      "openSubscription": "Ouvrir l'abonnement TorBox",
+      "helpLink": "Comment fonctionne le parrainage"
+    },
+    "apply": {
+      "button": "Appliquer à mon compte",
+      "confirmTitle": "Appliquer le code de parrainage ?",
+      "confirmBody": "Le code TorBox Manager sera ajouté à votre compte TorBox avant l'abonnement.",
+      "confirmBullet1": "Le bonus s'applique uniquement au premier abonnement payant.",
+      "confirmBullet2": "7 jours bonus par mois (ex. 12 mois = 84 jours).",
+      "confirmBullet3": "Un parrainage existant ne peut pas être modifié ici.",
+      "cancel": "Annuler",
+      "confirm": "Appliquer le code",
+      "applying": "Application…",
+      "success": "Code de parrainage appliqué à votre compte TorBox.",
+      "error": "Impossible d'appliquer le code. Essayez le lien d'abonnement.",
+      "alreadyHasReferrer": "Votre compte a déjà un code de parrainage.",
+      "needApiKey": "Ajoutez d'abord votre clé API TorBox."
+    },
+    "callout": {
+      "slimMessage": "7 jours bonus par mois sur votre premier abonnement TorBox — utilisez notre parrainage avant de payer.",
+      "compactMessage": "Jours bonus au premier abonnement — appliquez le code puis abonnez-vous sur TorBox.",
+      "rssHint": "Passez à Pro sur TorBox et obtenez des jours bonus avec notre parrainage.",
+      "apply": "Appliquer le code",
+      "subscribe": "S'abonner",
+      "dismiss": "Masquer 30 jours"
+    },
+    "upgradeCard": {
+      "title": "Passer à l'offre avec jours bonus",
+      "description": "Appliquez notre code puis complétez votre premier abonnement payant sur TorBox — 7 jours bonus par mois."
+    },
+    "steps": {
+      "title": "Comment ça marche",
+      "step1": "Appliquez le code à votre compte TorBox (bouton ci-dessus ou sur la page abonnement).",
+      "step2": "Abonnez-vous sur torbox.app — autorisez les popups si vous utilisez le lien.",
+      "step3": "Finalisez votre premier achat payant ; les jours bonus sont ajoutés automatiquement.",
+      "popupNote": "Avec le lien, confirmez la popup sur TorBox avant d'acheter."
+    },
+    "disclaimer": {
+      "supportsDevelopment": "Ce code soutient aussi le développement de TorBox Manager.",
+      "firstPurchase": "Le bonus s'applique uniquement au premier achat payant.",
+      "giftCards": "Les cartes cadeaux et bons ne sont pas éligibles."
+    },
+    "settings": {
+      "snoozeReminders": "Masquer les rappels 30 jours",
+      "resetSnooze": "Réafficher les rappels",
+      "applyOnKeyLabel": "Appliquer le parrainage TBM à l'enregistrement de ma clé API"
+    }
   },
   "RssFeeds": {
     "actions": "Actions",

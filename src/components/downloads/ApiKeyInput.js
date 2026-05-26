@@ -6,6 +6,11 @@ import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
 import { ensureUserDb } from '@/utils/ensureUserDb';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
+import { REFERRAL_CODE } from '@/components/constants';
+import { applyReferralToAccount } from '@/utils/referralEligibility';
+import { markReferralAppliedForKey, isReferralAppliedForKey } from '@/utils/referralApplied';
+
+const APPLY_REFERRAL_ON_KEY_STORAGE = 'torboxApplyReferralOnKey';
 
 export default function ApiKeyInput({
   value,
@@ -15,7 +20,10 @@ export default function ApiKeyInput({
 }) {
   const isLanding = variant === 'landing';
   const t = useTranslations('ApiKeyInput');
+  const referralT = useTranslations('Referral.settings');
   const [showKey, setShowKey] = useState(false);
+  const [applyReferralOnKey, setApplyReferralOnKey] = useState(false);
+  const lastAutoApplyKeyRef = useRef('');
   const [showManager, setShowManager] = useState(false);
   const [keepManagerOpen, setKeepManagerOpen] = useState(false);
   const [draft, setDraft] = useState(undefined);
@@ -35,7 +43,27 @@ export default function ApiKeyInput({
       setKeepManagerOpen(true);
       setShowManager(true);
     }
+    const applyStored = localStorage.getItem(APPLY_REFERRAL_ON_KEY_STORAGE);
+    if (applyStored === 'true') {
+      setApplyReferralOnKey(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!applyReferralOnKey || !committedValue || !isValidTorboxApiKey(committedValue)) {
+      return;
+    }
+    if (lastAutoApplyKeyRef.current === committedValue) return;
+    if (isReferralAppliedForKey(committedValue)) return;
+
+    lastAutoApplyKeyRef.current = committedValue;
+
+    applyReferralToAccount(committedValue, REFERRAL_CODE).then((result) => {
+      if (result.success || result.alreadyHasReferrer) {
+        markReferralAppliedForKey(committedValue);
+      }
+    });
+  }, [applyReferralOnKey, committedValue]);
 
   // Save manager open state to localStorage
   const handleKeepManagerToggle = (keepOpen) => {
@@ -129,6 +157,23 @@ export default function ApiKeyInput({
           </button>
         )}
       </div>
+
+      {!isLanding && (
+        <label className="flex items-start gap-2 cursor-pointer text-sm text-primary-text/80 dark:text-primary-text-dark/80">
+          <input
+            type="checkbox"
+            checked={applyReferralOnKey}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setApplyReferralOnKey(checked);
+              localStorage.setItem(APPLY_REFERRAL_ON_KEY_STORAGE, checked.toString());
+            }}
+            className="mt-1 rounded border-border dark:border-border-dark"
+          />
+          <span>{referralT('applyOnKeyLabel')}</span>
+        </label>
+      )}
+
       {showManager && (
         <ApiKeyManager
           onKeySelect={onKeyChange}

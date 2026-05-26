@@ -663,16 +663,71 @@
     "copyAll": "Copy All",
     "copyCode": "Copy code",
     "copyLink": "Copy link",
-    "description": "Use the code below to get extra 7 days for each month purchased.",
+    "description": "Get 7 extra days for each month on your first paid TorBox subscription.",
     "developerNote": "This is the developer's referral code.",
     "error": "Error copying to clipboard",
-    "landingDescription": "Need a TorBox account? Use our referral link to sign up and get started!",
+    "landingDescription": "New to TorBox? Use our referral link when you subscribe and get bonus days on your first purchase.",
     "referral": "Referral",
     "referralCode": "Referral Code",
     "referralLink": "Referral Link",
     "signUp": "Sign Up for TorBox",
     "title": "Get Free Premium Time",
-    "visitLink": "Visit Link"
+    "visitLink": "Visit Link",
+    "examples": {
+      "oneMonth": "1 mo → +7 days",
+      "threeMonths": "3 mo → +21 days",
+      "twelveMonths": "12 mo → +84 days"
+    },
+    "panel": {
+      "heroTitle": "Extra days on your first subscription",
+      "heroSubtitle": "7 bonus days for each month you purchase (you and the referrer).",
+      "openSubscription": "Open TorBox subscription",
+      "helpLink": "How referrals work"
+    },
+    "apply": {
+      "button": "Apply to my account",
+      "confirmTitle": "Apply referral code?",
+      "confirmBody": "This attaches the TorBox Manager referral code to your TorBox account before you subscribe.",
+      "confirmBullet1": "Bonus applies on your first paid subscription only.",
+      "confirmBullet2": "You get 7 extra days per month purchased (e.g. 12 months = 84 days).",
+      "confirmBullet3": "If you already have a referral on your account, it cannot be changed here.",
+      "cancel": "Cancel",
+      "confirm": "Apply code",
+      "applying": "Applying…",
+      "success": "Referral code applied to your TorBox account.",
+      "error": "Could not apply referral code. Try the subscription link instead.",
+      "alreadyHasReferrer": "Your account already has a referral code.",
+      "needApiKey": "Add your TorBox API key first."
+    },
+    "callout": {
+      "slimMessage": "Get 7 extra days per month on your first TorBox subscription when you use our referral before you pay.",
+      "compactMessage": "Bonus days on your first subscription — apply our referral code, then subscribe on TorBox.",
+      "rssHint": "Upgrade to Pro on TorBox and get bonus days on your first subscription with our referral.",
+      "apply": "Apply code",
+      "subscribe": "Subscribe",
+      "dismiss": "Dismiss for 30 days"
+    },
+    "upgradeCard": {
+      "title": "Upgrade with bonus days",
+      "description": "Apply our referral code, then complete your first paid subscription on TorBox to receive 7 extra days per month purchased."
+    },
+    "steps": {
+      "title": "How it works",
+      "step1": "Apply the code to your TorBox account (button above or paste on the subscription page).",
+      "step2": "Subscribe at torbox.app — allow popups if you use the referral link.",
+      "step3": "Complete your first paid purchase; bonus days are added automatically.",
+      "popupNote": "If you use the link instead of Apply, confirm the popup on TorBox before purchasing."
+    },
+    "disclaimer": {
+      "supportsDevelopment": "Using this code also supports TorBox Manager development.",
+      "firstPurchase": "Referral bonus applies to your first paid purchase only.",
+      "giftCards": "Gift cards and vouchers do not qualify."
+    },
+    "settings": {
+      "snoozeReminders": "Snooze reminders for 30 days",
+      "resetSnooze": "Show reminders again",
+      "applyOnKeyLabel": "Apply TBM referral when I save my API key (extra days on first subscription)"
+    }
   },
   "RssFeeds": {
     "actions": "Actions",

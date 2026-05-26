@@ -646,16 +646,71 @@
     "copyAll": "Copiar todo",
     "copyCode": "Copiar código",
     "copyLink": "Copiar enlace",
-    "description": "Use el código a continuación para obtener 7 días adicionales por cada mes comprado.",
+    "description": "7 días extra por mes en tu primera suscripción de pago de TorBox.",
     "developerNote": "Este es el código de referencia del desarrollador.",
     "error": "Error al copiar al portapapeles",
-    "landingDescription": "¿Necesitas una cuenta de TorBox? ¡Usa nuestro enlace de referencia para registrarte y comenzar!",
+    "landingDescription": "¿Nuevo en TorBox? Usa nuestro enlace al suscribirte y obtén días de bonificación en tu primera compra.",
     "referral": "Referencias",
     "referralCode": "Código de referencia",
     "referralLink": "Enlace de referencia",
     "signUp": "Registrarse en TorBox",
     "title": "Obtener tiempo premium gratis",
-    "visitLink": "Visitar enlace"
+    "visitLink": "Visitar enlace",
+    "examples": {
+      "oneMonth": "1 mes → +7 días",
+      "threeMonths": "3 meses → +21 días",
+      "twelveMonths": "12 meses → +84 días"
+    },
+    "panel": {
+      "heroTitle": "Días extra en tu primera suscripción",
+      "heroSubtitle": "7 días de bonificación por cada mes comprado (para ti y quien refiere).",
+      "openSubscription": "Abrir suscripción de TorBox",
+      "helpLink": "Cómo funcionan las referencias"
+    },
+    "apply": {
+      "button": "Aplicar a mi cuenta",
+      "confirmTitle": "¿Aplicar código de referencia?",
+      "confirmBody": "Esto añade el código de TorBox Manager a tu cuenta de TorBox antes de suscribirte.",
+      "confirmBullet1": "La bonificación aplica solo en tu primera suscripción de pago.",
+      "confirmBullet2": "7 días extra por mes (ej. 12 meses = 84 días).",
+      "confirmBullet3": "Si ya tienes una referencia, no se puede cambiar aquí.",
+      "cancel": "Cancelar",
+      "confirm": "Aplicar código",
+      "applying": "Aplicando…",
+      "success": "Código aplicado a tu cuenta de TorBox.",
+      "error": "No se pudo aplicar el código. Prueba el enlace de suscripción.",
+      "alreadyHasReferrer": "Tu cuenta ya tiene un código de referencia.",
+      "needApiKey": "Añade primero tu clave API de TorBox."
+    },
+    "callout": {
+      "slimMessage": "7 días extra por mes en tu primera suscripción de TorBox — usa nuestra referencia antes de pagar.",
+      "compactMessage": "Días de bonificación en tu primera suscripción — aplica el código y suscríbete en TorBox.",
+      "rssHint": "Mejora a Pro en TorBox y obtén días de bonificación con nuestra referencia.",
+      "apply": "Aplicar código",
+      "subscribe": "Suscribirse",
+      "dismiss": "Ocultar 30 días"
+    },
+    "upgradeCard": {
+      "title": "Mejora con días de bonificación",
+      "description": "Aplica nuestro código y completa tu primera suscripción de pago en TorBox para recibir 7 días extra por mes."
+    },
+    "steps": {
+      "title": "Cómo funciona",
+      "step1": "Aplica el código a tu cuenta de TorBox (botón arriba o pégalo en la página de suscripción).",
+      "step2": "Suscríbete en torbox.app — permite ventanas emergentes si usas el enlace.",
+      "step3": "Completa tu primera compra de pago; los días se añaden automáticamente.",
+      "popupNote": "Si usas el enlace, confirma la ventana emergente en TorBox antes de comprar."
+    },
+    "disclaimer": {
+      "supportsDevelopment": "Usar este código también apoya el desarrollo de TorBox Manager.",
+      "firstPurchase": "La bonificación aplica solo en la primera compra de pago.",
+      "giftCards": "Las tarjetas regalo y vales no califican."
+    },
+    "settings": {
+      "snoozeReminders": "Ocultar recordatorios 30 días",
+      "resetSnooze": "Mostrar recordatorios de nuevo",
+      "applyOnKeyLabel": "Aplicar referencia TBM al guardar mi clave API"
+    }
   },
   "RssFeeds": {
     "actions": "Acciones",

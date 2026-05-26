@@ -36,6 +36,7 @@ import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
 import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import ReferralCallout from '@/components/referral/ReferralCallout';
 
 export default function Downloads({ apiKey }) {
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
@@ -706,6 +707,8 @@ export default function Downloads({ apiKey }) {
             setIsDownloadPanelOpen={setIsDownloadPanelOpen}
             setToast={setToast}
           />
+
+          <ReferralCallout apiKey={apiKey} variant="compact" onToast={setToast} />
 
           {/* Filters Section */}
           <FiltersSection
