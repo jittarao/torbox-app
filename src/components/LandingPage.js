@@ -3,12 +3,7 @@
 import { useState } from 'react';
 import { Syne } from 'next/font/google';
 import ApiKeyInput from './downloads/ApiKeyInput';
-import {
-  FORK_GITHUB_REPO_URL,
-  FORK_REFERRAL_CODE,
-  FORK_REFERRAL_LINK,
-  UPSTREAM_GITHUB_REPO_URL,
-} from '@/components/constants';
+import { GITHUB_REPO_URL, REFERRAL_CODE, REFERRAL_LINK } from '@/components/constants';
 import { useTranslations } from 'next-intl';
 
 const syne = Syne({
@@ -178,26 +173,6 @@ export default function LandingPage({ onKeyChange }) {
                 {t('apiKeyInput.link')}
               </a>
             </p>
-            <p className="mt-4 pt-4 border-t border-zinc-800/60 text-xs text-zinc-600 text-center leading-relaxed">
-              {t('forkNoticeLine')}{' '}
-              <a
-                href={FORK_GITHUB_REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-amber-400/90 hover:text-amber-400 underline underline-offset-2 transition-colors"
-              >
-                {t('forkNoticeThisFork')}
-              </a>
-              {' · '}
-              <a
-                href={UPSTREAM_GITHUB_REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-amber-400/90 hover:text-amber-400 underline underline-offset-2 transition-colors"
-              >
-                {t('forkNoticeUpstream')}
-              </a>
-            </p>
           </div>
         </section>
 
@@ -212,7 +187,7 @@ export default function LandingPage({ onKeyChange }) {
           <div className="text-sm text-zinc-500">
             <p>{referralT('landingDescription')}</p>
             <a
-              href={FORK_REFERRAL_LINK}
+              href={REFERRAL_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
@@ -223,7 +198,7 @@ export default function LandingPage({ onKeyChange }) {
             <button
               type="button"
               onClick={async () => {
-                await navigator.clipboard.writeText(FORK_REFERRAL_CODE);
+                await navigator.clipboard.writeText(REFERRAL_CODE);
                 setShowCopied(true);
                 setTimeout(() => setShowCopied(false), 2000);
               }}
@@ -245,7 +220,7 @@ export default function LandingPage({ onKeyChange }) {
           <p>
             {t('footer.description')}{' '}
             <a
-              href={FORK_GITHUB_REPO_URL}
+              href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400/90 hover:text-amber-400 underline underline-offset-2 transition-colors"

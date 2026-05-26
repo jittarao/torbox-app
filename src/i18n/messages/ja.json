@@ -550,9 +550,6 @@
       "link": "torbox.app/settings",
       "title": "TorBox APIキーを入力"
     },
-    "forkNoticeLine": "このビルドはコミュニティが保守するフォークであり、本家アプリと異なる場合があります。",
-    "forkNoticeThisFork": "このフォーク（GitHub）",
-    "forkNoticeUpstream": "本家プロジェクト",
     "features": {
       "batchUpload": {
         "description": "ワンクリックで複数のトレントをアップロード",

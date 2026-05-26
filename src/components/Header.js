@@ -13,7 +13,7 @@ import SystemStatusIndicator from '@/components/shared/SystemStatusIndicator';
 import ReferralDropdown from '@/components/ReferralDropdown';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import { headerDropdownItemClass } from '@/components/shared/headerDropdownClasses';
-import { FORK_GITHUB_REPO_URL } from '@/components/constants';
+import { GITHUB_REPO_URL } from '@/components/constants';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getVersion } from '@/utils/version';
 // import CloudUploadManager from '@/components/downloads/CloudUploadManager';
@@ -234,7 +234,7 @@ export default function Header({ apiKey }) {
               </button>
               <LanguageSwitcher compact={true} />
               <a
-                href={FORK_GITHUB_REPO_URL}
+                href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub Repository"
@@ -396,7 +396,7 @@ export default function Header({ apiKey }) {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-900 dark:text-zinc-100 font-medium">GitHub</span>
                 <a
-                  href={FORK_GITHUB_REPO_URL}
+                  href={GITHUB_REPO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="GitHub Repository"
