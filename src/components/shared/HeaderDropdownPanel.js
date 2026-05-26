@@ -67,8 +67,12 @@ export default function HeaderDropdownPanel({
   if (isMobile && portalReady) {
     return createPortal(
       <div data-header-overlay>
-        <div className="fixed inset-0 z-[200] bg-black/60" onClick={onBackdropClick} aria-hidden />
-        <div className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none">
+        <div
+          className="z-overlay-backdrop fixed inset-0 bg-black/60"
+          onClick={onBackdropClick}
+          aria-hidden
+        />
+        <div className="z-overlay-panel fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
           <div className="pointer-events-auto w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             {panel}
           </div>

@@ -342,7 +342,7 @@ export default function AppShell({ apiKey, children, className = '' }) {
         />
 
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-border/60 bg-surface/90 px-3 py-2.5 backdrop-blur-xl dark:border-border-dark/60 dark:bg-surface-dark/90 md:hidden">
+        <header className="z-mobile-header sticky top-0 flex items-center justify-between gap-2 border-b border-border/60 bg-surface/90 px-3 py-2.5 backdrop-blur-xl dark:border-border-dark/60 dark:bg-surface-dark/90 md:hidden">
           <Link href="/" className="flex min-w-0 flex-1 items-center gap-2">
             <Image
               src="/images/TBM-logo.png"
@@ -393,7 +393,7 @@ export default function AppShell({ apiKey, children, className = '' }) {
 
         {/* Mobile drawer backdrop */}
         <div
-          className={`fixed inset-0 z-[255] bg-black/50 backdrop-blur-sm transition-opacity duration-200 md:hidden ${
+          className={`z-mobile-drawer-backdrop fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 md:hidden ${
             isDrawerOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
           }`}
           onClick={closeDrawer}
@@ -408,7 +408,7 @@ export default function AppShell({ apiKey, children, className = '' }) {
             aria-modal="true"
             aria-label={t('menu.toggle')}
             aria-hidden={!isDrawerOpen}
-            className={`fixed inset-y-0 left-0 z-[260] flex w-[min(100vw-3rem,18rem)] flex-col border-r border-border/60 bg-surface/95 backdrop-blur-xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:border-border-dark/60 dark:bg-surface-dark/95 md:hidden ${
+            className={`z-mobile-drawer fixed inset-y-0 left-0 flex w-[min(100vw-3rem,18rem)] flex-col border-r border-border/60 bg-surface/95 backdrop-blur-xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:border-border-dark/60 dark:bg-surface-dark/95 md:hidden ${
               isDrawerOpen
                 ? 'pointer-events-auto translate-x-0'
                 : 'pointer-events-none -translate-x-full'

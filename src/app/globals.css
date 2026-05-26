@@ -6,6 +6,13 @@
   --background: #fafafa;
   --foreground: #18181b;
   --landing-bg: #0a0a0b;
+  /* App shell layering (mobile drawer < header overlays < confirm dialogs) */
+  --z-mobile-header: 50;
+  --z-mobile-drawer-backdrop: 255;
+  --z-mobile-drawer: 260;
+  --z-overlay-backdrop: 300;
+  --z-overlay-panel: 301;
+  --z-overlay-dialog: 310;
 }
 
 @layer base {
@@ -293,6 +300,32 @@ select option {
 
   .status-uptime-segment--empty {
     @apply bg-zinc-300 dark:bg-zinc-700/60;
+  }
+}
+
+@layer utilities {
+  .z-mobile-header {
+    z-index: var(--z-mobile-header);
+  }
+
+  .z-mobile-drawer-backdrop {
+    z-index: var(--z-mobile-drawer-backdrop);
+  }
+
+  .z-mobile-drawer {
+    z-index: var(--z-mobile-drawer);
+  }
+
+  .z-overlay-backdrop {
+    z-index: var(--z-overlay-backdrop);
+  }
+
+  .z-overlay-panel {
+    z-index: var(--z-overlay-panel);
+  }
+
+  .z-overlay-dialog {
+    z-index: var(--z-overlay-dialog);
   }
 }
 

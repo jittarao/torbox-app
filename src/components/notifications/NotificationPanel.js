@@ -275,8 +275,12 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
 
   return (
     <div data-header-overlay>
-      <div className="fixed inset-0 bg-black/60 z-[200]" onClick={onClose} aria-hidden />
-      <div className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none">
+      <div
+        className="z-overlay-backdrop fixed inset-0 bg-black/60"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div className="z-overlay-panel fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div
           className="pointer-events-auto w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl dark:border-border-dark dark:bg-surface-alt-dark dark:shadow-[0_24px_56px_-16px_rgba(0,0,0,0.9)]"
           onClick={(e) => e.stopPropagation()}
