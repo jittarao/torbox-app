@@ -1,7 +1,7 @@
 'use client';
 
 import AutomationRules from '@/components/downloads/AutomationRules';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import { Inter } from 'next/font/google';
 import { useState, useEffect } from 'react';
 
@@ -39,11 +39,13 @@ export default function AutomationPage() {
   if (loading) return null;
 
   return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
-      <Header apiKey={apiKey} />
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
       <div className="container mx-auto p-4">
         <AutomationRules apiKey={apiKey} />
       </div>
-    </main>
+    </AppShell>
   );
 }

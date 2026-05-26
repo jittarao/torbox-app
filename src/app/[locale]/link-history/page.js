@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import LinkHistory from '@/components/LinkHistory';
 import { Inter } from 'next/font/google';
 
@@ -18,11 +18,13 @@ export default function LinkHistoryPage() {
   }, []);
 
   return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
-      <Header apiKey={apiKey} />
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
       <div className="container mx-auto p-4">
         <LinkHistory apiKey={apiKey} />
       </div>
-    </main>
+    </AppShell>
   );
 }

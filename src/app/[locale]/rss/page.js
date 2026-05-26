@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import RssFeedManager from '@/components/rss/RssFeedManager';
 import RssItemsManager from '@/components/rss/RssItemsManager';
 
@@ -159,12 +159,12 @@ export default function RssPage() {
     );
   }
 
-  return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
-      {!apiKey ? (
-        <div className="flex justify-center items-center min-h-screen">
+  if (!apiKey) {
+    return (
+      <div className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
+        <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">API Key Required</h1>
+            <h1 className="mb-4 text-2xl font-bold">API Key Required</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Please enter your TorBox API key to access RSS feeds.
             </p>
@@ -175,50 +175,43 @@ export default function RssPage() {
             </div>
           </div>
         </div>
-      ) : checkingPlan ? (
-        <>
-          <Header apiKey={apiKey} />
-          <div className="container mx-auto p-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex justify-center items-center min-h-[60vh]">
-                <div className="text-center">
-                  <Spinner size="lg" />
-                  <p className="mt-4 text-primary-text dark:text-primary-text-dark">
-                    {t('checkingSubscription')}
-                  </p>
-                </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
+      <div className="container mx-auto p-4">
+        <div className="mx-auto max-w-6xl">
+          {checkingPlan ? (
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <div className="text-center">
+                <Spinner size="lg" />
+                <p className="mt-4 text-primary-text dark:text-primary-text-dark">
+                  {t('checkingSubscription')}
+                </p>
               </div>
             </div>
-          </div>
-        </>
-      ) : userPlan !== 2 ? (
-        <>
-          <Header apiKey={apiKey} />
-          <div className="container mx-auto p-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex justify-center items-center min-h-[60vh]">
-                <div className="text-center bg-surface-alt dark:bg-surface-alt-dark p-8 rounded-lg border border-border dark:border-border-dark max-w-md">
-                  <Icons.ExclamationTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
-                  <h2 className="text-2xl font-bold mb-4 text-primary-text dark:text-primary-text-dark">
-                    {t('proSubscriptionRequired')}
-                  </h2>
-                  <p className="text-primary-text/70 dark:text-primary-text-dark/70">
-                    {t('proUserRequired')}
-                  </p>
-                  <ReferralInlineHint apiKey={apiKey} />
-                </div>
+          ) : userPlan !== 2 ? (
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <div className="max-w-md rounded-lg border border-border bg-surface-alt p-8 text-center dark:border-border-dark dark:bg-surface-alt-dark">
+                <Icons.ExclamationTriangle className="mx-auto mb-4 h-16 w-16 text-yellow-500" />
+                <h2 className="mb-4 text-2xl font-bold text-primary-text dark:text-primary-text-dark">
+                  {t('proSubscriptionRequired')}
+                </h2>
+                <p className="text-primary-text/70 dark:text-primary-text-dark/70">
+                  {t('proUserRequired')}
+                </p>
+                <ReferralInlineHint apiKey={apiKey} />
               </div>
             </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <Header apiKey={apiKey} />
-          <div className="container mx-auto p-4">
-            <div className="max-w-6xl mx-auto">
-              {/* Page Header */}
+          ) : (
+            <>
               <div className="mb-6">
-                <h1 className="text-3xl font-bold text-primary-text dark:text-primary-text-dark mb-2">
+                <h1 className="mb-2 text-3xl font-bold text-primary-text dark:text-primary-text-dark">
                   {t('pageTitle')}
                 </h1>
                 <p className="text-primary-text/70 dark:text-primary-text-dark/70">
@@ -226,7 +219,6 @@ export default function RssPage() {
                 </p>
               </div>
 
-              {/* Tabs */}
               <div className="mb-6">
                 <div className="border-b border-border dark:border-border-dark">
                   <nav className="-mb-px flex space-x-8">
@@ -238,13 +230,13 @@ export default function RssPage() {
                         <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id)}
-                          className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                          className={`flex items-center gap-2 border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
                             isActive
                               ? 'border-accent text-accent'
-                              : 'border-transparent text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary-text dark:hover:text-primary-text-dark hover:border-border dark:hover:border-border-dark'
+                              : 'border-transparent text-primary-text/60 hover:border-border hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:border-border-dark dark:hover:text-primary-text-dark'
                           }`}
                         >
-                          <IconComponent className="w-4 h-4" />
+                          <IconComponent className="h-4 w-4" />
                           {tab.label}
                         </button>
                       );
@@ -253,8 +245,7 @@ export default function RssPage() {
                 </div>
               </div>
 
-              {/* Tab Content */}
-              <div className="bg-surface dark:bg-surface-dark rounded-lg">
+              <div className="rounded-lg bg-surface dark:bg-surface-dark">
                 {tabs.map((tab) => {
                   if (activeTab !== tab.id) return null;
 
@@ -266,12 +257,12 @@ export default function RssPage() {
                   );
                 })}
               </div>
-            </div>
-          </div>
-        </>
-      )}
+            </>
+          )}
+        </div>
+      </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </main>
+    </AppShell>
   );
 }

@@ -104,6 +104,24 @@ select option {
       dark:text-amber-400 dark:bg-amber-500/10 dark:lg:border-amber-500/25;
   }
 
+  .ui-sidebar-nav {
+    @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
+      text-zinc-600 transition-[color,background,transform] duration-150
+      hover:bg-zinc-100/80 hover:text-zinc-900
+      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-amber-500/40
+      dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100;
+  }
+
+  .ui-sidebar-nav-active {
+    @apply ui-sidebar-nav text-amber-700 bg-amber-500/15 border border-amber-500/20
+      dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/25;
+  }
+
+  .ui-sidebar-flyout-anchor .ui-dropdown-panel {
+    @apply right-auto left-full top-0 ml-2 mt-0 origin-top-left;
+  }
+
   .ui-btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
       border-0 bg-zinc-100 text-zinc-700

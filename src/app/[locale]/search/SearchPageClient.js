@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
@@ -80,16 +80,15 @@ export default function SearchPageClient() {
   if (loading) return null;
 
   return (
-    <main
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans
-                  text-primary-text dark:text-primary-text-dark`}
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans text-primary-text dark:text-primary-text-dark`}
     >
-      <Header apiKey={apiKey} />
       <div className="max-w-7xl mx-auto p-4">
         <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />
         <SearchBar searchTypeOptions={searchTypeOptions} />
         <SearchResults apiKey={apiKey} />
       </div>
-    </main>
+    </AppShell>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import Header from '@/components/Header';
+import AppShell from '@/components/navigation/AppShell';
 import UserProfile from '@/components/user/UserProfile';
 import ReferralUpgradeCard from '@/components/referral/ReferralUpgradeCard';
 import Toast from '@/components/shared/Toast';
@@ -75,9 +75,10 @@ export default function UserPage() {
   }
 
   return (
-    <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
-      <Header apiKey={apiKey} onApiKeyChange={handleKeyChange} />
-
+    <AppShell
+      apiKey={apiKey}
+      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+    >
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text dark:text-text-dark mb-2">{t('title')}</h1>
@@ -95,7 +96,7 @@ export default function UserPage() {
 
       {/* Toast Notifications */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </main>
+    </AppShell>
   );
 }
 
