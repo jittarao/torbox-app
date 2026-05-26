@@ -39,8 +39,8 @@ export default function UsageCallout({ apiKey, planId }) {
       role="status"
       className={
         isDanger
-          ? 'mb-3 rounded-lg border border-label-danger-text/25 bg-label-danger-bg dark:bg-label-danger-bg-dark px-3 py-2.5'
-          : 'mb-3 rounded-lg border border-label-warning-text/25 bg-label-warning-bg dark:bg-label-warning-bg-dark px-3 py-2.5'
+          ? 'mb-2 rounded-lg border border-label-danger-text/25 bg-label-danger-bg dark:bg-label-danger-bg-dark px-3 py-2'
+          : 'mb-2 rounded-lg border border-label-warning-text/25 bg-label-warning-bg dark:bg-label-warning-bg-dark px-3 py-2'
       }
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

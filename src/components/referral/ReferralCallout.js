@@ -70,8 +70,8 @@ export default function ReferralCallout({
         role="status"
         className={
           isSlim
-            ? 'mb-4 flex flex-col gap-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between'
-            : 'mb-3 flex flex-col gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between'
+            ? 'mb-2 flex flex-col gap-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between'
+            : 'mb-2 flex flex-col gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between'
         }
       >
         <div className="flex items-start gap-2 min-w-0">

@@ -9,6 +9,7 @@ export default function ApiKeyManager({
   onClose,
   keepOpen,
   onKeepOpenToggle,
+  compact = false,
 }) {
   const t = useTranslations('ApiKeyManager');
   const [keys, setKeys] = useState([]);
@@ -49,9 +50,13 @@ export default function ApiKeyManager({
   };
 
   return (
-    <div className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-primary-text dark:text-primary-text-dark">
+    <div
+      className={`bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark ${compact ? 'p-3' : 'p-4'}`}
+    >
+      <div className={`flex justify-between items-center ${compact ? 'mb-2.5' : 'mb-4'}`}>
+        <h3
+          className={`${compact ? 'text-sm' : 'text-lg'} font-medium text-primary-text dark:text-primary-text-dark`}
+        >
           {t('savedKeys')}
         </h3>
         <div className="flex gap-2">
@@ -108,7 +113,8 @@ export default function ApiKeyManager({
           {keys.map((keyItem, index) => (
             <div
               key={index}
-              className={`flex items-center justify-between p-3 rounded-lg transition-colors
+              className={`flex items-center justify-between rounded-lg transition-colors
+                ${compact ? 'p-2' : 'p-3'}
                 ${
                   activeKey === keyItem.key
                     ? 'bg-accent/10 dark:bg-accent-dark/10 border border-accent dark:border-accent-dark'

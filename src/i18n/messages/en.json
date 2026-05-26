@@ -24,6 +24,7 @@
   },
   "ApiKeyInput": {
     "hide": "Hide API key",
+    "label": "API Key",
     "manageKeys": "Manage Keys",
     "placeholder": "Enter TorBox API Key",
     "show": "Show API key"

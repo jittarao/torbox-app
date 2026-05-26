@@ -24,6 +24,7 @@
   },
   "ApiKeyInput": {
     "hide": "APIキーを隠す",
+    "label": "APIキー",
     "manageKeys": "APIキーを管理",
     "placeholder": "TorBox APIキーを入力してください",
     "show": "APIキーを表示"

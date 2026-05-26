@@ -137,8 +137,13 @@ export default function Home() {
   return (
     <main className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}>
       <Header apiKey={apiKey} />
-      <div className="container mx-auto p-4">
-        <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />
+      <div className="container mx-auto px-4 pt-2 pb-4">
+        <ApiKeyInput
+          value={apiKey}
+          onKeyChange={handleKeyChange}
+          allowKeyManager={true}
+          variant="compact"
+        />
         <Downloads apiKey={apiKey} />
       </div>
     </main>
