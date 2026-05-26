@@ -217,7 +217,9 @@ export default function ActionBar({
         ref={stickyRef}
         className={
           isSticky
-            ? 'fixed top-0 left-0 right-0 z-50 border-b border-border dark:border-border-dark shadow-lg bg-surface dark:bg-surface-dark'
+            ? `fixed top-0 z-50 border-b border-border dark:border-border-dark shadow-lg bg-surface dark:bg-surface-dark
+              ${isFullscreen ? 'left-0 right-0' : 'left-0 right-0 md:left-[var(--sidebar-width,0px)]'}
+              transition-[left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`
             : undefined
         }
       >
