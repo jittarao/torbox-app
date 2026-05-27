@@ -3,7 +3,20 @@
  * Tablet range (md, below lg): tighter padding and type for iPad-sized viewports.
  */
 
+import { getColumnWidth } from '@/hooks/useColumnWidths';
+
 export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
+
+/** Inline width styles for table-fixed body cells (must match header column widths). */
+export function getTableColumnStyle(columnId, columnWidths, { isMobile = false } = {}) {
+  if (isMobile && columnId === 'name') return {};
+  const width = getColumnWidth(columnId, columnWidths);
+  return {
+    width: `${width}px`,
+    minWidth: `${width}px`,
+    maxWidth: `${width}px`,
+  };
+}
 
 export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
