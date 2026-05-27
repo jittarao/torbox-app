@@ -390,7 +390,6 @@ function ItemCard({
             setToast={setToast}
             activeType={activeType}
             isMobile={isMobile}
-            viewMode={viewMode}
             downloadHistory={downloadHistory}
           />
 
