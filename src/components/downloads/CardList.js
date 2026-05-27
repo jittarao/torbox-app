@@ -15,7 +15,7 @@ import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import ItemCard from './ItemCard';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
-import { cardListItemGap } from './utils/responsiveLayout';
+import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
 
 export default function CardList({
   items,
@@ -145,9 +145,10 @@ export default function CardList({
         typeof window !== 'undefined' &&
         window.innerWidth >= 768 &&
         window.innerWidth < 1024;
+      const gap = getCardListItemGapPx();
       const baseHeight = isMobile ? 170 : isTablet ? 74 : 82;
       if (!row) {
-        return baseHeight;
+        return baseHeight + gap;
       }
 
       if (
@@ -157,10 +158,10 @@ export default function CardList({
       ) {
         const fileRowHeight = isMobile ? 56 : 48;
         const fileListHeader = 32;
-        return baseHeight + fileListHeader + row.item.files.length * fileRowHeight;
+        return baseHeight + fileListHeader + row.item.files.length * fileRowHeight + gap;
       }
 
-      return baseHeight;
+      return baseHeight + gap;
     },
     [flattenedRows, expandedItemsSet, isMobile]
   );
@@ -696,7 +697,6 @@ export default function CardList({
                 left: 0,
                 right: 0,
                 transform: `translateY(${cardTop}px)`,
-                marginBottom: 0,
                 willChange: 'transform',
                 // Expanded cards must stack above neighbors until layout remeasures
                 zIndex: isExpanded ? 20 + virtualRow.index : virtualRow.index + 1,
