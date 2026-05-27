@@ -491,6 +491,8 @@
       "single": "Link pobierania"
     },
     "toast": {
+      "bulkAllFailed": "Nie udało się wygenerować żadnego z {total} linków pobierania",
+      "bulkPartialFailure": "Nie udało się wygenerować {failed} z {total} linków pobierania",
       "copyAllFailed": "Nie udało się skopiować linków",
       "copyFailed": "Nie udało się skopiować linku",
       "linkCopied": "Link skopiowany do schowka!",

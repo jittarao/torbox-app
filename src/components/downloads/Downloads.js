@@ -61,6 +61,7 @@ const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
 
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
+  const downloadPanelT = useTranslations('DownloadPanel');
   const fetchStatusT = useTranslations('FetchStatus');
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
@@ -246,6 +247,21 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleRowSelect,
     setSelectedItems,
   } = useSelection(enrichedDownloads);
+
+  const handleBulkDownloadComplete = useCallback(
+    ({ succeeded, failed, total }) => {
+      if (failed === 0) return;
+      setToast({
+        message:
+          succeeded > 0
+            ? downloadPanelT('toast.bulkPartialFailure', { failed, total })
+            : downloadPanelT('toast.bulkAllFailed', { total }),
+        type: 'error',
+      });
+    },
+    [downloadPanelT]
+  );
+
   const {
     downloadLinks,
     isDownloading,
@@ -253,7 +269,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleBulkDownload,
     setDownloadLinks,
     requestDownloadLink,
-  } = useDownloads(apiKey, activeType, downloadHistory, fetchDownloadHistory);
+  } = useDownloads(
+    apiKey,
+    activeType,
+    downloadHistory,
+    fetchDownloadHistory,
+    handleBulkDownloadComplete
+  );
 
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,

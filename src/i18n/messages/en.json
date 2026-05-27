@@ -505,6 +505,8 @@
       "single": "Download Link"
     },
     "toast": {
+      "bulkAllFailed": "Could not generate any of the {total} download links",
+      "bulkPartialFailure": "{failed} of {total} download links could not be generated",
       "copyAllFailed": "Failed to copy links",
       "copyFailed": "Failed to copy link",
       "linkCopied": "Link copied to clipboard!",
