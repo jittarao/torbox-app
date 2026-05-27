@@ -462,9 +462,24 @@
   "DownloadPanel": {
     "actions": {
       "clearAll": "Wyczyść wszystkie",
+      "copy": "Kopiuj",
       "copyAll": "Skopiuj wszystkie linki",
       "copyLink": "Skopiuj link",
-      "downloadFile": "Pobierz plik"
+      "copyLinkWithIndex": "Kopiuj link {index} z {total}",
+      "copied": "Skopiowano",
+      "downloadFile": "Pobierz plik",
+      "downloadFileWithIndex": "Otwórz pobieranie {index} z {total}",
+      "open": "Otwórz"
+    },
+    "aria": {
+      "collapse": "Zwiń panel pobierania",
+      "expand": "Rozwiń panel pobierania"
+    },
+    "badge": {
+      "ready": "{count, plural, one {# link gotowy} few {# linki gotowe} many {# linków gotowych} other {# linków gotowych}}"
+    },
+    "hint": {
+      "expiry": "Linki wygasają po 4 godzinach"
     },
     "status": {
       "fetching": "Pobieranie {current} z {total}",
