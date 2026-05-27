@@ -103,7 +103,12 @@ export default function CardList({
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
 
-  // Only virtualize ItemCards - FileList will handle its own virtualization
+  const expandedItemsArray = useMemo(() => {
+    return Array.from(expandedItems).sort();
+  }, [expandedItems]);
+
+  const expandedItemsSet = useMemo(() => new Set(expandedItemsArray), [expandedItemsArray]);
+
   const flattenedRows = useMemo(() => {
     return deferredItems.map((item, itemIndex) => ({
       item,
@@ -118,13 +123,28 @@ export default function CardList({
     return element.getBoundingClientRect().height + 8;
   }, []);
 
-  // Memoize estimateSize to prevent recalculation on every render
-  const estimateSize = useCallback(() => {
-    // Height estimates for mobile vs desktop
-    // Mobile cards are taller due to vertical layouts
-    // This will be refined by measureElement, but a good estimate helps initial render
-    return isMobile ? 170 : 82;
-  }, [isMobile]);
+  const estimateSize = useCallback(
+    (index) => {
+      const row = flattenedRows[index];
+      const baseHeight = isMobile ? 170 : 82;
+      if (!row) {
+        return baseHeight;
+      }
+
+      if (
+        expandedItemsSet.has(row.item.id) &&
+        row.item.files &&
+        row.item.files.length > 0
+      ) {
+        const fileRowHeight = isMobile ? 56 : 48;
+        const fileListHeader = 32;
+        return baseHeight + fileListHeader + row.item.files.length * fileRowHeight;
+      }
+
+      return baseHeight;
+    },
+    [flattenedRows, expandedItemsSet, isMobile]
+  );
 
   // Use different virtualizers based on fullscreen mode
   // In fullscreen: use useVirtualizer with scroll container
@@ -584,6 +604,13 @@ export default function CardList({
     return () => observer.disconnect();
   }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
+  const expandedItemsKey = useMemo(() => expandedItemsArray.join(','), [expandedItemsArray]);
+
+  // Remeasure card positions when file lists expand/collapse
+  useLayoutEffect(() => {
+    remeasureAndSync();
+  }, [expandedItemsKey, remeasureAndSync]);
+
   return (
     <>
       <div
@@ -627,6 +654,11 @@ export default function CardList({
                 }
               }
 
+              const isExpanded =
+                expandedItemsSet.has(row.item.id) &&
+                row.item.files &&
+                row.item.files.length > 0;
+
               const itemCardStyle = {
                 position: 'absolute',
                 top: 0,
@@ -635,6 +667,8 @@ export default function CardList({
                 transform: `translateY(${cardTop}px)`,
                 marginBottom: '8px', // Add gap between cards
                 willChange: 'transform',
+                // Expanded cards must stack above neighbors until layout remeasures
+                zIndex: isExpanded ? 20 + virtualRow.index : virtualRow.index + 1,
               };
 
               return (

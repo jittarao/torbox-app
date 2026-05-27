@@ -285,7 +285,9 @@ function ItemCard({
           : isItemDownloaded(item.id)
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
-      } px-2 py-4 md:p-4 relative rounded-lg border border-border dark:border-border-dark overflow-hidden cursor-pointer`}
+      } px-2 py-4 md:p-4 relative rounded-lg border border-border dark:border-border-dark ${
+        expandedItems.has(item.id) ? 'overflow-visible' : 'overflow-hidden'
+      } cursor-pointer`}
     >
       <div className="flex justify-between gap-2">
         <div className="flex flex-col justify-center gap-2 min-w-0">
