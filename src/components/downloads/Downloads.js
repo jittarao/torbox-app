@@ -105,6 +105,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
+  /** Item ids auto-expanded for file-name search; collapsed when search is cleared. */
+  const searchExpandedItemIdsRef = useRef(new Set());
   const scrollContainerRef = useRef(null);
   const fetchDownloadHistoryRef = useRef(false);
   const migrationAttemptedRef = useRef(false);
@@ -165,6 +167,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   // Function to collapse all files
   const collapseAllFiles = () => {
+    searchExpandedItemIdsRef.current = new Set();
     setExpandedItems(new Set());
   };
 
@@ -226,6 +229,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   );
 
   const expandAllFiles = () => {
+    searchExpandedItemIdsRef.current = new Set();
     const itemsWithFiles = enrichedDownloads.filter((item) => item.files && item.files.length > 0);
     const itemIds = itemsWithFiles.map((item) => item.id);
     setExpandedItems(new Set(itemIds));
@@ -340,23 +344,43 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const sortedItems = sortTorrents(filteredItems);
 
-  // Expand items that contain matching files so file rows are visible
+  // Expand items that contain matching files so file rows are visible; undo on clear
   useEffect(() => {
     const query = search.trim();
-    if (!query) return;
+    if (!query) {
+      const searchExpanded = searchExpandedItemIdsRef.current;
+      if (searchExpanded.size === 0) return;
+
+      setExpandedItems((prev) => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const id of searchExpanded) {
+          if (selectedItems.files.has(id)) continue;
+          if (next.delete(id)) changed = true;
+        }
+        return changed ? next : prev;
+      });
+      searchExpandedItemIdsRef.current = new Set();
+      return;
+    }
 
     setExpandedItems((prev) => {
       const next = new Set(prev);
       let changed = false;
       for (const item of filteredItems) {
-        if (itemHasFileNameSearchMatch(item, query) && item.files?.length > 0 && !next.has(item.id)) {
+        if (
+          itemHasFileNameSearchMatch(item, query) &&
+          item.files?.length > 0 &&
+          !next.has(item.id)
+        ) {
           next.add(item.id);
+          searchExpandedItemIdsRef.current.add(item.id);
           changed = true;
         }
       }
       return changed ? next : prev;
     });
-  }, [search, filteredItems]);
+  }, [search, filteredItems, selectedItems.files]);
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
@@ -489,6 +513,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       } else {
         newSet.add(itemId);
       }
+      searchExpandedItemIdsRef.current.delete(itemId);
       return newSet;
     });
   };
