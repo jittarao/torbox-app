@@ -26,9 +26,9 @@ export function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
 
 export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
-/** Fits ~6 icon buttons (download, export, delete, menu, etc.) without overflowing the cell */
+/** ~5 icon buttons (files, download, delete, menu) — export lives in More dropdown */
 const actionsColumnWidthClass =
-  'w-[200px] min-w-[200px] max-w-[200px] md:w-[184px] md:min-w-[184px] md:max-w-[184px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
+  'w-[168px] min-w-[168px] max-w-[168px] md:w-[156px] md:min-w-[156px] md:max-w-[156px] lg:w-[168px] lg:min-w-[168px] lg:max-w-[168px]';
 
 /** Shared sticky shell for the right-pinned actions column */
 const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tableActionsCellShadows}`;
@@ -36,14 +36,49 @@ const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tab
 export const tableCheckboxCell =
   'px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap';
 
-export const tableActionsCell = `px-2 md:px-2.5 lg:px-4 py-2 md:py-1.5 lg:py-2 whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium z-[1] ${tableActionsStickyShell}`;
+export const tableActionsCell = `px-2 md:px-2.5 lg:px-3 py-2 md:py-1.5 lg:py-2 whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium z-[1] overflow-hidden ${tableActionsStickyShell}`;
+
+/** Inner wrapper — clips icon hover rings inside the sticky column */
+export const tableActionsCellInner =
+  'flex w-full min-w-0 flex-nowrap items-center justify-end gap-1.5 md:gap-1';
 
 /** Match actionsColumnWidthClass — used for file-row layout math */
 export function getActionsColumnWidthPx() {
-  if (typeof window === 'undefined') return 200;
+  if (typeof window === 'undefined') return 168;
   const w = window.innerWidth;
-  if (w >= 768 && w < 1024) return 184;
-  return 200;
+  if (w >= 768 && w < 1024) return 156;
+  return 168;
+}
+
+/**
+ * Row + sticky actions backgrounds. Sticky cells need their own bg; use group/group-hover
+ * so hovering anywhere on the row updates the actions column (tr:hover alone is not enough).
+ */
+export function getTableRowSurfaceClasses({ selected = false, downloaded = false } = {}) {
+  if (selected) {
+    const base =
+      'bg-surface-alt-selected dark:bg-surface-alt-selected-dark';
+    const hover =
+      'hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark';
+    return {
+      row: `group ${base} ${hover}`,
+      stickyCell: `${base} group-hover:bg-surface-alt-selected-hover dark:group-hover:bg-surface-alt-selected-hover-dark`,
+    };
+  }
+  if (downloaded) {
+    const base = 'bg-downloaded dark:bg-downloaded-dark';
+    const hover = 'hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark';
+    return {
+      row: `group ${base} ${hover}`,
+      stickyCell: `${base} group-hover:bg-downloaded-hover dark:group-hover:bg-downloaded-hover-dark`,
+    };
+  }
+  const base = 'bg-surface dark:bg-surface-dark';
+  const hover = 'hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark';
+  return {
+    row: `group ${base} ${hover}`,
+    stickyCell: `${base} group-hover:bg-surface-alt-hover dark:group-hover:bg-surface-alt-hover-dark`,
+  };
 }
 
 export function getCheckboxColumnWidthPx() {

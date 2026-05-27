@@ -11,7 +11,9 @@ import { isVideoFile, isAudioFile } from './utils/videoDetection';
 import {
   getActionsColumnWidthPx,
   getCheckboxColumnWidthPx,
+  getTableRowSurfaceClasses,
   tableActionsCell,
+  tableActionsCellInner,
   tableCheckboxCell,
   tableRowSeparator,
 } from './utils/responsiveLayout';
@@ -67,11 +69,10 @@ function FileRow({
           downloadHistoryLookup.itemDownloads.has(itemKey) ||
           downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
 
-        const rowSurfaceClass = isChecked
-          ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-          : isDownloaded
-            ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
-            : 'bg-surface dark:bg-surface-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark';
+        const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
+          selected: isChecked,
+          downloaded: isDownloaded,
+        });
 
         return (
           <tr
@@ -152,8 +153,8 @@ function FileRow({
             </td>
 
             {/* File Actions — fixed slots: [play] [copy] [download] */}
-            <td className={`${tableActionsCell} ${rowSurfaceClass} [&_button]:md:p-1`}>
-              <div className="inline-flex items-center justify-end">
+            <td className={`${tableActionsCell} ${actionsSurfaceClass} [&_button]:md:p-1`}>
+              <div className={tableActionsCellInner}>
                 <span className={FILE_ACTION_SLOT_CLASS}>
                   {isVideoFile(file) && handleFileStream ? (
                     <button

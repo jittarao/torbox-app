@@ -10,7 +10,9 @@ import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
 import {
+  getTableRowSurfaceClasses,
   tableActionsCell,
+  tableActionsCellInner,
   tableCheckboxCell,
   tableDataCellPad,
   tableDataCellText,
@@ -335,11 +337,10 @@ function ItemRow({
   );
 
   const isSelected = selectedItems.items?.has(item.id);
-  const rowSurfaceClass = isSelected
-    ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-    : isDownloaded
-      ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
-      : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark';
+  const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
+    selected: isSelected,
+    downloaded: isDownloaded,
+  });
 
   return (
     <tr
@@ -371,21 +372,22 @@ function ItemRow({
         />
       </td>
       {visibleColumns.map((columnId) => renderCell(columnId))}
-      <td className={`${tableActionsCell} ${rowSurfaceClass}`}>
-        <ItemActions
-          item={item}
-          apiKey={apiKey}
-          onDelete={onDelete}
-          toggleFiles={toggleFiles}
-          expandedItems={expandedItems}
-          setItems={setItems}
-          setSelectedItems={setSelectedItems}
-          setToast={setToast}
-          activeType={activeType}
-          isMobile={isMobile}
-          viewMode={viewMode}
-          downloadHistory={downloadHistory}
-        />
+      <td className={`${tableActionsCell} ${actionsSurfaceClass}`}>
+        <div className={tableActionsCellInner}>
+          <ItemActions
+            item={item}
+            apiKey={apiKey}
+            onDelete={onDelete}
+            toggleFiles={toggleFiles}
+            expandedItems={expandedItems}
+            setItems={setItems}
+            setSelectedItems={setSelectedItems}
+            setToast={setToast}
+            activeType={activeType}
+            isMobile={isMobile}
+            downloadHistory={downloadHistory}
+          />
+        </div>
       </td>
     </tr>
   );

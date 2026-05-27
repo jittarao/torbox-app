@@ -16,9 +16,6 @@ export default function ItemActionButtons({
   onStopSeeding,
   onForceStart,
   onDownload,
-  onExport,
-  isExporting,
-  viewMode,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -57,12 +54,8 @@ export default function ItemActionButtons({
     await onDelete();
   };
 
-  const handleExport = async (e) => {
-    e.stopPropagation();
-    if (onExport) {
-      await onExport();
-    }
-  };
+  const tableIconButtonClass =
+    'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <>
@@ -107,8 +100,8 @@ export default function ItemActionButtons({
             e.stopPropagation();
             toggleFiles(item.id);
           }}
-          className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
-            hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors
+          className={`${tableIconButtonClass} text-primary-text/70 dark:text-primary-text-dark/70 
+            hover:bg-primary-text/10 dark:hover:bg-primary-text-dark/10 hover:text-primary-text dark:hover:text-primary-text-dark
             ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
         >
@@ -126,28 +119,13 @@ export default function ItemActionButtons({
         <button
           onClick={handleDownload}
           disabled={isDownloading}
-          className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
-          hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
+          className={`${tableIconButtonClass} text-accent dark:text-accent-dark 
+          hover:bg-accent/5 dark:hover:bg-accent-dark/5
           ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
           title={t('download.title')}
         >
           {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
           {isMobile && <span className="ml-2 text-xs">{t('download.label')}</span>}
-        </button>
-      )}
-
-      {/* Export button - only for torrents */}
-      {activeType === 'torrents' && onExport && (
-        <button
-          onClick={handleExport}
-          disabled={isExporting}
-          className={`p-1.5 rounded-full text-blue-500 dark:text-blue-400 
-          hover:bg-label-active-text/5 dark:hover:bg-label-active-text-dark/5 transition-colors
-          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
-          title={t('export.title')}
-        >
-          {isExporting ? <Spinner size="sm" /> : <Icons.Link />}
-          {isMobile && <span className="ml-2 text-xs">{t('export.label')}</span>}
         </button>
       )}
 
@@ -157,9 +135,9 @@ export default function ItemActionButtons({
         isLoading={isDeleting}
         confirmIcon={<Icons.Check />}
         defaultIcon={<Icons.Delete />}
-        className={`p-1.5 rounded-full text-red-500 dark:text-red-400 
+        className={`${tableIconButtonClass} text-red-500 dark:text-red-400 
           hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
-          disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
         title={t('delete.title')}
         isMobile={isMobile}
         mobileText={t('delete.label')}
