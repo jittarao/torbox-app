@@ -2,6 +2,7 @@
 
 import { COLUMNS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
+import { getColumnWidth } from '@/hooks/useColumnWidths';
 import ResizableColumn from './ResizableColumn';
 import { useTranslations } from 'next-intl';
 import {
@@ -44,7 +45,7 @@ export default function TableHeader({
             <ResizableColumn
               key={columnId}
               columnId={columnId}
-              width={columnWidths[columnId]}
+              width={getColumnWidth(columnId, columnWidths)}
               onWidthChange={(width) => updateColumnWidth(columnId, width)}
               sortable={column.sortable}
               onClick={() => column.sortable && onSort(columnId)}

@@ -14,11 +14,13 @@ import {
   tableCheckboxCell,
   tableDataCellPad,
   tableDataCellText,
+  getTableColumnStyle,
 } from './utils/responsiveLayout';
 
 function ItemRow({
   item,
   activeColumns,
+  columnWidths,
   selectedItems,
   setSelectedItems,
   handleItemSelection,
@@ -43,14 +45,14 @@ function ItemRow({
   const commonT = useTranslations('Common');
 
   const renderCell = (columnId) => {
-    const baseStyle = {};
+    const baseStyle = getTableColumnStyle(columnId, columnWidths, { isMobile });
 
     switch (columnId) {
       case 'name':
         return (
           <td
             key={columnId}
-            className={`${tableDataCellPad} max-w-[150px] md:max-w-none md:min-w-[7rem] relative`}
+            className={`${tableDataCellPad} max-w-[150px] md:max-w-none relative`}
             style={baseStyle}
           >
             <div
