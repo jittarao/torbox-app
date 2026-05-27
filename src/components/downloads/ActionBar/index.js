@@ -279,12 +279,12 @@ export default function ActionBar({
         }
       >
         <div
-          className={`flex flex-col gap-3 sm:gap-4 transition-all duration-200
+          className={`flex flex-wrap items-center gap-x-3 gap-y-2 transition-all duration-200
             ${isFullscreen ? 'px-2 sm:px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container-downloads mx-auto px-2 sm:px-4') : ''}
             ${isSticky ? 'py-2' : 'pb-4'}`}
         >
-          {/* Status + bulk actions */}
-          <div className="flex min-h-[44px] flex-wrap items-start gap-3 sm:items-center sm:gap-4">
+          {/* Left: counts, status filters, bulk actions */}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:gap-3">
             <StatusSection
               statusCounts={statusCounts}
               statusOptions={statusOptions}
@@ -322,58 +322,56 @@ export default function ActionBar({
             )}
           </div>
 
-          {/* Search + toolbar */}
-          <div className="flex flex-col gap-3 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between lg:gap-4">
+          {/* Right: search, sort, view controls */}
+          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
             <SearchBar
               search={search}
               onSearchChange={setSearch}
               itemTypePlural={itemTypePlural}
-              className="min-[480px]:max-w-md min-[480px]:flex-1 lg:max-w-lg"
+              className="w-36 sm:w-44 md:w-52 lg:w-60"
             />
 
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3 sm:shrink-0">
-              {(viewMode === 'card' || (isMobile && viewMode === 'table')) && (
-                <div className="flex min-w-0 shrink items-center gap-1">
-                  <Dropdown
-                    options={sortOptions}
-                    value={sortField}
-                    onChange={(value) => handleSort(value)}
-                    className="min-w-[8.5rem] max-w-[11rem] sm:min-w-[150px]"
-                    sortDir={sortDir}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleSort(sortField)}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-primary-text/70 transition-colors hover:border-primary-text/30 hover:bg-surface-alt-hover hover:text-accent dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-hover-dark dark:hover:text-accent-dark"
-                    aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
-                  >
-                    {sortDir === 'desc' ? '↓' : '↑'}
-                  </button>
-                </div>
-              )}
-
-              <ViewControls
-                isMobile={isMobile}
-                isBlurred={isBlurred}
-                onBlurToggle={onBlurToggle}
-                isFullscreen={isFullscreen}
-                onFullscreenToggle={onFullscreenToggle}
-                viewMode={viewMode}
-                onViewModeChange={onViewModeChange}
-                expandAllFiles={expandAllFiles}
-                collapseAllFiles={collapseAllFiles}
-                expandedItems={expandedItems}
-                unfilteredItems={unfilteredItems}
-              />
-
-              <div className="hidden shrink-0 lg:block">
-                <ColumnManager
-                  columns={COLUMNS}
-                  activeColumns={activeColumns}
-                  onColumnChange={onColumnChange}
-                  activeType={activeType}
+            {(viewMode === 'card' || (isMobile && viewMode === 'table')) && (
+              <div className="flex shrink-0 items-center gap-1">
+                <Dropdown
+                  options={sortOptions}
+                  value={sortField}
+                  onChange={(value) => handleSort(value)}
+                  className="min-w-[8.5rem] max-w-[11rem] sm:min-w-[150px]"
+                  sortDir={sortDir}
                 />
+                <button
+                  type="button"
+                  onClick={() => handleSort(sortField)}
+                  className="shrink-0 rounded-md border border-border px-2 py-1.5 text-sm text-primary-text/70 transition-colors hover:bg-surface-alt-hover hover:text-accent dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-hover-dark dark:hover:text-accent-dark"
+                  aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
+                >
+                  {sortDir === 'desc' ? '↓' : '↑'}
+                </button>
               </div>
+            )}
+
+            <ViewControls
+              isMobile={isMobile}
+              isBlurred={isBlurred}
+              onBlurToggle={onBlurToggle}
+              isFullscreen={isFullscreen}
+              onFullscreenToggle={onFullscreenToggle}
+              viewMode={viewMode}
+              onViewModeChange={onViewModeChange}
+              expandAllFiles={expandAllFiles}
+              collapseAllFiles={collapseAllFiles}
+              expandedItems={expandedItems}
+              unfilteredItems={unfilteredItems}
+            />
+
+            <div className="hidden shrink-0 lg:block">
+              <ColumnManager
+                columns={COLUMNS}
+                activeColumns={activeColumns}
+                onColumnChange={onColumnChange}
+                activeType={activeType}
+              />
             </div>
           </div>
         </div>

@@ -29,21 +29,21 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
   const hasQuery = Boolean(search?.trim());
 
   return (
-    <div className={`relative min-w-0 w-full ${className}`.trim()}>
+    <div className={`relative min-w-0 ${className}`.trim()}>
       <label htmlFor={inputId} className="sr-only">
         {t('searchDownloadsAria', { itemType: itemTypePlural })}
       </label>
       <div
-        className={`relative flex items-center rounded-xl border bg-surface-alt dark:bg-surface-alt-dark shadow-sm transition-[border-color,box-shadow] duration-200
+        className={`relative flex items-center rounded-lg border bg-surface-alt transition-colors duration-150 dark:bg-surface-alt-dark
           ${
             hasQuery
-              ? 'border-accent/50 dark:border-accent-dark/50 ring-2 ring-accent/15 dark:ring-accent-dark/15'
-              : 'border-border dark:border-border-dark hover:border-primary-text/25 dark:hover:border-primary-text-dark/25'
+              ? 'border-accent/60 dark:border-accent-dark/60'
+              : 'border-border dark:border-border-dark'
           }
-          focus-within:border-accent dark:focus-within:border-accent-dark focus-within:ring-2 focus-within:ring-accent/20 dark:focus-within:ring-accent-dark/20`}
+          focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/25 dark:focus-within:border-accent-dark dark:focus-within:ring-accent-dark/25`}
       >
         <span
-          className="pointer-events-none absolute left-3 flex shrink-0 text-primary-text/45 dark:text-primary-text-dark/45"
+          className="pointer-events-none absolute left-2.5 flex shrink-0 text-primary-text/40 dark:text-primary-text-dark/40"
           aria-hidden
         >
           <Icons.MagnifyingGlass />
@@ -59,19 +59,17 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full min-w-0 bg-transparent py-2.5 pl-10 pr-10 text-sm text-primary-text dark:text-primary-text-dark
-            placeholder:text-primary-text/45 dark:placeholder:text-primary-text-dark/45
-            focus:outline-none sm:py-2"
+          className="w-full min-w-0 bg-transparent py-1.5 pl-9 pr-8 text-sm text-primary-text dark:text-primary-text-dark
+            placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50
+            focus:outline-none"
         />
         {hasQuery && (
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
-              text-primary-text/50 dark:text-primary-text-dark/50
-              hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark
-              hover:text-primary-text dark:hover:text-primary-text-dark
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30
+            className="absolute right-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded
+              text-primary-text/40 hover:text-primary-text dark:text-primary-text-dark/40 dark:hover:text-primary-text-dark
+              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
               transition-colors"
             aria-label={t('clearSearch')}
           >

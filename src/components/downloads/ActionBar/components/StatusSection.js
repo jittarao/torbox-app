@@ -96,16 +96,16 @@ export default function StatusSection({
   };
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm text-primary-text sm:text-base dark:text-primary-text-dark">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-primary-text dark:text-primary-text-dark">
       <span
-        className={`font-semibold leading-snug ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
+        className={`shrink-0 font-semibold whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
         onClick={() => handleStatusClick('all')}
       >
         {getSelectionText()}
       </span>
 
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           {Object.entries(statusCounts)
             .reduce((acc, [status, count]) => {
               const option = STATUS_OPTIONS.find((opt) => opt.label === status);
