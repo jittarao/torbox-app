@@ -476,9 +476,24 @@
   "DownloadPanel": {
     "actions": {
       "clearAll": "Clear All",
+      "copy": "Copy",
       "copyAll": "Copy All Links",
       "copyLink": "Copy Link",
-      "downloadFile": "Download File"
+      "copyLinkWithIndex": "Copy link {index} of {total}",
+      "copied": "Copied",
+      "downloadFile": "Download File",
+      "downloadFileWithIndex": "Open download {index} of {total}",
+      "open": "Open"
+    },
+    "aria": {
+      "collapse": "Collapse download panel",
+      "expand": "Expand download panel"
+    },
+    "badge": {
+      "ready": "{count, plural, one {# link ready} other {# links ready}}"
+    },
+    "hint": {
+      "expiry": "Links expire in 4 hours"
     },
     "status": {
       "fetching": "Fetching {current} of {total}",

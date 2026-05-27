@@ -462,9 +462,24 @@
   "DownloadPanel": {
     "actions": {
       "clearAll": "すべてクリア",
+      "copy": "コピー",
       "copyAll": "すべてのリンクをコピー",
       "copyLink": "リンクをコピー",
-      "downloadFile": "ファイルをダウンロード"
+      "copyLinkWithIndex": "リンク {index}/{total} をコピー",
+      "copied": "コピー済み",
+      "downloadFile": "ファイルをダウンロード",
+      "downloadFileWithIndex": "ダウンロード {index}/{total} を開く",
+      "open": "開く"
+    },
+    "aria": {
+      "collapse": "ダウンロードパネルを閉じる",
+      "expand": "ダウンロードパネルを開く"
+    },
+    "badge": {
+      "ready": "{count}件のリンク準備完了"
+    },
+    "hint": {
+      "expiry": "リンクの有効期限は4時間です"
     },
     "status": {
       "fetching": "{total}件中{current}件の取得中",

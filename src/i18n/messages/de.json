@@ -462,9 +462,24 @@
   "DownloadPanel": {
     "actions": {
       "clearAll": "Alles löschen",
+      "copy": "Kopieren",
       "copyAll": "Alle Links kopieren",
-      "copyLink": "Link kopieren ",
-      "downloadFile": "Datei herunterladen"
+      "copyLink": "Link kopieren",
+      "copyLinkWithIndex": "Link {index} von {total} kopieren",
+      "copied": "Kopiert",
+      "downloadFile": "Datei herunterladen",
+      "downloadFileWithIndex": "Download {index} von {total} öffnen",
+      "open": "Öffnen"
+    },
+    "aria": {
+      "collapse": "Download-Panel einklappen",
+      "expand": "Download-Panel ausklappen"
+    },
+    "badge": {
+      "ready": "{count, plural, one {# Link bereit} other {# Links bereit}}"
+    },
+    "hint": {
+      "expiry": "Links laufen in 4 Stunden ab"
     },
     "status": {
       "fetching": "Lädt {current} von {total}",
