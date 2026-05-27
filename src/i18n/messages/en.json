@@ -922,7 +922,7 @@
     "hideAdvanced": "Hide Advanced",
     "minSeeders": "Min Seeders",
     "minSize": "Min Size (GB)",
-    "placeholderDownloads": "Search {itemType} or file names...",
+    "placeholderDownloads": "Search {itemType}…",
     "placeholderDownloadsShort": "Search…",
     "searchDownloadsAria": "Search {itemType} or file names",
     "placeholderSearch": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
