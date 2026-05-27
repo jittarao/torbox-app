@@ -11,7 +11,9 @@ import { countDownloadsPerTag, countDownloadsPerView } from '../filters/filterHe
 function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
   return (
     <div className="flex flex-col min-h-0">
-      <div className="flex items-center justify-between gap-1 px-1 py-1">
+      <div
+        className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'px-1 py-1'}`}
+      >
         <h3 className="px-1 text-[10px] font-semibold uppercase tracking-wider text-primary-text/50 dark:text-primary-text-dark/50">
           {title}
         </h3>
@@ -30,7 +32,9 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
         )}
       </div>
       <div
-        className={`flex-1 overflow-y-auto space-y-0.5 px-1 pb-2 min-h-[60px] ${tall ? '' : 'max-h-[200px]'}`}
+        className={`flex-1 overflow-y-auto min-h-[60px] pb-2 ${
+          tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1 max-h-[200px]'
+        }`}
       >
         {children}
         {emptyMessage && (
@@ -115,7 +119,7 @@ export default function FiltersSidebar({
     <aside
       className={`flex flex-col overflow-hidden ${
         isFixed
-          ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl'
+          ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl p-2.5'
           : 'w-[var(--downloads-sidebar-width,14rem)] shrink-0 border border-border dark:border-border-dark rounded-lg bg-surface/50 dark:bg-surface-dark/50'
       } ${className}`}
       style={isFixed ? { left: 'var(--sidebar-width, 0px)' } : undefined}
@@ -224,7 +228,11 @@ export default function FiltersSidebar({
         </SidebarSection>
       </div>
 
-      <div className="shrink-0 p-2 space-y-1.5 border-t border-border/60 dark:border-border-dark/60 bg-surface/50 dark:bg-surface-dark/50">
+      <div
+        className={`shrink-0 space-y-1.5 border-t border-border/60 dark:border-border-dark/60 bg-surface/50 dark:bg-surface-dark/50 ${
+          isFixed ? 'pt-2.5' : 'p-2'
+        }`}
+      >
         <button
           type="button"
           onClick={onNewView || onNewFilter}
