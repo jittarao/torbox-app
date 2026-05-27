@@ -74,31 +74,46 @@ export default function CardList({
     }
   }, [isFullscreen, scrollContainerRef]);
 
-  // In normal mode, track container position for window scroll
-  useEffect(() => {
+  // Measure list offset before paint so scrollMargin matches container position (table→card switch)
+  useLayoutEffect(() => {
     if (isFullscreen) {
+      containerOffsetTopRef.current = 0;
+      setContainerOffsetTop(0);
       return;
     }
 
     const updateContainerOffset = () => {
-      if (parentRef.current) {
-        const rect = parentRef.current.getBoundingClientRect();
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const offset = rect.top + scrollTop;
+      if (!parentRef.current) {
+        return;
+      }
+
+      const rect = parentRef.current.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const offset = rect.top + scrollTop;
+
+      if (offset !== containerOffsetTopRef.current) {
         containerOffsetTopRef.current = offset;
         setContainerOffsetTop(offset);
       }
     };
 
     updateContainerOffset();
-    requestAnimationFrame(updateContainerOffset);
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(updateContainerOffset)
+        : null;
+    if (resizeObserver && parentRef.current) {
+      resizeObserver.observe(parentRef.current);
+    }
 
     window.addEventListener('resize', updateContainerOffset);
 
     return () => {
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', updateContainerOffset);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, viewMode]);
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
@@ -155,7 +170,7 @@ export default function CardList({
     estimateSize,
     measureElement,
     overscan: 30,
-    scrollMargin: containerOffsetTopRef.current || containerOffsetTop,
+    scrollMargin: containerOffsetTop,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
@@ -551,14 +566,9 @@ export default function CardList({
       isTransitioningRef.current = true;
       setVirtualRows([]);
       setTotalSize(0);
-    }
-
-    const rafId = requestAnimationFrame(() => {
-      remeasureAndSync();
       isTransitioningRef.current = false;
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
+    }
+  }, [viewMode, isFullscreen]);
 
   useEffect(() => {
     const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
@@ -606,10 +616,30 @@ export default function CardList({
 
   const expandedItemsKey = useMemo(() => expandedItemsArray.join(','), [expandedItemsArray]);
 
-  // Remeasure card positions when file lists expand/collapse
+  // Remeasure once scrollMargin is known (avoids overlapping cards on table→card switch)
   useLayoutEffect(() => {
+    if (isFullscreen) {
+      remeasureAndSync();
+      return;
+    }
+
+    if (containerOffsetTop <= 0) {
+      return;
+    }
+
     remeasureAndSync();
-  }, [expandedItemsKey, remeasureAndSync]);
+
+    // Second frame: DOM + scrollMargin are settled after table→card mount
+    const rafId = requestAnimationFrame(remeasureAndSync);
+    return () => cancelAnimationFrame(rafId);
+  }, [
+    containerOffsetTop,
+    expandedItemsKey,
+    flattenedRows.length,
+    isFullscreen,
+    fullscreenScrollEl,
+    remeasureAndSync,
+  ]);
 
   return (
     <>
@@ -637,20 +667,17 @@ export default function CardList({
                 return null;
               }
 
-              // Calculate item card position
-              // In fullscreen: virtualRow.start is relative to scroll container (no conversion needed)
-              // In normal mode: virtualRow.start is relative to document top, convert to container-relative
+              // Position cards using the virtualizer's scrollMargin (must match container offset)
+              const scrollMargin = isFullscreen ? 0 : (virtualizer.options.scrollMargin ?? 0);
               let cardTop = 0;
+
               if (isFullscreen) {
-                // In fullscreen, virtualRow.start is already relative to the scroll container
                 cardTop = virtualRow.start;
-              } else if (containerOffsetTop > 0) {
-                // In normal mode, convert document-relative to container-relative
-                cardTop = virtualRow.start - containerOffsetTop;
+              } else if (scrollMargin > 0) {
+                cardTop = virtualRow.start - scrollMargin;
               } else {
-                // Fallback: if containerOffsetTop not calculated yet, use a simple sum
                 for (let i = 0; i < virtualRow.index; i++) {
-                  cardTop += estimateSize();
+                  cardTop += estimateSize(i);
                 }
               }
 
