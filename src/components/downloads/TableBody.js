@@ -159,9 +159,8 @@ export default function TableBody({
 
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
-    // Measure the actual rendered height of the row
-    // Add a small buffer for borders/spacing
-    return element.getBoundingClientRect().height + 1;
+    // offsetHeight includes cell padding; +1 keeps rows from overlapping row borders
+    return element.offsetHeight + 1;
   }, []);
 
   // Memoize estimateSize to prevent recalculation on every render
@@ -173,8 +172,14 @@ export default function TableBody({
       if (isMobile) {
         return row?.type === 'item' ? 170 : 60;
       }
-      // Desktop estimates
-      return row?.type === 'item' ? 70 : 50;
+      const isTablet =
+        typeof window !== 'undefined' &&
+        window.innerWidth >= 768 &&
+        window.innerWidth < 1024;
+      if (isTablet) {
+        return row?.type === 'item' ? 52 : 42;
+      }
+      return row?.type === 'item' ? 58 : 48;
     },
     [flattenedRows, isMobile]
   );
@@ -182,8 +187,18 @@ export default function TableBody({
   const rowMetrics = useMemo(() => {
     const offsets = [0];
 
+    const isTablet =
+      typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+
     flattenedRows.forEach((row) => {
-      const size = isMobile ? (row?.type === 'item' ? 170 : 60) : row?.type === 'item' ? 70 : 50;
+      let size;
+      if (isMobile) {
+        size = row?.type === 'item' ? 170 : 60;
+      } else if (isTablet) {
+        size = row?.type === 'item' ? 52 : 42;
+      } else {
+        size = row?.type === 'item' ? 58 : 48;
+      }
       offsets.push(offsets[offsets.length - 1] + size);
     });
 
@@ -527,7 +542,7 @@ export default function TableBody({
     return (
       <tbody
         ref={tbodyRef}
-        className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark"
+        className="bg-surface dark:bg-surface-dark"
       >
         <tr>
           <td
@@ -544,7 +559,7 @@ export default function TableBody({
   return (
     <tbody
       ref={tbodyRef}
-      className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark"
+      className="bg-surface dark:bg-surface-dark"
     >
       {/* Top spacer */}
       {startOffset > 0 && (

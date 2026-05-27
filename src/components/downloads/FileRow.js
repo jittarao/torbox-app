@@ -8,7 +8,11 @@ import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { isVideoFile, isAudioFile } from './utils/videoDetection';
-import { tableActionsCell, tableCheckboxCell } from './utils/responsiveLayout';
+import {
+  tableActionsCell,
+  tableCellBorder,
+  tableCheckboxCell,
+} from './utils/responsiveLayout';
 
 const ACTIONS_COLUMN_WIDTH = 210;
 const CHECKBOX_COLUMN_WIDTH = 60;
@@ -51,18 +55,18 @@ function FileRow({
           downloadHistoryLookup.itemDownloads.has(itemKey) ||
           downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
 
+        const rowSurfaceClass = isChecked
+          ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
+          : isDownloaded
+            ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+            : 'bg-surface dark:bg-surface-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark';
+
         return (
           <tr
             ref={fileIndex !== null ? measureRef : undefined}
             data-index={fileIndex !== null ? dataIndex : undefined}
             key={`${item.id}-${file.id}`}
-            className={`border-accent/5 dark:border-accent-dark/5 ${
-              isChecked
-                ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-                : isDownloaded
-                  ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
-                  : 'bg-surface dark:bg-surface-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark'
-            } transition-colors ${!isDisabled && 'cursor-pointer'}`}
+            className={`${rowSurfaceClass} transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
               if (e.shiftKey) {
@@ -91,7 +95,7 @@ function FileRow({
 
             {/* File Name and Size */}
             <td
-              className="pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2"
+              className={`pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2 ${tableCellBorder}`}
               colSpan={isMobile ? 1 : activeColumns.length}
             >
               <div
@@ -137,7 +141,7 @@ function FileRow({
 
             {/* File Actions */}
             <td
-              className={`${tableActionsCell} py-2 md:py-1.5 lg:py-2 md:pb-1.5 lg:pb-2 [&_button]:md:p-1`}
+              className={`${tableActionsCell} ${rowSurfaceClass} py-2 md:py-1.5 lg:py-2 md:pb-1.5 lg:pb-2 [&_button]:md:p-1`}
             >
               {/* Copy link button */}
               <button
