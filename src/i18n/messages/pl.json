@@ -401,9 +401,14 @@
     "creating": "Tworzenie..."
   },
   "FetchStatus": {
+    "autoRefreshInactive": "Automatyczne odświeżanie wznowi się po powrocie do tej karty.",
+    "autoRefreshSlowHint": "Wolniejsze odświeżanie, gdy ta karta jest w tle.",
     "dismiss": "Zamknij",
     "lastUpdated": "Ostatnia aktualizacja {ago}.",
+    "nextRefreshIn": "Następne odświeżenie za {seconds}s",
+    "nextRefreshSlow": "Odświeżanie w tle za {seconds}s",
     "refreshDelayedRateLimit": "Odświeżanie opóźnione — zbyt wiele żądań.",
+    "refreshingSoon": "Wkrótce odświeżanie…",
     "refreshNow": "Odśwież teraz",
     "refreshPaused": "Automatyczne odświeżanie wstrzymane podczas odtwarzania.",
     "refreshing": "Odświeżanie…",

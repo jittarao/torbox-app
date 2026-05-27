@@ -401,9 +401,14 @@
     "creating": "Creando..."
   },
   "FetchStatus": {
+    "autoRefreshInactive": "La actualización automática se reanuda al volver a esta pestaña.",
+    "autoRefreshSlowHint": "Actualización más lenta mientras esta pestaña está en segundo plano.",
     "dismiss": "Descartar",
     "lastUpdated": "Última actualización {ago}.",
+    "nextRefreshIn": "Próxima actualización en {seconds}s",
+    "nextRefreshSlow": "Actualización en segundo plano en {seconds}s",
     "refreshDelayedRateLimit": "Actualización retrasada — demasiadas solicitudes.",
+    "refreshingSoon": "Actualizando pronto…",
     "refreshNow": "Actualizar ahora",
     "refreshPaused": "Actualización automática en pausa durante la reproducción.",
     "refreshing": "Actualizando…",

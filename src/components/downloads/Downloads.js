@@ -53,6 +53,7 @@ import ReferralCallout from '@/components/referral/ReferralCallout';
 import UsageCallout from '@/components/downloads/UsageCallout';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import FetchStatusBanner from '@/components/downloads/FetchStatusBanner';
+import AutoRefreshIndicator from '@/components/downloads/AutoRefreshIndicator';
 import { useTranslations } from 'next-intl';
 
 const FILTERS_SIDEBAR_EXPANDED = '14rem';
@@ -180,6 +181,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     dismissError,
     lastSuccessfulFetchAt,
     refreshBlockedReason,
+    pollSchedule,
   } = useFetchData(apiKey, activeType);
 
   const showFullPageSpinner = loading && items.length === 0;
@@ -1023,23 +1025,33 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         />
       )}
 
-      {/* Asset Type Tabs */}
-      <AssetTypeTabs
-        activeType={activeType}
-        onTypeChange={(type) => {
-          setActiveType(type);
-          localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
-          setSelectedItems({ items: new Set(), files: new Map() });
-        }}
-        isTypeAvailable={(type) => {
-          if (type === 'all') return true;
-          // For download tabs, defer to the generic permissions helper
-          if (type === 'usenet') {
-            return hasDownloadAccess('usenet', permissions);
-          }
-          return true;
-        }}
-      />
+      {/* Asset Type Tabs + auto-refresh countdown */}
+      <div className="relative [&_nav]:pr-11 md:[&_nav]:pr-0">
+        <AssetTypeTabs
+          activeType={activeType}
+          onTypeChange={(type) => {
+            setActiveType(type);
+            localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
+            setSelectedItems({ items: new Set(), files: new Map() });
+          }}
+          isTypeAvailable={(type) => {
+            if (type === 'all') return true;
+            // For download tabs, defer to the generic permissions helper
+            if (type === 'usenet') {
+              return hasDownloadAccess('usenet', permissions);
+            }
+            return true;
+          }}
+        />
+        {apiKey && (
+          <AutoRefreshIndicator
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 sm:right-3"
+            pollSchedule={pollSchedule}
+            isRefreshing={isRefreshing}
+            onRefreshNow={() => fetchItems(true)}
+          />
+        )}
+      </div>
 
       <FetchStatusBanner
         error={fetchError}

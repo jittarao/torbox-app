@@ -55,6 +55,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const [error, setError] = useState(null);
   const [lastSuccessfulFetchAt, setLastSuccessfulFetchAt] = useState(null);
   const [refreshBlockedReason, setRefreshBlockedReason] = useState(null);
+  const [pollSchedule, setPollSchedule] = useState(null);
   const torrentsRef = useRef([]);
   const usenetRef = useRef([]);
   const webdlRef = useRef([]);
@@ -514,6 +515,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       setError(null);
       setLastSuccessfulFetchAt(null);
       setRefreshBlockedReason(null);
+      setPollSchedule(null);
     }
   }, [apiKey]);
 
@@ -597,6 +599,10 @@ export function useFetchData(apiKey, type = 'torrents') {
     [fetchLocalItems]
   );
 
+  const handlePollScheduleUpdate = useCallback((schedule) => {
+    setPollSchedule(schedule);
+  }, []);
+
   useDownloadListPolling({
     type,
     pollingPaused,
@@ -604,6 +610,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     onPoll: handlePoll,
     isRateLimited,
     onPollSkipped: markRateLimited,
+    onScheduleUpdate: handlePollScheduleUpdate,
   });
 
   useAutomationTorrentEvents({
@@ -623,5 +630,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     dismissError,
     lastSuccessfulFetchAt,
     refreshBlockedReason,
+    pollSchedule,
   };
 }

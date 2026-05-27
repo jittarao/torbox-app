@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { isQueuedItem, getAutoStartOptions } from '@/utils/utility';
 import { POLLING_CONFIG } from './pollingConfig';
+import { createPollSchedule } from './pollSchedule';
 
 const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 
@@ -14,6 +15,7 @@ const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
  * @param {(assetType: string, bypassCache?: boolean) => void | Promise<void>} options.onPoll - Per-type fetch
  * @param {(assetType?: string) => boolean} options.isRateLimited
  * @param {() => void} [options.onPollSkipped] - Called when a tick is skipped due to rate limiting
+ * @param {(schedule: import('./pollSchedule').PollSchedule) => void} [options.onScheduleUpdate] - Poll timer state for UI
  */
 export function useDownloadListPolling({
   type,
@@ -22,10 +24,12 @@ export function useDownloadListPolling({
   onPoll,
   isRateLimited,
   onPollSkipped,
+  onScheduleUpdate,
 }) {
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);
   const onPollSkippedRef = useRef(onPollSkipped);
+  const onScheduleUpdateRef = useRef(onScheduleUpdate);
 
   useEffect(() => {
     onPollRef.current = onPoll;
@@ -38,6 +42,10 @@ export function useDownloadListPolling({
   useEffect(() => {
     onPollSkippedRef.current = onPollSkipped;
   }, [onPollSkipped]);
+
+  useEffect(() => {
+    onScheduleUpdateRef.current = onScheduleUpdate;
+  }, [onScheduleUpdate]);
 
   useEffect(() => {
     let pollTimeoutId = null;
@@ -54,6 +62,21 @@ export function useDownloadListPolling({
     };
 
     const isEffectivelyInactive = () => pollingPaused || !isVisible;
+
+    const getScheduleMode = () => {
+      if (pollingPaused) return 'paused';
+      if (!isVisible) {
+        return shouldPollWhileHidden() ? 'slow' : 'inactive';
+      }
+      return 'active';
+    };
+
+    const emitSchedule = (delayMs, mode = getScheduleMode()) => {
+      const nextPollAt = delayMs > 0 ? Date.now() + delayMs : null;
+      onScheduleUpdateRef.current?.(
+        createPollSchedule(mode, nextPollAt, delayMs > 0 ? delayMs : currentPollingInterval)
+      );
+    };
 
     const pollAllAssetTypes = (bypassCache) => {
       let anySkipped = false;
@@ -84,6 +107,7 @@ export function useDownloadListPolling({
 
     const scheduleNextPoll = (delayMs) => {
       if (cancelled) return;
+      emitSchedule(delayMs);
       pollTimeoutId = setTimeout(() => {
         if (cancelled) return;
         const effectivelyInactive = isEffectivelyInactive();
@@ -98,6 +122,8 @@ export function useDownloadListPolling({
         currentPollingInterval = interval;
         if (!effectivelyInactive || shouldPollWhileHidden()) {
           scheduleNextPoll(interval);
+        } else {
+          emitSchedule(0, 'inactive');
         }
       }, delayMs);
     };
@@ -107,11 +133,15 @@ export function useDownloadListPolling({
         clearTimeout(pollTimeoutId);
         pollTimeoutId = null;
       }
+      emitSchedule(0, getScheduleMode());
     };
 
     const startPolling = (firstDelayMs = currentPollingInterval) => {
       stopPolling();
-      if (pollingPaused) return;
+      if (pollingPaused) {
+        emitSchedule(0, 'paused');
+        return;
+      }
 
       const effectivelyInactive = isEffectivelyInactive();
       if (!effectivelyInactive) {
@@ -122,6 +152,8 @@ export function useDownloadListPolling({
 
       if (!effectivelyInactive || shouldPollWhileHidden()) {
         scheduleNextPoll(firstDelayMs);
+      } else {
+        emitSchedule(0, 'inactive');
       }
     };
 
@@ -180,6 +212,7 @@ export function useDownloadListPolling({
     return () => {
       cancelled = true;
       stopPolling();
+      onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
     };

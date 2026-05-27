@@ -401,9 +401,14 @@
     "creating": "Création..."
   },
   "FetchStatus": {
+    "autoRefreshInactive": "L'actualisation automatique reprend lorsque vous revenez sur cet onglet.",
+    "autoRefreshSlowHint": "Actualisation plus lente tant que cet onglet est en arrière-plan.",
     "dismiss": "Fermer",
     "lastUpdated": "Dernière mise à jour {ago}.",
+    "nextRefreshIn": "Prochaine actualisation dans {seconds}s",
+    "nextRefreshSlow": "Actualisation en arrière-plan dans {seconds}s",
     "refreshDelayedRateLimit": "Actualisation retardée — trop de requêtes.",
+    "refreshingSoon": "Actualisation imminente…",
     "refreshNow": "Actualiser",
     "refreshPaused": "Actualisation automatique en pause pendant la lecture.",
     "refreshing": "Actualisation…",

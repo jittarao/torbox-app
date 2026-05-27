@@ -401,9 +401,14 @@
     "creating": "作成中..."
   },
   "FetchStatus": {
+    "autoRefreshInactive": "このタブに戻ると自動更新が再開されます。",
+    "autoRefreshSlowHint": "タブがバックグラウンドの間は更新間隔が長くなります。",
     "dismiss": "閉じる",
     "lastUpdated": "最終更新 {ago}。",
+    "nextRefreshIn": "次の更新まで {seconds} 秒",
+    "nextRefreshSlow": "バックグラウンド更新まで {seconds} 秒",
     "refreshDelayedRateLimit": "更新が遅延しています — リクエストが多すぎます。",
+    "refreshingSoon": "まもなく更新…",
     "refreshNow": "今すぐ更新",
     "refreshPaused": "メディア再生中は自動更新を一時停止しています。",
     "refreshing": "更新中…",

@@ -401,9 +401,14 @@
     "creating": "Erstellen..."
   },
   "FetchStatus": {
+    "autoRefreshInactive": "Auto-Aktualisierung setzt fort, wenn Sie zu diesem Tab zurückkehren.",
+    "autoRefreshSlowHint": "Langsamere Aktualisierung, während dieser Tab im Hintergrund ist.",
     "dismiss": "Schließen",
     "lastUpdated": "Zuletzt aktualisiert {ago}.",
+    "nextRefreshIn": "Nächste Aktualisierung in {seconds}s",
+    "nextRefreshSlow": "Hintergrund-Aktualisierung in {seconds}s",
     "refreshDelayedRateLimit": "Aktualisierung verzögert — zu viele Anfragen.",
+    "refreshingSoon": "Aktualisierung steht bevor…",
     "refreshNow": "Jetzt aktualisieren",
     "refreshPaused": "Auto-Aktualisierung pausiert während Medienwiedergabe.",
     "refreshing": "Aktualisiere…",

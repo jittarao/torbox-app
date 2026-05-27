@@ -415,9 +415,14 @@
     "creating": "Creating..."
   },
   "FetchStatus": {
+    "autoRefreshInactive": "Auto-refresh resumes when you return to this tab.",
+    "autoRefreshSlowHint": "Slower refresh while this tab is in the background.",
     "dismiss": "Dismiss",
     "lastUpdated": "Last updated {ago}.",
+    "nextRefreshIn": "Next refresh in {seconds}s",
+    "nextRefreshSlow": "Background refresh in {seconds}s",
     "refreshDelayedRateLimit": "Refresh delayed — too many requests.",
+    "refreshingSoon": "Refreshing soon…",
     "refreshNow": "Refresh now",
     "refreshPaused": "Auto-refresh paused while media is playing.",
     "refreshing": "Refreshing…",
