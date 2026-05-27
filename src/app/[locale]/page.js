@@ -138,7 +138,7 @@ export default function Home() {
       apiKey={apiKey}
       className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
     >
-      <div className="container-downloads mx-auto px-4 pt-2 pb-4">
+      <div className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4">
         <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
       </div>
     </AppShell>
