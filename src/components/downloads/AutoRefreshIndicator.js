@@ -52,6 +52,7 @@ function ProgressRing({ progress, className = '' }) {
 export default function AutoRefreshIndicator({
   pollSchedule,
   isRefreshing = false,
+  refreshRateLimited = false,
   onRefreshNow,
   className = '',
 }) {
@@ -78,6 +79,7 @@ export default function AutoRefreshIndicator({
 
   const statusLabel = useCallback(() => {
     if (isRefreshing) return t('refreshing');
+    if (refreshRateLimited) return t('refreshDelayedRateLimit');
     if (mode === 'paused') return t('refreshPaused');
     if (mode === 'inactive') return t('autoRefreshInactive');
     if (mode === 'slow') {
@@ -89,7 +91,7 @@ export default function AutoRefreshIndicator({
       return t('nextRefreshIn', { seconds: secondsLeft });
     }
     return t('refreshingSoon');
-  }, [isRefreshing, mode, secondsLeft, t]);
+  }, [isRefreshing, refreshRateLimited, mode, secondsLeft, t]);
 
   const showCountdown = mode === 'active' || mode === 'slow';
   const ringMuted = mode === 'paused' || mode === 'inactive';
@@ -99,7 +101,7 @@ export default function AutoRefreshIndicator({
       <button
         type="button"
         onClick={onRefreshNow}
-        disabled={isRefreshing}
+        disabled={isRefreshing || refreshRateLimited}
         title={statusLabel()}
         aria-label={`${statusLabel()}. ${t('refreshNow')}`}
         className={`

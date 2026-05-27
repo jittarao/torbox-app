@@ -6,11 +6,11 @@ import { perfMonitor } from '@/utils/performance';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useBackendModeStore } from '@/store/backendModeStore';
 import { POLLING_CONFIG } from './pollingConfig';
+import { createDownloadFetchRateLimiter } from './downloadFetchRateLimit';
 import { useDownloadListPolling } from './useDownloadListPolling';
 import { useAutomationTorrentEvents } from './useAutomationTorrentEvents';
 
-const { maxCalls: MAX_CALLS, windowSizeMs: WINDOW_SIZE, minIntervalBetweenCallsMs: MIN_INTERVAL_BETWEEN_CALLS, minIntervalByType: MIN_INTERVAL_MAPPING, autoStartCheckIntervalMs: AUTO_START_CHECK_INTERVAL } =
-  POLLING_CONFIG;
+const { autoStartCheckIntervalMs: AUTO_START_CHECK_INTERVAL } = POLLING_CONFIG;
 
 // Polling rules (intervals in pollingConfig.js):
 // 1. 15s polling when the browser tab is focused and refresh is not paused
@@ -56,6 +56,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   const [lastSuccessfulFetchAt, setLastSuccessfulFetchAt] = useState(null);
   const [refreshBlockedReason, setRefreshBlockedReason] = useState(null);
   const [pollSchedule, setPollSchedule] = useState(null);
+  const [canManualRefresh, setCanManualRefresh] = useState(true);
   const torrentsRef = useRef([]);
   const usenetRef = useRef([]);
   const webdlRef = useRef([]);
@@ -64,7 +65,10 @@ export function useFetchData(apiKey, type = 'torrents') {
   const fetchInProgressRef = useRef(false);
   const deltaCursorRef = useRef({ torrents: null, usenet: null, webdl: null });
   const prevApiKeyRef = useRef(apiKey);
-  const rateLimitDataRef = useRef({});
+  const rateLimiterRef = useRef(null);
+  if (!rateLimiterRef.current) {
+    rateLimiterRef.current = createDownloadFetchRateLimiter();
+  }
 
   useEffect(() => {
     torrentsRef.current = torrents;
@@ -78,48 +82,38 @@ export function useFetchData(apiKey, type = 'torrents') {
     webdlRef.current = webdlItems;
   }, [webdlItems]);
 
+  const syncManualRefreshAllowed = useCallback(() => {
+    setCanManualRefresh(rateLimiterRef.current.canManualRefresh(type));
+  }, [type]);
+
   useEffect(() => {
     const id = setInterval(() => {
-      const now = Date.now();
-      for (const key of Object.keys(rateLimitDataRef.current)) {
-        const rateData = rateLimitDataRef.current[key];
-        if (rateData) {
-          rateData.callTimestamps = rateData.callTimestamps
-            .filter((timestamp) => now - timestamp < WINDOW_SIZE)
-            .slice(-MAX_CALLS);
-        }
-      }
-    }, WINDOW_SIZE);
+      rateLimiterRef.current.prune();
+      syncManualRefreshAllowed();
+      setRefreshBlockedReason((prev) =>
+        prev === 'rate_limited' && rateLimiterRef.current.canManualRefresh(type) ? null : prev
+      );
+    }, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [type, syncManualRefreshAllowed]);
+
+  useEffect(() => {
+    syncManualRefreshAllowed();
+  }, [syncManualRefreshAllowed]);
 
   const markFetchSuccess = useCallback(() => {
     setLastSuccessfulFetchAt(Date.now());
     setRefreshBlockedReason(null);
-  }, []);
+    syncManualRefreshAllowed();
+  }, [syncManualRefreshAllowed]);
 
   const markRateLimited = useCallback(() => {
     setRefreshBlockedReason('rate_limited');
+    setCanManualRefresh(false);
   }, []);
 
   const isRateLimited = useCallback((activeType = type) => {
-    if (!rateLimitDataRef.current[activeType]) {
-      rateLimitDataRef.current[activeType] = {
-        callTimestamps: [],
-        lastFetchTime: 0,
-        latestFetchId: 0,
-      };
-    }
-    const rateData = rateLimitDataRef.current[activeType];
-    const now = Date.now();
-    const minInterval = MIN_INTERVAL_MAPPING[activeType] || MIN_INTERVAL_BETWEEN_CALLS;
-    if (now - rateData.lastFetchTime < minInterval) {
-      return true;
-    }
-    rateData.callTimestamps = rateData.callTimestamps
-      .filter((timestamp) => now - timestamp < WINDOW_SIZE)
-      .slice(-MAX_CALLS);
-    return rateData.callTimestamps.length >= MAX_CALLS;
+    return rateLimiterRef.current.peekWouldBlock(activeType);
   }, [type]);
 
   const pruneProcessedQueueIds = useCallback((items) => {
@@ -202,7 +196,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   }, []);
 
   const handleFetchError = useCallback(
-    (fetchError, activeType, currentFetchId, rateData, skipLoading, responseStatus = null) => {
+    (fetchError, activeType, currentFetchId, skipLoading, responseStatus = null) => {
       perfMonitor.endTimer(`fetch-${activeType}`);
 
       const statusCode =
@@ -225,7 +219,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
 
       if (
-        currentFetchId === rateData.latestFetchId &&
+        currentFetchId === rateLimiterRef.current.getLatestFetchId(activeType) &&
         affectsCurrentView(activeType, type)
       ) {
         setError(getErrorMessage(statusCode || fetchError?.message, activeType));
@@ -279,16 +273,8 @@ export function useFetchData(apiKey, type = 'torrents') {
         return flattenedResults;
       }
 
-      if (!rateLimitDataRef.current[activeType]) {
-        rateLimitDataRef.current[activeType] = {
-          callTimestamps: [],
-          lastFetchTime: 0,
-          latestFetchId: 0,
-        };
-      }
-      const rateData = rateLimitDataRef.current[activeType];
-
-      if (isRateLimited(activeType)) {
+      const currentFetchId = rateLimiterRef.current.acquire(activeType);
+      if (currentFetchId == null) {
         console.warn(`Rate limit reached for ${activeType}, skipping fetch`);
         if (affectsCurrentView(activeType, type)) {
           markRateLimited();
@@ -300,14 +286,9 @@ export function useFetchData(apiKey, type = 'torrents') {
       }
 
       const now = Date.now();
-      rateData.lastFetchTime = now;
-      rateData.callTimestamps.push(now);
-      const currentFetchId = ++rateData.latestFetchId;
       const isLatestFetch = () => {
-        const latestRateData = rateLimitDataRef.current[activeType];
         return (
-          latestRateData &&
-          latestRateData.latestFetchId === currentFetchId &&
+          rateLimiterRef.current.getLatestFetchId(activeType) === currentFetchId &&
           prevApiKeyRef.current === apiKey
         );
       };
@@ -357,7 +338,6 @@ export function useFetchData(apiKey, type = 'torrents') {
             errorData,
             activeType,
             currentFetchId,
-            rateData,
             skipLoading,
             response.status
           );
@@ -371,7 +351,6 @@ export function useFetchData(apiKey, type = 'torrents') {
             { message: `Failed to parse JSON: ${jsonError.message}` },
             activeType,
             currentFetchId,
-            rateData,
             skipLoading
           );
         }
@@ -474,13 +453,12 @@ export function useFetchData(apiKey, type = 'torrents') {
         }
         return [];
       } catch (err) {
-        return handleFetchError(err, activeType, currentFetchId, rateData, skipLoading);
+        return handleFetchError(err, activeType, currentFetchId, skipLoading);
       }
     },
     [
       apiKey,
       checkAndAutoStartTorrents,
-      isRateLimited,
       type,
       handleFetchError,
       markFetchSuccess,
@@ -505,7 +483,8 @@ export function useFetchData(apiKey, type = 'torrents') {
     if (prevApiKeyRef.current !== apiKey) {
       prevApiKeyRef.current = apiKey;
       deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
-      rateLimitDataRef.current = {};
+      rateLimiterRef.current.reset();
+      setCanManualRefresh(true);
       processedQueueIdsRef.current = new Set();
       fetchInProgressRef.current = false;
       setTorrents([]);
@@ -575,6 +554,11 @@ export function useFetchData(apiKey, type = 'torrents') {
 
   const fetchItems = useMemo(() => {
     return (bypassCache = true) => {
+      if (!rateLimiterRef.current.canManualRefresh(type)) {
+        markRateLimited();
+        return Promise.resolve([]);
+      }
+
       switch (type) {
         case 'all':
           return Promise.all([
@@ -590,7 +574,7 @@ export function useFetchData(apiKey, type = 'torrents') {
           return fetchLocalItems(bypassCache, 'torrents', 0, true);
       }
     };
-  }, [type, fetchLocalItems]);
+  }, [type, fetchLocalItems, markRateLimited]);
 
   const handlePoll = useCallback(
     (assetType, bypassCache = false) => {
@@ -631,5 +615,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     lastSuccessfulFetchAt,
     refreshBlockedReason,
     pollSchedule,
+    canManualRefresh,
   };
 }
