@@ -122,14 +122,6 @@ export default function AutoRefreshIndicator({
           }`}
           aria-hidden
         />
-        {showCountdown && secondsLeft != null && secondsLeft > 0 && (
-          <span
-            className="absolute -bottom-0.5 -right-0.5 z-20 min-w-[1.125rem] h-[1.125rem] px-0.5 rounded-full bg-accent dark:bg-accent-dark text-[10px] font-semibold leading-none text-white flex items-center justify-center tabular-nums shadow-sm"
-            aria-hidden
-          >
-            {secondsLeft > 99 ? '99+' : secondsLeft}
-          </span>
-        )}
       </button>
       <span className="sr-only" aria-live="polite">
         {statusLabel()}
