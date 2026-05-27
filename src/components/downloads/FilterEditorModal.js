@@ -148,6 +148,10 @@ export default function FilterEditorModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen) setPreviewApplied(false);
+  }, [columnFilters, isOpen]);
+
   if (!isOpen) return null;
 
   const filterGroups =
@@ -325,10 +329,6 @@ export default function FilterEditorModal({
     });
     setPreviewApplied(true);
   };
-
-  useEffect(() => {
-    if (isOpen) setPreviewApplied(false);
-  }, [columnFilters, isOpen]);
 
   const handleClear = () => {
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
