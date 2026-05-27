@@ -22,7 +22,7 @@ export default function SidebarNavSection({
           {label}
         </p>
       ) : null}
-      <ul className={`space-y-0.5 ${collapsed ? 'px-1.5' : 'px-2'}`}>
+      <ul className={collapsed ? 'space-y-2 px-2' : 'space-y-1 px-2'}>
         {items.map((item) => (
           <SidebarNavItem
             key={item.href}
