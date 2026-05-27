@@ -12,8 +12,10 @@ export const POLLING_CONFIG = {
   minIntervalByType: { torrents: 2_000, usenet: 2_000, webdl: 2_000 },
   /** Poll interval while tab is visible and refresh is not paused */
   activeIntervalMs: 15_000,
-  /** Poll interval while tab is hidden but auto-start needs queued torrent updates */
+  /** Poll interval while tab is hidden (grace period only) */
   inactiveIntervalMs: 60_000,
+  /** Keep slow polling after tab hide for this long, then stop (ms) */
+  hiddenGracePeriodMs: 3 * 60_000,
   /** Minimum time between auto-start control API calls (ms) */
   autoStartCheckIntervalMs: 30_000,
   /** Debounce trailing window for SSE-driven torrent refetches (ms) */

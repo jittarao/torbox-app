@@ -14,8 +14,8 @@ const { autoStartCheckIntervalMs: AUTO_START_CHECK_INTERVAL } = POLLING_CONFIG;
 
 // Polling rules (intervals in pollingConfig.js):
 // 1. 15s polling when the browser tab is focused and refresh is not paused
-// 2. 60s polling when hidden AND auto-start is on AND queued torrents exist (torrents or All tab)
-// 3. No polling when hidden without that auto-start condition
+// 2. 60s polling for hiddenGracePeriodMs after the tab is hidden, then stop (unless rule 3)
+// 3. 60s polling while hidden when auto-start is on and queued torrents exist (torrents or All tab)
 // 4. On the All tab, fetches torrents, usenet, and webdl on each poll tick
 
 function affectsCurrentView(activeType, viewType) {
