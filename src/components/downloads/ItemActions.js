@@ -165,7 +165,9 @@ export default function ItemActions({
   };
 
   return (
-    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-end space-x-2'}`}>
+    <div
+      className={`flex ${isMobile ? 'flex-col gap-2' : 'w-full min-w-0 flex-nowrap justify-end items-center gap-2'}`}
+    >
       <ItemActionButtons
         item={item}
         onDelete={handleDelete}

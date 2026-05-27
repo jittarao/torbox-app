@@ -152,9 +152,7 @@ function FileRow({
             </td>
 
             {/* File Actions — fixed slots: [play] [copy] [download] */}
-            <td
-              className={`${tableActionsCell} ${rowSurfaceClass} py-2 md:py-1.5 lg:py-2 md:pb-1.5 lg:pb-2 [&_button]:md:p-1`}
-            >
+            <td className={`${tableActionsCell} ${rowSurfaceClass} [&_button]:md:p-1`}>
               <div className="inline-flex items-center justify-end">
                 <span className={FILE_ACTION_SLOT_CLASS}>
                   {isVideoFile(file) && handleFileStream ? (
