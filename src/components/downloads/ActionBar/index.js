@@ -269,12 +269,12 @@ export default function ActionBar({
         }
       >
         <div
-          className={`flex flex-wrap items-center gap-x-3 gap-y-2 transition-all duration-200
+          className={`flex flex-col gap-y-2 transition-all duration-200 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3 lg:gap-y-2
             ${isFullscreen ? 'px-2 sm:px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container-downloads mx-auto px-2 sm:px-4') : ''}
             ${isSticky ? 'py-2' : 'pb-4'}`}
         >
-          {/* Left: counts, status filters, bulk actions */}
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:gap-3">
+          {/* Status + bulk actions — full-width rows below lg */}
+          <div className="flex min-w-0 w-full flex-col gap-2 sm:gap-2 lg:w-auto lg:flex-1 lg:flex-row lg:flex-wrap lg:items-center lg:gap-3">
             <StatusSection
               statusCounts={statusCounts}
               statusOptions={statusOptions}
@@ -312,13 +312,13 @@ export default function ActionBar({
             )}
           </div>
 
-          {/* Right: search, sort, view controls */}
-          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
+          {/* Search, sort, view controls — own row below lg */}
+          <div className="flex min-w-0 w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto lg:shrink-0 lg:justify-end">
             <SearchBar
               search={search}
               onSearchChange={setSearch}
               itemTypePlural={itemTypePlural}
-              className="w-36 sm:w-44 md:w-52 lg:w-60"
+              className="min-w-0 w-full basis-full sm:basis-auto sm:w-44 sm:flex-none md:w-52 lg:w-60"
             />
 
             {(viewMode === 'card' || (isMobile && viewMode === 'table')) && (
