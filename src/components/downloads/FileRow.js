@@ -8,6 +8,7 @@ import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { isVideoFile, isAudioFile } from './utils/videoDetection';
+import { tableActionsCell, tableCheckboxCell } from './utils/responsiveLayout';
 
 const ACTIONS_COLUMN_WIDTH = 210;
 const CHECKBOX_COLUMN_WIDTH = 60;
@@ -75,7 +76,7 @@ function FileRow({
             }}
           >
             {/* Checkbox */}
-            <td className="px-3 md:px-4 py-2 text-center whitespace-nowrap">
+            <td className={`${tableCheckboxCell} py-2 md:py-1.5 lg:py-2`}>
               <input
                 type="checkbox"
                 checked={isChecked}
@@ -89,9 +90,12 @@ function FileRow({
             </td>
 
             {/* File Name and Size */}
-            <td className="pl-3 md:pl-6 py-2" colSpan={isMobile ? 1 : activeColumns.length}>
+            <td
+              className="pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2"
+              colSpan={isMobile ? 1 : activeColumns.length}
+            >
               <div
-                className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4'}`}
+                className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 md:gap-2.5 lg:gap-4'}`}
                 style={{
                   maxWidth: isMobile
                     ? '100%'
@@ -102,7 +106,7 @@ function FileRow({
                 }}
               >
                 <div
-                  className={`text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-lg lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
+                  className={`text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-md lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
                 >
                   <Tooltip content={isBlurred ? '' : file.short_name || file.name}>
                     {file.short_name || file.name}
@@ -132,7 +136,9 @@ function FileRow({
             </td>
 
             {/* File Actions */}
-            <td className="px-3 md:px-4 pt-2 pb-[8.5] whitespace-nowrap text-right sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
+            <td
+              className={`${tableActionsCell} py-2 md:py-1.5 lg:py-2 md:pb-1.5 lg:pb-2 [&_button]:md:p-1`}
+            >
               {/* Copy link button */}
               <button
                 onClick={(e) => {

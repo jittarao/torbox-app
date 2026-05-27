@@ -23,8 +23,8 @@ function FileList({
 }) {
   const t = useTranslations('FileActions');
   return (
-    <div className="mt-4 border-t border-border/50 dark:border-border-dark/50 pt-4">
-      <div className="space-y-2">
+    <div className="mt-3 md:mt-2.5 lg:mt-4 border-t border-border/50 dark:border-border-dark/50 pt-3 md:pt-2.5 lg:pt-4">
+      <div className="space-y-1.5 md:space-y-1 lg:space-y-2">
         {files.map((file, fileIndex) => {
           const isChecked = selectedItems.files.get(itemId)?.has(file.id) || false;
           const isDisabled = selectedItems.items?.has(itemId);
@@ -41,7 +41,7 @@ function FileList({
                     : isFileDownloaded(itemId, file.id)
                       ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
                       : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
-              } rounded-md p-2 ${!isDisabled && 'cursor-pointer'}`}
+              } rounded-md p-2 md:p-1.5 lg:p-2 ${!isDisabled && 'cursor-pointer'}`}
               onMouseDown={(e) => {
                 if (e.shiftKey) e.preventDefault();
               }}
@@ -73,7 +73,7 @@ function FileList({
                     }`}
                   >
                     <span
-                      className={`text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate ${
+                      className={`text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate ${
                         isBlurred ? 'blur-[6px] select-none' : ''
                       }`}
                       title={isBlurred ? '' : file.name}

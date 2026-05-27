@@ -8,6 +8,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
+import { cardContainerPad } from './utils/responsiveLayout';
 
 function ItemCard({
   item,
@@ -285,13 +286,13 @@ function ItemCard({
           : isItemDownloaded(item.id)
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
-      } px-2 py-4 md:p-4 relative rounded-lg border border-border dark:border-border-dark ${
+      } ${cardContainerPad} relative ${
         expandedItems.has(item.id) ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer`}
     >
-      <div className="flex justify-between gap-2">
-        <div className="flex flex-col justify-center gap-2 min-w-0">
-          <div className="flex items-center gap-3">
+      <div className="flex justify-between gap-2 md:gap-3">
+        <div className="flex flex-col justify-center gap-1.5 md:gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-2 md:gap-2.5">
             <input
               type="checkbox"
               checked={selectedItems.items?.has(item.id)}
@@ -301,7 +302,7 @@ function ItemCard({
               className="accent-accent dark:accent-accent-dark flex-shrink-0"
             />
             <h3
-              className={`text-sm sm:text-md md:text-[18px] font-medium break-all text-primary-text dark:text-primary-text-dark flex-1 ${
+              className={`text-sm md:text-base lg:text-[18px] font-medium break-all md:truncate text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${
                 isBlurred ? 'blur-[6px] select-none' : ''
               }`}
             >
@@ -330,16 +331,19 @@ function ItemCard({
           </div>
 
           <div
-            className={`flex items-center ${
-              isMobile ? 'gap-2' : 'gap-4'
-            } text-xs md:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
+            className={`flex items-center flex-wrap ${
+              isMobile ? 'gap-2' : 'gap-2 md:gap-x-2.5 md:gap-y-1 lg:gap-4'
+            } text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
           >
             <DownloadStateBadge item={item} size={isMobile ? 'xs' : 'sm'} />
             {!isMobile ? (
               <>
                 {filteredColumns.map((column) => (
-                  <div className="flex items-center gap-1 font-semibold" key={column}>
-                    <div className="flex items-center gap-1">
+                  <div
+                    className="flex items-center gap-1 font-medium md:font-normal shrink-0"
+                    key={column}
+                  >
+                    <div className="flex items-center gap-0.5 md:gap-1 [&_svg]:md:h-3.5 [&_svg]:md:w-3.5">
                       <Tooltip content={getTooltipContent(column)}>
                         {getColumnIcon(column)}{' '}
                       </Tooltip>
@@ -371,7 +375,7 @@ function ItemCard({
           </div>
         </div>
 
-        <div className="flex flex-col items-end justify-between gap-2 flex-shrink-0">
+        <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 flex-shrink-0">
           <ItemActions
             item={item}
             apiKey={apiKey}
@@ -388,7 +392,7 @@ function ItemCard({
           />
 
           {item.active && (
-            <div className="flex items-center gap-4 text-sm md:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
+            <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
               <div className="flex items-center gap-1">
                 <span className="text-label-success-text-dark dark:text-label-success-text-dark">
                   ↓

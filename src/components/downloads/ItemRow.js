@@ -9,6 +9,12 @@ import Tooltip from '@/components/shared/Tooltip';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
+import {
+  tableActionsCell,
+  tableCheckboxCell,
+  tableDataCellPad,
+  tableDataCellText,
+} from './utils/responsiveLayout';
 
 function ItemRow({
   item,
@@ -42,9 +48,13 @@ function ItemRow({
     switch (columnId) {
       case 'name':
         return (
-          <td key={columnId} className="px-2 md:px-4 py-4 max-w-[150px] relative" style={baseStyle}>
+          <td
+            key={columnId}
+            className={`${tableDataCellPad} max-w-[150px] md:max-w-none md:min-w-[7rem] relative`}
+            style={baseStyle}
+          >
             <div
-              className={`text-sm text-primary-text dark:text-primary-text-dark ${
+              className={`text-sm md:text-xs lg:text-sm text-primary-text dark:text-primary-text-dark ${
                 isMobile ? 'break-all' : 'whitespace-nowrap truncate'
               } flex-1 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
             >
@@ -95,7 +105,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {formatSize(item.size || 0)}
@@ -108,7 +118,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 relative group"
+            className={`${tableDataCellText} relative group`}
             style={baseStyle}
           >
             <div className="cursor-default">
@@ -126,7 +136,7 @@ function ItemRow({
         );
       case 'download_state':
         return (
-          <td key={columnId} className="px-4 py-4 whitespace-nowrap" style={baseStyle}>
+          <td key={columnId} className={`${tableDataCellPad} whitespace-nowrap`} style={baseStyle}>
             <DownloadStateBadge item={item} />
           </td>
         );
@@ -134,7 +144,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             <div className="w-full bg-progress-track dark:bg-progress-track-dark rounded-full h-2.5">
@@ -150,7 +160,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             <DownloadProgressDisplay item={item} variant="full" />
@@ -160,7 +170,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {(item.ratio || 0).toFixed(2)}
@@ -171,7 +181,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {formatSpeed(item[columnId])}
@@ -181,7 +191,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {formatEta(item.eta, commonT)}
@@ -191,7 +201,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {item.id}
@@ -202,7 +212,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {formatSize(item[columnId] || 0)}
@@ -213,7 +223,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {item[columnId] || 0}
@@ -223,7 +233,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {item.files?.length || 0}
@@ -233,7 +243,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             <div className="flex items-center gap-2">
@@ -264,7 +274,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {item.private ? (
@@ -281,7 +291,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-red-500"
+            className={`${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-red-500`}
             style={baseStyle}
           >
             {item.error || ''}
@@ -291,7 +301,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={`${tableDataCellPad} text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
             style={baseStyle}
           >
             {item.tags && item.tags.length > 0 ? (
@@ -305,7 +315,7 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className="px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70"
+            className={tableDataCellText}
             style={baseStyle}
           >
             {item[columnId]}
@@ -346,7 +356,7 @@ function ItemRow({
         handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
       }}
     >
-      <td className="px-2 md:px-4 py-4 text-center whitespace-nowrap">
+      <td className={tableCheckboxCell}>
         <input
           type="checkbox"
           checked={selectedItems.items?.has(item.id)}
@@ -357,7 +367,7 @@ function ItemRow({
         />
       </td>
       {visibleColumns.map((columnId) => renderCell(columnId))}
-      <td className="px-2 md:px-4 py-4 pb-[16.5] whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 md:bg-inherit md:dark:bg-inherit">
+      <td className={tableActionsCell}>
         <ItemActions
           item={item}
           apiKey={apiKey}

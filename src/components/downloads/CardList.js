@@ -15,6 +15,7 @@ import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import ItemCard from './ItemCard';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
+import { cardListItemGap } from './utils/responsiveLayout';
 
 export default function CardList({
   items,
@@ -133,15 +134,18 @@ export default function CardList({
 
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
-    // Measure the actual rendered height of the element
-    // Add margin for spacing between cards
-    return element.getBoundingClientRect().height + 8;
+    const marginBottom = parseFloat(window.getComputedStyle(element).marginBottom) || 0;
+    return element.getBoundingClientRect().height + marginBottom;
   }, []);
 
   const estimateSize = useCallback(
     (index) => {
       const row = flattenedRows[index];
-      const baseHeight = isMobile ? 170 : 82;
+      const isTablet =
+        typeof window !== 'undefined' &&
+        window.innerWidth >= 768 &&
+        window.innerWidth < 1024;
+      const baseHeight = isMobile ? 170 : isTablet ? 74 : 82;
       if (!row) {
         return baseHeight;
       }
@@ -692,7 +696,7 @@ export default function CardList({
                 left: 0,
                 right: 0,
                 transform: `translateY(${cardTop}px)`,
-                marginBottom: '8px', // Add gap between cards
+                marginBottom: 0,
                 willChange: 'transform',
                 // Expanded cards must stack above neighbors until layout remeasures
                 zIndex: isExpanded ? 20 + virtualRow.index : virtualRow.index + 1,
@@ -704,6 +708,7 @@ export default function CardList({
                   data-index={virtualRow.index}
                   ref={virtualizer.measureElement}
                   style={itemCardStyle}
+                  className={cardListItemGap}
                 >
                   <ItemCard
                     item={row.item}

@@ -6,6 +6,7 @@ import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
 import TrackSelectionModal from './TrackSelectionModal';
 import { useStream } from '../shared/hooks/useStream';
+import { tableContainerClass } from './utils/responsiveLayout';
 
 // Local storage key for mobile notice dismissal
 const MOBILE_NOTICE_DISMISSED_KEY = 'mobile-notice-dismissed';
@@ -259,9 +260,9 @@ export default function ItemsTable({
       <div
         ref={tableContainerRef}
         id="items-table"
-        className="overflow-x-auto rounded-lg border border-border dark:border-border-dark"
+        className={tableContainerClass}
       >
-        <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative">
+        <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative md:text-xs lg:text-sm">
           <TableHeader
             activeColumns={activeColumns}
             columnWidths={isClient ? columnWidths : {}} // Only pass widths on client
