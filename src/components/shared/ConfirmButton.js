@@ -1,30 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
 import Spinner from './Spinner';
 
-const CircularProgress = ({ progress }) => (
+const CIRCLE_RADIUS = 8;
+const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
+const CircularProgress = ({ duration }) => (
   <div className="absolute inset-0 w-full h-full">
-    <svg className="w-full h-full -rotate-90">
+    <svg className="w-full h-full -rotate-90" viewBox="0 0 24 24">
       <circle
         className="text-red-200 dark:text-red-900"
         strokeWidth="2"
         stroke="currentColor"
         fill="transparent"
-        r="8"
+        r={CIRCLE_RADIUS}
         cx="12"
         cy="12"
       />
       <circle
-        className="text-red-500 dark:text-red-400 transition-all duration-100"
+        className="text-red-500 dark:text-red-400"
         strokeWidth="2"
-        strokeDasharray={50}
-        strokeDashoffset={50 * (1 - progress)}
+        strokeDasharray={CIRCUMFERENCE}
+        strokeDashoffset={CIRCUMFERENCE}
         strokeLinecap="round"
         stroke="currentColor"
         fill="transparent"
-        r="8"
+        r={CIRCLE_RADIUS}
         cx="12"
         cy="12"
-      />
+      >
+        <animate
+          attributeName="stroke-dashoffset"
+          from={CIRCUMFERENCE}
+          to="0"
+          dur={`${duration}ms`}
+          fill="freeze"
+        />
+      </circle>
     </svg>
   </div>
 );
@@ -41,32 +52,18 @@ export default function ConfirmButton({
   mobileText = '',
 }) {
   const [isConfirming, setIsConfirming] = useState(false);
-  const [progress, setProgress] = useState(0);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-    if (isConfirming) {
-      const startTime = Date.now();
-      const interval = setInterval(() => {
-        const currentProgress = (Date.now() - startTime) / timeout;
-        if (currentProgress >= 1) {
-          clearInterval(interval);
-          setIsConfirming(false);
-        } else {
-          setProgress(currentProgress);
-        }
-      }, 16);
+    if (!isConfirming) return;
 
-      timeoutRef.current = setTimeout(() => {
-        setIsConfirming(false);
-      }, timeout);
+    timeoutRef.current = setTimeout(() => {
+      setIsConfirming(false);
+    }, timeout);
 
-      return () => {
-        clearInterval(interval);
-        clearTimeout(timeoutRef.current);
-        setProgress(0);
-      };
-    }
+    return () => {
+      clearTimeout(timeoutRef.current);
+    };
   }, [isConfirming, timeout]);
 
   useEffect(() => {
@@ -102,7 +99,7 @@ export default function ConfirmButton({
           <Spinner size="sm" />
         ) : (
           <>
-            {isConfirming && <CircularProgress progress={progress} />}
+            {isConfirming && <CircularProgress duration={timeout} />}
             <div
               className={`relative z-10 transition-transform duration-200 ${
                 isConfirming ? 'scale-90' : ''
