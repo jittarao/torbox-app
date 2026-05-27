@@ -25,6 +25,7 @@ import CardList from './CardList';
 import VideoPlayerModal from './VideoPlayerModal';
 import AudioPlayer from './AudioPlayer';
 import FiltersSidebar, { filtersFromView } from './FiltersSidebar';
+import useFiltersSidebarCollapsed from './FiltersSidebar/useFiltersSidebarCollapsed';
 import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
 import FilterEditorModal from './FilterEditorModal';
 import TagManager from './Tags/TagManager';
@@ -52,6 +53,9 @@ import UsageCallout from '@/components/downloads/UsageCallout';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import FetchStatusBanner from '@/components/downloads/FetchStatusBanner';
 import { useTranslations } from 'next-intl';
+
+const FILTERS_SIDEBAR_EXPANDED = '14rem';
+const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
 
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
@@ -105,6 +109,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const migrationAttemptedRef = useRef(false);
   const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
+  const { collapsed: filtersSidebarCollapsed, toggleCollapsed: toggleFiltersSidebar } =
+    useFiltersSidebarCollapsed();
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const isBackendAvailable = backendMode === 'backend';
 
@@ -753,6 +759,10 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const showDesktopFiltersSidebar =
     isBackendAvailable && !isMobile && !isFullscreen;
+  const filtersSidebarExpanded = showDesktopFiltersSidebar && !filtersSidebarCollapsed;
+  const filtersSidebarWidth = filtersSidebarCollapsed
+    ? FILTERS_SIDEBAR_COLLAPSED
+    : FILTERS_SIDEBAR_EXPANDED;
 
   const handleApplyFiltersFromModal = (filters) => {
     setAppliedFilters(normalizeFilters(filters));
@@ -829,7 +839,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         collapseAllFiles={collapseAllFiles}
         expandedItems={expandedItems}
         scrollContainerRef={scrollContainerRef}
-        hasFiltersSidebar={showDesktopFiltersSidebar}
+        hasFiltersSidebar={filtersSidebarExpanded}
       />
 
       {viewMode === 'table' ? (
@@ -942,9 +952,17 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   return (
     <div
-      className={`space-y-2 mt-1.5 ${
+      className={`space-y-2 mt-1.5 transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
         showDesktopFiltersSidebar ? 'md:pl-[var(--downloads-sidebar-width)]' : ''
       }`}
+      style={
+        showDesktopFiltersSidebar
+          ? {
+              '--downloads-sidebar-width': filtersSidebarWidth,
+              '--downloads-content-left': `calc(var(--sidebar-width, 0px) + ${filtersSidebarWidth})`,
+            }
+          : undefined
+      }
     >
       {onApiKeyChange && (
         <ApiKeyInput
@@ -1035,7 +1053,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           )}
 
           {showDesktopFiltersSidebar && (
-            <FiltersSidebar {...sidebarProps} variant="fixed" className="hidden md:flex" />
+            <FiltersSidebar
+              {...sidebarProps}
+              variant="fixed"
+              className="hidden md:flex"
+              collapsed={filtersSidebarCollapsed}
+              onToggleCollapsed={toggleFiltersSidebar}
+            />
           )}
 
           <div

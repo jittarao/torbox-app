@@ -48,6 +48,34 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
   );
 }
 
+function SidebarCollapseToggle({ collapsed, onToggle, className = '' }) {
+  const t = useTranslations('DownloadsFilters');
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
+      title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
+      className={`ui-header-icon-btn shrink-0 transition-transform duration-300 ease-out hover:scale-105 active:scale-95 ${className}`}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+        stroke="currentColor"
+        className={`h-4 w-4 text-primary-text/60 dark:text-primary-text-dark/60 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          collapsed ? 'rotate-180' : ''
+        }`}
+        aria-hidden
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+  );
+}
+
 export default function FiltersSidebar({
   apiKey,
   views,
@@ -69,6 +97,8 @@ export default function FiltersSidebar({
   onManageTags,
   variant = 'inline',
   className = '',
+  collapsed = false,
+  onToggleCollapsed,
 }) {
   const t = useTranslations('DownloadsFilters');
   const { deleteView } = useCustomViews(apiKey);
@@ -115,9 +145,21 @@ export default function FiltersSidebar({
     }
   };
 
+  if (isFixed && collapsed && onToggleCollapsed) {
+    return (
+      <aside
+        className={`fixed inset-y-0 z-[35] flex w-[var(--downloads-sidebar-width,2.5rem)] flex-col items-center border-r border-border/60 bg-surface/90 pt-3 backdrop-blur-xl dark:border-border-dark/60 dark:bg-surface-dark/90 ${className}`}
+        style={{ left: 'var(--sidebar-width, 0px)' }}
+        aria-label={t('sidebarLabel')}
+      >
+        <SidebarCollapseToggle collapsed onToggle={onToggleCollapsed} />
+      </aside>
+    );
+  }
+
   return (
     <aside
-      className={`flex flex-col overflow-hidden ${
+      className={`flex flex-col overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
         isFixed
           ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl p-2.5'
           : 'w-[var(--downloads-sidebar-width,14rem)] shrink-0 border border-border dark:border-border-dark rounded-lg bg-surface/50 dark:bg-surface-dark/50'
@@ -125,6 +167,11 @@ export default function FiltersSidebar({
       style={isFixed ? { left: 'var(--sidebar-width, 0px)' } : undefined}
       aria-label={t('sidebarLabel')}
     >
+      {isFixed && onToggleCollapsed && (
+        <div className="mb-1 flex shrink-0 items-center justify-end">
+          <SidebarCollapseToggle collapsed={false} onToggle={onToggleCollapsed} />
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto divide-y divide-border/60 dark:divide-border-dark/60">
         <SidebarSection
           title={t('viewsSection')}

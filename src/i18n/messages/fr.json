@@ -412,6 +412,8 @@
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filtres",
+    "collapseSidebar": "Réduire le panneau de filtres",
+    "expandSidebar": "Développer le panneau de filtres",
     "viewsSection": "Vues",
     "tagsSection": "Étiquettes",
     "noViews": "Aucune vue enregistrée.",

@@ -426,6 +426,8 @@
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filters",
+    "collapseSidebar": "Collapse filters sidebar",
+    "expandSidebar": "Expand filters sidebar",
     "viewsSection": "Views",
     "tagsSection": "Tags",
     "noViews": "No saved views yet.",

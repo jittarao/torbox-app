@@ -412,6 +412,8 @@
   },
   "DownloadsFilters": {
     "sidebarLabel": "Filter",
+    "collapseSidebar": "Filterleiste einklappen",
+    "expandSidebar": "Filterleiste ausklappen",
     "viewsSection": "Ansichten",
     "tagsSection": "Schlagwörter",
     "noViews": "Noch keine gespeicherten Ansichten.",
