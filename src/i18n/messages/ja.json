@@ -901,6 +901,8 @@
     "minSeeders": "最小シーダー",
     "minSize": "最小サイズ (GB)",
     "placeholderDownloads": "{itemType} またはファイル名を検索...",
+    "placeholderDownloadsShort": "検索…",
+    "searchDownloadsAria": "{itemType} またはファイル名を検索",
     "placeholderSearch": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
     "quality": "品質",
     "qualityAll": "すべての品質",
@@ -1170,6 +1172,8 @@
     "expandAllFiles": "すべてのファイルを展開",
     "hideSensitive": "機密コンテンツを隠す",
     "showSensitive": "機密コンテンツを表示する",
-    "tableView": "テーブルビュー"
+    "tableView": "テーブルビュー",
+    "toolbarLabel": "ダウンロード表示オプション",
+    "viewModeGroup": "表示モード"
   }
 }

@@ -96,16 +96,16 @@ export default function StatusSection({
   };
 
   return (
-    <div className="flex flex-col gap-1 text-md text-primary-text dark:text-primary-text-dark">
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm text-primary-text sm:text-base dark:text-primary-text-dark">
       <span
-        className={`font-semibold ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'}  transition-colors`}
+        className={`font-semibold leading-snug ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
         onClick={() => handleStatusClick('all')}
       >
         {getSelectionText()}
       </span>
 
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
           {Object.entries(statusCounts)
             .reduce((acc, [status, count]) => {
               const option = STATUS_OPTIONS.find((opt) => opt.label === status);
@@ -133,7 +133,7 @@ export default function StatusSection({
                 <span
                   key={status}
                   onClick={() => handleStatusClick(status)}
-                  className={`text-sm font-medium border-b border-dashed cursor-pointer
+                  className={`text-xs font-medium border-b border-dashed cursor-pointer sm:text-sm
                     ${getStatusStyles(status)}
                     ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-70' : 'opacity-100'}
                     ${isSelected ? 'border-current' : 'hover:opacity-80 border-current/20 hover:border-current'}

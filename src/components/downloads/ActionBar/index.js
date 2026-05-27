@@ -279,105 +279,103 @@ export default function ActionBar({
         }
       >
         <div
-          className={`flex flex-col lg:flex-row gap-4 justify-between transition-all duration-200
+          className={`flex flex-col gap-3 sm:gap-4 transition-all duration-200
             ${isFullscreen ? 'px-2 sm:px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container-downloads mx-auto px-2 sm:px-4') : ''}
             ${isSticky ? 'py-2' : 'pb-4'}`}
         >
-        <div className="flex gap-4 items-center flex-wrap min-h-[49px]">
-          <StatusSection
-            statusCounts={statusCounts}
-            statusOptions={statusOptions}
-            isStatusSelected={isStatusSelected}
-            unfilteredItems={unfilteredItems}
-            filteredItems={filteredItems}
-            selectedItems={selectedItems}
-            hasSelectedFiles={hasSelectedFiles}
-            statusFilter={statusFilter}
-            onStatusChange={onStatusChange}
-            itemTypeName={itemTypeName}
-            itemTypePlural={itemTypePlural}
-            getTotalDownloadSize={getTotalDownloadSize}
-          />
-
-          {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
-            <ActionButtons
+          {/* Status + bulk actions */}
+          <div className="flex min-h-[44px] flex-wrap items-start gap-3 sm:items-center sm:gap-4">
+            <StatusSection
+              statusCounts={statusCounts}
+              statusOptions={statusOptions}
+              isStatusSelected={isStatusSelected}
+              unfilteredItems={unfilteredItems}
+              filteredItems={filteredItems}
               selectedItems={selectedItems}
-              setSelectedItems={setSelectedItems}
               hasSelectedFiles={hasSelectedFiles}
-              isDownloading={isDownloading}
-              isDeleting={isDeleting}
-              isExporting={isExporting}
-              onBulkDownload={onBulkDownload}
-              onBulkDelete={onBulkDelete}
-              onBulkExport={onBulkExport}
+              statusFilter={statusFilter}
+              onStatusChange={onStatusChange}
               itemTypeName={itemTypeName}
               itemTypePlural={itemTypePlural}
-              isDownloadPanelOpen={isDownloadPanelOpen}
-              setIsDownloadPanelOpen={setIsDownloadPanelOpen}
-              activeType={activeType}
-              apiKey={apiKey}
-              setToast={setToast}
+              getTotalDownloadSize={getTotalDownloadSize}
             />
-          )}
-        </div>
 
-        <div className="flex gap-3 items-center flex-wrap">
-          {/* Search bar */}
-          <SearchBar search={search} onSearchChange={setSearch} itemTypePlural={itemTypePlural} />
-
-          {/* Filter by status */}
-          {/* <StatusFilterDropdown
-          options={statusOptions}
-          value={statusFilter}
-          onChange={(value) => onStatusChange(value)}
-          className="min-w-[150px]"
-        /> */}
-
-          {/* Sort downloads list */}
-          {viewMode === 'card' ||
-            (isMobile && viewMode === 'table' && (
-              <div className="flex items-center gap-1">
-                <Dropdown
-                  options={sortOptions}
-                  value={sortField}
-                  onChange={(value) => handleSort(value)}
-                  className="min-w-[150px]"
-                  sortDir={sortDir}
-                />
-                <button
-                  onClick={() => handleSort(sortField)}
-                  className="px-1 py-2 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
-                >
-                  {sortDir === 'desc' ? '↓' : '↑'}
-                </button>
-              </div>
-            ))}
-
-          {/* View controls such as blur, fullscreen, and view mode */}
-          <ViewControls
-            isMobile={isMobile}
-            isBlurred={isBlurred}
-            onBlurToggle={onBlurToggle}
-            isFullscreen={isFullscreen}
-            onFullscreenToggle={onFullscreenToggle}
-            viewMode={viewMode}
-            onViewModeChange={onViewModeChange}
-            expandAllFiles={expandAllFiles}
-            collapseAllFiles={collapseAllFiles}
-            expandedItems={expandedItems}
-            unfilteredItems={unfilteredItems}
-          />
-
-          {/* Column manager */}
-          <div className="hidden lg:block">
-            <ColumnManager
-              columns={COLUMNS}
-              activeColumns={activeColumns}
-              onColumnChange={onColumnChange}
-              activeType={activeType}
-            />
+            {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
+              <ActionButtons
+                selectedItems={selectedItems}
+                setSelectedItems={setSelectedItems}
+                hasSelectedFiles={hasSelectedFiles}
+                isDownloading={isDownloading}
+                isDeleting={isDeleting}
+                isExporting={isExporting}
+                onBulkDownload={onBulkDownload}
+                onBulkDelete={onBulkDelete}
+                onBulkExport={onBulkExport}
+                itemTypeName={itemTypeName}
+                itemTypePlural={itemTypePlural}
+                isDownloadPanelOpen={isDownloadPanelOpen}
+                setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+                activeType={activeType}
+                apiKey={apiKey}
+                setToast={setToast}
+              />
+            )}
           </div>
-        </div>
+
+          {/* Search + toolbar */}
+          <div className="flex flex-col gap-3 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between lg:gap-4">
+            <SearchBar
+              search={search}
+              onSearchChange={setSearch}
+              itemTypePlural={itemTypePlural}
+              className="min-[480px]:max-w-md min-[480px]:flex-1 lg:max-w-lg"
+            />
+
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3 sm:shrink-0">
+              {(viewMode === 'card' || (isMobile && viewMode === 'table')) && (
+                <div className="flex min-w-0 shrink items-center gap-1">
+                  <Dropdown
+                    options={sortOptions}
+                    value={sortField}
+                    onChange={(value) => handleSort(value)}
+                    className="min-w-[8.5rem] max-w-[11rem] sm:min-w-[150px]"
+                    sortDir={sortDir}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSort(sortField)}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-primary-text/70 transition-colors hover:border-primary-text/30 hover:bg-surface-alt-hover hover:text-accent dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-hover-dark dark:hover:text-accent-dark"
+                    aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
+                  >
+                    {sortDir === 'desc' ? '↓' : '↑'}
+                  </button>
+                </div>
+              )}
+
+              <ViewControls
+                isMobile={isMobile}
+                isBlurred={isBlurred}
+                onBlurToggle={onBlurToggle}
+                isFullscreen={isFullscreen}
+                onFullscreenToggle={onFullscreenToggle}
+                viewMode={viewMode}
+                onViewModeChange={onViewModeChange}
+                expandAllFiles={expandAllFiles}
+                collapseAllFiles={collapseAllFiles}
+                expandedItems={expandedItems}
+                unfilteredItems={unfilteredItems}
+              />
+
+              <div className="hidden shrink-0 lg:block">
+                <ColumnManager
+                  columns={COLUMNS}
+                  activeColumns={activeColumns}
+                  onColumnChange={onColumnChange}
+                  activeType={activeType}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Fragment>

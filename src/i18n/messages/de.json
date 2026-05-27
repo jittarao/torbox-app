@@ -901,6 +901,8 @@
     "minSeeders": "Min. Seeder",
     "minSize": "Min. Größe (GB)",
     "placeholderDownloads": "{itemType} oder Dateinamen suchen...",
+    "placeholderDownloadsShort": "Suchen…",
+    "searchDownloadsAria": "{itemType} oder Dateinamen suchen",
     "placeholderSearch": "Suche nach Titel oder IMDB ID (z.B. imdb:tt0133093)...",
     "quality": "Qualität",
     "qualityAll": "Alle Qualitäten",
@@ -1170,6 +1172,8 @@
     "expandAllFiles": "Alle Dateien erweitern",
     "hideSensitive": "Vertraulichen Inhalt ausblenden ",
     "showSensitive": "Vertraulichen Inhalt anzeigen",
-    "tableView": "Tabellenansicht"
+    "tableView": "Tabellenansicht",
+    "toolbarLabel": "Downloads-Ansichtsoptionen",
+    "viewModeGroup": "Ansichtsmodus"
   }
 }
