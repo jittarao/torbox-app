@@ -122,7 +122,8 @@ export function useDownloads(
   apiKey,
   assetType = 'torrents',
   downloadHistory,
-  fetchDownloadHistory
+  fetchDownloadHistory,
+  onBulkComplete
 ) {
   const [downloadLinks, setDownloadLinks] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -424,65 +425,79 @@ export function useDownloads(
 
     // Collect all link history entries for bulk save
     const linkHistoryEntries = [];
+    const failures = [];
 
-    // Process in chunks
+    const bumpProgress = () => {
+      setDownloadProgress((prev) => ({
+        ...prev,
+        current: Math.min(prev.current + 1, prev.total),
+      }));
+    };
+
+    // Process in chunks — continue even when individual links fail
     for (let i = 0; i < downloadTasks.length; i += CONCURRENT_DOWNLOADS) {
       const chunk = downloadTasks.slice(i, i + CONCURRENT_DOWNLOADS);
-      const chunkResults = await Promise.all(
+      await Promise.all(
         chunk.map(async (task) => {
-          const result =
-            task.type === 'item'
-              ? await requestDownloadLink(task.id, {}, null, task.metadata, true) // Skip individual history save
-              : await requestDownloadLink(
-                  task.itemId,
-                  {
-                    fileId: task.fileId,
-                  },
-                  null,
-                  task.metadata,
-                  true // Skip individual history save
-                );
+          try {
+            const result =
+              task.type === 'item'
+                ? await requestDownloadLink(task.id, {}, null, task.metadata, true)
+                : await requestDownloadLink(
+                    task.itemId,
+                    { fileId: task.fileId },
+                    null,
+                    task.metadata,
+                    true
+                  );
 
-          if (result.success) {
-            // Determine filename with extension for download managers
-            const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
+            if (result?.success) {
+              const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
+              const sanitizedFilename = sanitizeFilename(filename);
 
-            // Sanitize filename to remove invalid characters (like forward slashes)
-            // that can cause download managers to misinterpret the URL
-            const sanitizedFilename = sanitizeFilename(filename);
+              const url = new URL(result.data.url);
+              const encodedFilename = encodeURIComponent(sanitizedFilename);
+              const separator = url.search ? '&' : '?';
+              const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
-            // Append filename parameter to URL
-            const url = new URL(result.data.url);
-            const encodedFilename = encodeURIComponent(sanitizedFilename);
-            const separator = url.search ? '&' : '?';
-            const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
+              setDownloadLinks((prev) => [
+                ...prev,
+                { ...result.data, url: urlWithFilename, name: task.name },
+              ]);
 
-            setDownloadLinks((prev) => [
-              ...prev,
-              { ...result.data, url: urlWithFilename, name: task.name },
-            ]);
-            setDownloadProgress((prev) => ({
-              ...prev,
-              current: prev.current + 1,
-            }));
-
-            // Collect link history entry for bulk save
-            if (result.linkHistory) {
-              linkHistoryEntries.push(result.linkHistory);
+              if (result.linkHistory) {
+                linkHistoryEntries.push(result.linkHistory);
+              }
+              return;
             }
 
-            return true;
+            failures.push({
+              name: task.name,
+              error: result?.error || 'Unknown error',
+            });
+          } catch (error) {
+            console.error('Bulk download link error:', error);
+            failures.push({
+              name: task.name,
+              error: error?.message || 'Unknown error',
+            });
+          } finally {
+            bumpProgress();
           }
-
-          return false;
         })
       );
-
-      // Stop if any download failed after retries
-      if (chunkResults.includes(false)) break;
     }
 
     setIsDownloading(false);
+
+    if (onBulkComplete) {
+      onBulkComplete({
+        succeeded: downloadTasks.length - failures.length,
+        failed: failures.length,
+        total: downloadTasks.length,
+        failures,
+      });
+    }
 
     // Save all link history entries in bulk after all downloads complete
     if (linkHistoryEntries.length > 0 && apiKey) {

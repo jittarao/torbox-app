@@ -491,6 +491,8 @@
       "single": "Lien de téléchargement"
     },
     "toast": {
+      "bulkAllFailed": "Impossible de générer les {total} liens de téléchargement",
+      "bulkPartialFailure": "{failed} liens sur {total} n'ont pas pu être générés",
       "copyAllFailed": "Échec de la copie des liens",
       "copyFailed": "Échec de la copie du lien",
       "linkCopied": "Lien copié dans le presse-papiers !",

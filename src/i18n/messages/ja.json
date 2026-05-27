@@ -491,6 +491,8 @@
       "single": "ダウンロードリンク"
     },
     "toast": {
+      "bulkAllFailed": "{total}件のダウンロードリンクを生成できませんでした",
+      "bulkPartialFailure": "{total}件中{failed}件のダウンロードリンクを生成できませんでした",
       "copyAllFailed": "リンクのコピーにすべて失敗しました",
       "copyFailed": "リンクのコピーに失敗しました",
       "linkCopied": "リンクがクリップボードにコピーされました！",

@@ -491,6 +491,8 @@
       "single": "Download-Link"
     },
     "toast": {
+      "bulkAllFailed": "Keiner der {total} Download-Links konnte erzeugt werden",
+      "bulkPartialFailure": "{failed} von {total} Download-Links konnten nicht erzeugt werden",
       "copyAllFailed": "Links konnten nicht kopiert werden",
       "copyFailed": "Link konnte nicht kopiert werden",
       "linkCopied": "Link in Zwischenablage kopiert! ",

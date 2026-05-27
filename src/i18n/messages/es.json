@@ -491,6 +491,8 @@
       "single": "Enlace de descarga"
     },
     "toast": {
+      "bulkAllFailed": "No se pudo generar ninguno de los {total} enlaces de descarga",
+      "bulkPartialFailure": "No se pudieron generar {failed} de {total} enlaces de descarga",
       "copyAllFailed": "Error al copiar enlaces",
       "copyFailed": "Error al copiar enlace",
       "linkCopied": "¡Enlace copiado al portapapeles!",
