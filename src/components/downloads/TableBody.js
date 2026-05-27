@@ -442,7 +442,7 @@ export default function TableBody({
 
   useLayoutEffect(() => {
     remeasureAndSync();
-  }, [resolvedColumnWidths, remeasureAndSync]);
+  }, [resolvedColumnWidths, tableOffsetTop, remeasureAndSync]);
 
   useEffect(() => {
     const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
@@ -494,7 +494,12 @@ export default function TableBody({
   const currentVirtualRows = virtualRows;
 
   const totalVirtualSize = virtualizer.getTotalSize();
-  const paddingTop = currentVirtualRows.length > 0 ? currentVirtualRows[0].start : 0;
+  // useWindowVirtualizer bakes scrollMargin into item start; subtract it for tbody spacers (see CardList)
+  const scrollMargin = isFullscreen ? 0 : tableOffsetTopRef.current || tableOffsetTop;
+  const paddingTop =
+    currentVirtualRows.length > 0
+      ? Math.max(0, currentVirtualRows[0].start - scrollMargin)
+      : 0;
   const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
   const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
