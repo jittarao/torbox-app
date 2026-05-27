@@ -8,7 +8,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
-import { cardContainerPad } from './utils/responsiveLayout';
+import { cardContainerPad, tableActionsCellInner } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
 function ItemCard({
@@ -379,19 +379,21 @@ function ItemCard({
         </div>
 
         <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 flex-shrink-0">
-          <ItemActions
-            item={item}
-            apiKey={apiKey}
-            onDelete={onDelete}
-            toggleFiles={toggleFiles}
-            expandedItems={expandedItems}
-            setItems={setItems}
-            setSelectedItems={setSelectedItems}
-            setToast={setToast}
-            activeType={activeType}
-            isMobile={isMobile}
-            downloadHistory={downloadHistory}
-          />
+          <div className={isMobile ? 'w-full' : tableActionsCellInner}>
+            <ItemActions
+              item={item}
+              apiKey={apiKey}
+              onDelete={onDelete}
+              toggleFiles={toggleFiles}
+              expandedItems={expandedItems}
+              setItems={setItems}
+              setSelectedItems={setSelectedItems}
+              setToast={setToast}
+              activeType={activeType}
+              isMobile={isMobile}
+              downloadHistory={downloadHistory}
+            />
+          </div>
 
           {item.active && (
             <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
