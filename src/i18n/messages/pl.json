@@ -897,7 +897,7 @@
     "hideAdvanced": "Ukryj zaawansowane",
     "minSeeders": "Min. seedery",
     "minSize": "Min. rozmiar (GB)",
-    "placeholderDownloads": "Szukaj {itemType}...",
+    "placeholderDownloads": "Szukaj {itemType} lub nazw plików...",
     "placeholderSearch": "Szukaj po tytule lub ID IMDB (np. imdb:tt0133093)...",
     "quality": "Jakość",
     "qualityAll": "Wszystkie jakości",

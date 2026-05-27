@@ -40,15 +40,20 @@ function FileRow({
   isMobile = false,
   isBlurred = false,
   tableWidth,
-  fileIndex = null, // If provided, render only this specific file
+  file = null, // Single file row (preferred when list is filtered)
+  fileIndex = null, // Legacy: index into item.files when file is not passed
   measureRef,
   dataIndex,
 }) {
   const t = useTranslations('FileActions');
   const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
 
-  // If fileIndex is provided, render only that file; otherwise render all files
-  const filesToRender = fileIndex !== null ? [item.files[fileIndex]].filter(Boolean) : item.files;
+  const filesToRender =
+    file != null
+      ? [file]
+      : fileIndex !== null
+        ? [item.files[fileIndex]].filter(Boolean)
+        : item.files;
 
   return (
     <>

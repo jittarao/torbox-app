@@ -16,6 +16,7 @@ import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
+import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
 export default function TableBody({
   items,
@@ -40,6 +41,7 @@ export default function TableBody({
   scrollContainerRef,
   onFileStreamInit,
   onAudioPlay,
+  fileSearch = '',
 }) {
   const t = useTranslations('TableBody');
 
@@ -124,8 +126,9 @@ export default function TableBody({
       });
 
       // Add file rows if expanded
-      if (expandedSet.has(item.id) && item.files && item.files.length > 0) {
-        item.files.forEach((file, fileIndex) => {
+      const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
+      if (expandedSet.has(item.id) && visibleFiles.length > 0) {
+        visibleFiles.forEach((file, fileIndex) => {
           rows.push({
             type: 'file',
             item,
@@ -138,7 +141,7 @@ export default function TableBody({
       }
     });
     return rows;
-  }, [deferredItems, expandedItemsArray]);
+  }, [deferredItems, expandedItemsArray, fileSearch]);
 
   const downloadHistoryLookup = useMemo(() => {
     const itemDownloads = new Set();
@@ -267,16 +270,18 @@ export default function TableBody({
         const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
         const item = items.find((i) => i.id === itemId);
         if (item) {
-          item.files.slice(start, end + 1).forEach((f) => {
-            onFileSelect(itemId, f.id, checked);
-          });
+          getFilesVisibleForDownloadSearch(item, fileSearch)
+            .slice(start, end + 1)
+            .forEach((f) => {
+              onFileSelect(itemId, f.id, checked);
+            });
         }
       } else {
         onFileSelect(itemId, file.id, checked);
       }
       lastClickedFileIndexRef.current = fileIndex;
     },
-    [items, onFileSelect]
+    [items, onFileSelect, fileSearch]
   );
 
   const assetKey = useCallback((itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId), []);
@@ -581,6 +586,7 @@ export default function TableBody({
                 isMobile={isMobile}
                 isBlurred={isBlurred}
                 tableWidth={tableWidth}
+                file={row.file}
                 fileIndex={row.fileIndex}
                 measureRef={virtualizer.measureElement}
                 dataIndex={virtualRow.index}
