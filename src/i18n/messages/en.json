@@ -497,6 +497,7 @@
     },
     "status": {
       "fetching": "Fetching {current} of {total}",
+      "generated": "Generated",
       "generating": "Generating links...",
       "generatingMore": "Generating more links..."
     },

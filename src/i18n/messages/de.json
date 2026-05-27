@@ -483,6 +483,7 @@
     },
     "status": {
       "fetching": "Lädt {current} von {total}",
+      "generated": "Erzeugt",
       "generating": "Erzeugt Links... ",
       "generatingMore": "Weitere Links werden generiert..."
     },
