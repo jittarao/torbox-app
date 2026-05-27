@@ -16,7 +16,7 @@ import {
 } from '@/components/downloads/CustomViews/utils';
 
 /** Evaluate a single filter condition against an item. */
-export function evaluateFilter(filter, item) {
+function evaluateFilter(filter, item) {
   if (!filter.column || filter.operator === undefined) return true;
 
   const columnValue = item[filter.column];

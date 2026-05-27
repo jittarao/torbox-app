@@ -42,6 +42,7 @@ export async function POST(request) {
           (async () => {
             const fileUploadResponse = await fetch(`${BACKEND_URL}/api/uploads/file`, {
               method: 'POST',
+              cache: 'no-store',
               headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey,
@@ -97,6 +98,7 @@ export async function POST(request) {
     // Create batch upload entries
     const response = await fetch(`${BACKEND_URL}/api/uploads/batch`, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -111,6 +113,7 @@ export async function POST(request) {
       const cleanupPromises = Array.from(filePathMap.values()).map((filePath) =>
         fetch(`${BACKEND_URL}/api/uploads/file`, {
           method: 'DELETE',
+          cache: 'no-store',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,

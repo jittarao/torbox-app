@@ -17,6 +17,7 @@ export async function POST(request, { params }) {
 
   try {
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/notifications/clear/${id}`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,

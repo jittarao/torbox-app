@@ -22,6 +22,7 @@ export async function POST(request) {
 
     const response = await fetch(`${BACKEND_URL}/api/link-history/bulk`, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -67,6 +68,7 @@ export async function DELETE(request) {
 
     const response = await fetch(`${BACKEND_URL}/api/link-history/bulk`, {
       method: 'DELETE',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

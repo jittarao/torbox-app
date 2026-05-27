@@ -4,7 +4,7 @@ import {
   getColumnMinWidth,
 } from '@/components/downloads/utils/tableColumnLayout';
 
-export { DEFAULT_COLUMN_WIDTHS };
+
 
 export function useColumnWidths(activeType) {
   const storageKey = `${activeType}-column-widths`;

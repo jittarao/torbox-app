@@ -122,6 +122,7 @@ export async function POST(request) {
 
     // Create upload entry in backend
     const uploadResponse = await fetch(`${BACKEND_URL}/api/uploads`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -211,6 +212,7 @@ export async function DELETE(request) {
         });
 
     const response = await fetch(endpoint, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,

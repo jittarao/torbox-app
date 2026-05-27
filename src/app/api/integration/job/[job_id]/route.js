@@ -13,6 +13,7 @@ export async function DELETE(request, { params }) {
 
   try {
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/integration/job/${job_id}`, {
+      cache: 'no-store',
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${apiKey}`,

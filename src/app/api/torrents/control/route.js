@@ -7,6 +7,7 @@ export async function POST(request) {
     const { torrent_id, operation } = await request.json();
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/torrents/controltorrent`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

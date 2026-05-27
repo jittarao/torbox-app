@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
@@ -12,16 +12,7 @@ export default function UserStats({ apiKey, setToast }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!apiKey) {
-      setError('API key is required');
-      return;
-    }
-
-    fetchStats();
-  }, [apiKey]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -80,7 +71,16 @@ export default function UserStats({ apiKey, setToast }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey, setError, setLoading, setStatsData, setStats30Days, setToast]);
+
+  useEffect(() => {
+    if (!apiKey) {
+      setError('API key is required');
+      return;
+    }
+
+    fetchStats();
+  }, [apiKey, fetchStats, setError]);
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';

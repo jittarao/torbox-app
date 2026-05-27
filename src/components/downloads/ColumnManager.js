@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -60,13 +60,13 @@ export default function ColumnManager({
   const t = useTranslations('ColumnManager');
   const columnT = useTranslations('Columns');
   const [isOpen, setIsOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

@@ -166,6 +166,7 @@ export async function POST(request) {
 
       // Upload file to backend storage
       const fileUploadResponse = await fetch(`${BACKEND_URL}/api/uploads/file`, {
+        cache: 'no-store',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,6 +198,7 @@ export async function POST(request) {
 
     // Create upload entry in backend
     const uploadResponse = await fetch(`${BACKEND_URL}/api/uploads`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,6 +220,7 @@ export async function POST(request) {
       if (file_path && upload_type === 'file') {
         try {
           await fetch(`${BACKEND_URL}/api/uploads/file`, {
+            cache: 'no-store',
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -302,6 +305,7 @@ export async function DELETE(request) {
         });
 
     const response = await fetch(endpoint, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,

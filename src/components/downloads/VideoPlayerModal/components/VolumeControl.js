@@ -31,6 +31,8 @@ export default function VolumeControl({
         clearTimeout(timeoutRef.current);
       }
     };
+    // timeoutRef is a ref (stable) — no deps needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMouseEnter = () => {

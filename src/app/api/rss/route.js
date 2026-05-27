@@ -112,6 +112,7 @@ export async function POST(request) {
     }
 
     const response = await fetch(endpoint, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -40,7 +40,7 @@ function transformOldEntry(oldEntry) {
 /**
  * Check if migration has already been completed
  */
-export function isMigrationCompleted() {
+function isMigrationCompleted() {
   if (typeof window === 'undefined') return true; // Server-side, skip
   return localStorage.getItem(MIGRATION_FLAG_KEY) === 'true';
 }

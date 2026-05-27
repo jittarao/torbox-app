@@ -44,6 +44,7 @@ export async function POST(request, { params }) {
     const body = await request.json();
 
     const response = await fetch(`${BACKEND_URL}/api/storage/${key}`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

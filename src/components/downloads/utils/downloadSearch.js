@@ -1,17 +1,17 @@
 /** @param {string} query */
-export function normalizeDownloadSearchQuery(query) {
+function normalizeDownloadSearchQuery(query) {
   return (query || '').trim().toLowerCase();
 }
 
 /** @param {{ name?: string, short_name?: string }} file @param {string} normalizedQuery */
-export function fileMatchesDownloadSearch(file, normalizedQuery) {
+function fileMatchesDownloadSearch(file, normalizedQuery) {
   if (!normalizedQuery) return true;
   const name = (file.short_name || file.name || '').toLowerCase();
   return name.includes(normalizedQuery);
 }
 
 /** @param {{ name?: string }} item @param {string} normalizedQuery */
-export function itemNameMatchesDownloadSearch(item, normalizedQuery) {
+function itemNameMatchesDownloadSearch(item, normalizedQuery) {
   if (!normalizedQuery) return true;
   return (item.name || '').toLowerCase().includes(normalizedQuery);
 }

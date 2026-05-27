@@ -167,7 +167,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       localStorage.setItem(ASSET_TYPE_STORAGE_KEY, 'all');
       setSelectedItems({ items: new Set(), files: new Map() });
     }
-  }, [canUseUsenet, activeType]);
+  }, [canUseUsenet, activeType, setActiveType, setSelectedItems]);
 
   // Function to collapse all files
   const collapseAllFiles = () => {
@@ -199,6 +199,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     if (isBackendAvailable && apiKey && tags.length === 0 && !tagsLoading) {
       loadTags();
     }
+    // tags.length, tagsLoading, loadTags intentionally omitted to prevent
+    // infinite loop when tags are loaded — should only run on mount/key change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
 
@@ -220,6 +222,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     ) {
       fetchDownloadTags();
     }
+    // tagMappings.length, downloadTagsLoading, fetchDownloadTags intentionally
+    // omitted to prevent infinite loop — should only run on mount/key change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
 
@@ -324,6 +328,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     if (isBackendAvailable && apiKey && views.length === 0 && !viewsLoading) {
       loadViews();
     }
+    // views.length, viewsLoading, loadViews intentionally omitted to prevent
+    // infinite loop — should only run on mount/key change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
 
@@ -351,8 +357,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         clearInterval(interval);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, pollingPaused]);
+  }, [apiKey, pollingPaused, fetchNotificationsStore, isPollingPaused]);
 
   const sortedItems = sortTorrents(filteredItems);
 
@@ -498,7 +503,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         });
       }
     },
-    [activeType, enrichedDownloads, requestDownloadLink, setToast, apiKey]
+    [activeType, enrichedDownloads, requestDownloadLink, setToast, apiKey, setPauseReason]
   );
 
   const handleAudioRefreshUrl = useCallback(async () => {
@@ -841,7 +846,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
       setStatusFilter('all');
     },
-    [activeType, clearView, editingView, filterModalMode, search, setSort, sortDirection, sortField]
+    [activeType, clearView, editingView, filterModalMode, search, setSort, sortDirection, sortField, setColumnFilters, setAppliedFilters, setSearch, setStatusFilter]
   );
 
   const sidebarProps = {

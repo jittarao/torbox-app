@@ -22,6 +22,7 @@ export async function PATCH(request) {
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/reorder`, {
       method: 'PATCH',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

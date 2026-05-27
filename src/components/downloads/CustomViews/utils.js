@@ -7,7 +7,7 @@ import {
 } from '../AutomationRules/constants';
 
 // Map column keys to filter types
-export const COLUMN_FILTER_TYPES = {
+const COLUMN_FILTER_TYPES = {
   // Number columns
   size: 'number',
   progress: 'number',
@@ -50,7 +50,7 @@ export const COLUMN_FILTER_TYPES = {
 };
 
 // Get filter type for a column
-export const getColumnFilterType = (columnKey) => {
+const getColumnFilterType = (columnKey) => {
   return COLUMN_FILTER_TYPES[columnKey] || 'number';
 };
 

@@ -40,6 +40,7 @@ export async function POST(request) {
     }
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/rss/controlrss`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

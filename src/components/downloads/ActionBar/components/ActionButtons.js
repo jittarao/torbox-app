@@ -66,7 +66,7 @@ export default function ActionButtons({
     if (apiKey) {
       checkConnectedProviders();
     }
-  }, [apiKey]);
+  }, [apiKey, setConnectedProviders]);
 
   // Close cloud upload dropdown when clicking outside
   useEffect(() => {

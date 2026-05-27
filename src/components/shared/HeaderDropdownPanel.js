@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
 const MOBILE_MEDIA_QUERY = '(max-width: 767px)';
@@ -16,11 +16,11 @@ export default function HeaderDropdownPanel({
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [portalReady, setPortalReady] = useState(false);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
+  const portalReady = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);

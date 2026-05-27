@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
@@ -11,16 +11,7 @@ export default function UserTransactions({ apiKey, setToast }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!apiKey) {
-      setError('API key is required');
-      return;
-    }
-
-    fetchTransactions();
-  }, [apiKey]);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -62,7 +53,16 @@ export default function UserTransactions({ apiKey, setToast }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey, setError, setLoading, setTransactions, setToast]);
+
+  useEffect(() => {
+    if (!apiKey) {
+      setError('API key is required');
+      return;
+    }
+
+    fetchTransactions();
+  }, [apiKey, fetchTransactions, setError]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';

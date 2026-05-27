@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
 import Icons from '@/components/icons';
@@ -29,7 +29,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
   };
 
   // Fetch item counts for all feeds
-  const fetchItemCounts = async () => {
+  const fetchItemCounts = useCallback(async () => {
     if (!feeds.length) return;
 
     const results = await Promise.allSettled(
@@ -48,14 +48,14 @@ export default function RssFeedManager({ apiKey, setToast }) {
       }
     }
     setItemCounts(counts);
-  };
+  }, [feeds, getFeedItems, setItemCounts]);
 
   // Fetch item counts when feeds change
   useEffect(() => {
     if (feeds.length > 0) {
       fetchItemCounts();
     }
-  }, [feeds]);
+  }, [feeds, fetchItemCounts]);
 
   // Auto-refresh feeds every 30 seconds to get items quickly
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, [feeds]);
+  }, [feeds, fetchItemCounts]);
 
   const [formData, setFormData] = useState({
     name: '',

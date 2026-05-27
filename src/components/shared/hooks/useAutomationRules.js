@@ -56,7 +56,7 @@ export function useAutomationRules(apiKey) {
       loadAttemptedRef.current = true;
       loadRules(apiKey);
     }
-  }, [apiKey, rules.length, loading, backendMode, backendIsLoading]);
+  }, [apiKey, rules.length, loading, backendMode, backendIsLoading, loadRules]);
 
   // Wrapper for saveRules that includes apiKey
   const saveRulesWithKey = async (newRules) => {

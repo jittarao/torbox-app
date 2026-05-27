@@ -83,6 +83,7 @@ export async function POST(request) {
     }
 
     const requestOptions = {
+      cache: 'no-store',
       method,
       headers: {
         Authorization: `Bearer ${apiKey}`,

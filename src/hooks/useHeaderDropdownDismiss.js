@@ -6,7 +6,7 @@ const HEADER_PANEL_SELECTOR = '[data-header-dropdown-panel]';
 const HEADER_OVERLAY_SELECTOR = '[data-header-overlay]';
 
 /** True when the event target is inside a header dropdown panel or mobile overlay. */
-export function isEventInsideHeaderDropdown(event) {
+function isEventInsideHeaderDropdown(event) {
   const target = event.target;
   if (!(target instanceof Element)) return false;
   return Boolean(target.closest(HEADER_PANEL_SELECTOR) || target.closest(HEADER_OVERLAY_SELECTOR));

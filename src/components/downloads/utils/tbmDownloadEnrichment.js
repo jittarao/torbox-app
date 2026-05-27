@@ -9,7 +9,7 @@
  * Build Sets for O(1) link-history lookups (item-level and per-file).
  * @param {Array<{ assetType: string, itemId: string|number, fileId?: string|number|null }>} downloadHistory
  */
-export function buildDownloadHistoryLookup(downloadHistory) {
+function buildDownloadHistoryLookup(downloadHistory) {
   const itemDownloads = new Set();
   const fileDownloads = new Set();
 
@@ -28,7 +28,7 @@ export function buildDownloadHistoryLookup(downloadHistory) {
 /**
  * Whether the user has generated a download link for the whole item (matches row highlight).
  */
-export function isItemDownloaded(item, lookup) {
+function isItemDownloaded(item, lookup) {
   if (!item || !lookup) return false;
   const assetType = item.assetType || item.asset_type;
   if (!assetType) return false;
@@ -38,7 +38,7 @@ export function isItemDownloaded(item, lookup) {
 /**
  * Whether a specific file within a multi-file item was downloaded.
  */
-export function isFileDownloaded(item, fileId, lookup) {
+function isFileDownloaded(item, fileId, lookup) {
   if (!item || !lookup) return false;
   const assetType = item.assetType || item.asset_type;
   if (!assetType) return false;
@@ -49,7 +49,7 @@ export function isFileDownloaded(item, fileId, lookup) {
 }
 
 /** Add link-history `is_downloaded` for filters and view counts. */
-export function applyLinkHistoryToDownloads(downloads, downloadHistory) {
+function applyLinkHistoryToDownloads(downloads, downloadHistory) {
   if (!downloads?.length) return downloads || [];
   const lookup = buildDownloadHistoryLookup(downloadHistory);
   return downloads.map((download) => ({

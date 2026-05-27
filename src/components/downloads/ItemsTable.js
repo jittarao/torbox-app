@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
@@ -41,7 +41,11 @@ export default function ItemsTable({
   fileSearch = '',
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const [tableWidth, setTableWidth] = useState(0);
   const tableContainerRef = useRef(null);
   const [trackSelectionModal, setTrackSelectionModal] = useState({
@@ -194,8 +198,6 @@ export default function ItemsTable({
 
   // Load mobile notice dismissal preference from localStorage
   useEffect(() => {
-    setIsClient(true);
-
     if (typeof localStorage !== 'undefined') {
       const noticeDismissed = localStorage.getItem(MOBILE_NOTICE_DISMISSED_KEY);
       if (noticeDismissed === 'true') {
