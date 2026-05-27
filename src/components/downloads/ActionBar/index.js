@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, Fragment } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, Fragment } from 'react';
 import ColumnManager from '../ColumnManager';
 import { COLUMNS } from '@/components/constants';
 import { getItemTypeName } from './utils/statusHelpers';
@@ -62,6 +62,21 @@ export default function ActionBar({
   const scrollTimeoutRef = useRef(null);
   const initialTopRef = useRef(0);
 
+  const getScrollTop = useCallback(() => {
+    if (isFullscreen && scrollContainerRef?.current) {
+      return scrollContainerRef.current.scrollTop;
+    }
+    return window.scrollY || document.documentElement.scrollTop;
+  }, [isFullscreen, scrollContainerRef]);
+
+  /** Document Y of the bar in normal flow — invalid while `position: fixed` */
+  const measureInitialTop = useCallback(() => {
+    const element = stickyRef.current;
+    if (!element || isStickyRef.current) return;
+    const rect = element.getBoundingClientRect();
+    initialTopRef.current = rect.top + getScrollTop();
+  }, [getScrollTop]);
+
   // Use filteredItems for status counts if available, otherwise use unfilteredItems
   const itemsForStatusCounts = filteredItems || unfilteredItems;
   const { statusCounts, statusOptions, isStatusSelected } = useStatusCounts(itemsForStatusCounts);
@@ -113,20 +128,17 @@ export default function ActionBar({
     isStickyRef.current = false;
 
     // Recalculate initial position after a brief delay to allow DOM to settle
-    const timer = setTimeout(() => {
-      const element = stickyRef.current;
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        const scrollTop =
-          isFullscreen && scrollContainerRef?.current
-            ? scrollContainerRef.current.scrollTop
-            : window.scrollY || document.documentElement.scrollTop;
-        initialTopRef.current = rect.top + scrollTop;
-      }
-    }, 50);
+    const timer = setTimeout(measureInitialTop, 50);
 
     return () => clearTimeout(timer);
-  }, [isFullscreen, scrollContainerRef, viewMode]);
+  }, [isFullscreen, scrollContainerRef, viewMode, measureInitialTop]);
+
+  // Re-anchor after unsticking once the bar is back in document flow
+  useLayoutEffect(() => {
+    if (!isSticky) {
+      measureInitialTop();
+    }
+  }, [isSticky, measureInitialTop]);
 
   // Measure height
   useEffect(() => {
@@ -162,28 +174,13 @@ export default function ActionBar({
     const element = stickyRef.current;
     if (!element) return;
 
-    // Recalculate initial position when effect runs (mode changed)
-    const recalculateInitialTop = () => {
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        const scrollTop =
-          isFullscreen && scrollContainerRef?.current
-            ? scrollContainerRef.current.scrollTop
-            : window.scrollY || document.documentElement.scrollTop;
-        initialTopRef.current = rect.top + scrollTop;
-      }
-    };
-
     // Recalculate after a brief delay to ensure DOM is ready
-    const initTimer = setTimeout(recalculateInitialTop, 100);
+    const initTimer = setTimeout(measureInitialTop, 100);
 
     const checkSticky = () => {
       if (!element) return;
 
-      const scrollTop =
-        isFullscreen && scrollContainerRef?.current
-          ? scrollContainerRef.current.scrollTop
-          : window.scrollY || document.documentElement.scrollTop;
+      const scrollTop = getScrollTop();
 
       // ActionBar should be sticky when we've scrolled past its initial position
       // We use >= instead of > to account for the exact moment it reaches the top
@@ -198,21 +195,14 @@ export default function ActionBar({
         if (shouldBeSticky) {
           const height = element.offsetHeight;
           setSpacerHeight((prev) => (prev !== height ? height : prev));
-        } else {
-          // When becoming unsticky, update initial position in case layout changed
-          requestAnimationFrame(() => {
-            if (element && !isStickyRef.current) {
-              recalculateInitialTop();
-            }
-          });
         }
       }
     };
 
-    // Throttled scroll handler
+    // Trailing rAF: always run check for the latest scroll position
     const handleScroll = () => {
       if (scrollTimeoutRef.current) {
-        return;
+        cancelAnimationFrame(scrollTimeoutRef.current);
       }
 
       scrollTimeoutRef.current = requestAnimationFrame(() => {
@@ -243,7 +233,7 @@ export default function ActionBar({
       }
       scrollElement.removeEventListener('scroll', handleScroll);
     };
-  }, [isFullscreen, scrollContainerRef, updateStickyBounds]);
+  }, [isFullscreen, scrollContainerRef, updateStickyBounds, getScrollTop, measureInitialTop]);
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;
