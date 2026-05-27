@@ -71,7 +71,7 @@ export const useCustomViewsStore = create((set, get) => ({
   },
 
   // Save a new view
-  saveView: async (apiKey, name, filters, sort, columns, assetType = null) => {
+  saveView: async (apiKey, name, filters, sort, columns, assetType = null, searchQuery = null) => {
     if (!apiKey) {
       throw new Error('API key is required');
     }
@@ -96,6 +96,7 @@ export const useCustomViewsStore = create((set, get) => ({
           sort_direction: sort?.direction || null,
           visible_columns: columns || null,
           asset_type: assetType || null,
+          search_query: searchQuery?.trim() || null,
         }),
       });
 

@@ -33,11 +33,11 @@ export function useCustomViews(apiKey) {
   }, [apiKey, loadViews]);
 
   const saveView = useCallback(
-    async (name, filters, sort, columns, assetType = null) => {
+    async (name, filters, sort, columns, assetType = null, searchQuery = null) => {
       if (!apiKey) {
         throw new Error('API key is required');
       }
-      return await saveViewStore(apiKey, name, filters, sort, columns, assetType);
+      return await saveViewStore(apiKey, name, filters, sort, columns, assetType, searchQuery);
     },
     [apiKey, saveViewStore]
   );

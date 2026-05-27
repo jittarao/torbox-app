@@ -52,7 +52,7 @@ export function setupCustomViewsRoutes(app, backend) {
       const views = userDb.db
         .prepare(
           `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
           FROM custom_views
           ORDER BY created_at DESC
         `
@@ -89,7 +89,8 @@ export function setupCustomViewsRoutes(app, backend) {
         });
       }
 
-      const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
+      const { name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query } =
+        req.body;
 
       if (!name || !filters) {
         return res.status(400).json({
@@ -103,8 +104,8 @@ export function setupCustomViewsRoutes(app, backend) {
       const result = userDb.db
         .prepare(
           `
-          INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `
         )
         .run(
@@ -113,13 +114,14 @@ export function setupCustomViewsRoutes(app, backend) {
           sort_field || null,
           sort_direction || null,
           visible_columns ? JSON.stringify(visible_columns) : null,
-          asset_type || null
+          asset_type || null,
+          search_query?.trim() || null
         );
 
       const view = userDb.db
         .prepare(
           `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
           FROM custom_views
           WHERE id = ?
         `
@@ -165,7 +167,7 @@ export function setupCustomViewsRoutes(app, backend) {
         const view = userDb.db
           .prepare(
             `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
           FROM custom_views
           WHERE id = ?
         `
@@ -207,7 +209,8 @@ export function setupCustomViewsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const viewId = req.validatedIds.id;
-        const { name, filters, sort_field, sort_direction, visible_columns, asset_type } = req.body;
+        const { name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query } =
+        req.body;
 
         if (!backend.userDatabaseManager) {
           return res.status(503).json({
@@ -243,6 +246,7 @@ export function setupCustomViewsRoutes(app, backend) {
           'sort_direction',
           'visible_columns',
           'asset_type',
+          'search_query',
         ];
 
         if (name !== undefined) {
@@ -262,6 +266,9 @@ export function setupCustomViewsRoutes(app, backend) {
         }
         if (asset_type !== undefined) {
           updates.asset_type = asset_type || null;
+        }
+        if (search_query !== undefined) {
+          updates.search_query = search_query?.trim() || null;
         }
 
         // Build SET clause with validated column names and parameterized values
@@ -288,7 +295,7 @@ export function setupCustomViewsRoutes(app, backend) {
         const view = userDb.db
           .prepare(
             `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, created_at, updated_at
+          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
           FROM custom_views
           WHERE id = ?
         `
