@@ -26,9 +26,9 @@ export function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
 
 export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
-/** ~5 icon buttons (files, download, delete, menu) — export lives in More dropdown */
+/** ~6 icon buttons (stop seeding, files, download, delete, menu) — export lives in More dropdown */
 const actionsColumnWidthClass =
-  'w-[168px] min-w-[168px] max-w-[168px] md:w-[156px] md:min-w-[156px] md:max-w-[156px] lg:w-[168px] lg:min-w-[168px] lg:max-w-[168px]';
+  'w-[200px] min-w-[200px] max-w-[200px] md:w-[188px] md:min-w-[188px] md:max-w-[188px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
 
 /** Shared sticky shell for the right-pinned actions column */
 const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tableActionsCellShadows}`;
@@ -44,10 +44,10 @@ export const tableActionsCellInner =
 
 /** Match actionsColumnWidthClass — used for file-row layout math */
 export function getActionsColumnWidthPx() {
-  if (typeof window === 'undefined') return 168;
+  if (typeof window === 'undefined') return 200;
   const w = window.innerWidth;
-  if (w >= 768 && w < 1024) return 156;
-  return 168;
+  if (w >= 768 && w < 1024) return 188;
+  return 200;
 }
 
 /**

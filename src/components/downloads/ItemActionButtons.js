@@ -69,9 +69,9 @@ export default function ItemActionButtons({
             isLoading={isStopping}
             confirmIcon={<Icons.Check />}
             defaultIcon={<Icons.Stop />}
-            className={`text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500
-              transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-              ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
+            className={`${tableIconButtonClass} text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500
+              hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
+              ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={t('stop.title')}
             isMobile={isMobile}
             mobileText={t('stop.label')}
