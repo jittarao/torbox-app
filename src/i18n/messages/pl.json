@@ -398,6 +398,18 @@
     "createView": "Utwórz widok",
     "creating": "Tworzenie..."
   },
+  "FetchStatus": {
+    "dismiss": "Zamknij",
+    "lastUpdated": "Ostatnia aktualizacja {ago}.",
+    "refreshDelayedRateLimit": "Odświeżanie opóźnione — zbyt wiele żądań.",
+    "refreshNow": "Odśwież teraz",
+    "refreshPaused": "Automatyczne odświeżanie wstrzymane podczas odtwarzania.",
+    "refreshing": "Odświeżanie…",
+    "retry": "Ponów",
+    "updatedHoursAgo": "{hours} godz. temu",
+    "updatedJustNow": "przed chwilą",
+    "updatedMinutesAgo": "{minutes} min temu"
+  },
   "DownloadsFilters": {
     "sidebarLabel": "Filtry",
     "viewsSection": "Widoki",

@@ -398,6 +398,18 @@
     "createView": "Crear vista",
     "creating": "Creando..."
   },
+  "FetchStatus": {
+    "dismiss": "Descartar",
+    "lastUpdated": "Última actualización {ago}.",
+    "refreshDelayedRateLimit": "Actualización retrasada — demasiadas solicitudes.",
+    "refreshNow": "Actualizar ahora",
+    "refreshPaused": "Actualización automática en pausa durante la reproducción.",
+    "refreshing": "Actualizando…",
+    "retry": "Reintentar",
+    "updatedHoursAgo": "hace {hours} h",
+    "updatedJustNow": "ahora mismo",
+    "updatedMinutesAgo": "hace {minutes} min"
+  },
   "DownloadsFilters": {
     "sidebarLabel": "Filtros",
     "viewsSection": "Vistas",

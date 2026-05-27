@@ -398,6 +398,18 @@
     "createView": "ビューを作成",
     "creating": "作成中..."
   },
+  "FetchStatus": {
+    "dismiss": "閉じる",
+    "lastUpdated": "最終更新 {ago}。",
+    "refreshDelayedRateLimit": "更新が遅延しています — リクエストが多すぎます。",
+    "refreshNow": "今すぐ更新",
+    "refreshPaused": "メディア再生中は自動更新を一時停止しています。",
+    "refreshing": "更新中…",
+    "retry": "再試行",
+    "updatedHoursAgo": "{hours}時間前",
+    "updatedJustNow": "たった今",
+    "updatedMinutesAgo": "{minutes}分前"
+  },
   "DownloadsFilters": {
     "sidebarLabel": "フィルター",
     "viewsSection": "ビュー",
