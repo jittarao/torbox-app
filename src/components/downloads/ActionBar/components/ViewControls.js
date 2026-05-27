@@ -4,6 +4,15 @@ import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
+const toolbarBtnBase =
+  'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
+
+function toolbarBtnClass(active) {
+  return active
+    ? `${toolbarBtnBase} border-accent text-accent dark:border-accent-dark dark:text-accent-dark`
+    : `${toolbarBtnBase} border-border text-primary-text/70 hover:text-primary-text dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark`;
+}
+
 function ToolbarButton({ active, onClick, title, children, className = '' }) {
   return (
     <Tooltip content={title}>
@@ -12,14 +21,7 @@ function ToolbarButton({ active, onClick, title, children, className = '' }) {
         onClick={onClick}
         aria-label={title}
         aria-pressed={active}
-        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm transition-colors
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30
-          ${
-            active
-              ? 'border-accent bg-accent/10 text-accent dark:border-accent-dark dark:bg-accent-dark/10 dark:text-accent-dark'
-              : 'border-border bg-surface-alt text-primary-text/70 hover:border-primary-text/30 hover:bg-surface-alt-hover hover:text-primary-text dark:border-border-dark dark:bg-surface-alt-dark dark:text-primary-text-dark/70 dark:hover:border-primary-text-dark/30 dark:hover:bg-surface-alt-hover-dark dark:hover:text-primary-text-dark'
-          }
-          ${className}`}
+        className={`${toolbarBtnClass(active)} ${className}`}
       >
         {children}
       </button>
@@ -55,21 +57,17 @@ export default function ViewControls({
 
   return (
     <div
-      className="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5 sm:overflow-visible sm:pb-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex shrink-0 items-center gap-1 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:overflow-visible"
       role="toolbar"
       aria-label={t('toolbarLabel')}
     >
       {!isMobile && (
-        <div
-          className="flex shrink-0 overflow-hidden rounded-lg border border-border dark:border-border-dark"
-          role="group"
-          aria-label={t('viewModeGroup')}
-        >
+        <div className="flex items-center gap-0" role="group" aria-label={t('viewModeGroup')}>
           <ToolbarButton
             active={viewMode === 'table'}
             onClick={() => handleViewModeChange('table')}
             title={t('tableView')}
-            className="!h-10 !w-10 rounded-none border-0 border-r border-border dark:border-border-dark"
+            className="rounded-r-none"
           >
             <Icons.Table />
           </ToolbarButton>
@@ -77,7 +75,7 @@ export default function ViewControls({
             active={viewMode === 'card'}
             onClick={() => handleViewModeChange('card')}
             title={t('cardView')}
-            className="!h-10 !w-10 rounded-none border-0"
+            className="rounded-l-none -ml-px"
           >
             <Icons.List />
           </ToolbarButton>
