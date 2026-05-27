@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import FilterGroup from './CustomViews/components/FilterGroup';
+import ViewFilterPreview from './CustomViews/components/ViewFilterPreview';
 import { getFilterableColumns } from './CustomViews/utils';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
@@ -28,6 +29,8 @@ export default function FilterEditorModal({
   sortDirection,
   activeColumns,
   search = '',
+  previewItems = null,
+  onPreview,
 }) {
   const { saveView, updateView } = useCustomViews(apiKey);
   const customViewsT = useTranslations('CustomViews');
@@ -44,8 +47,14 @@ export default function FilterEditorModal({
   const [saveSort, setSaveSort] = useState(false);
   const [saveColumns, setSaveColumns] = useState(false);
   const [saveSearch, setSaveSearch] = useState(false);
+  const [previewApplied, setPreviewApplied] = useState(false);
 
   const availableColumns = getFilterableColumns(columnsT, activeType);
+  const isViewMode = isCreateMode || isEditMode;
+  const trimmedSearch = search?.trim() || '';
+  const previewAssetType =
+    isEditMode && editingView?.asset_type ? editingView.asset_type : activeType;
+  const previewSearchQuery = saveSearch ? trimmedSearch : null;
 
   const modalTitle = (() => {
     if (isCreateMode) return downloadsFiltersT('modalTitleCreate');
@@ -60,6 +69,7 @@ export default function FilterEditorModal({
       setSaveSort(false);
       setSaveColumns(false);
       setSaveSearch(false);
+      setPreviewApplied(false);
       return;
     }
 
@@ -307,14 +317,25 @@ export default function FilterEditorModal({
     onClose();
   };
 
+  const handlePreview = () => {
+    if (!filtersActive && !previewSearchQuery) return;
+    onPreview?.(filtersToSave(), {
+      includeSort: saveSort,
+      includeSearch: saveSearch,
+    });
+    setPreviewApplied(true);
+  };
+
+  useEffect(() => {
+    if (isOpen) setPreviewApplied(false);
+  }, [columnFilters, isOpen]);
+
   const handleClear = () => {
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
     setColumnFilters(empty);
     onApply?.(empty);
     onClose();
   };
-
-  const trimmedSearch = search?.trim() || '';
 
   const saveOptionsRow = (
     <div className="flex flex-col gap-1.5">
@@ -388,36 +409,23 @@ export default function FilterEditorModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {isCreateMode && (
-            <div className="flex flex-col gap-2 pb-3 border-b border-border dark:border-border-dark">
-              {saveOptionsRow}
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={saveViewName}
-                  onChange={(e) => setSaveViewName(e.target.value)}
-                  placeholder={customViewsT('viewNamePlaceholder')}
-                  className="flex-1 px-3 py-2 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && filtersActive) handleCreateView();
-                  }}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateView}
-                  disabled={isSaving || !saveViewName.trim() || !filtersActive}
-                  className="px-4 py-2 text-sm font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
-                >
-                  {isSaving ? customViewsT('creating') : customViewsT('createView')}
-                </button>
-              </div>
-              {!filtersActive && (
-                <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
-                  {customViewsT('noFilters')}
-                </p>
-              )}
-            </div>
+          {isViewMode && saveOptionsRow}
+
+          {isViewMode && previewItems && (filtersActive || previewSearchQuery) && (
+            <ViewFilterPreview
+              filters={columnFilters}
+              previewItems={previewItems}
+              assetType={previewAssetType}
+              searchQuery={previewSearchQuery}
+              onPreview={onPreview ? handlePreview : undefined}
+              showPreviewButton={!!onPreview}
+            />
+          )}
+
+          {previewApplied && isViewMode && (
+            <p className="text-xs text-accent dark:text-accent-dark -mt-2">
+              {customViewsT('previewApplied')}
+            </p>
           )}
 
           {filterGroups.length === 0 ? (
@@ -453,40 +461,18 @@ export default function FilterEditorModal({
             ))
           )}
 
-          {apiKey && filtersActive && !isCreateMode && (
+          {apiKey && filtersActive && !isCreateMode && !isEditMode && (
             <div className="pt-3 border-t border-border dark:border-border-dark">
               {!showSaveInput ? (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  {isEditMode && saveOptionsRow}
                   <div className="flex items-center gap-2 flex-wrap sm:ml-auto">
-                    {isEditMode && (
-                      <button
-                        type="button"
-                        onClick={handleUpdateView}
-                        disabled={isSaving}
-                        className="px-3 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50"
-                      >
-                        {isSaving ? customViewsT('updating') : customViewsT('updateView')}
-                      </button>
-                    )}
-                    {!isEditMode && (
-                      <button
-                        type="button"
-                        onClick={() => setShowSaveInput(true)}
-                        className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
-                      >
-                        {customViewsT('saveAsNew')}
-                      </button>
-                    )}
-                    {isEditMode && (
-                      <button
-                        type="button"
-                        onClick={() => setShowSaveInput(true)}
-                        className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
-                      >
-                        {customViewsT('saveAsNew')}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowSaveInput(true)}
+                      className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+                    >
+                      {customViewsT('saveAsNew')}
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -533,7 +519,40 @@ export default function FilterEditorModal({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 p-4 border-t border-border dark:border-border-dark shrink-0">
+        <div className="flex flex-col gap-3 p-4 border-t border-border dark:border-border-dark shrink-0">
+          {isCreateMode && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={saveViewName}
+                  onChange={(e) => setSaveViewName(e.target.value)}
+                  placeholder={customViewsT('viewNamePlaceholder')}
+                  className="flex-1 px-3 py-2 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && filtersActive && saveViewName.trim()) {
+                      handleCreateView();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateView}
+                  disabled={isSaving || !saveViewName.trim() || !filtersActive}
+                  className="px-4 py-2 text-sm font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
+                >
+                  {isSaving ? customViewsT('creating') : customViewsT('createView')}
+                </button>
+              </div>
+              {!filtersActive && (
+                <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+                  {customViewsT('noFilters')}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2">
           {filtersActive && !isCreateMode && (
             <>
               <button
@@ -549,6 +568,25 @@ export default function FilterEditorModal({
                 className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
               >
                 {downloadsFiltersT('clearAll')}
+              </button>
+            </>
+          )}
+          {isEditMode && filtersActive && (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowSaveInput(true)}
+                className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+              >
+                {customViewsT('saveAsNew')}
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateView}
+                disabled={isSaving}
+                className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50"
+              >
+                {isSaving ? customViewsT('updating') : customViewsT('updateView')}
               </button>
             </>
           )}
@@ -572,6 +610,7 @@ export default function FilterEditorModal({
           >
             + {customViewsT('addGroup')}
           </button>
+          </div>
         </div>
       </div>
     </>

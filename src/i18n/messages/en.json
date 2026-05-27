@@ -412,7 +412,12 @@
     "updating": "Updating...",
     "viewNamePlaceholder": "View name...",
     "createView": "Create view",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "previewFilters": "Preview on list",
+    "previewHint": "Apply filters to the downloads list without saving.",
+    "previewMatchCount": "{count, plural, =0 {No downloads match} one {# download matches} other {# downloads match}}",
+    "previewMatchCountOfTotal": "{matched} of {total} on this tab",
+    "previewApplied": "Preview applied to the list below. Save when ready, or keep adjusting filters."
   },
   "FetchStatus": {
     "autoRefreshInactive": "Auto-refresh resumes when you return to this tab.",
