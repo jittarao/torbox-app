@@ -236,7 +236,7 @@ export default function FiltersSidebar({
         <button
           type="button"
           onClick={onNewView || onNewFilter}
-          className="w-full px-2 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 transition-opacity"
+          className="w-full px-2 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent/40 dark:border-accent-dark/40 rounded-md hover:bg-accent/10 dark:hover:bg-accent-dark/10 transition-colors"
         >
           {t('newView')}
         </button>
