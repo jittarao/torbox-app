@@ -10,12 +10,12 @@ export const tableRowSeparator =
   '[box-shadow:inset_0_-1px_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c]';
 
 /**
- * Bottom row line + left edge on sticky actions cells.
- * Single box-shadow rule — multiple Tailwind arbitrary shadows override each other.
- * Sticky <td>/<th> do not show inset shadows applied only on <tr>.
+ * Sticky actions cell shadows (one rule — arbitrary box-shadows override each other).
+ * Bottom: row divider (<tr> inset does not paint on sticky cells).
+ * Left: soft inset vignette inside the cell — depth when scrolling, no hard rule on neighbours.
  */
 export const tableActionsCellShadows =
-  '[box-shadow:inset_0_-1px_0_0_#cecece,inset_1px_0_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c,inset_1px_0_0_0_#3c3c3c]';
+  '[box-shadow:inset_0_-1px_0_0_#cecece,inset_12px_0_10px_-12px_rgba(15,23,42,0.05)] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c,inset_12px_0_10px_-12px_rgba(0,0,0,0.2)]';
 
 export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
 
