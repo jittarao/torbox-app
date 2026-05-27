@@ -398,7 +398,12 @@
     "updating": "Mise à jour...",
     "viewNamePlaceholder": "Nom de la vue...",
     "createView": "Créer une vue",
-    "creating": "Création..."
+    "creating": "Création...",
+    "previewFilters": "Aperçu sur la liste",
+    "previewHint": "Appliquer les filtres à la liste des téléchargements sans enregistrer.",
+    "previewMatchCount": "{count, plural, =0 {Aucun téléchargement ne correspond} one {# téléchargement correspond} other {# téléchargements correspondent}}",
+    "previewMatchCountOfTotal": "{matched} sur {total} dans cet onglet",
+    "previewApplied": "Aperçu appliqué à la liste. Enregistrez quand vous êtes prêt ou continuez à ajuster les filtres."
   },
   "FetchStatus": {
     "autoRefreshInactive": "L'actualisation automatique reprend lorsque vous revenez sur cet onglet.",

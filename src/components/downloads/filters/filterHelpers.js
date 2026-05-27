@@ -4,6 +4,7 @@ import {
 } from '../AutomationRules/constants';
 import { isTagsColumn } from '../CustomViews/utils';
 import { itemMatchesFilters } from './filterEvaluation';
+import { itemMatchesDownloadSearch } from '../utils/downloadSearch';
 
 export const EMPTY_FILTERS = {
   logicOperator: LOGIC_OPERATORS.AND,
@@ -155,6 +156,35 @@ export function isViewCompatibleWithAssetTab(viewAssetType, activeAssetType) {
   if (!activeAssetType || activeAssetType === 'all') return true;
   if (!viewAssetType || viewAssetType === 'all') return true;
   return viewAssetType === activeAssetType;
+}
+
+/**
+ * Count downloads matching filter rules (and optional search), for view editor preview.
+ */
+export function countDownloadsMatchingFilters(
+  filters,
+  enrichedDownloads,
+  { assetType = null, searchQuery = null } = {}
+) {
+  const items = enrichedDownloads || [];
+  const normalized = mergeViewAssetTypeFilter(filters, assetType);
+  const query = searchQuery?.trim() || '';
+  const filtersActive = hasActiveFilters(normalized);
+
+  if (!filtersActive && !query) {
+    return { matched: 0, total: items.length };
+  }
+
+  let matched = 0;
+  for (const item of items) {
+    if (!item) continue;
+    if (query && !itemMatchesDownloadSearch(item, query)) continue;
+    if (!filtersActive || itemMatchesFilters(item, normalized)) {
+      matched += 1;
+    }
+  }
+
+  return { matched, total: items.length };
 }
 
 /**

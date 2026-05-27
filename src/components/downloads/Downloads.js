@@ -818,6 +818,41 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     setAppliedFilters(normalizeFilters(filters));
   };
 
+  const handlePreviewFiltersFromModal = useCallback(
+    (filters, { includeSort = false, includeSearch = false } = {}) => {
+      const assetType =
+        filterModalMode === 'edit' && editingView?.asset_type
+          ? editingView.asset_type
+          : activeType;
+      const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);
+      setColumnFilters(normalized);
+      setAppliedFilters(normalized);
+      clearView();
+
+      if (includeSort && sortField) {
+        setSort(sortField, sortDirection || 'desc');
+      }
+
+      if (includeSearch && search?.trim()) {
+        setSearch(search.trim());
+      } else if (!includeSearch) {
+        setSearch('');
+      }
+
+      setStatusFilter('all');
+    },
+    [
+      activeType,
+      clearView,
+      editingView,
+      filterModalMode,
+      search,
+      setSort,
+      sortDirection,
+      sortField,
+    ]
+  );
+
   const sidebarProps = {
     apiKey,
     views,
@@ -1150,6 +1185,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
                 columnFilters={columnFilters}
                 setColumnFilters={setColumnFilters}
                 onApply={handleApplyFiltersFromModal}
+                onPreview={handlePreviewFiltersFromModal}
+                previewItems={enrichedDownloads}
                 onViewCreated={handleViewCreated}
                 onViewUpdated={handleViewUpdated}
                 sortField={sortField}

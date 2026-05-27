@@ -398,7 +398,12 @@
     "updating": "Aktualizacja...",
     "viewNamePlaceholder": "Nazwa widoku...",
     "createView": "Utwórz widok",
-    "creating": "Tworzenie..."
+    "creating": "Tworzenie...",
+    "previewFilters": "Podgląd na liście",
+    "previewHint": "Zastosuj filtry do listy pobierań bez zapisywania.",
+    "previewMatchCount": "{count, plural, =0 {Brak pasujących pobrań} one {# pobranie pasuje} few {# pobrania pasują} many {# pobrań pasuje} other {# pobrania pasuje}}",
+    "previewMatchCountOfTotal": "{matched} z {total} w tej karcie",
+    "previewApplied": "Podgląd zastosowany do listy. Zapisz, gdy gotowe, lub dalej dostosowuj filtry."
   },
   "FetchStatus": {
     "autoRefreshInactive": "Automatyczne odświeżanie wznowi się po powrocie do tej karty.",

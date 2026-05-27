@@ -398,7 +398,12 @@
     "updating": "Aktualisieren...",
     "viewNamePlaceholder": "Ansichtname...",
     "createView": "Ansicht erstellen",
-    "creating": "Erstellen..."
+    "creating": "Erstellen...",
+    "previewFilters": "In Liste anzeigen",
+    "previewHint": "Filter auf die Download-Liste anwenden, ohne zu speichern.",
+    "previewMatchCount": "{count, plural, =0 {Keine Downloads passen} one {# Download passt} other {# Downloads passen}}",
+    "previewMatchCountOfTotal": "{matched} von {total} in diesem Tab",
+    "previewApplied": "Vorschau auf die Liste angewendet. Speichern, wenn alles passt, oder Filter weiter anpassen."
   },
   "FetchStatus": {
     "autoRefreshInactive": "Auto-Aktualisierung setzt fort, wenn Sie zu diesem Tab zurückkehren.",

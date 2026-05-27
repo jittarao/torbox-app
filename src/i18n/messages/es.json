@@ -398,7 +398,12 @@
     "updating": "Actualizando...",
     "viewNamePlaceholder": "Nombre de la vista...",
     "createView": "Crear vista",
-    "creating": "Creando..."
+    "creating": "Creando...",
+    "previewFilters": "Vista previa en la lista",
+    "previewHint": "Aplica los filtros a la lista de descargas sin guardar.",
+    "previewMatchCount": "{count, plural, =0 {Ninguna descarga coincide} one {# descarga coincide} other {# descargas coinciden}}",
+    "previewMatchCountOfTotal": "{matched} de {total} en esta pestaña",
+    "previewApplied": "Vista previa aplicada a la lista. Guarda cuando estés listo o sigue ajustando los filtros."
   },
   "FetchStatus": {
     "autoRefreshInactive": "La actualización automática se reanuda al volver a esta pestaña.",
