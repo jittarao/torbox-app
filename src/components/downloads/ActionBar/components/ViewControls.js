@@ -7,27 +7,35 @@ import { useTranslations } from 'next-intl';
 const toolbarBtnBase =
   'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
 
-function toolbarBtnClass(active, { segment } = {}) {
+function toolbarBtnClass(active, { segment, otherActive } = {}) {
   const inactive =
     'border-border text-primary-text/70 hover:text-primary-text dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark';
   const activeAccent =
     'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
 
   if (!active) {
-    return `${toolbarBtnBase} ${inactive}`;
+    const hideSharedBorder =
+      segment === 'left' && otherActive
+        ? ' border-r-transparent dark:border-r-transparent'
+        : segment === 'right' && otherActive
+          ? ' border-l-transparent dark:border-l-transparent'
+          : '';
+    return `${toolbarBtnBase} ${inactive}${hideSharedBorder}`;
   }
 
-  if (segment === 'left') {
-    return `${toolbarBtnBase} ${activeAccent} border-r-border dark:border-r-border-dark`;
-  }
-  if (segment === 'right') {
-    return `${toolbarBtnBase} ${activeAccent} border-l-border dark:border-l-border-dark`;
-  }
-
-  return `${toolbarBtnBase} ${activeAccent}`;
+  const raised = segment ? ' relative z-10' : '';
+  return `${toolbarBtnBase} ${activeAccent}${raised}`;
 }
 
-function ToolbarButton({ active, onClick, title, children, className = '', segment }) {
+function ToolbarButton({
+  active,
+  onClick,
+  title,
+  children,
+  className = '',
+  segment,
+  otherActive,
+}) {
   return (
     <Tooltip content={title}>
       <button
@@ -35,7 +43,7 @@ function ToolbarButton({ active, onClick, title, children, className = '', segme
         onClick={onClick}
         aria-label={title}
         aria-pressed={active}
-        className={`${toolbarBtnClass(active, { segment })} ${className}`}
+        className={`${toolbarBtnClass(active, { segment, otherActive })} ${className}`}
       >
         {children}
       </button>
@@ -79,6 +87,7 @@ export default function ViewControls({
         <div className="flex items-center gap-0" role="group" aria-label={t('viewModeGroup')}>
           <ToolbarButton
             active={viewMode === 'table'}
+            otherActive={viewMode === 'card'}
             onClick={() => handleViewModeChange('table')}
             title={t('tableView')}
             segment="left"
@@ -88,6 +97,7 @@ export default function ViewControls({
           </ToolbarButton>
           <ToolbarButton
             active={viewMode === 'card'}
+            otherActive={viewMode === 'table'}
             onClick={() => handleViewModeChange('card')}
             title={t('cardView')}
             segment="right"
