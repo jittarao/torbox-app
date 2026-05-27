@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
+import useIsMobile from '@/hooks/useIsMobile';
 import TrackSelectionModal from './TrackSelectionModal';
 import { useStream } from '../shared/hooks/useStream';
 import { tableContainerClass } from './utils/responsiveLayout';
+import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
 
 // Local storage key for mobile notice dismissal
 const MOBILE_NOTICE_DISMISSED_KEY = 'mobile-notice-dismissed';
@@ -225,6 +227,16 @@ export default function ItemsTable({
   };
 
   const { columnWidths, updateColumnWidth } = useColumnWidths(activeType);
+  const isMobile = useIsMobile();
+
+  const columnLayout = useMemo(
+    () => computeResolvedColumnWidths(activeColumns, columnWidths, tableWidth, isMobile),
+    [activeColumns, columnWidths, tableWidth, isMobile]
+  );
+
+  useEffect(() => {
+    updateTableWidth();
+  }, [columnLayout]);
 
   return (
     <>
@@ -262,10 +274,17 @@ export default function ItemsTable({
         id="items-table"
         className={tableContainerClass}
       >
-        <table className="min-w-full table-fixed border-collapse border-spacing-0 relative md:text-xs lg:text-sm">
+        <table
+          className="w-full table-fixed border-separate border-spacing-0 relative md:text-xs lg:text-sm"
+          style={
+            columnLayout.tableMinWidth
+              ? { minWidth: `${columnLayout.tableMinWidth}px` }
+              : undefined
+          }
+        >
           <TableHeader
             activeColumns={activeColumns}
-            columnWidths={isClient ? columnWidths : {}} // Only pass widths on client
+            resolvedColumnWidths={isClient ? columnLayout.resolved : {}}
             updateColumnWidth={updateColumnWidth}
             selectedItems={selectedItems}
             onSelectAll={handleSelectAll}
@@ -278,7 +297,7 @@ export default function ItemsTable({
             items={sortedItems}
             setItems={setItems}
             activeColumns={activeColumns}
-            columnWidths={columnWidths}
+            resolvedColumnWidths={columnLayout.resolved}
             selectedItems={selectedItems}
             onRowSelect={handleRowSelect}
             onFileSelect={handleFileSelect}

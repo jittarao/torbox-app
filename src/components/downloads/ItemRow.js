@@ -14,13 +14,14 @@ import {
   tableCheckboxCell,
   tableDataCellPad,
   tableDataCellText,
-  getTableColumnStyle,
+  tableRowSeparator,
 } from './utils/responsiveLayout';
+import { getResolvedColumnStyle } from './utils/tableColumnLayout';
 
 function ItemRow({
   item,
   activeColumns,
-  columnWidths,
+  resolvedColumnWidths,
   selectedItems,
   setSelectedItems,
   handleItemSelection,
@@ -45,14 +46,14 @@ function ItemRow({
   const commonT = useTranslations('Common');
 
   const renderCell = (columnId) => {
-    const baseStyle = getTableColumnStyle(columnId, columnWidths, { isMobile });
+    const baseStyle = getResolvedColumnStyle(columnId, resolvedColumnWidths, { isMobile });
 
     switch (columnId) {
       case 'name':
         return (
           <td
             key={columnId}
-            className={`${tableDataCellPad} max-w-[150px] md:max-w-none relative`}
+            className={`${tableDataCellPad} max-w-[150px] md:max-w-none relative overflow-hidden`}
             style={baseStyle}
           >
             <div
@@ -344,7 +345,7 @@ function ItemRow({
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      className={`${rowSurfaceClass} ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
+      className={`${rowSurfaceClass} ${tableRowSeparator} ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
       style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
