@@ -1,5 +1,31 @@
+'use client';
+
 import Icons from '@/components/icons';
+import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
+
+function ToolbarButton({ active, onClick, title, children, className = '' }) {
+  return (
+    <Tooltip content={title}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={title}
+        aria-pressed={active}
+        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm transition-colors
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30
+          ${
+            active
+              ? 'border-accent bg-accent/10 text-accent dark:border-accent-dark dark:bg-accent-dark/10 dark:text-accent-dark'
+              : 'border-border bg-surface-alt text-primary-text/70 hover:border-primary-text/30 hover:bg-surface-alt-hover hover:text-primary-text dark:border-border-dark dark:bg-surface-alt-dark dark:text-primary-text-dark/70 dark:hover:border-primary-text-dark/30 dark:hover:bg-surface-alt-hover-dark dark:hover:text-primary-text-dark'
+          }
+          ${className}`}
+      >
+        {children}
+      </button>
+    </Tooltip>
+  );
+}
 
 export default function ViewControls({
   isMobile,
@@ -21,100 +47,68 @@ export default function ViewControls({
     localStorage.setItem('downloads-view-mode', mode);
   };
 
+  const itemsWithFiles =
+    unfilteredItems?.filter((item) => item.files && item.files.length > 0) ?? [];
+  const hasItemsWithFiles = itemsWithFiles.length > 0;
+  const allExpanded =
+    hasItemsWithFiles && itemsWithFiles.every((item) => expandedItems.has(item.id));
+
   return (
-    <div className="flex items-center gap-2">
-      {/* Table and card view buttons */}
+    <div
+      className="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5 sm:overflow-visible sm:pb-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      role="toolbar"
+      aria-label={t('toolbarLabel')}
+    >
       {!isMobile && (
-        <div className="flex items-center gap-0">
-          <button
+        <div
+          className="flex shrink-0 overflow-hidden rounded-lg border border-border dark:border-border-dark"
+          role="group"
+          aria-label={t('viewModeGroup')}
+        >
+          <ToolbarButton
+            active={viewMode === 'table'}
             onClick={() => handleViewModeChange('table')}
-            className={`px-3 py-1.5 text-sm border rounded-md rounded-r-none transition-colors 
-            ${
-              viewMode === 'table'
-                ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
-                : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
-            }`}
             title={t('tableView')}
+            className="!h-10 !w-10 rounded-none border-0 border-r border-border dark:border-border-dark"
           >
             <Icons.Table />
-          </button>
-          <button
+          </ToolbarButton>
+          <ToolbarButton
+            active={viewMode === 'card'}
             onClick={() => handleViewModeChange('card')}
-            className={`px-3 py-1.5 text-sm border rounded-md rounded-l-none transition-colors
-            ${
-              viewMode === 'card'
-                ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
-                : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
-            }`}
             title={t('cardView')}
+            className="!h-10 !w-10 rounded-none border-0"
           >
             <Icons.List />
-          </button>
+          </ToolbarButton>
         </div>
       )}
 
-      {/* Blur button */}
-      <button
+      <ToolbarButton
+        active={isBlurred}
         onClick={onBlurToggle}
-        className={`px-3 py-1.5 text-sm border rounded-md transition-colors
-          ${
-            isBlurred
-              ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
-              : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
-          }`}
         title={isBlurred ? t('showSensitive') : t('hideSensitive')}
       >
         {isBlurred ? <Icons.Eye /> : <Icons.EyeOff />}
-      </button>
+      </ToolbarButton>
 
-      {/* Fullscreen button */}
-      <button
+      <ToolbarButton
+        active={isFullscreen}
         onClick={onFullscreenToggle}
-        className={`px-3 py-1.5 text-sm border rounded-md transition-colors
-          ${
-            isFullscreen
-              ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
-              : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
-          }`}
         title={isFullscreen ? t('exitFullscreen') : t('enterFullscreen')}
       >
         {isFullscreen ? <Icons.Minimize /> : <Icons.Maximize />}
-      </button>
+      </ToolbarButton>
 
-      {/* Expand/Collapse all files button */}
-      {unfilteredItems &&
-        unfilteredItems.length > 0 &&
-        (() => {
-          const itemsWithFiles = unfilteredItems.filter(
-            (item) => item.files && item.files.length > 0
-          );
-          const hasItemsWithFiles = itemsWithFiles.length > 0;
-          const allExpanded =
-            hasItemsWithFiles && itemsWithFiles.every((item) => expandedItems.has(item.id));
-
-          if (!hasItemsWithFiles) return null;
-
-          return (
-            <button
-              onClick={() => {
-                if (allExpanded) {
-                  collapseAllFiles();
-                } else {
-                  expandAllFiles();
-                }
-              }}
-              className={`px-3 py-1.5 text-sm border rounded-md transition-colors
-              ${
-                allExpanded
-                  ? 'border-accent dark:border-accent-dark text-accent dark:text-accent-dark'
-                  : 'border-border dark:border-border-dark text-primary-text/70 dark:text-primary-text-dark/70'
-              }`}
-              title={allExpanded ? t('collapseAllFiles') : t('expandAllFiles')}
-            >
-              {allExpanded ? <Icons.CollapseAll /> : <Icons.ExpandAll />}
-            </button>
-          );
-        })()}
+      {hasItemsWithFiles && (
+        <ToolbarButton
+          active={allExpanded}
+          onClick={() => (allExpanded ? collapseAllFiles() : expandAllFiles())}
+          title={allExpanded ? t('collapseAllFiles') : t('expandAllFiles')}
+        >
+          {allExpanded ? <Icons.CollapseAll /> : <Icons.ExpandAll />}
+        </ToolbarButton>
+      )}
     </div>
   );
 }
