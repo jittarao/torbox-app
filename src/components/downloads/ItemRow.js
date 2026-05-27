@@ -333,17 +333,18 @@ function ItemRow({
     `${item.assetType}:${String(item.id)}`
   );
 
+  const isSelected = selectedItems.items?.has(item.id);
+  const rowSurfaceClass = isSelected
+    ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
+    : isDownloaded
+      ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+      : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark';
+
   return (
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      className={`${
-        selectedItems.items?.has(item.id)
-          ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-          : isDownloaded
-            ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
-            : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
-      } ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
+      className={`${rowSurfaceClass} ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
       style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
@@ -369,7 +370,7 @@ function ItemRow({
         />
       </td>
       {visibleColumns.map((columnId) => renderCell(columnId))}
-      <td className={tableActionsCell}>
+      <td className={`${tableActionsCell} ${rowSurfaceClass}`}>
         <ItemActions
           item={item}
           apiKey={apiKey}

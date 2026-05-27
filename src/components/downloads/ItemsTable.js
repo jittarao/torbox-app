@@ -262,7 +262,7 @@ export default function ItemsTable({
         id="items-table"
         className={tableContainerClass}
       >
-        <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative md:text-xs lg:text-sm">
+        <table className="min-w-full table-fixed border-collapse border-spacing-0 relative md:text-xs lg:text-sm">
           <TableHeader
             activeColumns={activeColumns}
             columnWidths={isClient ? columnWidths : {}} // Only pass widths on client
