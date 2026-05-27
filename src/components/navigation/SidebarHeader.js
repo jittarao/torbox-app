@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { getVersion } from '@/utils/version';
-import { USER_NAV_ITEM } from './navConfig';
 import { useSidebar } from './SidebarContext';
 
 function SidebarBrand() {
@@ -42,28 +41,6 @@ function SidebarBrand() {
   );
 }
 
-function SidebarUserLink({ isActive, label, onNavigate, className = '' }) {
-  const { collapsed } = useSidebar();
-  const Icon = USER_NAV_ITEM.Icon;
-
-  return (
-    <Link
-      href={USER_NAV_ITEM.href}
-      onClick={onNavigate}
-      title={label}
-      aria-current={isActive ? 'page' : undefined}
-      className={`shrink-0 transition-colors duration-150 ${
-        isActive
-          ? 'ui-sidebar-nav-active !px-2.5 !py-2'
-          : 'ui-header-icon-btn hover:text-amber-700 dark:hover:text-amber-200'
-      } ${collapsed ? '' : ''} ${className}`}
-    >
-      <Icon className="h-5 w-5 shrink-0" aria-hidden />
-      {!collapsed ? <span className="sr-only">{label}</span> : null}
-    </Link>
-  );
-}
-
 export function SidebarCollapseToggle() {
   const t = useTranslations('Header');
   const { collapsed, toggleCollapsed } = useSidebar();
@@ -92,15 +69,8 @@ export function SidebarCollapseToggle() {
   );
 }
 
-export default function SidebarHeader({
-  isActive,
-  getLabel,
-  onNavigate,
-  showCollapseToggle = true,
-}) {
+export default function SidebarHeader({ showCollapseToggle = true }) {
   const { collapsed } = useSidebar();
-  const userLabel = getLabel(USER_NAV_ITEM.labelKey);
-  const userActive = isActive(USER_NAV_ITEM.href);
 
   return (
     <div className="shrink-0 border-b border-border/40 dark:border-border-dark/40">
@@ -112,21 +82,8 @@ export default function SidebarHeader({
         <div className={collapsed ? 'flex justify-center' : 'min-w-0 flex-1'}>
           <SidebarBrand />
         </div>
-        {!collapsed ? (
-          <SidebarUserLink isActive={userActive} label={userLabel} onNavigate={onNavigate} />
-        ) : null}
         {showCollapseToggle ? <SidebarCollapseToggle /> : null}
       </div>
-      {collapsed ? (
-        <div className="flex justify-center border-t border-border/40 px-2 py-2 dark:border-border-dark/40">
-          <SidebarUserLink
-            isActive={userActive}
-            label={userLabel}
-            onNavigate={onNavigate}
-            className="!justify-center"
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

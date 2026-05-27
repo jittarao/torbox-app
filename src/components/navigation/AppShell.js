@@ -29,7 +29,7 @@ function DesktopSidebar({ apiKey, nav, isActive, getLabel, t, toggleDarkMode }) 
       style={{ width: sidebarWidth }}
       aria-label={t('title')}
     >
-      <SidebarHeader isActive={isActive} getLabel={getLabel} />
+      <SidebarHeader />
       <SidebarNav nav={nav} isActive={isActive} getLabel={getLabel} />
       <SidebarUtilitiesFooter
         apiKey={apiKey}
