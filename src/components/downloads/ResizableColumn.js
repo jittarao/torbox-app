@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
+import { getColumnMinWidth } from './utils/tableColumnLayout';
 
 export default function ResizableColumn({
   columnId,
@@ -13,6 +14,7 @@ export default function ResizableColumn({
   const [isResizing, setIsResizing] = useState(false);
   const [wasResizing, setWasResizing] = useState(false);
   const isMobile = useIsMobile();
+  const minWidth = getColumnMinWidth(columnId);
   const resizeRef = useRef({
     startX: 0,
     startWidth: 0,
@@ -25,11 +27,11 @@ export default function ResizableColumn({
 
       resizeRef.current = {
         startX: e.clientX,
-        startWidth: parseInt(width || 60, 10),
+        startWidth: parseInt(width || minWidth, 10),
       };
       setIsResizing(true);
     },
-    [width]
+    [width, minWidth]
   );
 
   const handleMouseMove = useCallback(
@@ -41,10 +43,10 @@ export default function ResizableColumn({
 
       const { startX, startWidth } = resizeRef.current;
       const diff = e.clientX - startX;
-      const newWidth = Math.max(startWidth + diff, 50);
+      const newWidth = Math.max(startWidth + diff, minWidth);
       onWidthChange(newWidth);
     },
-    [isResizing, onWidthChange]
+    [isResizing, onWidthChange, minWidth]
   );
 
   const handleMouseUp = useCallback(
@@ -64,13 +66,15 @@ export default function ResizableColumn({
     if (isResizing) {
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
-      document.body.style.userSelect = 'none'; // Prevent text selection while resizing
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
     }
 
     return () => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.userSelect = ''; // Reset user select
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
@@ -81,24 +85,21 @@ export default function ResizableColumn({
     }
   }, [wasResizing]);
 
+  const pixelWidth = isMobile && columnId === 'name' ? undefined : Math.max(minWidth, parseInt(width, 10) || minWidth);
+
   return (
     <th
-      className={`relative group select-none ${className} ${
+      className={`relative group select-none overflow-hidden ${className} ${
         sortable ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark' : ''
-      }`}
+      } ${isResizing ? 'bg-surface-hover/80 dark:bg-surface-hover-dark/80' : ''}`}
       style={
-        isMobile && columnId === 'name'
-          ? {}
-          : columnId === 'name'
-            ? {
-                width: 'auto',
-                minWidth: `${width}px`,
-              }
-            : {
-                width: `${width}px`,
-                minWidth: `${width}px`,
-                maxWidth: `${width}px`,
-              }
+        pixelWidth == null
+          ? undefined
+          : {
+              width: `${pixelWidth}px`,
+              minWidth: `${pixelWidth}px`,
+              maxWidth: `${pixelWidth}px`,
+            }
       }
       onClick={(e) => {
         if (wasResizing) {
@@ -109,14 +110,25 @@ export default function ResizableColumn({
         onClick?.(e);
       }}
     >
-      <div className="flex items-center">{children}</div>
-      <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize group-hover:bg-accent/20 dark:group-hover:bg-accent-dark/20 flex items-center justify-center"
-        onMouseDown={handleMouseDown}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-[2px] h-4 opacity-0 group-hover:opacity-100 bg-accent/50 dark:bg-accent-dark/50 transition-opacity" />
-      </div>
+      <div className="flex items-center min-w-0 pr-3">{children}</div>
+      {!(isMobile && columnId === 'name') && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize column"
+          className="absolute right-0 top-0 bottom-0 z-20 w-3 cursor-col-resize touch-none flex items-center justify-center hover:bg-accent/15 dark:hover:bg-accent-dark/15"
+          onMouseDown={handleMouseDown}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className={`w-0.5 h-5 rounded-full transition-opacity ${
+              isResizing
+                ? 'opacity-100 bg-accent dark:bg-accent-dark'
+                : 'opacity-0 group-hover:opacity-100 bg-accent/60 dark:bg-accent-dark/60'
+            }`}
+          />
+        </div>
+      )}
     </th>
   );
 }

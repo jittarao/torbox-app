@@ -12,8 +12,8 @@ import {
   getActionsColumnWidthPx,
   getCheckboxColumnWidthPx,
   tableActionsCell,
-  tableCellBorder,
   tableCheckboxCell,
+  tableRowSeparator,
 } from './utils/responsiveLayout';
 
 const EXTRA_COLUMN_PADDING = 10;
@@ -66,7 +66,7 @@ function FileRow({
             ref={fileIndex !== null ? measureRef : undefined}
             data-index={fileIndex !== null ? dataIndex : undefined}
             key={`${item.id}-${file.id}`}
-            className={`${rowSurfaceClass} transition-colors ${!isDisabled && 'cursor-pointer'}`}
+            className={`${rowSurfaceClass} ${tableRowSeparator} transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
               if (e.shiftKey) {
@@ -95,7 +95,7 @@ function FileRow({
 
             {/* File Name and Size */}
             <td
-              className={`pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2 ${tableCellBorder}`}
+              className="pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2 overflow-hidden"
               colSpan={isMobile ? 1 : activeColumns.length}
             >
               <div

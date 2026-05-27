@@ -2,7 +2,6 @@
 
 import { COLUMNS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
-import { getColumnWidth } from '@/hooks/useColumnWidths';
 import ResizableColumn from './ResizableColumn';
 import { useTranslations } from 'next-intl';
 import {
@@ -13,7 +12,7 @@ import {
 
 export default function TableHeader({
   activeColumns,
-  columnWidths,
+  resolvedColumnWidths,
   updateColumnWidth,
   selectedItems,
   onSelectAll,
@@ -30,7 +29,7 @@ export default function TableHeader({
 
   return (
     <thead className="bg-surface-alt dark:bg-surface-alt-dark">
-      <tr className="table-row">
+      <tr className="table-row bg-surface-alt dark:bg-surface-alt-dark">
         <th className={tableHeaderCheckboxCell}>
           <input
             type="checkbox"
@@ -45,7 +44,7 @@ export default function TableHeader({
             <ResizableColumn
               key={columnId}
               columnId={columnId}
-              width={getColumnWidth(columnId, columnWidths)}
+              width={resolvedColumnWidths[columnId]}
               onWidthChange={(width) => updateColumnWidth(columnId, width)}
               sortable={column.sortable}
               onClick={() => column.sortable && onSort(columnId)}

@@ -21,7 +21,7 @@ export default function TableBody({
   items,
   setItems,
   activeColumns,
-  columnWidths,
+  resolvedColumnWidths,
   selectedItems,
   onRowSelect,
   onFileSelect,
@@ -159,8 +159,7 @@ export default function TableBody({
 
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
-    // offsetHeight includes cell padding; +1 keeps rows from overlapping row borders
-    return element.offsetHeight + 1;
+    return Math.ceil(element.getBoundingClientRect().height);
   }, []);
 
   // Memoize estimateSize to prevent recalculation on every render
@@ -183,30 +182,6 @@ export default function TableBody({
     },
     [flattenedRows, isMobile]
   );
-
-  const rowMetrics = useMemo(() => {
-    const offsets = [0];
-
-    const isTablet =
-      typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
-
-    flattenedRows.forEach((row) => {
-      let size;
-      if (isMobile) {
-        size = row?.type === 'item' ? 170 : 60;
-      } else if (isTablet) {
-        size = row?.type === 'item' ? 52 : 42;
-      } else {
-        size = row?.type === 'item' ? 58 : 48;
-      }
-      offsets.push(offsets[offsets.length - 1] + size);
-    });
-
-    return {
-      offsets,
-      totalSize: offsets[offsets.length - 1] || 0,
-    };
-  }, [flattenedRows, isMobile]);
 
   const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
 
@@ -460,6 +435,10 @@ export default function TableBody({
     return () => cancelAnimationFrame(rafId);
   }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
+  useLayoutEffect(() => {
+    remeasureAndSync();
+  }, [resolvedColumnWidths, remeasureAndSync]);
+
   useEffect(() => {
     const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
     if (!scrollTarget) {
@@ -509,33 +488,10 @@ export default function TableBody({
   // State is updated in effects to keep it in sync with scroll
   const currentVirtualRows = virtualRows;
 
-  // Calculate startOffset - only show spacer for rows that are actually before the first visible
-  // In fullscreen: use container scroll position
-  // In normal mode: useWindowVirtualizer calculates from document top, but table starts at tableOffsetTop
-  const firstVisibleRow = currentVirtualRows[0];
-  let startOffset = 0;
-
-  if (firstVisibleRow && firstVisibleRow.index > 0) {
-    if (isFullscreen) {
-      startOffset = rowMetrics.offsets[firstVisibleRow.index] || 0;
-    } else if (tableOffsetTop > 0) {
-      // In normal mode, use window scroll position
-      const currentScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
-
-      // Only show spacer if we've scrolled past where the table content starts
-      if (currentScrollY > tableOffsetTop) {
-        // Calculate the offset within the table by summing row sizes
-        // But limit it to a reasonable maximum based on scroll position
-        const scrollIntoTable = currentScrollY - tableOffsetTop;
-
-        startOffset = rowMetrics.offsets[firstVisibleRow.index] || 0;
-
-        // Don't show a spacer larger than how far we've scrolled into the table
-        // This prevents the huge spacer issue
-        startOffset = Math.min(startOffset, scrollIntoTable);
-      }
-    }
-  }
+  const totalVirtualSize = virtualizer.getTotalSize();
+  const paddingTop = currentVirtualRows.length > 0 ? currentVirtualRows[0].start : 0;
+  const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
+  const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
   // Show empty state when there are no items
   if (deferredItems.length === 0) {
@@ -562,9 +518,9 @@ export default function TableBody({
       className="bg-surface dark:bg-surface-dark"
     >
       {/* Top spacer */}
-      {startOffset > 0 && (
-        <tr>
-          <td colSpan={activeColumns.length + 2} style={{ height: startOffset, padding: 0 }} />
+      {paddingTop > 0 && (
+        <tr aria-hidden="true">
+          <td colSpan={activeColumns.length + 2} style={{ height: paddingTop, padding: 0, border: 0 }} />
         </tr>
       )}
       {/* Virtualized rows */}
@@ -582,7 +538,7 @@ export default function TableBody({
                 key={`item-${row.item.id}`}
                 item={row.item}
                 activeColumns={activeColumns}
-                columnWidths={columnWidths}
+                resolvedColumnWidths={resolvedColumnWidths}
                 selectedItems={selectedItems}
                 setItems={setItems}
                 setSelectedItems={setSelectedItems}
@@ -634,30 +590,14 @@ export default function TableBody({
           }
         })}
       {/* Bottom spacer */}
-      {currentVirtualRows.length > 0 &&
-        (() => {
-          const lastVisibleRow = currentVirtualRows[currentVirtualRows.length - 1];
-          const lastVisibleIndex = lastVisibleRow?.index ?? 0;
-
-          // Calculate height of rows after the last visible row
-          const bottomOffset = Math.max(
-            0,
-            rowMetrics.totalSize - (rowMetrics.offsets[lastVisibleIndex + 1] || 0)
-          );
-
-          // Only show bottom spacer if there are rows after the last visible one
-          return bottomOffset > 0 ? (
-            <tr>
-              <td
-                colSpan={activeColumns.length + 2}
-                style={{
-                  height: bottomOffset,
-                  padding: 0,
-                }}
-              />
-            </tr>
-          ) : null;
-        })()}
+      {paddingBottom > 0 && (
+        <tr aria-hidden="true">
+          <td
+            colSpan={activeColumns.length + 2}
+            style={{ height: paddingBottom, padding: 0, border: 0 }}
+          />
+        </tr>
+      )}
     </tbody>
   );
 }

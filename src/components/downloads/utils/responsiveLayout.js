@@ -3,15 +3,28 @@
  * Tablet range (md, below lg): tighter padding and type for iPad-sized viewports.
  */
 
-import { getColumnWidth } from '@/hooks/useColumnWidths';
+import { getResolvedColumnStyle } from './tableColumnLayout';
 
-/** Bottom edge per row — on cells so borders render with table-fixed + sticky columns */
-export const tableCellBorder = 'border-b border-border dark:border-border-dark';
+/** Inset divider — reliable with virtualization (unlike collapsed cell borders) */
+export const tableRowSeparator =
+  '[box-shadow:inset_0_-1px_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c]';
 
-export const tableDataCellPad = `px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5 ${tableCellBorder}`;
+export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
+
+/** @deprecated Use getResolvedColumnStyle with computeResolvedColumnWidths */
+export function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
+  return getResolvedColumnStyle(columnId, resolvedWidths, options);
+}
+
+export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
 const actionsColumnWidthClass =
   'w-[100px] min-w-[100px] max-w-[100px] md:w-[92px] md:min-w-[92px] md:max-w-[92px] lg:w-[100px] lg:min-w-[100px] lg:max-w-[100px]';
+
+export const tableCheckboxCell =
+  'px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap';
+
+export const tableActionsCell = `px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 md:pb-2 lg:pb-[12px] whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium sticky right-0 z-10 ${actionsColumnWidthClass}`;
 
 /** Match actionsColumnWidthClass — used for file-row layout math */
 export function getActionsColumnWidthPx() {
@@ -29,36 +42,11 @@ export function getCheckboxColumnWidthPx() {
   return 60;
 }
 
-/** Inline width styles for table-fixed body cells (must match header column widths). */
-export function getTableColumnStyle(columnId, columnWidths, { isMobile = false } = {}) {
-  if (isMobile && columnId === 'name') return {};
-  // Name absorbs remaining table width; stored width is the resize minimum
-  if (columnId === 'name') {
-    const minWidth = getColumnWidth(columnId, columnWidths);
-    return {
-      width: 'auto',
-      minWidth: `${minWidth}px`,
-    };
-  }
-  const width = getColumnWidth(columnId, columnWidths);
-  return {
-    width: `${width}px`,
-    minWidth: `${width}px`,
-    maxWidth: `${width}px`,
-  };
-}
+export const tableHeaderCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-left text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide ${tableRowSeparator}`;
 
-export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
+export const tableHeaderCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[48px] min-w-[48px] max-w-[48px] md:w-[52px] md:min-w-[52px] md:max-w-[52px] lg:w-[60px] lg:min-w-[60px] lg:max-w-[60px] ${tableRowSeparator}`;
 
-export const tableCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap ${tableCellBorder}`;
-
-export const tableActionsCell = `px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 md:pb-2 lg:pb-[12px] whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium sticky right-0 z-10 ${actionsColumnWidthClass} ${tableCellBorder}`;
-
-export const tableHeaderCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-left text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide ${tableCellBorder}`;
-
-export const tableHeaderCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[48px] min-w-[48px] max-w-[48px] md:w-[52px] md:min-w-[52px] md:max-w-[52px] lg:w-[60px] lg:min-w-[60px] lg:max-w-[60px] ${tableCellBorder}`;
-
-export const tableHeaderActionsCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-right text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide sticky right-0 bg-surface-alt dark:bg-surface-alt-dark ${actionsColumnWidthClass} ${tableCellBorder}`;
+export const tableHeaderActionsCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-right text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide sticky right-0 bg-surface-alt dark:bg-surface-alt-dark ${actionsColumnWidthClass} ${tableRowSeparator}`;
 
 export const tableContainerClass =
   'overflow-x-auto rounded-lg md:rounded-xl border border-border dark:border-border-dark md:shadow-sm md:shadow-black/[0.03] dark:md:shadow-black/20';
