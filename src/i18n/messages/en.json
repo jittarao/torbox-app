@@ -412,6 +412,18 @@
     "createView": "Create view",
     "creating": "Creating..."
   },
+  "FetchStatus": {
+    "dismiss": "Dismiss",
+    "lastUpdated": "Last updated {ago}.",
+    "refreshDelayedRateLimit": "Refresh delayed — too many requests.",
+    "refreshNow": "Refresh now",
+    "refreshPaused": "Auto-refresh paused while media is playing.",
+    "refreshing": "Refreshing…",
+    "retry": "Retry",
+    "updatedHoursAgo": "{hours}h ago",
+    "updatedJustNow": "just now",
+    "updatedMinutesAgo": "{minutes}m ago"
+  },
   "DownloadsFilters": {
     "sidebarLabel": "Filters",
     "viewsSection": "Views",

@@ -50,10 +50,12 @@ import { useBackendMode } from '@/hooks/useBackendMode';
 import ReferralCallout from '@/components/referral/ReferralCallout';
 import UsageCallout from '@/components/downloads/UsageCallout';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
+import FetchStatusBanner from '@/components/downloads/FetchStatusBanner';
 import { useTranslations } from 'next-intl';
 
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
+  const fetchStatusT = useTranslations('FetchStatus');
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
@@ -159,7 +161,19 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     setExpandedItems(new Set());
   };
 
-  const { loading, items, setItems, fetchItems } = useFetchData(apiKey, activeType);
+  const {
+    loading,
+    error: fetchError,
+    items,
+    setItems,
+    fetchItems,
+    dismissError,
+    lastSuccessfulFetchAt,
+    refreshBlockedReason,
+  } = useFetchData(apiKey, activeType);
+
+  const showFullPageSpinner = loading && items.length === 0;
+  const isRefreshing = loading && items.length > 0;
 
   // Load tags (only if backend is available)
   const {
@@ -959,8 +973,23 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         }}
       />
 
-      {/* Loading State */}
-      {loading ? (
+      <FetchStatusBanner
+        error={fetchError}
+        onDismissError={dismissError}
+        onRetry={() => fetchItems(true)}
+        lastSuccessfulFetchAt={lastSuccessfulFetchAt}
+        refreshBlockedReason={refreshBlockedReason}
+        pollingPaused={pollingPaused}
+      />
+
+      {isRefreshing && (
+        <p className="text-xs text-secondary-text dark:text-secondary-text-dark text-center py-1">
+          {fetchStatusT('refreshing')}
+        </p>
+      )}
+
+      {/* Loading State — full spinner only when there is nothing to show yet */}
+      {showFullPageSpinner ? (
         <div className="flex justify-center items-center py-12">
           <Spinner size="sm" className="text-primary-text dark:text-primary-text-dark" />
         </div>
