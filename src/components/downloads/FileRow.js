@@ -18,6 +18,13 @@ import {
 
 const EXTRA_COLUMN_PADDING = 10;
 
+const FILE_ACTION_BUTTON_CLASS =
+  'p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors';
+
+/** Fixed slot so copy/download stay column-aligned when play is absent */
+const FILE_ACTION_SLOT_CLASS =
+  'inline-flex size-7 md:size-6 lg:size-7 shrink-0 items-center justify-center';
+
 function FileRow({
   item,
   selectedItems,
@@ -139,80 +146,81 @@ function FileRow({
               </div>
             </td>
 
-            {/* File Actions */}
+            {/* File Actions — fixed slots: [play] [copy] [download] */}
             <td
               className={`${tableActionsCell} ${rowSurfaceClass} py-2 md:py-1.5 lg:py-2 md:pb-1.5 lg:pb-2 [&_button]:md:p-1`}
             >
-              {/* Copy link button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleFileDownload(item.id, file, true);
-                }}
-                disabled={isCopying[assetKey(item.id, file.id)]}
-                className="p-1.5 rounded-full text-accent dark:text-accent-dark 
-                  hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
-                title={t('copyLink')}
-              >
-                {isCopying[assetKey(item.id, file.id)] ? <Spinner size="sm" /> : <Icons.Copy />}
-              </button>
-
-              {/* Download button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleFileDownload(item.id, file);
-                }}
-                disabled={isDownloading[assetKey(item.id, file.id)]}
-                className="p-1.5 rounded-full text-accent dark:text-accent-dark 
-                  hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
-                title={t('download')}
-              >
-                {isDownloading[assetKey(item.id, file.id)] ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Icons.Download />
-                )}
-              </button>
-
-              {/* Play button - video files (stream) */}
-              {isVideoFile(file) && handleFileStream && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleFileStream(item.id, file);
-                  }}
-                  disabled={isStreaming?.[assetKey(item.id, file.id)]}
-                  className="p-1.5 rounded-full text-accent dark:text-accent-dark 
-                    hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
-                  title={t('play')}
-                >
-                  {isStreaming?.[assetKey(item.id, file.id)] ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <Icons.Play />
-                  )}
-                </button>
-              )}
-              {/* Play button - audio files (mp3, m4b, m4a, etc.) */}
-              {isAudioFile(file) && handleAudioPlay && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAudioPlay(item.id, file);
-                  }}
-                  disabled={isStreaming?.[assetKey(item.id, file.id)]}
-                  className="p-1.5 rounded-full text-accent dark:text-accent-dark 
-                    hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors"
-                  title={t('play')}
-                >
-                  {isStreaming?.[assetKey(item.id, file.id)] ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <Icons.Play />
-                  )}
-                </button>
-              )}
+              <div className="inline-flex items-center justify-end">
+                <span className={FILE_ACTION_SLOT_CLASS}>
+                  {isVideoFile(file) && handleFileStream ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFileStream(item.id, file);
+                      }}
+                      disabled={isStreaming?.[assetKey(item.id, file.id)]}
+                      className={FILE_ACTION_BUTTON_CLASS}
+                      title={t('play')}
+                    >
+                      {isStreaming?.[assetKey(item.id, file.id)] ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <Icons.Play />
+                      )}
+                    </button>
+                  ) : isAudioFile(file) && handleAudioPlay ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAudioPlay(item.id, file);
+                      }}
+                      disabled={isStreaming?.[assetKey(item.id, file.id)]}
+                      className={FILE_ACTION_BUTTON_CLASS}
+                      title={t('play')}
+                    >
+                      {isStreaming?.[assetKey(item.id, file.id)] ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <Icons.Play />
+                      )}
+                    </button>
+                  ) : null}
+                </span>
+                <span className={FILE_ACTION_SLOT_CLASS}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFileDownload(item.id, file, true);
+                    }}
+                    disabled={isCopying[assetKey(item.id, file.id)]}
+                    className={FILE_ACTION_BUTTON_CLASS}
+                    title={t('copyLink')}
+                  >
+                    {isCopying[assetKey(item.id, file.id)] ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Icons.Copy />
+                    )}
+                  </button>
+                </span>
+                <span className={FILE_ACTION_SLOT_CLASS}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFileDownload(item.id, file);
+                    }}
+                    disabled={isDownloading[assetKey(item.id, file.id)]}
+                    className={FILE_ACTION_BUTTON_CLASS}
+                    title={t('download')}
+                  >
+                    {isDownloading[assetKey(item.id, file.id)] ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Icons.Download />
+                    )}
+                  </button>
+                </span>
+              </div>
             </td>
           </tr>
         );
