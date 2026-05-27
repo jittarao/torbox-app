@@ -182,6 +182,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     lastSuccessfulFetchAt,
     refreshBlockedReason,
     pollSchedule,
+    canManualRefresh,
   } = useFetchData(apiKey, activeType);
 
   const showFullPageSpinner = loading && items.length === 0;
@@ -1083,6 +1084,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
             className="absolute right-2 top-1/2 -translate-y-1/2 z-10 sm:right-3"
             pollSchedule={pollSchedule}
             isRefreshing={isRefreshing}
+            refreshRateLimited={!canManualRefresh}
             onRefreshNow={() => fetchItems(true)}
           />
         )}

@@ -3,6 +3,8 @@
 export const POLLING_CONFIG = {
   /** Max API calls per asset type within the sliding window */
   maxCalls: 3,
+  /** Same limit applied across all asset types combined (manual refresh, polling, etc.) */
+  globalMaxCalls: 3,
   /** Sliding window for call counting (ms) */
   windowSizeMs: 10_000,
   /** Minimum gap between fetches for the same asset type (ms) */
