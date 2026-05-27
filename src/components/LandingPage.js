@@ -135,7 +135,7 @@ export default function LandingPage({ onKeyChange }) {
                 opacity: 0,
               }}
             >
-              <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-5 transition-colors duration-300 group-hover:bg-amber-500/20 [&_svg]:w-5 [&_svg]:h-5">
+              <div className="size-11 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-5 transition-colors duration-300 group-hover:bg-amber-500/20 [&_svg]:w-5 [&_svg]:h-5">
                 {icon}
               </div>
               <h3

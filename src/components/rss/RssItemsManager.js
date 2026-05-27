@@ -210,10 +210,11 @@ export default function RssItemsManager({ apiKey, setToast }) {
   if (componentError) {
     return (
       <div className="text-center p-8 text-red-500">
-        <Icons.ExclamationTriangle className="w-8 h-8 mx-auto mb-2" />
+        <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
         <p>{t('error')}</p>
         <p className="text-sm text-gray-500">{componentError}</p>
         <button
+          type="button"
           onClick={() => setComponentError(null)}
           className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
         >
@@ -231,11 +232,12 @@ export default function RssItemsManager({ apiKey, setToast }) {
           {t('title')}
         </h2>
         <button
+          type="button"
           onClick={() => fetchItems(selectedFeed)}
           disabled={!selectedFeed || loading}
           className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
         >
-          <Icons.Refresh className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <Icons.Refresh className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           {t('refresh')}
         </button>
       </div>
@@ -338,13 +340,13 @@ export default function RssItemsManager({ apiKey, setToast }) {
             </div>
           ) : error ? (
             <div className="text-center p-8 text-red-500">
-              <Icons.ExclamationTriangle className="w-8 h-8 mx-auto mb-2" />
+              <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
               <p>{t('error')}</p>
               <p className="text-sm text-gray-500">{error}</p>
             </div>
           ) : filteredAndSortedItems.length === 0 ? (
             <div className="text-center p-8 text-gray-500">
-              <Icons.Rss className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <Icons.Rss className="size-12 mx-auto mb-4 opacity-50" />
               <p>{searchTerm || filterType !== 'all' ? t('noMatchingItems') : t('noItems')}</p>
             </div>
           ) : (
@@ -388,6 +390,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
 
                     <div className="flex gap-2 ml-4">
                       <button
+                        type="button"
                         onClick={() => handleDownload(item)}
                         disabled={downloadingItems.has(item.id)}
                         className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-1"
@@ -395,7 +398,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                         {downloadingItems.has(item.id) ? (
                           <Spinner size="sm" />
                         ) : (
-                          <Icons.Download className="w-3 h-3" />
+                          <Icons.Download className="size-3" />
                         )}
                         {t('download')}
                       </button>
@@ -405,8 +408,9 @@ export default function RssItemsManager({ apiKey, setToast }) {
                           type="button"
                           onClick={() => handleOpenLink(item.link)}
                           className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          aria-label={t('openLink') || 'Open link'}
                         >
-                          <Icons.ExternalLink className="w-3 h-3" />
+                          <Icons.ExternalLink className="size-3" />
                         </button>
                       )}
                     </div>

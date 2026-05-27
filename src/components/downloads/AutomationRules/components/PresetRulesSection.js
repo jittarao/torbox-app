@@ -11,9 +11,10 @@ export default function PresetRulesSection({ onApplyPreset, t }) {
         {t('presets.title')}
       </h4>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {presets.map((preset, index) => (
+        {presets.map((preset) => (
           <button
-            key={index}
+            type="button"
+            key={preset.name}
             onClick={() => onApplyPreset(preset)}
             className="text-left p-3 text-xs bg-surface-alt dark:bg-surface-alt-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors border border-border dark:border-border-dark"
           >

@@ -171,9 +171,11 @@ export function evaluateFilter(filter, item) {
     const itemTags = item.tags || [];
     const itemTagIds = itemTags.map((tag) => tag.id);
     const filterTagIds = Array.isArray(filterValue)
-      ? filterValue
-          .map((v) => (typeof v === 'number' ? v : parseInt(v, 10)))
-          .filter((id) => !isNaN(id))
+      ? filterValue.reduce((acc, v) => {
+          const id = typeof v === 'number' ? v : parseInt(v, 10);
+          if (!isNaN(id)) acc.push(id);
+          return acc;
+        }, [])
       : [];
 
     switch (operator) {
@@ -204,9 +206,10 @@ export function itemMatchesFilters(item, filters) {
 
       if (groupFilters.length === 0) return true;
 
-      const filterResults = groupFilters
-        .filter((f) => f.column)
-        .map((filter) => evaluateFilter(filter, item));
+      const filterResults = groupFilters.reduce((acc, f) => {
+        if (f.column) acc.push(evaluateFilter(f, item));
+        return acc;
+      }, []);
 
       if (filterResults.length === 0) return true;
 

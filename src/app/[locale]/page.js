@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
   loading: () => (
     <div className="flex justify-center items-center p-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/30 border-t-amber-500"></div>
+      <div className="animate-spin rounded-full size-8 border-2 border-amber-500/30 border-t-amber-500"></div>
     </div>
   ),
   ssr: false,
@@ -27,52 +27,28 @@ import { useUpload } from '@/components/shared/hooks/useUpload';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [apiKey, setApiKey] = useState(() => {
+    try {
+      const storedKey = localStorage.getItem('torboxApiKey');
+      if (storedKey) return storedKey;
+      const storedKeys = localStorage.getItem('torboxApiKeys');
+      if (storedKeys) {
+        const keys = JSON.parse(storedKeys);
+        if (keys.length > 0) {
+          localStorage.setItem('torboxApiKey', keys[0].key);
+          return keys[0].key;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading API key from localStorage:', error);
+    }
+    return '';
+  });
   const [isClient, setIsClient] = useState(false);
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
 
   useEffect(() => {
     setIsClient(true);
-
-    // Load API key from storage
-    const storedKey = localStorage.getItem('torboxApiKey');
-    const storedKeys = localStorage.getItem('torboxApiKeys');
-
-    let loadedKey = null;
-    if (storedKey) {
-      loadedKey = storedKey;
-      setApiKey(storedKey);
-    } else if (storedKeys) {
-      // If no active key but we have stored keys, use the first one
-      try {
-        const keys = JSON.parse(storedKeys);
-        if (keys.length > 0) {
-          loadedKey = keys[0].key;
-          setApiKey(keys[0].key);
-          localStorage.setItem('torboxApiKey', keys[0].key);
-        }
-      } catch (error) {
-        console.error('Error parsing API keys from localStorage:', error);
-      }
-    }
-
-    // Ensure user database exists for loaded API key
-    if (loadedKey) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey)
-          .then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for existing API key');
-            }
-          })
-          .catch((error) => {
-            console.error('Error ensuring user database on load:', error);
-          });
-      });
-    }
-
-    setLoading(false);
 
     // Register protocol handler
     if (
@@ -98,6 +74,22 @@ export default function Home() {
       setLinkInput(magnetLink);
     }
   }, []);
+
+  useEffect(() => {
+    if (apiKey) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(apiKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
+      });
+    }
+  }, [apiKey]);
 
   // Handle received files
   useFileHandler((file) => {
@@ -125,7 +117,7 @@ export default function Home() {
     }
   };
 
-  if (!isClient || loading) {
+  if (!isClient) {
     return <div className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`} aria-hidden />;
   }
 

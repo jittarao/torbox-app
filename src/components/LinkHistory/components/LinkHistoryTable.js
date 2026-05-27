@@ -36,7 +36,7 @@ const LinkHistoryTable = memo(
                   type="checkbox"
                   checked={allSelected}
                   onChange={(e) => onSelectAll(e.target.checked)}
-                  className="w-4 h-4 accent-accent dark:accent-accent-dark cursor-pointer"
+                  className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
                 />
               </th>
               <th className="relative group select-none px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[120px] min-w-[120px] max-w-[150px]">

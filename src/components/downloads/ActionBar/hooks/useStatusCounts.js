@@ -33,18 +33,15 @@ export const useStatusCounts = (unfilteredItems) => {
 
   // Update the label key in STATUS_OPTIONS to include counts
   const statusOptions = useMemo(() => {
-    return STATUS_OPTIONS.filter((option) => !option.hidden).map((option) => {
+    return STATUS_OPTIONS.reduce((acc, option) => {
+      if (option.hidden) return acc;
       if (option.label === 'All') {
-        return {
-          ...option,
-          label: `All (${unfilteredItems.length})`,
-        };
+        acc.push({ ...option, label: `All (${unfilteredItems.length})` });
+      } else {
+        acc.push({ ...option, label: `${option.label} (${statusCounts[option.label] || 0})` });
       }
-      return {
-        ...option,
-        label: `${option.label} (${statusCounts[option.label] || 0})`,
-      };
-    });
+      return acc;
+    }, []);
   }, [statusCounts, unfilteredItems.length]);
 
   const isStatusSelected = (status, statusFilter) => {

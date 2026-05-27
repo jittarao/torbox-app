@@ -64,7 +64,7 @@ function ItemRow({
               <div className="flex items-center gap-2 min-w-0">
                 <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
                   <span
-                    className={`inline-block shrink-0 w-2 h-2 rounded-full ${
+                    className={`inline-block shrink-0 size-2 rounded-full ${
                       item.cached
                         ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
                         : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
@@ -73,7 +73,7 @@ function ItemRow({
                 </Tooltip>
                 {item.private && (
                   <Tooltip content="Private Tracker">
-                    <Icons.Private className="h-4 w-4 shrink-0 text-orange-500 dark:text-orange-400" />
+                    <Icons.Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400" />
                   </Tooltip>
                 )}
                 {item.name && (
@@ -106,11 +106,7 @@ function ItemRow({
         );
       case 'size':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {formatSize(item.size || 0)}
           </td>
         );
@@ -119,11 +115,7 @@ function ItemRow({
       case 'updated_at':
       case 'expires_at':
         return (
-          <td
-            key={columnId}
-            className={`${tableDataCellText} relative group`}
-            style={baseStyle}
-          >
+          <td key={columnId} className={`${tableDataCellText} relative group`} style={baseStyle}>
             <div className="cursor-default">
               {item[columnId] ? (
                 <>
@@ -145,11 +137,7 @@ function ItemRow({
         );
       case 'progress':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             <div className="w-full bg-progress-track dark:bg-progress-track-dark rounded-full h-2.5">
               <div
                 className="bg-accent dark:bg-accent-dark h-2.5 rounded-full"
@@ -161,97 +149,61 @@ function ItemRow({
         );
       case 'download_progress':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             <DownloadProgressDisplay item={item} variant="full" />
           </td>
         );
       case 'ratio':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {(item.ratio || 0).toFixed(2)}
           </td>
         );
       case 'download_speed':
       case 'upload_speed':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {formatSpeed(item[columnId])}
           </td>
         );
       case 'eta':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {formatEta(item.eta, commonT)}
           </td>
         );
       case 'id':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {item.id}
           </td>
         );
       case 'total_uploaded':
       case 'total_downloaded':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {formatSize(item[columnId] || 0)}
           </td>
         );
       case 'seeds':
       case 'peers':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {item[columnId] || 0}
           </td>
         );
       case 'file_count':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {item.files?.length || 0}
           </td>
         );
       case 'asset_type':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             <div className="flex items-center gap-2">
               <span
-                className={`inline-block w-2 h-2 rounded-full ${
+                className={`inline-block size-2 rounded-full ${
                   item.assetType === 'torrents'
                     ? 'bg-label-active-text dark:bg-label-active-text-dark'
                     : item.assetType === 'usenet'
@@ -275,14 +227,10 @@ function ItemRow({
         );
       case 'private':
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {item.private ? (
               <div className="flex items-center gap-2">
-                <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                <Icons.Private className="size-4 text-orange-500 dark:text-orange-400" />
                 <span>Private</span>
               </div>
             ) : (
@@ -316,11 +264,7 @@ function ItemRow({
         );
       default:
         return (
-          <td
-            key={columnId}
-            className={tableDataCellText}
-            style={baseStyle}
-          >
+          <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {item[columnId]}
           </td>
         );
@@ -358,6 +302,18 @@ function ItemRow({
         const isChecked = selectedItems.items?.has(item.id);
         handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
       }}
+      onKeyDown={(e) => {
+        if (
+          (e.key === 'Enter' || e.key === ' ') &&
+          !e.target.closest('button') &&
+          !onRowSelect(item.id, selectedItems.files)
+        ) {
+          e.preventDefault();
+          const isChecked = selectedItems.items?.has(item.id);
+          handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
+        }
+      }}
+      tabIndex={0}
     >
       <td className={tableCheckboxCell}>
         <input

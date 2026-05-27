@@ -1020,18 +1020,23 @@ class Database {
       let synced = 0;
       let errors = 0;
 
-      for (const user of activeUsers) {
-        try {
-          const userDb = await userDatabaseManager.getUserDatabase(user.auth_id);
-          await this.updateUploadCounters(user.auth_id, userDb);
-          synced++;
-        } catch (error) {
-          logger.error('Failed to sync upload counters for user', error, {
-            authId: user.auth_id,
-          });
+      const results = await Promise.allSettled(
+        activeUsers.map(async (user) => {
+          try {
+            const userDb = await userDatabaseManager.getUserDatabase(user.auth_id);
+            await this.updateUploadCounters(user.auth_id, userDb);
+            return { ok: true };
+          } finally {
+            userDatabaseManager.closeConnection(user.auth_id);
+          }
+        })
+      );
+
+      for (const r of results) {
+        if (r.status === 'fulfilled') synced++;
+        else {
           errors++;
-        } finally {
-          userDatabaseManager.closeConnection(user.auth_id);
+          logger.error('Failed to sync upload counters for user', r.reason);
         }
       }
 

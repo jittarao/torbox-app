@@ -156,13 +156,15 @@ export const getFilterableColumns = (columnT, activeType = 'all') => {
   const columnKeysToExclude = ['id', 'hash', 'download_progress'];
 
   // Build base columns from COLUMNS
-  const baseColumns = Object.entries(COLUMNS)
-    .filter(([key, column]) => !columnKeysToExclude.includes(key))
-    .map(([key, column]) => ({
+  const baseColumns = Object.entries(COLUMNS).reduce((acc, [key, column]) => {
+    if (columnKeysToExclude.includes(key)) return acc;
+    acc.push({
       key,
       label: column.displayName ? column.displayName : columnT(key),
       ...column,
-    }));
+    });
+    return acc;
+  }, []);
 
   // Add tags column
   baseColumns.push({
@@ -187,13 +189,15 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   };
 
   // Build base columns from COLUMNS
-  const allColumns = Object.entries(COLUMNS)
-    .filter(([key, column]) => !columnKeysToExclude.includes(key))
-    .map(([key, column]) => ({
+  const allColumns = Object.entries(COLUMNS).reduce((acc, [key, column]) => {
+    if (columnKeysToExclude.includes(key)) return acc;
+    acc.push({
       key,
       label: getColumnLabel(key, column),
       ...column,
-    }));
+    });
+    return acc;
+  }, []);
 
   // Add additional filters not in the COLUMNS object
   allColumns.push({

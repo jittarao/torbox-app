@@ -40,6 +40,7 @@ export async function GET(request, { params }) {
     const response = await fetch(
       `${API_BASE}/${API_VERSION}/api/integration/oauth/${apiProvider}/callback?code=${code}&state=${state}`,
       {
+        cache: 'no-store',
         headers: {
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },

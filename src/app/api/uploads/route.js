@@ -33,6 +33,7 @@ export async function GET(request) {
 
     const response = await fetch(url.toString(), {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

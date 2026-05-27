@@ -9,13 +9,7 @@ import {
   isTagOnlyFilter,
 } from './filters/filterHelpers';
 
-export default function ActiveFiltersBar({
-  appliedFilters,
-  activeView,
-  tags,
-  onClear,
-  onEdit,
-}) {
+export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onClear, onEdit }) {
   const t = useTranslations('DownloadsFilters');
 
   const summary = useMemo(() => {

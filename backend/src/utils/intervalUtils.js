@@ -45,13 +45,3 @@ export function applyIntervalMultiplier(minutes) {
 
   return adjusted;
 }
-
-/**
- * Apply interval multiplier to milliseconds
- * @param {number} ms - Original interval in milliseconds
- * @returns {number} - Adjusted interval in milliseconds
- */
-export function applyIntervalMultiplierMs(ms) {
-  const multiplier = getIntervalMultiplier();
-  return ms * multiplier;
-}

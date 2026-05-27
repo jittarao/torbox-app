@@ -23,6 +23,7 @@ export async function GET(request) {
 
     const [torrentsResponse, queuedResponse] = await Promise.all([
       fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?bypass_cache=true&_t=${timestamp}`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -35,6 +36,7 @@ export async function GET(request) {
       fetch(
         `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent&bypass_cache=true&_t=${timestamp}`,
         {
+          cache: 'no-store',
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -256,12 +258,14 @@ export async function DELETE(request) {
     // First, fetch the torrent data to determine if it's queued
     const [torrentsResponse, queuedResponse] = await Promise.all([
       fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?id=${id}`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       }),
       fetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

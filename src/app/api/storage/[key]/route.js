@@ -13,6 +13,7 @@ export async function GET(request, { params }) {
 
     const response = await fetch(`${BACKEND_URL}/api/storage/${key}`, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
       },

@@ -106,7 +106,7 @@ export default function ArchivedDownloads({ apiKey }) {
       {archivedItems.length === 0 ? (
         <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
           <div className="text-center">
-            <Icons.Archive className="w-16 h-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
+            <Icons.Archive className="size-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
             <h2 className="text-lg font-medium text-primary-text dark:text-primary-text-dark mb-2">
               {archivedT('emptyState.title')}
             </h2>
@@ -166,6 +166,7 @@ export default function ArchivedDownloads({ apiKey }) {
                   >
                     {/* Add to TorBox Button */}
                     <button
+                      type="button"
                       onClick={() => handleRestore(item)}
                       className={`p-1.5 rounded-full text-green-500 dark:text-green-400 
                         hover:bg-green-500/5 dark:hover:bg-green-400/5 transition-all duration-200
@@ -183,6 +184,7 @@ export default function ArchivedDownloads({ apiKey }) {
 
                     {/* Copy Magnet Button */}
                     <button
+                      type="button"
                       onClick={() => handleCopyMagnet(item)}
                       className={`p-1.5 rounded-full text-blue-500 dark:text-blue-400 
                         hover:bg-label-active-text/5 dark:hover:bg-label-active-text-dark/5 transition-all duration-200
@@ -194,12 +196,13 @@ export default function ArchivedDownloads({ apiKey }) {
                           <Icons.Copy /> {archivedT('actions.copyMagnet')}
                         </div>
                       ) : (
-                        <Icons.Copy className="w-4 h-4" />
+                        <Icons.Copy className="size-4" />
                       )}
                     </button>
 
                     {/* Remove Button */}
                     <button
+                      type="button"
                       onClick={() => handleRemove(item.id)}
                       className={`p-1.5 rounded-full text-red-500 dark:text-red-400 
                         hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
@@ -232,6 +235,7 @@ export default function ArchivedDownloads({ apiKey }) {
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => fetchPage(pagination.page - 1)}
               disabled={pagination.page === 1}
               className="px-4 py-2 rounded-md border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
@@ -239,6 +243,7 @@ export default function ArchivedDownloads({ apiKey }) {
               {t('previous') || 'Previous'}
             </button>
             <button
+              type="button"
               onClick={() => fetchPage(pagination.page + 1)}
               disabled={pagination.page >= pagination.totalPages}
               className="px-4 py-2 rounded-md border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt dark:hover:bg-surface-alt-dark"

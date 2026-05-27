@@ -117,7 +117,7 @@ export default function RuleForm({
           ) : (
             <div className="space-y-4">
               {ruleGroups.map((group, groupIndex) => (
-                <div key={groupIndex} className="relative">
+                <div key={group._key || groupIndex} className="relative">
                   {groupIndex > 0 && (
                     <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
                       <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
@@ -228,12 +228,14 @@ export default function RuleForm({
 
         <div className="flex justify-end gap-2 mt-4">
           <button
+            type="button"
             onClick={onCancel}
             className="px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
           >
             {t('cancel')}
           </button>
           <button
+            type="button"
             onClick={onSubmit}
             className="px-3 py-1.5 text-sm bg-accent dark:bg-accent-dark text-white rounded-md hover:bg-accent/90 dark:hover:bg-accent-dark/90 transition-colors"
           >

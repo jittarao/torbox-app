@@ -12,25 +12,16 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function SearchPageClient() {
-  const [apiKey, setApiKey] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
   const [permissions, setPermissions] = useState(null);
 
   const searchType = useSearchStore((state) => state.searchType);
   const setSearchType = useSearchStore((state) => state.setSearchType);
 
   useEffect(() => {
-    const storedKey = localStorage.getItem('torboxApiKey');
-    let loadedKey = null;
-    if (storedKey) {
-      loadedKey = storedKey;
-      setApiKey(storedKey);
-    }
-
-    // Ensure user database exists for loaded API key
-    if (loadedKey) {
+    if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey)
+        ensureUserDb(apiKey)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -41,9 +32,7 @@ export default function SearchPageClient() {
           });
       });
     }
-
-    setLoading(false);
-  }, []);
+  }, [apiKey]);
 
   // Fetch user profile and derive permissions (usenet search requires Pro)
   useEffect(() => {
@@ -76,8 +65,6 @@ export default function SearchPageClient() {
     setApiKey(newKey);
     localStorage.setItem('torboxApiKey', newKey);
   };
-
-  if (loading) return null;
 
   return (
     <AppShell

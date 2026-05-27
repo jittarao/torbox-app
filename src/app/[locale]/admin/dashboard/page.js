@@ -44,7 +44,7 @@ export default function AdminDashboard() {
 
         {overviewLoading && !overviewMetrics ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
             <p className="mt-2 text-gray-600 dark:text-gray-400">Loading metrics…</p>
           </div>
         ) : overviewMetrics ? (

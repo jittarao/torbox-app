@@ -44,8 +44,7 @@ export function isFileDownloaded(item, fileId, lookup) {
   if (!assetType) return false;
   const itemKey = `${assetType}:${String(item.id)}`;
   return (
-    lookup.itemDownloads.has(itemKey) ||
-    lookup.fileDownloads.has(`${itemKey}:${String(fileId)}`)
+    lookup.itemDownloads.has(itemKey) || lookup.fileDownloads.has(`${itemKey}:${String(fileId)}`)
   );
 }
 

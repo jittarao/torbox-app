@@ -49,6 +49,7 @@ export async function GET(request) {
     const response = await fetch(
       `${API_BASE}/${API_VERSION}/api/rss/getfeeditems?rss_feed_id=${feedId}&offset=${offset}&limit=${limit}`,
       {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

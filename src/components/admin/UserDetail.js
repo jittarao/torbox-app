@@ -49,6 +49,7 @@ export default function UserDetail({ user }) {
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">User Information</h3>
           <button
+            type="button"
             onClick={handleStatusChange}
             className={`px-4 py-2 rounded-md text-sm font-medium ${
               user.status === 'active'

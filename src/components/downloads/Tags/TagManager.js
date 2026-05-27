@@ -83,7 +83,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
     <>
       <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
 
-      <div
+      <dialog
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70]
           bg-surface dark:bg-surface-dark
           border border-border dark:border-border-dark
@@ -91,8 +91,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
           w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[80vh]
           overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
+        open
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark">
@@ -106,7 +105,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
               text-primary-text dark:text-primary-text-dark
               transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -131,7 +130,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
                   hover:bg-surface-alt dark:hover:bg-surface-alt-dark
                   transition-colors flex items-center justify-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -263,7 +262,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
                         title="Edit tag"
                       >
                         <svg
-                          className="w-4 h-4"
+                          className="size-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -285,7 +284,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
                         title="Delete tag"
                       >
                         <svg
-                          className="w-4 h-4"
+                          className="size-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -319,7 +318,7 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
             Close
           </button>
         </div>
-      </div>
+      </dialog>
     </>
   );
 

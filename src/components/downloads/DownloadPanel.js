@@ -54,10 +54,10 @@ function ExtensionBadge({ extension }) {
   if (!extension) {
     return (
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt dark:bg-surface-alt-dark text-muted dark:text-muted-dark"
+        className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt dark:bg-surface-alt-dark text-muted dark:text-muted-dark"
         aria-hidden
       >
-        <Icons.File className="h-4 w-4" />
+        <Icons.File className="size-4" />
       </span>
     );
   }
@@ -66,7 +66,7 @@ function ExtensionBadge({ extension }) {
 
   return (
     <span
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold uppercase tracking-wide ${style}`}
+      className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold uppercase tracking-wide ${style}`}
       aria-hidden
     >
       {extension.length > 4 ? extension.slice(0, 3) : extension}
@@ -74,14 +74,7 @@ function ExtensionBadge({ extension }) {
   );
 }
 
-function PanelHeader({
-  downloadLinks,
-  isDownloading,
-  downloadProgress,
-  isOpen,
-  onToggle,
-  t,
-}) {
+function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, onToggle, t }) {
   const count = downloadLinks.length;
   const progressPercent =
     downloadProgress.total > 0
@@ -96,8 +89,8 @@ function PanelHeader({
       aria-expanded={isOpen}
       aria-label={isOpen ? t('aria.collapse') : t('aria.expand')}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark">
-        <Icons.Download className="h-5 w-5" aria-hidden />
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark">
+        <Icons.Download className="size-5" aria-hidden />
       </span>
 
       <div className="min-w-0 flex-1">
@@ -143,9 +136,9 @@ function PanelHeader({
 
       <span className="shrink-0 text-primary-text/60 dark:text-primary-text-dark/60">
         {isOpen ? (
-          <Icons.ChevronDown className="h-5 w-5" aria-hidden />
+          <Icons.ChevronDown className="size-5" aria-hidden />
         ) : (
-          <Icons.ChevronUp className="h-5 w-5" aria-hidden />
+          <Icons.ChevronUp className="size-5" aria-hidden />
         )}
       </span>
     </button>
@@ -174,7 +167,9 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
         </Tooltip>
         {hostname && (
           <Tooltip content={link.url}>
-            <p className="mt-0.5 truncate text-[11px] text-muted dark:text-muted-dark">{hostname}</p>
+            <p className="mt-0.5 truncate text-[11px] text-muted dark:text-muted-dark">
+              {hostname}
+            </p>
           </Tooltip>
         )}
       </div>
@@ -193,17 +188,17 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
           }`}
           title={isCopied ? t('actions.copied') : t('actions.copyLink')}
           aria-label={
-            isCopied
-              ? t('actions.copied')
-              : t('actions.copyLinkWithIndex', { index, total })
+            isCopied ? t('actions.copied') : t('actions.copyLinkWithIndex', { index, total })
           }
         >
           {isCopied ? (
-            <Icons.Check className="h-4 w-4" aria-hidden />
+            <Icons.Check className="size-4" aria-hidden />
           ) : (
-            <Icons.Copy className="h-4 w-4" aria-hidden />
+            <Icons.Copy className="size-4" aria-hidden />
           )}
-          <span className="hidden sm:inline">{isCopied ? t('actions.copied') : t('actions.copy')}</span>
+          <span className="hidden sm:inline">
+            {isCopied ? t('actions.copied') : t('actions.copy')}
+          </span>
         </button>
         <button
           type="button"
@@ -215,7 +210,7 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
           title={t('actions.downloadFile')}
           aria-label={t('actions.downloadFileWithIndex', { index, total })}
         >
-          <Icons.Download className="h-4 w-4" aria-hidden />
+          <Icons.Download className="size-4" aria-hidden />
           <span className="hidden sm:inline">{t('actions.open')}</span>
         </button>
       </div>
@@ -315,10 +310,10 @@ export default function DownloadPanel({
 
       {isDownloadPanelOpen && (
         <>
-          <div className="max-h-[min(60vh,28rem)] overflow-y-auto overscroll-contain px-3 py-3">
+          <div className="max-h-[min(60vh,28rem)] overflow-y-auto overscroll-contain p-3">
             {downloadLinks.length === 0 && isDownloading ? (
               <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent/30 border-t-accent dark:border-accent-dark/30 dark:border-t-accent-dark" />
+                <div className="size-8 animate-spin rounded-full border-2 border-accent/30 border-t-accent dark:border-accent-dark/30 dark:border-t-accent-dark" />
                 <p className="text-sm text-muted dark:text-muted-dark">{t('status.generating')}</p>
               </div>
             ) : (
@@ -336,19 +331,19 @@ export default function DownloadPanel({
                   />
                 ))}
                 {isDownloading && downloadLinks.length < downloadProgress.total && (
-                  <li className="flex items-center gap-2 rounded-xl border border-dashed border-border px-3 py-3 text-sm text-muted dark:border-border-dark dark:text-muted-dark">
-                    <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-accent/30 border-t-accent dark:border-accent-dark/30 dark:border-t-accent-dark" />
-                    {downloadLinks.length > 0
-                      ? t('status.generatingMore')
-                      : t('status.generating')}
+                  <li className="flex items-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted dark:border-border-dark dark:text-muted-dark">
+                    <div className="size-4 shrink-0 animate-spin rounded-full border-2 border-accent/30 border-t-accent dark:border-accent-dark/30 dark:border-t-accent-dark" />
+                    {downloadLinks.length > 0 ? t('status.generatingMore') : t('status.generating')}
                   </li>
                 )}
               </ul>
             )}
           </div>
 
-          <div className="border-t border-border bg-surface-alt/50 px-3 py-3 dark:border-border-dark dark:bg-surface-alt-dark/50">
-            <p className="mb-3 text-center text-[11px] text-muted dark:text-muted-dark">{t('hint.expiry')}</p>
+          <div className="border-t border-border bg-surface-alt/50 p-3 dark:border-border-dark dark:bg-surface-alt-dark/50">
+            <p className="mb-3 text-center text-[11px] text-muted dark:text-muted-dark">
+              {t('hint.expiry')}
+            </p>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
@@ -364,9 +359,9 @@ export default function DownloadPanel({
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90 disabled:pointer-events-none disabled:opacity-40 dark:bg-accent-dark dark:hover:bg-accent-dark/90"
               >
                 {copiedAll ? (
-                  <Icons.Check className="h-4 w-4" aria-hidden />
+                  <Icons.Check className="size-4" aria-hidden />
                 ) : (
-                  <Icons.Copy className="h-4 w-4" aria-hidden />
+                  <Icons.Copy className="size-4" aria-hidden />
                 )}
                 {copiedAll ? t('actions.copied') : t('actions.copyAll')}
               </button>

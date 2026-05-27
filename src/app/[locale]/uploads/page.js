@@ -8,21 +8,12 @@ import { useState, useEffect } from 'react';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function UploadsPage() {
-  const [apiKey, setApiKey] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 
   useEffect(() => {
-    const storedKey = localStorage.getItem('torboxApiKey');
-    let loadedKey = null;
-    if (storedKey) {
-      loadedKey = storedKey;
-      setApiKey(storedKey);
-    }
-
-    // Ensure user database exists for loaded API key
-    if (loadedKey) {
+    if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey)
+        ensureUserDb(apiKey)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -33,11 +24,7 @@ export default function UploadsPage() {
           });
       });
     }
-
-    setLoading(false);
-  }, []);
-
-  if (loading) return null;
+  }, [apiKey]);
 
   return (
     <AppShell

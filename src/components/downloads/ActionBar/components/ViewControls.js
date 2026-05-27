@@ -10,8 +10,7 @@ const toolbarBtnBase =
 function toolbarBtnClass(active, { segment, otherActive } = {}) {
   const inactive =
     'border-border text-primary-text/70 hover:text-primary-text dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark';
-  const activeAccent =
-    'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
+  const activeAccent = 'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
 
   if (!active) {
     const hideSharedBorder =
@@ -27,15 +26,7 @@ function toolbarBtnClass(active, { segment, otherActive } = {}) {
   return `${toolbarBtnBase} ${activeAccent}${raised}`;
 }
 
-function ToolbarButton({
-  active,
-  onClick,
-  title,
-  children,
-  className = '',
-  segment,
-  otherActive,
-}) {
+function ToolbarButton({ active, onClick, title, children, className = '', segment, otherActive }) {
   return (
     <Tooltip content={title}>
       <button

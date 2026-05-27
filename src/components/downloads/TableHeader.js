@@ -63,9 +63,7 @@ export default function TableHeader({
             </ResizableColumn>
           );
         })}
-        <th className={tableHeaderActionsCell}>
-          {columnT('actions')}
-        </th>
+        <th className={tableHeaderActionsCell}>{columnT('actions')}</th>
       </tr>
     </thead>
   );

@@ -106,7 +106,7 @@ export default function AutoRefreshIndicator({
         aria-label={`${statusLabel()}. ${t('refreshNow')}`}
         className={`
           group relative flex items-center justify-center shrink-0
-          w-9 h-9 rounded-full
+          size-9 rounded-full
           border border-border/60 dark:border-border-dark/60
           bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-sm
           shadow-sm
@@ -119,7 +119,7 @@ export default function AutoRefreshIndicator({
       >
         {!ringMuted && showCountdown && <ProgressRing progress={progress} />}
         <Icons.Refresh
-          className={`relative z-10 w-4 h-4 text-secondary-text dark:text-secondary-text-dark group-hover:text-accent dark:group-hover:text-accent-dark transition-colors ${
+          className={`relative z-10 size-4 text-secondary-text dark:text-secondary-text-dark group-hover:text-accent dark:group-hover:text-accent-dark transition-colors ${
             isRefreshing ? 'animate-spin' : ''
           }`}
           aria-hidden

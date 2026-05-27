@@ -112,12 +112,20 @@ export function useFetchData(apiKey, type = 'torrents') {
     setCanManualRefresh(false);
   }, []);
 
-  const isRateLimited = useCallback((activeType = type) => {
-    return rateLimiterRef.current.peekWouldBlock(activeType);
-  }, [type]);
+  const isRateLimited = useCallback(
+    (activeType = type) => {
+      return rateLimiterRef.current.peekWouldBlock(activeType);
+    },
+    [type]
+  );
 
   const pruneProcessedQueueIds = useCallback((items) => {
-    const queuedIds = new Set(items.filter(isQueuedItem).map((item) => item.id));
+    const queuedIds = new Set(
+      items.reduce((acc, item) => {
+        if (isQueuedItem(item)) acc.push(item.id);
+        return acc;
+      }, [])
+    );
     for (const id of processedQueueIdsRef.current) {
       if (!queuedIds.has(id)) {
         processedQueueIdsRef.current.delete(id);
@@ -186,10 +194,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     if (status === 429) {
       return 'Too many requests to TorBox servers. Please wait a moment.';
     }
-    if (
-      message &&
-      (message.includes('NetworkError') || message.includes('Failed to fetch'))
-    ) {
+    if (message && (message.includes('NetworkError') || message.includes('Failed to fetch'))) {
       return `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
     }
     return `Failed to fetch ${activeType} data`;
@@ -456,14 +461,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         return handleFetchError(err, activeType, currentFetchId, skipLoading);
       }
     },
-    [
-      apiKey,
-      checkAndAutoStartTorrents,
-      type,
-      handleFetchError,
-      markFetchSuccess,
-      markRateLimited,
-    ]
+    [apiKey, checkAndAutoStartTorrents, type, handleFetchError, markFetchSuccess, markRateLimited]
   );
 
   const items = useMemo(() => {

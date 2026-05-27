@@ -4,7 +4,7 @@ const APPLIED_PREFIX = 'torbox-referral-applied:';
  * @param {string} apiKey
  * @returns {string}
  */
-export function getApiKeyFingerprint(apiKey) {
+function getApiKeyFingerprint(apiKey) {
   if (!apiKey || apiKey.length < 12) return apiKey || '';
   return `${apiKey.slice(0, 8)}…${apiKey.slice(-4)}`;
 }
@@ -24,12 +24,4 @@ export function isReferralAppliedForKey(apiKey) {
 export function markReferralAppliedForKey(apiKey) {
   if (typeof localStorage === 'undefined' || !apiKey) return;
   localStorage.setItem(`${APPLIED_PREFIX}${getApiKeyFingerprint(apiKey)}`, 'true');
-}
-
-/**
- * @param {string} apiKey
- */
-export function clearReferralAppliedForKey(apiKey) {
-  if (typeof localStorage === 'undefined' || !apiKey) return;
-  localStorage.removeItem(`${APPLIED_PREFIX}${getApiKeyFingerprint(apiKey)}`);
 }

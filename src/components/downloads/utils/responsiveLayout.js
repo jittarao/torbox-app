@@ -56,8 +56,7 @@ export function getActionsColumnWidthPx() {
  */
 export function getTableRowSurfaceClasses({ selected = false, downloaded = false } = {}) {
   if (selected) {
-    const base =
-      'bg-surface-alt-selected dark:bg-surface-alt-selected-dark';
+    const base = 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark';
     const hover =
       'hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark';
     return {

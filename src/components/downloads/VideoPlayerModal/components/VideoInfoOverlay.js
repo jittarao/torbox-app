@@ -31,6 +31,9 @@ export default function VideoInfoOverlay({
     <div
       className="absolute inset-0 z-30 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
     >
       <div
         className="bg-black/90 backdrop-blur-md rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-white/20 shadow-2xl"
@@ -38,15 +41,16 @@ export default function VideoInfoOverlay({
       >
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
           <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Icons.Question className="w-6 h-6 text-accent dark:text-accent-dark" />
+            <Icons.Question className="size-6 text-accent dark:text-accent-dark" />
             Video Information
           </h3>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
             aria-label="Close Info"
           >
-            <Icons.X className="w-5 h-5" />
+            <Icons.X className="size-5" />
           </button>
         </div>
 
@@ -55,7 +59,7 @@ export default function VideoInfoOverlay({
           {metadata?.search_metadata && (
             <div className="bg-gradient-to-br from-accent/10 to-accent/5 dark:from-accent-dark/10 dark:to-accent-dark/5 rounded-lg p-5 border border-accent/20 dark:border-accent-dark/20">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Icons.Play className="w-5 h-5 text-accent dark:text-accent-dark" />
+                <Icons.Play className="size-5 text-accent dark:text-accent-dark" />
                 Media Information
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,9 +85,9 @@ export default function VideoInfoOverlay({
                   <div>
                     <span className="text-xs text-white/60 uppercase tracking-wide">Genres</span>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {metadata.search_metadata.genres.map((genre, idx) => (
+                      {metadata.search_metadata.genres.map((genre) => (
                         <span
-                          key={idx}
+                          key={genre}
                           className="px-3 py-1 rounded-full bg-accent/20 dark:bg-accent-dark/20 text-accent dark:text-accent-dark text-xs font-medium border border-accent/30 dark:border-accent-dark/30"
                         >
                           {genre}
@@ -99,9 +103,9 @@ export default function VideoInfoOverlay({
                         Keywords
                       </span>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {metadata.search_metadata.keywords.slice(0, 8).map((keyword, idx) => (
+                        {metadata.search_metadata.keywords.slice(0, 8).map((keyword) => (
                           <span
-                            key={idx}
+                            key={keyword}
                             className="px-2 py-1 rounded bg-white/5 text-white/70 text-xs"
                           >
                             {keyword}
@@ -162,9 +166,9 @@ export default function VideoInfoOverlay({
                         Languages
                       </span>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {metadata.search_metadata.languages.map((lang, idx) => (
+                        {metadata.search_metadata.languages.map((lang) => (
                           <span
-                            key={idx}
+                            key={lang}
                             className="px-2 py-1 rounded bg-white/5 text-white/80 text-xs font-medium"
                           >
                             {lang}
@@ -188,7 +192,7 @@ export default function VideoInfoOverlay({
           {/* Technical Information Section */}
           <div className="bg-white/5 rounded-lg p-5 border border-white/10">
             <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Icons.Cog className="w-5 h-5 text-white/60" />
+              <Icons.Cog className="size-5 text-white/60" />
               Technical Details
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -269,7 +273,7 @@ export default function VideoInfoOverlay({
             <div className="bg-white/5 rounded-lg p-5 border border-white/10">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <svg
-                  className="w-5 h-5 text-white/60"
+                  className="size-5 text-white/60"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
@@ -288,7 +292,10 @@ export default function VideoInfoOverlay({
               </h4>
               <div className="space-y-3">
                 {audios.map((audio, idx) => (
-                  <div key={idx} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <div
+                    key={`${audio.language || ''}-${audio.language_full || ''}-${audio.codec || ''}-${audio.channels || ''}`}
+                    className="bg-white/5 rounded-lg p-3 border border-white/10"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -341,12 +348,15 @@ export default function VideoInfoOverlay({
           {subtitles.length > 0 && (
             <div className="bg-white/5 rounded-lg p-5 border border-white/10">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Icons.Eye className="w-5 h-5 text-white/60" />
+                <Icons.Eye className="size-5 text-white/60" />
                 Subtitle Tracks ({subtitles.length})
               </h4>
               <div className="space-y-2">
                 {subtitles.map((subtitle, idx) => (
-                  <div key={idx} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <div
+                    key={`${subtitle.language || ''}-${subtitle.language_full || ''}-${subtitle.codec || ''}`}
+                    className="bg-white/5 rounded-lg p-3 border border-white/10"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-white">Track {idx + 1}</span>
                       <span className="text-sm text-white/80">

@@ -89,8 +89,15 @@ export function setupCustomViewsRoutes(app, backend) {
         });
       }
 
-      const { name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query } =
-        req.body;
+      const {
+        name,
+        filters,
+        sort_field,
+        sort_direction,
+        visible_columns,
+        asset_type,
+        search_query,
+      } = req.body;
 
       if (!name || !filters) {
         return res.status(400).json({
@@ -209,8 +216,15 @@ export function setupCustomViewsRoutes(app, backend) {
       try {
         const authId = req.validatedAuthId;
         const viewId = req.validatedIds.id;
-        const { name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query } =
-        req.body;
+        const {
+          name,
+          filters,
+          sort_field,
+          sort_direction,
+          visible_columns,
+          asset_type,
+          search_query,
+        } = req.body;
 
         if (!backend.userDatabaseManager) {
           return res.status(503).json({

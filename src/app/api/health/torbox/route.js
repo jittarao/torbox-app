@@ -27,6 +27,7 @@ export async function GET() {
     const startTime = Date.now();
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/user/me`, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

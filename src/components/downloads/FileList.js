@@ -97,6 +97,7 @@ function FileList({
                 {/* File Actions */}
                 <div className="flex items-center gap-1">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onFileDownload(itemId, file.id, true);
@@ -108,6 +109,7 @@ function FileList({
                     {isCopying[assetKey] ? <Spinner size="sm" /> : <Icons.Copy />}
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onFileDownload(itemId, file.id);
@@ -121,6 +123,7 @@ function FileList({
                   {/* Play button - video files */}
                   {isVideoFile(file) && onFileStream && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onFileStream(itemId, file);
@@ -135,6 +138,7 @@ function FileList({
                   {/* Play button - audio files */}
                   {isAudioFile(file) && onAudioPlay && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAudioPlay(itemId, file);

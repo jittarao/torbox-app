@@ -27,7 +27,7 @@ export default function TrackSelector({
 
   const Icon = isAudio ? (
     <svg
-      className="w-5 h-5"
+      className="size-5"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -44,7 +44,7 @@ export default function TrackSelector({
     </svg>
   ) : (
     <svg
-      className="w-5 h-5"
+      className="size-5"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -59,6 +59,7 @@ export default function TrackSelector({
   return (
     <div className="relative" ref={menuRef}>
       <button
+        type="button"
         onClick={(e) => {
           e.stopPropagation();
           onToggle(e);
@@ -78,6 +79,7 @@ export default function TrackSelector({
           <div className="max-h-48 overflow-y-auto">
             {!isAudio && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(null);
@@ -91,7 +93,8 @@ export default function TrackSelector({
             )}
             {tracks.map((track, idx) => (
               <button
-                key={idx}
+                type="button"
+                key={`${track.language || ''}-${track.language_full || ''}-${idx}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(idx);

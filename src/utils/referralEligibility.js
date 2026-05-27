@@ -1,6 +1,9 @@
 import { REFERRAL_CODE } from '@/components/constants';
 import { isReferralAppliedForKey } from '@/utils/referralApplied';
-import { isReferralReminderDismissed, REFERRAL_CALLOUT_DISMISS_KEY } from '@/utils/referralDismissal';
+import {
+  isReferralReminderDismissed,
+  REFERRAL_CALLOUT_DISMISS_KEY,
+} from '@/utils/referralDismissal';
 
 /**
  * @param {Object|null} userData
@@ -19,10 +22,10 @@ export function userHasReferrerAttached(userData) {
   if (!userData) return false;
   return Boolean(
     userData.referred_by ||
-      userData.referral_used ||
-      userData.referral_code_used ||
-      userData.using_referral ||
-      userData.has_referral
+    userData.referral_used ||
+    userData.referral_code_used ||
+    userData.using_referral ||
+    userData.has_referral
   );
 }
 
@@ -179,8 +182,7 @@ export async function applyReferralToAccount(apiKey, referralCode) {
   }
 
   const { alreadyHasReferrer, isSelfReferral } = classifyReferralApplyError(data);
-  const skipFutureAttempts =
-    alreadyHasReferrer || isSelfReferral || response.status === 409;
+  const skipFutureAttempts = alreadyHasReferrer || isSelfReferral || response.status === 409;
 
   return {
     success: false,

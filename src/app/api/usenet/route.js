@@ -25,6 +25,7 @@ export async function GET(request) {
     // Fetch both regular and queued usenet downloads in parallel
     const [downloadsResponse, queuedResponse] = await Promise.all([
       fetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?bypass_cache=true&_t=${timestamp}`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -36,6 +37,7 @@ export async function GET(request) {
       fetch(
         `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet&bypass_cache=true&_t=${timestamp}`,
         {
+          cache: 'no-store',
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -260,12 +262,14 @@ export async function DELETE(request) {
     // First, fetch the usenet data to determine if it's queued
     const [downloadsResponse, queuedResponse] = await Promise.all([
       fetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?id=${id}`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       }),
       fetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

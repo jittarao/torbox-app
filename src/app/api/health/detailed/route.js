@@ -32,6 +32,7 @@ export async function GET() {
   try {
     const response = await fetch(`${BACKEND_URL}/api/health/detailed`, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
       },

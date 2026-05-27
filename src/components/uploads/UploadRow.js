@@ -56,22 +56,25 @@ export default function UploadRow({
           type="checkbox"
           checked={selected}
           onChange={(e) => onSelect(upload.id, e.target.checked)}
-          className="w-4 h-4 accent-accent dark:accent-accent-dark cursor-pointer"
+          className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
           onClick={(e) => e.stopPropagation()}
+          aria-label={upload.name || 'Select upload'}
         />
       </td>
       <td className="p-3 text-sm text-primary-text dark:text-primary-text-dark">
         <div className="flex items-center gap-2">
           {isSortable && (
             <button
+              type="button"
               {...attributes}
               {...listeners}
               className="cursor-grab active:cursor-grabbing text-primary-text/50 dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark"
               title="Drag to reorder"
+              aria-label="Drag to reorder"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
+                className="size-5"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -116,6 +119,7 @@ export default function UploadRow({
         <div className="flex gap-2 items-center">
           {canDownload && (
             <button
+              type="button"
               onClick={() => onDownload(upload.id)}
               disabled={downloading.has(upload.id)}
               className="p-1.5 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
@@ -123,7 +127,7 @@ export default function UploadRow({
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4"
+                className="size-4"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -139,6 +143,7 @@ export default function UploadRow({
           )}
           {canCopy && (
             <button
+              type="button"
               onClick={() => onCopy(upload.url, upload.id)}
               disabled={copying.has(upload.id)}
               className={`p-1.5 rounded transition-colors ${
@@ -150,7 +155,7 @@ export default function UploadRow({
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4"
+                className="size-4"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -165,6 +170,7 @@ export default function UploadRow({
           )}
           {upload.status === 'failed' && (
             <button
+              type="button"
               onClick={() => onRetry(upload.id)}
               disabled={retrying.has(upload.id)}
               className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50"
@@ -173,6 +179,7 @@ export default function UploadRow({
             </button>
           )}
           <button
+            type="button"
             onClick={() => onDelete(upload.id)}
             disabled={deleting.has(upload.id)}
             className="px-3 py-1 text-xs bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded hover:opacity-90 disabled:opacity-50"

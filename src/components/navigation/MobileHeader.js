@@ -20,12 +20,10 @@ export default function MobileHeader({ title, apiKey, isUserActive, userLabel })
           aria-current={isUserActive ? 'page' : undefined}
           title={userLabel}
           className={`ui-header-icon-btn ${
-            isUserActive
-              ? 'text-amber-700 dark:text-amber-400 bg-amber-500/15'
-              : ''
+            isUserActive ? 'text-amber-700 dark:text-amber-400 bg-amber-500/15' : ''
           }`}
         >
-          <UserIcon className="h-5 w-5 shrink-0" aria-hidden />
+          <UserIcon className="size-5 shrink-0" aria-hidden />
         </Link>
       </div>
     </header>

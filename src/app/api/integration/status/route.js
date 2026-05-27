@@ -13,6 +13,7 @@ export async function GET() {
   try {
     // Try to get integration jobs to check if the feature is available
     const jobsResponse = await fetch(`${API_BASE}/${API_VERSION}/api/integration/jobs`, {
+      cache: 'no-store',
       headers: {
         'x-api-key': apiKey,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -47,6 +48,7 @@ export async function GET() {
     const providerChecks = await Promise.allSettled([
       // Try to get Google Drive status
       fetch(`${API_BASE}/${API_VERSION}/api/integration/googledrive`, {
+        cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -55,6 +57,7 @@ export async function GET() {
 
       // Try to get Dropbox status
       fetch(`${API_BASE}/${API_VERSION}/api/integration/dropbox`, {
+        cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -63,6 +66,7 @@ export async function GET() {
 
       // Try to get OneDrive status
       fetch(`${API_BASE}/${API_VERSION}/api/integration/onedrive`, {
+        cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -71,6 +75,7 @@ export async function GET() {
 
       // Try to get GoFile status
       fetch(`${API_BASE}/${API_VERSION}/api/integration/gofile`, {
+        cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -79,6 +84,7 @@ export async function GET() {
 
       // Try to get 1Fichier status
       fetch(`${API_BASE}/${API_VERSION}/api/integration/1fichier`, {
+        cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -87,6 +93,7 @@ export async function GET() {
 
       // Try to get Pixeldrain status
       fetch(`${API_BASE}/${API_VERSION}/api/integration/pixeldrain`, {
+        cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

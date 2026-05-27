@@ -1090,7 +1090,7 @@ class PollingScheduler {
 
         // Reserve next_poll_at for all users we are about to fetch so the next tick does not re-enqueue them
         const reserveUntil = new Date(Date.now() + MIN_POLL_INTERVAL_MS);
-        const authIdsToReserve = usersToFetch.map((u) => u?.auth_id).filter(Boolean);
+        const authIdsToReserve = usersToFetch.flatMap((u) => (u?.auth_id ? [u.auth_id] : []));
         if (authIdsToReserve.length > 0) {
           this.masterDb.updateNextPollAtBatch(authIdsToReserve, reserveUntil);
         }
@@ -1107,7 +1107,7 @@ class PollingScheduler {
 
         logger.debug('Found users due for polling', {
           count: usersToFetch.length,
-          authIds: usersToFetch.map((u) => u?.auth_id).filter(Boolean),
+          authIds: usersToFetch.flatMap((u) => (u?.auth_id ? [u.auth_id] : [])),
         });
 
         const counters = { success: 0, skipped: 0, error: 0 };
@@ -1131,18 +1131,19 @@ class PollingScheduler {
               const result = await this.fetchTorrentsForUser(user, null);
               if (result.error) {
                 counters.error++;
+                const resultAuthId = result.user.auth_id;
                 if (result.error.isConnectionError) {
-                  this.handleConnectionError(result.user.auth_id, 0);
+                  this.handleConnectionError(resultAuthId, 0);
                 } else if (result.error.isPlanRestrictedFeature === true) {
-                  await this.handlePlanRestrictedPollFailure(result.user.auth_id);
-                  this.handlePollError(result.user.auth_id, result.error, 0);
+                  await this.handlePlanRestrictedPollFailure(resultAuthId);
+                  this.handlePollError(resultAuthId, result.error, 0);
                 } else if (
                   result.error.isAuthError ||
                   result.error.name === 'AuthenticationError'
                 ) {
-                  this.handlePollError(result.user.auth_id, result.error, 0);
+                  this.handlePollError(resultAuthId, result.error, 0);
                 } else {
-                  this.handlePollError(result.user.auth_id, result.error, 0);
+                  this.handlePollError(resultAuthId, result.error, 0);
                 }
                 continue;
               }

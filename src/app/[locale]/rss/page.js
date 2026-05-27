@@ -16,7 +16,23 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function RssPage() {
   const [toast, setToast] = useState(null);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => {
+    try {
+      const storedKey = localStorage.getItem('torboxApiKey');
+      if (storedKey) return storedKey;
+      const storedKeys = localStorage.getItem('torboxApiKeys');
+      if (storedKeys) {
+        const keys = JSON.parse(storedKeys);
+        if (keys.length > 0) {
+          localStorage.setItem('torboxApiKey', keys[0].key);
+          return keys[0].key;
+        }
+      }
+    } catch (err) {
+      console.error('Error loading API key from localStorage:', err);
+    }
+    return '';
+  });
   const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState('feeds');
   const [error, setError] = useState(null);
@@ -27,46 +43,21 @@ export default function RssPage() {
   const t = useTranslations('RssFeeds');
 
   useEffect(() => {
-    try {
-      setIsClient(true);
-
-      // Load API key from storage (same as main page)
-      const storedKey = localStorage.getItem('torboxApiKey');
-      const storedKeys = localStorage.getItem('torboxApiKeys');
-
-      let loadedKey = null;
-      if (storedKey) {
-        loadedKey = storedKey;
-        setApiKey(storedKey);
-      } else if (storedKeys) {
-        // If no active key but we have stored keys, use the first one
-        const keys = JSON.parse(storedKeys);
-        if (keys.length > 0) {
-          loadedKey = keys[0].key;
-          setApiKey(keys[0].key);
-          localStorage.setItem('torboxApiKey', keys[0].key);
-        }
-      }
-
-      // Ensure user database exists for loaded API key
-      if (loadedKey) {
-        import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-          ensureUserDb(loadedKey)
-            .then((result) => {
-              if (result.success && result.wasCreated) {
-                console.log('User database created for existing API key');
-              }
-            })
-            .catch((error) => {
-              console.error('Error ensuring user database on load:', error);
-            });
-        });
-      }
-    } catch (err) {
-      console.error('Error in RSS page useEffect:', err);
-      setError(err.message);
+    setIsClient(true);
+    if (apiKey) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(apiKey)
+          .then((result) => {
+            if (result.success && result.wasCreated) {
+              console.log('User database created for existing API key');
+            }
+          })
+          .catch((error) => {
+            console.error('Error ensuring user database on load:', error);
+          });
+      });
     }
-  }, []);
+  }, [apiKey]);
 
   // Fetch user plan when apiKey is available
   useEffect(() => {
@@ -148,6 +139,7 @@ export default function RssPage() {
             <h1 className="text-2xl font-bold mb-4 text-red-600">Error Loading RSS Page</h1>
             <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
             <button
+              type="button"
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
             >
@@ -198,7 +190,7 @@ export default function RssPage() {
           ) : userPlan !== 2 ? (
             <div className="flex min-h-[60vh] items-center justify-center">
               <div className="max-w-md rounded-lg border border-border bg-surface-alt p-8 text-center dark:border-border-dark dark:bg-surface-alt-dark">
-                <Icons.ExclamationTriangle className="mx-auto mb-4 h-16 w-16 text-yellow-500" />
+                <Icons.ExclamationTriangle className="mx-auto mb-4 size-16 text-yellow-500" />
                 <h2 className="mb-4 text-2xl font-bold text-primary-text dark:text-primary-text-dark">
                   {t('proSubscriptionRequired')}
                 </h2>
@@ -228,6 +220,7 @@ export default function RssPage() {
 
                       return (
                         <button
+                          type="button"
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id)}
                           className={`flex items-center gap-2 border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
@@ -236,7 +229,7 @@ export default function RssPage() {
                               : 'border-transparent text-primary-text/60 hover:border-border hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:border-border-dark dark:hover:text-primary-text-dark'
                           }`}
                         >
-                          <IconComponent className="h-4 w-4" />
+                          <IconComponent className="size-4" />
                           {tab.label}
                         </button>
                       );

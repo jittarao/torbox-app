@@ -81,6 +81,7 @@ export default function ItemActionButtons({
       {/* Force start button */}
       {activeType === 'torrents' && !item.download_state && (
         <button
+          type="button"
           onClick={handleForceStart}
           disabled={isDownloading}
           className={`stroke-2 text-accent dark:text-accent-dark 
@@ -96,6 +97,7 @@ export default function ItemActionButtons({
       {/* Toggle files button */}
       {item.download_present && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             toggleFiles(item.id);
@@ -117,6 +119,7 @@ export default function ItemActionButtons({
       {/* Download button */}
       {item.download_present && (
         <button
+          type="button"
           onClick={handleDownload}
           disabled={isDownloading}
           className={`${tableIconButtonClass} text-accent dark:text-accent-dark 

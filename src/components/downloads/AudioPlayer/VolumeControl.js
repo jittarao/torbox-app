@@ -61,7 +61,7 @@ export default function VolumeControl({
       {showVolumeSlider && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => onToggle(false)} aria-hidden />
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 py-3 px-3 rounded-xl bg-[#0d1117] border border-white/10 shadow-xl z-20">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 p-3 rounded-xl bg-[#0d1117] border border-white/10 shadow-xl z-20">
             <div className="flex items-center gap-2">
               <button
                 type="button"

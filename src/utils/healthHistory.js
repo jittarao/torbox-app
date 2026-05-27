@@ -27,14 +27,6 @@ export function appendHistoryEntry(history, segment) {
   return next;
 }
 
-export function padHistory(history) {
-  if (history.length >= HEALTH_HISTORY_LENGTH) {
-    return history.slice(-HEALTH_HISTORY_LENGTH);
-  }
-  const padding = Array(HEALTH_HISTORY_LENGTH - history.length).fill({ s: 'empty', at: null });
-  return [...padding, ...history];
-}
-
 export function padHistoryForDisplay(history, currentStatus) {
   if (history.length === 0 && currentStatus === 'unhealthy') {
     return Array(HEALTH_HISTORY_LENGTH).fill({ s: 'down', at: null });

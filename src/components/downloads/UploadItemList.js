@@ -177,15 +177,17 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
               <div className="flex items-center gap-2">
                 {item.status === 'queued' && !uploading && (
                   <button
+                    type="button"
                     onClick={() => {
                       const updatedItems = items.filter((_, idx) => idx !== itemIndex);
                       setItems(updatedItems);
                     }}
                     className="text-red-500 hover:text-red-600 transition-colors duration-200"
+                    aria-label="Remove item"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="w-5 h-5"
+                      className="size-5"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -198,7 +200,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
                 {item.status === 'success' && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5 text-green-500"
+                    className="size-5 text-green-500"
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
@@ -214,7 +216,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
                 {item.status === 'error' && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5 text-red-500"
+                    className="size-5 text-red-500"
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
@@ -232,7 +234,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
                 {item.status === 'queued' && uploading && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5 text-gray-300"
+                    className="size-5 text-gray-300"
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
@@ -255,6 +257,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
       {hasMoreItems && (
         <div className="mt-3 flex justify-center">
           <button
+            type="button"
             onClick={() => setShowAll(true)}
             className="text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors px-4 py-2 border border-border dark:border-border-dark rounded-lg hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
           >
@@ -266,6 +269,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
       {showAll && items.length > INITIAL_DISPLAY_COUNT && (
         <div className="mt-3 flex justify-center">
           <button
+            type="button"
             onClick={() => setShowAll(false)}
             className="text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors px-4 py-2 border border-border dark:border-border-dark rounded-lg hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
           >

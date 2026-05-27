@@ -1,31 +1,21 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-export default function ReferralConfirmDialog({
-  isOpen,
-  onClose,
-  onConfirm,
-  isLoading = false,
-}) {
+export default function ReferralConfirmDialog({ isOpen, onClose, onConfirm, isLoading = false }) {
   const t = useTranslations('Referral.apply');
 
   if (!isOpen) return null;
 
   return (
     <>
-      <div
-        className="z-overlay-backdrop fixed inset-0 bg-black/50"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
+      <div className="z-overlay-backdrop fixed inset-0 bg-black/50" onClick={onClose} aria-hidden />
+      <dialog
         className="z-overlay-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
           bg-surface dark:bg-surface-dark border border-border dark:border-border-dark
           rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:max-w-md p-6"
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="referral-confirm-title"
         onClick={(e) => e.stopPropagation()}
+        open
       >
         <h2
           id="referral-confirm-title"
@@ -40,7 +30,12 @@ export default function ReferralConfirmDialog({
           <li>{t('confirmBullet3')}</li>
         </ul>
         <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-          <button type="button" onClick={onClose} className="ui-btn-ghost justify-center" disabled={isLoading}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ui-btn-ghost justify-center"
+            disabled={isLoading}
+          >
             {t('cancel')}
           </button>
           <button
@@ -51,7 +46,7 @@ export default function ReferralConfirmDialog({
           >
             {isLoading ? (
               <>
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 {t('applying')}
               </>
             ) : (
@@ -59,7 +54,7 @@ export default function ReferralConfirmDialog({
             )}
           </button>
         </div>
-      </div>
+      </dialog>
     </>
   );
 }

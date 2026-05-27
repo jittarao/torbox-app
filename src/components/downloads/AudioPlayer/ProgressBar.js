@@ -44,9 +44,12 @@ export default function ProgressBar({
   const showHoverPreview = hoverTime != null && duration > 0;
   const chapterTicks =
     chapters.length > 0 && duration > 0 && Number.isFinite(duration)
-      ? chapters
-          .filter((ch, i) => i > 0 && Number.isFinite(ch.startSeconds) && ch.startSeconds > 0)
-          .map((ch) => (ch.startSeconds / duration) * 100)
+      ? chapters.reduce((acc, ch, i) => {
+          if (i > 0 && Number.isFinite(ch.startSeconds) && ch.startSeconds > 0) {
+            acc.push((ch.startSeconds / duration) * 100);
+          }
+          return acc;
+        }, [])
       : [];
 
   return (
@@ -80,9 +83,9 @@ export default function ProgressBar({
             style={{ width: `${seekValue}%` }}
           />
         </div>
-        {chapterTicks.map((pct, i) => (
+        {chapterTicks.map((pct) => (
           <div
-            key={i}
+            key={pct}
             className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 -ml-px rounded-full bg-white/25 pointer-events-none"
             style={{ left: `${pct}%` }}
             aria-hidden

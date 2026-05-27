@@ -52,17 +52,19 @@ class RuleExecutor {
         if (!torrent) continue;
 
         try {
+          const action = rule.action;
+          const actionType = action?.type;
           logger.debug('Executing action on torrent', {
             authId: this.authId,
             ruleId: rule.id,
             ruleName: rule.name,
             torrentId: torrent.id,
             torrentName: torrent.name,
-            action: rule.action?.type,
+            action: actionType,
             torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
           });
 
-          await ruleEvaluator.executeAction(rule.action, torrent, {
+          await ruleEvaluator.executeAction(action, torrent, {
             skipValidation: tagActionValidated,
           });
           successCount++;
@@ -73,7 +75,7 @@ class RuleExecutor {
             ruleName: rule.name,
             torrentId: torrent.id,
             torrentName: torrent.name,
-            action: rule.action?.type,
+            action: actionType,
           });
         } catch (error) {
           let torrentStatus = 'unknown';

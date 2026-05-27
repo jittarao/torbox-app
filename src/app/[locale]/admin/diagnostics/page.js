@@ -76,7 +76,7 @@ export default function AdminDiagnosticsPage() {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Running diagnostics…</p>
         </div>
       </AdminLayout>
@@ -105,6 +105,7 @@ export default function AdminDiagnosticsPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Database Diagnostics</h2>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
@@ -301,9 +302,9 @@ export default function AdminDiagnosticsPage() {
                   API keys without corresponding user registry entries
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.orphanedApiKeys.map((key, idx) => (
+                  {issues.orphanedApiKeys.map((key) => (
                     <div
-                      key={idx}
+                      key={key.auth_id}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
@@ -340,9 +341,9 @@ export default function AdminDiagnosticsPage() {
                   User registry entries without corresponding API keys
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.orphanedUsers.map((user, idx) => (
+                  {issues.orphanedUsers.map((user) => (
                     <div
-                      key={idx}
+                      key={user.auth_id}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
@@ -373,9 +374,9 @@ export default function AdminDiagnosticsPage() {
                   This should never happen due to PRIMARY KEY constraint
                 </p>
                 <div className="space-y-2">
-                  {issues.duplicateAuthIds.map((dup, idx) => (
+                  {issues.duplicateAuthIds.map((dup) => (
                     <div
-                      key={idx}
+                      key={dup.auth_id}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
                     >
                       <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
@@ -400,9 +401,9 @@ export default function AdminDiagnosticsPage() {
                   This should never happen due to UNIQUE constraint
                 </p>
                 <div className="space-y-2">
-                  {issues.duplicateDbPaths.map((dup, idx) => (
+                  {issues.duplicateDbPaths.map((dup) => (
                     <div
-                      key={idx}
+                      key={dup.db_path}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
                     >
                       <div className="text-sm text-gray-700 dark:text-gray-300">{dup.db_path}</div>
@@ -425,9 +426,9 @@ export default function AdminDiagnosticsPage() {
                   Database files referenced in registry but not found on disk
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.missingFiles.slice(0, 20).map((file, idx) => (
+                  {issues.missingFiles.slice(0, 20).map((file) => (
                     <div
-                      key={idx}
+                      key={file.auth_id + '-' + file.db_path}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
@@ -469,9 +470,9 @@ export default function AdminDiagnosticsPage() {
                   </button>
                 </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.statusMismatches.map((mismatch, idx) => (
+                  {issues.statusMismatches.map((mismatch) => (
                     <div
-                      key={idx}
+                      key={mismatch.auth_id}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
@@ -513,9 +514,9 @@ export default function AdminDiagnosticsPage() {
                   </p>
                 )}
                 <div className="space-y-2">
-                  {issues.databaseIntegrityFailures.map((failure, idx) => (
+                  {issues.databaseIntegrityFailures.map((failure) => (
                     <div
-                      key={idx}
+                      key={failure.auth_id}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
                     >
                       <div className="text-sm">
@@ -545,9 +546,9 @@ export default function AdminDiagnosticsPage() {
                   Database files found on disk but not registered in the user registry
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.orphanedSqliteFiles.slice(0, 20).map((file, idx) => (
+                  {issues.orphanedSqliteFiles.slice(0, 20).map((file) => (
                     <div
-                      key={idx}
+                      key={file.path}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
@@ -584,9 +585,48 @@ export default function AdminDiagnosticsPage() {
                   database
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.orphanedWalFiles.slice(0, 20).map((file, idx) => (
+                  {issues.orphanedWalFiles.slice(0, 20).map((file) => (
                     <div
-                      key={idx}
+                      key={file.path}
+                      className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                          {file.filename}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {file.path}
+                        </div>
+                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                          Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
+                          {new Date(file.modified).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {issues.orphanedSqliteFiles.length > 20 && (
+                    <div className="text-sm text-yellow-800 dark:text-yellow-300 text-center pt-2">
+                      ... and {issues.orphanedSqliteFiles.length - 20} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Orphaned WAL Files */}
+            {issues.orphanedWalFiles && issues.orphanedWalFiles.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
+                  ⚠️ Orphaned WAL Files ({issues.orphanedWalFiles.length})
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Write-Ahead Logging files found on disk but not associated with any registered
+                  database
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {issues.orphanedWalFiles.slice(0, 20).map((file) => (
+                    <div
+                      key={file.path}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
@@ -622,9 +662,9 @@ export default function AdminDiagnosticsPage() {
                   Shared Memory files found on disk but not associated with any registered database
                 </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {issues.orphanedShmFiles.slice(0, 20).map((file, idx) => (
+                  {issues.orphanedShmFiles.slice(0, 20).map((file) => (
                     <div
-                      key={idx}
+                      key={file.path}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">

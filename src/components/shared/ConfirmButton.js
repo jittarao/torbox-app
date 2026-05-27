@@ -89,12 +89,13 @@ export default function ConfirmButton({
 
   return (
     <button
+      type="button"
       onClick={handleConfirmClick}
       disabled={isLoading}
       className={`${className} ${isConfirming ? 'scale-110' : ''}`}
       title={isConfirming ? 'Click again to confirm' : title}
     >
-      <div className="relative w-6 h-6 flex items-center justify-center">
+      <div className="relative size-6 flex items-center justify-center">
         {isLoading ? (
           <Spinner size="sm" />
         ) : (

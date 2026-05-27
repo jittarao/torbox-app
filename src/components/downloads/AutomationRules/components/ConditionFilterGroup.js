@@ -105,7 +105,7 @@ export default function ConditionFilterGroup({
           ) : (
             <>
               {group.conditions.map((condition, conditionIndex) => (
-                <div key={conditionIndex} className="relative">
+                <div key={condition._key || conditionIndex} className="relative">
                   {conditionIndex > 0 && (
                     <div className="absolute left-4 top-0 bottom-0 w-px bg-border dark:bg-border-dark -translate-y-2" />
                   )}

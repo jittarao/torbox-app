@@ -30,7 +30,7 @@ export default function UserDetailPage() {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Loading user details…</p>
         </div>
       </AdminLayout>
@@ -43,6 +43,7 @@ export default function UserDetailPage() {
         <div className="text-center py-12">
           <p className="text-gray-600 dark:text-gray-400">User not found</p>
           <button
+            type="button"
             onClick={() => {
               const locale = window.location.pathname.split('/')[1] || 'en';
               router.push(`/${locale}/admin/users`);
@@ -61,6 +62,7 @@ export default function UserDetailPage() {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => {
               const locale = window.location.pathname.split('/')[1] || 'en';
               router.push(`/${locale}/admin/users`);

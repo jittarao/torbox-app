@@ -913,13 +913,13 @@ class UploadProcessor {
         throw new Error('authId is required for processing upload');
       }
 
-      // Get API client (force refresh if this is a retry after auth error)
-      const apiClient = await this.getApiClient(upload.authId, isRetryAfterAuthError);
-
-      // Check rate limit before making request
+      // Check rate limit before making request or getting API client
       if (this.isAtRateLimit(userDb, type) || this.isTooCloseToRateLimit(userDb, type)) {
         return await this.handleRateLimitDeferral(upload, userDb, type);
       }
+
+      // Get API client (force refresh if this is a retry after auth error)
+      const apiClient = await this.getApiClient(upload.authId, isRetryAfterAuthError);
 
       // Wait for rate limit if needed
       await this.waitForRateLimit(userDb, type);
@@ -1268,15 +1268,18 @@ class UploadProcessor {
       const activeUsers = this.masterDatabase.getActiveUsers();
       let totalRecovered = 0;
 
-      for (const user of activeUsers) {
-        try {
+      const recoveryResults = await Promise.allSettled(
+        activeUsers.map(async (user) => {
           const userDb = await this.userDatabaseManager.getUserDatabase(user.auth_id);
-          const recovered = this.recoverStuckProcessingUploads(userDb, user.auth_id);
-          totalRecovered += recovered;
-        } catch (error) {
-          logger.error('Error recovering stuck uploads for user', error, {
-            authId: user.auth_id,
-          });
+          return this.recoverStuckProcessingUploads(userDb, user.auth_id);
+        })
+      );
+
+      for (const r of recoveryResults) {
+        if (r.status === 'fulfilled') {
+          totalRecovered += r.value;
+        } else {
+          logger.error('Error recovering stuck uploads for user', r.reason);
         }
       }
 
@@ -1582,57 +1585,39 @@ class UploadProcessor {
       // Get all files with their stats, sorted by oldest first
       const files = await getUserUploadFiles(authId);
 
-      // First, delete files older than retention period
-      for (const file of files) {
-        if (file.mtime < retentionCutoff) {
-          try {
+      // First, delete files older than retention period (in parallel)
+      const retentionResults = await Promise.allSettled(
+        files
+          .filter((file) => file.mtime < retentionCutoff)
+          .map(async (file) => {
             await deleteUploadFile(authId, file.relativePath);
-            deletedCount++;
-            freedBytes += file.size;
 
-            // Mark corresponding upload record as file_deleted if it exists
-            // file.relativePath is already relative to storage root
-            // First check if upload exists and was queued (to decrement counter)
             const uploadBeforeDelete = userDb.db
-              .prepare(
-                `
-                SELECT status
-                FROM uploads
-                WHERE file_path = ? AND file_deleted = false
-              `
-              )
+              .prepare(`SELECT status FROM uploads WHERE file_path = ? AND file_deleted = false`)
               .get(file.relativePath);
 
             const wasQueued = uploadBeforeDelete?.status === 'queued';
 
-            // Mark as file_deleted
             userDb.db
               .prepare(
-                `
-                UPDATE uploads
-                SET file_deleted = true
-                WHERE file_path = ? AND file_deleted = false
-              `
+                `UPDATE uploads SET file_deleted = true WHERE file_path = ? AND file_deleted = false`
               )
               .run(file.relativePath);
 
-            // Decrement counter if upload was queued (since getQueuedUploads filters out file_deleted = true)
             if (wasQueued) {
               this.masterDatabase.decrementUploadCounter(authId);
             }
 
-            logger.debug('Deleted file due to retention period', {
-              authId,
-              filePath: file.relativePath,
-              ageDays: Math.floor((now - file.mtime.getTime()) / (24 * 60 * 60 * 1000)),
-              wasQueued,
-            });
-          } catch (error) {
-            logger.error('Error deleting old file', error, {
-              authId,
-              filePath: file.relativePath,
-            });
-          }
+            return { size: file.size, wasQueued };
+          })
+      );
+
+      for (const r of retentionResults) {
+        if (r.status === 'fulfilled') {
+          deletedCount++;
+          freedBytes += r.value.size;
+        } else {
+          logger.error('Error deleting old file', r.reason, { authId });
         }
       }
 
@@ -1640,62 +1625,53 @@ class UploadProcessor {
       // Recalculate size after retention cleanup
       const currentSize = await calculateUserUploadDirSize(authId);
       if (currentSize > MAX_UPLOAD_DIR_SIZE_BYTES) {
-        // Get remaining files (after retention cleanup) sorted by oldest first
         const remainingFiles = await getUserUploadFiles(authId);
         let sizeToFree = currentSize - MAX_UPLOAD_DIR_SIZE_BYTES;
 
+        const filesToDelete = [];
         for (const file of remainingFiles) {
           if (sizeToFree <= 0) break;
+          filesToDelete.push(file);
+          sizeToFree -= file.size;
+        }
 
-          try {
-            await deleteUploadFile(authId, file.relativePath);
-            deletedCount++;
-            freedBytes += file.size;
-            sizeToFree -= file.size;
+        const deleteResults = await Promise.allSettled(
+          filesToDelete.map(async (file) => {
+            const result = { file, wasQueued: false };
+            try {
+              await deleteUploadFile(authId, file.relativePath);
+              result.deleted = true;
+              result.freedSize = file.size;
 
-            // Mark corresponding upload record as file_deleted if it exists
-            // file.relativePath is already relative to storage root
-            // First check if upload exists and was queued (to decrement counter)
-            const uploadBeforeDelete = userDb.db
-              .prepare(
-                `
-                SELECT status
-                FROM uploads
-                WHERE file_path = ? AND file_deleted = false
-              `
-              )
-              .get(file.relativePath);
+              const uploadBeforeDelete = userDb.db
+                .prepare(`SELECT status FROM uploads WHERE file_path = ? AND file_deleted = false`)
+                .get(file.relativePath);
+              result.wasQueued = uploadBeforeDelete?.status === 'queued';
 
-            const wasQueued = uploadBeforeDelete?.status === 'queued';
+              userDb.db
+                .prepare(
+                  `UPDATE uploads SET file_deleted = true WHERE file_path = ? AND file_deleted = false`
+                )
+                .run(file.relativePath);
 
-            // Mark as file_deleted
-            userDb.db
-              .prepare(
-                `
-                UPDATE uploads
-                SET file_deleted = true
-                WHERE file_path = ? AND file_deleted = false
-              `
-              )
-              .run(file.relativePath);
-
-            // Decrement counter if upload was queued (since getQueuedUploads filters out file_deleted = true)
-            if (wasQueued) {
-              this.masterDatabase.decrementUploadCounter(authId);
+              if (result.wasQueued) {
+                this.masterDatabase.decrementUploadCounter(authId);
+              }
+            } catch (error) {
+              logger.error('Error deleting file for size limit', error, {
+                authId,
+                filePath: file.relativePath,
+              });
+              result.deleted = false;
             }
+            return result;
+          })
+        );
 
-            logger.debug('Deleted file due to size limit', {
-              authId,
-              filePath: file.relativePath,
-              fileSize: file.size,
-              remainingToFree: sizeToFree,
-              wasQueued,
-            });
-          } catch (error) {
-            logger.error('Error deleting file for size limit', error, {
-              authId,
-              filePath: file.relativePath,
-            });
+        for (const r of deleteResults) {
+          if (r.status === 'fulfilled' && r.value.deleted) {
+            deletedCount++;
+            freedBytes += r.value.freedSize;
           }
         }
       }

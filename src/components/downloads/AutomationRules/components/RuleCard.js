@@ -23,7 +23,8 @@ export default function RuleCard({
             type="checkbox"
             checked={rule.enabled}
             onChange={() => onToggle(rule.id)}
-            className="w-4 h-4 accent-accent dark:accent-accent-dark"
+            className="size-4 accent-accent dark:accent-accent-dark"
+            aria-label={t('toggleRule') || 'Toggle rule'}
           />
           <span className="text-primary-text dark:text-primary-text-dark font-medium">
             {rule.name}
@@ -32,14 +33,16 @@ export default function RuleCard({
         <div className="flex items-center gap-2">
           {onRun && (
             <button
+              type="button"
               onClick={() => onRun(rule.id)}
               disabled={isRunning}
               className="text-green-500 dark:text-green-400 hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
               title={isRunning ? t('running') || 'Running...' : t('runRule') || 'Run rule'}
+              aria-label={isRunning ? t('running') || 'Running...' : t('runRule') || 'Run rule'}
             >
               {isRunning ? (
                 <svg
-                  className="animate-spin h-4 w-4"
+                  className="animate-spin size-4"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -64,21 +67,29 @@ export default function RuleCard({
             </button>
           )}
           <button
+            type="button"
             onClick={() => onViewLogs(rule.id)}
             className="text-blue-500 dark:text-blue-400 hover:opacity-80"
             title={t('viewLogs')}
+            aria-label={t('viewLogs')}
           >
             <Icons.Clock />
           </button>
           <button
+            type="button"
             onClick={() => onEdit(rule)}
             className="text-accent dark:text-accent-dark hover:opacity-80"
+            title={t('editRule') || 'Edit rule'}
+            aria-label={t('editRule') || 'Edit rule'}
           >
             <Icons.Edit />
           </button>
           <button
+            type="button"
             onClick={() => onDelete(rule.id)}
             className="text-red-500 dark:text-red-500 hover:opacity-80"
+            title={t('deleteRule') || 'Delete rule'}
+            aria-label={t('deleteRule') || 'Delete rule'}
           >
             <Icons.Delete />
           </button>

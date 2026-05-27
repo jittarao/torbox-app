@@ -7,13 +7,12 @@ import Spinner from '@/components/shared/Spinner';
 function filterChapters(chapters, query) {
   if (!query.trim()) return chapters.map((ch, i) => ({ ch, i }));
   const q = query.trim().toLowerCase();
-  return chapters
-    .map((ch, i) => ({ ch, i }))
-    .filter(({ ch, i }) => {
-      const numMatch = String(i + 1) === q || String(i + 1).padStart(2, '0') === q;
-      const titleMatch = (ch.title || '').toLowerCase().includes(q);
-      return numMatch || titleMatch;
-    });
+  return chapters.reduce((acc, ch, i) => {
+    const numMatch = String(i + 1) === q || String(i + 1).padStart(2, '0') === q;
+    const titleMatch = (ch.title || '').toLowerCase().includes(q);
+    if (numMatch || titleMatch) acc.push({ ch, i });
+    return acc;
+  }, []);
 }
 
 export default function ChaptersPanel({
@@ -99,7 +98,7 @@ export default function ChaptersPanel({
           {filteredEntries.map(({ ch, i }) => {
             const isCurrent = i === currentChapterIndex;
             return (
-              <li key={i} ref={isCurrent ? currentChapterRef : undefined}>
+              <li key={ch.startSeconds ?? i} ref={isCurrent ? currentChapterRef : undefined}>
                 <button
                   type="button"
                   onClick={() => {
@@ -119,7 +118,7 @@ export default function ChaptersPanel({
                 >
                   <span
                     className={`
-                      flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold tabular-nums
+                      flex-shrink-0 size-6 rounded-full flex items-center justify-center text-[10px] font-semibold tabular-nums
                       transition-colors duration-300 ease-out
                       ${isCurrent ? 'bg-amber-500/25 text-amber-300' : 'bg-white/5 text-gray-400'}
                     `}
@@ -139,13 +138,13 @@ export default function ChaptersPanel({
                   </span>
                   <span
                     className={`
-                      flex-shrink-0 w-4 h-4 flex items-center justify-center text-amber-400
+                      flex-shrink-0 size-4 flex items-center justify-center text-amber-400
                       transition-opacity duration-300 ease-out
                       ${isCurrent ? 'opacity-100' : 'opacity-0'}
                     `}
                     aria-hidden
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="size-4" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"

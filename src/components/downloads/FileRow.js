@@ -69,10 +69,12 @@ function FileRow({
           downloadHistoryLookup.itemDownloads.has(itemKey) ||
           downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
 
-        const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
-          selected: isChecked,
-          downloaded: isDownloaded,
-        });
+        const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses(
+          {
+            selected: isChecked,
+            downloaded: isDownloaded,
+          }
+        );
 
         return (
           <tr
@@ -158,6 +160,7 @@ function FileRow({
                 <span className={FILE_ACTION_SLOT_CLASS}>
                   {isVideoFile(file) && handleFileStream ? (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleFileStream(item.id, file);
@@ -174,6 +177,7 @@ function FileRow({
                     </button>
                   ) : isAudioFile(file) && handleAudioPlay ? (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleAudioPlay(item.id, file);
@@ -192,6 +196,7 @@ function FileRow({
                 </span>
                 <span className={FILE_ACTION_SLOT_CLASS}>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleFileDownload(item.id, file, true);
@@ -200,15 +205,12 @@ function FileRow({
                     className={FILE_ACTION_BUTTON_CLASS}
                     title={t('copyLink')}
                   >
-                    {isCopying[assetKey(item.id, file.id)] ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <Icons.Copy />
-                    )}
+                    {isCopying[assetKey(item.id, file.id)] ? <Spinner size="sm" /> : <Icons.Copy />}
                   </button>
                 </span>
                 <span className={FILE_ACTION_SLOT_CLASS}>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleFileDownload(item.id, file);

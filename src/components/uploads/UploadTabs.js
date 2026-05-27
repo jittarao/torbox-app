@@ -9,6 +9,7 @@ export default function UploadTabs({ activeTab, setActiveTab, statusCounts }) {
           const isActive = activeTab === status;
           return (
             <button
+              type="button"
               key={status}
               onClick={() => setActiveTab(status)}
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${

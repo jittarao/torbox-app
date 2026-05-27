@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { ensureUserDb } from '@/utils/ensureUserDb';
@@ -13,23 +13,19 @@ export default function ApiKeyManager({
 }) {
   const t = useTranslations('ApiKeyManager');
   const tInput = useTranslations('ApiKeyInput');
-  const [keys, setKeys] = useState([]);
+  const [keys, setKeys] = useState(() => {
+    try {
+      const storedKeys = localStorage.getItem('torboxApiKeys');
+      return storedKeys ? JSON.parse(storedKeys) : [];
+    } catch (error) {
+      console.error('Error parsing API keys from localStorage:', error);
+      return [];
+    }
+  });
   const [showAddForm, setShowAddForm] = useState(false);
   const [newKeyLabel, setNewKeyLabel] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
   const [showKeys, setShowKeys] = useState(false);
-
-  useEffect(() => {
-    const storedKeys = localStorage.getItem('torboxApiKeys');
-    if (storedKeys) {
-      try {
-        setKeys(JSON.parse(storedKeys));
-      } catch (error) {
-        console.error('Error parsing API keys from localStorage:', error);
-        setKeys([]);
-      }
-    }
-  }, []);
 
   const saveKeys = (newKeys) => {
     localStorage.setItem('torboxApiKeys', JSON.stringify(newKeys));
@@ -83,7 +79,7 @@ export default function ApiKeyManager({
               onClick={() => onKeepOpenToggle(!keepOpen)}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                className={`inline-block size-4 transform rounded-full bg-white transition-transform
                   ${keepOpen ? 'translate-x-4' : 'translate-x-1'}`}
               />
             </div>
@@ -100,7 +96,7 @@ export default function ApiKeyManager({
               flex items-center gap-1"
             aria-label={t('addKey')}
           >
-            <Icons.Plus className="w-4 h-4 shrink-0" />
+            <Icons.Plus className="size-4 shrink-0" />
             <span className={compact ? 'hidden min-[400px]:inline' : 'hidden sm:inline'}>
               {t('addKey')}
             </span>
@@ -118,22 +114,20 @@ export default function ApiKeyManager({
               }`}
             aria-label={closeDisabled ? 'Manager stays open' : t('close')}
             title={
-              closeDisabled
-                ? 'Manager stays open - disable "Toggle Open" to close'
-                : t('close')
+              closeDisabled ? 'Manager stays open - disable "Toggle Open" to close' : t('close')
             }
             disabled={closeDisabled}
           >
-            <Icons.Times className="w-5 h-5" />
+            <Icons.Times className="size-5" />
           </button>
         </div>
       </div>
 
       {keys.length > 0 ? (
         <div className="space-y-1.5 sm:space-y-2 max-h-[min(40vh,20rem)] sm:max-h-none overflow-y-auto overscroll-contain -mx-0.5 px-0.5">
-          {keys.map((keyItem, index) => (
+          {keys.map((keyItem) => (
             <div
-              key={index}
+              key={keyItem.key}
               className={`flex items-center gap-2 justify-between rounded-lg transition-colors min-w-0
                 ${compact ? 'p-2' : 'p-2.5 sm:p-3'}
                 ${
@@ -144,7 +138,7 @@ export default function ApiKeyManager({
             >
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                 <div
-                  className={`shrink-0 w-2 h-2 rounded-full ${
+                  className={`shrink-0 size-2 rounded-full ${
                     activeKey === keyItem.key
                       ? 'bg-accent dark:bg-accent-dark'
                       : 'bg-primary-text/20 dark:bg-primary-text-dark/20'
@@ -182,7 +176,7 @@ export default function ApiKeyManager({
                 aria-label={t('deleteKey')}
                 title={t('deleteKey')}
               >
-                <Icons.Delete className="w-4 h-4" />
+                <Icons.Delete className="size-4" />
               </button>
             </div>
           ))}
@@ -202,7 +196,7 @@ export default function ApiKeyManager({
             onClick={() => setShowAddForm(false)}
             aria-hidden
           />
-          <div
+          <dialog
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70]
               bg-surface dark:bg-surface-dark
               border border-border dark:border-border-dark
@@ -210,9 +204,8 @@ export default function ApiKeyManager({
               w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[min(90vh,32rem)]
               overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
             aria-labelledby="api-key-add-dialog-title"
+            open
           >
             <div className="flex items-center justify-between gap-3 p-4 sm:p-6 pb-0 sm:pb-0 shrink-0">
               <h3
@@ -230,7 +223,7 @@ export default function ApiKeyManager({
                   hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
                 aria-label={t('close')}
               >
-                <Icons.Times className="w-5 h-5" />
+                <Icons.Times className="size-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pt-4 space-y-4">
@@ -278,7 +271,11 @@ export default function ApiKeyManager({
                       dark:hover:text-primary-text-dark transition-colors p-2 touch-manipulation min-h-9 min-w-9 flex items-center justify-center"
                     aria-label={showKeys ? tInput('hide') : tInput('show')}
                   >
-                    {showKeys ? <Icons.Eye className="w-4 h-4" /> : <Icons.EyeOff className="w-4 h-4" />}
+                    {showKeys ? (
+                      <Icons.Eye className="size-4" />
+                    ) : (
+                      <Icons.EyeOff className="size-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -303,7 +300,7 @@ export default function ApiKeyManager({
                 {t('add')}
               </button>
             </div>
-          </div>
+          </dialog>
         </>
       )}
     </div>

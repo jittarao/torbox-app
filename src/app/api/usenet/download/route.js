@@ -34,6 +34,7 @@ export async function GET(request) {
     });
     const apiUrl = `${API_BASE}/${API_VERSION}/api/usenet/requestdl?${queryParams}`;
     const response = await fetch(apiUrl, {
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

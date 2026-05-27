@@ -165,7 +165,7 @@ export default function SearchResults({ apiKey }) {
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
                 <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -184,9 +184,18 @@ export default function SearchResults({ apiKey }) {
                           : 'bg-border dark:bg-border-dark'
                       }`}
                   onClick={() => setShowCachedOnly(!showCachedOnly)}
+                  role="switch"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowCachedOnly(!showCachedOnly);
+                    }
+                  }}
+                  aria-checked={showCachedOnly}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                    className={`inline-block size-4 transform rounded-full bg-white transition-transform
                         ${showCachedOnly ? 'translate-x-4' : 'translate-x-1'}`}
                   />
                 </div>
@@ -208,9 +217,18 @@ export default function SearchResults({ apiKey }) {
                   : 'bg-border dark:bg-border-dark'
               }`}
                     onClick={() => setHideTorBoxIndexers(!hideTorBoxIndexers)}
+                    role="switch"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setHideTorBoxIndexers(!hideTorBoxIndexers);
+                      }
+                    }}
+                    aria-checked={hideTorBoxIndexers}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                      className={`inline-block size-4 transform rounded-full bg-white transition-transform
                 ${hideTorBoxIndexers ? 'translate-x-4' : 'translate-x-1'}`}
                     />
                   </div>
@@ -225,6 +243,7 @@ export default function SearchResults({ apiKey }) {
                   className="w-full md:w-40"
                 />
                 <button
+                  type="button"
                   onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
                   className="p-2 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
                 >
@@ -309,6 +328,7 @@ export default function SearchResults({ apiKey }) {
                       (searchType === 'usenet' &&
                         !TORBOX_NATIVE_TRACKERS.includes(item.tracker))) && (
                       <button
+                        type="button"
                         onClick={() => copyLink(item)}
                         className="shrink-0 px-3 py-1 text-sm bg-accent hover:bg-accent/90 
                               dark:bg-accent-dark dark:hover:bg-accent-dark/90
@@ -319,6 +339,7 @@ export default function SearchResults({ apiKey }) {
                     )}
 
                     <button
+                      type="button"
                       onClick={() => handleUpload(item)}
                       disabled={
                         isUploading[item.hash] ||

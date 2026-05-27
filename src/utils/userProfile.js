@@ -42,7 +42,7 @@ export async function fetchUserProfile(apiKey) {
  * @param {Object} userData - User profile data
  * @returns {boolean} - True if user has Pro plan
  */
-export function hasProPlan(userData) {
+function hasProPlan(userData) {
   if (!userData || userData.plan == null) {
     return false;
   }
@@ -81,15 +81,6 @@ export function getUserPermissions(userData) {
 export function hasDownloadAccess(type, permissions) {
   if (!permissions || !permissions.downloads) return false;
   return Boolean(permissions.downloads[type]);
-}
-
-/**
- * Check if user can use usenet downloads (requires Pro plan, plan_id === 2)
- * @param {Object} userData - User profile data
- * @returns {boolean} - True if user has access to usenet
- */
-export function canUseUsenet(userData) {
-  return hasProPlan(userData);
 }
 
 /**

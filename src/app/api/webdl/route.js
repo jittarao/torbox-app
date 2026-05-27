@@ -25,6 +25,7 @@ export async function GET(request) {
     // Fetch both regular and queued web downloads in parallel
     const [downloadsResponse, queuedResponse] = await Promise.all([
       fetch(`${API_BASE}/${API_VERSION}/api/webdl/mylist?bypass_cache=true&_t=${timestamp}`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -36,6 +37,7 @@ export async function GET(request) {
       fetch(
         `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=webdl&bypass_cache=true&_t=${timestamp}`,
         {
+          cache: 'no-store',
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -169,12 +171,14 @@ export async function DELETE(request) {
     // First, fetch the webdl data to determine if it's queued
     const [downloadsResponse, queuedResponse] = await Promise.all([
       fetch(`${API_BASE}/${API_VERSION}/api/webdl/mylist?id=${id}`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       }),
       fetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=webdl`, {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

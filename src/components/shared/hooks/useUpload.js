@@ -476,33 +476,38 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         setError(result.userMessage || result.error || 'Batch upload failed');
       }
     } else {
-      // Use individual uploads for small batches
+      const itemEntries = pendingItems.map((item) => ({
+        item,
+        idx: items.findIndex((x) => x === item),
+      }));
+
+      itemEntries.forEach(({ idx }) => updateItemStatus(idx, 'processing'));
+
+      const results = await Promise.allSettled(itemEntries.map(({ item }) => uploadItem(item)));
+
       let processedCount = 0;
+      let firstError = null;
 
-      for (let i = 0; i < pendingItems.length; i++) {
-        const item = pendingItems[i];
-        const idx = items.findIndex((x) => x === item);
-
-        updateItemStatus(idx, 'processing');
-
-        const result = await uploadItem(item);
-
-        if (result.success) {
+      results.forEach((r, i) => {
+        const { idx } = itemEntries[i];
+        if (r.status === 'fulfilled' && r.value.success) {
           updateItemStatus(idx, 'success');
           processedCount++;
-          setProgress({
-            current: processedCount,
-            total: pendingItems.length,
-          });
-
-          // Clear any previous errors on success
-          setError(null);
         } else {
-          updateItemStatus(idx, 'error', result.error);
-          setError(result.userMessage || result.error);
-          // Continue processing other items even if one fails
+          const errMsg =
+            r.status === 'rejected'
+              ? r.reason?.message || 'Upload failed'
+              : r.value.userMessage || r.value.error || 'Upload failed';
+          updateItemStatus(idx, 'error', errMsg);
+          if (!firstError) firstError = errMsg;
         }
-      }
+      });
+
+      setProgress({
+        current: processedCount,
+        total: pendingItems.length,
+      });
+      setError(firstError);
     }
 
     setIsUploading(false);

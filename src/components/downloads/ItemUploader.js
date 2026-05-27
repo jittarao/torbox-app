@@ -238,13 +238,14 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
         <div className="flex items-center gap-2 lg:gap-4">
           {activeType === 'torrents' && isExpanded && (
             <button
+              type="button"
               onClick={() => setShowOptions(!showOptions)}
               className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             >
               {showOptions ? t('options.hide') : t('options.show')}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className={`w-4 h-4 transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`}
+                className={`size-4 transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -257,6 +258,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             </button>
           )}
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
@@ -264,7 +266,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             {isExpanded ? t('section.hide') : t('section.show')}
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              className={`size-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -352,6 +354,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             <>
               <div className="flex justify-end">
                 <button
+                  type="button"
                   onClick={() => {
                     uploadItems();
                     phEvent('upload_items');
@@ -374,7 +377,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2 flex-1">
                   <svg
-                    className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
+                    className="size-5 text-red-500 mt-0.5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -395,11 +398,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setError(null)}
                   className="ml-2 p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                   aria-label="Dismiss error"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -418,7 +422,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2 flex-1">
                   <svg
-                    className="w-5 h-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0"
+                    className="size-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -440,11 +444,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setNzbTipsHidden(true)}
                   className="ml-2 p-1 text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
                   aria-label="Hide tips"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -461,10 +466,11 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           {activeType === 'usenet' && nzbTipsHidden && (
             <div className="mt-3 flex justify-center">
               <button
+                type="button"
                 onClick={() => setNzbTipsHidden(false)}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-lg transition-all duration-200"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -500,6 +506,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 </h3>
 
                 <button
+                  type="button"
                   onClick={handleDismiss}
                   className="text-sm text-primary-text/70 hover:text-primary-text dark:text-primary-text-dark dark:hover:text-primary-text-dark/70"
                   aria-label={t('status.clearItems')}

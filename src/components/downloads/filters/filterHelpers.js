@@ -1,7 +1,4 @@
-import {
-  LOGIC_OPERATORS,
-  MULTI_SELECT_OPERATORS,
-} from '../AutomationRules/constants';
+import { LOGIC_OPERATORS, MULTI_SELECT_OPERATORS } from '../AutomationRules/constants';
 import { isTagsColumn } from '../CustomViews/utils';
 import { itemMatchesFilters } from './filterEvaluation';
 import { itemMatchesDownloadSearch } from '../utils/downloadSearch';
@@ -81,11 +78,7 @@ export function buildTagFilter(tagIds, operator = MULTI_SELECT_OPERATORS.IS_ANY_
 export function countActiveConditions(filters) {
   if (!filters) return 0;
 
-  const groups = filters.groups
-    ? filters.groups
-    : Array.isArray(filters)
-      ? [{ filters }]
-      : [];
+  const groups = filters.groups ? filters.groups : Array.isArray(filters) ? [{ filters }] : [];
 
   return groups.reduce(
     (count, group) => count + (group.filters?.filter((f) => f.column).length || 0),

@@ -448,9 +448,7 @@ select option {
   }
 
   .pb-mobile-nav {
-    padding-bottom: calc(
-      var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
-    );
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
   }
 
   .z-mobile-drawer-backdrop {

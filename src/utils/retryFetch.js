@@ -3,6 +3,7 @@
 
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_DELAY_MS = 2000;
+const RETRYABLE_STATUSES = new Set([502, 503, 504, 429]);
 
 // Helper function to get user-friendly error messages
 const getErrorMessage = (error, status, url) => {
@@ -76,7 +77,7 @@ export async function retryFetch(url, options = {}) {
 
       if (!response.ok) {
         // For 502, 503, 504 errors, we want to retry
-        if ([502, 503, 504, 429].includes(response.status)) {
+        if (RETRYABLE_STATUSES.has(response.status)) {
           lastError = new Error(`HTTP error! status: ${response.status}`);
           retries++;
           if (retries < maxRetries) {
@@ -144,14 +145,5 @@ export async function retryFetch(url, options = {}) {
     success: false,
     error: `Failed after ${maxRetries} retries`,
     userMessage: getErrorMessage(lastError, lastStatus, url),
-  };
-}
-
-// Helper to create retry options with defaults
-export function createRetryOptions(overrides = {}) {
-  return {
-    maxRetries: DEFAULT_MAX_RETRIES,
-    delayMs: DEFAULT_DELAY_MS,
-    ...overrides,
   };
 }

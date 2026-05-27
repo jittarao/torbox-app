@@ -21,6 +21,7 @@ export async function GET(request, { params }) {
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/${id}/download`, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'x-api-key': apiKey,
       },

@@ -21,8 +21,12 @@ export default function ApiKeyInput({
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const lastAutoApplyKeyRef = useRef('');
-  const [showManager, setShowManager] = useState(false);
-  const [keepManagerOpen, setKeepManagerOpen] = useState(false);
+  const [showManager, setShowManager] = useState(() => {
+    return localStorage.getItem('torboxKeepManagerOpen') === 'true';
+  });
+  const [keepManagerOpen, setKeepManagerOpen] = useState(() => {
+    return localStorage.getItem('torboxKeepManagerOpen') === 'true';
+  });
   const [draft, setDraft] = useState(undefined);
   const ensureDbTimeoutRef = useRef(null);
 
@@ -32,15 +36,6 @@ export default function ApiKeyInput({
   useEffect(() => {
     setDraft(undefined);
   }, [committedValue]);
-
-  // Load manager open state from localStorage on mount
-  useEffect(() => {
-    const storedState = localStorage.getItem('torboxKeepManagerOpen');
-    if (storedState === 'true') {
-      setKeepManagerOpen(true);
-      setShowManager(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (!committedValue || !isValidTorboxApiKey(committedValue)) {
@@ -160,7 +155,11 @@ export default function ApiKeyInput({
             className={eyeButtonClassName}
             aria-label={showKey ? t('hide') : t('show')}
           >
-            {showKey ? <Icons.Eye className={isCompact ? 'w-3.5 h-3.5' : undefined} /> : <Icons.EyeOff className={isCompact ? 'w-3.5 h-3.5' : undefined} />}
+            {showKey ? (
+              <Icons.Eye className={isCompact ? 'w-3.5 h-3.5' : undefined} />
+            ) : (
+              <Icons.EyeOff className={isCompact ? 'w-3.5 h-3.5' : undefined} />
+            )}
           </button>
         </div>
 

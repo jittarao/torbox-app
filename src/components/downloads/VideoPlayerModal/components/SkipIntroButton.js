@@ -9,6 +9,7 @@ export default function SkipIntroButton({ onSkip }) {
   return (
     <div className="absolute bottom-24 right-6 z-30">
       <button
+        type="button"
         onClick={onSkip}
         className="px-6 py-3 rounded-lg bg-black/80 hover:bg-black/90 
           backdrop-blur-md text-white font-medium
@@ -16,7 +17,7 @@ export default function SkipIntroButton({ onSkip }) {
           hover:scale-105 active:scale-95
           flex items-center gap-2 shadow-lg"
       >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
           <path d="M6 4l8 8-8 8V4zm10 0v16h2V4h-2z" />
         </svg>
         <span>Skip Intro</span>

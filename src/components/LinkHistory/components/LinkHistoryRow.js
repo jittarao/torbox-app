@@ -24,7 +24,8 @@ const LinkHistoryRow = memo(
             type="checkbox"
             checked={isSelected}
             onChange={(e) => onSelect(item.id, e.target.checked)}
-            className="w-4 h-4 accent-accent dark:accent-accent-dark cursor-pointer"
+            className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
+            aria-label={linkHistoryT('actions.selectItem')}
           />
         </td>
         <td className="px-3 md:px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
@@ -43,11 +44,13 @@ const LinkHistoryRow = memo(
           className={`px-3 md:px-4 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-2`}
         >
           <button
+            type="button"
             onClick={() => onCopy(item.url)}
             className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
               hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
               ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={linkHistoryT('actions.copy')}
+            aria-label={linkHistoryT('actions.copy')}
           >
             {isMobile ? (
               <div className="flex items-center justify-center gap-2">
@@ -58,11 +61,13 @@ const LinkHistoryRow = memo(
             )}
           </button>
           <button
+            type="button"
             onClick={() => onOpen(item.url)}
             className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
               hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
               ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={linkHistoryT('actions.download')}
+            aria-label={linkHistoryT('actions.download')}
           >
             {isMobile ? (
               <div className="flex items-center justify-center gap-2">
@@ -73,12 +78,14 @@ const LinkHistoryRow = memo(
             )}
           </button>
           <button
+            type="button"
             onClick={() => onDelete(item.id)}
             disabled={deleting}
             className={`p-1.5 rounded-full text-red-500 dark:text-red-400 
               hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
               disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={linkHistoryT('actions.remove')}
+            aria-label={linkHistoryT('actions.remove')}
           >
             {isMobile ? (
               <div className="flex items-center justify-center gap-2">

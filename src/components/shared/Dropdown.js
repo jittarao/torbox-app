@@ -33,6 +33,7 @@ export default function Dropdown({ options, value, onChange, className = '', sor
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between w-full p-2 text-sm rounded 
           bg-transparent border border-border dark:border-border-dark 
@@ -58,6 +59,7 @@ export default function Dropdown({ options, value, onChange, className = '', sor
         >
           {options.map((option) => (
             <button
+              type="button"
               key={option.label}
               onClick={() => {
                 const newValue =

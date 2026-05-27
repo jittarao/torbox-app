@@ -18,11 +18,5 @@ export default function ReferralHeaderBanner({ apiKey }) {
     return null;
   }
 
-  return (
-    <ReferralCallout
-      apiKey={apiKey}
-      variant="slim"
-      promptFromQuery={promptFromQuery}
-    />
-  );
+  return <ReferralCallout apiKey={apiKey} variant="slim" promptFromQuery={promptFromQuery} />;
 }

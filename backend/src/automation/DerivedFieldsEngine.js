@@ -119,27 +119,22 @@ class DerivedFieldsEngine {
   async updateDerivedFields(changes, pollIntervalSeconds = 300) {
     const now = new Date();
 
-    // Process new torrents
-    for (const torrent of changes.new) {
-      await this.initializeTelemetry(torrent.id, torrent);
-    }
+    // Process new torrents in parallel
+    await Promise.all(changes.new.map((torrent) => this.initializeTelemetry(torrent.id, torrent)));
 
-    // Process updated torrents
-    for (const { torrent, diff } of changes.updated) {
-      await this.updateTelemetry(torrent, diff, now);
-    }
+    // Process updated torrents in parallel
+    await Promise.all(
+      changes.updated.map(({ torrent, diff }) => this.updateTelemetry(torrent, diff, now))
+    );
 
     // Process removed torrents
     // Note: Shadow state is already deleted in StateDiffEngine._findRemovedTorrents(),
     // which cascades to telemetry and speed_history via foreign key constraints (ON DELETE CASCADE)
-    for (const shadow of changes.removed) {
-      // No-op: cleanup is handled by StateDiffEngine via CASCADE delete
-    }
 
-    // Process state transitions
-    for (const transition of changes.stateTransitions) {
-      await this.handleStateTransition(transition, now);
-    }
+    // Process state transitions in parallel
+    await Promise.all(
+      changes.stateTransitions.map((transition) => this.handleStateTransition(transition, now))
+    );
 
     // Backfill telemetry records that have NULL activity timestamps.
     // Only run when new torrents were added or state transitions occurred — these are the only

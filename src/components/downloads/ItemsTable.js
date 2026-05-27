@@ -248,13 +248,14 @@ export default function ItemsTable({
             Viewing simplified table on mobile. Rotate device or use larger screen for full view.
           </p>
           <button
+            type="button"
             onClick={handleDismissMobileNotice}
             className="ml-2 text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary-text dark:hover:text-primary-text-dark"
             aria-label="Dismiss notice"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
+              className="size-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -270,17 +271,11 @@ export default function ItemsTable({
         </div>
       )}
 
-      <div
-        ref={tableContainerRef}
-        id="items-table"
-        className={tableContainerClass}
-      >
+      <div ref={tableContainerRef} id="items-table" className={tableContainerClass}>
         <table
           className="w-full table-fixed border-separate border-spacing-0 relative md:text-xs lg:text-sm"
           style={
-            columnLayout.tableMinWidth
-              ? { minWidth: `${columnLayout.tableMinWidth}px` }
-              : undefined
+            columnLayout.tableMinWidth ? { minWidth: `${columnLayout.tableMinWidth}px` } : undefined
           }
         >
           <TableHeader

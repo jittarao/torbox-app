@@ -103,7 +103,9 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     apiKey: null,
   });
   const [isBlurred, setIsBlurred] = useState(false);
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState(
+    () => localStorage.getItem('downloads-view-mode') || 'table'
+  );
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
@@ -190,12 +192,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const isRefreshing = loading && items.length > 0;
 
   // Load tags (only if backend is available)
-  const {
-    loadTags,
-    tags,
-    loading: tagsLoading,
-    updateTag: updateTagName,
-  } = useTags(apiKey);
+  const { loadTags, tags, loading: tagsLoading, updateTag: updateTagName } = useTags(apiKey);
 
   // Load tags once when component mounts (only if backend is available)
   useEffect(() => {
@@ -330,16 +327,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
 
-  // Update pause reason when video player opens/closes
-  useEffect(() => {
-    setPauseReason('videoPlayer', videoPlayerState.isOpen);
-  }, [videoPlayerState.isOpen, setPauseReason]);
-
-  // Update pause reason when audio player opens/closes
-  useEffect(() => {
-    setPauseReason('audioPlayer', audioPlayerState.isOpen);
-  }, [audioPlayerState.isOpen, setPauseReason]);
-
   // Start notifications polling once when component mounts
   const { fetchNotifications: fetchNotificationsStore } = useNotificationsStore();
   useEffect(() => {
@@ -433,35 +420,36 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         return;
       }
 
-      // Export each selected torrent
-      for (const itemId of selectedItemIds) {
-        const item = enrichedDownloads.find((i) => i.id === itemId);
-        if (!item) continue;
+      await Promise.all(
+        selectedItemIds.map(async (itemId) => {
+          const item = enrichedDownloads.find((i) => i.id === itemId);
+          if (!item) return;
 
-        try {
-          const response = await fetch(`/api/torrents/export?torrent_id=${itemId}&type=torrent`, {
-            headers: {
-              'x-api-key': apiKey,
-            },
-          });
+          try {
+            const response = await fetch(`/api/torrents/export?torrent_id=${itemId}&type=torrent`, {
+              headers: {
+                'x-api-key': apiKey,
+              },
+            });
 
-          if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${item.name || item.id}.torrent`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          } else {
-            console.error(`Failed to export torrent ${itemId}`);
+            if (response.ok) {
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${item.name || item.id}.torrent`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            } else {
+              console.error(`Failed to export torrent ${itemId}`);
+            }
+          } catch (error) {
+            console.error(`Error exporting torrent ${itemId}:`, error);
           }
-        } catch (error) {
-          console.error(`Error exporting torrent ${itemId}:`, error);
-        }
-      }
+        })
+      );
 
       setToast({
         message: `Exported ${selectedItemIds.length} torrent files`,
@@ -502,6 +490,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           fileName: file.name || file.short_name || 'Audio',
           apiKey,
         });
+        setPauseReason('audioPlayer', true);
       } else {
         setToast({
           message: result.error || 'Could not get audio link',
@@ -542,14 +531,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       return newSet;
     });
   };
-
-  useEffect(() => {
-    const storedViewMode = localStorage.getItem('downloads-view-mode');
-    if (storedViewMode) {
-      // If mobile, always set to table view
-      setViewMode(isMobile ? 'table' : storedViewMode);
-    }
-  }, []);
 
   // One-time migration from localStorage to backend, then fetch from backend
   useEffect(() => {
@@ -728,8 +709,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const handleApplyTag = (tagId) => {
     const id = Number(tagId);
-    const isActive =
-      activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
+    const isActive = activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
 
     if (isActive) {
       handleClearFilters();
@@ -830,8 +810,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const handleManageTags = () => handleOpenTagManager(false);
 
-  const showDesktopFiltersSidebar =
-    isBackendAvailable && !isMobile && !isFullscreen;
+  const showDesktopFiltersSidebar = isBackendAvailable && !isMobile && !isFullscreen;
   const filtersSidebarExpanded = showDesktopFiltersSidebar && !filtersSidebarCollapsed;
   const filtersSidebarWidth = filtersSidebarCollapsed
     ? FILTERS_SIDEBAR_COLLAPSED
@@ -844,9 +823,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const handlePreviewFiltersFromModal = useCallback(
     (filters, { includeSort = false, includeSearch = false } = {}) => {
       const assetType =
-        filterModalMode === 'edit' && editingView?.asset_type
-          ? editingView.asset_type
-          : activeType;
+        filterModalMode === 'edit' && editingView?.asset_type ? editingView.asset_type : activeType;
       const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);
       setColumnFilters(normalized);
       setAppliedFilters(normalized);
@@ -864,16 +841,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
       setStatusFilter('all');
     },
-    [
-      activeType,
-      clearView,
-      editingView,
-      filterModalMode,
-      search,
-      setSort,
-      sortDirection,
-      sortField,
-    ]
+    [activeType, clearView, editingView, filterModalMode, search, setSort, sortDirection, sortField]
   );
 
   const sidebarProps = {
@@ -1001,6 +969,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               initialSubtitleIndex:
                 initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
             });
+            setPauseReason('videoPlayer', true);
           }}
           onAudioPlay={handleAudioPlay}
           fileSearch={search}
@@ -1053,6 +1022,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               initialSubtitleIndex:
                 initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
             });
+            setPauseReason('videoPlayer', true);
           }}
           onAudioPlay={handleAudioPlay}
         />
@@ -1161,7 +1131,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               onClick={() => setMobileFiltersOpen(true)}
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-border dark:border-border-dark rounded-md hover:bg-surface-alt dark:hover:bg-surface-alt-dark md:hidden"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="size-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1231,7 +1207,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           )}
           <VideoPlayerModal
             isOpen={videoPlayerState.isOpen}
-            onClose={() =>
+            onClose={() => {
+              setPauseReason('videoPlayer', false);
               setVideoPlayerState({
                 isOpen: false,
                 streamUrl: null,
@@ -1245,8 +1222,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
                 introInformation: null,
                 initialAudioIndex: 0,
                 initialSubtitleIndex: null,
-              })
-            }
+              });
+            }}
             streamUrl={videoPlayerState.streamUrl}
             fileName={videoPlayerState.fileName}
             subtitles={videoPlayerState.subtitles}
@@ -1265,13 +1242,15 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           />
           {audioPlayerState.isOpen && (
             <AudioPlayer
+              key={`${audioPlayerState.fileId}-${audioPlayerState.itemId}`}
               audioUrl={audioPlayerState.url}
               fileName={audioPlayerState.fileName}
               itemId={audioPlayerState.itemId}
               fileId={audioPlayerState.fileId}
               assetType={audioPlayerState.assetType}
               apiKey={audioPlayerState.apiKey}
-              onClose={() =>
+              onClose={() => {
+                setPauseReason('audioPlayer', false);
                 setAudioPlayerState({
                   isOpen: false,
                   url: null,
@@ -1280,8 +1259,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
                   assetType: 'torrent',
                   fileName: null,
                   apiKey: null,
-                })
-              }
+                });
+              }}
               onRefreshUrl={handleAudioRefreshUrl}
             />
           )}

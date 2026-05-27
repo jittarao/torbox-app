@@ -288,10 +288,11 @@ export async function getUserUploadFiles(authId) {
   async function scanDirectory(dirPath, baseDir) {
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
+      const subDirPromises = [];
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
-          await scanDirectory(fullPath, baseDir);
+          subDirPromises.push(scanDirectory(fullPath, baseDir));
         } else if (entry.isFile()) {
           try {
             const stats = await stat(fullPath);
@@ -302,14 +303,11 @@ export async function getUserUploadFiles(authId) {
               size: stats.size,
               mtime: stats.mtime,
             });
-          } catch {
-            // File might have been deleted, skip it
-          }
+          } catch {}
         }
       }
-    } catch {
-      // Directory might not exist or be inaccessible, skip it
-    }
+      await Promise.all(subDirPromises);
+    } catch {}
   }
 
   const userUploadDir = getUserUploadDir(authId);

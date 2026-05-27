@@ -38,7 +38,7 @@ function SortableItem({ id, label }) {
       <span className="text-sm text-primary-text dark:text-primary-text-dark">{label}</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 text-primary-text/30 dark:text-primary-text-dark/30
+        className="size-4 text-primary-text/30 dark:text-primary-text-dark/30
           group-hover:text-primary-text/70 dark:group-hover:text-primary-text-dark/70 
           transition-colors"
         fill="none"
@@ -130,6 +130,7 @@ export default function ColumnManager({
   return (
     <div className="relative">
       <button
+        type="button"
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md 
@@ -139,7 +140,7 @@ export default function ColumnManager({
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
+          className="size-4"
           viewBox="0 0 20 20"
           fill="currentColor"
         >

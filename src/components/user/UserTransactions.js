@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
@@ -82,13 +82,17 @@ export default function UserTransactions({ apiKey, setToast }) {
     }
   };
 
+  const currencyFormatters = useMemo(() => ({}), []);
   const formatCurrency = (amount, currency = 'USD') => {
     if (amount === null || amount === undefined) return 'N/A';
     try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-      }).format(amount);
+      if (!currencyFormatters[currency]) {
+        currencyFormatters[currency] = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currency,
+        });
+      }
+      return currencyFormatters[currency].format(amount);
     } catch (err) {
       return 'N/A';
     }
@@ -114,15 +118,15 @@ export default function UserTransactions({ apiKey, setToast }) {
   const getTypeIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'subscription':
-        return <Icons.CreditCard className="w-4 h-4" />;
+        return <Icons.CreditCard className="size-4" />;
       case 'payment':
-        return <Icons.DollarSign className="w-4 h-4" />;
+        return <Icons.DollarSign className="size-4" />;
       case 'refund':
-        return <Icons.RotateCcw className="w-4 h-4" />;
+        return <Icons.RotateCcw className="size-4" />;
       case 'credit':
-        return <Icons.Plus className="w-4 h-4" />;
+        return <Icons.Plus className="size-4" />;
       default:
-        return <Icons.FileText className="w-4 h-4" />;
+        return <Icons.FileText className="size-4" />;
     }
   };
 
@@ -140,9 +144,10 @@ export default function UserTransactions({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <button
+            type="button"
             onClick={fetchTransactions}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >
@@ -230,7 +235,7 @@ export default function UserTransactions({ apiKey, setToast }) {
           </div>
         ) : (
           <div className="text-center py-8">
-            <Icons.Receipt className="w-12 h-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+            <Icons.Receipt className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
             <p className="text-muted dark:text-muted-dark">{t('transactions.noTransactions')}</p>
           </div>
         )}
@@ -241,11 +246,12 @@ export default function UserTransactions({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">
             An error occurred while rendering transactions
           </p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >
