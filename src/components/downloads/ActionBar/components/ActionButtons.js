@@ -245,7 +245,7 @@ export default function ActionButtons({
   };
 
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
+    <div className="flex min-w-0 w-full flex-wrap items-center gap-2 lg:w-auto">
       <button
         onClick={handleDownloadClick}
         disabled={isDownloading}

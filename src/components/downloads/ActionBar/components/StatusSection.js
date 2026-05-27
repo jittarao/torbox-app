@@ -98,7 +98,7 @@ export default function StatusSection({
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-primary-text dark:text-primary-text-dark">
       <span
-        className={`shrink-0 font-semibold whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
+        className={`min-w-0 font-semibold lg:shrink-0 lg:whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
         onClick={() => handleStatusClick('all')}
       >
         {getSelectionText()}
