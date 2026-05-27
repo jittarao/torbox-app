@@ -9,13 +9,13 @@ import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { isVideoFile, isAudioFile } from './utils/videoDetection';
 import {
+  getActionsColumnWidthPx,
+  getCheckboxColumnWidthPx,
   tableActionsCell,
   tableCellBorder,
   tableCheckboxCell,
 } from './utils/responsiveLayout';
 
-const ACTIONS_COLUMN_WIDTH = 210;
-const CHECKBOX_COLUMN_WIDTH = 60;
 const EXTRA_COLUMN_PADDING = 10;
 
 function FileRow({
@@ -104,8 +104,8 @@ function FileRow({
                   maxWidth: isMobile
                     ? '100%'
                     : tableWidth -
-                      ACTIONS_COLUMN_WIDTH -
-                      CHECKBOX_COLUMN_WIDTH -
+                      getActionsColumnWidthPx() -
+                      getCheckboxColumnWidthPx() -
                       EXTRA_COLUMN_PADDING,
                 }}
               >

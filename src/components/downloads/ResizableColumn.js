@@ -89,11 +89,16 @@ export default function ResizableColumn({
       style={
         isMobile && columnId === 'name'
           ? {}
-          : {
-              width: `${width}px`,
-              minWidth: `${width}px`,
-              maxWidth: `${width}px`,
-            }
+          : columnId === 'name'
+            ? {
+                width: 'auto',
+                minWidth: `${width}px`,
+              }
+            : {
+                width: `${width}px`,
+                minWidth: `${width}px`,
+                maxWidth: `${width}px`,
+              }
       }
       onClick={(e) => {
         if (wasResizing) {
