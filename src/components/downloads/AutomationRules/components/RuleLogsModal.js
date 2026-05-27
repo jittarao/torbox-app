@@ -75,12 +75,14 @@ export default function RuleLogsModal({
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => onClearLogs(ruleId)}
               className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
             >
               {t('clearLogs')}
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
             >
@@ -94,9 +96,9 @@ export default function RuleLogsModal({
             <div className="text-center text-gray-500 dark:text-gray-400 py-8">{t('noLogs')}</div>
           ) : (
             <div className="space-y-3">
-              {logs?.map((log, index) => (
+              {logs?.map((log) => (
                 <div
-                  key={index}
+                  key={log.id}
                   className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700"
                 >
                   <div className="flex justify-between items-start mb-2">

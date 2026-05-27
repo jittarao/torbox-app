@@ -261,28 +261,29 @@ export default function CloudUploadManager({ apiKey, setToast }) {
   const getJobStatusIcon = (status) => {
     switch (status) {
       case 'completed':
-        return <Icons.Check className="w-4 h-4" />;
+        return <Icons.Check className="size-4" />;
       case 'failed':
-        return <Icons.X className="w-4 h-4" />;
+        return <Icons.X className="size-4" />;
       case 'uploading':
       case 'in_progress':
         return <Spinner size="xs" />;
       case 'pending':
-        return <Icons.Clock className="w-4 h-4" />;
+        return <Icons.Clock className="size-4" />;
       default:
-        return <Icons.Clock className="w-4 h-4" />;
+        return <Icons.Clock className="size-4" />;
     }
   };
 
   return (
     <>
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="flex items-center justify-center w-10 h-10 bg-surface-alt dark:bg-surface-alt-dark 
+        className="flex items-center justify-center size-10 bg-surface-alt dark:bg-surface-alt-dark 
           hover:bg-surface-alt/80 dark:hover:bg-surface-alt-dark/80 rounded-lg transition-colors"
         title={t('title')}
       >
-        <Icons.Cloud className="w-5 h-5" />
+        <Icons.Cloud className="size-5" />
       </button>
 
       {isOpen && (
@@ -293,10 +294,11 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                 {t('title')}
               </h2>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-lg transition-colors"
               >
-                <Icons.X className="w-5 h-5" />
+                <Icons.X className="size-5" />
               </button>
             </div>
 
@@ -311,7 +313,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                 {Object.keys(connectedProviders).length === 0 && (
                   <div className="mb-4 p-4 bg-accent/10 dark:bg-accent-dark/10 border border-accent/25 dark:border-accent-dark/25 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <Icons.AlertCircle className="w-5 h-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0" />
+                      <Icons.AlertCircle className="size-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
                           No cloud providers configured
@@ -344,7 +346,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <provider.icon className={`w-6 h-6 ${provider.color}`} />
+                          <provider.icon className={`size-6 ${provider.color}`} />
                           <div>
                             <p className="font-medium text-primary-text dark:text-primary-text-dark">
                               {provider.name}
@@ -355,6 +357,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                           </div>
                         </div>
                         <button
+                          type="button"
                           onClick={() =>
                             connectedProviders[provider.id]
                               ? disconnectProvider(provider.id)
@@ -388,11 +391,12 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                     {t('activeJobs')}
                   </h3>
                   <button
+                    type="button"
                     onClick={loadActiveJobs}
                     disabled={isLoadingJobs}
                     className="p-2 hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-lg transition-colors"
                   >
-                    <Icons.Refresh className={`w-4 h-4 ${isLoadingJobs ? 'animate-spin' : ''}`} />
+                    <Icons.Refresh className={`size-4 ${isLoadingJobs ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
 
@@ -421,6 +425,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                           </div>
                           {(job.status === 'uploading' || job.status === 'in_progress') && (
                             <button
+                              type="button"
                               onClick={() => cancelJob(job.id)}
                               className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
                             >
@@ -446,7 +451,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-                    <Icons.Cloud className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <Icons.Cloud className="size-12 mx-auto mb-3 opacity-50" />
                     <p>{t('noActiveJobs')}</p>
                   </div>
                 )}

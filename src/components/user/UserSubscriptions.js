@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
@@ -73,13 +73,17 @@ export default function UserSubscriptions({ apiKey, setToast }) {
     }
   };
 
+  const currencyFormatters = useMemo(() => ({}), []);
   const formatCurrency = (amount, currency = 'USD') => {
     if (amount === null || amount === undefined) return 'N/A';
     try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-      }).format(amount);
+      if (!currencyFormatters[currency]) {
+        currencyFormatters[currency] = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currency,
+        });
+      }
+      return currencyFormatters[currency].format(amount);
     } catch (err) {
       return 'N/A';
     }
@@ -114,9 +118,10 @@ export default function UserSubscriptions({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <button
+            type="button"
             onClick={fetchSubscriptions}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >
@@ -222,9 +227,9 @@ export default function UserSubscriptions({ apiKey, setToast }) {
                       {t('subscriptions.features')}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {subscription.features.map((feature, featureIndex) => (
+                      {subscription.features.map((feature) => (
                         <span
-                          key={featureIndex}
+                          key={feature}
                           className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded"
                         >
                           {feature}
@@ -238,7 +243,7 @@ export default function UserSubscriptions({ apiKey, setToast }) {
           </div>
         ) : (
           <div className="text-center py-8">
-            <Icons.CreditCard className="w-12 h-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+            <Icons.CreditCard className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
             <p className="text-muted dark:text-muted-dark">{t('subscriptions.noSubscriptions')}</p>
           </div>
         )}
@@ -249,11 +254,12 @@ export default function UserSubscriptions({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">
             An error occurred while rendering subscriptions
           </p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >

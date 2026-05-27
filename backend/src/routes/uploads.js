@@ -239,6 +239,8 @@ export function setupUploadsRoutes(app, backend) {
       const errors = [];
 
       // Use transaction for batch insert
+      const VALID_TYPES = new Set(['torrent', 'usenet', 'webdl']);
+      const VALID_UPLOAD_TYPES = new Set(['file', 'magnet', 'link']);
       const insertMany = userDb.db.transaction((uploads) => {
         const results = [];
         for (const upload of uploads) {
@@ -246,12 +248,12 @@ export function setupUploadsRoutes(app, backend) {
             upload;
 
           // Validation
-          if (!type || !['torrent', 'usenet', 'webdl'].includes(type)) {
+          if (!type || !VALID_TYPES.has(type)) {
             errors.push({ upload, error: 'Invalid type. Must be torrent, usenet, or webdl' });
             continue;
           }
 
-          if (!upload_type || !['file', 'magnet', 'link'].includes(upload_type)) {
+          if (!upload_type || !VALID_UPLOAD_TYPES.has(upload_type)) {
             errors.push({
               upload,
               error: 'Invalid upload_type. Must be file, magnet, or link',
@@ -1255,8 +1257,8 @@ export function setupUploadsRoutes(app, backend) {
       let queuedDeletedCount = 0;
 
       // Delete files and records
-      for (const upload of uploads) {
-        try {
+      const deleteResults = await Promise.allSettled(
+        uploads.map(async (upload) => {
           // Delete file if exists (with authId for security validation)
           if (upload.file_path) {
             await deleteUploadFile(authId, upload.file_path);
@@ -1270,20 +1272,23 @@ export function setupUploadsRoutes(app, backend) {
 
           // Delete from database
           userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
-          deletedCount++;
 
-          // Decrement counter only if status was still queued or processing
-          // at the time of deletion (not if UploadProcessor completed it)
-          if (
+          // Check if status was still queued or processing
+          const wasQueued =
             currentUpload &&
-            (currentUpload.status === 'queued' || currentUpload.status === 'processing')
-          ) {
-            queuedDeletedCount++;
-          }
-        } catch (error) {
-          logger.error('Error deleting upload in bulk operation', error, {
-            authId,
-            uploadId: upload.id,
+            (currentUpload.status === 'queued' || currentUpload.status === 'processing');
+
+          return { deleted: true, wasQueued };
+        })
+      );
+
+      for (const r of deleteResults) {
+        if (r.status === 'fulfilled') {
+          deletedCount++;
+          if (r.value.wasQueued) queuedDeletedCount++;
+        } else {
+          logger.error('Error deleting upload in bulk operation', r.reason, {
+            endpoint: this.endpoint,
           });
         }
       }

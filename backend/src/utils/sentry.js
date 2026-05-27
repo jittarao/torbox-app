@@ -245,23 +245,6 @@ export function captureMessage(message, level = 'info', context = {}) {
 }
 
 /**
- * Set user context for Sentry
- * @param {Object} user - User object with id, email, etc.
- */
-export function setUser(user) {
-  if (!Sentry) return;
-  Sentry.setUser(user);
-}
-
-/**
- * Clear user context
- */
-export function clearUser() {
-  if (!Sentry) return;
-  Sentry.setUser(null);
-}
-
-/**
  * Add breadcrumb to Sentry
  * @param {Object} breadcrumb - Breadcrumb data
  */
@@ -269,22 +252,3 @@ export function addBreadcrumb(breadcrumb) {
   if (!Sentry) return;
   Sentry.addBreadcrumb(breadcrumb);
 }
-
-/**
- * Flush Sentry events (useful before shutdown)
- */
-export async function flush(timeout = 2000) {
-  if (!Sentry) return;
-  await Sentry.flush(timeout);
-}
-
-export default {
-  initSentry,
-  getSentry,
-  captureException,
-  captureMessage,
-  setUser,
-  clearUser,
-  addBreadcrumb,
-  flush,
-};

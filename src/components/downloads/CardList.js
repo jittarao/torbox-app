@@ -103,9 +103,7 @@ export default function CardList({
     updateContainerOffset();
 
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(updateContainerOffset)
-        : null;
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateContainerOffset) : null;
     if (resizeObserver && parentRef.current) {
       resizeObserver.observe(parentRef.current);
     }
@@ -144,9 +142,7 @@ export default function CardList({
     (index) => {
       const row = flattenedRows[index];
       const isTablet =
-        typeof window !== 'undefined' &&
-        window.innerWidth >= 768 &&
-        window.innerWidth < 1024;
+        typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
       const gap = getCardListItemGapPx();
       const baseHeight = isMobile ? 170 : isTablet ? 74 : 82;
       if (!row) {
@@ -660,18 +656,12 @@ export default function CardList({
         {/* Virtualized rows - only ItemCards */}
         {
           virtualRows
-            .filter((virtualRow) => {
-              // Filter out invalid indices (can happen during data updates when filtering changes item count)
-              return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
-            })
-            .map((virtualRow) => {
+            .flatMap((virtualRow) => {
+              if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
+
               const row = flattenedRows[virtualRow.index];
 
-              // Guard: Skip if row or row.item doesn't exist
-              // This provides extra safety in case of race conditions
-              if (!row || !row.item) {
-                return null;
-              }
+              if (!row || !row.item) return [];
 
               // Position cards using the virtualizer's scrollMargin (must match container offset)
               const scrollMargin = isFullscreen ? 0 : (virtualizer.options.scrollMargin ?? 0);
@@ -688,8 +678,7 @@ export default function CardList({
               }
 
               const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
-              const isExpanded =
-                expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;
+              const isExpanded = expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;
 
               const itemCardStyle = {
                 position: 'absolute',

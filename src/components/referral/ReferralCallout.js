@@ -75,7 +75,7 @@ export default function ReferralCallout({
         }
       >
         <div className="flex items-start gap-2 min-w-0">
-          <Icons.Gift className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <Icons.Gift className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
           <p className="text-sm text-zinc-800 dark:text-zinc-200">
             {isSlim ? t('callout.slimMessage') : t('callout.compactMessage')}
           </p>
@@ -104,7 +104,7 @@ export default function ReferralCallout({
             className="p-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 rounded"
             aria-label={t('callout.dismiss')}
           >
-            <Icons.X className="w-4 h-4" />
+            <Icons.X className="size-4" />
           </button>
         </div>
       </div>

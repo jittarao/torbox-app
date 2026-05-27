@@ -4,9 +4,6 @@ import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/cons
 export async function POST(request) {
   try {
     const apiKey = request.headers.get('x-api-key');
-    const requestBody = await request.json();
-    const { rss_feed_id, feed_id, operation } = requestBody;
-    const actualFeedId = rss_feed_id || feed_id;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -17,6 +14,10 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    const requestBody = await request.json();
+    const { rss_feed_id, feed_id, operation } = requestBody;
+    const actualFeedId = rss_feed_id || feed_id;
 
     if (!actualFeedId) {
       return NextResponse.json(

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 
-function MoreIcon({ className = 'h-5 w-5' }) {
+function MoreIcon({ className = 'size-5' }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +27,7 @@ function TabButton({ active, label, Icon, onClick, href, ariaCurrent }) {
   if (href) {
     return (
       <Link href={href} className={className} aria-current={ariaCurrent}>
-        <Icon className="h-5 w-5 shrink-0" aria-hidden />
+        <Icon className="size-5 shrink-0" aria-hidden />
         <span className="truncate">{label}</span>
       </Link>
     );
@@ -35,7 +35,7 @@ function TabButton({ active, label, Icon, onClick, href, ariaCurrent }) {
 
   return (
     <button type="button" onClick={onClick} className={className} aria-current={ariaCurrent}>
-      <Icon className="h-5 w-5 shrink-0" aria-hidden />
+      <Icon className="size-5 shrink-0" aria-hidden />
       <span className="truncate">{label}</span>
     </button>
   );

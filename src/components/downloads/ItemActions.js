@@ -119,9 +119,7 @@ export default function ItemActions({
   };
 
   return (
-    <div
-      className={`flex ${isMobile ? 'flex-col gap-2' : 'contents'}`}
-    >
+    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'contents'}`}>
       <ItemActionButtons
         item={item}
         onDelete={handleDelete}

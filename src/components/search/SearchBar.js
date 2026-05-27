@@ -166,6 +166,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
           />
           {localQuery && (
             <button
+              type="button"
               onClick={clearSearch}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 
                 text-primary-text/40 dark:text-primary-text-dark/40 
@@ -184,6 +185,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
           </div>
         </div>
         <button
+          type="button"
           onClick={handleSearch}
           className="px-4 py-2 bg-accent dark:bg-accent-dark text-white rounded-lg
             hover:bg-accent/90 dark:hover:bg-accent-dark/90 transition-colors
@@ -202,6 +204,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
                 {t('recentSearches') || 'Recent Searches'}
               </span>
               <button
+                type="button"
                 onClick={clearHistory}
                 className="text-xs text-red-500 hover:text-red-600 transition-colors"
               >
@@ -209,9 +212,10 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
               </button>
             </div>
           </div>
-          {searchHistory.map((item, index) => (
+          {searchHistory.map((item) => (
             <button
-              key={index}
+              type="button"
+              key={item}
               onClick={() => handleHistoryClick(item)}
               className="w-full p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-primary-text dark:text-primary-text-dark"
             >
@@ -229,9 +233,10 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
               {t('searchExamples') || 'Search Examples'}
             </span>
           </div>
-          {SEARCH_SUGGESTIONS.map((suggestion, index) => (
+          {SEARCH_SUGGESTIONS.map((suggestion) => (
             <button
-              key={index}
+              type="button"
+              key={suggestion.label}
               onClick={() => handleSuggestionClick(suggestion)}
               className="w-full p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
@@ -251,7 +256,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2">
             <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-              <Icons.Cog className="h-4 w-4" />
+              <Icons.Cog className="size-4" />
               {t('customEngines')}
             </span>
             <div
@@ -262,19 +267,29 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
                     : 'bg-border dark:bg-border-dark'
                 }`}
               onClick={handleCustomEnginesClick}
+              role="switch"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleCustomEnginesClick();
+                }
+              }}
+              aria-checked={includeCustomEngines}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                className={`inline-block size-4 transform rounded-full bg-white transition-transform
                   ${includeCustomEngines ? 'translate-x-4' : 'translate-x-1'}`}
               />
             </div>
           </label>
 
           <button
+            type="button"
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
             className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
           >
-            <Icons.Filter className="h-4 w-4" />
+            <Icons.Filter className="size-4" />
             {showAdvancedOptions
               ? t('hideAdvanced') || 'Hide Advanced'
               : t('showAdvanced') || 'Show Advanced'}
@@ -366,6 +381,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
 
           <div className="col-span-full flex justify-end">
             <button
+              type="button"
               onClick={clearFilters}
               className="px-3 py-1 text-sm text-red-500 hover:text-red-600 transition-colors"
             >

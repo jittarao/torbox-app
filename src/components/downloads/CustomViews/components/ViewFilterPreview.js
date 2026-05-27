@@ -2,10 +2,7 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  countDownloadsMatchingFilters,
-  hasActiveFilters,
-} from '../../filters/filterHelpers';
+import { countDownloadsMatchingFilters, hasActiveFilters } from '../../filters/filterHelpers';
 
 export default function ViewFilterPreview({
   filters,
@@ -42,9 +39,7 @@ export default function ViewFilterPreview({
           {t('previewMatchCount', { count: matched })}
         </p>
         <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 mt-0.5">
-          {total > 0
-            ? t('previewMatchCountOfTotal', { matched, total })
-            : t('previewHint')}
+          {total > 0 ? t('previewMatchCountOfTotal', { matched, total }) : t('previewHint')}
         </p>
       </div>
       {showPreviewButton && onPreview && (

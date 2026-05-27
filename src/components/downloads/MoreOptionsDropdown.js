@@ -399,7 +399,7 @@ export default function MoreOptionsDropdown({
 
     // Tag assignment option
     // items.push(
-    //   <button
+    //   <button type="button"
     //     key="assign-tags"
     //     onClick={(e) => {
     //       e.stopPropagation();
@@ -418,6 +418,7 @@ export default function MoreOptionsDropdown({
     // Common options for all types
     items.push(
       <button
+        type="button"
         key="copy-id"
         onClick={handleCopyId}
         className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
@@ -429,6 +430,7 @@ export default function MoreOptionsDropdown({
 
     items.push(
       <button
+        type="button"
         key="copy-hash"
         onClick={handleCopyHash}
         className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
@@ -440,7 +442,7 @@ export default function MoreOptionsDropdown({
 
     // Cloud upload option - HIDDEN FOR NOW
     // items.push(
-    //   <button
+    //   <button type="button"
     //     key="cloud-upload"
     //     onClick={() => {
     //       setToast({
@@ -481,7 +483,7 @@ export default function MoreOptionsDropdown({
 
     //   providers.forEach((provider) => {
     //     items.push(
-    //       <button
+    //       <button type="button"
     //         key={`upload-${provider.id}`}
     //         onClick={() => handleCloudUpload(provider.id)}
     //         disabled={isUploading}
@@ -498,6 +500,7 @@ export default function MoreOptionsDropdown({
     if (activeType === 'torrents') {
       items.push(
         <button
+          type="button"
           key="copy-short-magnet"
           onClick={handleCopyShortMagnet}
           className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
@@ -510,6 +513,7 @@ export default function MoreOptionsDropdown({
       if (item.active) {
         items.push(
           <button
+            type="button"
             key="copy-full-magnet"
             onClick={handleCopyFullMagnet}
             disabled={isExporting}
@@ -522,6 +526,7 @@ export default function MoreOptionsDropdown({
 
         items.push(
           <button
+            type="button"
             key="reannounce"
             onClick={handleReannounce}
             disabled={isReannouncing}
@@ -535,6 +540,7 @@ export default function MoreOptionsDropdown({
 
       items.push(
         <button
+          type="button"
           key="export-torrent"
           onClick={handleExportTorrent}
           disabled={isExporting}
@@ -550,6 +556,7 @@ export default function MoreOptionsDropdown({
     if (activeType === 'webdl') {
       items.push(
         <button
+          type="button"
           key="copy-source-url"
           onClick={handleCopySourceUrl}
           className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
@@ -566,6 +573,7 @@ export default function MoreOptionsDropdown({
   return (
     <div className="relative" ref={menuRef}>
       <button
+        type="button"
         ref={buttonRef}
         onClick={toggleMenu}
         className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 

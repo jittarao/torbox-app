@@ -67,7 +67,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded
+            className="absolute right-1.5 flex size-6 shrink-0 items-center justify-center rounded
               text-primary-text/40 hover:text-primary-text dark:text-primary-text-dark/40 dark:hover:text-primary-text-dark
               focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
               transition-colors"

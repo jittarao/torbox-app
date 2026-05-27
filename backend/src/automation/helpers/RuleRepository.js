@@ -398,7 +398,10 @@ class RuleRepository {
 
       // Delete rules that are no longer in the incoming set
       const existingRows = userDb.prepare('SELECT id FROM automation_rules').all();
-      const toDelete = existingRows.filter((r) => !incomingIds.has(r.id)).map((r) => r.id);
+      const toDelete = existingRows.reduce((acc, r) => {
+        if (!incomingIds.has(r.id)) acc.push(r.id);
+        return acc;
+      }, []);
       if (toDelete.length > 0) {
         const placeholders = toDelete.map(() => '?').join(',');
         userDb

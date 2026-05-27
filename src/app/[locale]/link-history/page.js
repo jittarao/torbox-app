@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import LinkHistory from '@/components/LinkHistory';
 import { Inter } from 'next/font/google';
@@ -8,14 +8,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function LinkHistoryPage() {
-  const [apiKey, setApiKey] = useState('');
-
-  useEffect(() => {
-    const storedKey = localStorage.getItem('torboxApiKey');
-    if (storedKey) {
-      setApiKey(storedKey);
-    }
-  }, []);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 
   return (
     <AppShell

@@ -153,43 +153,4 @@ export function handleServiceWorkerError(error) {
   return true;
 }
 
-// Global error handler (legacy; prefer ErrorHandlerInitializer)
-export function setupGlobalErrorHandler() {
-  window.addEventListener('unhandledrejection', (event) => {
-    const error = event.reason;
-
-    if (handleChunkError(error)) {
-      event.preventDefault();
-      return;
-    }
-
-    if (handleServiceWorkerError(error)) {
-      event.preventDefault();
-      return;
-    }
-
-    console.error('Unhandled promise rejection:', error);
-  });
-
-  window.addEventListener('error', (event) => {
-    const error = event.error || new Error(event.message);
-
-    if (!isChunkOrStaleCacheError(error)) {
-      return;
-    }
-
-    console.warn('Stale chunk/cache error detected. Attempting recovery...', error);
-
-    if (handleChunkError(error)) {
-      event.preventDefault();
-      return;
-    }
-
-    if (handleServiceWorkerError(error)) {
-      event.preventDefault();
-    }
-  });
-}
-
-// Note: Error handler is now initialized via ErrorHandlerInitializer component
-// This allows better control over when it's set up in the React component tree
+// Error handler is now initialized via ErrorHandlerInitializer component

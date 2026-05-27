@@ -93,7 +93,10 @@ export async function migrateDownloadHistory(apiKey) {
     }
 
     // Transform old entries to new format
-    const transformedEntries = oldEntries.map(transformOldEntry).filter(Boolean);
+    const transformedEntries = oldEntries.flatMap((entry) => {
+      const result = transformOldEntry(entry);
+      return result ? [result] : [];
+    });
 
     if (transformedEntries.length === 0) {
       // No valid entries after transformation

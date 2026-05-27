@@ -19,6 +19,7 @@ export async function GET() {
     }
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/rss/getfeeds`, {
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

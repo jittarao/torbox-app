@@ -123,56 +123,57 @@ export default function ActionButtons({
 
     try {
       const selectedItemsArray = Array.from(selectedItems.items);
+
+      const uploadOne = async (itemId) => {
+        const uploadData = {
+          id: itemId,
+          file_id: null,
+          zip: true,
+          type: activeType,
+        };
+
+        let response;
+        switch (providerId) {
+          case INTEGRATION_TYPES.GOOGLE_DRIVE:
+            response = await apiClient.addToGoogleDrive(uploadData);
+            break;
+          case INTEGRATION_TYPES.DROPBOX:
+            response = await apiClient.addToDropbox(uploadData);
+            break;
+          case INTEGRATION_TYPES.ONEDRIVE:
+            response = await apiClient.addToOneDrive(uploadData);
+            break;
+          case INTEGRATION_TYPES.GOFILE:
+            response = await apiClient.addToGofile(uploadData);
+            break;
+          case INTEGRATION_TYPES.FICHIER:
+            response = await apiClient.addTo1Fichier(uploadData);
+            break;
+          case INTEGRATION_TYPES.PIXELDRAIN:
+            response = await apiClient.addToPixeldrain(uploadData);
+            break;
+          default:
+            throw new Error('Unknown provider');
+        }
+
+        return { success: !!(response && response.success) };
+      };
+
+      const results = await Promise.allSettled(selectedItemsArray.map(uploadOne));
       let successCount = 0;
       let errorCount = 0;
 
-      for (const itemId of selectedItemsArray) {
-        try {
-          const uploadData = {
-            id: itemId,
-            file_id: null, // Will upload as zip for bulk operations
-            zip: true,
-            type: activeType,
-          };
-
-          let response;
-          switch (providerId) {
-            case INTEGRATION_TYPES.GOOGLE_DRIVE:
-              response = await apiClient.addToGoogleDrive(uploadData);
-              break;
-            case INTEGRATION_TYPES.DROPBOX:
-              response = await apiClient.addToDropbox(uploadData);
-              break;
-            case INTEGRATION_TYPES.ONEDRIVE:
-              response = await apiClient.addToOneDrive(uploadData);
-              break;
-            case INTEGRATION_TYPES.GOFILE:
-              response = await apiClient.addToGofile(uploadData);
-              break;
-            case INTEGRATION_TYPES.FICHIER:
-              response = await apiClient.addTo1Fichier(uploadData);
-              break;
-            case INTEGRATION_TYPES.PIXELDRAIN:
-              response = await apiClient.addToPixeldrain(uploadData);
-              break;
-            default:
-              throw new Error('Unknown provider');
-          }
-
-          if (response && response.success) {
-            successCount++;
-          } else {
-            console.error(`Upload failed for item ${itemId}:`, response);
-            errorCount++;
-          }
-        } catch (error) {
-          console.error(`Error uploading item ${itemId}:`, error);
-
-          // Check if it's an authentication error
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value.success) {
+          successCount++;
+        } else {
+          const error = r.status === 'rejected' ? r.reason : null;
           if (
-            error.message &&
+            error?.message &&
             (error.message.includes('AUTH_ERROR') ||
-              error.message.includes('Provider not connected'))
+              error.message.includes('Provider not connected') ||
+              error.message.includes('NO_AUTH') ||
+              error.message.includes('Authentication required'))
           ) {
             setToast({
               message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
@@ -182,21 +183,6 @@ export default function ActionButtons({
             setShowCloudUpload(false);
             return;
           }
-
-          // Check for other specific error types
-          if (
-            error.message &&
-            (error.message.includes('NO_AUTH') || error.message.includes('Authentication required'))
-          ) {
-            setToast({
-              message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
-              type: 'error',
-            });
-            setIsUploading(false);
-            setShowCloudUpload(false);
-            return;
-          }
-
           errorCount++;
         }
       }
@@ -247,6 +233,7 @@ export default function ActionButtons({
   return (
     <div className="flex min-w-0 w-full flex-wrap items-center gap-2 lg:w-auto">
       <button
+        type="button"
         onClick={handleDownloadClick}
         disabled={isDownloading}
         className="bg-accent text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-accent/90 
@@ -258,6 +245,7 @@ export default function ActionButtons({
       {/* Bulk Export button - only for torrents */}
       {activeType === 'torrents' && selectedItems.items?.size > 0 && onBulkExport && (
         <button
+          type="button"
           onClick={handleBulkExport}
           disabled={isExporting}
           className="bg-primary hover:bg-primary-hover text-white text-xs lg:text-sm px-4 py-1.5 rounded
@@ -270,6 +258,7 @@ export default function ActionButtons({
       {/* Bulk Tag Assignment button */}
       {selectedItems.items?.size > 0 && (
         <button
+          type="button"
           onClick={() => setShowTagAssignment(true)}
           className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark 
           transition-colors"
@@ -283,6 +272,7 @@ export default function ActionButtons({
       {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
         <>
           <button
+            type="button"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={isDeleting}
             className="bg-red-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-red-600 
@@ -323,6 +313,7 @@ export default function ActionButtons({
 
                 <div className="flex justify-end gap-4">
                   <button
+                    type="button"
                     onClick={() => setShowDeleteConfirm(false)}
                     className="px-4 py-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70 
                     hover:text-primary-text dark:hover:text-primary-text-dark"
@@ -330,6 +321,7 @@ export default function ActionButtons({
                     {t('deleteConfirm.cancel')}
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setShowDeleteConfirm(false);
                       onBulkDelete(deleteParentDownloads);
@@ -351,6 +343,7 @@ export default function ActionButtons({
       )}
 
       <button
+        type="button"
         onClick={() => setSelectedItems({ items: new Set(), files: new Map() })}
         className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
       >

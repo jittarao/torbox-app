@@ -81,7 +81,7 @@ export default function PlaybackControls({
         aria-label="Previous chapter"
       >
         <svg
-          className="w-6 h-6"
+          className="size-6"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -99,11 +99,11 @@ export default function PlaybackControls({
         onPointerUp={handleSkipBackPointerUp}
         onPointerCancel={handleSkipBackPointerUp}
         onContextMenu={(e) => e.preventDefault()}
-        className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/15 text-gray-300 hover:text-white transition-colors active:scale-95"
+        className="flex flex-col items-center justify-center size-12 rounded-full bg-white/10 hover:bg-white/15 text-gray-300 hover:text-white transition-colors active:scale-95"
         aria-label="Back 15 seconds (hold for 60s)"
       >
         <svg
-          className="w-6 h-6"
+          className="size-6"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -121,20 +121,20 @@ export default function PlaybackControls({
         type="button"
         onClick={onPlayPause}
         disabled={!canPlay}
-        className="relative flex items-center justify-center w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-400 text-gray-900 shadow-lg transition-all disabled:opacity-50 active:scale-95"
+        className="relative flex items-center justify-center size-14 rounded-full bg-amber-500 hover:bg-amber-400 text-gray-900 shadow-lg transition-all disabled:opacity-50 active:scale-95"
         aria-label={isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
       >
         {isBuffering ? (
           <span
-            className="w-7 h-7 border-2 border-gray-900/25 border-t-gray-900 rounded-full animate-spin"
+            className="size-7 border-2 border-gray-900/25 border-t-gray-900 rounded-full animate-spin"
             aria-hidden
           />
         ) : isPlaying ? (
-          <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="size-7" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
           </svg>
         ) : (
-          <svg className="w-7 h-7 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="size-7 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
@@ -146,11 +146,11 @@ export default function PlaybackControls({
         onPointerUp={handleSkipForwardPointerUp}
         onPointerCancel={handleSkipForwardPointerUp}
         onContextMenu={(e) => e.preventDefault()}
-        className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/15 text-gray-300 hover:text-white transition-colors active:scale-95"
+        className="flex flex-col items-center justify-center size-12 rounded-full bg-white/10 hover:bg-white/15 text-gray-300 hover:text-white transition-colors active:scale-95"
         aria-label="Forward 15 seconds (hold for 60s)"
       >
         <svg
-          className="w-6 h-6"
+          className="size-6"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -171,7 +171,7 @@ export default function PlaybackControls({
         aria-label="Next chapter"
       >
         <svg
-          className="w-6 h-6"
+          className="size-6"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

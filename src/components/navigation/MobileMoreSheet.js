@@ -17,7 +17,7 @@ function MoreNavLink({ href, label, Icon, active, onNavigate }) {
         aria-current={active ? 'page' : undefined}
         className={active ? 'ui-mobile-more-link-active' : 'ui-mobile-more-link'}
       >
-        <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
+        <Icon className="size-5 shrink-0 opacity-90" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{label}</span>
       </Link>
     </li>
@@ -67,22 +67,17 @@ export default function MobileMoreSheet({
         onClick={onClose}
         aria-hidden={!open}
       />
-      <div
+      <dialog
         ref={sheetRef}
-        role="dialog"
-        aria-modal="true"
         aria-label={t('menu.more')}
-        aria-hidden={!open}
         className={`z-overlay-panel fixed inset-x-0 bottom-0 flex max-h-[min(85dvh,32rem)] flex-col rounded-t-2xl border border-border/60 bg-surface shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:border-border-dark/60 dark:bg-surface-dark md:hidden ${
           open ? 'translate-y-0' : 'pointer-events-none translate-y-full'
         }`}
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex' }}
+        open={open}
       >
         <div className="flex shrink-0 justify-center pt-2.5 pb-1">
-          <div
-            className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600"
-            aria-hidden
-          />
+          <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />
         </div>
 
         <div className="flex items-center justify-between gap-2 border-b border-border/40 px-4 py-2 dark:border-border-dark/40">
@@ -100,7 +95,7 @@ export default function MobileMoreSheet({
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              className="h-5 w-5"
+              className="size-5"
               aria-hidden
             >
               <path
@@ -145,7 +140,7 @@ export default function MobileMoreSheet({
             />
           </SidebarContext.Provider>
         </div>
-      </div>
+      </dialog>
     </HeaderOverlayPortal>
   );
 }

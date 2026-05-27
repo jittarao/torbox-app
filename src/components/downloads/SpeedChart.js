@@ -353,13 +353,13 @@ export default function SpeedChart({ items }) {
           {hasActivity && (
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
-                <span className="inline-block w-2 h-2 rounded-full bg-label-success-text-dark dark:bg-label-success-text-dark mr-1"></span>
+                <span className="inline-block size-2 rounded-full bg-label-success-text-dark dark:bg-label-success-text-dark mr-1"></span>
                 <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">
                   ↓ {formatSpeed(currentDownloadSpeed)}
                 </span>
               </div>
               <div className="flex items-center">
-                <span className="inline-block w-2 h-2 rounded-full bg-label-danger-text-dark dark:bg-label-danger-text-dark mr-1"></span>
+                <span className="inline-block size-2 rounded-full bg-label-danger-text-dark dark:bg-label-danger-text-dark mr-1"></span>
                 <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">
                   ↑ {formatSpeed(currentUploadSpeed)}
                 </span>
@@ -371,6 +371,7 @@ export default function SpeedChart({ items }) {
           {/* Scale type toggle */}
           {isExpanded && !isMobile && (
             <button
+              type="button"
               onClick={() => setUseLogScale(!useLogScale)}
               className="text-xs lg:text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
             >
@@ -396,6 +397,7 @@ export default function SpeedChart({ items }) {
 
           {/* Show/hide chart button */}
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
@@ -403,7 +405,7 @@ export default function SpeedChart({ items }) {
             {isExpanded ? t('chart.hide') : t('chart.show')}
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              className={`size-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

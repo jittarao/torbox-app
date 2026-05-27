@@ -30,7 +30,7 @@ export const logSecurityEvent = (event, details = {}) => {
 export const detectCrossUserData = (items, apiKey) => {
   if (!items || !Array.isArray(items)) return false;
 
-  const authIds = [...new Set(items.map((item) => item?.auth_id).filter(Boolean))];
+  const authIds = [...new Set(items.flatMap((item) => (item?.auth_id ? [item.auth_id] : [])))];
 
   if (authIds.length > 1) {
     logSecurityEvent('cross_user_data_detected', {

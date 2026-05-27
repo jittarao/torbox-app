@@ -259,7 +259,7 @@ export default function BandwidthChart({ apiKey }) {
     <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
-          <Icons.BarChart3 className="w-5 h-5 text-accent dark:text-accent-dark" />
+          <Icons.BarChart3 className="size-5 text-accent dark:text-accent-dark" />
           <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
             {t('title')}
           </h3>
@@ -293,7 +293,7 @@ export default function BandwidthChart({ apiKey }) {
 
       {!loading && error && (
         <div className="text-center py-12">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
           <p className="text-muted dark:text-muted-dark mb-4">{error}</p>
           <button
             type="button"
@@ -307,7 +307,7 @@ export default function BandwidthChart({ apiKey }) {
 
       {!loading && !error && !hasData && (
         <div className="text-center py-12">
-          <Icons.BarChart3 className="w-12 h-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+          <Icons.BarChart3 className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
           <p className="text-muted dark:text-muted-dark">{t('empty')}</p>
         </div>
       )}

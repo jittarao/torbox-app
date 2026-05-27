@@ -237,6 +237,8 @@ export function setupLinkHistoryRoutes(app, backend) {
 
       const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
+      const VALID_ASSET_TYPES = new Set(['torrents', 'usenet', 'webdl']);
+
       // Validate all entries and deduplicate
       const validatedEntries = [];
       const seenKeys = new Set(); // Track item_id + file_id combinations to deduplicate
@@ -248,7 +250,7 @@ export function setupLinkHistoryRoutes(app, backend) {
           continue; // Skip invalid entries
         }
 
-        if (!['torrents', 'usenet', 'webdl'].includes(asset_type)) {
+        if (!VALID_ASSET_TYPES.has(asset_type)) {
           continue; // Skip invalid asset types
         }
 

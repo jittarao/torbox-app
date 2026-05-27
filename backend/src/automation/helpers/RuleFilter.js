@@ -17,15 +17,14 @@ class RuleFilter {
    */
   async _buildTagsByDownloadId(matchingTorrents) {
     const userDb = await this.getUserDb();
-    const allDownloadIds = matchingTorrents
-      .map(
-        (t) =>
-          t.id?.toString() ||
-          t.torrent_id?.toString() ||
-          t.usenet_id?.toString() ||
-          t.web_id?.toString()
-      )
-      .filter((id) => id);
+    const allDownloadIds = matchingTorrents.flatMap((t) => {
+      const id =
+        t.id?.toString() ||
+        t.torrent_id?.toString() ||
+        t.usenet_id?.toString() ||
+        t.web_id?.toString();
+      return id ? [id] : [];
+    });
 
     if (allDownloadIds.length === 0) {
       return new Map();

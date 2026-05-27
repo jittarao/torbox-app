@@ -25,14 +25,13 @@ export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
         onClick={onClose}
         aria-hidden={!isOpen}
       />
-      <div
+      <dialog
         className={`fixed inset-y-0 left-0 z-50 flex flex-col w-[min(85vw,var(--downloads-sidebar-width,16rem))] bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark shadow-xl transition-transform duration-300 ease-out md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        role="dialog"
-        aria-modal="true"
         aria-label={t('sidebarLabel')}
-        aria-hidden={!isOpen}
+        style={{ display: 'flex' }}
+        open={isOpen}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-border dark:border-border-dark shrink-0">
           <span className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
@@ -44,8 +43,13 @@ export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
             className="p-1 rounded hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
             aria-label={t('close')}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -55,7 +59,7 @@ export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
             className="w-full h-full border-0 rounded-none bg-transparent"
           />
         </div>
-      </div>
+      </dialog>
     </>
   );
 }

@@ -38,8 +38,8 @@ function CollapsedUtilities({ apiKey, t, toggleDarkMode }) {
         className="ui-header-icon-btn"
         type="button"
       >
-        <Icons.Sun className="block h-5 w-5 dark:hidden" />
-        <Icons.Moon className="hidden h-5 w-5 dark:block" />
+        <Icons.Sun className="block size-5 dark:hidden" />
+        <Icons.Moon className="hidden size-5 dark:block" />
       </button>
       <UtilityFlyout>
         <LanguageSwitcher iconOnly />
@@ -52,7 +52,7 @@ function CollapsedUtilities({ apiKey, t, toggleDarkMode }) {
         className="ui-header-icon-btn"
         title="GitHub"
       >
-        <Icons.GitHub className="h-5 w-5" />
+        <Icons.GitHub className="size-5" />
       </a>
     </div>
   );
@@ -84,8 +84,8 @@ function SidebarDock({ apiKey, t, toggleDarkMode }) {
             className="ui-sidebar-control-btn"
             type="button"
           >
-            <Icons.Sun className="block h-4 w-4 dark:hidden" />
-            <Icons.Moon className="hidden h-4 w-4 dark:block" />
+            <Icons.Sun className="block size-4 dark:hidden" />
+            <Icons.Moon className="hidden size-4 dark:block" />
           </button>
           <UtilityFlyout className="flex min-w-0 flex-1">
             <LanguageSwitcher variant="sidebar-control" />
@@ -98,7 +98,7 @@ function SidebarDock({ apiKey, t, toggleDarkMode }) {
             title="GitHub"
             className="ui-sidebar-control-btn"
           >
-            <Icons.GitHub className="h-4 w-4" />
+            <Icons.GitHub className="size-4" />
           </a>
         </div>
       </div>

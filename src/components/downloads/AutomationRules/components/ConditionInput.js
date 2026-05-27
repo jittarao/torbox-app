@@ -21,29 +21,30 @@ import { STATUS_OPTIONS } from '@/components/constants';
 
 // Map STATUS_OPTIONS labels to backend status values
 const getStatusOptions = () => {
-  return STATUS_OPTIONS.filter(
-    (opt) =>
-      !opt.hidden &&
-      opt.label !== 'All' &&
-      opt.label !== 'Meta_DL' &&
-      opt.label !== 'Checking_Resume_Data'
-  ).map((opt) => {
-    // Map label to backend status value (lowercase, snake_case)
-    const labelToValue = {
-      Queued: 'queued',
-      Downloading: 'downloading',
-      Seeding: 'seeding',
-      Completed: 'completed',
-      Uploading: 'uploading',
-      Stalled: 'stalled',
-      Inactive: 'inactive',
-      Failed: 'failed',
-    };
-    return {
+  const labelToValue = {
+    Queued: 'queued',
+    Downloading: 'downloading',
+    Seeding: 'seeding',
+    Completed: 'completed',
+    Uploading: 'uploading',
+    Stalled: 'stalled',
+    Inactive: 'inactive',
+    Failed: 'failed',
+  };
+  return STATUS_OPTIONS.reduce((acc, opt) => {
+    if (
+      opt.hidden ||
+      opt.label === 'All' ||
+      opt.label === 'Meta_DL' ||
+      opt.label === 'Checking_Resume_Data'
+    )
+      return acc;
+    acc.push({
       label: opt.label,
       value: labelToValue[opt.label] || opt.label.toLowerCase().replace(/\s+/g, '_'),
-    };
-  });
+    });
+    return acc;
+  }, []);
 };
 
 export default function ConditionInput({

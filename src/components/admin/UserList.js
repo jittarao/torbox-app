@@ -100,6 +100,7 @@ export default function UserList({
           </form>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => onStatusFilter('all')}
               className={`px-4 py-2 rounded-md text-sm font-medium ${
                 !filters?.status
@@ -110,6 +111,7 @@ export default function UserList({
               All
             </button>
             <button
+              type="button"
               onClick={() => onStatusFilter('active')}
               className={`px-4 py-2 rounded-md text-sm font-medium ${
                 filters?.status === 'active'
@@ -120,6 +122,7 @@ export default function UserList({
               Active
             </button>
             <button
+              type="button"
               onClick={() => onStatusFilter('inactive')}
               className={`px-4 py-2 rounded-md text-sm font-medium ${
                 filters?.status === 'inactive'
@@ -146,7 +149,7 @@ export default function UserList({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
             <p className="mt-2 text-gray-600 dark:text-gray-400">Loading users…</p>
           </div>
         ) : users.length === 0 ? (
@@ -231,6 +234,7 @@ export default function UserList({
                       >
                         <div className="flex justify-end gap-2">
                           <button
+                            type="button"
                             onClick={(e) => handleStatusChange(user.auth_id, user.status, e)}
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                           >
@@ -262,6 +266,7 @@ export default function UserList({
                 </div>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => onPageChange(pagination.page - 1)}
                     disabled={pagination.page === 1}
                     className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
@@ -269,6 +274,7 @@ export default function UserList({
                     Previous
                   </button>
                   <button
+                    type="button"
                     onClick={() => onPageChange(pagination.page + 1)}
                     disabled={pagination.page >= pagination.totalPages}
                     className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"

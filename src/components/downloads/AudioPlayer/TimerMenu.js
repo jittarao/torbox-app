@@ -39,7 +39,7 @@ export default function TimerMenu({
         className={`flex flex-col items-center gap-1 transition-colors ${sleepTimer ? 'text-amber-400' : 'text-gray-400 hover:text-white'}`}
       >
         <svg
-          className="w-5 h-5"
+          className="size-5"
           fill="none"
           stroke="currentColor"
           strokeWidth={1.5}

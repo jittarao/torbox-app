@@ -9,9 +9,7 @@ export const FileHandler = () => {
         if (!launchParams.files.length) return;
 
         const fileHandles = launchParams.files;
-        const files = await Promise.all(
-          fileHandles.map((fileHandle) => fileHandle.getFile())
-        );
+        const files = await Promise.all(fileHandles.map((fileHandle) => fileHandle.getFile()));
         for (const file of files) {
           if (file.name.endsWith('.torrent') || file.name.endsWith('.nzb')) {
             // Handle the file - you can emit an event or call a handler function

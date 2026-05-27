@@ -11,9 +11,7 @@ import { countDownloadsPerTag, countDownloadsPerView } from '../filters/filterHe
 function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
   return (
     <div className="flex flex-col min-h-0">
-      <div
-        className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'px-1 py-1'}`}
-      >
+      <div className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'p-1'}`}>
         <h3 className="px-1 text-[10px] font-semibold uppercase tracking-wider text-primary-text/50 dark:text-primary-text-dark/50">
           {title}
         </h3>
@@ -25,8 +23,19 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
             aria-label={addLabel}
             title={addLabel}
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="size-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           </button>
         )}
@@ -38,7 +47,7 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
       >
         {children}
         {emptyMessage && (
-          <p className="px-2 py-2 text-[11px] text-primary-text/50 dark:text-primary-text-dark/50 italic">
+          <p className="p-2 text-[11px] text-primary-text/50 dark:text-primary-text-dark/50 italic">
             {emptyMessage}
           </p>
         )}
@@ -48,7 +57,7 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
   );
 }
 
-function FilterIcon({ className = 'h-4 w-4' }) {
+function FilterIcon({ className = 'size-4' }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
       <path
@@ -61,7 +70,7 @@ function FilterIcon({ className = 'h-4 w-4' }) {
   );
 }
 
-function CollapseChevron({ collapsed, className = 'h-3.5 w-3.5' }) {
+function CollapseChevron({ collapsed, className = 'size-3.5' }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +91,7 @@ function CollapseChevron({ collapsed, className = 'h-3.5 w-3.5' }) {
 function CollapseToggleControl({ collapsed }) {
   return (
     <span
-      className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/50 bg-white/60 text-primary-text/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-200 group-hover:border-accent/35 group-hover:bg-accent/[0.07] group-hover:text-accent group-hover:shadow-[0_1px_3px_rgba(217,119,6,0.12)] group-active:scale-95 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-primary-text-dark/55 dark:group-hover:border-accent-dark/40 dark:group-hover:bg-accent-dark/10 dark:group-hover:text-accent-dark"
+      className="flex size-7 items-center justify-center rounded-lg border border-border/50 bg-white/60 text-primary-text/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-all duration-200 group-hover:border-accent/35 group-hover:bg-accent/[0.07] group-hover:text-accent group-hover:shadow-[0_1px_3px_rgba(217,119,6,0.12)] group-active:scale-95 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-primary-text-dark/55 dark:group-hover:border-accent-dark/40 dark:group-hover:bg-accent-dark/10 dark:group-hover:text-accent-dark"
       aria-hidden
     >
       <CollapseChevron collapsed={collapsed} />
@@ -105,10 +114,10 @@ function FiltersSidebarHeader({ collapsed, onToggle, compact = false }) {
         className="group flex w-full flex-col items-center gap-2 border-b border-border/50 px-1 py-3 transition-colors hover:bg-surface-alt/40 dark:border-border-dark/50 dark:hover:bg-surface-alt-dark/30"
       >
         <span
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 text-accent transition-colors group-hover:bg-accent/15 dark:bg-accent-dark/15 dark:text-accent-dark dark:group-hover:bg-accent-dark/20"
+          className="flex size-7 items-center justify-center rounded-lg bg-accent/10 text-accent transition-colors group-hover:bg-accent/15 dark:bg-accent-dark/15 dark:text-accent-dark dark:group-hover:bg-accent-dark/20"
           aria-hidden
         >
-          <FilterIcon className="h-3.5 w-3.5" />
+          <FilterIcon className="size-3.5" />
         </span>
         <span
           className="max-h-[4.5rem] truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-text/50 dark:text-primary-text-dark/50"
@@ -126,10 +135,10 @@ function FiltersSidebarHeader({ collapsed, onToggle, compact = false }) {
     <div className="mb-2.5 flex shrink-0 items-center gap-2 border-b border-border/50 pb-2.5 dark:border-border-dark/50">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent dark:bg-accent-dark/15 dark:text-accent-dark"
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent dark:bg-accent-dark/15 dark:text-accent-dark"
           aria-hidden
         >
-          <FilterIcon className="h-3.5 w-3.5" />
+          <FilterIcon className="size-3.5" />
         </span>
         <h2 className="truncate text-sm font-semibold tracking-tight text-primary-text dark:text-primary-text-dark">
           {label}
@@ -181,9 +190,7 @@ export default function FiltersSidebar({
   const closeOverflowMenu = () => setOverflowMenu(null);
 
   const openOverflowMenu = (key, anchorRef, items) => {
-    setOverflowMenu((current) =>
-      current?.key === key ? null : { key, anchorRef, items }
-    );
+    setOverflowMenu((current) => (current?.key === key ? null : { key, anchorRef, items }));
   };
 
   const tagCounts = useMemo(() => countDownloadsPerTag(enrichedDownloads), [enrichedDownloads]);

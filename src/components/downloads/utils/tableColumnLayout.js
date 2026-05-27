@@ -1,7 +1,4 @@
-import {
-  getActionsColumnWidthPx,
-  getCheckboxColumnWidthPx,
-} from './responsiveLayout';
+import { getActionsColumnWidthPx, getCheckboxColumnWidthPx } from './responsiveLayout';
 
 /** Column that expands to consume leftover table width */
 export const FLEX_COLUMN_ID = 'name';
@@ -64,9 +61,7 @@ export function computeResolvedColumnWidths(activeColumns, columnWidths, tableWi
   if (isMobile) {
     const nameMin = getColumnMinWidth(FLEX_COLUMN_ID);
     const resolved = {};
-    const nameWidth = tableWidth
-      ? Math.max(nameMin, tableWidth - checkbox - actions)
-      : nameMin;
+    const nameWidth = tableWidth ? Math.max(nameMin, tableWidth - checkbox - actions) : nameMin;
     resolved[FLEX_COLUMN_ID] = nameWidth;
     return { resolved, checkbox, actions, tableMinWidth: null };
   }

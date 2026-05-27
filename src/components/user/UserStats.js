@@ -114,9 +114,10 @@ export default function UserStats({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <button
+            type="button"
             onClick={fetchStats}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >
@@ -147,7 +148,7 @@ export default function UserStats({ apiKey, setToast }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-label-active-bg dark:bg-label-active-bg-dark p-4 rounded-lg border border-label-active-text/10">
                 <div className="flex items-center">
-                  <Icons.Download className="w-8 h-8 text-label-active-text dark:text-label-active-text-dark mr-3" />
+                  <Icons.Download className="size-8 text-label-active-text dark:text-label-active-text-dark mr-3" />
                   <div>
                     <p className="text-sm text-label-active-text dark:text-label-active-text-dark">
                       {t('stats.totalDownloads')}
@@ -161,7 +162,7 @@ export default function UserStats({ apiKey, setToast }) {
 
               <div className="bg-label-success-bg dark:bg-label-success-bg-dark p-4 rounded-lg border border-label-success-text/10">
                 <div className="flex items-center">
-                  <Icons.HardDrive className="w-8 h-8 text-label-success-text dark:text-label-success-text-dark mr-3" />
+                  <Icons.HardDrive className="size-8 text-label-success-text dark:text-label-success-text-dark mr-3" />
                   <div>
                     <p className="text-sm text-label-success-text dark:text-label-success-text-dark">
                       {t('stats.totalSize')}
@@ -175,7 +176,7 @@ export default function UserStats({ apiKey, setToast }) {
 
               <div className="bg-accent/10 dark:bg-accent-dark/10 p-4 rounded-lg border border-accent/20">
                 <div className="flex items-center">
-                  <Icons.Activity className="w-8 h-8 text-accent dark:text-accent-dark mr-3" />
+                  <Icons.Activity className="size-8 text-accent dark:text-accent-dark mr-3" />
                   <div>
                     <p className="text-sm text-accent dark:text-accent-dark">
                       {t('stats.activeDownloads')}
@@ -189,7 +190,7 @@ export default function UserStats({ apiKey, setToast }) {
 
               <div className="bg-label-warning-bg dark:bg-label-warning-bg-dark p-4 rounded-lg border border-label-warning-text/10">
                 <div className="flex items-center">
-                  <Icons.Clock className="w-8 h-8 text-label-warning-text dark:text-label-warning-text-dark mr-3" />
+                  <Icons.Clock className="size-8 text-label-warning-text dark:text-label-warning-text-dark mr-3" />
                   <div>
                     <p className="text-sm text-label-warning-text dark:text-label-warning-text-dark">
                       {t('stats.avgSpeed')}
@@ -292,7 +293,7 @@ export default function UserStats({ apiKey, setToast }) {
         {/* No Data State */}
         {!statsData && !stats30Days && !loading && !error && (
           <div className="text-center py-8">
-            <Icons.BarChart3 className="w-12 h-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+            <Icons.BarChart3 className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
             <p className="text-muted dark:text-muted-dark">{t('stats.noData')}</p>
           </div>
         )}
@@ -303,11 +304,12 @@ export default function UserStats({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <Icons.AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">
             An error occurred while rendering statistics
           </p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >

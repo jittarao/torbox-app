@@ -35,6 +35,7 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
   return (
     <div className={`relative shrink-0 ${sidebarTrigger ? 'w-full' : ''}`} ref={rootRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={sidebarTrigger ? 'ui-sidebar-action' : 'ui-dropdown-icon-btn relative'}
         aria-label={t('notifications')}
@@ -47,9 +48,9 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
           <>
             <span className="ui-sidebar-action-icon">
               {loading ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-500" />
+                <span className="size-4 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-500" />
               ) : (
-                <Icons.Bell className="h-[18px] w-[18px]" />
+                <Icons.Bell className="size-[18px]" />
               )}
             </span>
             <span className="min-w-0 flex-1 truncate text-left">{t('notifications')}</span>
@@ -63,22 +64,22 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
           </>
         ) : (
           <>
-            <Icons.Bell className="h-5 w-5" />
+            <Icons.Bell className="size-5" />
 
             {unreadCount > 0 && !loading && !error ? (
               <span
-                className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#0f0f10]"
+                className="absolute top-1 right-1 size-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#0f0f10]"
                 aria-hidden
               />
             ) : null}
 
             {loading ? (
-              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+              <span className="absolute -top-0.5 -right-0.5 size-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
             ) : null}
 
             {error && !loading ? (
               <span
-                className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-600"
+                className="absolute -top-0.5 -right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-600"
                 title={`Connection error (${consecutiveErrors} attempts) - Click to retry`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -86,7 +87,7 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
                 }}
                 role="presentation"
               >
-                <Icons.Times className="h-2.5 w-2.5 text-white" />
+                <Icons.Times className="size-2.5 text-white" />
               </span>
             ) : null}
           </>

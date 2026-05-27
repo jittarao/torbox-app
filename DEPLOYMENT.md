@@ -63,13 +63,13 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 
 ### Environment Variables
 
-| Variable           | Description                                                                                    | Default                 | Required |
-| ------------------ | ---------------------------------------------------------------------------------------------- | ----------------------- | -------- |
-| `BACKEND_URL`      | URL of the backend API server                                                                  | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED` | Disable backend usage (set to `true`/`false`)                                                  | `false`                 | No       |
-| `SEARCH_PAGE_DISABLED` | Hide the search page and top-nav link (`true`/`1`/`yes`)                                   | `false`                 | No       |
-| `FFPROBE_PATH`     | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
-| `FFPROBE_AUTO_DIR` | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set). | `<project>/.ffprobe`    | No       |
+| Variable               | Description                                                                                    | Default                 | Required |
+| ---------------------- | ---------------------------------------------------------------------------------------------- | ----------------------- | -------- |
+| `BACKEND_URL`          | URL of the backend API server                                                                  | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED`     | Disable backend usage (set to `true`/`false`)                                                  | `false`                 | No       |
+| `SEARCH_PAGE_DISABLED` | Hide the search page and top-nav link (`true`/`1`/`yes`)                                       | `false`                 | No       |
+| `FFPROBE_PATH`         | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
+| `FFPROBE_AUTO_DIR`     | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set). | `<project>/.ffprobe`    | No       |
 
 ### Backend
 
@@ -119,21 +119,21 @@ bun run dev
 
 ### Environment Variables
 
-| Variable               | Description                                                                | Default                  | Required |
-| ---------------------- | -------------------------------------------------------------------------- | ------------------------ | -------- |
-| `FRONTEND_URL`         | Frontend URL for CORS                                                      | `http://localhost:3000`  | Yes      |
-| `ENCRYPTION_KEY`       | Base64-encoded key for API key encryption                                  | -                        | Yes      |
-| `PORT`                 | Port for backend server                                                    | `3001`                   | No       |
-| `NODE_ENV`             | Node environment                                                           | `production`             | No       |
-| `TORBOX_API_BASE`      | TorBox API base URL                                                        | `https://api.torbox.app` | No       |
-| `TORBOX_API_VERSION`   | TorBox API version                                                         | `v1`                     | No       |
-| `MASTER_DB_PATH`       | Directory for master database                                              | `/app/data/master.db`    | No       |
-| `USER_DB_DIR`          | Directory for user database files                                          | `/app/data/users`        | No       |
-| `MAX_DB_CONNECTIONS`   | Maximum pooled database connections                                        | `200`                    | No       |
-| `SQLITE_CACHE_SIZE_KB` | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB) | `-1000`                  | No       |
-| `IP_RATE_LIMIT_MAX`    | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`           | No       |
-| `USER_RATE_LIMIT_MAX`  | Max API requests per authenticated user per 15 minutes                     | `500`                    | No       |
-| `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)    | unset                    | No       |
+| Variable               | Description                                                                      | Default                  | Required |
+| ---------------------- | -------------------------------------------------------------------------------- | ------------------------ | -------- |
+| `FRONTEND_URL`         | Frontend URL for CORS                                                            | `http://localhost:3000`  | Yes      |
+| `ENCRYPTION_KEY`       | Base64-encoded key for API key encryption                                        | -                        | Yes      |
+| `PORT`                 | Port for backend server                                                          | `3001`                   | No       |
+| `NODE_ENV`             | Node environment                                                                 | `production`             | No       |
+| `TORBOX_API_BASE`      | TorBox API base URL                                                              | `https://api.torbox.app` | No       |
+| `TORBOX_API_VERSION`   | TorBox API version                                                               | `v1`                     | No       |
+| `MASTER_DB_PATH`       | Directory for master database                                                    | `/app/data/master.db`    | No       |
+| `USER_DB_DIR`          | Directory for user database files                                                | `/app/data/users`        | No       |
+| `MAX_DB_CONNECTIONS`   | Maximum pooled database connections                                              | `200`                    | No       |
+| `SQLITE_CACHE_SIZE_KB` | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)       | `-1000`                  | No       |
+| `IP_RATE_LIMIT_MAX`    | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`                   | No       |
+| `USER_RATE_LIMIT_MAX`  | Max API requests per authenticated user per 15 minutes                           | `500`                    | No       |
+| `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
 
 ## Full Stack Deployment (Frontend + Backend)
 

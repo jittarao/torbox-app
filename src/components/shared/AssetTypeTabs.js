@@ -43,10 +43,11 @@ export default function AssetTypeTabs({ activeType, onTypeChange, isTypeAvailabl
   return (
     <div className="border-b border-border dark:border-border-dark overflow-x-auto overflow-y-hidden">
       <nav className="-mb-px flex justify-start md:justify-center space-x-2 md:space-x-8 px-4 md:px-0">
-        {tabs
-          .filter((tab) => isTypeAvailable(tab.id))
-          .map((tab) => (
+        {tabs.flatMap((tab) => {
+          if (!isTypeAvailable(tab.id)) return [];
+          return [
             <button
+              type="button"
               key={tab.id}
               onClick={() => onTypeChange(tab.id)}
               className={`
@@ -60,8 +61,9 @@ export default function AssetTypeTabs({ activeType, onTypeChange, isTypeAvailabl
             >
               {tab.icon}
               <span className="w-max">{tab.label}</span>
-            </button>
-          ))}
+            </button>,
+          ];
+        })}
       </nav>
     </div>
   );

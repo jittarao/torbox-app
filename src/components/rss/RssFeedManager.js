@@ -32,15 +32,19 @@ export default function RssFeedManager({ apiKey, setToast }) {
   const fetchItemCounts = async () => {
     if (!feeds.length) return;
 
-    const counts = {};
-    for (const feed of feeds) {
-      try {
-        // Fetch a reasonable number to get the count
+    const results = await Promise.allSettled(
+      feeds.map(async (feed) => {
         const result = await getFeedItems(feed.id, 0, 250);
-        counts[feed.id] = result.success ? result.data?.length || 0 : 0;
-      } catch (error) {
-        console.error(`Error fetching items for feed ${feed.id}:`, error);
-        counts[feed.id] = 0;
+        return { id: feed.id, count: result.success ? result.data?.length || 0 : 0 };
+      })
+    );
+
+    const counts = {};
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        counts[r.value.id] = r.value.count;
+      } else {
+        console.error('Error fetching items for feed:', r.reason);
       }
     }
     setItemCounts(counts);
@@ -237,10 +241,11 @@ export default function RssFeedManager({ apiKey, setToast }) {
   if (componentError) {
     return (
       <div className="text-center p-8 text-red-500">
-        <Icons.ExclamationTriangle className="w-8 h-8 mx-auto mb-2" />
+        <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
         <p>{t('error')}</p>
         <p className="text-sm text-gray-500">{componentError}</p>
         <button
+          type="button"
           onClick={() => setComponentError(null)}
           className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
         >
@@ -262,7 +267,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
   if (error) {
     return (
       <div className="text-center p-8 text-red-500">
-        <Icons.ExclamationTriangle className="w-8 h-8 mx-auto mb-2" />
+        <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
         <p>{t('error')}</p>
         <p className="text-sm text-gray-500">{error}</p>
       </div>
@@ -278,22 +283,24 @@ export default function RssFeedManager({ apiKey, setToast }) {
         </h2>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={handleRefresh}
             disabled={refreshing}
             className="px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {refreshing ? (
-              <Icons.Loading className="w-4 h-4 animate-spin" />
+              <Icons.Loading className="size-4 animate-spin" />
             ) : (
-              <Icons.Refresh className="w-4 h-4" />
+              <Icons.Refresh className="size-4" />
             )}
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
+            type="button"
             onClick={() => setShowAddForm(true)}
             className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
           >
-            <Icons.Plus className="w-4 h-4" />
+            <Icons.Plus className="size-4" />
             {t('addFeed')}
           </button>
         </div>
@@ -454,7 +461,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
                 disabled={isSubmitting}
                 className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                {isSubmitting ? <Spinner size="sm" /> : <Icons.Check className="w-4 h-4" />}
+                {isSubmitting ? <Spinner size="sm" /> : <Icons.Check className="size-4" />}
                 {t('save')}
               </button>
               <button
@@ -473,7 +480,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
       <div className="space-y-4">
         {feeds.length === 0 ? (
           <div className="text-center p-8 text-gray-500">
-            <Icons.Rss className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <Icons.Rss className="size-12 mx-auto mb-4 opacity-50" />
             <p>{t('noFeeds')}</p>
           </div>
         ) : (
@@ -515,6 +522,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
                 </div>
                 <div className="flex gap-2 ml-4">
                   <button
+                    type="button"
                     onClick={() =>
                       handleControl(feed.id, feed.status === 'active' ? 'pause' : 'resume')
                     }
@@ -523,15 +531,17 @@ export default function RssFeedManager({ apiKey, setToast }) {
                     {feed.status === 'active' ? t('disable') : t('enable')}
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleEdit(feed)}
                     className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    aria-label={t('editFeed') || 'Edit feed'}
                   >
-                    <Icons.Edit className="w-3 h-3" />
+                    <Icons.Edit className="size-3" />
                   </button>
                   <ConfirmButton
                     onClick={() => handleDelete(feed.id)}
-                    confirmIcon={<Icons.Check className="w-3 h-3" />}
-                    defaultIcon={<Icons.Delete className="w-3 h-3" />}
+                    confirmIcon={<Icons.Check className="size-3" />}
+                    defaultIcon={<Icons.Delete className="size-3" />}
                     className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     title={t('confirmDelete.title')}
                     message={t('confirmDelete.message')}

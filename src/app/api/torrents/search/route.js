@@ -54,6 +54,7 @@ export async function GET(req) {
     }
 
     const res = await fetch(endpoint, {
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

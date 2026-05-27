@@ -175,9 +175,7 @@ export default function TableBody({
         return row?.type === 'item' ? 170 : 60;
       }
       const isTablet =
-        typeof window !== 'undefined' &&
-        window.innerWidth >= 768 &&
-        window.innerWidth < 1024;
+        typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
       if (isTablet) {
         return row?.type === 'item' ? 52 : 42;
       }
@@ -497,19 +495,14 @@ export default function TableBody({
   // useWindowVirtualizer bakes scrollMargin into item start; subtract it for tbody spacers (see CardList)
   const scrollMargin = isFullscreen ? 0 : tableOffsetTopRef.current || tableOffsetTop;
   const paddingTop =
-    currentVirtualRows.length > 0
-      ? Math.max(0, currentVirtualRows[0].start - scrollMargin)
-      : 0;
+    currentVirtualRows.length > 0 ? Math.max(0, currentVirtualRows[0].start - scrollMargin) : 0;
   const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
   const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
   // Show empty state when there are no items
   if (deferredItems.length === 0) {
     return (
-      <tbody
-        ref={tbodyRef}
-        className="bg-surface dark:bg-surface-dark"
-      >
+      <tbody ref={tbodyRef} className="bg-surface dark:bg-surface-dark">
         <tr>
           <td
             colSpan={activeColumns.length + 2}
@@ -523,83 +516,80 @@ export default function TableBody({
   }
 
   return (
-    <tbody
-      ref={tbodyRef}
-      className="bg-surface dark:bg-surface-dark"
-    >
+    <tbody ref={tbodyRef} className="bg-surface dark:bg-surface-dark">
       {/* Top spacer */}
       {paddingTop > 0 && (
         <tr aria-hidden="true">
-          <td colSpan={activeColumns.length + 2} style={{ height: paddingTop, padding: 0, border: 0 }} />
+          <td
+            colSpan={activeColumns.length + 2}
+            style={{ height: paddingTop, padding: 0, border: 0 }}
+          />
         </tr>
       )}
       {/* Virtualized rows */}
-      {currentVirtualRows
-        .filter((virtualRow) => {
-          // Filter out invalid indices (can happen during data updates)
-          return virtualRow.index >= 0 && virtualRow.index < flattenedRows.length;
-        })
-        .map((virtualRow) => {
-          const row = flattenedRows[virtualRow.index];
+      {currentVirtualRows.flatMap((virtualRow) => {
+        if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
 
-          if (row.type === 'item') {
-            return (
-              <ItemRow
-                key={`item-${row.item.id}`}
-                item={row.item}
-                activeColumns={activeColumns}
-                resolvedColumnWidths={resolvedColumnWidths}
-                selectedItems={selectedItems}
-                setItems={setItems}
-                setSelectedItems={setSelectedItems}
-                downloadHistory={downloadHistory}
-                downloadHistoryLookup={downloadHistoryLookup}
-                onRowSelect={onRowSelect}
-                expandedItems={expandedItems}
-                toggleFiles={toggleFiles}
-                apiKey={apiKey}
-                onDelete={onDelete}
-                rowIndex={row.itemIndex}
-                handleItemSelection={handleItemSelection}
-                setToast={setToast}
-                activeType={activeType}
-                isMobile={isMobile}
-                isBlurred={isBlurred}
-                viewMode={viewMode}
-                tableWidth={tableWidth}
-                measureRef={virtualizer.measureElement}
-                dataIndex={virtualRow.index}
-                style={rowStyle}
-              />
-            );
-          } else {
-            // File row - use FileRow component to render the specific file
-            return (
-              <FileRow
-                key={`file-${row.item.id}-${row.file.id}`}
-                item={row.item}
-                selectedItems={selectedItems}
-                handleFileSelection={handleFileSelection}
-                handleFileDownload={handleFileDownload}
-                handleFileStream={handleFileStream}
-                handleAudioPlay={handleAudioPlay}
-                activeColumns={activeColumns}
-                downloadHistoryLookup={downloadHistoryLookup}
-                isCopying={isCopying}
-                isDownloading={isDownloading}
-                isStreaming={isStreaming}
-                isMobile={isMobile}
-                isBlurred={isBlurred}
-                tableWidth={tableWidth}
-                file={row.file}
-                fileIndex={row.fileIndex}
-                measureRef={virtualizer.measureElement}
-                dataIndex={virtualRow.index}
-                style={rowStyle}
-              />
-            );
-          }
-        })}
+        const row = flattenedRows[virtualRow.index];
+
+        if (row.type === 'item') {
+          return (
+            <ItemRow
+              key={`item-${row.item.id}`}
+              item={row.item}
+              activeColumns={activeColumns}
+              resolvedColumnWidths={resolvedColumnWidths}
+              selectedItems={selectedItems}
+              setItems={setItems}
+              setSelectedItems={setSelectedItems}
+              downloadHistory={downloadHistory}
+              downloadHistoryLookup={downloadHistoryLookup}
+              onRowSelect={onRowSelect}
+              expandedItems={expandedItems}
+              toggleFiles={toggleFiles}
+              apiKey={apiKey}
+              onDelete={onDelete}
+              rowIndex={row.itemIndex}
+              handleItemSelection={handleItemSelection}
+              setToast={setToast}
+              activeType={activeType}
+              isMobile={isMobile}
+              isBlurred={isBlurred}
+              viewMode={viewMode}
+              tableWidth={tableWidth}
+              measureRef={virtualizer.measureElement}
+              dataIndex={virtualRow.index}
+              style={rowStyle}
+            />
+          );
+        } else {
+          // File row - use FileRow component to render the specific file
+          return (
+            <FileRow
+              key={`file-${row.item.id}-${row.file.id}`}
+              item={row.item}
+              selectedItems={selectedItems}
+              handleFileSelection={handleFileSelection}
+              handleFileDownload={handleFileDownload}
+              handleFileStream={handleFileStream}
+              handleAudioPlay={handleAudioPlay}
+              activeColumns={activeColumns}
+              downloadHistoryLookup={downloadHistoryLookup}
+              isCopying={isCopying}
+              isDownloading={isDownloading}
+              isStreaming={isStreaming}
+              isMobile={isMobile}
+              isBlurred={isBlurred}
+              tableWidth={tableWidth}
+              file={row.file}
+              fileIndex={row.fileIndex}
+              measureRef={virtualizer.measureElement}
+              dataIndex={virtualRow.index}
+              style={rowStyle}
+            />
+          );
+        }
+      })}
       {/* Bottom spacer */}
       {paddingBottom > 0 && (
         <tr aria-hidden="true">

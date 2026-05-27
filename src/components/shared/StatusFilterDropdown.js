@@ -29,6 +29,7 @@ export default function StatusFilterDropdown({ options, value, onChange, classNa
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between w-full p-2 text-sm rounded 
           bg-transparent border border-border dark:border-border-dark 
@@ -60,6 +61,7 @@ export default function StatusFilterDropdown({ options, value, onChange, classNa
             const [label, count] = extractLabelAndCount(option.label);
             return (
               <button
+                type="button"
                 key={option.label}
                 onClick={() => {
                   const newValue =

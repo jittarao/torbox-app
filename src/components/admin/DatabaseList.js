@@ -145,6 +145,7 @@ export default function DatabaseList({ databases }) {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex justify-end gap-2">
                     <button
+                      type="button"
                       onClick={() => handleBackup(db.auth_id)}
                       disabled={!db.exists || backingUp === db.auth_id}
                       className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:opacity-50"
@@ -152,6 +153,7 @@ export default function DatabaseList({ databases }) {
                       {backingUp === db.auth_id ? 'Backing up...' : 'Backup'}
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDownload(db.auth_id, null)}
                       disabled={!db.exists || downloading === db.auth_id}
                       className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
@@ -160,6 +162,7 @@ export default function DatabaseList({ databases }) {
                       {downloading === db.auth_id ? 'Downloading...' : 'Download'}
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleVacuum(db.auth_id)}
                       disabled={!db.exists || vacuuming === db.auth_id}
                       className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50"

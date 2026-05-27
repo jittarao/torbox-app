@@ -36,30 +36,35 @@ export async function POST(request) {
     }
 
     // First, upload all files in parallel (if any)
-    const fileUploadPromises = uploads
-      .filter((upload) => upload.upload_type === 'file' && upload.file_data)
-      .map(async (upload) => {
-        const fileUploadResponse = await fetch(`${BACKEND_URL}/api/uploads/file`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            file_data: upload.file_data,
-            filename: upload.filename,
-            type: upload.type,
-          }),
-        });
+    const fileUploadPromises = uploads.reduce((acc, upload) => {
+      if (upload.upload_type === 'file' && upload.file_data) {
+        acc.push(
+          (async () => {
+            const fileUploadResponse = await fetch(`${BACKEND_URL}/api/uploads/file`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+              },
+              body: JSON.stringify({
+                file_data: upload.file_data,
+                filename: upload.filename,
+                type: upload.type,
+              }),
+            });
 
-        if (!fileUploadResponse.ok) {
-          const errorData = await fileUploadResponse.json().catch(() => ({}));
-          return { upload, error: errorData.error || 'Failed to save file' };
-        }
+            if (!fileUploadResponse.ok) {
+              const errorData = await fileUploadResponse.json().catch(() => ({}));
+              return { upload, error: errorData.error || 'Failed to save file' };
+            }
 
-        const fileUploadData = await fileUploadResponse.json();
-        return { upload, file_path: fileUploadData.data.file_path };
-      });
+            const fileUploadData = await fileUploadResponse.json();
+            return { upload, file_path: fileUploadData.data.file_path };
+          })()
+        );
+      }
+      return acc;
+    }, []);
 
     const fileUploadResults = await Promise.all(fileUploadPromises);
 
@@ -76,24 +81,18 @@ export async function POST(request) {
 
     // Prepare uploads for batch endpoint (remove file_data, add file_path)
     // Filter out uploads that failed file upload - they're already in fileUploadErrors
-    const preparedUploads = uploads
-      .filter((upload) => {
-        // Include non-file uploads (url, magnet, etc.)
-        if (upload.upload_type !== 'file') {
-          return true;
-        }
-        // Only include file uploads that successfully uploaded
-        return filePathMap.has(upload);
-      })
-      .map((upload) => {
+    const preparedUploads = uploads.reduce((acc, upload) => {
+      if (upload.upload_type !== 'file' || filePathMap.has(upload)) {
         const prepared = { ...upload };
         if (upload.upload_type === 'file') {
           prepared.file_path = filePathMap.get(upload);
           delete prepared.file_data;
           delete prepared.filename;
         }
-        return prepared;
-      });
+        acc.push(prepared);
+      }
+      return acc;
+    }, []);
 
     // Create batch upload entries
     const response = await fetch(`${BACKEND_URL}/api/uploads/batch`, {

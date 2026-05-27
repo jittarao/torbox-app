@@ -1084,9 +1084,11 @@ class RuleEvaluator {
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
     const downloadTagIds = tagsByDownloadId.get(downloadId) || [];
-    const conditionTagIds = condition.value
-      .map((v) => (typeof v === 'number' ? v : parseInt(v, 10)))
-      .filter((id) => !isNaN(id));
+    const conditionTagIds = condition.value.reduce((acc, v) => {
+      const id = typeof v === 'number' ? v : parseInt(v, 10);
+      if (!isNaN(id)) acc.push(id);
+      return acc;
+    }, []);
 
     if (conditionTagIds.length === 0) {
       return false; // No valid tag IDs — do not match any torrent

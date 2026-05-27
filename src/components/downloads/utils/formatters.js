@@ -1,5 +1,32 @@
+const sizeFormatters = new Map();
+const speedFormatters = new Map();
+
+const getSizeFormatter = (locale) => {
+  if (!sizeFormatters.has(locale)) {
+    sizeFormatters.set(
+      locale,
+      new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 1,
+      })
+    );
+  }
+  return sizeFormatters.get(locale);
+};
+
+const getSpeedFormatter = (locale) => {
+  if (!speedFormatters.has(locale)) {
+    speedFormatters.set(
+      locale,
+      new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 0,
+      })
+    );
+  }
+  return speedFormatters.get(locale);
+};
+
 export const formatSize = (bytes, locale = 'en') => {
-  // Handle all edge cases: null, undefined, NaN, negative values
   if (bytes === null || bytes === undefined || isNaN(bytes) || bytes < 0) {
     return 'Unknown';
   }
@@ -10,29 +37,19 @@ export const formatSize = (bytes, locale = 'en') => {
   try {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
 
-    // Ensure i is within valid range for the sizes array
     if (i < 0 || i >= sizes.length) {
       return 'Unknown';
     }
 
     const value = bytes / Math.pow(1024, i);
 
-    return (
-      new Intl.NumberFormat(locale, {
-        maximumFractionDigits: 1,
-        minimumFractionDigits: 1,
-      }).format(value) +
-      ' ' +
-      sizes[i]
-    );
+    return getSizeFormatter(locale).format(value) + ' ' + sizes[i];
   } catch (error) {
-    // Fallback in case of any calculation errors
     return 'Unknown';
   }
 };
 
 export const formatSpeed = (bytesPerSecond, locale = 'en') => {
-  // Handle all edge cases: null, undefined, NaN, 0, negative values
   if (
     bytesPerSecond === null ||
     bytesPerSecond === undefined ||
@@ -46,26 +63,15 @@ export const formatSpeed = (bytesPerSecond, locale = 'en') => {
     const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
     const i = Math.floor(Math.log(bytesPerSecond) / Math.log(1024));
 
-    // Ensure i is within valid range for the units array
     if (i < 0 || i >= units.length) {
       return '0 B/s';
     }
 
-    // Calculate the value in the appropriate unit
     const value = bytesPerSecond / Math.pow(1024, i);
-
-    // Round to nearest integer for cleaner display
     const roundedValue = Math.round(value);
 
-    return (
-      new Intl.NumberFormat(locale, {
-        maximumFractionDigits: 0,
-      }).format(roundedValue) +
-      ' ' +
-      units[i]
-    );
+    return getSpeedFormatter(locale).format(roundedValue) + ' ' + units[i];
   } catch (error) {
-    // Fallback in case of any calculation errors
     return '0 B/s';
   }
 };

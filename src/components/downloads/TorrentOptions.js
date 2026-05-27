@@ -51,7 +51,7 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
                     type="checkbox"
                     checked={globalOptions.allowZip}
                     onChange={(e) => updateGlobalOptions({ allowZip: e.target.checked })}
-                    className="w-4 h-4 accent-accent dark:accent-accent-dark"
+                    className="size-4 accent-accent dark:accent-accent-dark"
                   />
                   <div>
                     <span
@@ -71,7 +71,7 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
                     type="checkbox"
                     checked={globalOptions.asQueued}
                     onChange={(e) => updateGlobalOptions({ asQueued: e.target.checked })}
-                    className="w-4 h-4 accent-accent dark:accent-accent-dark"
+                    className="size-4 accent-accent dark:accent-accent-dark"
                   />
                   <div>
                     <span
@@ -112,7 +112,7 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
                   type="checkbox"
                   checked={globalOptions.autoStart}
                   onChange={(e) => updateGlobalOptions({ autoStart: e.target.checked })}
-                  className="w-4 h-4 accent-accent dark:accent-accent-dark"
+                  className="size-4 accent-accent dark:accent-accent-dark"
                 />
                 <span
                   className="text-sm text-primary-text dark:text-primary-text-dark 

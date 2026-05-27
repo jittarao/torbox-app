@@ -181,7 +181,11 @@ export default function FilterEditorModal({
         ...current,
         groups: [
           ...current.groups,
-          { logicOperator: LOGIC_OPERATORS.AND, filters: [] },
+          {
+            _key: Math.random().toString(36).substring(2, 15),
+            logicOperator: LOGIC_OPERATORS.AND,
+            filters: [],
+          },
         ],
       };
     });
@@ -204,7 +208,13 @@ export default function FilterEditorModal({
         ...current,
         groups:
           newGroups.length === 0
-            ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: [] }]
+            ? [
+                {
+                  _key: Math.random().toString(36).substring(2, 15),
+                  logicOperator: LOGIC_OPERATORS.AND,
+                  filters: [],
+                },
+              ]
             : newGroups,
       };
     });
@@ -218,7 +228,12 @@ export default function FilterEditorModal({
         ...newGroups[groupIndex],
         filters: [
           ...(newGroups[groupIndex].filters || []),
-          { column: '', operator: '', value: null },
+          {
+            _key: Math.random().toString(36).substring(2, 15),
+            column: '',
+            operator: '',
+            value: null,
+          },
         ],
       };
       return { ...current, groups: newGroups };
@@ -345,7 +360,7 @@ export default function FilterEditorModal({
             type="checkbox"
             checked={saveSort}
             onChange={(e) => setSaveSort(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+            className="size-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
           />
           <span>{customViewsT('includeSort')}</span>
         </label>
@@ -354,7 +369,7 @@ export default function FilterEditorModal({
             type="checkbox"
             checked={saveColumns}
             onChange={(e) => setSaveColumns(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+            className="size-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
           />
           <span>{customViewsT('includeColumns')}</span>
         </label>
@@ -366,7 +381,7 @@ export default function FilterEditorModal({
             checked={saveSearch}
             disabled={!trimmedSearch}
             onChange={(e) => setSaveSearch(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+            className="size-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
           />
           <span>{customViewsT('includeSearch')}</span>
         </label>
@@ -382,12 +397,11 @@ export default function FilterEditorModal({
   const modalContent = (
     <>
       <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
-      <div
+      <dialog
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:w-[min(92vw,56rem)] lg:w-[min(88vw,64rem)] max-h-[min(90vh,52rem)] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="filter-editor-title"
+        open
       >
         <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark shrink-0">
           <h2
@@ -402,8 +416,13 @@ export default function FilterEditorModal({
             className="p-1 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
             aria-label={downloadsFiltersT('close')}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -434,7 +453,7 @@ export default function FilterEditorModal({
             </p>
           ) : (
             filterGroups.map((group, groupIndex) => (
-              <div key={groupIndex} className="relative">
+              <div key={group._key || groupIndex} className="relative">
                 {groupIndex > 0 && (
                   <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
                     <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
@@ -553,66 +572,72 @@ export default function FilterEditorModal({
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-          {filtersActive && !isCreateMode && (
-            <>
-              <button
-                type="button"
-                onClick={handleApply}
-                className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90"
-              >
-                {downloadsFiltersT('applyFilters')}
-              </button>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
-              >
-                {downloadsFiltersT('clearAll')}
-              </button>
-            </>
-          )}
-          {isEditMode && filtersActive && (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowSaveInput(true)}
-                className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
-              >
-                {customViewsT('saveAsNew')}
-              </button>
-              <button
-                type="button"
-                onClick={handleUpdateView}
-                disabled={isSaving}
-                className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50"
-              >
-                {isSaving ? customViewsT('updating') : customViewsT('updateView')}
-              </button>
-            </>
-          )}
-          {filterGroups.length > 1 && (
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-xs text-primary-text/70">{customViewsT('betweenGroups')}</span>
-              <Select
-                value={groupLogicOperator}
-                onChange={(e) => handleGroupLogicChange(e.target.value)}
-                className="min-w-[80px] text-xs"
-              >
-                <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.and')}</option>
-                <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.or')}</option>
-              </Select>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={handleAddGroup}
-            className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
-          >
-            + {customViewsT('addGroup')}
-          </button>
+            {filtersActive && !isCreateMode && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleApply}
+                  className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90"
+                >
+                  {downloadsFiltersT('applyFilters')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
+                >
+                  {downloadsFiltersT('clearAll')}
+                </button>
+              </>
+            )}
+            {isEditMode && filtersActive && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowSaveInput(true)}
+                  className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+                >
+                  {customViewsT('saveAsNew')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdateView}
+                  disabled={isSaving}
+                  className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50"
+                >
+                  {isSaving ? customViewsT('updating') : customViewsT('updateView')}
+                </button>
+              </>
+            )}
+            {filterGroups.length > 1 && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs text-primary-text/70">
+                  {customViewsT('betweenGroups')}
+                </span>
+                <Select
+                  value={groupLogicOperator}
+                  onChange={(e) => handleGroupLogicChange(e.target.value)}
+                  className="min-w-[80px] text-xs"
+                >
+                  <option value={LOGIC_OPERATORS.AND}>
+                    {automationRulesT('logicOperators.and')}
+                  </option>
+                  <option value={LOGIC_OPERATORS.OR}>
+                    {automationRulesT('logicOperators.or')}
+                  </option>
+                </Select>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleAddGroup}
+              className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
+            >
+              + {customViewsT('addGroup')}
+            </button>
           </div>
         </div>
-      </div>
+      </dialog>
     </>
   );
 

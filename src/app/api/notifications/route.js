@@ -15,6 +15,7 @@ export async function GET() {
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/notifications/mynotifications`, {
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

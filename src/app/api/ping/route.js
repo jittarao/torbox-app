@@ -32,6 +32,7 @@ export async function POST(request) {
 
       const response = await fetch(domain, {
         method: 'HEAD',
+        cache: 'no-store',
         headers,
         // Add timeout for better error handling
         signal: AbortSignal.timeout(10000), // 10 second timeout

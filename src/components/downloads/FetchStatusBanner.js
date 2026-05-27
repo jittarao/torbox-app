@@ -38,8 +38,7 @@ export default function FetchStatusBanner({
     return () => clearInterval(id);
   }, [lastSuccessfulFetchAt, t]);
 
-  const showStaleHint =
-    !error && (refreshBlockedReason === 'rate_limited' || pollingPaused);
+  const showStaleHint = !error && (refreshBlockedReason === 'rate_limited' || pollingPaused);
 
   if (!error && !showStaleHint) return null;
 
@@ -52,10 +51,12 @@ export default function FetchStatusBanner({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-2 min-w-0">
             <Icons.AlertCircle
-              className="w-4 h-4 shrink-0 text-label-danger-text dark:text-label-danger-text-dark mt-0.5"
+              className="size-4 shrink-0 text-label-danger-text dark:text-label-danger-text-dark mt-0.5"
               aria-hidden
             />
-            <p className="text-sm text-label-danger-text dark:text-label-danger-text-dark">{error}</p>
+            <p className="text-sm text-label-danger-text dark:text-label-danger-text-dark">
+              {error}
+            </p>
           </div>
           <div className="flex shrink-0 gap-2 sm:ml-2">
             <button

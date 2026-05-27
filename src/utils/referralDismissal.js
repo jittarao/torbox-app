@@ -4,7 +4,7 @@ const STORAGE_PREFIX = 'torbox-referral-dismiss:';
  * @param {string} key
  * @returns {Date|null}
  */
-export function getDismissUntil(key) {
+function getDismissUntil(key) {
   if (typeof localStorage === 'undefined') return null;
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}${key}`);

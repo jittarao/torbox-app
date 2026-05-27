@@ -636,7 +636,7 @@ export default function VideoPlayerModal({
             type="button"
             onClick={onClose}
             className="group absolute top-4 right-4 z-30 
-              w-10 h-10 flex items-center justify-center
+              size-10 flex items-center justify-center
               rounded-full 
               bg-black/40 hover:bg-black/70 
               backdrop-blur-sm hover:backdrop-blur-md
@@ -648,7 +648,7 @@ export default function VideoPlayerModal({
               focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent"
             aria-label="Close"
           >
-            <Icons.X className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+            <Icons.X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
           </button>
         )}
 

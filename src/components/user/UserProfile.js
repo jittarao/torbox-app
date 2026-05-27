@@ -165,12 +165,13 @@ export default function UserProfile({ apiKey, setToast }) {
       return (
         <div className="p-6">
           <div className="max-w-md mx-auto text-center py-12">
-            <Icons.AlertCircle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+            <Icons.AlertCircle className="size-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
             <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">
               {t('errors.loadError') || 'Error loading profile'}
             </p>
             <p className="text-muted dark:text-muted-dark mb-6">{error}</p>
             <button
+              type="button"
               onClick={fetchUserProfile}
               className="px-6 py-2.5 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
             >
@@ -185,7 +186,7 @@ export default function UserProfile({ apiKey, setToast }) {
       return (
         <div className="p-6">
           <div className="text-center py-12">
-            <Icons.User className="w-12 h-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+            <Icons.User className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
             <p className="text-muted dark:text-muted-dark">{t('noData')}</p>
           </div>
         </div>
@@ -201,8 +202,8 @@ export default function UserProfile({ apiKey, setToast }) {
         <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-accent/10 dark:bg-accent-dark/10 flex items-center justify-center">
-                <Icons.User className="w-8 h-8 text-accent dark:text-accent-dark" />
+              <div className="size-16 rounded-full bg-accent/10 dark:bg-accent-dark/10 flex items-center justify-center">
+                <Icons.User className="size-8 text-accent dark:text-accent-dark" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark mb-1">
@@ -214,7 +215,7 @@ export default function UserProfile({ apiKey, setToast }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {StatusIcon && <StatusIcon className="w-5 h-5" />}
+              {StatusIcon && <StatusIcon className="size-5" />}
               <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${statusInfo.color}`}>
                 {statusInfo.status}
               </span>
@@ -226,7 +227,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Basic Information Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.User className="w-5 h-5 text-accent dark:text-accent-dark" />
+              <Icons.User className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.basicInfo')}
               </h3>
@@ -263,15 +264,16 @@ export default function UserProfile({ apiKey, setToast }) {
                         https://torbox.app/subscription?referral={userData.user_referral}
                       </span>
                       <button
+                        type="button"
                         onClick={copyReferralLink}
                         className="p-2 text-accent dark:text-accent-dark hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded transition-colors flex-shrink-0"
                         title={t('copyLink')}
                         aria-label={t('copyLink')}
                       >
                         {copiedLink ? (
-                          <Icons.Check className="w-5 h-5" />
+                          <Icons.Check className="size-5" />
                         ) : (
-                          <Icons.Copy className="w-5 h-5" />
+                          <Icons.Copy className="size-5" />
                         )}
                       </button>
                     </div>
@@ -302,7 +304,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Account Status Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.CreditCard className="w-5 h-5 text-accent dark:text-accent-dark" />
+              <Icons.CreditCard className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.accountStatus')}
               </h3>
@@ -332,7 +334,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Usage Statistics Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.BarChart3 className="w-5 h-5 text-accent dark:text-accent-dark" />
+              <Icons.BarChart3 className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.usage')}
               </h3>
@@ -389,7 +391,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Download Breakdown Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.Download className="w-5 h-5 text-accent dark:text-accent-dark" />
+              <Icons.Download className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.downloadBreakdown')}
               </h3>
@@ -434,12 +436,13 @@ export default function UserProfile({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center py-12">
-          <Icons.AlertCircle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <Icons.AlertCircle className="size-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
           <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">
             {t('errors.renderError') || 'Render Error'}
           </p>
           <p className="text-muted dark:text-muted-dark mb-6">{err.message}</p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="px-6 py-2.5 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
           >

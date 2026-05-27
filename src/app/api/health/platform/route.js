@@ -7,6 +7,7 @@ export async function GET() {
     const startTime = Date.now();
     const response = await fetch(API_BASE, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },

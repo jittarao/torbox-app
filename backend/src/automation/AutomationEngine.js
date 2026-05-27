@@ -116,14 +116,12 @@ class AutomationEngine {
     try {
       logger.info('AutomationEngine initializing', { authId: this.authId });
 
-      // Initialize rule evaluator
-      await this.getRuleEvaluator();
-
-      // Load enabled rules from user database
-      const enabledRules = await this.getAutomationRules({ enabled: true });
-
-      // Sync active rules flag to master DB
-      await this.syncActiveRulesFlag();
+      // Initialize rule evaluator, load rules, and sync flag in parallel
+      const [enabledRules] = await Promise.all([
+        this.getAutomationRules({ enabled: true }),
+        this.getRuleEvaluator(),
+        this.syncActiveRulesFlag(),
+      ]);
 
       // Initialize next_poll_at if needed
       await this.initializeNextPollAt(enabledRules);
@@ -647,9 +645,7 @@ class AutomationEngine {
       torrentCount: torrents.length,
     });
 
-    const ruleEvaluator = ruleEvaluatorInstance ?? (await this.getRuleEvaluator());
-
-    // Check if rule should be evaluated based on interval
+    // Check if rule should be evaluated based on interval (synchronous guard before async work)
     if (this.shouldSkipRuleEvaluation(rule)) {
       logger.debug('Rule evaluation skipped - interval not elapsed', {
         authId: this.authId,
@@ -660,6 +656,8 @@ class AutomationEngine {
       });
       return { executed: false, skipped: true, ruleId: null };
     }
+
+    const ruleEvaluator = ruleEvaluatorInstance ?? (await this.getRuleEvaluator());
 
     // Evaluate rule (last_evaluated_at is batch-updated at end of evaluateRulesBatch)
     const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(

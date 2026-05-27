@@ -1,22 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const STORAGE_KEY = 'torbox-filters-sidebar-collapsed';
 
-export default function useFiltersSidebarCollapsed() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+function readStoredCollapsed() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'true') setCollapsed(true);
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
+export default function useFiltersSidebarCollapsed() {
+  const [collapsed, setCollapsed] = useState(readStoredCollapsed);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
@@ -30,5 +27,5 @@ export default function useFiltersSidebarCollapsed() {
     });
   }, []);
 
-  return { collapsed: hydrated ? collapsed : false, toggleCollapsed, hydrated };
+  return { collapsed, toggleCollapsed };
 }

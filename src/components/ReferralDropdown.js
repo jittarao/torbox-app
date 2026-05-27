@@ -63,6 +63,7 @@ export default function ReferralDropdown({
       ref={dropdownRef}
     >
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={
           iconOnly
@@ -77,7 +78,7 @@ export default function ReferralDropdown({
         aria-haspopup="menu"
         title={iconOnly ? t('referral') : undefined}
       >
-        <Icons.Gift className="h-[18px] w-[18px] shrink-0 opacity-90" aria-hidden />
+        <Icons.Gift className="size-[18px] shrink-0 opacity-90" aria-hidden />
         {!iconOnly ? (
           <>
             <span
@@ -88,7 +89,7 @@ export default function ReferralDropdown({
               {t('referral')}
             </span>
             <svg
-              className={`h-4 w-4 shrink-0 opacity-60 transition-transform duration-200 ${
+              className={`size-4 shrink-0 opacity-60 transition-transform duration-200 ${
                 isOpen ? 'rotate-180' : ''
               }`}
               fill="none"
@@ -116,7 +117,7 @@ export default function ReferralDropdown({
       >
         <div className="ui-dropdown-header border-t-2 border-amber-500/50">
           <div className="flex items-center gap-2">
-            <Icons.Gift className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <Icons.Gift className="size-5 text-amber-600 dark:text-amber-400" />
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {t('panel.heroTitle')}
             </h3>
@@ -156,9 +157,9 @@ export default function ReferralDropdown({
               className="ui-btn-ghost w-full justify-center !text-sm gap-2 border border-zinc-200 dark:border-zinc-700"
             >
               {actions.copiedItem === 'link' ? (
-                <Icons.Check className="w-4 h-4" />
+                <Icons.Check className="size-4" />
               ) : (
-                <Icons.Copy className="w-4 h-4" />
+                <Icons.Copy className="size-4" />
               )}
               {t('copyLink')}
             </button>
@@ -168,7 +169,7 @@ export default function ReferralDropdown({
               rel="noopener noreferrer"
               className="ui-btn-ghost w-full justify-center !text-sm gap-2 border border-zinc-200 dark:border-zinc-700"
             >
-              <Icons.ExternalLink className="w-4 h-4" />
+              <Icons.ExternalLink className="size-4" />
               {t('panel.openSubscription')}
             </a>
           </div>
@@ -188,9 +189,9 @@ export default function ReferralDropdown({
                 title={t('copyCode')}
               >
                 {actions.copiedItem === 'code' ? (
-                  <Icons.Check className="w-4 h-4" />
+                  <Icons.Check className="size-4" />
                 ) : (
-                  <Icons.Copy className="w-4 h-4" />
+                  <Icons.Copy className="size-4" />
                 )}
               </button>
             </div>
@@ -224,7 +225,7 @@ export default function ReferralDropdown({
               className="text-xs text-amber-700 dark:text-amber-400 underline hover:no-underline inline-flex items-center gap-1"
             >
               {t('panel.helpLink')}
-              <Icons.ExternalLink className="w-3 h-3" />
+              <Icons.ExternalLink className="size-3" />
             </a>
             <div className="flex flex-wrap gap-3 pt-1">
               <button

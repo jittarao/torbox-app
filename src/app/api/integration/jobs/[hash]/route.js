@@ -13,6 +13,7 @@ export async function GET(request, { params }) {
 
   try {
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/integration/jobs/${hash}`, {
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,

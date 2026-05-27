@@ -176,7 +176,7 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
           <>
             <span className="ui-sidebar-action-icon">
               {isLoading ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-500" />
+                <span className="size-4 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-500" />
               ) : (
                 <IconComponent className={`h-[18px] w-[18px] ${config.iconClass}`} />
               )}
@@ -192,9 +192,9 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
             </span>
           </>
         ) : isLoading ? (
-          <span className="h-4 w-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+          <span className="size-4 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
         ) : (
-          <IconComponent className={`h-5 w-5 ${config.iconClass}`} />
+          <IconComponent className={`size-5 ${config.iconClass}`} />
         )}
       </button>
 
@@ -207,16 +207,16 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
               aria-hidden
             />
             <div className="z-overlay-panel fixed inset-0 flex items-end justify-center p-3 sm:items-center sm:p-4 pointer-events-none">
-              <div
+              <dialog
                 className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl dark:border-border-dark dark:bg-surface-alt-dark"
-                role="dialog"
-                aria-modal="true"
                 onClick={(e) => e.stopPropagation()}
+                style={{ display: 'flex' }}
+                open
               >
                 <div className="overflow-y-auto overflow-x-hidden min-h-0 flex-1">
                   <SystemStatusPanel {...panelProps} />
                 </div>
-              </div>
+              </dialog>
             </div>
           </div>
         </HeaderOverlayPortal>

@@ -22,6 +22,7 @@ const Pagination = memo(({ pagination, onPageChange }) => {
       </div>
       <div className="flex gap-2 items-center">
         <button
+          type="button"
           onClick={handlePrevious}
           disabled={pagination.page === 1}
           className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg disabled:opacity-50 hover:bg-surface dark:hover:bg-surface-dark transition-colors"
@@ -34,7 +35,7 @@ const Pagination = memo(({ pagination, onPageChange }) => {
               return (
                 <span
                   key={`ellipsis-${index}`}
-                  className="px-2 py-2 text-primary-text/50 dark:text-primary-text-dark/50"
+                  className="p-2 text-primary-text/50 dark:text-primary-text-dark/50"
                 >
                   ...
                 </span>
@@ -42,6 +43,7 @@ const Pagination = memo(({ pagination, onPageChange }) => {
             }
             return (
               <button
+                type="button"
                 key={page}
                 onClick={() => onPageChange(page)}
                 className={`px-3 py-2 rounded-lg transition-colors ${
@@ -56,6 +58,7 @@ const Pagination = memo(({ pagination, onPageChange }) => {
           })}
         </div>
         <button
+          type="button"
           onClick={handleNext}
           disabled={pagination.page === pagination.totalPages}
           className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg disabled:opacity-50 hover:bg-surface dark:hover:bg-surface-dark transition-colors"

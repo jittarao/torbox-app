@@ -51,6 +51,7 @@ export default function UploadPagination({ pagination, setPagination }) {
       </div>
       <div className="flex gap-2 items-center">
         <button
+          type="button"
           onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
           disabled={pagination.page === 1}
           className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg disabled:opacity-50 hover:bg-surface dark:hover:bg-surface-dark transition-colors"
@@ -63,7 +64,7 @@ export default function UploadPagination({ pagination, setPagination }) {
               return (
                 <span
                   key={`ellipsis-${index}`}
-                  className="px-2 py-2 text-primary-text/50 dark:text-primary-text-dark/50"
+                  className="p-2 text-primary-text/50 dark:text-primary-text-dark/50"
                 >
                   ...
                 </span>
@@ -71,6 +72,7 @@ export default function UploadPagination({ pagination, setPagination }) {
             }
             return (
               <button
+                type="button"
                 key={page}
                 onClick={() => setPagination((prev) => ({ ...prev, page }))}
                 className={`px-3 py-2 rounded-lg transition-colors ${
@@ -85,6 +87,7 @@ export default function UploadPagination({ pagination, setPagination }) {
           })}
         </div>
         <button
+          type="button"
           onClick={() =>
             setPagination((prev) => ({
               ...prev,

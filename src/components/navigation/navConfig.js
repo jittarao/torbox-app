@@ -43,11 +43,11 @@ function getMobileTabHrefs(ctx) {
 export function buildMobileNav(ctx = {}) {
   const items = filterVisible(NAV_ITEMS, ctx);
   const tabHrefs = new Set(getMobileTabHrefs(ctx));
-  const tabs = getMobileTabHrefs(ctx)
-    .map((href) => items.find((item) => item.href === href))
-    .filter(Boolean);
+  const tabs = getMobileTabHrefs(ctx).flatMap((href) => {
+    const found = items.find((item) => item.href === href);
+    return found ? [found] : [];
+  });
   const moreItems = items.filter((item) => !tabHrefs.has(item.href));
 
   return { tabs, moreItems };
 }
-

@@ -107,7 +107,7 @@ export default function FilterGroup({
           ) : (
             <>
               {group.filters.map((filter, filterIndex) => (
-                <div key={filterIndex} className="relative">
+                <div key={filter._key || filterIndex} className="relative">
                   {filterIndex > 0 && (
                     <div className="absolute left-4 top-0 bottom-0 w-px bg-border dark:bg-border-dark -translate-y-2" />
                   )}

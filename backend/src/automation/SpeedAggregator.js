@@ -221,25 +221,22 @@ class SpeedAggregator {
     let samplesRecorded = 0;
     let errors = 0;
 
-    for (const { torrent } of updatedTorrents) {
-      if (!torrent || !torrent.id) {
-        continue;
-      }
-
-      if (this._isTorrentActive(torrent)) {
-        try {
-          await this.recordSample(
+    const results = await Promise.allSettled(
+      updatedTorrents
+        .filter(({ torrent }) => torrent && torrent.id && this._isTorrentActive(torrent))
+        .map(({ torrent }) =>
+          this.recordSample(
             torrent.id,
             torrent.total_downloaded || 0,
             torrent.total_uploaded || 0,
             now
-          );
-          samplesRecorded++;
-        } catch (error) {
-          errors++;
-          // Error already logged in recordSample
-        }
-      }
+          )
+        )
+    );
+
+    for (const r of results) {
+      if (r.status === 'fulfilled') samplesRecorded++;
+      else errors++;
     }
 
     if (samplesRecorded > 0 || errors > 0) {

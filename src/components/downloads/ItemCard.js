@@ -238,7 +238,7 @@ function ItemCard({
         return (
           <div className="flex items-center gap-2">
             <span
-              className={`inline-block w-2 h-2 rounded-full ${
+              className={`inline-block size-2 rounded-full ${
                 item.assetType === 'torrents'
                   ? 'bg-label-active-text dark:bg-label-active-text-dark'
                   : item.assetType === 'usenet'
@@ -262,7 +262,7 @@ function ItemCard({
       case 'private':
         return item.private ? (
           <div className="flex items-center gap-2">
-            <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+            <Icons.Private className="size-4 text-orange-500 dark:text-orange-400" />
             <span>Private</span>
           </div>
         ) : (
@@ -283,6 +283,15 @@ function ItemCard({
         const isChecked = selectedItems.items?.has(item.id);
         onItemSelect(item.id, !isChecked, index, e.shiftKey);
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!isDisabled(item.id)) {
+            const isChecked = selectedItems.items?.has(item.id);
+            onItemSelect(item.id, !isChecked, index, e.shiftKey);
+          }
+        }
+      }}
       className={`${
         selectedItems.items?.has(item.id)
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
@@ -292,6 +301,8 @@ function ItemCard({
       } ${cardContainerPad} relative ${
         expandedItems.has(item.id) ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer`}
+      role="button"
+      tabIndex={0}
     >
       <div className="flex justify-between gap-2 md:gap-3">
         <div className="flex flex-col justify-center gap-1.5 md:gap-2 min-w-0 flex-1">
@@ -312,7 +323,7 @@ function ItemCard({
               <div className="flex items-center gap-2">
                 <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
                   <span
-                    className={`inline-block w-2 h-2 rounded-full ${
+                    className={`inline-block size-2 rounded-full ${
                       item.cached
                         ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
                         : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
@@ -321,7 +332,7 @@ function ItemCard({
                 </Tooltip>
                 {item.private && (
                   <Tooltip content="Private Tracker">
-                    <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                    <Icons.Private className="size-4 text-orange-500 dark:text-orange-400" />
                   </Tooltip>
                 )}
                 {item.name && (

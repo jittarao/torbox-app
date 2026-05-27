@@ -17,7 +17,7 @@ export default function SidebarNavItem({ href, label, Icon, active, onNavigate }
           collapsed ? 'justify-center gap-0 !px-2.5' : ''
         }`}
       >
-        <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" aria-hidden />
+        <Icon className="size-[18px] shrink-0 opacity-90" aria-hidden />
         {collapsed ? (
           <span className="sr-only">{label}</span>
         ) : (

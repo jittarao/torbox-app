@@ -12,7 +12,23 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function UserPage() {
   const [toast, setToast] = useState(null);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => {
+    try {
+      const storedKey = localStorage.getItem('torboxApiKey');
+      if (storedKey) return storedKey;
+      const storedKeys = localStorage.getItem('torboxApiKeys');
+      if (storedKeys) {
+        const keys = JSON.parse(storedKeys);
+        if (keys.length > 0) {
+          localStorage.setItem('torboxApiKey', keys[0].key);
+          return keys[0].key;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading API key from localStorage:', error);
+    }
+    return '';
+  });
   const [isClient, setIsClient] = useState(false);
 
   // Move translations hook to top level - always call it
@@ -20,33 +36,9 @@ export default function UserPage() {
 
   useEffect(() => {
     setIsClient(true);
-
-    // Load API key from storage
-    const storedKey = localStorage.getItem('torboxApiKey');
-    const storedKeys = localStorage.getItem('torboxApiKeys');
-
-    let loadedKey = null;
-    if (storedKey) {
-      loadedKey = storedKey;
-      setApiKey(storedKey);
-    } else if (storedKeys) {
-      // If no active key but we have stored keys, use the first one
-      try {
-        const keys = JSON.parse(storedKeys);
-        if (keys.length > 0) {
-          loadedKey = keys[0].key;
-          setApiKey(keys[0].key);
-          localStorage.setItem('torboxApiKey', keys[0].key);
-        }
-      } catch (error) {
-        console.error('Error parsing API keys from localStorage:', error);
-      }
-    }
-
-    // Ensure user database exists for loaded API key
-    if (loadedKey) {
+    if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(loadedKey)
+        ensureUserDb(apiKey)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -57,7 +49,7 @@ export default function UserPage() {
           });
       });
     }
-  }, []);
+  }, [apiKey]);
 
   // Handle API key change
   const handleKeyChange = (newKey) => {
@@ -108,7 +100,7 @@ function ErrorBoundary({ children }) {
     return (
       <div className="p-6">
         <div className="text-center py-8">
-          <div className="w-12 h-12 text-red-500 mx-auto mb-4">
+          <div className="size-12 text-red-500 mx-auto mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -124,6 +116,7 @@ function ErrorBoundary({ children }) {
             Something went wrong with this component
           </p>
           <button
+            type="button"
             onClick={() => setHasError(false)}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
           >

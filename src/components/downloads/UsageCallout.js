@@ -47,12 +47,12 @@ export default function UsageCallout({ apiKey, planId }) {
         <div className="flex items-start gap-2 min-w-0">
           {isDanger ? (
             <Icons.AlertCircle
-              className="w-4 h-4 shrink-0 text-label-danger-text dark:text-label-danger-text-dark mt-0.5"
+              className="size-4 shrink-0 text-label-danger-text dark:text-label-danger-text-dark mt-0.5"
               aria-hidden
             />
           ) : (
             <Icons.ExclamationTriangle
-              className="w-4 h-4 shrink-0 text-label-warning-text dark:text-label-warning-text-dark mt-0.5"
+              className="size-4 shrink-0 text-label-warning-text dark:text-label-warning-text-dark mt-0.5"
               aria-hidden
             />
           )}
@@ -66,7 +66,9 @@ export default function UsageCallout({ apiKey, planId }) {
             >
               {title}
             </p>
-            <p className="text-sm text-primary-text dark:text-primary-text-dark mt-0.5">{message}</p>
+            <p className="text-sm text-primary-text dark:text-primary-text-dark mt-0.5">
+              {message}
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0 sm:pt-0.5">
@@ -80,7 +82,7 @@ export default function UsageCallout({ apiKey, planId }) {
             className="ui-btn-ghost !py-1.5 !px-3 !text-xs inline-flex items-center gap-1"
           >
             {t('learnMore')}
-            <Icons.ExternalLink className="w-3 h-3" aria-hidden />
+            <Icons.ExternalLink className="size-3" aria-hidden />
           </a>
         </div>
       </div>
