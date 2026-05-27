@@ -49,16 +49,38 @@ export function useDownloadListPolling({
 
   useEffect(() => {
     let pollTimeoutId = null;
+    let graceStopTimeoutId = null;
     let wasTabHidden = false;
+    let hiddenSince = null;
     let isVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
     let currentPollingInterval = POLLING_CONFIG.activeIntervalMs;
     let cancelled = false;
 
-    const shouldPollWhileHidden = () => {
-      if (pollingPaused) return false;
+    if (!isVisible) {
+      hiddenSince = Date.now();
+    }
+
+    const clearGraceStopTimeout = () => {
+      if (graceStopTimeoutId) {
+        clearTimeout(graceStopTimeoutId);
+        graceStopTimeoutId = null;
+      }
+    };
+
+    const isWithinHiddenGracePeriod = () => {
+      if (isVisible || hiddenSince == null) return false;
+      return Date.now() - hiddenSince < POLLING_CONFIG.hiddenGracePeriodMs;
+    };
+
+    const shouldPollForAutoStartQueued = () => {
       if (type !== 'torrents' && type !== 'all') return false;
       const options = getAutoStartOptions();
       return Boolean(options?.autoStart && torrentsRef.current?.some(isQueuedItem));
+    };
+
+    const shouldPollWhileHidden = () => {
+      if (pollingPaused) return false;
+      return isWithinHiddenGracePeriod() || shouldPollForAutoStartQueued();
     };
 
     const isEffectivelyInactive = () => pollingPaused || !isVisible;
@@ -133,7 +155,23 @@ export function useDownloadListPolling({
         clearTimeout(pollTimeoutId);
         pollTimeoutId = null;
       }
+      clearGraceStopTimeout();
       emitSchedule(0, getScheduleMode());
+    };
+
+    const scheduleGraceStop = () => {
+      clearGraceStopTimeout();
+      if (isVisible || hiddenSince == null || !isWithinHiddenGracePeriod()) return;
+
+      const remainingMs = hiddenSince + POLLING_CONFIG.hiddenGracePeriodMs - Date.now();
+      if (remainingMs <= 0) return;
+
+      graceStopTimeoutId = setTimeout(() => {
+        graceStopTimeoutId = null;
+        if (cancelled || isVisible) return;
+        if (shouldPollWhileHidden()) return;
+        stopPolling();
+      }, remainingMs);
     };
 
     const startPolling = (firstDelayMs = currentPollingInterval) => {
@@ -152,6 +190,9 @@ export function useDownloadListPolling({
 
       if (!effectivelyInactive || shouldPollWhileHidden()) {
         scheduleNextPoll(firstDelayMs);
+        if (effectivelyInactive) {
+          scheduleGraceStop();
+        }
       } else {
         emitSchedule(0, 'inactive');
       }
@@ -187,6 +228,9 @@ export function useDownloadListPolling({
 
       if (!isVisible) {
         wasTabHidden = true;
+        if (hiddenSince == null) {
+          hiddenSince = Date.now();
+        }
         stopPolling();
         if (shouldPollWhileHidden()) {
           startPolling(POLLING_CONFIG.inactiveIntervalMs);
@@ -194,6 +238,8 @@ export function useDownloadListPolling({
         return;
       }
 
+      hiddenSince = null;
+      clearGraceStopTimeout();
       handleBecameVisible();
     };
 
@@ -205,13 +251,18 @@ export function useDownloadListPolling({
       handleBecameVisible();
     };
 
-    startPolling(POLLING_CONFIG.activeIntervalMs);
+    const initialDelayMs =
+      !isVisible && shouldPollWhileHidden()
+        ? POLLING_CONFIG.inactiveIntervalMs
+        : POLLING_CONFIG.activeIntervalMs;
+    startPolling(initialDelayMs);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       cancelled = true;
       stopPolling();
+      clearGraceStopTimeout();
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
