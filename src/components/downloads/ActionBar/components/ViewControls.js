@@ -7,13 +7,27 @@ import { useTranslations } from 'next-intl';
 const toolbarBtnBase =
   'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
 
-function toolbarBtnClass(active) {
-  return active
-    ? `${toolbarBtnBase} border-accent text-accent dark:border-accent-dark dark:text-accent-dark`
-    : `${toolbarBtnBase} border-border text-primary-text/70 hover:text-primary-text dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark`;
+function toolbarBtnClass(active, { segment } = {}) {
+  const inactive =
+    'border-border text-primary-text/70 hover:text-primary-text dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark';
+  const activeAccent =
+    'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
+
+  if (!active) {
+    return `${toolbarBtnBase} ${inactive}`;
+  }
+
+  if (segment === 'left') {
+    return `${toolbarBtnBase} ${activeAccent} border-r-border dark:border-r-border-dark`;
+  }
+  if (segment === 'right') {
+    return `${toolbarBtnBase} ${activeAccent} border-l-border dark:border-l-border-dark`;
+  }
+
+  return `${toolbarBtnBase} ${activeAccent}`;
 }
 
-function ToolbarButton({ active, onClick, title, children, className = '' }) {
+function ToolbarButton({ active, onClick, title, children, className = '', segment }) {
   return (
     <Tooltip content={title}>
       <button
@@ -21,7 +35,7 @@ function ToolbarButton({ active, onClick, title, children, className = '' }) {
         onClick={onClick}
         aria-label={title}
         aria-pressed={active}
-        className={`${toolbarBtnClass(active)} ${className}`}
+        className={`${toolbarBtnClass(active, { segment })} ${className}`}
       >
         {children}
       </button>
@@ -67,6 +81,7 @@ export default function ViewControls({
             active={viewMode === 'table'}
             onClick={() => handleViewModeChange('table')}
             title={t('tableView')}
+            segment="left"
             className="rounded-r-none"
           >
             <Icons.Table />
@@ -75,6 +90,7 @@ export default function ViewControls({
             active={viewMode === 'card'}
             onClick={() => handleViewModeChange('card')}
             title={t('cardView')}
+            segment="right"
             className="rounded-l-none -ml-px"
           >
             <Icons.List />
