@@ -412,6 +412,8 @@
   },
   "DownloadsFilters": {
     "sidebarLabel": "フィルター",
+    "collapseSidebar": "フィルターサイドバーを折りたたむ",
+    "expandSidebar": "フィルターサイドバーを展開",
     "viewsSection": "ビュー",
     "tagsSection": "タグ",
     "noViews": "保存されたビューはありません。",
