@@ -9,6 +9,14 @@ import { getResolvedColumnStyle } from './tableColumnLayout';
 export const tableRowSeparator =
   '[box-shadow:inset_0_-1px_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c]';
 
+/**
+ * Bottom row line + left edge on sticky actions cells.
+ * Single box-shadow rule — multiple Tailwind arbitrary shadows override each other.
+ * Sticky <td>/<th> do not show inset shadows applied only on <tr>.
+ */
+export const tableActionsCellShadows =
+  '[box-shadow:inset_0_-1px_0_0_#cecece,inset_1px_0_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c,inset_1px_0_0_0_#3c3c3c]';
+
 export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
 
 /** @deprecated Use getResolvedColumnStyle with computeResolvedColumnWidths */
@@ -18,20 +26,24 @@ export function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
 
 export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
+/** Fits ~6 icon buttons (download, export, delete, menu, etc.) without overflowing the cell */
 const actionsColumnWidthClass =
-  'w-[100px] min-w-[100px] max-w-[100px] md:w-[92px] md:min-w-[92px] md:max-w-[92px] lg:w-[100px] lg:min-w-[100px] lg:max-w-[100px]';
+  'w-[200px] min-w-[200px] max-w-[200px] md:w-[184px] md:min-w-[184px] md:max-w-[184px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
+
+/** Shared sticky shell for the right-pinned actions column */
+const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tableActionsCellShadows}`;
 
 export const tableCheckboxCell =
   'px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap';
 
-export const tableActionsCell = `px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 md:pb-2 lg:pb-[12px] whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium sticky right-0 z-10 ${actionsColumnWidthClass}`;
+export const tableActionsCell = `px-2 md:px-2.5 lg:px-4 py-2 md:py-1.5 lg:py-2 whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium z-[1] ${tableActionsStickyShell}`;
 
 /** Match actionsColumnWidthClass — used for file-row layout math */
 export function getActionsColumnWidthPx() {
-  if (typeof window === 'undefined') return 100;
+  if (typeof window === 'undefined') return 200;
   const w = window.innerWidth;
-  if (w >= 768 && w < 1024) return 92;
-  return 100;
+  if (w >= 768 && w < 1024) return 184;
+  return 200;
 }
 
 export function getCheckboxColumnWidthPx() {
@@ -46,7 +58,7 @@ export const tableHeaderCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 te
 
 export const tableHeaderCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[48px] min-w-[48px] max-w-[48px] md:w-[52px] md:min-w-[52px] md:max-w-[52px] lg:w-[60px] lg:min-w-[60px] lg:max-w-[60px] ${tableRowSeparator}`;
 
-export const tableHeaderActionsCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-right text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide sticky right-0 bg-surface-alt dark:bg-surface-alt-dark ${actionsColumnWidthClass} ${tableRowSeparator}`;
+export const tableHeaderActionsCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-right text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide z-[2] bg-surface-alt dark:bg-surface-alt-dark ${tableActionsStickyShell}`;
 
 export const tableContainerClass =
   'overflow-x-auto rounded-lg md:rounded-xl border border-border dark:border-border-dark md:shadow-sm md:shadow-black/[0.03] dark:md:shadow-black/20';
