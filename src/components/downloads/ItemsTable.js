@@ -38,6 +38,7 @@ export default function ItemsTable({
   scrollContainerRef,
   onOpenVideoPlayer,
   onAudioPlay,
+  fileSearch = '',
 }) {
   const [showMobileNotice, setShowMobileNotice] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -316,6 +317,7 @@ export default function ItemsTable({
             scrollContainerRef={scrollContainerRef}
             onFileStreamInit={handleFileStreamInit}
             onAudioPlay={onAudioPlay}
+            fileSearch={fileSearch}
           />
         </table>
       </div>

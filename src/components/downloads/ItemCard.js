@@ -9,6 +9,7 @@ import FileList from './FileList';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
 import { cardContainerPad } from './utils/responsiveLayout';
+import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
 function ItemCard({
   item,
@@ -28,6 +29,7 @@ function ItemCard({
   onDelete,
   toggleFiles,
   expandedItems,
+  fileSearch = '',
   setItems,
   setSelectedItems,
   setToast,
@@ -41,6 +43,7 @@ function ItemCard({
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
+  const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
 
   const filteredColumns = activeColumns.filter(
     (column) =>
@@ -410,9 +413,9 @@ function ItemCard({
         </div>
       </div>
 
-      {expandedItems.has(item.id) && item.files && item.files.length > 0 && (
+      {expandedItems.has(item.id) && visibleFiles.length > 0 && (
         <FileList
-          files={item.files}
+          files={visibleFiles}
           itemId={item.id}
           selectedItems={selectedItems}
           isFileDownloaded={isFileDownloaded}

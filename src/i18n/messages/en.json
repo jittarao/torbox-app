@@ -919,7 +919,7 @@
     "hideAdvanced": "Hide Advanced",
     "minSeeders": "Min Seeders",
     "minSize": "Min Size (GB)",
-    "placeholderDownloads": "Search {itemType}...",
+    "placeholderDownloads": "Search {itemType} or file names...",
     "placeholderSearch": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
     "quality": "Quality",
     "qualityAll": "All Qualities",

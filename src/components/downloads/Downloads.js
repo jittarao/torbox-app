@@ -30,6 +30,7 @@ import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
 import FilterEditorModal from './FilterEditorModal';
 import TagManager from './Tags/TagManager';
 import ActiveFiltersBar from './ActiveFiltersBar';
+import { itemHasFileNameSearchMatch } from './utils/downloadSearch';
 import {
   EMPTY_FILTERS,
   buildTagFilter,
@@ -338,6 +339,24 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   }, [apiKey, pollingPaused]);
 
   const sortedItems = sortTorrents(filteredItems);
+
+  // Expand items that contain matching files so file rows are visible
+  useEffect(() => {
+    const query = search.trim();
+    if (!query) return;
+
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const item of filteredItems) {
+        if (itemHasFileNameSearchMatch(item, query) && item.files?.length > 0 && !next.has(item.id)) {
+          next.add(item.id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [search, filteredItems]);
 
   const onFullscreenToggle = () => {
     setIsFullscreen((prev) => !prev);
@@ -895,10 +914,12 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
             });
           }}
           onAudioPlay={handleAudioPlay}
+          fileSearch={search}
         />
       ) : (
         <CardList
           items={sortedItems}
+          fileSearch={search}
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}
           setItems={setItems}

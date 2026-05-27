@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 import { LOGIC_OPERATORS } from '@/components/downloads/AutomationRules/constants';
 import { itemMatchesFilters } from '@/components/downloads/filters/filterEvaluation';
+import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
 
 export function useFilter(
   items,
@@ -36,9 +37,7 @@ export function useFilter(
     return items.filter((item) => {
       if (!item || typeof item !== 'object') return false;
 
-      // Handle search filtering
-      const matchesSearch =
-        !search || (item.name && item.name.toLowerCase().includes(search.toLowerCase()));
+      const matchesSearch = itemMatchesDownloadSearch(item, search);
 
       // Handle status filtering
       let matchesStatus = true;

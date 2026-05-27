@@ -16,6 +16,7 @@ import ItemCard from './ItemCard';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
 import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
+import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
 export default function CardList({
   items,
@@ -37,6 +38,7 @@ export default function CardList({
   scrollContainerRef,
   onOpenVideoPlayer,
   onAudioPlay,
+  fileSearch = '',
 }) {
   const t = useTranslations('CardList');
   const lastClickedItemIndexRef = useRef(null);
@@ -151,19 +153,16 @@ export default function CardList({
         return baseHeight + gap;
       }
 
-      if (
-        expandedItemsSet.has(row.item.id) &&
-        row.item.files &&
-        row.item.files.length > 0
-      ) {
+      const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
+      if (expandedItemsSet.has(row.item.id) && visibleFiles.length > 0) {
         const fileRowHeight = isMobile ? 56 : 48;
         const fileListHeader = 32;
-        return baseHeight + fileListHeader + row.item.files.length * fileRowHeight + gap;
+        return baseHeight + fileListHeader + visibleFiles.length * fileRowHeight + gap;
       }
 
       return baseHeight + gap;
     },
-    [flattenedRows, expandedItemsSet, isMobile]
+    [flattenedRows, expandedItemsSet, isMobile, fileSearch]
   );
 
   // Use different virtualizers based on fullscreen mode
@@ -251,16 +250,18 @@ export default function CardList({
         const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
         const item = items.find((i) => i.id === itemId);
         if (item) {
-          item.files.slice(start, end + 1).forEach((f) => {
-            onFileSelect(itemId, f.id, checked);
-          });
+          getFilesVisibleForDownloadSearch(item, fileSearch)
+            .slice(start, end + 1)
+            .forEach((f) => {
+              onFileSelect(itemId, f.id, checked);
+            });
         }
       } else {
         onFileSelect(itemId, file.id, checked);
       }
       lastClickedFileIndexRef.current = fileIndex;
     },
-    [items, onFileSelect]
+    [items, onFileSelect, fileSearch]
   );
 
   const assetKey = useCallback((itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId), []);
@@ -686,10 +687,9 @@ export default function CardList({
                 }
               }
 
+              const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
               const isExpanded =
-                expandedItemsSet.has(row.item.id) &&
-                row.item.files &&
-                row.item.files.length > 0;
+                expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;
 
               const itemCardStyle = {
                 position: 'absolute',
@@ -728,6 +728,7 @@ export default function CardList({
                     onDelete={onDelete}
                     toggleFiles={toggleFiles}
                     expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
+                    fileSearch={fileSearch}
                     setItems={setItems}
                     setSelectedItems={setSelectedItems}
                     setToast={setToast}
