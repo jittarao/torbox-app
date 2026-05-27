@@ -42,7 +42,7 @@ function CollapsedUtilities({ apiKey, t, toggleDarkMode }) {
         <Icons.Moon className="hidden h-5 w-5 dark:block" />
       </button>
       <UtilityFlyout>
-        <LanguageSwitcher compact />
+        <LanguageSwitcher iconOnly />
       </UtilityFlyout>
       <a
         href={GITHUB_REPO_URL}

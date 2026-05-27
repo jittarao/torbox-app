@@ -17,9 +17,10 @@ const languages = {
   pl: { name: 'Polski', flag: '/images/flags/flag-pl.png' },
 };
 
-export default function LanguageSwitcher({ compact = false, variant = 'default' }) {
+export default function LanguageSwitcher({ iconOnly = false, variant = 'default' }) {
   const locale = useLocale();
   const t = useTranslations('Header');
+  const currentLanguage = languages[locale];
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -44,6 +45,14 @@ export default function LanguageSwitcher({ compact = false, variant = 'default' 
 
   const sidebarCell = variant === 'sidebar-cell';
   const sidebarControl = variant === 'sidebar-control';
+  const showLocaleCode = (sidebarCell || sidebarControl) && !iconOnly;
+  const languageLabel = t('menu.language');
+
+  const flagSize = iconOnly
+    ? { width: 20, height: 14 }
+    : sidebarCell
+      ? { width: 28, height: 18 }
+      : { width: 24, height: 16 };
 
   return (
     <div
@@ -53,35 +62,38 @@ export default function LanguageSwitcher({ compact = false, variant = 'default' 
       ref={dropdownRef}
     >
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={
-          sidebarCell
-            ? 'ui-sidebar-pref-cell'
-            : sidebarControl
-              ? 'ui-sidebar-language-control'
-              : compact
-                ? 'ui-btn-ghost !gap-2'
+          iconOnly
+            ? 'ui-header-icon-btn'
+            : sidebarCell
+              ? 'ui-sidebar-pref-cell'
+              : sidebarControl
+                ? 'ui-sidebar-language-control'
                 : 'flex items-center gap-2 text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300'
         }
-        aria-label={sidebarControl ? t('menu.language') : undefined}
+        aria-label={iconOnly || sidebarControl ? languageLabel : undefined}
+        title={iconOnly || sidebarControl ? currentLanguage.name : undefined}
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
         <Image
-          src={languages[locale].flag}
-          alt={languages[locale].name}
-          width={sidebarCell ? 28 : 24}
-          height={sidebarCell ? 18 : 16}
-          className="rounded-sm"
+          src={currentLanguage.flag}
+          alt=""
+          width={flagSize.width}
+          height={flagSize.height}
+          className={`shrink-0 rounded-sm object-cover ring-1 ring-black/10 dark:ring-white/10 ${
+            iconOnly ? 'h-[14px] w-5' : ''
+          }`}
+          aria-hidden
         />
-        {sidebarCell || sidebarControl ? (
+        {showLocaleCode ? (
           <span className="text-xs font-medium uppercase tracking-wide">{locale}</span>
-        ) : compact ? (
-          <span className="hidden text-sm font-medium uppercase xl:inline">{locale}</span>
-        ) : (
-          <span className="text-sm">{languages[locale].name}</span>
-        )}
-        {!sidebarCell && !sidebarControl ? (
+        ) : !iconOnly && !sidebarCell && !sidebarControl ? (
+          <span className="text-sm">{currentLanguage.name}</span>
+        ) : null}
+        {!sidebarCell && !sidebarControl && !iconOnly ? (
           <svg
             className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
