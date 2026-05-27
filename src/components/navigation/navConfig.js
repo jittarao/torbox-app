@@ -1,6 +1,6 @@
 import Icons from '@/components/icons';
 
-/** Profile link — rendered in the sidebar header, not the main nav list */
+/** Profile link — rendered after main nav items with a separator */
 export const USER_NAV_ITEM = {
   href: '/user',
   labelKey: 'user',
