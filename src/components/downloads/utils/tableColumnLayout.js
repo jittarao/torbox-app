@@ -61,7 +61,17 @@ export function computeResolvedColumnWidths(activeColumns, columnWidths, tableWi
   const checkbox = getCheckboxColumnWidthPx();
   const actions = getActionsColumnWidthPx();
 
-  if (isMobile || !tableWidth) {
+  if (isMobile) {
+    const nameMin = getColumnMinWidth(FLEX_COLUMN_ID);
+    const resolved = {};
+    const nameWidth = tableWidth
+      ? Math.max(nameMin, tableWidth - checkbox - actions)
+      : nameMin;
+    resolved[FLEX_COLUMN_ID] = nameWidth;
+    return { resolved, checkbox, actions, tableMinWidth: null };
+  }
+
+  if (!tableWidth) {
     const resolved = {};
     for (const col of activeColumns) {
       resolved[col] = getColumnWidth(col, columnWidths, DEFAULT_COLUMN_WIDTHS);
@@ -98,7 +108,7 @@ export function computeResolvedColumnWidths(activeColumns, columnWidths, tableWi
 }
 
 export function getResolvedColumnStyle(columnId, resolvedWidths, { isMobile = false } = {}) {
-  if (isMobile && columnId === FLEX_COLUMN_ID) return {};
+  if (isMobile && columnId !== FLEX_COLUMN_ID) return {};
   const width = resolvedWidths?.[columnId];
   if (!width) return {};
   return {

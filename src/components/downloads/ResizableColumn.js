@@ -85,7 +85,7 @@ export default function ResizableColumn({
     }
   }, [wasResizing]);
 
-  const pixelWidth = isMobile && columnId === 'name' ? undefined : Math.max(minWidth, parseInt(width, 10) || minWidth);
+  const pixelWidth = Math.max(minWidth, parseInt(width, 10) || minWidth);
 
   return (
     <th

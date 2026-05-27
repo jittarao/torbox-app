@@ -55,18 +55,16 @@ function ItemRow({
         return (
           <td
             key={columnId}
-            className={`${tableDataCellPad} max-w-[150px] md:max-w-none relative overflow-hidden`}
+            className={`${tableDataCellPad} relative overflow-hidden`}
             style={baseStyle}
           >
             <div
-              className={`text-sm md:text-xs lg:text-sm text-primary-text dark:text-primary-text-dark ${
-                isMobile ? 'break-all' : 'whitespace-nowrap truncate'
-              } flex-1 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
+              className={`text-sm md:text-xs lg:text-sm text-primary-text dark:text-primary-text-dark min-w-0 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
                   <span
-                    className={`inline-block w-2 h-2 rounded-full ${
+                    className={`inline-block shrink-0 w-2 h-2 rounded-full ${
                       item.cached
                         ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
                         : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
@@ -75,12 +73,12 @@ function ItemRow({
                 </Tooltip>
                 {item.private && (
                   <Tooltip content="Private Tracker">
-                    <Icons.Private className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                    <Icons.Private className="h-4 w-4 shrink-0 text-orange-500 dark:text-orange-400" />
                   </Tooltip>
                 )}
                 {item.name && (
                   <Tooltip content={!isBlurred ? item.name : ''}>
-                    <span>{item.name || 'Unnamed Item'}</span>
+                    <span className="truncate">{item.name || 'Unnamed Item'}</span>
                   </Tooltip>
                 )}
               </div>
