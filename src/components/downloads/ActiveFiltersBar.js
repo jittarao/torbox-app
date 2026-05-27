@@ -6,6 +6,7 @@ import {
   countActiveConditions,
   getActiveTagIds,
   hasActiveFilters,
+  isTagOnlyFilter,
 } from './filters/filterHelpers';
 
 export default function ActiveFiltersBar({
@@ -36,18 +37,22 @@ export default function ActiveFiltersBar({
   if (!hasActiveFilters(appliedFilters) && !activeView) return null;
   if (!summary) return null;
 
+  const showEdit = activeView || !isTagOnlyFilter(appliedFilters);
+
   return (
     <div className="flex items-center gap-2 px-2 py-1.5 mb-1 text-xs rounded-md border border-accent/30 dark:border-accent-dark/30 bg-accent/5 dark:bg-accent-dark/5">
       <span className="flex-1 min-w-0 truncate text-primary-text dark:text-primary-text-dark">
         {summary}
       </span>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="shrink-0 text-accent dark:text-accent-dark hover:underline"
-      >
-        {t('editFilters')}
-      </button>
+      {showEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="shrink-0 text-accent dark:text-accent-dark hover:underline"
+        >
+          {t('editFilters')}
+        </button>
+      )}
       <button
         type="button"
         onClick={onClear}
