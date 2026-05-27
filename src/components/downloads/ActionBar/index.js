@@ -233,7 +233,7 @@ export default function ActionBar({
       }
       scrollElement.removeEventListener('scroll', handleScroll);
     };
-  }, [isFullscreen, scrollContainerRef, updateStickyBounds, getScrollTop, measureInitialTop]);
+  }, [isFullscreen, scrollContainerRef, updateStickyBounds, getScrollTop, measureInitialTop, setIsSticky, setSpacerHeight]);
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;

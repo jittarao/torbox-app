@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
@@ -78,7 +78,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
     if (isOpen) {
       loadActiveJobs();
     }
-  }, [isOpen]);
+  }, [isOpen, loadActiveJobs]);
 
   // Check for connected providers on mount
   useEffect(() => {
@@ -132,9 +132,9 @@ export default function CloudUploadManager({ apiKey, setToast }) {
     if (apiKey) {
       checkConnectedProviders();
     }
-  }, [apiKey]);
+  }, [apiKey, setConnectedProviders]);
 
-  const loadActiveJobs = async () => {
+  const loadActiveJobs = useCallback(async () => {
     setIsLoadingJobs(true);
     try {
       const response = await apiClient.getIntegrationJobs();
@@ -152,7 +152,7 @@ export default function CloudUploadManager({ apiKey, setToast }) {
     } finally {
       setIsLoadingJobs(false);
     }
-  };
+  }, [apiClient, setIsLoadingJobs, setActiveJobs]);
 
   const connectProvider = async (providerId) => {
     setIsLoading(true);

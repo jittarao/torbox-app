@@ -21,6 +21,7 @@ export async function DELETE(request, { params }) {
 
     const response = await fetch(`${BACKEND_URL}/api/link-history/${id}`, {
       method: 'DELETE',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

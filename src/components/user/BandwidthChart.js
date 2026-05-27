@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -65,7 +65,11 @@ export default function BandwidthChart({ apiKey }) {
   const [bandwidthData, setBandwidthData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const chartRef = useRef(null);
   const fetchingRef = useRef(false);
 
@@ -110,9 +114,7 @@ export default function BandwidthChart({ apiKey }) {
     }
   }, [apiKey, grouping, t]);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+
 
   useEffect(() => {
     if (!apiKey) {

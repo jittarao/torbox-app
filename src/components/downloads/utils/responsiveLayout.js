@@ -20,7 +20,7 @@ export const tableActionsCellShadows =
 export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
 
 /** @deprecated Use getResolvedColumnStyle with computeResolvedColumnWidths */
-export function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
+function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
   return getResolvedColumnStyle(columnId, resolvedWidths, options);
 }
 

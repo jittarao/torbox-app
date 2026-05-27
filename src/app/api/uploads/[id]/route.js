@@ -65,6 +65,7 @@ export async function POST(request, { params }) {
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/${id}/retry`, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -108,6 +109,7 @@ export async function DELETE(request, { params }) {
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/${id}`, {
       method: 'DELETE',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

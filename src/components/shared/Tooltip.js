@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function Tooltip({ children, content, position = 'top' }) {
@@ -6,7 +6,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
 
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     if (!triggerRef.current || !isVisible) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
@@ -65,7 +65,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
     }
 
     setTooltipPosition({ top, left, translateXOffset, arrowOffset });
-  };
+  }, [isVisible, position, setTooltipPosition]);
 
   useEffect(() => {
     if (isVisible) {
@@ -77,7 +77,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [isVisible]);
+  }, [isVisible, updatePosition]);
 
   const tooltipStyles = {
     position: 'fixed',

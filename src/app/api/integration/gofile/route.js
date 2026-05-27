@@ -14,6 +14,7 @@ export async function POST(request) {
     const body = await request.json();
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/integration/gofile`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

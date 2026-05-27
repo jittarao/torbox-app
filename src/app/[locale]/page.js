@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
@@ -44,12 +44,14 @@ export default function Home() {
     }
     return '';
   });
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
 
   useEffect(() => {
-    setIsClient(true);
-
     // Register protocol handler
     if (
       'registerProtocolHandler' in navigator &&
@@ -73,7 +75,7 @@ export default function Home() {
     if (magnetLink) {
       setLinkInput(magnetLink);
     }
-  }, []);
+  }, [setLinkInput]);
 
   useEffect(() => {
     if (apiKey) {

@@ -277,7 +277,7 @@ export const getConditionUnit = (conditionType) => {
 };
 
 // Map condition types to column keys where applicable (for reference only)
-export const CONDITION_TO_COLUMN_MAP = {
+const CONDITION_TO_COLUMN_MAP = {
   [CONDITION_TYPES.PROGRESS]: 'progress',
   [CONDITION_TYPES.RATIO]: 'ratio',
   [CONDITION_TYPES.SEEDS]: 'seeds',
@@ -296,12 +296,12 @@ export const CONDITION_TO_COLUMN_MAP = {
 };
 
 // Get column key for a condition type (if applicable)
-export const getColumnKeyForCondition = (conditionType) => {
+const getColumnKeyForCondition = (conditionType) => {
   return CONDITION_TO_COLUMN_MAP[conditionType] || null;
 };
 
 // Get condition type filter category (number, text, boolean, status, tags, time, timestamp)
-export const getConditionTypeCategory = (conditionType) => {
+const getConditionTypeCategory = (conditionType) => {
   if (isBooleanCondition(conditionType)) {
     return 'boolean';
   }
@@ -561,7 +561,7 @@ export const getConditionTypeOptions = (t) => {
 };
 
 // Flatten condition type options for simple dropdown
-export const getFlatConditionTypeOptions = (t) => {
+const getFlatConditionTypeOptions = (t) => {
   const grouped = getConditionTypeOptions(t);
   return grouped.flatMap((group) => group.options);
 };

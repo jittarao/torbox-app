@@ -9,7 +9,7 @@ import {
  * @param {Object|null} userData
  * @returns {number|null}
  */
-export function getPlanId(userData) {
+function getPlanId(userData) {
   if (!userData || userData.plan == null) return null;
   return typeof userData.plan === 'object' ? userData.plan?.id : userData.plan;
 }
@@ -18,7 +18,7 @@ export function getPlanId(userData) {
  * @param {Object|null} userData
  * @returns {boolean}
  */
-export function userHasReferrerAttached(userData) {
+function userHasReferrerAttached(userData) {
   if (!userData) return false;
   return Boolean(
     userData.referred_by ||
@@ -44,7 +44,7 @@ export function isOwnReferralCode(userData, referralCode = REFERRAL_CODE) {
  * @param {Object} data - TorBox addreferral error payload
  * @returns {{ alreadyHasReferrer: boolean, isSelfReferral: boolean }}
  */
-export function classifyReferralApplyError(data) {
+function classifyReferralApplyError(data) {
   const detail = String(data.detail || data.error || '').toLowerCase();
   const errorCode = String(data.error || '').toUpperCase();
 
@@ -66,7 +66,7 @@ export function classifyReferralApplyError(data) {
  * @param {Array|null|undefined} subscriptions
  * @returns {boolean}
  */
-export function hasPaidSubscriptionHistory(subscriptions) {
+function hasPaidSubscriptionHistory(subscriptions) {
   if (!Array.isArray(subscriptions) || subscriptions.length === 0) return false;
 
   return subscriptions.some((subscription) => {

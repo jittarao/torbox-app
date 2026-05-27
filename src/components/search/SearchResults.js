@@ -39,7 +39,7 @@ export default function SearchResults({ apiKey }) {
   // Clear results when API key changes
   useEffect(() => {
     clearResults();
-  }, [apiKey]);
+  }, [apiKey, clearResults]);
 
   // Update sort key when search type changes
   useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo, useEffect, useState } from 'react';
+import { useRef, useMemo, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -77,11 +77,14 @@ export default function SpeedChart({ items }) {
 
   // State to track if the chart is expanded or collapsed
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   // Set initial expanded state based on localStorage or screen size
   useEffect(() => {
-    setIsClient(true);
 
     const handleResize = () => {
       // Only set default state if no localStorage value exists

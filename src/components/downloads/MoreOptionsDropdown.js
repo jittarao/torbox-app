@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Icons from '@/components/icons';
 import Spinner from '../shared/Spinner';
@@ -24,14 +24,13 @@ export default function MoreOptionsDropdown({
   // const [showCloudUpload, setShowCloudUpload] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const t = useTranslations('MoreOptionsDropdown');
   const apiClient = createApiClient(apiKey);
-
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
 
   // Close menu when clicking outside and handle window resize
   useEffect(() => {

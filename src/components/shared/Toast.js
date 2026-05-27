@@ -9,7 +9,7 @@ export default function Toast({ message, type = 'success', onClose }) {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [onClose]);
 
   return (
     <div

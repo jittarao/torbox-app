@@ -145,8 +145,10 @@ export default function FilterEditorModal({
     ) {
       setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
     }
+    // columnFilters, normalizeFilters, EMPTY_FILTERS intentionally omitted to
+    // avoid resetting filters on every change — effect should only run on open/close.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, setColumnFilters]);
 
   useEffect(() => {
     if (isOpen) setPreviewApplied(false);

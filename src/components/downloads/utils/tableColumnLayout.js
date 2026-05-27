@@ -1,7 +1,7 @@
 import { getActionsColumnWidthPx, getCheckboxColumnWidthPx } from './responsiveLayout';
 
 /** Column that expands to consume leftover table width */
-export const FLEX_COLUMN_ID = 'name';
+const FLEX_COLUMN_ID = 'name';
 
 /** Sensible defaults for fixed columns (name is computed, not stored by default) */
 export const DEFAULT_COLUMN_WIDTHS = {
@@ -44,7 +44,7 @@ export function getColumnMinWidth(columnId) {
   return COLUMN_MIN_WIDTHS[columnId] ?? COLUMN_MIN_WIDTHS.default;
 }
 
-export function getColumnWidth(columnId, columnWidths, defaults = DEFAULT_COLUMN_WIDTHS) {
+function getColumnWidth(columnId, columnWidths, defaults = DEFAULT_COLUMN_WIDTHS) {
   const stored = columnWidths?.[columnId];
   if (stored != null) return stored;
   return defaults[columnId] ?? DEFAULT_MIN_WIDTH;

@@ -7,6 +7,7 @@ export async function POST(request) {
     const { queued_id, operation, type } = await request.json();
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/queued/controlqueued`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

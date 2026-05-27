@@ -145,7 +145,7 @@ export function countDownloadsPerTag(enrichedDownloads) {
 }
 
 /** Whether a saved view can match items on the current asset tab. */
-export function isViewCompatibleWithAssetTab(viewAssetType, activeAssetType) {
+function isViewCompatibleWithAssetTab(viewAssetType, activeAssetType) {
   if (!activeAssetType || activeAssetType === 'all') return true;
   if (!viewAssetType || viewAssetType === 'all') return true;
   return viewAssetType === activeAssetType;

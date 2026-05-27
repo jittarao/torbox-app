@@ -33,7 +33,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
 
   // Determine which items to display
   const displayItems = useMemo(() => {
-    if (showAll || items.length <= INITIAL_DISPLAY_COUNT) {
+    if (showAll || itemsWithKeys.length <= INITIAL_DISPLAY_COUNT) {
       return itemsWithKeys;
     }
     return itemsWithKeys.slice(0, INITIAL_DISPLAY_COUNT);

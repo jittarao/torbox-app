@@ -25,7 +25,6 @@ export default function Select({
   disabled = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState('');
   const [dropdownLayout, setDropdownLayout] = useState(null);
   const selectRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -158,10 +157,10 @@ export default function Select({
   }, [isOpen, updateDropdownPosition, allOptions.length]);
 
   // Find selected option label
-  useEffect(() => {
-    const selected = allOptions.find((opt) => String(opt.value) === String(value));
-    setSelectedLabel(selected ? selected.label : '');
-  }, [value, allOptions]);
+  const selectedLabel = useMemo(
+    () => allOptions.find((opt) => String(opt.value) === String(value))?.label ?? '',
+    [value, allOptions]
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -220,13 +219,13 @@ export default function Select({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, disabled]);
+  }, [isOpen, disabled, handleSelect]);
 
-  const handleSelect = (selectedValue) => {
+  const handleSelect = useCallback((selectedValue) => {
     onChange({ target: { value: selectedValue } });
     setIsOpen(false);
     selectRef.current?.focus();
-  };
+  }, [onChange, setIsOpen]);
 
   const handleToggle = () => {
     if (!disabled) {

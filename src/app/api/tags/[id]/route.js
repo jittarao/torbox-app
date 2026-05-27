@@ -90,6 +90,7 @@ export async function PUT(request, { params }) {
     };
 
     const response = await fetch(`${BACKEND_URL}/api/tags/${id}`, {
+      cache: 'no-store',
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -129,6 +130,7 @@ export async function DELETE(request, { params }) {
     url.searchParams.set('authId', authId);
 
     const response = await fetch(url, {
+      cache: 'no-store',
       method: 'DELETE',
     });
 

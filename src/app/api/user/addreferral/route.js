@@ -29,6 +29,7 @@ export async function POST(request) {
     const response = await fetch(
       `${API_BASE}/${API_VERSION}/api/user/addreferral?referral=${encodeURIComponent(referral)}`,
       {
+        cache: 'no-store',
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,

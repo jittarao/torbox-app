@@ -30,6 +30,7 @@ export async function POST(request) {
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/bulk/retry`, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

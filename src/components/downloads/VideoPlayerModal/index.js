@@ -197,7 +197,7 @@ export default function VideoPlayerModal({
         clearTimeout(volumeSliderTimeoutRef.current);
       }
     };
-  }, [isOpen]);
+  }, [isOpen, setShowVolumeSlider, setShowAudioMenu, setShowSubtitleMenu, setShowPlaybackSpeedMenu]);
 
   // Update streamUrl when initialStreamUrl changes
   useEffect(() => {

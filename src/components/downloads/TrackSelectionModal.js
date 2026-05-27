@@ -38,7 +38,7 @@ export default function TrackSelectionModal({
         setSelectedAudioIndex(0);
       }
     }
-  }, [audios]);
+  }, [audios, setSelectedAudioIndex, setSelectedSubtitleIndex]);
 
   // Handle play button click
   const handlePlay = () => {

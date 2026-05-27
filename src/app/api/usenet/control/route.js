@@ -20,6 +20,7 @@ export async function POST(request) {
     const apiUrl = `${API_BASE}/${API_VERSION}/api/usenet/controlusenetdownload`;
 
     const response = await fetch(apiUrl, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,

@@ -72,6 +72,8 @@ export default function ConfirmButton({
         clearTimeout(timeoutRef.current);
       }
     };
+    // timeoutRef is a ref (stable) — no deps needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleConfirmClick = async (e) => {

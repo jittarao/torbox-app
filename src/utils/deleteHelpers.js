@@ -4,7 +4,7 @@ import { retryFetch } from '@/utils/retryFetch';
 // Parallel deletes
 const CONCURRENT_DELETES = 3;
 
-export const getDeleteEndpoint = (assetType = 'torrents') => {
+const getDeleteEndpoint = (assetType = 'torrents') => {
   switch (assetType) {
     case 'usenet':
       return '/api/usenet';

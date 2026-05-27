@@ -92,6 +92,7 @@ export async function POST(request) {
     };
 
     const response = await fetch(`${BACKEND_URL}/api/automation/rules`, {
+      cache: 'no-store',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

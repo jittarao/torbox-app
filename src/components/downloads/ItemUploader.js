@@ -169,7 +169,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     if (hasCompletedUploads && hasNoQueuedItems && !isUploading) {
       handleUploadComplete();
     }
-  }, [items, isUploading, activeType]);
+  }, [items, isUploading, activeType, handleUploadComplete]);
 
   // Get asset type specific labels
   const getAssetTypeInfo = () => {
