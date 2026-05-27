@@ -900,7 +900,7 @@
     "hideAdvanced": "Erweitert ausblenden",
     "minSeeders": "Min. Seeder",
     "minSize": "Min. Größe (GB)",
-    "placeholderDownloads": "{itemType} oder Dateinamen suchen...",
+    "placeholderDownloads": "Suchen {itemType}…",
     "placeholderDownloadsShort": "Suchen…",
     "searchDownloadsAria": "{itemType} oder Dateinamen suchen",
     "placeholderSearch": "Suche nach Titel oder IMDB ID (z.B. imdb:tt0133093)...",
