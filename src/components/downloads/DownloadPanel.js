@@ -120,10 +120,7 @@ function PanelHeader({
             })}
           </p>
         ) : count > 0 ? (
-          <p className="mt-0.5 truncate text-xs text-muted dark:text-muted-dark">
-            {getDisplayName(downloadLinks[downloadLinks.length - 1])}
-            {count > 1 && ` · +${count - 1}`}
-          </p>
+          <p className="mt-0.5 text-xs text-muted dark:text-muted-dark">{t('status.generated')}</p>
         ) : (
           <p className="mt-0.5 text-xs text-muted dark:text-muted-dark animate-pulse">
             {t('status.generating')}
