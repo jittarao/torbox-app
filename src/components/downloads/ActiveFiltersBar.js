@@ -20,7 +20,11 @@ export default function ActiveFiltersBar({
 
   const summary = useMemo(() => {
     if (activeView?.name) {
-      return t('activeView', { name: activeView.name });
+      const base = t('activeView', { name: activeView.name });
+      if (activeView.search_query?.trim()) {
+        return `${base} · ${t('activeSearch', { query: activeView.search_query.trim() })}`;
+      }
+      return base;
     }
 
     const tagIds = getActiveTagIds(appliedFilters);

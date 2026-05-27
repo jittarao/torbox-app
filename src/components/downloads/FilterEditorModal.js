@@ -27,6 +27,7 @@ export default function FilterEditorModal({
   sortField,
   sortDirection,
   activeColumns,
+  search = '',
 }) {
   const { saveView, updateView } = useCustomViews(apiKey);
   const customViewsT = useTranslations('CustomViews');
@@ -42,6 +43,7 @@ export default function FilterEditorModal({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveSort, setSaveSort] = useState(false);
   const [saveColumns, setSaveColumns] = useState(false);
+  const [saveSearch, setSaveSearch] = useState(false);
 
   const availableColumns = getFilterableColumns(columnsT, activeType);
 
@@ -57,6 +59,7 @@ export default function FilterEditorModal({
       setShowSaveInput(false);
       setSaveSort(false);
       setSaveColumns(false);
+      setSaveSearch(false);
       return;
     }
 
@@ -65,20 +68,23 @@ export default function FilterEditorModal({
       setShowSaveInput(true);
       setSaveSort(false);
       setSaveColumns(false);
+      setSaveSearch(!!search?.trim());
       return;
     }
 
     if (isEditMode) {
       setSaveSort(!!editingView.sort_field);
       setSaveColumns(!!editingView.visible_columns);
+      setSaveSearch(!!editingView.search_query);
       setShowSaveInput(false);
       return;
     }
 
     setSaveSort(false);
     setSaveColumns(false);
+    setSaveSearch(false);
     setShowSaveInput(false);
-  }, [isOpen, isCreateMode, isEditMode, editingView]);
+  }, [isOpen, isCreateMode, isEditMode, editingView, search]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -243,12 +249,14 @@ export default function FilterEditorModal({
         filtersToSave(),
         saveSort ? { field: sortField, direction: sortDirection } : null,
         saveColumns ? activeColumns : null,
-        activeType
+        activeType,
+        saveSearch ? search?.trim() || null : null
       );
       setSaveViewName('');
       setShowSaveInput(false);
       setSaveSort(false);
       setSaveColumns(false);
+      setSaveSearch(false);
       onViewCreated?.(view);
       onClose();
     } catch (error) {
@@ -278,6 +286,11 @@ export default function FilterEditorModal({
       } else {
         updates.visible_columns = null;
       }
+      if (saveSearch) {
+        updates.search_query = search?.trim() || null;
+      } else {
+        updates.search_query = null;
+      }
       const view = await updateView(editingView.id, updates);
       onViewUpdated?.(view);
       onClose();
@@ -301,26 +314,47 @@ export default function FilterEditorModal({
     onClose();
   };
 
+  const trimmedSearch = search?.trim() || '';
+
   const saveOptionsRow = (
-    <div className="flex items-center gap-3 text-xs flex-wrap">
-      <label className="flex items-center gap-1.5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={saveSort}
-          onChange={(e) => setSaveSort(e.target.checked)}
-          className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
-        />
-        <span>{customViewsT('includeSort')}</span>
-      </label>
-      <label className="flex items-center gap-1.5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={saveColumns}
-          onChange={(e) => setSaveColumns(e.target.checked)}
-          className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
-        />
-        <span>{customViewsT('includeColumns')}</span>
-      </label>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-3 text-xs flex-wrap">
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={saveSort}
+            onChange={(e) => setSaveSort(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+          />
+          <span>{customViewsT('includeSort')}</span>
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={saveColumns}
+            onChange={(e) => setSaveColumns(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+          />
+          <span>{customViewsT('includeColumns')}</span>
+        </label>
+        <label
+          className={`flex items-center gap-1.5 ${trimmedSearch ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+        >
+          <input
+            type="checkbox"
+            checked={saveSearch}
+            disabled={!trimmedSearch}
+            onChange={(e) => setSaveSearch(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border dark:border-border-dark text-accent dark:text-accent-dark"
+          />
+          <span>{customViewsT('includeSearch')}</span>
+        </label>
+      </div>
+      {saveSearch && trimmedSearch && (
+        <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 truncate">
+          {customViewsT('includeSearchHint', { query: trimmedSearch })}
+        </p>
+      )}
     </div>
   );
 

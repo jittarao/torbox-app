@@ -661,6 +661,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       }
     }
 
+    setSearch(view.search_query || '');
+
     setMobileFiltersOpen(false);
   };
 
@@ -669,6 +671,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
     setColumnFilters(empty);
     setAppliedFilters(empty);
+    setSearch('');
   };
 
   const handleClearView = handleClearFilters;
@@ -685,6 +688,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
     clearView();
     setStatusFilter('all');
+    setSearch('');
     const tagFilter = buildTagFilter(id);
     setColumnFilters(tagFilter);
     setAppliedFilters(tagFilter);
@@ -1114,6 +1118,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
                 sortField={sortField}
                 sortDirection={sortDirection}
                 activeColumns={activeColumns}
+                search={search}
               />
               <TagManager
                 isOpen={tagManagerOpen}
