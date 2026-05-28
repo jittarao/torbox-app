@@ -23,6 +23,34 @@ const DEFAULT_EXPANDED_STATES = {
   webdl: false,
 };
 
+function getExpandedStates() {
+  if (typeof localStorage === 'undefined') {
+    return DEFAULT_EXPANDED_STATES;
+  }
+
+  try {
+    const saved = localStorage.getItem(UPLOADER_EXPANDED_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return { ...DEFAULT_EXPANDED_STATES, ...parsed };
+    }
+  } catch (error) {
+    console.error('Error parsing uploader expanded states:', error);
+  }
+
+  return DEFAULT_EXPANDED_STATES;
+}
+
+function saveExpandedStates(states) {
+  if (typeof localStorage === 'undefined') return;
+
+  try {
+    localStorage.setItem(UPLOADER_EXPANDED_KEY, JSON.stringify(states));
+  } catch (error) {
+    console.error('Error saving uploader expanded states:', error);
+  }
+}
+
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const t = useTranslations('ItemUploader');
   const commonT = useTranslations('Common');
@@ -67,37 +95,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     () => true,
     () => false
   );
-
-  // Helper function to get expanded states from localStorage
-  const getExpandedStates = () => {
-    if (typeof localStorage === 'undefined') {
-      return DEFAULT_EXPANDED_STATES;
-    }
-
-    try {
-      const saved = localStorage.getItem(UPLOADER_EXPANDED_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Merge with defaults to handle missing keys
-        return { ...DEFAULT_EXPANDED_STATES, ...parsed };
-      }
-    } catch (error) {
-      console.error('Error parsing uploader expanded states:', error);
-    }
-
-    return DEFAULT_EXPANDED_STATES;
-  };
-
-  // Helper function to save expanded states to localStorage
-  const saveExpandedStates = (states) => {
-    if (typeof localStorage === 'undefined') return;
-
-    try {
-      localStorage.setItem(UPLOADER_EXPANDED_KEY, JSON.stringify(states));
-    } catch (error) {
-      console.error('Error saving uploader expanded states:', error);
-    }
-  };
 
   // Show toast notification when error occurs
   useEffect(() => {

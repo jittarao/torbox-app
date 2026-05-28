@@ -33,11 +33,10 @@ export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
         aria-hidden={!isOpen}
       />
       <dialog
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col w-[min(85vw,var(--downloads-sidebar-width,16rem))] bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark shadow-xl transition-transform duration-300 ease-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 hidden open:flex flex-col w-[min(85vw,var(--downloads-sidebar-width,16rem))] bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark shadow-xl transition-transform duration-300 ease-out md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label={t('sidebarLabel')}
-        style={{ display: 'flex' }}
         open={isOpen}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-border dark:border-border-dark shrink-0">
