@@ -31,10 +31,9 @@ function FileList({
           const assetKey = `${itemId}-${file.id}`;
 
           return (
-            <button
-              type="button"
+            <div
               key={`${itemId}-${file.id}`}
-              disabled={isDisabled}
+              tabIndex={isDisabled ? -1 : 0}
               className={`${
                 isChecked
                   ? 'bg-accent/15 hover:bg-accent/20 dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
@@ -49,11 +48,15 @@ function FileList({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                if (e.target.closest('button') || isDisabled) return;
+                if (e.target.closest('button, input, a, select, textarea') || isDisabled) return;
                 onFileSelect(itemId, fileIndex, file, !isChecked, e.shiftKey);
               }}
               onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !isDisabled) {
+                if (
+                  (e.key === 'Enter' || e.key === ' ') &&
+                  !isDisabled &&
+                  !e.target.closest('button, input, a, select, textarea')
+                ) {
                   e.preventDefault();
                   e.stopPropagation();
                   onFileSelect(itemId, fileIndex, file, !isChecked, e.shiftKey);
@@ -161,7 +164,7 @@ function FileList({
                   )}
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
