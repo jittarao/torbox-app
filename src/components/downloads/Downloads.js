@@ -46,7 +46,11 @@ import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
-import { enrichDownloadsWithTbm } from './utils/tbmDownloadEnrichment';
+import {
+  enrichDownloadsWithTbm,
+  buildDownloadHistoryLookup,
+} from './utils/tbmDownloadEnrichment';
+import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import ReferralCallout from '@/components/referral/ReferralCallout';
@@ -235,10 +239,15 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
 
+  const downloadHistoryLookup = useMemo(
+    () => buildDownloadHistoryLookup(downloadHistory),
+    [downloadHistory]
+  );
+
   /** TorBox API downloads merged with TBM backend data (tags, link-history flags). */
   const enrichedDownloads = useMemo(
-    () => enrichDownloadsWithTbm(items, mapTagsToDownloads, downloadHistory),
-    [items, tagMappings, mapTagsToDownloads, downloadHistory]
+    () => enrichDownloadsWithTbm(items, mapTagsToDownloads, downloadHistoryLookup),
+    [items, tagMappings, mapTagsToDownloads, downloadHistoryLookup]
   );
 
   const expandAllFiles = () => {
@@ -641,8 +650,11 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     if (hasExpandedRef.current) return;
 
     // Expand all items that have selected files
-    selectedItems.files.forEach((_, itemId) => {
-      setExpandedItems((prev) => new Set([...prev, itemId]));
+    selectedItems.files.forEach((_, selectionId) => {
+      const item = findItemBySelectionId(items, selectionId);
+      if (item?.id != null) {
+        setExpandedItems((prev) => new Set([...prev, item.id]));
+      }
     });
 
     hasExpandedRef.current = true;
@@ -651,8 +663,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   // Get the total size of all selected items and files
   const getTotalDownloadSize = useCallback(() => {
     // Calculate size of selected files
-    const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [itemId, fileIds]) => {
-      const item = enrichedDownloads.find((i) => i.id === itemId);
+    const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [selectionId, fileIds]) => {
+      const item = findItemBySelectionId(enrichedDownloads, selectionId);
       if (!item) return acc;
 
       return (
@@ -665,8 +677,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     }, 0);
 
     // Calculate size of selected items
-    const itemsSize = Array.from(selectedItems.items).reduce((acc, itemId) => {
-      const item = enrichedDownloads.find((i) => i.id === itemId);
+    const itemsSize = Array.from(selectedItems.items).reduce((acc, selectionId) => {
+      const item = findItemBySelectionId(enrichedDownloads, selectionId);
       return acc + (item?.size || 0);
     }, 0);
 

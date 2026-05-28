@@ -9,6 +9,7 @@ import {
   tableHeaderCell,
   tableHeaderCheckboxCell,
 } from './utils/responsiveLayout';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 export default function TableHeader({
   activeColumns,
@@ -34,7 +35,10 @@ export default function TableHeader({
           <input
             type="checkbox"
             onChange={(e) => onSelectAll(items, e.target.checked)}
-            checked={selectedItems.items?.size === items.length && items.length > 0}
+            checked={
+              items.length > 0 &&
+              items.every((item) => selectedItems.items?.has(getDownloadSelectionId(item)))
+            }
             className="accent-accent dark:accent-accent-dark"
           />
         </th>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
+import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 
 // Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
@@ -409,14 +410,15 @@ export function useDownloads(
 
     // Create array of all download tasks
     const downloadTasks = [
-      ...Array.from(selectedItems.items).flatMap((id) => {
-        const item = items.find((t) => String(t.id) === String(id));
+      ...Array.from(selectedItems.items).flatMap((selectionId) => {
+        const item = findItemBySelectionId(items, selectionId);
+        const itemId = item?.id ?? selectionId;
         const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
         if (item?.files?.length === 1) {
           // If there's exactly one file, create a file task
           return {
             type: 'file',
-            itemId: id,
+            itemId,
             fileId: item.files[0].id,
             name: item.files[0].name || `File ${item.files[0].id}`,
             metadata: {
@@ -428,9 +430,9 @@ export function useDownloads(
           // Otherwise, create an item task
           return {
             type: 'item',
-            id,
+            id: itemId,
             name:
-              item?.name || `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${id}`,
+              item?.name || `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${itemId}`,
             metadata: {
               assetType: taskAssetType,
               item,
@@ -438,8 +440,9 @@ export function useDownloads(
           };
         }
       }),
-      ...Array.from(selectedItems.files.entries()).flatMap(([itemId, fileIds]) => {
-        const item = items.find((t) => String(t.id) === String(itemId));
+      ...Array.from(selectedItems.files.entries()).flatMap(([selectionId, fileIds]) => {
+        const item = findItemBySelectionId(items, selectionId);
+        const itemId = item?.id ?? selectionId;
         const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
         return Array.from(fileIds).map((fileId) => ({
           type: 'file',

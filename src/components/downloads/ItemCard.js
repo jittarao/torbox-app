@@ -8,6 +8,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { cardContainerPad, tableActionsCellInner } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
@@ -271,10 +272,12 @@ function ItemCard({
     }
   };
 
+  const selectionId = getDownloadSelectionId(item);
+
   const handleCardSelect = (shiftKey) => {
-    if (isDisabled(item.id)) return;
-    const isChecked = selectedItems.items?.has(item.id);
-    onItemSelect(item.id, !isChecked, index, shiftKey);
+    if (isDisabled(selectionId)) return;
+    const isChecked = selectedItems.items?.has(selectionId);
+    onItemSelect(selectionId, !isChecked, index, shiftKey);
   };
 
   const renderSpeedIndicators = () =>
@@ -317,7 +320,7 @@ function ItemCard({
       }}
       tabIndex={0}
       className={`${
-        selectedItems.items?.has(item.id)
+        selectedItems.items?.has(selectionId)
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
           : isItemDownloaded(item.id)
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
@@ -343,10 +346,10 @@ function ItemCard({
           >
             <input
               type="checkbox"
-              checked={selectedItems.items?.has(item.id)}
-              onChange={(e) => onItemSelect(item.id, e.target.checked, index)}
+              checked={selectedItems.items?.has(selectionId)}
+              onChange={(e) => onItemSelect(selectionId, e.target.checked, index)}
               onClick={(e) => e.stopPropagation()}
-              disabled={isDisabled(item.id)}
+              disabled={isDisabled(selectionId)}
               className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
             />
             <h3
@@ -482,10 +485,10 @@ function ItemCard({
       {expandedItems.has(item.id) && visibleFiles.length > 0 && (
         <FileList
           files={visibleFiles}
-          itemId={item.id}
+          itemId={selectionId}
           selectedItems={selectedItems}
           isFileDownloaded={isFileDownloaded}
-          isDisabled={isDisabled(item.id)}
+          isDisabled={isDisabled(selectionId)}
           isBlurred={isBlurred}
           onFileSelect={onFileSelect}
           onFileDownload={onFileDownload}

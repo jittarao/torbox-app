@@ -15,12 +15,8 @@ export function useFilter(
   const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
 
-  const columnFilters = useMemo(() => {
-    if (customFilters) {
-      return JSON.parse(JSON.stringify(customFilters));
-    }
-    return customFilters;
-  }, [customFilters]);
+  // Parent should pass stable appliedFilters from useState (no deep-clone each render).
+  const columnFilters = customFilters;
 
   const filteredItems = useMemo(() => {
     // Ensure items is an array before filtering
