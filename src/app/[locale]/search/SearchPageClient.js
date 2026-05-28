@@ -1,19 +1,19 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
-import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
+import { hasDownloadAccess } from '@/utils/userProfile';
 import { useSearchStore } from '@/store/searchStore';
+import { useSession } from '@/components/shared/hooks/useSession';
 
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function SearchPageClient() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
-  const [permissions, setPermissions] = useState(null);
+  const { apiKey, permissions, setApiKey } = useSession();
 
   const searchType = useSearchStore((state) => state.searchType);
   const setSearchType = useSearchStore((state) => state.setSearchType);
@@ -36,24 +36,13 @@ export default function SearchPageClient() {
 
   useEffect(() => {
     initEnsureUserDb(apiKey);
-  }, []);
+  }, [apiKey]);
 
-  // Fetch user profile and derive permissions (usenet search requires Pro)
   useEffect(() => {
-    if (apiKey && apiKey.length >= 20) {
-      fetchUserProfile(apiKey)
-        .then((userData) => {
-          const perms = userData ? getUserPermissions(userData) : null;
-          setPermissions(perms);
-          if (perms && searchType === 'usenet' && !hasDownloadAccess('usenet', perms)) {
-            setSearchType('torrents');
-          }
-        })
-        .catch(() => setPermissions(null));
-    } else {
-      setPermissions(null);
+    if (permissions && searchType === 'usenet' && !hasDownloadAccess('usenet', permissions)) {
+      setSearchType('torrents');
     }
-  }, [apiKey, searchType, setSearchType]);
+  }, [permissions, searchType, setSearchType]);
 
   const searchTypeOptions = useMemo(() => {
     const torrents = { value: 'torrents', labelKey: 'itemTypes.Torrents' };
@@ -64,17 +53,7 @@ export default function SearchPageClient() {
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
-    localStorage.setItem('torboxApiKey', newKey);
     initEnsureUserDb(newKey);
-    if (newKey && newKey.length >= 20) {
-      fetchUserProfile(newKey)
-        .then((userData) => {
-          setPermissions(userData ? getUserPermissions(userData) : null);
-        })
-        .catch(() => setPermissions(null));
-    } else {
-      setPermissions(null);
-    }
   };
 
   return (

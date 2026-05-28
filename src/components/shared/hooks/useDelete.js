@@ -8,7 +8,6 @@ import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 export function useDelete(
   apiKey,
-  _setItems,
   setSelectedItems,
   setToast,
   fetchItems,

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import AppShell from '@/components/navigation/AppShell';
-import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import dynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
 import { useUpload } from '@/components/shared/hooks/useUpload';
+import { useSession } from '@/components/shared/hooks/useSession';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -26,38 +26,14 @@ const LandingPage = dynamic(() => import('@/components/LandingPage'), {
   ssr: false,
 });
 
-function readStoredApiKey() {
-  try {
-    const storedKey = localStorage.getItem('torboxApiKey');
-    if (storedKey) return storedKey;
-    const storedKeys = localStorage.getItem('torboxApiKeys');
-    if (storedKeys) {
-      const keys = JSON.parse(storedKeys);
-      if (keys.length > 0) {
-        localStorage.setItem('torboxApiKey', keys[0].key);
-        return keys[0].key;
-      }
-    }
-  } catch (error) {
-    console.error('Error loading API key from localStorage:', error);
-  }
-  return '';
-}
-
 export default function HomePageClient() {
-  const [apiKey, setApiKey] = useState('');
-  const [apiKeyReady, setApiKeyReady] = useState(false);
+  const { apiKey, hydrated, setApiKey } = useSession();
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
-
-  useEffect(() => {
-    setApiKey(readStoredApiKey());
-    setApiKeyReady(true);
-  }, []);
 
   useEffect(() => {
     // Register protocol handler
@@ -118,23 +94,19 @@ export default function HomePageClient() {
     }
   });
 
-  // Only store when empty or valid UUID; never overwrite a valid key with invalid input.
   const handleKeyChange = (newKey) => {
+    setApiKey(newKey);
     const trimmed = (newKey || '').trim();
-    if (trimmed === '' || isValidTorboxApiKey(trimmed)) {
-      setApiKey(trimmed);
-      localStorage.setItem('torboxApiKey', trimmed);
-      if (trimmed) {
-        import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-          ensureUserDb(trimmed).catch((error) => {
-            console.error('Error ensuring user database:', error);
-          });
+    if (trimmed) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(trimmed).catch((error) => {
+          console.error('Error ensuring user database:', error);
         });
-      }
+      });
     }
   };
 
-  if (!isClient || !apiKeyReady) {
+  if (!isClient || !hydrated) {
     return <div className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`} aria-hidden />;
   }
 

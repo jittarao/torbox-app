@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useCustomViewsStore } from '@/store/customViewsStore';
 
 export function useCustomViews(apiKey) {
@@ -16,16 +17,28 @@ export function useCustomViews(apiKey) {
     applyView: applyViewStore,
     clearView: clearViewStore,
     setApiKey,
-  } = useCustomViewsStore();
+  } = useCustomViewsStore(
+    useShallow((s) => ({
+      views: s.views,
+      activeView: s.activeView,
+      loading: s.loading,
+      error: s.error,
+      loadViews: s.loadViews,
+      saveView: s.saveView,
+      updateView: s.updateView,
+      deleteView: s.deleteView,
+      applyView: s.applyView,
+      clearView: s.clearView,
+      setApiKey: s.setApiKey,
+    }))
+  );
 
-  // Update API key in store when it changes (this will reset views if changed)
   useEffect(() => {
     if (apiKey) {
       setApiKey(apiKey);
     }
   }, [apiKey, setApiKey]);
 
-  // Wrapper functions that pass apiKey to store actions
   const loadViewsWithKey = useCallback(async () => {
     if (apiKey) {
       await loadViews(apiKey);

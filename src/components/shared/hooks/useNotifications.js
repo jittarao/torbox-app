@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useNotificationsStore } from '@/store/notificationsStore';
 
 export function useNotifications(apiKey) {
@@ -9,7 +10,6 @@ export function useNotifications(apiKey) {
     loading,
     error,
     unreadCount,
-    isPolling,
     consecutiveErrors,
     fetchNotifications: fetchNotificationsStore,
     clearAllNotifications: clearAllNotificationsStore,
@@ -22,16 +22,33 @@ export function useNotifications(apiKey) {
     setIsPolling: setIsPollingStore,
     retryFetch: retryFetchStore,
     setApiKey,
-  } = useNotificationsStore();
+  } = useNotificationsStore(
+    useShallow((s) => ({
+      notifications: s.notifications,
+      loading: s.loading,
+      error: s.error,
+      unreadCount: s.unreadCount,
+      consecutiveErrors: s.consecutiveErrors,
+      fetchNotifications: s.fetchNotifications,
+      clearAllNotifications: s.clearAllNotifications,
+      clearNotification: s.clearNotification,
+      testNotification: s.testNotification,
+      markAsRead: s.markAsRead,
+      markAllAsRead: s.markAllAsRead,
+      addNotification: s.addNotification,
+      removeNotification: s.removeNotification,
+      setIsPolling: s.setIsPolling,
+      retryFetch: s.retryFetch,
+      setApiKey: s.setApiKey,
+    }))
+  );
 
-  // Update API key in store when it changes (this will reset notifications if changed)
   useEffect(() => {
     if (apiKey) {
       setApiKey(apiKey);
     }
   }, [apiKey, setApiKey]);
 
-  // Wrapper functions that pass apiKey to store actions
   const fetchNotifications = useCallback(async () => {
     if (apiKey) {
       await fetchNotificationsStore(apiKey);

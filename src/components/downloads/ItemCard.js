@@ -31,7 +31,6 @@ function ItemCard({
   toggleFiles,
   expandedItems,
   fileSearch = '',
-  setItems,
   setSelectedItems,
   setToast,
   activeType,
@@ -449,7 +448,6 @@ function ItemCard({
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
                 expandedItems={expandedItems}
-                setItems={setItems}
                 setSelectedItems={setSelectedItems}
                 setToast={setToast}
                 activeType={activeType}
@@ -469,7 +467,6 @@ function ItemCard({
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
                 expandedItems={expandedItems}
-                setItems={setItems}
                 setSelectedItems={setSelectedItems}
                 setToast={setToast}
                 activeType={activeType}

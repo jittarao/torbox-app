@@ -15,6 +15,7 @@ import MobileBottomNav from './MobileBottomNav';
 import MobileMoreSheet from './MobileMoreSheet';
 import { SidebarContext, useSidebar } from './SidebarContext';
 import useSidebarCollapsed from './useSidebarCollapsed';
+import { useNotificationsPolling } from '@/components/shared/hooks/useNotificationsPolling';
 
 const SIDEBAR_EXPANDED = '16rem';
 const SIDEBAR_COLLAPSED = '4.5rem';
@@ -43,6 +44,7 @@ function DesktopSidebar({ apiKey, nav, isActive, getLabel, t, toggleDarkMode }) 
 
 export default function AppShell({ apiKey, children, className = '' }) {
   const { searchPageDisabled } = useFeatureFlags();
+  useNotificationsPolling(apiKey);
   const t = useTranslations('Header');
   const { isActive, pathname } = useNavActive();
   const { toggleDarkMode } = useTheme();
