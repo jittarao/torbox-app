@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { getListKeyForAssetType } from '@/store/torboxDownloadsSelectors';
+import { downloadRowEqual, mergeListIntoEntities } from '@/utils/downloadListMerge';
+import {
+  entityKey,
+  getListKeyForAssetType,
+  selectItemsForView,
+} from '@/store/torboxDownloadsSelectors';
 
 const initialMeta = {
   loading: true,
@@ -10,19 +15,63 @@ const initialMeta = {
   canManualRefresh: true,
 };
 
+const emptyOrder = { torrents: [], usenet: [], webdl: [] };
+
+function rowsFromOrder(entities, orderKeys) {
+  const rows = [];
+  for (let i = 0; i < orderKeys.length; i++) {
+    const row = entities[orderKeys[i]];
+    if (row) rows.push(row);
+  }
+  return rows;
+}
+
 /**
- * TorBox API download lists (torrents / usenet / webdl) and fetch metadata.
- * Derived view state (filters, sort) stays in Downloads.js.
+ * TorBox API download lists (normalized entities + order) and fetch metadata.
  */
 export const useTorboxDownloadsStore = create((set, get) => ({
+  /** @type {Record<string, object>} */
+  entities: {},
+  order: { ...emptyOrder },
+  /** @deprecated Compatibility arrays — kept in sync with entities/order */
   torrents: [],
   usenet: [],
   webdl: [],
   ...initialMeta,
 
-  setTorrents: (torrents) => set({ torrents }),
-  setUsenet: (usenet) => set({ usenet }),
-  setWebdl: (webdl) => set({ webdl }),
+  /**
+   * @param {'torrents' | 'usenet' | 'webdl'} assetType
+   * @param {object[]} mergedList — output of mergeDownloadList
+   */
+  applyListMerge: (assetType, mergedList) => {
+    const listKey = getListKeyForAssetType(assetType);
+    const state = get();
+    const prevOrder = state.order[listKey] || [];
+    const { entities, orderKeys } = mergeListIntoEntities(
+      state.entities,
+      prevOrder,
+      mergedList,
+      assetType
+    );
+    get().setListFromMerge(assetType, entities, orderKeys);
+  },
+
+  /**
+   * Apply pre-merged entities + order keys for one asset type (fetch path).
+   */
+  setListFromMerge: (assetType, entities, orderKeys) => {
+    const listKey = getListKeyForAssetType(assetType);
+    const state = get();
+    set({
+      entities,
+      order: { ...state.order, [listKey]: orderKeys },
+      [listKey]: rowsFromOrder(entities, orderKeys),
+    });
+  },
+
+  setTorrents: (torrents) => get().applyListMerge('torrents', torrents || []),
+  setUsenet: (usenet) => get().applyListMerge('usenet', usenet || []),
+  setWebdl: (webdl) => get().applyListMerge('webdl', webdl || []),
 
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
@@ -47,6 +96,8 @@ export const useTorboxDownloadsStore = create((set, get) => ({
 
   resetForApiKey: (hasApiKey) =>
     set({
+      entities: {},
+      order: { ...emptyOrder },
       torrents: [],
       usenet: [],
       webdl: [],
@@ -63,10 +114,10 @@ export const useTorboxDownloadsStore = create((set, get) => ({
    * @param {(prev: object[]) => object[]} updater
    */
   updateList: (assetType, updater) => {
-    const key = getListKeyForAssetType(assetType);
-    const prev = get()[key] || [];
+    const listKey = getListKeyForAssetType(assetType);
+    const prev = selectItemsForView(get(), assetType === 'usenet' ? 'usenet' : assetType === 'webdl' ? 'webdl' : 'torrents');
     const next = updater(prev);
-    set({ [key]: next });
+    get().applyListMerge(assetType, next);
   },
 
   /**
@@ -75,18 +126,49 @@ export const useTorboxDownloadsStore = create((set, get) => ({
    */
   removeByIds: (assetType, ids) => {
     const idSet = new Set(ids);
-    get().updateList(assetType, (prev) => prev.filter((item) => !idSet.has(item.id)));
+    const listKey = getListKeyForAssetType(assetType);
+    const state = get();
+    const prevOrder = state.order[listKey] || [];
+    const nextOrder = prevOrder.filter((key) => {
+      const row = state.entities[key];
+      return row && !idSet.has(row.id);
+    });
+    const nextEntities = { ...state.entities };
+    for (const key of prevOrder) {
+      const row = state.entities[key];
+      if (row && idSet.has(row.id)) {
+        delete nextEntities[key];
+      }
+    }
+
+    set({
+      entities: nextEntities,
+      order: { ...state.order, [listKey]: nextOrder },
+      [listKey]: rowsFromOrder(nextEntities, nextOrder),
+    });
   },
 
   /**
-   * Optimistic patch for a single row.
    * @param {'torrents' | 'usenet' | 'webdl'} assetType
    * @param {number|string} id
    * @param {object} partial
    */
   patchItem: (assetType, id, partial) => {
-    get().updateList(assetType, (prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...partial } : item))
-    );
+    const key = entityKey(assetType, id);
+    const state = get();
+    const prev = state.entities[key];
+    if (!prev) return;
+
+    const nextRow = { ...prev, ...partial };
+    const listKey = getListKeyForAssetType(assetType);
+    const storedRow =
+      downloadRowEqual(prev, nextRow) ? prev : nextRow;
+
+    set({
+      entities: { ...state.entities, [key]: storedRow },
+      [listKey]: (state[listKey] || []).map((item) =>
+        item.id === id ? storedRow : item
+      ),
+    });
   },
 }));

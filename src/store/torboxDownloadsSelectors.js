@@ -2,21 +2,76 @@
  * Pure selectors for torboxDownloadsStore (no React).
  */
 
+import { entityKey } from '@/utils/downloadListMerge';
+
+const emptyOrder = { torrents: [], usenet: [], webdl: [] };
+
+let allViewIdsCache = {
+  torrentsRef: null,
+  usenetRef: null,
+  webdlRef: null,
+  result: [],
+};
+
 /**
- * @param {{ torrents?: object[], usenet?: object[], webdl?: object[] }} state
+ * @param {{ order?: { torrents?: string[], usenet?: string[], webdl?: string[] } }} state
+ * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType
+ * @returns {string[]}
+ */
+export function selectViewOrderedIds(state, viewType) {
+  const order = state.order || emptyOrder;
+
+  switch (viewType) {
+    case 'all': {
+      const t = order.torrents || [];
+      const u = order.usenet || [];
+      const w = order.webdl || [];
+      if (
+        allViewIdsCache.torrentsRef === t &&
+        allViewIdsCache.usenetRef === u &&
+        allViewIdsCache.webdlRef === w
+      ) {
+        return allViewIdsCache.result;
+      }
+      const result = [...t, ...u, ...w];
+      allViewIdsCache = {
+        torrentsRef: t,
+        usenetRef: u,
+        webdlRef: w,
+        result,
+      };
+      return result;
+    }
+    case 'usenet':
+      return order.usenet || [];
+    case 'webdl':
+      return order.webdl || [];
+    default:
+      return order.torrents || [];
+  }
+}
+
+/**
+ * @param {{ entities?: Record<string, object>, order?: object }} state
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType
  */
 export function selectItemsForView(state, viewType) {
-  switch (viewType) {
-    case 'all':
-      return [...(state.torrents || []), ...(state.usenet || []), ...(state.webdl || [])];
-    case 'usenet':
-      return state.usenet || [];
-    case 'webdl':
-      return state.webdl || [];
-    default:
-      return state.torrents || [];
+  const entities = state.entities || {};
+  const ids = selectViewOrderedIds(state, viewType);
+  const rows = [];
+  for (let i = 0; i < ids.length; i++) {
+    const row = entities[ids[i]];
+    if (row) rows.push(row);
   }
+  return rows;
+}
+
+/**
+ * @param {{ entities?: Record<string, object> }} state
+ * @param {string} key — `${assetType}:${id}`
+ */
+export function selectEntity(state, key) {
+  return state.entities?.[key];
 }
 
 /**
@@ -42,19 +97,22 @@ export function getListKeyForAssetType(assetType) {
 }
 
 export function hasCachedDataForView(state, viewType) {
+  const order = state.order || emptyOrder;
   switch (viewType) {
     case 'all':
       return (
-        (state.torrents?.length || 0) +
-          (state.usenet?.length || 0) +
-          (state.webdl?.length || 0) >
+        (order.torrents?.length || 0) +
+          (order.usenet?.length || 0) +
+          (order.webdl?.length || 0) >
         0
       );
     case 'usenet':
-      return (state.usenet?.length || 0) > 0;
+      return (order.usenet?.length || 0) > 0;
     case 'webdl':
-      return (state.webdl?.length || 0) > 0;
+      return (order.webdl?.length || 0) > 0;
     default:
-      return (state.torrents?.length || 0) > 0;
+      return (order.torrents?.length || 0) > 0;
   }
 }
+
+export { entityKey };

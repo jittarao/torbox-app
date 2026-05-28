@@ -140,3 +140,52 @@ export function downloadListReconcileSignature(items) {
   parts.sort();
   return parts.join(',');
 }
+
+/** @param {'torrents' | 'usenet' | 'webdl'} assetType @param {number|string} id */
+export function entityKey(assetType, id) {
+  return `${assetType}:${id}`;
+}
+
+/**
+ * Apply merged list to normalized entities + order keys (structural sharing preserved).
+ *
+ * @param {Record<string, object>} prevEntities
+ * @param {string[]} prevOrderKeys
+ * @param {object[]} mergedList
+ * @param {'torrents' | 'usenet' | 'webdl'} assetType
+ */
+export function mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType) {
+  const nextEntities = { ...prevEntities };
+  const nextOrder = [];
+  const nextKeySet = new Set();
+
+  for (const row of mergedList || []) {
+    const key = entityKey(assetType, row.id);
+    nextKeySet.add(key);
+    const prev = prevEntities[key];
+    nextEntities[key] = prev && downloadRowEqual(prev, row) ? prev : row;
+    nextOrder.push(key);
+  }
+
+  for (const key of prevOrderKeys || []) {
+    if (!nextKeySet.has(key)) {
+      delete nextEntities[key];
+    }
+  }
+
+  return { entities: nextEntities, orderKeys: nextOrder };
+}
+
+/**
+ * @param {Record<string, object>} prevEntities
+ * @param {string[]} prevOrderKeys
+ * @param {{ delta?: boolean, data?: object[], removed?: (number|string)[] }} payload
+ * @param {'torrents' | 'usenet' | 'webdl'} assetType
+ */
+export function mergeDownloadEntities(prevEntities, prevOrderKeys, payload, assetType) {
+  const prevList = (prevOrderKeys || [])
+    .map((key) => prevEntities[key])
+    .filter(Boolean);
+  const mergedList = mergeDownloadList(prevList, payload, assetType);
+  return mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType);
+}

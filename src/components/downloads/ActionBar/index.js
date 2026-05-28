@@ -8,7 +8,7 @@ import StatusSection from './components/StatusSection';
 import SearchBar from './components/SearchBar';
 import ActionButtons from './components/ActionButtons';
 import ViewControls from './components/ViewControls';
-import { useStatusCounts } from './hooks/useStatusCounts';
+import { useDownloadsStatusCounts } from './hooks/useDownloadsStatusCounts';
 import Dropdown from '@/components/shared/Dropdown';
 import { useTranslations } from 'next-intl';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -51,7 +51,6 @@ export default function ActionBar({
   setToast,
   expandAllFiles,
   collapseAllFiles,
-  expandedItems,
   scrollContainerRef,
   hasFiltersSidebar = false,
 }) {
@@ -84,9 +83,7 @@ export default function ActionBar({
     initialTopRef.current = rect.top + getScrollTop();
   }, [getScrollTop]);
 
-  // Use filteredItems for status counts if available, otherwise use unfilteredItems
-  const itemsForStatusCounts = filteredItems || unfilteredItems;
-  const { statusCounts, statusOptions, isStatusSelected } = useStatusCounts(itemsForStatusCounts);
+  const { statusCounts, statusOptions, isStatusSelected } = useDownloadsStatusCounts(activeType);
 
   const t = useTranslations('Columns');
 
@@ -368,7 +365,6 @@ export default function ActionBar({
               onViewModeChange={onViewModeChange}
               expandAllFiles={expandAllFiles}
               collapseAllFiles={collapseAllFiles}
-              expandedItems={expandedItems}
               unfilteredItems={unfilteredItems}
             />
 

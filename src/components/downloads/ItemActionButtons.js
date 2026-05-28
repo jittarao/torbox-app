@@ -18,7 +18,7 @@ export default function ItemActionButtons({
   onDelete,
   isDeleting,
   toggleFiles,
-  expandedItems,
+  isExpanded = false,
   activeType = 'torrents',
   onStopSeeding,
   onForceStart,
@@ -75,7 +75,7 @@ export default function ItemActionButtons({
       : 'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
   const fileCount = item.files?.length ?? item.file_count;
-  const filesExpanded = expandedItems.has(item.id);
+  const filesExpanded = isExpanded;
   const filesLabel = filesExpanded
     ? t('files.hide')
     : fileCount != null && fileCount > 0

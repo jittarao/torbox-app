@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import {
   mergeDownloadList,
+  mergeListIntoEntities,
+  entityKey,
   downloadRowEqual,
   sortItemsNonMutating,
   downloadListIdSignature,
@@ -134,6 +136,21 @@ describe('downloadListIdSignature', () => {
       { id: 2, assetType: 'usenet' },
     ];
     expect(downloadListIdSignature(a)).toBe(downloadListIdSignature(b));
+  });
+});
+
+describe('mergeListIntoEntities', () => {
+  test('builds entity map and order keys', () => {
+    const row = {
+      id: 1,
+      assetType: 'torrents',
+      added: '2020-01-01',
+      download_finished: true,
+      active: false,
+    };
+    const { entities, orderKeys } = mergeListIntoEntities({}, [], [row], 'torrents');
+    expect(orderKeys).toEqual([entityKey('torrents', 1)]);
+    expect(entities[entityKey('torrents', 1)]).toBe(row);
   });
 });
 

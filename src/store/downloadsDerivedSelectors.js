@@ -1,0 +1,269 @@
+/**
+ * Pure derived selectors for downloads list (filter/sort on ids, not persisted arrays).
+ */
+
+import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
+import { STATUS_OPTIONS } from '@/components/constants';
+import { itemMatchesFilters } from '@/components/downloads/filters/filterEvaluation';
+import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
+import {
+  buildDownloadHistoryLookup,
+  enrichDownloadsWithTbm,
+} from '@/components/downloads/utils/tbmDownloadEnrichment';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
+
+const isQueued = (torrent) =>
+  !torrent.download_state &&
+  !torrent.download_finished &&
+  !torrent.active &&
+  torrent.type === 'torrent';
+
+const STATUS_PRIORITY_MAP = {
+  Completed: 6,
+  Downloading: 5,
+  Inactive: 4,
+  Queued: 3,
+  Seeding: 2,
+  Stalled: 1,
+  Uploading: 0,
+};
+
+const FIELD_TYPE_MAP = {
+  id: 'numeric',
+  size: 'numeric',
+  total_uploaded: 'numeric',
+  total_downloaded: 'numeric',
+  download_speed: 'numeric',
+  upload_speed: 'numeric',
+  seeds: 'numeric',
+  peers: 'numeric',
+  eta: 'numeric',
+  progress: 'numeric',
+  ratio: 'numeric',
+  name: 'text',
+  created_at: 'date',
+  cached_at: 'date',
+  updated_at: 'date',
+  expires_at: 'date',
+  download_state: 'status',
+  file_count: 'file_count',
+};
+
+function getStatusPriority(torrent) {
+  if (isQueued(torrent)) return STATUS_PRIORITY_MAP.Queued;
+
+  const status = STATUS_OPTIONS.find((option) => {
+    if (option.value === 'all' || option.value.is_queued) return false;
+    return Object.entries(option.value).every(([key, value]) => {
+      if (key === 'download_state') {
+        return (Array.isArray(value) ? value : [value]).some((state) =>
+          torrent.download_state?.includes(state)
+        );
+      }
+      return torrent[key] === value;
+    });
+  });
+
+  return STATUS_PRIORITY_MAP[status?.label] ?? -1;
+}
+
+function numericCompare(a, b, field) {
+  return (Number(a[field]) || 0) - (Number(b[field]) || 0);
+}
+
+function textCompare(a, b, field) {
+  return (a[field] || '').toLowerCase().localeCompare((b[field] || '').toLowerCase());
+}
+
+function dateCompare(a, b, field) {
+  return new Date(a[field] || 0) - new Date(b[field] || 0);
+}
+
+function statusCompare(a, b) {
+  return getStatusPriority(b) - getStatusPriority(a);
+}
+
+function fileCountCompare(a, b) {
+  return (a.files?.length || 0) - (b.files?.length || 0);
+}
+
+function compareRows(a, b, sortField) {
+  const fieldType = FIELD_TYPE_MAP[sortField] || 'text';
+  switch (fieldType) {
+    case 'numeric':
+      return numericCompare(a, b, sortField);
+    case 'date':
+      return dateCompare(a, b, sortField);
+    case 'status':
+      return statusCompare(a, b);
+    case 'file_count':
+      return fileCountCompare(a, b);
+    default:
+      return textCompare(a, b, sortField);
+  }
+}
+
+/**
+ * @param {string[]} ids
+ * @param {Record<string, object>} entities
+ * @param {string} sortField
+ * @param {'asc'|'desc'} sortDirection
+ */
+export function sortIds(ids, entities, sortField, sortDirection) {
+  if (!ids?.length) return [];
+
+  const sorted = ids.toSorted((idA, idB) => {
+    const a = entities[idA];
+    const b = entities[idB];
+    if (!a || !b) return 0;
+    const cmp = compareRows(a, b, sortField);
+    return sortDirection === 'desc' ? -cmp : cmp;
+  });
+
+  return sorted;
+}
+
+function matchesStatusFilter(item, statusFilter) {
+  if (statusFilter === 'all') return true;
+
+  try {
+    const filters = Array.isArray(statusFilter)
+      ? statusFilter.map((f) => (typeof f === 'string' ? JSON.parse(f) : f))
+      : [typeof statusFilter === 'string' ? JSON.parse(statusFilter) : statusFilter];
+
+    const itemStatus = getMatchingStatus(item);
+
+    if (itemStatus.label === 'Meta_DL' || itemStatus.label === 'Checking_Resume_Data') {
+      const downloadingFilter = filters.find(
+        (f) =>
+          JSON.stringify(f) ===
+          JSON.stringify({
+            active: true,
+            download_finished: false,
+            download_present: false,
+          })
+      );
+      if (downloadingFilter) return true;
+    }
+
+    return filters.some((filter) => JSON.stringify(filter) === JSON.stringify(itemStatus.value));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Build row shape used by filter predicates (tags + is_downloaded).
+ */
+export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
+  if (!entity) return null;
+  const downloadId =
+    entity.id?.toString() ||
+    entity.torrent_id?.toString() ||
+    entity.usenet_id?.toString() ||
+    entity.web_id?.toString();
+  const tags = tagMappings?.[downloadId] || entity.tags || [];
+  const single = [{ ...entity, tags }];
+  const enriched = enrichDownloadsWithTbm(single, (d) => d, downloadHistoryLookup);
+  return enriched[0] || { ...entity, tags };
+}
+
+/**
+ * @param {string[]} ids
+ * @param {Record<string, object>} entities
+ * @param {{ search?: string, statusFilter?: string, appliedFilters?: object }} criteria
+ * @param {object} [tagMappings]
+ * @param {object} [downloadHistoryLookup]
+ */
+export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHistoryLookup = null) {
+  if (!ids?.length) return [];
+
+  const { search = '', statusFilter = 'all', appliedFilters } = criteria;
+  const lookup =
+    downloadHistoryLookup?.itemDownloads != null
+      ? downloadHistoryLookup
+      : buildDownloadHistoryLookup(downloadHistoryLookup || []);
+
+  return ids.filter((id) => {
+    const entity = entities[id];
+    if (!entity) return false;
+
+    const row = enrichRowForFilter(entity, tagMappings, lookup);
+    if (!row) return false;
+
+    if (!itemMatchesDownloadSearch(row, search)) return false;
+    if (!matchesStatusFilter(row, statusFilter)) return false;
+    if (!itemMatchesFilters(row, appliedFilters)) return false;
+
+    return true;
+  });
+}
+
+let allViewIdsCache = {
+  torrentsRef: null,
+  usenetRef: null,
+  webdlRef: null,
+  result: [],
+};
+
+/**
+ * @param {import('@/store/torboxDownloadsStore').TorboxDownloadsState} torboxState
+ * @param {'torrents'|'usenet'|'webdl'|'all'} viewType
+ */
+export function selectVisibleSortedIds(
+  torboxState,
+  viewType,
+  criteria,
+  tagMappings = {},
+  downloadHistory = []
+) {
+  const viewIds = selectViewOrderedIds(torboxState, viewType);
+  const entities = torboxState.entities || {};
+  const lookup = buildDownloadHistoryLookup(downloadHistory);
+
+  const filtered = filterIds(viewIds, entities, criteria, tagMappings, lookup);
+  return sortIds(filtered, entities, criteria.sortField || 'created_at', criteria.sortDirection || 'desc');
+}
+
+/**
+ * Resolve visible ids to row objects (for bulk actions / legacy callers).
+ */
+export function idsToRows(ids, entities, tagMappings = {}, downloadHistory = []) {
+  if (!ids?.length) return [];
+  const lookup = buildDownloadHistoryLookup(downloadHistory);
+  return ids
+    .map((id) => entities[id])
+    .filter(Boolean)
+    .map((entity) => enrichRowForFilter(entity, tagMappings, lookup));
+}
+
+/**
+ * Status counts for ActionBar from view ids (unfiltered by search/status/column).
+ */
+export function selectStatusCountsFromIds(torboxState, viewType) {
+  const viewIds = selectViewOrderedIds(torboxState, viewType);
+  const entities = torboxState.entities || {};
+  const counts = {};
+
+  for (const id of viewIds) {
+    const item = entities[id];
+    if (!item) continue;
+    const status = getMatchingStatus(item);
+    if (status?.label) {
+      counts[status.label] = (counts[status.label] || 0) + 1;
+    }
+  }
+
+  return { counts, total: viewIds.length };
+}
+
+export function findEntityBySelectionId(entities, ids, selectionId) {
+  for (const id of ids) {
+    const item = entities[id];
+    if (!item) continue;
+    if (getDownloadSelectionId(item) === selectionId) return item;
+    if (item.id === selectionId || String(item.id) === String(selectionId)) return item;
+  }
+  return undefined;
+}

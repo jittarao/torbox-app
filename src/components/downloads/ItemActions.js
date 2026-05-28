@@ -15,7 +15,7 @@ export default function ItemActions({
   apiKey,
   onDelete,
   toggleFiles,
-  expandedItems,
+  isExpanded = false,
   setToast,
   activeType = 'torrents',
   compact = false,
@@ -120,7 +120,7 @@ export default function ItemActions({
       onDelete={handleDelete}
       isDeleting={isDeleting}
       toggleFiles={toggleFiles}
-      expandedItems={expandedItems}
+      isExpanded={isExpanded}
       activeType={activeType}
       onStopSeeding={handleStopSeeding}
       onForceStart={handleForceStart}
