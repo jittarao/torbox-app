@@ -583,26 +583,28 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         />
       )}
 
-      {/* Asset Type Tabs + auto-refresh countdown */}
-      <div className="relative [&_nav]:pr-11 md:[&_nav]:pr-0">
-        <AssetTypeTabs
-          activeType={activeType}
-          onTypeChange={(type) => {
-            setActiveType(type);
-            localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
-          }}
-          isTypeAvailable={(type) => {
-            if (type === 'all') return true;
-            // For download tabs, defer to the generic permissions helper
-            if (type === 'usenet') {
-              return hasDownloadAccess('usenet', permissions);
-            }
-            return true;
-          }}
-        />
+      {/* Asset Type Tabs + auto-refresh countdown (flex on mobile avoids covering webdl tab) */}
+      <div className="relative flex items-center border-b border-border dark:border-border-dark md:block">
+        <div className="min-w-0 flex-1 [&>div]:border-b-0">
+          <AssetTypeTabs
+            activeType={activeType}
+            onTypeChange={(type) => {
+              setActiveType(type);
+              localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
+            }}
+            isTypeAvailable={(type) => {
+              if (type === 'all') return true;
+              // For download tabs, defer to the generic permissions helper
+              if (type === 'usenet') {
+                return hasDownloadAccess('usenet', permissions);
+              }
+              return true;
+            }}
+          />
+        </div>
         {apiKey && (
           <AutoRefreshIndicator
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 sm:right-3"
+            className="shrink-0 px-2 md:absolute md:right-3 md:top-1/2 md:-translate-y-1/2 md:px-0 z-10"
             pollSchedule={pollSchedule}
             isRefreshing={isRefreshing}
             refreshRateLimited={!canManualRefresh}
