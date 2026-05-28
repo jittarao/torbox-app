@@ -271,28 +271,33 @@ function ItemCard({
     }
   };
 
+  const handleCardSelect = (shiftKey) => {
+    if (isDisabled(item.id)) return;
+    const isChecked = selectedItems.items?.has(item.id);
+    onItemSelect(item.id, !isChecked, index, shiftKey);
+  };
+
   return (
-    <button
-      type="button"
+    <div
       onMouseDown={(e) => {
         if (e.shiftKey) {
           e.preventDefault();
         }
       }}
       onClick={(e) => {
-        if (isDisabled(item.id)) return;
-        const isChecked = selectedItems.items?.has(item.id);
-        onItemSelect(item.id, !isChecked, index, e.shiftKey);
+        if (e.target.closest('button, input, a, select, textarea')) return;
+        handleCardSelect(e.shiftKey);
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (
+          (e.key === 'Enter' || e.key === ' ') &&
+          !e.target.closest('button, input, a, select, textarea')
+        ) {
           e.preventDefault();
-          if (!isDisabled(item.id)) {
-            const isChecked = selectedItems.items?.has(item.id);
-            onItemSelect(item.id, !isChecked, index, e.shiftKey);
-          }
+          handleCardSelect(e.shiftKey);
         }
       }}
+      tabIndex={0}
       className={`${
         selectedItems.items?.has(item.id)
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
@@ -452,7 +457,7 @@ function ItemCard({
           )}
         </div>
       )}
-    </button>
+    </div>
   );
 }
 
