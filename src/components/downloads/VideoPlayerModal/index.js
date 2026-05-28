@@ -197,7 +197,13 @@ export default function VideoPlayerModal({
       document.removeEventListener('mousedown', handleClickOutside);
       if (sliderTimeout) clearTimeout(sliderTimeout);
     };
-  }, [isOpen, setShowVolumeSlider, setShowAudioMenu, setShowSubtitleMenu, setShowPlaybackSpeedMenu]);
+  }, [
+    isOpen,
+    setShowVolumeSlider,
+    setShowAudioMenu,
+    setShowSubtitleMenu,
+    setShowPlaybackSpeedMenu,
+  ]);
 
   // Update streamUrl when initialStreamUrl changes
   useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useCallback, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useSyncExternalStore, use } from 'react';
 
 const ThemeContext = createContext();
 
@@ -48,7 +48,7 @@ export function ThemeProvider({ children }) {
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
+  const context = use(ThemeContext);
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }

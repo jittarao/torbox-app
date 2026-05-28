@@ -848,7 +848,20 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
       setStatusFilter('all');
     },
-    [activeType, clearView, editingView, filterModalMode, search, setSort, sortDirection, sortField, setColumnFilters, setAppliedFilters, setSearch, setStatusFilter]
+    [
+      activeType,
+      clearView,
+      editingView,
+      filterModalMode,
+      search,
+      setSort,
+      sortDirection,
+      sortField,
+      setColumnFilters,
+      setAppliedFilters,
+      setSearch,
+      setStatusFilter,
+    ]
   );
 
   const sidebarProps = {

@@ -116,8 +116,6 @@ export default function BandwidthChart({ apiKey }) {
     }
   }, [apiKey, grouping, t]);
 
-
-
   useEffect(() => {
     if (!apiKey) {
       setLoading(false);

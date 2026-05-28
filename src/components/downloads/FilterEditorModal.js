@@ -70,7 +70,9 @@ export default function FilterEditorModal({
     setShowSaveInput(isCreateMode);
     setSaveSort(isEditMode ? !!editingView?.sort_field : false);
     setSaveColumns(isEditMode ? !!editingView?.visible_columns : false);
-    setSaveSearch(isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false);
+    setSaveSearch(
+      isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false
+    );
     setPreviewApplied(false);
   }
 

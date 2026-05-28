@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, use } from 'react';
 
 export const SidebarContext = createContext({
   collapsed: false,
@@ -8,5 +8,5 @@ export const SidebarContext = createContext({
 });
 
 export function useSidebar() {
-  return useContext(SidebarContext);
+  return use(SidebarContext);
 }

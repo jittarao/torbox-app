@@ -15,7 +15,8 @@ export default function ApiKeyManager({
   const tInput = useTranslations('ApiKeyInput');
   const [keys, setKeys] = useState(() => {
     try {
-      const storedKeys = localStorage.getItem('torboxApiKeys:v1') ?? localStorage.getItem('torboxApiKeys');
+      const storedKeys =
+        localStorage.getItem('torboxApiKeys:v1') ?? localStorage.getItem('torboxApiKeys');
       return storedKeys ? JSON.parse(storedKeys) : [];
     } catch (error) {
       console.error('Error parsing API keys from localStorage:', error);
