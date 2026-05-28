@@ -383,6 +383,44 @@ select option {
     @apply ui-header-icon-btn;
   }
 
+  .ui-tooltip {
+    @apply px-2.5 py-1.5 text-xs font-normal leading-snug rounded-lg
+      border border-zinc-200 bg-white text-zinc-800
+      shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25)]
+      dark:border-zinc-600 dark:bg-[#1a1a1d] dark:text-zinc-200
+      dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.85)];
+  }
+
+  .ui-tooltip-arrow {
+    @apply absolute top-full pointer-events-none leading-[0];
+    margin-top: -2px;
+  }
+
+  .ui-tooltip-arrow-svg {
+    @apply block h-[7px] w-3;
+  }
+
+  .ui-tooltip-arrow-fill {
+    fill: #fff;
+    stroke: none;
+  }
+
+  .ui-tooltip-arrow-stroke {
+    fill: none;
+    stroke: theme('colors.zinc.200');
+    stroke-width: 1;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .dark .ui-tooltip-arrow-fill {
+    fill: #1a1a1d;
+  }
+
+  .dark .ui-tooltip-arrow-stroke {
+    stroke: theme('colors.zinc.600');
+  }
+
   .ui-notification-item {
     @apply border-l-2 px-3 py-2.5 transition-colors duration-150
       hover:bg-zinc-200 dark:hover:bg-zinc-700;
