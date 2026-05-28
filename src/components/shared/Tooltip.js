@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useId } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 
 const activeTooltips = new Map();
@@ -27,8 +27,14 @@ function useCanHover() {
 
 export default function Tooltip({ children, content, position = 'top' }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [tooltipPosition, setTooltipPosition] = useState({
+    top: 0,
+    left: 0,
+    arrowLeft: 0,
+  });
   const triggerRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const positionRafRef = useRef(null);
   const tooltipId = useId();
   const canHover = useCanHover();
 
@@ -41,62 +47,82 @@ export default function Tooltip({ children, content, position = 'top' }) {
   const updatePosition = useCallback(() => {
     if (!triggerRef.current || !isVisible) return;
 
-    const rect = triggerRef.current.getBoundingClientRect();
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current?.getBoundingClientRect();
+    const tooltipWidth = tooltipRect?.width ?? 0;
+    const tooltipHeight = tooltipRect?.height ?? 0;
+
+    if (tooltipWidth === 0 || tooltipHeight === 0) {
+      if (tooltipRef.current) {
+        positionRafRef.current = requestAnimationFrame(updatePosition);
+      }
+      return;
+    }
+
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const edgePadding = 16;
 
-    let top, left;
+    let anchorX;
+    let anchorY;
 
     switch (position) {
-      case 'top':
-        top = rect.top - 4;
-        left = rect.left + rect.width / 2;
-        break;
       case 'bottom':
-        top = rect.top + rect.height + 4;
-        left = rect.left + rect.width / 2;
+        anchorY = triggerRect.top + triggerRect.height + 4;
+        anchorX = triggerRect.left + triggerRect.width / 2;
         break;
       case 'left':
-        top = rect.top + rect.height / 2;
-        left = rect.left - 4;
+        anchorY = triggerRect.top + triggerRect.height / 2;
+        anchorX = triggerRect.left - 4;
         break;
       case 'right':
-        top = rect.top + rect.height / 2;
-        left = rect.left + rect.width + 4;
+        anchorY = triggerRect.top + triggerRect.height / 2;
+        anchorX = triggerRect.left + triggerRect.width + 4;
         break;
+      case 'top':
       default:
-        top = rect.top - 4;
-        left = rect.left + rect.width / 2;
+        anchorY = triggerRect.top - 4;
+        anchorX = triggerRect.left + triggerRect.width / 2;
     }
 
-    const tooltipWidth = 500;
-    const tooltipHeight = 40;
-    const tooltipHalfWidth = tooltipWidth / 2;
-
-    let translateXOffset = 0;
-    let arrowOffset = '50%';
-
-    if (left - tooltipHalfWidth < 0) {
-      translateXOffset = -(tooltipHalfWidth - left);
-      arrowOffset = `${(left / tooltipWidth) * 100}%`;
-      left = tooltipHalfWidth;
-    } else if (left + tooltipHalfWidth > viewportWidth) {
-      translateXOffset = -(left + tooltipHalfWidth - viewportWidth);
-      arrowOffset = `${((viewportWidth - left) / tooltipWidth) * 100}%`;
-      left = viewportWidth - tooltipHalfWidth;
+    let tooltipLeft = anchorX - tooltipWidth / 2;
+    if (tooltipLeft < edgePadding) {
+      tooltipLeft = edgePadding;
+    } else if (tooltipLeft + tooltipWidth > viewportWidth - edgePadding) {
+      tooltipLeft = viewportWidth - edgePadding - tooltipWidth;
     }
 
-    if (top - tooltipHeight < 0) {
-      top = rect.bottom + 4;
-    } else if (top + tooltipHeight > viewportHeight) {
-      top = rect.top - tooltipHeight - 4;
+    let tooltipTop = anchorY;
+    if (anchorY - tooltipHeight < 0) {
+      tooltipTop = triggerRect.bottom + 4;
+    } else if (anchorY + tooltipHeight > viewportHeight) {
+      tooltipTop = triggerRect.top - tooltipHeight - 4;
     }
 
-    setTooltipPosition({ top, left, translateXOffset, arrowOffset });
+    const arrowMargin = 12;
+    const arrowLeft = Math.min(
+      Math.max(anchorX - tooltipLeft, arrowMargin),
+      tooltipWidth - arrowMargin
+    );
+
+    setTooltipPosition({
+      top: tooltipTop,
+      left: tooltipLeft,
+      arrowLeft,
+    });
   }, [isVisible, position]);
+
+  useLayoutEffect(() => {
+    if (!isVisible) return;
+    updatePosition();
+  }, [isVisible, content, updatePosition]);
 
   useEffect(() => {
     if (!isVisible) {
+      if (positionRafRef.current) {
+        cancelAnimationFrame(positionRafRef.current);
+        positionRafRef.current = null;
+      }
       activeTooltips.delete(tooltipId);
       return;
     }
@@ -135,6 +161,10 @@ export default function Tooltip({ children, content, position = 'top' }) {
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      if (positionRafRef.current) {
+        cancelAnimationFrame(positionRafRef.current);
+        positionRafRef.current = null;
+      }
       activeTooltips.delete(tooltipId);
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('resize', updatePosition);
@@ -154,7 +184,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
     position: 'fixed',
     top: tooltipPosition.top,
     left: tooltipPosition.left,
-    transform: `translate(calc(-50% + ${tooltipPosition.translateXOffset || 0}px), -100%)`,
+    transform: 'translateY(-100%)',
     zIndex: 9999,
     marginTop: -8,
     width: 'fit-content',
@@ -165,7 +195,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
   };
 
   const arrowPosition = {
-    left: tooltipPosition.arrowOffset || '50%',
+    left: tooltipPosition.arrowLeft,
     transform: 'translateX(-50%)',
   };
 
@@ -183,6 +213,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
       {isVisible &&
         createPortal(
           <div
+            ref={tooltipRef}
             style={tooltipStyles}
             className="ui-tooltip"
             role="tooltip"
