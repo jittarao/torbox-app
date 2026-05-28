@@ -151,7 +151,7 @@ export default function CardList({
 
       const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
       if (expandedItemsSet.has(row.item.id) && visibleFiles.length > 0) {
-        const fileRowHeight = isMobile ? 56 : 48;
+        const fileRowHeight = isMobile ? 72 : 48;
         const fileListHeader = 32;
         return baseHeight + fileListHeader + visibleFiles.length * fileRowHeight + gap;
       }
