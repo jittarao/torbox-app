@@ -6,6 +6,7 @@ import { encrypt, hashApiKey } from '../utils/crypto.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
+import { getMasterDbPath, getUserDbPath } from '../utils/dataPaths.js';
 
 /**
  * Master Database
@@ -18,11 +19,7 @@ class Database {
     this.initialized = false;
     /** @type {Map<string, import('bun:sqlite').Statement>} */
     this._statementCache = new Map();
-    // Master database path
-    const masterDbPath = process.env.MASTER_DB_PATH || '/app/data/master.db';
-    this.dbPath = masterDbPath.startsWith('sqlite://')
-      ? masterDbPath.replace('sqlite://', '')
-      : masterDbPath;
+    this.dbPath = getMasterDbPath();
 
     logger.info('Master database path', { dbPath: this.dbPath });
   }
@@ -315,7 +312,7 @@ class Database {
     if (!existingUser) {
       // Create user_registry entry if it doesn't exist
       // Use provided dbPath or a placeholder that will be updated by registerUser
-      const placeholderDbPath = dbPath || `/app/data/users/user_${authId}.sqlite`;
+      const placeholderDbPath = dbPath || getUserDbPath(authId);
       try {
         this.runQuery(
           `

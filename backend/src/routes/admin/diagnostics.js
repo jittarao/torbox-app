@@ -3,6 +3,7 @@ import path from 'path';
 import { Database as SQLiteDatabase } from 'bun:sqlite';
 import { sendSuccess, sendError, asyncHandler } from './helpers.js';
 import logger from '../../utils/logger.js';
+import { getUserDbDir } from '../../utils/dataPaths.js';
 
 /**
  * User Database Diagnostics Routes
@@ -14,7 +15,7 @@ export function setupDiagnosticsRoutes(router, backend) {
     '/diagnostics',
     asyncHandler(async (req, res) => {
       const masterDb = backend.masterDatabase;
-      const userDbDir = process.env.USER_DB_DIR || '/app/data/users';
+      const userDbDir = getUserDbDir();
 
       const diagnostics = {
         timestamp: new Date().toISOString(),

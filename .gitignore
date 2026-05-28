@@ -160,6 +160,7 @@ Thumbs.db
 
 # Project specific
 /data
+backend/data/
 /logs
 .next/cache/
 
