@@ -672,7 +672,7 @@ export default function MoreOptionsDropdown({
   );
 
   return (
-    <div className={mobileBar ? 'shrink-0' : 'relative'} ref={mobileBar ? undefined : menuRef}>
+    <div className={mobileBar ? 'ml-auto shrink-0' : 'relative'} ref={mobileBar ? undefined : menuRef}>
       <button
         type="button"
         ref={buttonRef}
