@@ -1,7 +1,7 @@
 import HomePageClient from './HomePageClient';
 
 export const metadata = {
-  title: 'Downloads',
+  title: 'TorBox Manager',
   description: 'Manage your TorBox downloads, torrents, and usenet files.',
 };
 
