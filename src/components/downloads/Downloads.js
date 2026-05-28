@@ -177,15 +177,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const canUseUsenet = hasDownloadAccess('usenet', permissions);
 
-  // If usenet is selected but user doesn't have Pro plan, switch to all
-  useEffect(() => {
-    if (!canUseUsenet && activeType === 'usenet') {
-      setActiveType('all');
-      localStorage.setItem(ASSET_TYPE_STORAGE_KEY, 'all');
-      setSelectedItems({ items: new Set(), files: new Map() });
-    }
-  }, [canUseUsenet, activeType, setActiveType, setSelectedItems]);
-
   // Function to collapse all files
   const collapseAllFiles = () => {
     searchExpandedItemIdsRef.current = new Set();
@@ -265,6 +256,15 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleRowSelect,
     setSelectedItems,
   } = useSelection(enrichedDownloads);
+
+  // If usenet is selected but user doesn't have Pro plan, switch to all
+  useEffect(() => {
+    if (!canUseUsenet && activeType === 'usenet') {
+      setActiveType('all');
+      localStorage.setItem(ASSET_TYPE_STORAGE_KEY, 'all');
+      setSelectedItems({ items: new Set(), files: new Map() });
+    }
+  }, [canUseUsenet, activeType, setActiveType, setSelectedItems]);
 
   const handleBulkDownloadComplete = useCallback(
     ({ succeeded, failed, total }) => {
