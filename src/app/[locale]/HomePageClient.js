@@ -26,30 +26,38 @@ const LandingPage = dynamic(() => import('@/components/LandingPage'), {
   ssr: false,
 });
 
-export default function HomePageClient() {
-  const [apiKey, setApiKey] = useState(() => {
-    try {
-      const storedKey = localStorage.getItem('torboxApiKey');
-      if (storedKey) return storedKey;
-      const storedKeys = localStorage.getItem('torboxApiKeys');
-      if (storedKeys) {
-        const keys = JSON.parse(storedKeys);
-        if (keys.length > 0) {
-          localStorage.setItem('torboxApiKey', keys[0].key);
-          return keys[0].key;
-        }
+function readStoredApiKey() {
+  try {
+    const storedKey = localStorage.getItem('torboxApiKey');
+    if (storedKey) return storedKey;
+    const storedKeys = localStorage.getItem('torboxApiKeys');
+    if (storedKeys) {
+      const keys = JSON.parse(storedKeys);
+      if (keys.length > 0) {
+        localStorage.setItem('torboxApiKey', keys[0].key);
+        return keys[0].key;
       }
-    } catch (error) {
-      console.error('Error loading API key from localStorage:', error);
     }
-    return '';
-  });
+  } catch (error) {
+    console.error('Error loading API key from localStorage:', error);
+  }
+  return '';
+}
+
+export default function HomePageClient() {
+  const [apiKey, setApiKey] = useState('');
+  const [apiKeyReady, setApiKeyReady] = useState(false);
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
+
+  useEffect(() => {
+    setApiKey(readStoredApiKey());
+    setApiKeyReady(true);
+  }, []);
 
   useEffect(() => {
     // Register protocol handler
@@ -126,7 +134,7 @@ export default function HomePageClient() {
     }
   };
 
-  if (!isClient) {
+  if (!isClient || !apiKeyReady) {
     return <div className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`} aria-hidden />;
   }
 
