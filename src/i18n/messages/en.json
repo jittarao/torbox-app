@@ -1025,7 +1025,7 @@
     }
   },
   "Statuses": {
-    "checking_resume_data": "Checking Resume Data",
+    "checking_resume_data": "Checking",
     "completed": "Completed",
     "downloading": "Downloading",
     "failed": "Failed",

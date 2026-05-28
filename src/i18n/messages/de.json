@@ -1003,7 +1003,7 @@
     }
   },
   "Statuses": {
-    "checking_resume_data": "Daten wiederherstellen überprüfen",
+    "checking_resume_data": "Prüfe…",
     "completed": "Abgeschlossen ",
     "downloading": "Herunterladen",
     "failed": "Fehlgeschlagen ",
