@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
 import {
   getTableRowSurfaceClasses,
+  tableRowFocusClasses,
   tableActionsCell,
   tableActionsCellInner,
   tableCheckboxCell,
@@ -294,7 +295,7 @@ function ItemRow({
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      className={`${rowSurfaceClass} ${!hasSelectedFiles && 'cursor-pointer'}`}
+      className={`${rowSurfaceClass} ${tableRowFocusClasses} ${!hasSelectedFiles && 'cursor-pointer'}`}
       style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
@@ -306,6 +307,8 @@ function ItemRow({
         // Ignore clicks on buttons or if has selected files
         if (e.target.closest('button') || hasSelectedFiles) return;
         handleItemSelection(selectionId, !isSelected, rowIndex, e.shiftKey);
+        // Mouse selection (incl. shift+range) must not leave a focus ring on the row
+        e.currentTarget.blur();
       }}
       onKeyDown={(e) => {
         if (

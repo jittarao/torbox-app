@@ -10,6 +10,9 @@
 export const tableRowSeparator =
   '[box-shadow:inset_0_-1px_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c]';
 
+/** Rows with tabIndex — suppress focus outline (shift+range select counts as focus-visible in some UAs) */
+export const tableRowFocusClasses = 'outline-none focus:outline-none focus-visible:outline-none';
+
 /**
  * Sticky actions cell shadows (one rule — arbitrary box-shadows override each other).
  * Bottom: row divider (<tr> inset does not paint on sticky cells).
