@@ -106,13 +106,14 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const canUseUsenet = hasDownloadAccess('usenet', permissions);
 
-  const collapseAllFiles = () => {
+  const collapseAllFiles = useCallback(() => {
     searchExpandedItemIdsRef.current = new Set();
     collapseAllExpanded();
-  };
+  }, [collapseAllExpanded]);
 
   const {
     loading,
+    refreshing,
     error: fetchError,
     fetchItems,
     dismissError,
@@ -125,14 +126,16 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const {
     viewItems,
     sortedItems,
+    visibleIds,
     downloadHistory,
     downloadHistoryLookup,
     tags,
+    tagMappings,
     updateTagName,
   } = useDownloadsListData(activeType, apiKey, isBackendAvailable);
 
   const showFullPageSpinner = loading && viewItems.length === 0;
-  const isRefreshing = loading && viewItems.length > 0;
+  const isRefreshing = refreshing || (loading && viewItems.length > 0);
 
   const { fetchDownloadHistory } = useDownloadsHistoryMigration(
     apiKey,
@@ -140,13 +143,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     backendIsLoading
   );
 
-  const expandAllFiles = () => {
+  const expandAllFiles = useCallback(() => {
     searchExpandedItemIdsRef.current = new Set();
     const itemIds = viewItems
       .filter((item) => item.files && item.files.length > 0)
       .map((item) => item.id);
     expandIds(itemIds);
-  };
+  }, [viewItems, expandIds]);
 
   const {
     selectedItems,
@@ -293,9 +296,9 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     }
   }, [search, sortedItems, selectedItems.files, expandedById, setExpanded]);
 
-  const onFullscreenToggle = () => {
+  const onFullscreenToggle = useCallback(() => {
     setIsFullscreen((prev) => !prev);
-  };
+  }, []);
 
   // Reset scroll when entering fullscreen so virtualization starts from the top
   useLayoutEffect(() => {
@@ -389,10 +392,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     }
   };
 
-  const toggleFiles = (itemId) => {
-    searchExpandedItemIdsRef.current.delete(itemId);
-    toggleExpanded(itemId);
-  };
+  const toggleFiles = useCallback(
+    (itemId) => {
+      searchExpandedItemIdsRef.current.delete(itemId);
+      toggleExpanded(itemId);
+    },
+    [toggleExpanded]
+  );
 
   useEffect(() => {
     hasExpandedRef.current = false;
@@ -442,25 +448,46 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     ? FILTERS_SIDEBAR_COLLAPSED
     : FILTERS_SIDEBAR_EXPANDED;
 
-  const sidebarProps = {
-    apiKey,
-    views,
-    activeView,
-    tags,
-    activeAssetType: activeType,
-    activeTagIds,
-    onApplyView: handleApplyView,
-    onClearView: handleClearFilters,
-    onApplyTag: handleApplyTag,
-    onEditView: handleEditView,
-    onRenameView: handleRenameView,
-    onRenameTag: handleRenameTag,
-    onDeleteTag: handleTagDeleted,
-    onNewFilter: handleOpenNewFilter,
-    onNewView: handleOpenNewView,
-    onNewTag: handleNewTag,
-    onManageTags: handleManageTags,
-  };
+  const sidebarProps = useMemo(
+    () => ({
+      apiKey,
+      views,
+      activeView,
+      tags,
+      activeAssetType: activeType,
+      activeTagIds,
+      onApplyView: handleApplyView,
+      onClearView: handleClearFilters,
+      onApplyTag: handleApplyTag,
+      onEditView: handleEditView,
+      onRenameView: handleRenameView,
+      onRenameTag: handleRenameTag,
+      onDeleteTag: handleTagDeleted,
+      onNewFilter: handleOpenNewFilter,
+      onNewView: handleOpenNewView,
+      onNewTag: handleNewTag,
+      onManageTags: handleManageTags,
+    }),
+    [
+      apiKey,
+      views,
+      activeView,
+      tags,
+      activeType,
+      activeTagIds,
+      handleApplyView,
+      handleClearFilters,
+      handleApplyTag,
+      handleEditView,
+      handleRenameView,
+      handleRenameTag,
+      handleTagDeleted,
+      handleOpenNewFilter,
+      handleOpenNewView,
+      handleNewTag,
+      handleManageTags,
+    ]
+  );
 
   const downloadsTableContent = (
     <>
@@ -537,7 +564,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         />
       ) : (
         <CardList
-          items={sortedItems}
+          entityKeys={visibleIds}
+          tagMappings={tagMappings}
           fileSearch={search}
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}

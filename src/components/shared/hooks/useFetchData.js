@@ -35,25 +35,25 @@ export function useFetchData(apiKey, type = 'torrents') {
 
   const {
     loading,
+    refreshing,
     error,
     lastSuccessfulFetchAt,
     refreshBlockedReason,
     pollSchedule,
     canManualRefresh,
-    dismissError,
-    setPollSchedule,
   } = useTorboxDownloadsStore(
     useShallow((s) => ({
       loading: s.loading,
+      refreshing: s.refreshing,
       error: s.error,
       lastSuccessfulFetchAt: s.lastSuccessfulFetchAt,
       refreshBlockedReason: s.refreshBlockedReason,
       pollSchedule: s.pollSchedule,
       canManualRefresh: s.canManualRefresh,
-      dismissError: s.dismissError,
-      setPollSchedule: s.setPollSchedule,
     }))
   );
+  const dismissError = useTorboxDownloadsStore((s) => s.dismissError);
+  const setPollSchedule = useTorboxDownloadsStore((s) => s.setPollSchedule);
 
   const syncManualRefreshAllowed = useCallback(() => {
     syncCanManualRefresh(type);
@@ -128,7 +128,11 @@ export function useFetchData(apiKey, type = 'torrents') {
         return Promise.resolve([]);
       }
 
-      return fetchDownloadsForView(apiKey, type, { bypassCache, skipLoading: true });
+      return fetchDownloadsForView(apiKey, type, {
+        bypassCache,
+        skipLoading: true,
+        manualRefresh: true,
+      });
     };
   }, [type, apiKey, markRateLimited]);
 
@@ -164,6 +168,7 @@ export function useFetchData(apiKey, type = 'torrents') {
 
   return {
     loading,
+    refreshing,
     error,
     fetchItems,
     dismissError,

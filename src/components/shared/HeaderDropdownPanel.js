@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-
-const MOBILE_MEDIA_QUERY = '(max-width: 767px)';
+import useIsMobile from '@/hooks/useIsMobile';
 
 export default function HeaderDropdownPanel({
   open,
@@ -15,16 +14,7 @@ export default function HeaderDropdownPanel({
 }) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_MEDIA_QUERY).matches
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
-    const update = () => setIsMobile(mediaQuery.matches);
-    mediaQuery.addEventListener('change', update);
-    return () => mediaQuery.removeEventListener('change', update);
-  }, []);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {

@@ -7,7 +7,7 @@ export default function AdminHeader() {
   const { push } = useRouter();
   const params = useParams();
   const locale = params?.locale || 'en';
-  const { logout } = useAdminStore();
+  const logout = useAdminStore((s) => s.logout);
 
   const handleLogout = () => {
     logout();

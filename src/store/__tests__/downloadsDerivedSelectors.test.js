@@ -84,4 +84,29 @@ describe('downloadsDerivedSelectors', () => {
     expect(visible).toHaveLength(2);
     expect(visible[0]).toBe(entityKey('torrents', 1));
   });
+
+  test('selectVisibleSortedIds accepts prebuilt download history lookup', () => {
+    const torboxState = {
+      entities,
+      order: { torrents: ids, usenet: [], webdl: [] },
+    };
+    const lookup = {
+      itemDownloads: new Set(['torrents:1']),
+      fileDownloads: new Set(),
+    };
+    const visible = selectVisibleSortedIds(
+      torboxState,
+      'torrents',
+      {
+        search: '',
+        statusFilter: 'all',
+        appliedFilters: EMPTY_FILTERS,
+        sortField: 'name',
+        sortDirection: 'asc',
+      },
+      {},
+      lookup
+    );
+    expect(visible).toHaveLength(2);
+  });
 });

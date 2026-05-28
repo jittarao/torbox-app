@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import Script from 'next/script';
 import { RybbitHeadScripts } from '@/components/RybbitHeadScripts';
 import { defaultLocale } from '@/i18n/settings';
@@ -12,6 +12,11 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
 });
 
 const themeScript = `
@@ -44,7 +49,7 @@ export function RootDocumentShell({ locale, children }) {
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark antialiased font-sans`}
         suppressHydrationWarning
       >
         {children}

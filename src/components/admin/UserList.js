@@ -16,7 +16,9 @@ export default function UserList({
   onSearch,
   onUsersUpdated,
 }) {
-  const { deleteUser, updateUserStatus, fetchUsers } = useAdminStore();
+  const deleteUser = useAdminStore((s) => s.deleteUser);
+  const updateUserStatus = useAdminStore((s) => s.updateUserStatus);
+  const fetchUsers = useAdminStore((s) => s.fetchUsers);
   const [deleting, setDeleting] = useState(null);
   const [reactivating, setReactivating] = useState(false);
   const [searchValue, setSearchValue] = useState(filters?.search || '');

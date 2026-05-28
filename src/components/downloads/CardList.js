@@ -11,18 +11,26 @@ import useIsMobile from '@/hooks/useIsMobile';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import { useStream } from '../shared/hooks/useStream';
-import ItemCard from './ItemCard';
+import DownloadCardContainer from './DownloadCardContainer';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
 import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
-import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 
+function parseEntityKey(entityKey) {
+  const sep = entityKey.indexOf(':');
+  if (sep === -1) return { assetType: 'torrents', id: entityKey };
+  return { assetType: entityKey.slice(0, sep), id: entityKey.slice(sep + 1) };
+}
+
 export default function CardList({
-  items,
+  entityKeys,
+  tagMappings = {},
   selectedItems,
   setSelectedItems,
   apiKey,
@@ -109,8 +117,12 @@ export default function CardList({
     };
   }, [isFullscreen, viewMode]);
 
-  // Defer items update to prevent synchronous updates during render
-  const deferredItems = useDeferredValue(items);
+  const deferredEntityKeys = useDeferredValue(entityKeys);
+  const entities = useTorboxDownloadsStore((state) => state.entities);
+  const rowItems = useMemo(
+    () => deferredEntityKeys.map((key) => entities[key]).filter(Boolean),
+    [deferredEntityKeys, entities]
+  );
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const deferredExpandedById = useDeferredValue(expandedById);
 
@@ -123,11 +135,11 @@ export default function CardList({
   }, [deferredExpandedById]);
 
   const flattenedRows = useMemo(() => {
-    return deferredItems.map((item, itemIndex) => ({
-      item,
+    return deferredEntityKeys.map((key, itemIndex) => ({
+      entityKey: key,
       itemIndex,
     }));
-  }, [deferredItems]);
+  }, [deferredEntityKeys]);
 
   // Include margin-bottom (cardListItemGap) so variable-height cards stack with correct spacing
   const measureElement = useCallback((element) => {
@@ -146,8 +158,12 @@ export default function CardList({
         return baseHeight + gap;
       }
 
-      const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
-      if (expandedItemsSet.has(row.item.id) && visibleFiles.length > 0) {
+      const entity = useTorboxDownloadsStore.getState().entities[row.entityKey];
+      if (!entity) {
+        return baseHeight + gap;
+      }
+      const visibleFiles = getFilesVisibleForDownloadSearch(entity, fileSearch);
+      if (expandedItemsSet.has(entity.id) && visibleFiles.length > 0) {
         const fileRowHeight = isMobile ? 72 : 48;
         const fileListHeader = 32;
         return baseHeight + fileListHeader + visibleFiles.length * fileRowHeight + gap;
@@ -166,7 +182,7 @@ export default function CardList({
     count: flattenedRows.length,
     estimateSize,
     measureElement,
-    overscan: 30,
+    overscan: 10,
     scrollMargin: containerOffsetTop,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
@@ -178,7 +194,7 @@ export default function CardList({
     getScrollElement,
     estimateSize,
     measureElement,
-    overscan: 30,
+    overscan: 10,
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
@@ -202,7 +218,7 @@ export default function CardList({
     lastClickedItemIndexRef,
     lastClickedFileIndexRef,
   } = useDownloadRowInteractions({
-    items,
+    items: rowItems,
     activeType,
     fileSearch,
     onFileSelect,
@@ -385,28 +401,35 @@ export default function CardList({
     [assetKey, onAudioPlay, setToast]
   );
 
-  // Create a lookup map for efficient item assetType retrieval
-  const itemAssetTypeMap = useMemo(() => {
-    const map = new Map();
-    items.forEach((item) => {
-      map.set(String(item.id), item.assetType);
-    });
-    return map;
-  }, [items]);
+  const isItemDownloaded = useCallback(
+    (itemId) => {
+      const key = deferredEntityKeys.find((entityKey) => {
+        const { id } = parseEntityKey(entityKey);
+        return String(id) === String(itemId);
+      });
+      if (!key) return false;
+      const { assetType, id } = parseEntityKey(key);
+      return downloadHistoryLookup.itemDownloads.has(`${assetType}:${String(id)}`);
+    },
+    [deferredEntityKeys, downloadHistoryLookup]
+  );
 
-  const isItemDownloaded = (itemId) => {
-    const itemAssetType = itemAssetTypeMap.get(String(itemId));
-    return downloadHistoryLookup.itemDownloads.has(`${itemAssetType}:${String(itemId)}`);
-  };
-
-  const isFileDownloaded = (itemId, fileId) => {
-    const itemAssetType = itemAssetTypeMap.get(String(itemId));
-    const itemKey = `${itemAssetType}:${String(itemId)}`;
-    return (
-      downloadHistoryLookup.itemDownloads.has(itemKey) ||
-      downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(fileId)}`)
-    );
-  };
+  const isFileDownloaded = useCallback(
+    (itemId, fileId) => {
+      const key = deferredEntityKeys.find((entityKey) => {
+        const { id } = parseEntityKey(entityKey);
+        return String(id) === String(itemId);
+      });
+      if (!key) return false;
+      const { assetType, id } = parseEntityKey(key);
+      const itemKey = `${assetType}:${String(id)}`;
+      return (
+        downloadHistoryLookup.itemDownloads.has(itemKey) ||
+        downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(fileId)}`)
+      );
+    },
+    [deferredEntityKeys, downloadHistoryLookup]
+  );
 
   const expandedItemsKey = useMemo(
     () => Object.keys(deferredExpandedById).sort().join(','),
@@ -440,17 +463,19 @@ export default function CardList({
 
           const row = flattenedRows[virtualRow.index];
 
-          if (!row || !row.item) return [];
+          if (!row?.entityKey) return [];
 
           return (
             <div
-              key={`item-${row.item.id}`}
+              key={row.entityKey}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
               className={cardListItemGap}
             >
-              <ItemCard
-                item={row.item}
+              <DownloadCardContainer
+                entityKey={row.entityKey}
+                tagMappings={tagMappings}
+                downloadHistoryLookup={downloadHistoryLookup}
                 index={row.itemIndex}
                 isItemDownloaded={isItemDownloaded}
                 isFileDownloaded={isFileDownloaded}

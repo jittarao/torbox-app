@@ -202,10 +202,7 @@ class AdminApiClient {
       throw new Error('Admin key not set');
     }
 
-    const downloadUrl = `/api/admin/databases/${authId}/backup/${filename}?adminKey=${encodeURIComponent(adminKey)}`;
-
-    // Return URL for download
-    return downloadUrl;
+    return `/api/admin/databases/${authId}/backup/${filename}`;
   }
 
   async vacuumDatabase(authId) {

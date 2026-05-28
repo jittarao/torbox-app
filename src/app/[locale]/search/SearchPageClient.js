@@ -8,10 +8,6 @@ import { hasDownloadAccess } from '@/utils/userProfile';
 import { useSearchStore } from '@/store/searchStore';
 import { useSession } from '@/components/shared/hooks/useSession';
 
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-
 export default function SearchPageClient() {
   const { apiKey, permissions, setApiKey } = useSession();
 
@@ -59,7 +55,7 @@ export default function SearchPageClient() {
   return (
     <AppShell
       apiKey={apiKey}
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans text-primary-text dark:text-primary-text-dark`}
+      className="min-h-screen bg-surface dark:bg-surface-dark font-sans text-primary-text dark:text-primary-text-dark"
     >
       <div className="max-w-7xl mx-auto p-4">
         <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />

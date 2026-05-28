@@ -9,7 +9,9 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { push } = useRouter();
-  const { authenticate, isAuthenticated, verifyAuth } = useAdminStore();
+  const authenticate = useAdminStore((s) => s.authenticate);
+  const isAuthenticated = useAdminStore((s) => s.isAuthenticated);
+  const verifyAuth = useAdminStore((s) => s.verifyAuth);
 
   useEffect(() => {
     // Check if already authenticated

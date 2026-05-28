@@ -12,7 +12,8 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const params = useParams();
   const locale = params?.locale || 'en';
-  const { isAuthenticated, verifyAuth } = useAdminStore();
+  const isAuthenticated = useAdminStore((s) => s.isAuthenticated);
+  const verifyAuth = useAdminStore((s) => s.verifyAuth);
 
   useEffect(() => {
     // Verify authentication on mount and route changes

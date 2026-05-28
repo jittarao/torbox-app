@@ -33,7 +33,8 @@ export const useTagsStore = create((set, get) => ({
       get().setApiKey(apiKey);
     }
 
-    set({ loading: true, error: null });
+    const requestId = get().activeRequestId + 1;
+    set({ loading: true, error: null, activeRequestId: requestId });
     try {
       const response = await fetch('/api/tags', {
         headers: {
@@ -41,17 +42,28 @@ export const useTagsStore = create((set, get) => ({
         },
       });
 
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to load tags');
       }
 
       const data = await response.json();
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
+
       if (data.success) {
         set({ tags: data.tags || [], loading: false });
       } else {
         throw new Error(data.error || 'Failed to load tags');
       }
     } catch (err) {
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
       console.error('Error loading tags:', err);
       set({ error: err.message, loading: false });
     }

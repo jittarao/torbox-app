@@ -101,7 +101,15 @@ async function checkAndAutoStartTorrents(items, apiKey, viewType) {
   }
 }
 
-function handleFetchError(fetchError, activeType, viewType, currentFetchId, skipLoading, responseStatus) {
+function handleFetchError(
+  fetchError,
+  activeType,
+  viewType,
+  currentFetchId,
+  skipLoading,
+  responseStatus,
+  manualRefresh = false
+) {
   const store = useTorboxDownloadsStore.getState();
   perfMonitor.endTimer(`fetch-${activeType}`);
 
@@ -135,6 +143,9 @@ function handleFetchError(fetchError, activeType, viewType, currentFetchId, skip
   if (!skipLoading) {
     store.setLoading(false);
   }
+  if (manualRefresh) {
+    store.setRefreshing(false);
+  }
   return [];
 }
 
@@ -144,28 +155,32 @@ function handleFetchError(fetchError, activeType, viewType, currentFetchId, skip
  * @param {string} apiKey
  * @param {'torrents' | 'usenet' | 'webdl'} activeType
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType — active UI tab (poll scope + errors)
- * @param {{ bypassCache?: boolean, retryCount?: number, skipLoading?: boolean }} [options]
+ * @param {{ bypassCache?: boolean, retryCount?: number, skipLoading?: boolean, manualRefresh?: boolean }} [options]
  */
 export async function fetchDownloadType(
   apiKey,
   activeType,
   viewType,
-  { bypassCache = false, retryCount = 0, skipLoading = false } = {}
+  { bypassCache = false, retryCount = 0, skipLoading = false, manualRefresh = false } = {}
 ) {
   const store = useTorboxDownloadsStore.getState();
 
   if (retryCount > 1) {
     console.error('Max retry attempts reached, giving up');
     if (!skipLoading) store.setLoading(false);
+    if (manualRefresh) store.setRefreshing(false);
     return [];
   }
 
   if (!apiKey) {
     if (!skipLoading) store.setLoading(false);
+    if (manualRefresh) store.setRefreshing(false);
     return [];
   }
 
-  if (!skipLoading) {
+  if (manualRefresh) {
+    store.setRefreshing(true);
+  } else if (!skipLoading) {
     store.setLoading(true);
   }
 
@@ -177,8 +192,14 @@ export async function fetchDownloadType(
       store.markRateLimited();
     }
     if (!skipLoading) store.setLoading(false);
+    if (manualRefresh) store.setRefreshing(false);
     return [];
   }
+
+  const finishFetchFlags = () => {
+    if (!skipLoading) store.setLoading(false);
+    if (manualRefresh) store.setRefreshing(false);
+  };
 
   const now = Date.now();
   const isLatestFetch = () =>
@@ -203,7 +224,7 @@ export async function fetchDownloadType(
 
   try {
     if (!isLatestFetch()) {
-      if (!skipLoading) store.setLoading(false);
+      finishFetchFlags();
       return [];
     }
 
@@ -232,7 +253,8 @@ export async function fetchDownloadType(
         viewType,
         currentFetchId,
         skipLoading,
-        response.status
+        response.status,
+        manualRefresh
       );
     }
 
@@ -245,11 +267,14 @@ export async function fetchDownloadType(
         activeType,
         viewType,
         currentFetchId,
-        skipLoading
+        skipLoading,
+        null,
+        manualRefresh
       );
     }
 
     if (!isLatestFetch()) {
+      finishFetchFlags();
       return [];
     }
 
@@ -265,6 +290,7 @@ export async function fetchDownloadType(
           bypassCache: true,
           retryCount: retryCount + 1,
           skipLoading,
+          manualRefresh,
         });
       }
 
@@ -294,6 +320,7 @@ export async function fetchDownloadType(
       }
 
       if (!isLatestFetch()) {
+        finishFetchFlags();
         return [];
       }
 
@@ -312,9 +339,7 @@ export async function fetchDownloadType(
         syncCanManualRefresh(viewType);
       }
 
-      if (!skipLoading) {
-        store.setLoading(false);
-      }
+      finishFetchFlags();
 
       return sortedItems;
     }
@@ -323,7 +348,7 @@ export async function fetchDownloadType(
       if (affectsCurrentView(activeType, viewType)) {
         store.markFetchSuccess();
       }
-      if (!skipLoading) store.setLoading(false);
+      finishFetchFlags();
       return [];
     }
 
@@ -333,42 +358,69 @@ export async function fetchDownloadType(
       console.warn(`Invalid ${activeType} data format:`, data);
     }
 
-    if (!skipLoading) store.setLoading(false);
+    finishFetchFlags();
     return [];
   } catch (err) {
-    return handleFetchError(err, activeType, viewType, currentFetchId, skipLoading);
+    return handleFetchError(err, activeType, viewType, currentFetchId, skipLoading, null, manualRefresh);
   }
 }
 
 /**
  * @param {string} apiKey
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType
- * @param {{ bypassCache?: boolean, skipLoading?: boolean }} [options]
+ * @param {{ bypassCache?: boolean, skipLoading?: boolean, manualRefresh?: boolean }} [options]
  */
 export async function fetchDownloadsForView(
   apiKey,
   viewType,
-  { bypassCache = false, skipLoading = false, retryCount = 0 } = {}
+  { bypassCache = false, skipLoading = false, retryCount = 0, manualRefresh = false } = {}
 ) {
+  const store = useTorboxDownloadsStore.getState();
+
   if (viewType === 'all') {
-    const results = await Promise.allSettled([
-      fetchDownloadType(apiKey, 'torrents', viewType, { bypassCache, retryCount, skipLoading: true }),
-      fetchDownloadType(apiKey, 'usenet', viewType, { bypassCache, retryCount, skipLoading: true }),
-      fetchDownloadType(apiKey, 'webdl', viewType, { bypassCache, retryCount, skipLoading: true }),
-    ]);
-
-    const flattened = results
-      .map((r) => (r.status === 'fulfilled' ? r.value : []))
-      .flat();
-
-    if (!skipLoading) {
-      useTorboxDownloadsStore.getState().setLoading(false);
+    if (manualRefresh) {
+      store.setRefreshing(true);
+    } else if (!skipLoading) {
+      store.setLoading(true);
     }
-    return flattened;
+
+    try {
+      const results = await Promise.allSettled([
+        fetchDownloadType(apiKey, 'torrents', viewType, {
+          bypassCache,
+          retryCount,
+          skipLoading: true,
+        }),
+        fetchDownloadType(apiKey, 'usenet', viewType, {
+          bypassCache,
+          retryCount,
+          skipLoading: true,
+        }),
+        fetchDownloadType(apiKey, 'webdl', viewType, {
+          bypassCache,
+          retryCount,
+          skipLoading: true,
+        }),
+      ]);
+
+      return results.map((r) => (r.status === 'fulfilled' ? r.value : [])).flat();
+    } finally {
+      if (!skipLoading) {
+        store.setLoading(false);
+      }
+      if (manualRefresh) {
+        store.setRefreshing(false);
+      }
+    }
   }
 
   const activeType = viewType === 'usenet' ? 'usenet' : viewType === 'webdl' ? 'webdl' : 'torrents';
-  return fetchDownloadType(apiKey, activeType, viewType, { bypassCache, retryCount, skipLoading });
+  return fetchDownloadType(apiKey, activeType, viewType, {
+    bypassCache,
+    retryCount,
+    skipLoading,
+    manualRefresh,
+  });
 }
 
 export function syncCanManualRefresh(viewType) {

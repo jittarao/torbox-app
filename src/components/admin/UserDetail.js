@@ -8,7 +8,7 @@ export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [automationInfo, setAutomationInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { updateUserStatus } = useAdminStore();
+  const updateUserStatus = useAdminStore((s) => s.updateUserStatus);
 
   useEffect(() => {
     const loadDetails = async () => {

@@ -9,8 +9,12 @@ import Toast from '@/components/shared/Toast';
 
 export default function AdminUsersPage() {
   const { push } = useRouter();
-  const { users, usersLoading, usersPagination, userFilters, fetchUsers, setUserFilter } =
-    useAdminStore();
+  const users = useAdminStore((s) => s.users);
+  const usersLoading = useAdminStore((s) => s.usersLoading);
+  const usersPagination = useAdminStore((s) => s.usersPagination);
+  const userFilters = useAdminStore((s) => s.userFilters);
+  const fetchUsers = useAdminStore((s) => s.fetchUsers);
+  const setUserFilter = useAdminStore((s) => s.setUserFilter);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
