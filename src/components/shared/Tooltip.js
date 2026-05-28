@@ -1,10 +1,42 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
+
+const activeTooltips = new Map();
+
+function closeOtherTooltips(exceptId) {
+  activeTooltips.forEach((close, id) => {
+    if (id !== exceptId) close();
+  });
+}
+
+function useCanHover() {
+  const [canHover, setCanHover] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const onChange = (e) => setCanHover(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  return canHover;
+}
 
 export default function Tooltip({ children, content, position = 'top' }) {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
+  const tooltipId = useId();
+  const canHover = useCanHover();
+
+  const hide = useCallback(() => setIsVisible(false), []);
+  const show = useCallback(() => {
+    closeOtherTooltips(tooltipId);
+    setIsVisible(true);
+  }, [tooltipId]);
 
   const updatePosition = useCallback(() => {
     if (!triggerRef.current || !isVisible) return;
@@ -37,42 +69,49 @@ export default function Tooltip({ children, content, position = 'top' }) {
         left = rect.left + rect.width / 2;
     }
 
-    // Ensure tooltip stays within viewport bounds
-    const tooltipWidth = 500; // Approximate max width
-    const tooltipHeight = 40; // Approximate height
+    const tooltipWidth = 500;
+    const tooltipHeight = 40;
     const tooltipHalfWidth = tooltipWidth / 2;
 
     let translateXOffset = 0;
     let arrowOffset = '50%';
 
     if (left - tooltipHalfWidth < 0) {
-      // If tooltip would go off left edge, pin it to left edge and adjust transform
       translateXOffset = -(tooltipHalfWidth - left);
       arrowOffset = `${(left / tooltipWidth) * 100}%`;
       left = tooltipHalfWidth;
     } else if (left + tooltipHalfWidth > viewportWidth) {
-      // If tooltip would go off right edge, pin it to right edge and adjust transform
       translateXOffset = -(left + tooltipHalfWidth - viewportWidth);
       arrowOffset = `${((viewportWidth - left) / tooltipWidth) * 100}%`;
       left = viewportWidth - tooltipHalfWidth;
     }
 
-    // Adjust vertical position if tooltip would go off screen
     if (top - tooltipHeight < 0) {
-      top = rect.bottom + 4; // Switch to bottom position
+      top = rect.bottom + 4;
     } else if (top + tooltipHeight > viewportHeight) {
-      top = rect.top - tooltipHeight - 4; // Switch to top position
+      top = rect.top - tooltipHeight - 4;
     }
 
     setTooltipPosition({ top, left, translateXOffset, arrowOffset });
-  }, [isVisible, position, setTooltipPosition]);
+  }, [isVisible, position]);
 
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible) {
+      activeTooltips.delete(tooltipId);
+      return;
+    }
 
-    const hide = () => setIsVisible(false);
+    activeTooltips.set(tooltipId, hide);
+    closeOtherTooltips(tooltipId);
+
+    const onPointerDownOutside = (e) => {
+      const trigger = triggerRef.current;
+      if (!trigger || trigger.contains(e.target)) return;
+      hide();
+    };
 
     const onPointerMove = (e) => {
+      if (!canHover) return;
       const trigger = triggerRef.current;
       if (!trigger) {
         hide();
@@ -91,16 +130,25 @@ export default function Tooltip({ children, content, position = 'top' }) {
     updatePosition();
     window.addEventListener('scroll', hide, true);
     window.addEventListener('resize', updatePosition);
+    document.addEventListener('pointerdown', onPointerDownOutside, true);
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      activeTooltips.delete(tooltipId);
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('resize', updatePosition);
+      document.removeEventListener('pointerdown', onPointerDownOutside, true);
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [isVisible, updatePosition]);
+  }, [isVisible, updatePosition, hide, tooltipId, canHover]);
+
+  useEffect(() => {
+    if (!isVisible || canHover) return;
+    const timer = setTimeout(hide, 2500);
+    return () => clearTimeout(timer);
+  }, [isVisible, canHover, hide]);
 
   const tooltipStyles = {
     position: 'fixed',
@@ -132,8 +180,9 @@ export default function Tooltip({ children, content, position = 'top' }) {
     <div
       ref={triggerRef}
       className="w-fit max-w-full"
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
+      onMouseEnter={canHover ? show : undefined}
+      onMouseLeave={canHover ? hide : undefined}
+      onPointerDown={!canHover ? show : undefined}
     >
       {children}
       {isVisible &&
