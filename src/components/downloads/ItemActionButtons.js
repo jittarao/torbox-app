@@ -51,8 +51,13 @@ export default function ItemActionButtons({
 
   const handleDownload = async (e) => {
     e.stopPropagation();
-    await onDownload();
-    phEvent('download_item');
+    setIsDownloading(true);
+    try {
+      await onDownload();
+      phEvent('download_item');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleDelete = async (e) => {
@@ -107,6 +112,21 @@ export default function ItemActionButtons({
         </button>
       )}
 
+      {/* Download — on card for mobileBar; in row for desktop */}
+      {item.download_present && (!compact || mobileBar) && (
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={isDownloading}
+          className={`${tableIconButtonClass} text-accent dark:text-accent-dark 
+          hover:bg-accent/5 dark:hover:bg-accent-dark/5`}
+          title={t('download.title')}
+          aria-label={t('download.label')}
+        >
+          {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
+        </button>
+      )}
+
       {/* Toggle files button */}
       {item.download_present && (
         <button
@@ -138,20 +158,6 @@ export default function ItemActionButtons({
           ) : (
             <Icons.ChevronDown />
           )}
-        </button>
-      )}
-
-      {/* Download / delete — hidden on compact mobile; surfaced in MoreOptionsDropdown */}
-      {!compact && item.download_present && (
-        <button
-          type="button"
-          onClick={handleDownload}
-          disabled={isDownloading}
-          className={`${tableIconButtonClass} text-accent dark:text-accent-dark 
-          hover:bg-accent/5 dark:hover:bg-accent-dark/5`}
-          title={t('download.title')}
-        >
-          {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
         </button>
       )}
 

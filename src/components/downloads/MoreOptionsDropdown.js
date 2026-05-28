@@ -200,7 +200,15 @@ function MenuItems({
   }
 
   if (menuVariant === 'sheet') {
-    return <ul className="space-y-0.5 px-2 py-1">{items.map((node) => <li key={node.key}>{node}</li>)}</ul>;
+    return (
+      <ul className="w-full space-y-0.5 px-2 py-1">
+        {items.map((node) => (
+          <li key={node.key} className="w-full">
+            {node}
+          </li>
+        ))}
+      </ul>
+    );
   }
 
   return items;
@@ -663,8 +671,6 @@ export default function MoreOptionsDropdown({
     />
   );
 
-  const itemSubtitle = item.name?.trim() || item.id;
-
   return (
     <div className={mobileBar ? 'shrink-0' : 'relative'} ref={mobileBar ? undefined : menuRef}>
       <button
@@ -706,8 +712,7 @@ export default function MoreOptionsDropdown({
             <dialog
               ref={menuRef}
               aria-label={t('title')}
-              className="z-overlay-panel fixed inset-x-0 bottom-0 flex max-h-[min(85dvh,28rem)] flex-col rounded-t-2xl border border-border/60 bg-surface shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:border-border-dark/60 dark:bg-surface-dark"
-              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex' }}
+              className="ui-bottom-sheet z-overlay-panel fixed bottom-0 left-0 right-0 flex max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border-0 border-t border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark"
               open={isMenuOpen}
             >
               <div className="flex shrink-0 justify-center pt-2.5 pb-1">
@@ -716,15 +721,10 @@ export default function MoreOptionsDropdown({
                   aria-hidden
                 />
               </div>
-              <div className="flex items-start justify-between gap-3 border-b border-border/40 px-4 py-2 dark:border-border-dark/40">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
-                    {t('title')}
-                  </h2>
-                  <p className="mt-0.5 truncate text-xs text-primary-text/55 dark:text-primary-text-dark/55">
-                    {itemSubtitle}
-                  </p>
-                </div>
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/40 px-4 py-2.5 dark:border-border-dark/40">
+                <h2 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
+                  {t('title')}
+                </h2>
                 <button
                   type="button"
                   onClick={() => setIsMenuOpen(false)}
@@ -748,7 +748,7 @@ export default function MoreOptionsDropdown({
                   </svg>
                 </button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] pt-1">
                 {menuItemsElement}
               </div>
             </dialog>

@@ -393,11 +393,6 @@ function ItemCard({
             ) : (
               <>
                 <span>{formatSize(item.size || 0)}</span>{' '}
-                {item.ratio !== undefined && item.ratio !== null && (
-                  <>
-                    <span>{item.ratio.toFixed(2)}</span>{' '}
-                  </>
-                )}
                 <span>{timeAgo(item.created_at, commonT)}</span>
               </>
             )}

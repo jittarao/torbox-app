@@ -151,7 +151,7 @@ export default function ItemActions({
       activeType={activeType}
       compact={compact && !mobileBar}
       mobileBar={mobileBar}
-      showDownload={(compact || mobileBar) && item.download_present}
+      showDownload={compact && !mobileBar && item.download_present}
       onDownload={handleDownload}
       showDelete={compact || mobileBar}
       onDelete={handleDelete}
@@ -162,7 +162,7 @@ export default function ItemActions({
   if (mobileBar) {
     return (
       <div
-        className={`flex items-center gap-0.5 w-full ${hasCardActions ? '' : 'justify-end'}`}
+        className={`flex items-center gap-1 w-full min-w-0 ${hasCardActions ? '' : 'justify-end'}`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >

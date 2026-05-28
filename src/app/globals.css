@@ -164,6 +164,11 @@ select option {
       dark:text-amber-400 dark:bg-amber-500/10;
   }
 
+  /* Reset UA dialog sizing so mobile bottom sheets span the viewport */
+  .ui-bottom-sheet {
+    @apply m-0 box-border w-full max-w-[100vw] p-0;
+  }
+
   .ui-sidebar-section-label {
     @apply px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-zinc-500
       dark:text-zinc-500;
