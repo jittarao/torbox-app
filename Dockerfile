@@ -50,8 +50,8 @@ COPY . .
 
 # Build the Next.js application with production optimizations
 # This creates optimized static files and server bundles
-# Use node explicitly for the build to ensure compatibility with standalone output
-RUN NODE_ENV=production node node_modules/.bin/next build
+# Use bun for the build so resolution matches bun install (next-pwa / pify)
+RUN bun run build
 
 # Verify that the standalone output was created
 # This prevents silent build failures from causing COPY errors later
