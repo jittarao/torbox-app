@@ -7,8 +7,11 @@ import { useTranslations } from 'next-intl';
 
 const mobileIconButtonClass = 'ui-header-icon-btn !h-11 !w-11 !min-w-11 shrink-0 touch-manipulation';
 
+const mobileDownloadButtonClass =
+  'ui-header-icon-btn !h-12 !w-12 !min-w-12 shrink-0 touch-manipulation text-accent dark:text-accent-dark [&_svg]:size-6 hover:bg-accent/10 dark:hover:bg-accent-dark/10 active:bg-accent/15 dark:active:bg-accent-dark/15';
+
 const mobileFilesButtonClass =
-  'flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm font-medium text-primary-text/75 dark:text-primary-text-dark/75 touch-manipulation transition-colors hover:bg-zinc-100/80 active:bg-zinc-100 dark:hover:bg-white/[0.06] dark:active:bg-white/[0.08]';
+  'ui-header-icon-btn !h-11 shrink-0 touch-manipulation !w-auto !min-w-0 px-2.5 gap-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 [&_svg]:size-3.5';
 
 export default function ItemActionButtons({
   item,
@@ -118,8 +121,11 @@ export default function ItemActionButtons({
           type="button"
           onClick={handleDownload}
           disabled={isDownloading}
-          className={`${tableIconButtonClass} text-accent dark:text-accent-dark 
-          hover:bg-accent/5 dark:hover:bg-accent-dark/5`}
+          className={
+            mobileBar
+              ? mobileDownloadButtonClass
+              : `${tableIconButtonClass} text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5`
+          }
           title={t('download.title')}
           aria-label={t('download.label')}
         >
@@ -142,15 +148,17 @@ export default function ItemActionButtons({
             hover:bg-primary-text/10 dark:hover:bg-primary-text-dark/10 hover:text-primary-text dark:hover:text-primary-text-dark`
           }
           title={filesExpanded ? t('files.hide') : t('files.show')}
+          aria-label={mobileBar ? filesLabel : undefined}
           aria-expanded={filesExpanded}
         >
           {mobileBar ? (
             <>
-              <span className="min-w-0 truncate">{filesLabel}</span>
+              <Icons.Files className="shrink-0 opacity-70" aria-hidden />
+              <span className="tabular-nums">{fileCount ?? '—'}</span>
               {filesExpanded ? (
-                <Icons.ChevronUp className="size-4 shrink-0 opacity-50" />
+                <Icons.ChevronUp className="shrink-0 opacity-50" aria-hidden />
               ) : (
-                <Icons.ChevronDown className="size-4 shrink-0 opacity-50" />
+                <Icons.ChevronDown className="shrink-0 opacity-50" aria-hidden />
               )}
             </>
           ) : filesExpanded ? (

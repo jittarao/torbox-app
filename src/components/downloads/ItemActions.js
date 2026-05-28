@@ -162,7 +162,7 @@ export default function ItemActions({
   if (mobileBar) {
     return (
       <div
-        className={`flex items-center gap-1 w-full min-w-0 ${hasCardActions ? '' : 'justify-end'}`}
+        className={`flex items-center gap-2 w-full min-w-0 ${hasCardActions ? '' : 'justify-end'}`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
