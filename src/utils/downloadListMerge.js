@@ -125,3 +125,18 @@ export function downloadListIdSignature(items) {
   ids.sort();
   return ids.join(',');
 }
+
+/**
+ * Signature for selection reconcile — ids plus per-item file lists (order-independent).
+ * @param {object[]} items
+ */
+export function downloadListReconcileSignature(items) {
+  if (!items?.length) return '';
+  const parts = items.map((i) => {
+    const id = `${i.assetType || 'torrents'}:${i.id}`;
+    const files = fileListSignature(i.files);
+    return files ? `${id}[${files}]` : id;
+  });
+  parts.sort();
+  return parts.join(',');
+}

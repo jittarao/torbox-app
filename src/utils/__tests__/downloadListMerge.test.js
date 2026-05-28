@@ -4,6 +4,7 @@ import {
   downloadRowEqual,
   sortItemsNonMutating,
   downloadListIdSignature,
+  downloadListReconcileSignature,
   isRowLikelyChanging,
 } from '../downloadListMerge.js';
 
@@ -133,5 +134,15 @@ describe('downloadListIdSignature', () => {
       { id: 2, assetType: 'usenet' },
     ];
     expect(downloadListIdSignature(a)).toBe(downloadListIdSignature(b));
+  });
+});
+
+describe('downloadListReconcileSignature', () => {
+  test('changes when file list changes for the same item id', () => {
+    const withoutFiles = [{ id: 1, assetType: 'torrents' }];
+    const withFiles = [{ id: 1, assetType: 'torrents', files: [{ id: 10, size: 100 }] }];
+    expect(downloadListReconcileSignature(withoutFiles)).not.toBe(
+      downloadListReconcileSignature(withFiles)
+    );
   });
 });

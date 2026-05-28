@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { downloadListIdSignature } from '@/utils/downloadListMerge';
+import { downloadListReconcileSignature } from '@/utils/downloadListMerge';
 import {
   getDownloadSelectionId,
   selectionIdMatchesItem,
@@ -7,8 +7,22 @@ import {
 
 const LEGACY_STORAGE_KEY = 'torboxSelectedItems';
 
-function storageKeyForType(activeType) {
-  return `torboxSelectedItems:${activeType || 'all'}`;
+/** Stable localStorage namespace per API key (not reversible to full key). */
+export function apiKeyStorageScope(apiKey) {
+  if (!apiKey || apiKey.length < 8) return '';
+  let hash = 0;
+  for (let i = 0; i < apiKey.length; i++) {
+    hash = (Math.imul(31, hash) + apiKey.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+function storageKeyForType(activeType, apiKeyScope) {
+  const type = activeType || 'all';
+  if (apiKeyScope) {
+    return `torboxSelectedItems:${apiKeyScope}:${type}`;
+  }
+  return `torboxSelectedItems:${type}`;
 }
 
 function parseFileMapKey(key) {
@@ -50,20 +64,23 @@ function deserializeSelection(raw) {
   }
 }
 
-function persistSelection(activeType, selection) {
+function persistSelection(activeType, selection, apiKeyScope = '') {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(storageKeyForType(activeType), serializeSelection(selection));
+    localStorage.setItem(storageKeyForType(activeType, apiKeyScope), serializeSelection(selection));
   } catch (error) {
     console.error('Error saving selections to localStorage:', error);
   }
 }
 
-function readRawSelection(activeType) {
+function readRawSelection(activeType, apiKeyScope = '') {
   if (typeof localStorage === 'undefined') return null;
 
-  const scoped = localStorage.getItem(storageKeyForType(activeType));
+  const scoped = localStorage.getItem(storageKeyForType(activeType, apiKeyScope));
   if (scoped) return scoped;
+
+  const unscoped = localStorage.getItem(storageKeyForType(activeType, ''));
+  if (unscoped) return unscoped;
 
   if (activeType === 'all') {
     return localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -107,8 +124,8 @@ export function pruneSelectionAgainstItems(selection, currentItems) {
   return { items: validItems, files: validFiles };
 }
 
-export function loadStoredSelections(activeType, currentItems = []) {
-  const raw = readRawSelection(activeType);
+export function loadStoredSelections(activeType, currentItems = [], apiKeyScope = '') {
+  const raw = readRawSelection(activeType, apiKeyScope);
   const parsed = deserializeSelection(raw);
 
   if (!currentItems.length) {
@@ -120,19 +137,43 @@ export function loadStoredSelections(activeType, currentItems = []) {
 
 export const useDownloadsSelectionStore = create((set, get) => ({
   activeType: 'all',
+  apiKeyScope: '',
   selectedItems: emptySelection(),
   listSignature: '',
   hasHydratedSelection: false,
 
+  setApiKeyScope: (apiKey) => {
+    const scope = apiKeyStorageScope(apiKey);
+    const { apiKeyScope: prevScope } = get();
+    if (prevScope === scope) return;
+    get().resetForApiKey(apiKey);
+  },
+
+  resetForApiKey: (apiKey) => {
+    const scope = apiKeyStorageScope(apiKey);
+    const { apiKeyScope: prevScope, activeType, selectedItems } = get();
+
+    if (prevScope && prevScope !== scope) {
+      persistSelection(activeType, selectedItems, prevScope);
+    }
+
+    set({
+      apiKeyScope: scope,
+      selectedItems: emptySelection(),
+      listSignature: '',
+      hasHydratedSelection: false,
+    });
+  },
+
   setActiveType: (activeType) => {
-    const { activeType: prevType, selectedItems, hasHydratedSelection } = get();
+    const { activeType: prevType, selectedItems, hasHydratedSelection, apiKeyScope } = get();
     if (prevType === activeType && hasHydratedSelection) return;
 
     if (prevType !== activeType) {
-      persistSelection(prevType, selectedItems);
+      persistSelection(prevType, selectedItems, apiKeyScope);
     }
 
-    const nextSelection = loadStoredSelections(activeType, []);
+    const nextSelection = loadStoredSelections(activeType, [], apiKeyScope);
     set({
       activeType,
       selectedItems: nextSelection,
@@ -151,24 +192,25 @@ export const useDownloadsSelectionStore = create((set, get) => ({
               files: updaterOrValue.files ?? state.selectedItems.files,
             };
 
-      persistSelection(state.activeType, next);
+      persistSelection(state.activeType, next, state.apiKeyScope);
       return { selectedItems: next };
     });
   },
 
   clearSelection: () => {
+    const { activeType, apiKeyScope } = get();
     const empty = emptySelection();
-    persistSelection(get().activeType, empty);
+    persistSelection(activeType, empty, apiKeyScope);
     set({ selectedItems: empty });
   },
 
   reconcileWithItems: (items) => {
-    const signature = downloadListIdSignature(items);
-    const { listSignature, activeType } = get();
+    const signature = downloadListReconcileSignature(items);
+    const { listSignature, selectedItems, activeType, apiKeyScope } = get();
     if (listSignature === signature) return;
 
-    const pruned = loadStoredSelections(activeType, items || []);
-    persistSelection(activeType, pruned);
+    const pruned = pruneSelectionAgainstItems(selectedItems, items || []);
+    persistSelection(activeType, pruned, apiKeyScope);
     set({ listSignature: signature, selectedItems: pruned });
   },
 
@@ -218,6 +260,13 @@ export function selectIsItemSelected(selectionId) {
 
 export function selectSelectedItemCount(state) {
   return state.selectedItems.items.size;
+}
+
+export function selectTotalSelectedFileCount(state) {
+  return Array.from(state.selectedItems.files.values()).reduce(
+    (total, files) => total + files.size,
+    0
+  );
 }
 
 export function selectHasSelectedFiles(state) {

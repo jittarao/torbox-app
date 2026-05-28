@@ -8,6 +8,7 @@ import { useAutomationRulesStore } from '@/store/automationRulesStore';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { useHealthStore } from '@/store/healthStore';
 import { useRssStore } from '@/store/rssStore';
+import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
 function readStoredApiKey() {
   if (typeof localStorage === 'undefined') return '';
@@ -31,7 +32,17 @@ function readStoredApiKey() {
   return '';
 }
 
-function fanOutApiKey(apiKey) {
+let permissionsLoadPromise = null;
+let permissionsLoadKey = null;
+
+function fanOutApiKey(apiKey, prevApiKey) {
+  const keyChanged = prevApiKey !== apiKey;
+  if (keyChanged) {
+    useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
+  } else {
+    useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);
+  }
+
   useTagsStore.getState().setApiKey(apiKey);
   useDownloadTagsStore.getState().setApiKey(apiKey);
   useCustomViewsStore.getState().setApiKey(apiKey);
@@ -52,7 +63,7 @@ export const useSessionStore = create((set, get) => ({
     const apiKey = readStoredApiKey();
     set({ apiKey, hydrated: true });
     if (apiKey) {
-      fanOutApiKey(apiKey);
+      fanOutApiKey(apiKey, '');
     }
   },
 
@@ -67,10 +78,14 @@ export const useSessionStore = create((set, get) => ({
     set({ hydrated: true });
 
     if (current !== trimmed) {
-      set({ apiKey: trimmed, permissions: trimmed ? get().permissions : null });
+      set({
+        apiKey: trimmed,
+        permissions: null,
+        permissionsLoading: Boolean(trimmed),
+      });
     }
 
-    fanOutApiKey(trimmed);
+    fanOutApiKey(trimmed, current);
 
     if (trimmed) {
       get().loadPermissions(trimmed);
@@ -85,13 +100,19 @@ export const useSessionStore = create((set, get) => ({
       return;
     }
 
-    set({ apiKey: trimmed, permissions: trimmed ? get().permissions : null });
+    const { apiKey: current } = get();
+
+    set({
+      apiKey: trimmed,
+      permissions: null,
+      permissionsLoading: Boolean(trimmed),
+    });
 
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('torboxApiKey', trimmed);
     }
 
-    fanOutApiKey(trimmed);
+    fanOutApiKey(trimmed, current);
 
     if (trimmed) {
       get().loadPermissions(trimmed);
@@ -106,17 +127,36 @@ export const useSessionStore = create((set, get) => ({
       return null;
     }
 
+    if (permissionsLoadPromise && permissionsLoadKey === apiKey) {
+      return permissionsLoadPromise;
+    }
+
+    permissionsLoadKey = apiKey;
     set({ permissionsLoading: true });
 
-    try {
-      const userData = await fetchUserProfile(apiKey);
-      const permissions = userData ? getUserPermissions(userData) : null;
-      set({ permissions, permissionsLoading: false });
-      return permissions;
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      set({ permissions: null, permissionsLoading: false });
-      return null;
-    }
+    permissionsLoadPromise = (async () => {
+      try {
+        const userData = await fetchUserProfile(apiKey);
+        if (get().apiKey !== apiKey) {
+          return null;
+        }
+        const permissions = userData ? getUserPermissions(userData) : null;
+        set({ permissions, permissionsLoading: false });
+        return permissions;
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        if (get().apiKey === apiKey) {
+          set({ permissions: null, permissionsLoading: false });
+        }
+        return null;
+      } finally {
+        if (permissionsLoadKey === apiKey) {
+          permissionsLoadPromise = null;
+          permissionsLoadKey = null;
+        }
+      }
+    })();
+
+    return permissionsLoadPromise;
   },
 }));

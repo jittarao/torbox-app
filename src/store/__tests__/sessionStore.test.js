@@ -49,4 +49,21 @@ describe('sessionStore', () => {
     expect(useSessionStore.getState().apiKey).toBe(validKey);
     expect(useSessionStore.getState().hydrated).toBe(true);
   });
+
+  test('setApiKey clears permissions until reload completes', () => {
+    const keyA = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+    const keyB = 'bbbbbbbb-bbbb-cccc-dddd-ffffffffffff';
+    useSessionStore.setState({
+      apiKey: keyA,
+      hydrated: true,
+      permissions: { planId: 2 },
+      permissionsLoading: false,
+    });
+
+    useSessionStore.getState().setApiKey(keyB);
+
+    expect(useSessionStore.getState().apiKey).toBe(keyB);
+    expect(useSessionStore.getState().permissions).toBe(null);
+    expect(useSessionStore.getState().permissionsLoading).toBe(true);
+  });
 });

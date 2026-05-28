@@ -12,7 +12,12 @@ import { useStatusCounts } from './hooks/useStatusCounts';
 import Dropdown from '@/components/shared/Dropdown';
 import { useTranslations } from 'next-intl';
 import useIsMobile from '@/hooks/useIsMobile';
-import { useDownloadsSelectionStore, selectHasSelectedFiles } from '@/store/downloadsSelectionStore';
+import {
+  useDownloadsSelectionStore,
+  selectHasSelectedFiles,
+  selectSelectedItemCount,
+  selectTotalSelectedFileCount,
+} from '@/store/downloadsSelectionStore';
 
 export default function ActionBar({
   unfilteredItems,
@@ -50,9 +55,11 @@ export default function ActionBar({
   scrollContainerRef,
   hasFiltersSidebar = false,
 }) {
-  const selectedItems = useDownloadsSelectionStore((state) => state.selectedItems);
-  const setSelectedItems = useDownloadsSelectionStore((state) => state.setSelectedItems);
+  const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
+  const selectedFileCount = useDownloadsSelectionStore(selectTotalSelectedFileCount);
   const hasSelectedFiles = useDownloadsSelectionStore(selectHasSelectedFiles);
+  const setSelectedItems = useDownloadsSelectionStore((state) => state.setSelectedItems);
+  const hasSelection = selectedItemCount > 0 || hasSelectedFiles;
   const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
   const [spacerHeight, setSpacerHeight] = useState(0);
@@ -290,7 +297,8 @@ export default function ActionBar({
               isStatusSelected={isStatusSelected}
               unfilteredItems={unfilteredItems}
               filteredItems={filteredItems}
-              selectedItems={selectedItems}
+              selectedItemCount={selectedItemCount}
+              selectedFileCount={selectedFileCount}
               hasSelectedFiles={hasSelectedFiles}
               statusFilter={statusFilter}
               onStatusChange={onStatusChange}
@@ -299,9 +307,8 @@ export default function ActionBar({
               getTotalDownloadSize={getTotalDownloadSize}
             />
 
-            {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
+            {hasSelection && (
               <ActionButtons
-                selectedItems={selectedItems}
                 setSelectedItems={setSelectedItems}
                 hasSelectedFiles={hasSelectedFiles}
                 isDownloading={isDownloading}

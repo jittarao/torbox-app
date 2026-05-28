@@ -8,9 +8,12 @@ import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from '../../Tags/TagAssignmentModal';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
+import {
+  useDownloadsSelectionStore,
+  selectSelectedItemCount,
+} from '@/store/downloadsSelectionStore';
 
 export default function ActionButtons({
-  selectedItems,
   setSelectedItems,
   hasSelectedFiles,
   isDownloading,
@@ -29,6 +32,8 @@ export default function ActionButtons({
   allItems = [],
 }) {
   const t = useTranslations('ActionButtons');
+  const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
+  const getSelectedItems = () => useDownloadsSelectionStore.getState().selectedItems;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
@@ -107,6 +112,7 @@ export default function ActionButtons({
   };
 
   const handleBulkCloudUpload = async (providerId) => {
+    const selectedItems = getSelectedItems();
     if (isUploadingRef.current || !selectedItems.items?.size) return;
 
     // Check if any providers are connected
@@ -246,7 +252,7 @@ export default function ActionButtons({
       </button>
 
       {/* Bulk Export button - only for torrents */}
-      {activeType === 'torrents' && selectedItems.items?.size > 0 && onBulkExport && (
+      {activeType === 'torrents' && selectedItemCount > 0 && onBulkExport && (
         <button
           type="button"
           onClick={handleBulkExport}
@@ -259,7 +265,7 @@ export default function ActionButtons({
       )}
 
       {/* Bulk Tag Assignment button */}
-      {selectedItems.items?.size > 0 && (
+      {selectedItemCount > 0 && (
         <button
           type="button"
           onClick={() => setShowTagAssignment(true)}
@@ -272,7 +278,7 @@ export default function ActionButtons({
 
       {/* Bulk Cloud Upload button - Temporarily hidden */}
 
-      {(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
+      {(selectedItemCount > 0 || hasSelectedFiles) && (
         <>
           <button
             type="button"
@@ -293,13 +299,13 @@ export default function ActionButtons({
                 <p className="text-primary-text/70 dark:text-primary-text-dark/70 mb-6">
                   {t('deleteConfirm.message', {
                     count:
-                      selectedItems.items?.size +
-                      (deleteParentDownloads ? selectedItems.files?.size : 0),
-                    type: selectedItems.items?.size === 1 ? itemTypeName : itemTypePlural,
+                      selectedItemCount +
+                      (deleteParentDownloads ? getSelectedItems().files?.size : 0),
+                    type: selectedItemCount === 1 ? itemTypeName : itemTypePlural,
                   })}
                 </p>
 
-                {hasSelectedFiles() && (
+                {hasSelectedFiles && (
                   <label className="flex gap-3 mb-6 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
                     <input
                       type="checkbox"
@@ -358,7 +364,7 @@ export default function ActionButtons({
         <TagAssignmentModal
           isOpen={showTagAssignment}
           onClose={() => setShowTagAssignment(false)}
-          downloadIds={Array.from(selectedItems.items || [])
+          downloadIds={Array.from(getSelectedItems().items || [])
             .map((selectionId) => findItemBySelectionId(allItems, selectionId)?.id?.toString())
             .filter(Boolean)}
           apiKey={apiKey}
