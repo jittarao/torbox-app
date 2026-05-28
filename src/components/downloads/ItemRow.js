@@ -23,7 +23,6 @@ import {
   useIsDownloadSelected,
   useItemHasSelectedFiles,
 } from '@/components/shared/hooks/useSelection';
-import { selectIsRowExpanded } from '@/store/downloadsUiStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 
 function ItemRow({
@@ -46,7 +45,7 @@ function ItemRow({
   dataIndex,
 }) {
   const commonT = useTranslations('Common');
-  const isExpanded = useDownloadsUiStore(selectIsRowExpanded(item.id));
+  const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
 
   const renderCell = (columnId) => {
     const baseStyle = getResolvedColumnStyle(columnId, resolvedColumnWidths, { isMobile });

@@ -19,7 +19,7 @@ import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
-import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
+import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 
 export default function CardList({
   items,
@@ -42,8 +42,6 @@ export default function CardList({
   fileSearch = '',
 }) {
   const t = useTranslations('CardList');
-  const lastClickedItemIndexRef = useRef(null);
-  const lastClickedFileIndexRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
   const [isStreaming, setIsStreaming] = useState({});
@@ -187,119 +185,33 @@ export default function CardList({
   // Use the appropriate virtualizer based on mode
   const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
-  // Define isDisabled first so it can be used in handlers
-  const isSelectionDisabled = (selectionId) => {
-    const files = useDownloadsSelectionStore.getState().selectedItems.files;
-    return files?.has(selectionId) && files.get(selectionId).size > 0;
-  };
-
-  const handleItemSelection = useCallback(
-    (selectionId, checked, rowIndex, isShiftKey = false) => {
-      const setSelected = useDownloadsSelectionStore.getState().setSelectedItems;
-
-      if (isShiftKey && typeof rowIndex === 'number' && lastClickedItemIndexRef.current !== null) {
-        const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
-        const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
-
-        setSelected((prev) => {
-          const newItems = new Set(prev.items);
-          for (let i = start; i <= end; i++) {
-            const t = items[i];
-            const sid = getDownloadSelectionId(t);
-            if (checked && !isSelectionDisabled(sid)) {
-              newItems.add(sid);
-            } else {
-              newItems.delete(sid);
-            }
-          }
-          return {
-            items: newItems,
-            files: prev.files,
-          };
-        });
-      } else {
-        setSelected((prev) => {
-          const newItems = new Set(prev.items);
-          if (checked && !isSelectionDisabled(selectionId)) {
-            newItems.add(selectionId);
-          } else {
-            newItems.delete(selectionId);
-          }
-          return {
-            items: newItems,
-            files: prev.files,
-          };
-        });
-      }
-      lastClickedItemIndexRef.current = rowIndex;
-    },
-    [items]
+  const toastMessages = useMemo(
+    () => ({
+      copyLinkSuccess: t('toast.copyLink'),
+      copyLinkFailed: t('toast.copyLinkFailed'),
+    }),
+    [t]
   );
 
-  const handleFileSelection = useCallback(
-    (selectionId, fileIndex, file, checked, isShiftKey = false) => {
-      if (isShiftKey && lastClickedFileIndexRef.current !== null) {
-        const start = Math.min(lastClickedFileIndexRef.current, fileIndex);
-        const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
-        const item = items.find((i) => getDownloadSelectionId(i) === selectionId);
-        if (item) {
-          getFilesVisibleForDownloadSearch(item, fileSearch)
-            .slice(start, end + 1)
-            .forEach((f) => {
-              onFileSelect(selectionId, f.id, checked);
-            });
-        }
-      } else {
-        onFileSelect(selectionId, file.id, checked);
-      }
-      lastClickedFileIndexRef.current = fileIndex;
-    },
-    [items, onFileSelect, fileSearch]
-  );
-
-  const assetKey = useCallback((itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId), []);
-
-  const handleFileDownload = useCallback(
-    async (itemId, file, copyLink = false) => {
-      const key = assetKey(itemId, file.id);
-      if (copyLink) {
-        setIsCopying((prev) => ({ ...prev, [key]: true }));
-      } else {
-        setIsDownloading((prev) => ({ ...prev, [key]: true }));
-      }
-      const options = { fileId: file.id, filename: file.name };
-
-      const idField =
-        activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
-
-      const metadata = {
-        assetType: activeType,
-        item: items.find((item) => item.id === itemId),
-      };
-
-      await downloadSingle(itemId, options, idField, copyLink, metadata)
-        .then(() => {
-          setToast({
-            message: t('toast.copyLink'),
-            type: 'success',
-          });
-        })
-        .catch((err) => {
-          setToast({
-            message: t('toast.copyLinkFailed'),
-            type: 'error',
-          });
-        })
-        .finally(() => {
-          if (copyLink) {
-            setIsCopying((prev) => ({ ...prev, [key]: false }));
-          } else {
-            setIsDownloading((prev) => ({ ...prev, [key]: false }));
-          }
-        });
-    },
-    [assetKey, activeType, items, downloadSingle, setToast, t]
-  );
+  const {
+    handleItemSelection,
+    handleFileSelection,
+    handleFileDownload,
+    isSelectionDisabled,
+    assetKey,
+    lastClickedItemIndexRef,
+    lastClickedFileIndexRef,
+  } = useDownloadRowInteractions({
+    items,
+    activeType,
+    fileSearch,
+    onFileSelect,
+    downloadSingle,
+    setToast,
+    toastMessages,
+    setIsDownloading,
+    setIsCopying,
+  });
 
   // Map activeType to stream type
   const getStreamType = useCallback(() => {

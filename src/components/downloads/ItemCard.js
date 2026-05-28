@@ -13,7 +13,7 @@ import {
   useIsDownloadSelected,
   useIsItemBlockingFileSelect,
 } from '@/components/shared/hooks/useSelection';
-import { selectIsRowExpanded, useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { cardContainerPad, tableActionsCellInner } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
@@ -43,7 +43,7 @@ function ItemCard({
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
-  const isExpanded = useDownloadsUiStore(selectIsRowExpanded(item.id));
+  const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
   const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
 
   const filteredColumns = activeColumns.filter(

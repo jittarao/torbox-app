@@ -1,9 +1,9 @@
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useBackendModeStore } from '@/store/backendModeStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
-import { selectItemsForView, hasCachedDataForView } from '@/store/torboxDownloadsSelectors';
+import { hasCachedDataForView } from '@/store/torboxDownloadsSelectors';
 import {
   fetchDownloadType,
   fetchDownloadsForView,
@@ -54,8 +54,6 @@ export function useFetchData(apiKey, type = 'torrents') {
       setPollSchedule: s.setPollSchedule,
     }))
   );
-
-  const items = useTorboxDownloadsStore(useCallback((s) => selectItemsForView(s, type), [type]));
 
   const syncManualRefreshAllowed = useCallback(() => {
     syncCanManualRefresh(type);
@@ -167,7 +165,6 @@ export function useFetchData(apiKey, type = 'torrents') {
   return {
     loading,
     error,
-    items,
     fetchItems,
     dismissError,
     lastSuccessfulFetchAt,

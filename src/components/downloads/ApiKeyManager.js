@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { ensureUserDb } from '@/utils/ensureUserDb';
+import { useModalFocusTrap } from '@/components/shared/hooks/useModalFocusTrap';
 
 export default function ApiKeyManager({
   onKeySelect,
@@ -27,6 +28,8 @@ export default function ApiKeyManager({
   const [newKeyLabel, setNewKeyLabel] = useState('');
   const [newKeyValue, setNewKeyValue] = useState('');
   const [showKeys, setShowKeys] = useState(false);
+  const addDialogRef = useRef(null);
+  useModalFocusTrap(showAddForm, addDialogRef);
 
   const saveKeys = (newKeys) => {
     localStorage.setItem('torboxApiKeys:v1', JSON.stringify(newKeys));
@@ -198,6 +201,7 @@ export default function ApiKeyManager({
             aria-hidden
           />
           <dialog
+            ref={addDialogRef}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70]
               bg-surface dark:bg-surface-dark
               border border-border dark:border-border-dark
@@ -205,6 +209,7 @@ export default function ApiKeyManager({
               w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[min(90vh,32rem)]
               overflow-hidden flex flex-col"
             aria-labelledby="api-key-add-dialog-title"
+            aria-modal="true"
             open
           >
             <div onClick={(e) => e.stopPropagation()} className="flex flex-col h-full">

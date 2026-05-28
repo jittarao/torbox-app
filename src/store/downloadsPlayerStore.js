@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { entityKey } from '@/utils/downloadListMerge';
-import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
+import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloadsSelectors';
 
 const INITIAL_VIDEO = {
   isOpen: false,
@@ -31,16 +31,15 @@ const INITIAL_AUDIO = {
 
 function findItemById(itemId, activeType) {
   const entities = useTorboxDownloadsStore.getState().entities;
-  const assetType = resolveItemAssetType(null, activeType);
-  const key = entityKey(activeType === 'all' ? 'torrents' : assetType, itemId);
-  if (entities[key]) return entities[key];
   if (activeType === 'all') {
     for (const type of ['torrents', 'usenet', 'webdl']) {
       const row = entities[entityKey(type, itemId)];
       if (row) return row;
     }
+    return undefined;
   }
-  return undefined;
+  const assetType = resolveItemAssetType(null, activeType);
+  return entities[entityKey(assetType, itemId)];
 }
 
 /**
@@ -52,6 +51,16 @@ export const useDownloadsPlayerStore = create((set, get) => ({
   activeType: 'torrents',
 
   setActiveType: (activeType) => set({ activeType }),
+
+  closeAll: () => {
+    const state = get();
+    if (state.video.isOpen) {
+      get().closeVideo();
+    }
+    if (state.audio.isOpen) {
+      get().closeAudio();
+    }
+  },
 
   openVideo: (payload) => {
     usePollingPauseStore.getState().setPauseReason('videoPlayer', true);
@@ -104,21 +113,21 @@ export const useDownloadsPlayerStore = create((set, get) => ({
   setAudioUrl: (url) => set((state) => ({ audio: { ...state.audio, url } })),
 
   playAudio: async ({ itemId, file, apiKey, activeType, requestDownloadLink, onError }) => {
-    const idField =
-      activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
     const item = findItemById(itemId, activeType);
+    const resolvedAssetType = resolveItemAssetType(item, activeType);
+    const idField = getIdFieldForItem(item, activeType);
     const result = await requestDownloadLink(
       itemId,
       { fileId: file.id, filename: file.name || file.short_name },
       idField,
-      { assetType: activeType, item }
+      { assetType: resolvedAssetType, item }
     );
     if (result.success && result.data?.url) {
       get().openAudio({
         url: result.data.url,
         itemId,
         fileId: file.id,
-        assetType: activeType,
+        assetType: resolvedAssetType,
         fileName: file.name || file.short_name || 'Audio',
         apiKey,
       });
@@ -134,12 +143,14 @@ export const useDownloadsPlayerStore = create((set, get) => ({
     if (itemId == null || fileId == null || !key) {
       throw new Error('Cannot refresh link: missing item, file, or API key');
     }
-    const idField = at === 'usenet' ? 'usenet_id' : at === 'webdl' ? 'web_id' : 'torrent_id';
+    const item = findItemById(itemId, activeType);
+    const resolvedAssetType = resolveItemAssetType(item, at || activeType);
+    const idField = getIdFieldForItem(item, at || activeType);
     const result = await requestDownloadLink(
       itemId,
       { fileId },
       idField,
-      { assetType: at, item: findItemById(itemId, activeType) }
+      { assetType: resolvedAssetType, item }
     );
     if (result.success && result.data?.url) {
       get().setAudioUrl(result.data.url);

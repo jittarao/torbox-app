@@ -7,6 +7,7 @@ import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
+import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -61,21 +62,7 @@ export default function HomePageClient() {
     }
   }, [setLinkInput]);
 
-  useEffect(() => {
-    if (apiKey) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
-          .then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for existing API key');
-            }
-          })
-          .catch((error) => {
-            console.error('Error ensuring user database on load:', error);
-          });
-      });
-    }
-  }, [apiKey]);
+  useEnsureUserDb(apiKey);
 
   // Handle received files
   useFileHandler((file) => {
@@ -96,14 +83,6 @@ export default function HomePageClient() {
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
-    const trimmed = (newKey || '').trim();
-    if (trimmed) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(trimmed).catch((error) => {
-          console.error('Error ensuring user database:', error);
-        });
-      });
-    }
   };
 
   if (!isClient || !hydrated) {
