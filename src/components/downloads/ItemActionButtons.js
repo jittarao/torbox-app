@@ -5,6 +5,11 @@ import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 
+const mobileIconButtonClass = 'ui-header-icon-btn !h-11 !w-11 !min-w-11 shrink-0 touch-manipulation';
+
+const mobileFilesButtonClass =
+  'flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm font-medium text-primary-text/75 dark:text-primary-text-dark/75 touch-manipulation transition-colors hover:bg-zinc-100/80 active:bg-zinc-100 dark:hover:bg-white/[0.06] dark:active:bg-white/[0.08]';
+
 export default function ItemActionButtons({
   item,
   onDelete,
@@ -16,6 +21,7 @@ export default function ItemActionButtons({
   onForceStart,
   onDownload,
   compact = false,
+  mobileBar = false,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -54,9 +60,19 @@ export default function ItemActionButtons({
     await onDelete();
   };
 
-  const tableIconButtonClass = compact
-    ? 'shrink-0 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:size-4'
-    : 'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const tableIconButtonClass = mobileBar
+    ? mobileIconButtonClass
+    : compact
+      ? 'shrink-0 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:size-4'
+      : 'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const fileCount = item.files?.length ?? item.file_count;
+  const filesExpanded = expandedItems.has(item.id);
+  const filesLabel = filesExpanded
+    ? t('files.hide')
+    : fileCount != null && fileCount > 0
+      ? t('files.count', { count: fileCount })
+      : t('files.label');
 
   return (
     <>
@@ -99,11 +115,29 @@ export default function ItemActionButtons({
             e.stopPropagation();
             toggleFiles(item.id);
           }}
-          className={`${tableIconButtonClass} text-primary-text/70 dark:text-primary-text-dark/70 
-            hover:bg-primary-text/10 dark:hover:bg-primary-text-dark/10 hover:text-primary-text dark:hover:text-primary-text-dark`}
-          title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
+          className={
+            mobileBar
+              ? mobileFilesButtonClass
+              : `${tableIconButtonClass} text-primary-text/70 dark:text-primary-text-dark/70 
+            hover:bg-primary-text/10 dark:hover:bg-primary-text-dark/10 hover:text-primary-text dark:hover:text-primary-text-dark`
+          }
+          title={filesExpanded ? t('files.hide') : t('files.show')}
+          aria-expanded={filesExpanded}
         >
-          {expandedItems.has(item.id) ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
+          {mobileBar ? (
+            <>
+              <span className="min-w-0 truncate">{filesLabel}</span>
+              {filesExpanded ? (
+                <Icons.ChevronUp className="size-4 shrink-0 opacity-50" />
+              ) : (
+                <Icons.ChevronDown className="size-4 shrink-0 opacity-50" />
+              )}
+            </>
+          ) : filesExpanded ? (
+            <Icons.ChevronUp />
+          ) : (
+            <Icons.ChevronDown />
+          )}
         </button>
       )}
 

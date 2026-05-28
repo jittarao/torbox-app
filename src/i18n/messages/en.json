@@ -568,7 +568,8 @@
       "title": "Export Torrent"
     },
     "files": {
-      "hide": "Hide Files",
+      "count": "{count} files",
+      "hide": "Hide files",
       "label": "Files",
       "show": "Show Files"
     },

@@ -20,6 +20,7 @@ export default function ItemActions({
   activeType = 'torrents',
   downloadHistory,
   compact = false,
+  mobileBar = false,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
@@ -118,33 +119,63 @@ export default function ItemActions({
     }
   };
 
+  const showStopSeeding =
+    activeType === 'torrents' &&
+    item.download_finished &&
+    item.download_present &&
+    item.active;
+  const showForceStart = activeType === 'torrents' && !item.download_state;
+  const hasCardActions = showStopSeeding || showForceStart || item.download_present;
+
+  const actionButtons = (
+    <ItemActionButtons
+      item={item}
+      onDelete={handleDelete}
+      isDeleting={isDeleting}
+      toggleFiles={toggleFiles}
+      expandedItems={expandedItems}
+      activeType={activeType}
+      onStopSeeding={handleStopSeeding}
+      onForceStart={handleForceStart}
+      onDownload={handleDownload}
+      compact={compact || mobileBar}
+      mobileBar={mobileBar}
+    />
+  );
+
+  const moreMenu = (
+    <MoreOptionsDropdown
+      item={item}
+      apiKey={apiKey}
+      setToast={setToast}
+      activeType={activeType}
+      compact={compact && !mobileBar}
+      mobileBar={mobileBar}
+      showDownload={(compact || mobileBar) && item.download_present}
+      onDownload={handleDownload}
+      showDelete={compact || mobileBar}
+      onDelete={handleDelete}
+      isDeleting={isDeleting}
+    />
+  );
+
+  if (mobileBar) {
+    return (
+      <div
+        className={`flex items-center gap-0.5 w-full ${hasCardActions ? '' : 'justify-end'}`}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        {actionButtons}
+        {moreMenu}
+      </div>
+    );
+  }
+
   return (
     <>
-      <ItemActionButtons
-        item={item}
-        onDelete={handleDelete}
-        isDeleting={isDeleting}
-        toggleFiles={toggleFiles}
-        expandedItems={expandedItems}
-        activeType={activeType}
-        onStopSeeding={handleStopSeeding}
-        onForceStart={handleForceStart}
-        onDownload={handleDownload}
-        compact={compact}
-      />
-
-      <MoreOptionsDropdown
-        item={item}
-        apiKey={apiKey}
-        setToast={setToast}
-        activeType={activeType}
-        compact={compact}
-        showDownload={compact && item.download_present}
-        onDownload={handleDownload}
-        showDelete={compact}
-        onDelete={handleDelete}
-        isDeleting={isDeleting}
-      />
+      {actionButtons}
+      {moreMenu}
     </>
   );
 }

@@ -546,6 +546,7 @@
       "title": "Eksportuj torrent"
     },
     "files": {
+      "count": "{count} plików",
       "hide": "Ukryj pliki",
       "label": "Pliki",
       "show": "Pokaż pliki"
