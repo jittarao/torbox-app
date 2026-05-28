@@ -1003,7 +1003,7 @@
     }
   },
   "Statuses": {
-    "checking_resume_data": "Sprawdzanie danych wznowienia",
+    "checking_resume_data": "Sprawdzanie",
     "completed": "Zakończone",
     "downloading": "Pobieranie",
     "failed": "Nie powiodło się",

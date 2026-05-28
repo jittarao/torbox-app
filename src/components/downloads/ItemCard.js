@@ -384,7 +384,9 @@ function ItemCard({
                     <Tooltip content={!isBlurred ? item.name : ''}>
                       <span
                         className={
-                          isMobile ? 'break-words' : 'block break-all md:truncate'
+                          isMobile
+                            ? 'inline-block max-w-full min-w-0 break-words'
+                            : 'inline-block max-w-full min-w-0 truncate'
                         }
                       >
                         {item.name || 'Unnamed Item'}

@@ -1003,7 +1003,7 @@
     }
   },
   "Statuses": {
-    "checking_resume_data": "Comprobando datos de resumen",
+    "checking_resume_data": "Comprobando",
     "completed": "Completado",
     "downloading": "Descargando",
     "failed": "Fallido",

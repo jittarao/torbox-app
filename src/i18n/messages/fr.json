@@ -1003,7 +1003,7 @@
     }
   },
   "Statuses": {
-    "checking_resume_data": "Comprobando datos de resumen",
+    "checking_resume_data": "Vérification",
     "en attente": "En attente",
     "en téléchargement": "En téléchargement",
     "inactif": "Inactif",

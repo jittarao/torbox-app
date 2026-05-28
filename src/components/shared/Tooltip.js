@@ -68,14 +68,37 @@ export default function Tooltip({ children, content, position = 'top' }) {
   }, [isVisible, position, setTooltipPosition]);
 
   useEffect(() => {
-    if (isVisible) {
-      updatePosition();
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-    }
+    if (!isVisible) return;
+
+    const hide = () => setIsVisible(false);
+
+    const onPointerMove = (e) => {
+      const trigger = triggerRef.current;
+      if (!trigger) {
+        hide();
+        return;
+      }
+      const hit = document.elementFromPoint(e.clientX, e.clientY);
+      if (!hit || !trigger.contains(hit)) {
+        hide();
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') hide();
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', updatePosition);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     return () => {
-      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('scroll', hide, true);
       window.removeEventListener('resize', updatePosition);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [isVisible, updatePosition]);
 
@@ -90,6 +113,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
     maxWidth: 'min(500px, calc(100vw - 32px))',
     wordWrap: 'break-word',
     whiteSpace: 'normal',
+    pointerEvents: 'none',
   };
 
   const arrowPosition = {
@@ -107,7 +131,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
   return (
     <div
       ref={triggerRef}
-      className="inline-block max-w-full"
+      className="w-fit max-w-full"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >

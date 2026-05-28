@@ -1003,7 +1003,7 @@
     }
   },
   "Statuses": {
-    "checking_resume_data": "リザムーデータのチェック中",
+    "checking_resume_data": "チェック中",
     "completed": "完了",
     "downloading": "ダウンロード中",
     "failed": "失敗",
