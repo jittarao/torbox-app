@@ -7,8 +7,22 @@ const { version: appPackageVersion } = require('./package.json');
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
+/** Runtime paths that must not trigger dev recompiles / CSS HMR (Turbopack + webpack). */
+const DEV_WATCH_IGNORED = [
+  '**/.audiobook-cache/**',
+  '**/.ffprobe/**',
+  '**/backend/data/**',
+  '**/data/**',
+  '**/logs/**',
+  '**/*.log',
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Applies in `next dev` (Turbopack). Prevents SQLite, caches, and logs from spurious HMR.
+  watchOptions: {
+    ignored: DEV_WATCH_IGNORED,
+  },
   env: {
     NEXT_PUBLIC_TORBOX_MANAGER_VERSION: appPackageVersion,
   },
@@ -52,7 +66,7 @@ const nextConfig = {
               ? config.watchOptions.ignored
               : [config.watchOptions.ignored]
             : []),
-          '**/.audiobook-cache/**',
+          ...DEV_WATCH_IGNORED,
         ],
       };
     }
