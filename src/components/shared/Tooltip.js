@@ -165,13 +165,8 @@ export default function Tooltip({ children, content, position = 'top' }) {
   };
 
   const arrowPosition = {
-    position: 'absolute',
-    top: '100%',
     left: tooltipPosition.arrowOffset || '50%',
-    transform: 'translate(-50%, -50%) rotate(45deg)',
-    width: '8px',
-    height: '8px',
-    backgroundColor: 'inherit',
+    transform: 'translateX(-50%)',
   };
 
   if (!content) return children;
@@ -189,11 +184,21 @@ export default function Tooltip({ children, content, position = 'top' }) {
         createPortal(
           <div
             style={tooltipStyles}
-            className="px-2 py-1 text-xs bg-gray-800 text-white rounded shadow-lg"
+            className="ui-tooltip"
             role="tooltip"
           >
             {content}
-            <div style={arrowPosition} />
+            <div className="ui-tooltip-arrow" style={arrowPosition} aria-hidden>
+              <svg
+                className="ui-tooltip-arrow-svg"
+                viewBox="0 0 12 7"
+                width="12"
+                height="7"
+              >
+                <path className="ui-tooltip-arrow-fill" d="M1 1 L11 1 L6 6.5 Z" />
+                <path className="ui-tooltip-arrow-stroke" d="M1 1 L6 6.5 L11 1" />
+              </svg>
+            </div>
           </div>,
           document.body
         )}
