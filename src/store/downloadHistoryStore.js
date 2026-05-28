@@ -49,8 +49,8 @@ export const useDownloadHistoryStore = create((set, get) => ({
       });
 
       try {
-        // Fetch link history in keyset pages for highlighting (avoids a single huge request)
-        const PAGE_SIZE = 250;
+        // Keyset pages for highlighting; backend allows up to 1000 per request
+        const PAGE_SIZE = 1000;
         const MAX_ROWS = 8000;
         const merged = [];
         let cursor = null;
