@@ -1,20 +1,30 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTagsStore } from '@/store/tagsStore';
 
 export function useTags(apiKey) {
   const { tags, loading, error, loadTags, createTag, updateTag, deleteTag, setApiKey } =
-    useTagsStore();
+    useTagsStore(
+      useShallow((s) => ({
+        tags: s.tags,
+        loading: s.loading,
+        error: s.error,
+        loadTags: s.loadTags,
+        createTag: s.createTag,
+        updateTag: s.updateTag,
+        deleteTag: s.deleteTag,
+        setApiKey: s.setApiKey,
+      }))
+    );
 
-  // Update API key in store when it changes (this will reset tags if changed)
   useEffect(() => {
     if (apiKey) {
       setApiKey(apiKey);
     }
   }, [apiKey, setApiKey]);
 
-  // Wrapper functions that pass apiKey to store actions
   const loadTagsWithKey = useCallback(async () => {
     if (apiKey) {
       await loadTags(apiKey);

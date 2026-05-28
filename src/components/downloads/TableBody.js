@@ -12,8 +12,7 @@ import {
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import ItemRow from './ItemRow';
 import FileRow from './FileRow';
-import { useDownloads } from '../shared/hooks/useDownloads';
-import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
+import { useDownloadsActions } from './DownloadsActionsContext';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
@@ -21,7 +20,6 @@ import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 export default function TableBody({
   items,
-  setItems,
   activeColumns,
   resolvedColumnWidths,
   selectedItems,
@@ -52,13 +50,7 @@ export default function TableBody({
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
   const [isStreaming, setIsStreaming] = useState({});
-  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
-  const { downloadSingle } = useDownloads(
-    apiKey,
-    activeType,
-    downloadHistory,
-    fetchDownloadHistory
-  );
+  const { downloadSingle } = useDownloadsActions();
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
   const tableOffsetTopRef = useRef(0);
@@ -538,7 +530,6 @@ export default function TableBody({
               activeColumns={activeColumns}
               resolvedColumnWidths={resolvedColumnWidths}
               selectedItems={selectedItems}
-              setItems={setItems}
               setSelectedItems={setSelectedItems}
               downloadHistory={downloadHistory}
               downloadHistoryLookup={downloadHistoryLookup}

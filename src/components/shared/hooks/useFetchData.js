@@ -128,53 +128,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     initialFetch();
   }, [type, apiKey]);
 
-  const setItems = useMemo(() => {
-    const store = useTorboxDownloadsStore.getState;
-
-    switch (type) {
-      case 'all':
-        return (newItemsOrUpdater) => {
-          if (typeof newItemsOrUpdater === 'function') {
-            const updater = newItemsOrUpdater;
-            store().updateList('torrents', (prev) => updater(prev || []));
-            store().updateList('usenet', (prev) => updater(prev || []));
-            store().updateList('webdl', (prev) => updater(prev || []));
-          } else if (Array.isArray(newItemsOrUpdater)) {
-            const list = newItemsOrUpdater;
-            store().setTorrents(list.filter((item) => item.assetType === 'torrents'));
-            store().setUsenet(list.filter((item) => item.assetType === 'usenet'));
-            store().setWebdl(list.filter((item) => item.assetType === 'webdl'));
-          } else {
-            console.warn('setItems called with non-array and non-function:', newItemsOrUpdater);
-          }
-        };
-      case 'usenet':
-        return (updater) => {
-          if (typeof updater === 'function') {
-            store().updateList('usenet', updater);
-          } else {
-            store().setUsenet(updater);
-          }
-        };
-      case 'webdl':
-        return (updater) => {
-          if (typeof updater === 'function') {
-            store().updateList('webdl', updater);
-          } else {
-            store().setWebdl(updater);
-          }
-        };
-      default:
-        return (updater) => {
-          if (typeof updater === 'function') {
-            store().updateList('torrents', updater);
-          } else {
-            store().setTorrents(updater);
-          }
-        };
-    }
-  }, [type]);
-
   const fetchItems = useMemo(() => {
     return (bypassCache = true) => {
       if (!getRateLimiter().canManualRefresh(type)) {
@@ -221,7 +174,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     loading,
     error,
     items,
-    setItems,
     fetchItems,
     dismissError,
     lastSuccessfulFetchAt,

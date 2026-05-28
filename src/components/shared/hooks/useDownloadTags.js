@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
 
 /**
@@ -8,35 +9,30 @@ import { useDownloadTagsStore } from '@/store/downloadTagsStore';
  * Uses Zustand store for app-level state management
  */
 export function useDownloadTags(apiKey) {
-  const {
-    tagMappings,
-    loading,
-    error,
-    fetchDownloadTags,
-    assignTags: assignTagsStore,
-    setApiKey,
-  } = useDownloadTagsStore();
+  const { tagMappings, loading, error, fetchDownloadTags, assignTags, setApiKey } =
+    useDownloadTagsStore(
+      useShallow((s) => ({
+        tagMappings: s.tagMappings,
+        loading: s.loading,
+        error: s.error,
+        fetchDownloadTags: s.fetchDownloadTags,
+        assignTags: s.assignTags,
+        setApiKey: s.setApiKey,
+      }))
+    );
 
-  // Update API key in store when it changes (this will reset mappings if changed)
   useEffect(() => {
     if (apiKey) {
       setApiKey(apiKey);
     }
   }, [apiKey, setApiKey]);
 
-  /**
-   * Fetch all download-tag mappings
-   * Returns a map: { downloadId: [{ id, name }] }
-   */
   const fetchDownloadTagsWithKey = useCallback(async () => {
     if (apiKey) {
       await fetchDownloadTags(apiKey);
     }
   }, [apiKey, fetchDownloadTags]);
 
-  /**
-   * Get tags for a specific download
-   */
   const getDownloadTags = useCallback(
     (downloadId) => {
       return tagMappings[downloadId] || [];
@@ -44,26 +40,16 @@ export function useDownloadTags(apiKey) {
     [tagMappings]
   );
 
-  /**
-   * Assign tags to downloads (bulk operation)
-   * @param {string[]} downloadIds - Array of download IDs
-   * @param {number[]} tagIds - Array of tag IDs to assign
-   * @param {string} operation - 'add', 'remove', or 'replace'
-   */
-  const assignTags = useCallback(
+  const assignTagsWithKey = useCallback(
     async (downloadIds, tagIds, operation = 'add') => {
       if (!apiKey) {
         throw new Error('API key is required');
       }
-      return await assignTagsStore(apiKey, downloadIds, tagIds, operation);
+      return await assignTags(apiKey, downloadIds, tagIds, operation);
     },
-    [apiKey, assignTagsStore]
+    [apiKey, assignTags]
   );
 
-  /**
-   * Map tags to download items
-   * Takes an array of download items and adds tags property to each
-   */
   const mapTagsToDownloads = useCallback(
     (downloads) => {
       if (!downloads || !Array.isArray(downloads)) {
@@ -86,10 +72,6 @@ export function useDownloadTags(apiKey) {
     [getDownloadTags]
   );
 
-  /**
-   * Create a lookup map for efficient filter evaluation
-   * Returns: { downloadId: Set<tagId> }
-   */
   const createTagLookupMap = useMemo(() => {
     const map = {};
     for (const [downloadId, tags] of Object.entries(tagMappings)) {
@@ -98,10 +80,6 @@ export function useDownloadTags(apiKey) {
     return map;
   }, [tagMappings]);
 
-  /**
-   * Check if a download has any of the specified tags
-   * Used for filter evaluation
-   */
   const hasAnyTag = useCallback(
     (downloadId, tagIds) => {
       const downloadTagIds = createTagLookupMap[downloadId];
@@ -111,9 +89,6 @@ export function useDownloadTags(apiKey) {
     [createTagLookupMap]
   );
 
-  /**
-   * Check if a download has all of the specified tags
-   */
   const hasAllTags = useCallback(
     (downloadId, tagIds) => {
       const downloadTagIds = createTagLookupMap[downloadId];
@@ -123,9 +98,6 @@ export function useDownloadTags(apiKey) {
     [createTagLookupMap]
   );
 
-  /**
-   * Check if a download has none of the specified tags
-   */
   const hasNoneTags = useCallback(
     (downloadId, tagIds) => {
       const downloadTagIds = createTagLookupMap[downloadId];
@@ -141,7 +113,7 @@ export function useDownloadTags(apiKey) {
     error,
     fetchDownloadTags: fetchDownloadTagsWithKey,
     getDownloadTags,
-    assignTags,
+    assignTags: assignTagsWithKey,
     mapTagsToDownloads,
     hasAnyTag,
     hasAllTags,

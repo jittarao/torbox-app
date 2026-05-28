@@ -27,7 +27,6 @@ function ItemRow({
   selectedItems,
   setSelectedItems,
   handleItemSelection,
-  setItems,
   downloadHistory,
   downloadHistoryLookup,
   onRowSelect,
@@ -339,7 +338,6 @@ function ItemRow({
             onDelete={onDelete}
             toggleFiles={toggleFiles}
             expandedItems={expandedItems}
-            setItems={setItems}
             setSelectedItems={setSelectedItems}
             setToast={setToast}
             activeType={activeType}

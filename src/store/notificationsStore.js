@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createApiClient } from '@/utils/apiClient';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
+import { usePollingPauseStore } from '@/store/pollingPauseStore';
 
 function getClearedNotifications() {
   try {
@@ -25,8 +26,36 @@ function getReadNotifications() {
 }
 
 const MIN_NOTIFICATION_FETCH_INTERVAL_MS = 60_000;
+const NOTIFICATION_POLL_INTERVAL_MS = 120_000;
 const RATE_LIMIT_BACKOFF_BASE_MS = 60_000;
 const MAX_RATE_LIMIT_BACKOFF_MS = 600_000;
+
+let notificationPollTimer = null;
+let notificationPollApiKey = null;
+let notificationPollSubscribers = 0;
+
+function clearNotificationPollTimer() {
+  if (notificationPollTimer) {
+    clearInterval(notificationPollTimer);
+    notificationPollTimer = null;
+  }
+}
+
+function tickNotificationPoll() {
+  if (!notificationPollApiKey) return;
+
+  if (usePollingPauseStore.getState().isPollingPaused()) return;
+
+  const { isPolling, fetchNotifications } = useNotificationsStore.getState();
+  if (isPolling) {
+    fetchNotifications(notificationPollApiKey);
+  }
+}
+
+function ensureNotificationPollTimer() {
+  if (notificationPollTimer) return;
+  notificationPollTimer = setInterval(tickNotificationPoll, NOTIFICATION_POLL_INTERVAL_MS);
+}
 
 function isRateLimitMessage(message) {
   return /429|too many requests/i.test(message || '');
@@ -474,6 +503,25 @@ export const useNotificationsStore = create((set, get) => ({
   // Set polling state
   setIsPolling: (isPolling) => {
     set({ isPolling });
+  },
+
+  startPolling: (apiKey) => {
+    if (!apiKey) return;
+
+    get().setApiKey(apiKey);
+    notificationPollSubscribers += 1;
+    notificationPollApiKey = apiKey;
+
+    get().fetchNotifications(apiKey);
+    ensureNotificationPollTimer();
+  },
+
+  stopPolling: () => {
+    notificationPollSubscribers = Math.max(0, notificationPollSubscribers - 1);
+    if (notificationPollSubscribers === 0) {
+      clearNotificationPollTimer();
+      notificationPollApiKey = null;
+    }
   },
 
   // Manual retry function

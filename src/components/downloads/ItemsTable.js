@@ -14,7 +14,6 @@ export default function ItemsTable({
   apiKey,
   activeType,
   sortedItems,
-  setItems,
   activeColumns,
   sortField,
   sortDirection,
@@ -241,7 +240,6 @@ export default function ItemsTable({
           />
           <TableBody
             items={sortedItems}
-            setItems={setItems}
             activeColumns={activeColumns}
             resolvedColumnWidths={columnLayout.resolved}
             selectedItems={selectedItems}

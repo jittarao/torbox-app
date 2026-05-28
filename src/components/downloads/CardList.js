@@ -9,9 +9,8 @@ import {
 } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
-import { useDownloads } from '../shared/hooks/useDownloads';
+import { useDownloadsActions } from './DownloadsActionsContext';
 import { useStream } from '../shared/hooks/useStream';
-import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import ItemCard from './ItemCard';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
@@ -23,7 +22,6 @@ export default function CardList({
   items,
   selectedItems,
   setSelectedItems,
-  setItems,
   apiKey,
   activeColumns,
   onFileSelect,
@@ -57,13 +55,7 @@ export default function CardList({
     file: null,
   });
   const parentRef = useRef(null);
-  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
-  const { downloadSingle } = useDownloads(
-    apiKey,
-    activeType,
-    downloadHistory,
-    fetchDownloadHistory
-  );
+  const { downloadSingle } = useDownloadsActions();
   const { createStream } = useStream(apiKey);
   const isMobile = useIsMobile();
   const containerOffsetTopRef = useRef(0);
@@ -670,7 +662,6 @@ export default function CardList({
                 toggleFiles={toggleFiles}
                 expandedItems={expandedItems}
                 fileSearch={fileSearch}
-                setItems={setItems}
                 setSelectedItems={setSelectedItems}
                 setToast={setToast}
                 activeType={activeType}

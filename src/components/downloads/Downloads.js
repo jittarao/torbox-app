@@ -3,6 +3,8 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
+import { useDownloadsEnrichment } from '../shared/hooks/useDownloadsEnrichment';
+import { DownloadsActionsProvider } from './DownloadsActionsContext';
 import { useDelete } from '../shared/hooks/useDelete';
 import { useFetchData } from '../shared/hooks/useFetchData';
 import { useFilter } from '../shared/hooks/useFilter';
@@ -39,20 +41,14 @@ import {
   getActiveTagIds,
 } from './filters/filterHelpers';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
-import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
-import { useTags } from '@/components/shared/hooks/useTags';
-import { useNotificationsStore } from '@/store/notificationsStore';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
-import {
-  enrichDownloadsWithTbm,
-  buildDownloadHistoryLookup,
-} from './utils/tbmDownloadEnrichment';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
-import { fetchUserProfile, getUserPermissions, hasDownloadAccess } from '@/utils/userProfile';
+import { hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { useSessionStore } from '@/store/sessionStore';
 import ReferralCallout from '@/components/referral/ReferralCallout';
 import UsageCallout from '@/components/downloads/UsageCallout';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
@@ -89,12 +85,11 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   );
   const [toast, setToast] = useState(null);
   const [activeType, setActiveType] = useState(getStoredAssetType);
-  const [permissions, setPermissions] = useState(null);
+  const permissions = useSessionStore((state) => state.permissions);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
 
   // Use Zustand store for download history
-  const downloadHistory = useDownloadHistoryStore((state) => state.downloadHistory);
   const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
   const downloadHistoryLoading = useDownloadHistoryStore((state) => state.isLoading);
   const clearDownloadHistory = useDownloadHistoryStore((state) => state.clearDownloadHistory);
@@ -159,26 +154,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     }
   }, [apiKey]);
 
-  // Fetch user profile and derive permissions (plan-based feature access)
-  useEffect(() => {
-    if (apiKey && apiKey.length >= 20) {
-      fetchUserProfile(apiKey)
-        .then((userData) => {
-          if (userData) {
-            setPermissions(getUserPermissions(userData));
-          } else {
-            setPermissions(null);
-          }
-        })
-        .catch((error) => {
-          console.error('Error fetching user profile:', error);
-          setPermissions(null);
-        });
-    } else {
-      setPermissions(null);
-    }
-  }, [apiKey]);
-
   const canUseUsenet = hasDownloadAccess('usenet', permissions);
 
   // Function to collapse all files
@@ -191,7 +166,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     loading,
     error: fetchError,
     items,
-    setItems,
     fetchItems,
     dismissError,
     lastSuccessfulFetchAt,
@@ -203,51 +177,10 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const showFullPageSpinner = loading && items.length === 0;
   const isRefreshing = loading && items.length > 0;
 
-  // Load tags (only if backend is available)
-  const { loadTags, tags, loading: tagsLoading, updateTag: updateTagName } = useTags(apiKey);
-
-  // Load tags once when component mounts (only if backend is available)
-  useEffect(() => {
-    if (isBackendAvailable && apiKey && tags.length === 0 && !tagsLoading) {
-      loadTags();
-    }
-    // tags.length, tagsLoading, loadTags intentionally omitted to prevent
-    // infinite loop when tags are loaded — should only run on mount/key change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, isBackendAvailable]);
-
-  // Load download tags (only if backend is available)
-  const {
-    fetchDownloadTags,
-    mapTagsToDownloads,
-    tagMappings,
-    loading: downloadTagsLoading,
-  } = useDownloadTags(apiKey);
-
-  // Load download tags once when component mounts (only if backend is available)
-  useEffect(() => {
-    if (
-      isBackendAvailable &&
-      apiKey &&
-      Object.keys(tagMappings).length === 0 &&
-      !downloadTagsLoading
-    ) {
-      fetchDownloadTags();
-    }
-    // tagMappings.length, downloadTagsLoading, fetchDownloadTags intentionally
-    // omitted to prevent infinite loop — should only run on mount/key change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, isBackendAvailable]);
-
-  const downloadHistoryLookup = useMemo(
-    () => buildDownloadHistoryLookup(downloadHistory),
-    [downloadHistory]
-  );
-
-  /** TorBox API downloads merged with TBM backend data (tags, link-history flags). */
-  const enrichedDownloads = useMemo(
-    () => enrichDownloadsWithTbm(items, mapTagsToDownloads, downloadHistoryLookup),
-    [items, tagMappings, mapTagsToDownloads, downloadHistoryLookup]
+  const { enrichedDownloads, downloadHistory, tags, updateTagName } = useDownloadsEnrichment(
+    items,
+    apiKey,
+    isBackendAvailable
   );
 
   const expandAllFiles = () => {
@@ -264,7 +197,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     hasSelectedFiles,
     handleRowSelect,
     setSelectedItems,
-  } = useSelection(enrichedDownloads);
+  } = useSelection(enrichedDownloads, activeType);
 
   // If usenet is selected but user doesn't have Pro plan, switch to all
   useEffect(() => {
@@ -296,6 +229,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleBulkDownload,
     setDownloadLinks,
     requestDownloadLink,
+    downloadSingle,
   } = useDownloads(
     apiKey,
     activeType,
@@ -304,9 +238,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleBulkDownloadComplete
   );
 
+  const downloadActions = useMemo(
+    () => ({ downloadSingle, requestDownloadLink }),
+    [downloadSingle, requestDownloadLink]
+  );
+
   const { isDeleting, deleteItem, deleteItems } = useDelete(
     apiKey,
-    setItems,
     setSelectedItems,
     setToast,
     fetchItems,
@@ -358,34 +296,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     // infinite loop — should only run on mount/key change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, isBackendAvailable]);
-
-  // Start notifications polling once when component mounts
-  const { fetchNotifications: fetchNotificationsStore } = useNotificationsStore();
-  useEffect(() => {
-    if (apiKey) {
-      // Perform initial fetch
-      fetchNotificationsStore(apiKey);
-
-      // Set up periodic polling (every 2 minutes)
-      const interval = setInterval(() => {
-        // Check if polling is paused (e.g., video or audio player is open)
-        if (isPollingPaused()) {
-          return;
-        }
-        // Read isPolling from store inside callback to get current value
-        const { isPolling } = useNotificationsStore.getState();
-        if (isPolling) {
-          fetchNotificationsStore(apiKey);
-        }
-      }, 120000); // 2 minutes
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
-    // Only re-run when apiKey changes; pause state is read inside the interval callback.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey]);
 
   const sortedItems = sortTorrents(filteredItems);
 
@@ -454,12 +364,14 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       }
 
       await Promise.all(
-        selectedItemIds.map(async (itemId) => {
-          const item = enrichedDownloads.find((i) => i.id === itemId);
+        selectedItemIds.map(async (selectionId) => {
+          const item = findItemBySelectionId(enrichedDownloads, selectionId);
           if (!item) return;
 
           try {
-            const response = await fetch(`/api/torrents/export?torrent_id=${itemId}&type=torrent`, {
+            const response = await fetch(
+              `/api/torrents/export?torrent_id=${item.id}&type=torrent`,
+              {
               headers: {
                 'x-api-key': apiKey,
               },
@@ -956,7 +868,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           apiKey={apiKey}
           activeType={activeType}
           activeColumns={activeColumns}
-          setItems={setItems}
           selectedItems={selectedItems}
           handleSelectAll={handleSelectAll}
           handleFileSelect={handleFileSelect}
@@ -1013,7 +924,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           fileSearch={search}
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}
-          setItems={setItems}
           apiKey={apiKey}
           activeColumns={activeColumns}
           onFileSelect={handleFileSelect}
@@ -1093,7 +1003,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           onTypeChange={(type) => {
             setActiveType(type);
             localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
-            setSelectedItems({ items: new Set(), files: new Map() });
           }}
           isTypeAvailable={(type) => {
             if (type === 'all') return true;
@@ -1198,7 +1107,9 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               downloadLinks.length > 0 ? 'mb-12' : ''
             }`}
           >
-            {downloadsTableContent}
+            <DownloadsActionsProvider value={downloadActions}>
+              {downloadsTableContent}
+            </DownloadsActionsProvider>
           </div>
 
           {isBackendAvailable && (

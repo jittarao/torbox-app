@@ -2,15 +2,15 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
+import { selectDisplayResults } from '@/store/searchSelectors';
 import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import Icons from '@/components/icons';
 import { formatSize } from '@/components/downloads/utils/formatters';
-
-const TORBOX_NATIVE_TRACKERS = ['Newznab'];
 
 const SORT_OPTIONS = {
   torrents: [
@@ -25,7 +25,22 @@ const SORT_OPTIONS = {
 };
 
 export default function SearchResults({ apiKey }) {
-  const { filteredResults, results, loading, error, searchType, clearResults } = useSearchStore();
+  const searchState = useSearchStore(
+    useShallow((s) => ({
+      results: s.results,
+      loading: s.loading,
+      error: s.error,
+      searchType: s.searchType,
+      clearResults: s.clearResults,
+      seasonFilter: s.seasonFilter,
+      episodeFilter: s.episodeFilter,
+      yearFilter: s.yearFilter,
+      qualityFilter: s.qualityFilter,
+      sizeFilter: s.sizeFilter,
+      seedersFilter: s.seedersFilter,
+    }))
+  );
+  const { results, loading, error, searchType, clearResults } = searchState;
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
@@ -35,6 +50,15 @@ export default function SearchResults({ apiKey }) {
   const [addedItems, setAddedItems] = useState([]);
   const [hideTorBoxIndexers, setHideTorBoxIndexers] = useState(false);
   const t = useTranslations('SearchResults');
+
+  const displayResults = useMemo(
+    () =>
+      selectDisplayResults(
+        { ...searchState, results, searchType },
+        { sortKey, sortDir, showCachedOnly, hideTorBoxIndexers }
+      ),
+    [searchState, results, searchType, sortKey, sortDir, showCachedOnly, hideTorBoxIndexers]
+  );
 
   // Clear results when API key changes
   useEffect(() => {
@@ -48,43 +72,6 @@ export default function SearchResults({ apiKey }) {
       setSortDir('asc');
     }
   }, [searchType, sortKey]);
-
-  const sortedResults = useMemo(() => {
-    return filteredResults.toSorted((a, b) => {
-      const modifier = sortDir === 'desc' ? -1 : 1;
-
-      switch (sortKey) {
-        case 'seeders': {
-          if (searchType === 'usenet') return 0;
-          const aValue = parseInt(a.last_known_seeders || 0, 10);
-          const bValue = parseInt(b.last_known_seeders || 0, 10);
-          return (aValue - bValue) * modifier;
-        }
-        case 'size': {
-          // Size is usually in bytes, so BigInt handles large numbers better
-          const aValue = BigInt(a.size || 0);
-          const bValue = BigInt(b.size || 0);
-          return Number(aValue - bValue) * modifier;
-        }
-        case 'age': {
-          // Remove 'd' from age strings if present
-          const aValue = parseInt(String(a.age).replace('d', '') || 0, 10);
-          const bValue = parseInt(String(b.age).replace('d', '') || 0, 10);
-          return (aValue - bValue) * modifier;
-        }
-        default:
-          return 0;
-      }
-    });
-  }, [filteredResults, sortKey, sortDir, searchType]);
-
-  const displayResults = useMemo(() => {
-    let tempResults = sortedResults;
-    if (hideTorBoxIndexers) {
-      tempResults = tempResults.filter((t) => !TORBOX_NATIVE_TRACKERS.includes(t.tracker));
-    }
-    return showCachedOnly ? tempResults.filter((t) => t.cached) : tempResults;
-  }, [sortedResults, showCachedOnly, hideTorBoxIndexers]);
 
   const copyLink = async (item) => {
     const link = searchType === 'usenet' ? item.nzb : item.magnet;

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useDownloads } from '../shared/hooks/useDownloads';
+import { useDownloadsActions } from './DownloadsActionsContext';
 import { useUpload } from '../shared/hooks/useUpload';
-import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
@@ -17,7 +16,6 @@ export default function ItemActions({
   onDelete,
   toggleFiles,
   expandedItems,
-  setItems: _setItems,
   setToast,
   activeType = 'torrents',
   downloadHistory,
@@ -26,13 +24,7 @@ export default function ItemActions({
 }) {
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [isDeleting, setIsDeleting] = useState(false);
-  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
-  const { downloadSingle } = useDownloads(
-    apiKey,
-    activeType,
-    downloadHistory,
-    fetchDownloadHistory
-  );
+  const { downloadSingle } = useDownloadsActions();
   const { controlTorrent, controlQueuedItem } = useUpload(apiKey);
   const t = useTranslations('ItemActions');
 
