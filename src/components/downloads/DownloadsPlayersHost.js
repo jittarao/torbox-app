@@ -6,7 +6,7 @@ import VideoPlayerModal from './VideoPlayerModal';
 import AudioPlayer from './AudioPlayer';
 import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
 /**
- * Subscribes only to player store — keeps stream URL updates off DownloadsPage.
+ * Subscribes only to player store — keeps stream URL updates off Downloads.
  */
 export default function DownloadsPlayersHost({ apiKey, activeType, requestDownloadLink }) {
   const { video, audio, closeVideo, closeAudio, setVideoStreamUrl, setActiveType, refreshAudioUrl } =

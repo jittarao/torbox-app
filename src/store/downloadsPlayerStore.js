@@ -44,7 +44,7 @@ function findItemById(itemId, activeType) {
 }
 
 /**
- * Video/audio player UI state — isolated so DownloadsPage does not re-render on stream URL ticks.
+ * Video/audio player UI state — isolated so Downloads does not re-render on stream URL ticks.
  */
 export const useDownloadsPlayerStore = create((set, get) => ({
   video: INITIAL_VIDEO,
