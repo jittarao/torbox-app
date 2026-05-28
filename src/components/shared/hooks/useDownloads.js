@@ -31,10 +31,24 @@ const parseUtcDate = (dateString) => {
   return new Date(utcDateString);
 };
 
+const saveLinkHistoryToBackend = async (apiKey) => {
+  const { ensureUserDb } = await import('@/utils/ensureUserDb');
+  const dbReady = await ensureUserDb(apiKey);
+  if (!dbReady.success) {
+    console.warn('Cannot save link history: user database not ready', dbReady.error);
+    return false;
+  }
+  return true;
+};
+
 const addToDownloadHistory = async (link, apiKey) => {
   // Only save to backend - no localStorage fallback to avoid dual sources of truth
   if (!apiKey) {
     console.warn('Cannot save link history: API key is required');
+    return;
+  }
+
+  if (!(await saveLinkHistoryToBackend(apiKey))) {
     return;
   }
 
@@ -75,6 +89,10 @@ const addBulkToDownloadHistory = async (links, apiKey) => {
     return;
   }
 
+  if (!(await saveLinkHistoryToBackend(apiKey))) {
+    return;
+  }
+
   try {
     const entries = links.map((link) => ({
       item_id: link.itemId,
@@ -109,6 +127,22 @@ const addBulkToDownloadHistory = async (links, apiKey) => {
 
 // Sanitize filename by extracting the actual filename from folder/filename format
 // and replacing invalid characters that can cause issues in URLs or file systems
+/** Backend only accepts torrents | usenet | webdl — never "all". */
+function resolveDownloadAssetType(assetType, metadata = {}) {
+  if (assetType && assetType !== 'all') {
+    return assetType;
+  }
+  const fromItem = metadata.item?.assetType || metadata.item?.asset_type;
+  if (fromItem && fromItem !== 'all') {
+    return fromItem;
+  }
+  const fromMeta = metadata.assetType || metadata.asset_type;
+  if (fromMeta && fromMeta !== 'all') {
+    return fromMeta;
+  }
+  return 'torrents';
+}
+
 const sanitizeFilename = (filename) => {
   if (!filename) return filename;
   // Split by / and use the last part (handles folder/filename.ext format from TorBox)
@@ -179,14 +213,11 @@ export function useDownloads(
   ) => {
     if (!apiKey) return false;
 
-    // For 'all' type, determine the actual asset type from metadata
-    let actualAssetType = assetType;
+    const actualAssetType = resolveDownloadAssetType(assetType, metadata);
     let actualEndpoint = getDownloadEndpoint();
     let actualIdField = idField || getIdField();
 
-    if (assetType === 'all' && metadata.item) {
-      actualAssetType = metadata.item.assetType || 'torrents';
-
+    if (assetType === 'all') {
       // Determine the correct endpoint and ID field based on the actual asset type
       switch (actualAssetType) {
         case 'usenet':
@@ -232,12 +263,13 @@ export function useDownloads(
       );
     }
 
-    if (existingDownload)
+    if (existingDownload) {
       return {
         success: true,
         data: { id: existingDownload.id, url: existingDownload.url },
-        linkHistory: null, // No new link to save
+        linkHistory: null,
       };
+    }
 
     const params = new URLSearchParams({
       [idField]: id,
@@ -378,7 +410,8 @@ export function useDownloads(
     // Create array of all download tasks
     const downloadTasks = [
       ...Array.from(selectedItems.items).flatMap((id) => {
-        const item = items.find((t) => t.id === id);
+        const item = items.find((t) => String(t.id) === String(id));
+        const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
         if (item?.files?.length === 1) {
           // If there's exactly one file, create a file task
           return {
@@ -387,7 +420,7 @@ export function useDownloads(
             fileId: item.files[0].id,
             name: item.files[0].name || `File ${item.files[0].id}`,
             metadata: {
-              assetType,
+              assetType: taskAssetType,
               item,
             },
           };
@@ -399,25 +432,28 @@ export function useDownloads(
             name:
               item?.name || `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${id}`,
             metadata: {
-              assetType,
+              assetType: taskAssetType,
               item,
             },
           };
         }
       }),
       ...Array.from(selectedItems.files.entries()).flatMap(([itemId, fileIds]) => {
-        const item = items.find((t) => t.id === itemId);
+        const item = items.find((t) => String(t.id) === String(itemId));
+        const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
         return Array.from(fileIds).map((fileId) => ({
           type: 'file',
           itemId,
           fileId,
           name: item?.files?.find((f) => f.id === fileId)?.name || `File ${fileId}`,
           metadata: {
-            assetType,
-            item: {
-              ...item,
-              files: item.files.filter((f) => f.id === fileId), // Filter to include only the specific file
-            },
+            assetType: taskAssetType,
+            item: item
+              ? {
+                  ...item,
+                  files: (item.files || []).filter((f) => f.id === fileId),
+                }
+              : undefined,
           },
         }));
       }),

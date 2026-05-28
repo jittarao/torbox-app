@@ -910,7 +910,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         statusFilter={statusFilter}
         onStatusChange={setStatusFilter}
         isDownloading={isDownloading}
-        onBulkDownload={() => handleBulkDownload(selectedItems, sortedItems)}
+        onBulkDownload={() => handleBulkDownload(selectedItems, enrichedDownloads)}
         isDeleting={isDeleting}
         onBulkDelete={(includeParentDownloads) =>
           deleteItems(selectedItems, includeParentDownloads, enrichedDownloads)

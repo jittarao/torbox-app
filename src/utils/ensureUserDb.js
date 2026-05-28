@@ -1,5 +1,8 @@
 import { useAppStore } from '@/store/appStore';
 
+/** In-flight ensure-db requests per API key (concurrent callers share one promise). */
+const ensureDbPromises = new Map();
+
 /**
  * Ensures the user database exists for a given API key
  * This should be called when an API key is loaded or set
@@ -11,19 +14,36 @@ export async function ensureUserDb(apiKey) {
     return { success: false, error: 'Invalid API key' };
   }
 
-  const { isDbEnsured, isEnsuringDb, setEnsuringDb, markDbEnsured } = useAppStore.getState();
+  const { isDbEnsured } = useAppStore.getState();
 
-  // If already ensured, return success immediately
   if (isDbEnsured(apiKey)) {
     return { success: true, wasCreated: false, dbExists: true };
   }
 
-  // If currently ensuring, return early to prevent duplicate calls
-  if (isEnsuringDb(apiKey)) {
+  const inFlight = ensureDbPromises.get(apiKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const promise = runEnsureUserDb(apiKey);
+  ensureDbPromises.set(apiKey, promise);
+
+  try {
+    return await promise;
+  } finally {
+    if (ensureDbPromises.get(apiKey) === promise) {
+      ensureDbPromises.delete(apiKey);
+    }
+  }
+}
+
+async function runEnsureUserDb(apiKey) {
+  const { isDbEnsured, setEnsuringDb, markDbEnsured } = useAppStore.getState();
+
+  if (isDbEnsured(apiKey)) {
     return { success: true, wasCreated: false, dbExists: true };
   }
 
-  // Mark as ensuring
   setEnsuringDb(apiKey, true);
 
   try {
@@ -37,28 +57,26 @@ export async function ensureUserDb(apiKey) {
 
     if (response.ok) {
       const data = await response.json();
-      // Mark as ensured
       markDbEnsured(apiKey);
-      setEnsuringDb(apiKey, false);
       return {
         success: true,
         wasCreated: data.wasCreated || false,
         dbExists: data.dbExists || false,
       };
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      setEnsuringDb(apiKey, false);
-      return {
-        success: false,
-        error: errorData.error || `HTTP ${response.status}`,
-      };
     }
+
+    const errorData = await response.json().catch(() => ({}));
+    return {
+      success: false,
+      error: errorData.error || `HTTP ${response.status}`,
+    };
   } catch (error) {
     console.error('Error ensuring user database:', error);
-    setEnsuringDb(apiKey, false);
     return {
       success: false,
       error: error.message || 'Failed to ensure user database',
     };
+  } finally {
+    setEnsuringDb(apiKey, false);
   }
 }
