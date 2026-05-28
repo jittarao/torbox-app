@@ -5,11 +5,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
-export function useSelection(items, activeType = 'all') {
+export function useSelection(items, activeType = 'all', apiKey = '') {
   const {
     selectedItems,
     setSelectedItems,
     setActiveType,
+    setApiKeyScope,
     reconcileWithItems,
     handleSelectAll,
     handleFileSelect,
@@ -18,11 +19,16 @@ export function useSelection(items, activeType = 'all') {
       selectedItems: s.selectedItems,
       setSelectedItems: s.setSelectedItems,
       setActiveType: s.setActiveType,
+      setApiKeyScope: s.setApiKeyScope,
       reconcileWithItems: s.reconcileWithItems,
       handleSelectAll: s.handleSelectAll,
       handleFileSelect: s.handleFileSelect,
     }))
   );
+
+  useEffect(() => {
+    setApiKeyScope(apiKey);
+  }, [apiKey, setApiKeyScope]);
 
   useEffect(() => {
     setActiveType(activeType);

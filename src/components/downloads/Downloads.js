@@ -160,7 +160,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleFileSelect,
     hasSelectedFiles,
     setSelectedItems,
-  } = useSelection(enrichedDownloads, activeType);
+  } = useSelection(enrichedDownloads, activeType, apiKey);
 
   // If usenet is selected but user doesn't have Pro plan, switch to all
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { getStatusStyles, getTotalSelectedFiles } from '../utils/statusHelpers';
+import { getStatusStyles } from '../utils/statusHelpers';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { useTranslations } from 'next-intl';
 
@@ -7,8 +7,9 @@ export default function StatusSection({
   isStatusSelected,
   unfilteredItems,
   filteredItems,
-  selectedItems,
-  hasSelectedFiles,
+  selectedItemCount = 0,
+  selectedFileCount = 0,
+  hasSelectedFiles = false,
   statusFilter,
   onStatusChange,
   itemTypeName,
@@ -49,8 +50,8 @@ export default function StatusSection({
   };
 
   const getSelectionText = () => {
-    const itemCount = selectedItems.items?.size;
-    const fileCount = getTotalSelectedFiles(selectedItems);
+    const itemCount = selectedItemCount;
+    const fileCount = selectedFileCount;
     const downloadSize = getTotalDownloadSize();
 
     if (itemCount > 0 && fileCount > 0) {
@@ -112,7 +113,7 @@ export default function StatusSection({
         {getSelectionText()}
       </button>
 
-      {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
+      {!(selectedItemCount > 0 || hasSelectedFiles) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           {Object.entries(statusCounts)
             .reduce((acc, [status, count]) => {

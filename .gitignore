@@ -11,6 +11,7 @@ lerna-debug.log*
 out/
 build/
 dist/
+next-env.d.ts
 
 # Audiobook chapter cache (written at runtime, must not be watched by HMR)
 .audiobook-cache/
