@@ -259,6 +259,15 @@ export default function Select({
     };
   }, [isOpen]);
 
+  const handleSelect = useCallback(
+    (selectedValue) => {
+      onChange({ target: { value: selectedValue } });
+      setIsOpen(false);
+      selectRef.current?.focus();
+    },
+    [onChange]
+  );
+
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -293,15 +302,6 @@ export default function Select({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, disabled, handleSelect]);
-
-  const handleSelect = useCallback(
-    (selectedValue) => {
-      onChange({ target: { value: selectedValue } });
-      setIsOpen(false);
-      selectRef.current?.focus();
-    },
-    [onChange, setIsOpen]
-  );
 
   const handleToggle = () => {
     if (!disabled) {
