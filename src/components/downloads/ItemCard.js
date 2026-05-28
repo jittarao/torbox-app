@@ -332,31 +332,47 @@ function ItemCard({
               className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
             />
             <h3
-              className={`text-sm md:text-base lg:text-[18px] font-medium ${
-                isMobile ? 'break-words' : 'break-all md:truncate'
-              } text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${
+              className={`text-sm md:text-base lg:text-[18px] font-medium text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${
                 isBlurred ? 'blur-[6px] select-none' : ''
               }`}
             >
-              <div className={`flex gap-2 ${isMobile ? 'items-start' : 'items-center'}`}>
-                <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
-                  <span
-                    className={`inline-block size-2 rounded-full shrink-0 mt-1.5 ${
-                      item.cached
-                        ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
-                        : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
-                    }`}
-                  ></span>
-                </Tooltip>
-                {item.private && (
-                  <Tooltip content="Private Tracker">
-                    <Icons.Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
+              <div
+                className={
+                  isMobile
+                    ? 'grid w-full min-w-0 grid-cols-[auto_1fr] items-start gap-x-2'
+                    : 'flex items-center gap-2'
+                }
+              >
+                <div
+                  className={`flex shrink-0 gap-2 ${isMobile ? 'items-start' : 'items-center'}`}
+                >
+                  <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
+                    <span
+                      className={`inline-block size-2 rounded-full shrink-0 mt-1.5 ${
+                        item.cached
+                          ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
+                          : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
+                      }`}
+                    ></span>
                   </Tooltip>
-                )}
+                  {item.private && (
+                    <Tooltip content="Private Tracker">
+                      <Icons.Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
+                    </Tooltip>
+                  )}
+                </div>
                 {item.name && (
-                  <Tooltip content={!isBlurred ? item.name : ''}>
-                    <span>{item.name || 'Unnamed Item'}</span>
-                  </Tooltip>
+                  <div className="min-w-0">
+                    <Tooltip content={!isBlurred ? item.name : ''}>
+                      <span
+                        className={
+                          isMobile ? 'break-words' : 'block break-all md:truncate'
+                        }
+                      >
+                        {item.name || 'Unnamed Item'}
+                      </span>
+                    </Tooltip>
+                  </div>
                 )}
               </div>
             </h3>
