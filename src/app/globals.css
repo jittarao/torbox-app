@@ -69,13 +69,13 @@ select option {
 }
 
 .dark select {
-  background-color: #111827;
-  color: #e5e7eb;
+  background-color: #0f0f10;
+  color: #e4e4e7;
 }
 
 .dark select option {
-  background-color: #111827;
-  color: #e5e7eb;
+  background-color: #0f0f10;
+  color: #e4e4e7;
 }
 
 /* Landing page entrance animations */
@@ -507,7 +507,7 @@ select option {
   }
 
   .dark select option {
-    background-color: #111827 !important;
-    color: #e5e7eb !important;
+    background-color: #0f0f10 !important;
+    color: #e4e4e7 !important;
   }
 }
