@@ -1,5 +1,18 @@
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
+function parseRetryAfterMs(retryAfter) {
+  if (!retryAfter) return null;
+  const seconds = Number(retryAfter);
+  if (!Number.isNaN(seconds)) {
+    return seconds * 1000;
+  }
+  const dateMs = Date.parse(retryAfter);
+  if (!Number.isNaN(dateMs)) {
+    return Math.max(0, dateMs - Date.now());
+  }
+  return null;
+}
+
 class ApiClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
@@ -95,6 +108,16 @@ class ApiClient {
           throw timeoutError;
         }
 
+        // Handle 429 rate limit errors
+        if (response.status === 429) {
+          const rateLimitError = new Error(
+            data.detail || data.error || data.message || 'Too many requests'
+          );
+          rateLimitError.isRateLimited = true;
+          rateLimitError.retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
+          throw rateLimitError;
+        }
+
         // Handle different error formats
         const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
         throw new Error(errorMessage);
@@ -118,7 +141,9 @@ class ApiClient {
         throw timeoutError;
       }
 
-      console.error(`API request failed for ${endpoint}:`, error);
+      if (!error.isRateLimited) {
+        console.error(`API request failed for ${endpoint}:`, error);
+      }
       throw error;
     }
   }
@@ -340,7 +365,12 @@ class ApiClient {
       // Return the response directly without wrapping it in a data property
       return response;
     } catch (error) {
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.message,
+        isRateLimited: error.isRateLimited,
+        retryAfterMs: error.retryAfterMs,
+      };
     }
   }
 

@@ -24,6 +24,14 @@ function getReadNotifications() {
   }
 }
 
+const MIN_NOTIFICATION_FETCH_INTERVAL_MS = 60_000;
+const RATE_LIMIT_BACKOFF_BASE_MS = 60_000;
+const MAX_RATE_LIMIT_BACKOFF_MS = 600_000;
+
+function isRateLimitMessage(message) {
+  return /429|too many requests/i.test(message || '');
+}
+
 export const useNotificationsStore = create((set, get) => ({
   notifications: [],
   loading: false,
@@ -32,6 +40,8 @@ export const useNotificationsStore = create((set, get) => ({
   isPolling: true,
   consecutiveErrors: 0,
   lastErrorTime: null,
+  rateLimitBackoffUntil: null,
+  lastFetchTime: null,
   currentApiKey: null,
   fetchingNotifications: false,
 
@@ -46,12 +56,14 @@ export const useNotificationsStore = create((set, get) => ({
         error: null,
         consecutiveErrors: 0,
         lastErrorTime: null,
+        rateLimitBackoffUntil: null,
+        lastFetchTime: null,
       });
     }
   },
 
   // Fetch notifications from API
-  fetchNotifications: async (apiKey) => {
+  fetchNotifications: async (apiKey, options = {}) => {
     if (!apiKey) {
       set({ error: 'API key is required', loading: false });
       return;
@@ -62,7 +74,15 @@ export const useNotificationsStore = create((set, get) => ({
       return;
     }
 
-    const { currentApiKey, fetchingNotifications, consecutiveErrors, lastErrorTime } = get();
+    const {
+      currentApiKey,
+      fetchingNotifications,
+      consecutiveErrors,
+      lastErrorTime,
+      rateLimitBackoffUntil,
+      lastFetchTime,
+    } = get();
+    const { force = false } = options;
 
     // Update API key in store (this will reset notifications if changed)
     get().setApiKey(apiKey);
@@ -72,16 +92,24 @@ export const useNotificationsStore = create((set, get) => ({
       return;
     }
 
-    // Check if we should skip this request due to recent errors
     const now = Date.now();
-    const timeSinceLastError = lastErrorTime ? now - lastErrorTime : Infinity;
-    const backoffTime = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000); // Max 5 minutes
 
-    if (consecutiveErrors >= 3 && timeSinceLastError < backoffTime) {
-      console.log(
-        `Skipping notification fetch due to consecutive errors. Backoff: ${backoffTime}ms`
-      );
-      return;
+    if (!force) {
+      if (rateLimitBackoffUntil && now < rateLimitBackoffUntil) {
+        return;
+      }
+
+      if (lastFetchTime && now - lastFetchTime < MIN_NOTIFICATION_FETCH_INTERVAL_MS) {
+        return;
+      }
+
+      // Back off after repeated connection errors
+      const timeSinceLastError = lastErrorTime ? now - lastErrorTime : Infinity;
+      const connectionBackoffTime = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000);
+
+      if (consecutiveErrors >= 3 && timeSinceLastError < connectionBackoffTime) {
+        return;
+      }
     }
 
     const { notifications } = get();
@@ -89,7 +117,7 @@ export const useNotificationsStore = create((set, get) => ({
     if (notifications.length === 0) {
       set({ loading: true });
     }
-    set({ fetchingNotifications: true, error: null });
+    set({ fetchingNotifications: true, error: null, lastFetchTime: now });
 
     try {
       if (get().currentApiKey !== apiKey) {
@@ -101,7 +129,11 @@ export const useNotificationsStore = create((set, get) => ({
 
       if (response.success) {
         // Reset error state on successful fetch
-        set({ consecutiveErrors: 0, lastErrorTime: null });
+        set({
+          consecutiveErrors: 0,
+          lastErrorTime: null,
+          rateLimitBackoffUntil: null,
+        });
 
         // Handle different response formats from TorBox API
         let notificationData = [];
@@ -149,21 +181,65 @@ export const useNotificationsStore = create((set, get) => ({
         });
       } else {
         const errorMsg = response.error || 'Failed to fetch notifications';
-        const now = Date.now();
+        const errorTime = Date.now();
+
+        if (response.isRateLimited || isRateLimitMessage(errorMsg)) {
+          const newConsecutiveErrors = consecutiveErrors + 1;
+          const backoffMs = Math.max(
+            response.retryAfterMs || 0,
+            Math.min(
+              RATE_LIMIT_BACKOFF_BASE_MS * Math.pow(2, newConsecutiveErrors - 1),
+              MAX_RATE_LIMIT_BACKOFF_MS
+            )
+          );
+          set({
+            consecutiveErrors: newConsecutiveErrors,
+            lastErrorTime: errorTime,
+            rateLimitBackoffUntil: errorTime + backoffMs,
+            error: null,
+            loading: false,
+            fetchingNotifications: false,
+          });
+          return;
+        }
+
         set({
           error: errorMsg,
           consecutiveErrors: consecutiveErrors + 1,
-          lastErrorTime: now,
+          lastErrorTime: errorTime,
           loading: false,
           fetchingNotifications: false,
         });
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      if (!error.isRateLimited && !isRateLimitMessage(error.message)) {
+        console.error('Error fetching notifications:', error);
+      }
       if (get().currentApiKey !== apiKey) {
         return;
       }
-      const now = Date.now();
+      const errorTime = Date.now();
+
+      if (error.isRateLimited || isRateLimitMessage(error.message)) {
+        const retryAfterMs = error.retryAfterMs || 0;
+        const newConsecutiveErrors = consecutiveErrors + 1;
+        const backoffMs = Math.max(
+          retryAfterMs,
+          Math.min(
+            RATE_LIMIT_BACKOFF_BASE_MS * Math.pow(2, newConsecutiveErrors - 1),
+            MAX_RATE_LIMIT_BACKOFF_MS
+          )
+        );
+        set({
+          consecutiveErrors: newConsecutiveErrors,
+          lastErrorTime: errorTime,
+          rateLimitBackoffUntil: errorTime + backoffMs,
+          error: null,
+          loading: false,
+          fetchingNotifications: false,
+        });
+        return;
+      }
 
       // Check if it's a connection timeout or network error
       const isConnectionError =
@@ -180,7 +256,7 @@ export const useNotificationsStore = create((set, get) => ({
         const newConsecutiveErrors = consecutiveErrors + 1;
         set({
           consecutiveErrors: newConsecutiveErrors,
-          lastErrorTime: now,
+          lastErrorTime: errorTime,
           error: 'Connection timeout - notifications temporarily unavailable',
           loading: false,
           fetchingNotifications: false,
@@ -402,7 +478,13 @@ export const useNotificationsStore = create((set, get) => ({
 
   // Manual retry function
   retryFetch: (apiKey) => {
-    set({ consecutiveErrors: 0, lastErrorTime: null, error: null, isPolling: true });
-    get().fetchNotifications(apiKey);
+    set({
+      consecutiveErrors: 0,
+      lastErrorTime: null,
+      rateLimitBackoffUntil: null,
+      error: null,
+      isPolling: true,
+    });
+    get().fetchNotifications(apiKey, { force: true });
   },
 }));
