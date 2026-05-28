@@ -86,7 +86,8 @@ export default function Tooltip({ children, content, position = 'top' }) {
     transform: `translate(calc(-50% + ${tooltipPosition.translateXOffset || 0}px), -100%)`,
     zIndex: 9999,
     marginTop: -8,
-    maxWidth: '500px',
+    width: 'fit-content',
+    maxWidth: 'min(500px, calc(100vw - 32px))',
     wordWrap: 'break-word',
     whiteSpace: 'normal',
   };
@@ -115,7 +116,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
         createPortal(
           <div
             style={tooltipStyles}
-            className="px-2 py-1 text-xs bg-gray-800 text-white rounded shadow-lg whitespace-nowrap"
+            className="px-2 py-1 text-xs bg-gray-800 text-white rounded shadow-lg"
             role="tooltip"
           >
             {content}
