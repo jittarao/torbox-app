@@ -40,7 +40,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     refreshBlockedReason,
     pollSchedule,
     canManualRefresh,
-    torrents,
     dismissError,
     setPollSchedule,
   } = useTorboxDownloadsStore(
@@ -51,18 +50,12 @@ export function useFetchData(apiKey, type = 'torrents') {
       refreshBlockedReason: s.refreshBlockedReason,
       pollSchedule: s.pollSchedule,
       canManualRefresh: s.canManualRefresh,
-      torrents: s.torrents,
       dismissError: s.dismissError,
       setPollSchedule: s.setPollSchedule,
     }))
   );
 
   const items = useTorboxDownloadsStore(useCallback((s) => selectItemsForView(s, type), [type]));
-
-  const torrentsRef = useRef(torrents);
-  useEffect(() => {
-    torrentsRef.current = torrents;
-  }, [torrents]);
 
   const syncManualRefreshAllowed = useCallback(() => {
     syncCanManualRefresh(type);
@@ -158,7 +151,6 @@ export function useFetchData(apiKey, type = 'torrents') {
   useDownloadListPolling({
     type,
     pollingPaused,
-    torrentsRef,
     onPoll: handlePoll,
     isRateLimited,
     onPollSkipped: markRateLimited,

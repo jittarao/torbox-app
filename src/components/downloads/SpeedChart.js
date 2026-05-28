@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRef, useMemo, useEffect, useState, useSyncExternalStore } from 'react';
+import { useRef, useMemo, useEffect, useState, useSyncExternalStore, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -20,6 +20,8 @@ import { formatSpeed } from './utils/formatters';
 import { useSpeedData } from '../shared/hooks/useSpeedData';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { selectItemsForView } from '@/store/torboxDownloadsSelectors';
 
 // Register Chart.js components
 ChartJS.register(
@@ -69,11 +71,17 @@ const ensureValidData = (data) => {
 // Local storage key for chart expanded state
 const CHART_EXPANDED_KEY = 'speedchart-expanded';
 
-export default function SpeedChart({ items }) {
+export default function SpeedChart({ items: itemsProp }) {
   const t = useTranslations('SpeedChart');
   const [timeRange, setTimeRange] = useState('10m');
   const [useLogScale, setUseLogScale] = useState(false);
-  const speedData = useSpeedData(items, timeRange);
+
+  const getTorrentItems = useCallback(() => {
+    if (itemsProp) return itemsProp;
+    return selectItemsForView(useTorboxDownloadsStore.getState(), 'torrents');
+  }, [itemsProp]);
+
+  const speedData = useSpeedData(getTorrentItems, timeRange);
   const chartRef = useRef(null);
   const isMobile = useIsMobile();
 

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { isQueuedItem, getAutoStartOptions } from '@/utils/utility';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { selectItemsForView } from '@/store/torboxDownloadsSelectors';
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
 
@@ -11,7 +13,6 @@ const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
  * @param {Object} options
  * @param {string} options.type - Active view type: torrents | usenet | webdl | all
  * @param {boolean} options.pollingPaused - True when any pause reason is active
- * @param {import('react').RefObject<Array>} options.torrentsRef - Latest torrents for auto-start checks
  * @param {(assetType: string, bypassCache?: boolean) => void | Promise<void>} options.onPoll - Per-type fetch
  * @param {(assetType?: string) => boolean} options.isRateLimited
  * @param {() => void} [options.onPollSkipped] - Called when a tick is skipped due to rate limiting
@@ -20,7 +21,6 @@ const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 export function useDownloadListPolling({
   type,
   pollingPaused,
-  torrentsRef,
   onPoll,
   isRateLimited,
   onPollSkipped,
@@ -75,7 +75,8 @@ export function useDownloadListPolling({
     const shouldPollForAutoStartQueued = () => {
       if (type !== 'torrents' && type !== 'all') return false;
       const options = getAutoStartOptions();
-      return Boolean(options?.autoStart && torrentsRef.current?.some(isQueuedItem));
+      const torrents = selectItemsForView(useTorboxDownloadsStore.getState(), 'torrents');
+      return Boolean(options?.autoStart && torrents.some(isQueuedItem));
     };
 
     const shouldPollWhileHidden = () => {

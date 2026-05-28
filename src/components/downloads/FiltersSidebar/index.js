@@ -6,7 +6,7 @@ import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
 import SidebarListItem from './SidebarListItem';
 import SidebarOverflowMenu from './SidebarOverflowMenu';
-import { countDownloadsPerTag, countDownloadsPerView } from '../filters/filterHelpers';
+import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 
 function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
   return (
@@ -162,7 +162,6 @@ export default function FiltersSidebar({
   views,
   activeView,
   tags,
-  enrichedDownloads,
   activeAssetType = 'all',
   activeTagIds,
   onApplyView,
@@ -193,11 +192,7 @@ export default function FiltersSidebar({
     setOverflowMenu((current) => (current?.key === key ? null : { key, anchorRef, items }));
   };
 
-  const tagCounts = useMemo(() => countDownloadsPerTag(enrichedDownloads), [enrichedDownloads]);
-  const viewCounts = useMemo(
-    () => countDownloadsPerView(views, enrichedDownloads, activeAssetType),
-    [views, enrichedDownloads, activeAssetType]
-  );
+  const { tagCounts, viewCounts } = useFiltersSidebarCounts(activeAssetType, views);
 
   const activeTagSet = useMemo(
     () => new Set((activeTagIds || []).map((id) => Number(id))),

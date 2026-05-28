@@ -17,15 +17,6 @@ const initialMeta = {
 
 const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 
-function rowsFromOrder(entities, orderKeys) {
-  const rows = [];
-  for (let i = 0; i < orderKeys.length; i++) {
-    const row = entities[orderKeys[i]];
-    if (row) rows.push(row);
-  }
-  return rows;
-}
-
 /**
  * TorBox API download lists (normalized entities + order) and fetch metadata.
  */
@@ -33,10 +24,6 @@ export const useTorboxDownloadsStore = create((set, get) => ({
   /** @type {Record<string, object>} */
   entities: {},
   order: { ...emptyOrder },
-  /** @deprecated Compatibility arrays — kept in sync with entities/order */
-  torrents: [],
-  usenet: [],
-  webdl: [],
   ...initialMeta,
 
   /**
@@ -65,10 +52,10 @@ export const useTorboxDownloadsStore = create((set, get) => ({
     set({
       entities,
       order: { ...state.order, [listKey]: orderKeys },
-      [listKey]: rowsFromOrder(entities, orderKeys),
     });
   },
 
+  /** @deprecated Use applyListMerge — kept for callers that still pass arrays */
   setTorrents: (torrents) => get().applyListMerge('torrents', torrents || []),
   setUsenet: (usenet) => get().applyListMerge('usenet', usenet || []),
   setWebdl: (webdl) => get().applyListMerge('webdl', webdl || []),
@@ -98,9 +85,6 @@ export const useTorboxDownloadsStore = create((set, get) => ({
     set({
       entities: {},
       order: { ...emptyOrder },
-      torrents: [],
-      usenet: [],
-      webdl: [],
       loading: !!hasApiKey,
       error: null,
       lastSuccessfulFetchAt: null,
@@ -144,7 +128,6 @@ export const useTorboxDownloadsStore = create((set, get) => ({
     set({
       entities: nextEntities,
       order: { ...state.order, [listKey]: nextOrder },
-      [listKey]: rowsFromOrder(nextEntities, nextOrder),
     });
   },
 
@@ -166,9 +149,6 @@ export const useTorboxDownloadsStore = create((set, get) => ({
 
     set({
       entities: { ...state.entities, [key]: storedRow },
-      [listKey]: (state[listKey] || []).map((item) =>
-        item.id === id ? storedRow : item
-      ),
     });
   },
 }));

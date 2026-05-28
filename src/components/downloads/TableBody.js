@@ -20,6 +20,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 
 export default function TableBody({
   items,
@@ -353,119 +354,16 @@ export default function TableBody({
     []
   );
 
-  // Track view mode / fullscreen changes to prevent flushSync errors
-  const prevViewModeRef = useRef(viewMode);
-  const prevIsFullscreenRef = useRef(isFullscreen);
-  const isTransitioningRef = useRef(false);
-  const [virtualRows, setVirtualRows] = useState([]);
-  // Ref to latest virtualizer so effects don't depend on it (virtualizer reference changes every render)
-  const virtualizerRef = useRef(virtualizer);
-  virtualizerRef.current = virtualizer;
+  const expandedItemsKey = expandedItemsArray.join(',');
 
-  const syncVirtualRows = useCallback(() => {
-    try {
-      const rows = virtualizerRef.current.getVirtualItems();
-      setVirtualRows((previousRows) => {
-        if (
-          previousRows.length === rows.length &&
-          previousRows.every(
-            (row, index) =>
-              row.index === rows[index]?.index &&
-              row.start === rows[index]?.start &&
-              row.size === rows[index]?.size
-          )
-        ) {
-          return previousRows;
-        }
-
-        return rows;
-      });
-    } catch (error) {
-      // Silently handle errors and retry on the next sync event
-    }
-  }, []);
-
-  const remeasureAndSync = useCallback(() => {
-    try {
-      virtualizerRef.current.measure?.();
-    } catch (error) {
-      // ignore
-    }
-    syncVirtualRows();
-  }, [syncVirtualRows]);
-
-  // Update virtual rows after render completes to prevent flushSync errors
-  // This is critical when switching from Card to Table view or entering fullscreen
-  useLayoutEffect(() => {
-    const viewModeChanged = prevViewModeRef.current !== viewMode;
-    const fullscreenChanged = prevIsFullscreenRef.current !== isFullscreen;
-    prevViewModeRef.current = viewMode;
-    prevIsFullscreenRef.current = isFullscreen;
-
-    if (viewModeChanged || fullscreenChanged) {
-      isTransitioningRef.current = true;
-      setVirtualRows([]);
-    }
-
-    const rafId = requestAnimationFrame(() => {
-      remeasureAndSync();
-      isTransitioningRef.current = false;
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
-
-  useLayoutEffect(() => {
-    remeasureAndSync();
-  }, [resolvedColumnWidths, tableOffsetTop, remeasureAndSync]);
-
-  useEffect(() => {
-    const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
-    if (!scrollTarget) {
-      return;
-    }
-
-    let rafId = null;
-    const scheduleSync = () => {
-      if (isTransitioningRef.current || rafId !== null) {
-        return;
-      }
-
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        syncVirtualRows();
-      });
-    };
-
-    scheduleSync();
-    scrollTarget.addEventListener('scroll', scheduleSync, { passive: true });
-    window.addEventListener('resize', scheduleSync);
-
-    return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      scrollTarget.removeEventListener('scroll', scheduleSync);
-      window.removeEventListener('resize', scheduleSync);
-    };
-  }, [isFullscreen, fullscreenScrollEl, flattenedRows.length, syncVirtualRows]);
-
-  // Re-measure when the fullscreen scroll container resizes (e.g. fixed layout settling)
-  useEffect(() => {
-    if (!isFullscreen || !fullscreenScrollEl) {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      remeasureAndSync();
-    });
-    observer.observe(fullscreenScrollEl);
-
-    return () => observer.disconnect();
-  }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
-
-  // Get virtual rows - always use state to prevent flushSync errors
-  // State is updated in effects to keep it in sync with scroll
-  const currentVirtualRows = virtualRows;
+  const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
+    virtualizer,
+    viewMode,
+    isFullscreen,
+    fullscreenScrollEl,
+    rowCount: flattenedRows.length,
+    remeasureDeps: [resolvedColumnWidths, tableOffsetTop, expandedItemsKey, fileSearch],
+  });
 
   const totalVirtualSize = virtualizer.getTotalSize();
   // useWindowVirtualizer bakes scrollMargin into item start; subtract it for tbody spacers (see CardList)

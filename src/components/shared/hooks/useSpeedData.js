@@ -25,7 +25,13 @@ const ensureValidNumber = (value) => {
   return value;
 };
 
-export function useSpeedData(items, timeRange = '10m') {
+/**
+ * @param {object[] | (() => object[])} itemsOrGetter — torrent rows, or a getter (e.g. from Zustand) read on each tick
+ */
+export function useSpeedData(itemsOrGetter, timeRange = '10m') {
+  const getItems =
+    typeof itemsOrGetter === 'function' ? itemsOrGetter : () => itemsOrGetter;
+
   const [speedData, setSpeedData] = useState({
     labels: [],
     timestamps: [],
@@ -36,17 +42,13 @@ export function useSpeedData(items, timeRange = '10m') {
   const intervalRef = useRef(null);
   const lastUpdateRef = useRef(Date.now());
   const hasActivityRef = useRef(false);
-  const itemsRef = useRef(items);
-
-  // Keep ref updated so interval callback always sees latest items without re-creating interval
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
+  const getItemsRef = useRef(getItems);
+  getItemsRef.current = getItems;
 
   useEffect(() => {
     // Function to update speed data (reads latest items from ref)
     const updateSpeedData = () => {
-      const currentItems = itemsRef.current;
+      const currentItems = getItemsRef.current();
       if (!currentItems || currentItems.length === 0) return;
 
       const now = Date.now();

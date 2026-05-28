@@ -5,6 +5,10 @@
 import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { itemMatchesFilters } from '@/components/downloads/filters/filterEvaluation';
+import {
+  mergeViewAssetTypeFilter,
+  hasActiveFilters,
+} from '@/components/downloads/filters/filterHelpers';
 import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
 import {
   buildDownloadHistoryLookup,
@@ -256,6 +260,77 @@ export function selectStatusCountsFromIds(torboxState, viewType) {
   }
 
   return { counts, total: viewIds.length };
+}
+
+/**
+ * Tag counts for sidebar — uses tagMappings + view ids (no enriched array).
+ */
+export function countDownloadsPerTagFromStore(torboxState, viewType, tagMappings = {}) {
+  const viewIds = selectViewOrderedIds(torboxState, viewType);
+  const entities = torboxState.entities || {};
+  const counts = {};
+
+  for (const id of viewIds) {
+    const entity = entities[id];
+    if (!entity) continue;
+    const downloadId = entity.id?.toString();
+    const tags = tagMappings[downloadId] || entity.tags || [];
+    for (const tag of tags) {
+      counts[tag.id] = (counts[tag.id] || 0) + 1;
+    }
+  }
+  return counts;
+}
+
+/**
+ * Per-view match counts for sidebar (filter rules on entities).
+ */
+export function countDownloadsPerViewFromStore(
+  views,
+  torboxState,
+  activeAssetType,
+  tagMappings = {},
+  downloadHistory = []
+) {
+  const counts = {};
+  if (!views?.length) return counts;
+
+  const lookup = buildDownloadHistoryLookup(downloadHistory);
+  const entities = torboxState.entities || {};
+  const viewIds = selectViewOrderedIds(torboxState, activeAssetType);
+
+  for (const view of views) {
+    if (
+      view.asset_type &&
+      activeAssetType !== 'all' &&
+      view.asset_type !== 'all' &&
+      view.asset_type !== activeAssetType
+    ) {
+      counts[view.id] = 0;
+      continue;
+    }
+
+    const filters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
+    if (!hasActiveFilters(filters)) {
+      counts[view.id] = 0;
+      continue;
+    }
+
+    const matched = filterIds(
+      viewIds,
+      entities,
+      {
+        search: view.search_query || '',
+        statusFilter: 'all',
+        appliedFilters: filters,
+      },
+      tagMappings,
+      lookup
+    );
+    counts[view.id] = matched.length;
+  }
+
+  return counts;
 }
 
 export function findEntityBySelectionId(entities, ids, selectionId) {
