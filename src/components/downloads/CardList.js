@@ -144,7 +144,7 @@ export default function CardList({
       const isTablet =
         typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
       const gap = getCardListItemGapPx();
-      const baseHeight = isMobile ? 96 : isTablet ? 74 : 82;
+      const baseHeight = isMobile ? 118 : isTablet ? 74 : 82;
       if (!row) {
         return baseHeight + gap;
       }
@@ -517,14 +517,12 @@ export default function CardList({
   const prevIsFullscreenRef = useRef(isFullscreen);
   const isTransitioningRef = useRef(false);
   const [virtualRows, setVirtualRows] = useState([]);
-  const [totalSize, setTotalSize] = useState(0);
   const virtualizerRef = useRef(virtualizer);
   virtualizerRef.current = virtualizer;
 
   const syncVirtualRows = useCallback(() => {
     try {
       const rows = virtualizerRef.current.getVirtualItems();
-      const size = virtualizerRef.current.getTotalSize();
       setVirtualRows((previousRows) => {
         if (
           previousRows.length === rows.length &&
@@ -540,7 +538,6 @@ export default function CardList({
 
         return rows;
       });
-      setTotalSize((previousSize) => (previousSize === size ? previousSize : size));
     } catch (error) {
       // Silently handle errors and retry on the next sync event
     }
@@ -564,10 +561,19 @@ export default function CardList({
     if (viewModeChanged || fullscreenChanged) {
       isTransitioningRef.current = true;
       setVirtualRows([]);
-      setTotalSize(0);
       isTransitioningRef.current = false;
     }
   }, [viewMode, isFullscreen]);
+
+  const expandedItemsKey = useMemo(() => expandedItemsArray.join(','), [expandedItemsArray]);
+
+  // Keep virtual row positions in sync after layout (fixes stacked cards on mobile refresh)
+  useLayoutEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      remeasureAndSync();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [flattenedRows.length, containerOffsetTop, expandedItemsKey, remeasureAndSync]);
 
   useEffect(() => {
     const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
@@ -601,44 +607,22 @@ export default function CardList({
   }, [isFullscreen, fullscreenScrollEl, flattenedRows.length, syncVirtualRows]);
 
   useEffect(() => {
-    if (!isFullscreen || !fullscreenScrollEl) {
+    const scrollEl = isFullscreen ? fullscreenScrollEl : null;
+    const layoutEl = scrollEl ?? parentRef.current;
+    if (!layoutEl) {
       return;
     }
 
     const observer = new ResizeObserver(() => {
       remeasureAndSync();
     });
-    observer.observe(fullscreenScrollEl);
+    observer.observe(layoutEl);
 
     return () => observer.disconnect();
   }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
-  const expandedItemsKey = useMemo(() => expandedItemsArray.join(','), [expandedItemsArray]);
-
-  // Remeasure once scrollMargin is known (avoids overlapping cards on table→card switch)
-  useLayoutEffect(() => {
-    if (isFullscreen) {
-      remeasureAndSync();
-      return;
-    }
-
-    if (containerOffsetTop <= 0) {
-      return;
-    }
-
-    remeasureAndSync();
-
-    // Second frame: DOM + scrollMargin are settled after table→card mount
-    const rafId = requestAnimationFrame(remeasureAndSync);
-    return () => cancelAnimationFrame(rafId);
-  }, [
-    containerOffsetTop,
-    expandedItemsKey,
-    flattenedRows.length,
-    isFullscreen,
-    fullscreenScrollEl,
-    remeasureAndSync,
-  ]);
+  const totalSize = virtualizer.getTotalSize();
+  const scrollMargin = isFullscreen ? 0 : containerOffsetTop;
 
   return (
     <>
@@ -658,19 +642,8 @@ export default function CardList({
 
           if (!row || !row.item) return [];
 
-          // Position cards using the virtualizer's scrollMargin (must match container offset)
-          const scrollMargin = isFullscreen ? 0 : (virtualizer.options.scrollMargin ?? 0);
-          let cardTop = 0;
-
-          if (isFullscreen) {
-            cardTop = virtualRow.start;
-          } else if (scrollMargin > 0) {
-            cardTop = virtualRow.start - scrollMargin;
-          } else {
-            for (let i = 0; i < virtualRow.index; i++) {
-              cardTop += estimateSize(i);
-            }
-          }
+          // useWindowVirtualizer bakes scrollMargin into item start; subtract for container-local Y
+          const cardTop = isFullscreen ? virtualRow.start : virtualRow.start - scrollMargin;
 
           const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
           const isExpanded = expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;

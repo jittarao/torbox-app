@@ -15,6 +15,7 @@ export default function ItemActionButtons({
   onStopSeeding,
   onForceStart,
   onDownload,
+  compact = false,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -53,8 +54,9 @@ export default function ItemActionButtons({
     await onDelete();
   };
 
-  const tableIconButtonClass =
-    'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const tableIconButtonClass = compact
+    ? 'shrink-0 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:size-4'
+    : 'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <>
@@ -105,8 +107,8 @@ export default function ItemActionButtons({
         </button>
       )}
 
-      {/* Download button */}
-      {item.download_present && (
+      {/* Download / delete — hidden on compact mobile; surfaced in MoreOptionsDropdown */}
+      {!compact && item.download_present && (
         <button
           type="button"
           onClick={handleDownload}
@@ -119,16 +121,17 @@ export default function ItemActionButtons({
         </button>
       )}
 
-      {/* Delete button */}
-      <ConfirmButton
-        onClick={handleDelete}
-        isLoading={isDeleting}
-        confirmIcon={<Icons.Check />}
-        defaultIcon={<Icons.Delete />}
-        className={`${tableIconButtonClass} text-red-500 dark:text-red-400 
+      {!compact && (
+        <ConfirmButton
+          onClick={handleDelete}
+          isLoading={isDeleting}
+          confirmIcon={<Icons.Check />}
+          defaultIcon={<Icons.Delete />}
+          className={`${tableIconButtonClass} text-red-500 dark:text-red-400 
           hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200`}
-        title={t('delete.title')}
-      />
+          title={t('delete.title')}
+        />
+      )}
     </>
   );
 }
