@@ -8,12 +8,7 @@ import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from './Tags/TagAssignmentModal';
 
-export default function MoreOptionsDropdown({
-  item,
-  apiKey,
-  setToast,
-  activeType = 'torrents',
-}) {
+export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType = 'torrents' }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isExporting, setIsExporting] = useState(false);

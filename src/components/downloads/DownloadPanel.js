@@ -120,7 +120,7 @@ function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, o
           </p>
         )}
 
-          {isDownloading && downloadProgress.total > 0 && (
+        {isDownloading && downloadProgress.total > 0 && (
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-progress-track dark:bg-progress-track-dark">
             <progress
               className="block h-full w-full appearance-none border-none [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-accent dark:[&::-webkit-progress-value]:bg-accent-dark [&::-moz-progress-bar]:bg-accent dark:[&::-moz-progress-bar]:bg-accent-dark"

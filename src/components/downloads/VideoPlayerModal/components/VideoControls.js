@@ -105,7 +105,11 @@ export default function VideoControls({
         }
       }}
       onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && onOverlayClick && e.target === e.currentTarget) {
+        if (
+          (e.key === 'Enter' || e.key === ' ') &&
+          onOverlayClick &&
+          e.target === e.currentTarget
+        ) {
           e.preventDefault();
           onOverlayClick(e);
         }

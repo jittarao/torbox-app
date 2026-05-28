@@ -100,7 +100,9 @@ export const useSearchStore = create((set, get) => ({
 
   loadHistory: () => {
     try {
-      const history = localStorage.getItem('torboxSearchHistory:v1') ?? localStorage.getItem('torboxSearchHistory');
+      const history =
+        localStorage.getItem('torboxSearchHistory:v1') ??
+        localStorage.getItem('torboxSearchHistory');
       if (history) {
         set({ searchHistory: JSON.parse(history) });
       }

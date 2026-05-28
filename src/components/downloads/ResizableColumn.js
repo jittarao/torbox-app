@@ -55,7 +55,9 @@ export default function ResizableColumn({
       e.stopPropagation();
       wasResizingRef.current = isResizing;
       setIsResizing(false);
-      setTimeout(() => { wasResizingRef.current = false; }, 0);
+      setTimeout(() => {
+        wasResizingRef.current = false;
+      }, 0);
     },
     [isResizing]
   );

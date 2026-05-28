@@ -3,15 +3,7 @@ import { COLUMNS } from '@/components/constants';
 
 function getDefaultColumns(activeType) {
   const defaults = {
-    all: [
-      'id',
-      'name',
-      'size',
-      'created_at',
-      'download_state',
-      'asset_type',
-      'download_progress',
-    ],
+    all: ['id', 'name', 'size', 'created_at', 'download_state', 'asset_type', 'download_progress'],
     torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
     usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
     webdl: [

@@ -80,11 +80,7 @@ function ItemRow({
                 )}
                 {item.name && (
                   <Tooltip content={!isBlurred ? item.name : ''}>
-                    <span
-                      className={
-                        isMobile ? 'break-words min-w-0' : 'truncate'
-                      }
-                    >
+                    <span className={isMobile ? 'break-words min-w-0' : 'truncate'}>
                       {item.name || 'Unnamed Item'}
                     </span>
                   </Tooltip>

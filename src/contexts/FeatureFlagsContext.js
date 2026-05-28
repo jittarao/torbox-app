@@ -1,17 +1,14 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, use, useMemo } from 'react';
 
 const FeatureFlagsContext = createContext({ searchPageDisabled: false });
 
 export function FeatureFlagsProvider({ searchPageDisabled = false, children }) {
-  return (
-    <FeatureFlagsContext.Provider value={{ searchPageDisabled: !!searchPageDisabled }}>
-      {children}
-    </FeatureFlagsContext.Provider>
-  );
+  const value = useMemo(() => ({ searchPageDisabled: !!searchPageDisabled }), [searchPageDisabled]);
+  return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;
 }
 
 export function useFeatureFlags() {
-  return useContext(FeatureFlagsContext);
+  return use(FeatureFlagsContext);
 }

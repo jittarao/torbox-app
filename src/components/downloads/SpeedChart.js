@@ -94,7 +94,8 @@ export default function SpeedChart({ items }) {
 
   // Listen for resize when no localStorage preference exists
   useEffect(() => {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem(CHART_EXPANDED_KEY) !== null) return;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(CHART_EXPANDED_KEY) !== null)
+      return;
 
     const handleResize = () => {
       if (window.innerWidth >= 1024) {

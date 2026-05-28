@@ -47,7 +47,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       if (filters.type) params.append('type', filters.type);
       if (filters.search) params.append('search', filters.search);
 
-      const response = await fetch(`/api/uploads?${params.toString()}`, {
+      const fetchPromise = fetch(`/api/uploads?${params.toString()}`, {
         headers: {
           'x-api-key': apiKey,
         },
@@ -56,6 +56,8 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       if (requestId !== uploadsRequestIdRef.current) {
         return;
       }
+
+      const response = await fetchPromise;
 
       const data = await response.json();
 
@@ -122,7 +124,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       const params = new URLSearchParams();
       if (filters.type) params.append('type', filters.type);
 
-      const response = await fetch(`/api/uploads?${params.toString()}`, {
+      const fetchPromise = fetch(`/api/uploads?${params.toString()}`, {
         headers: {
           'x-api-key': apiKey,
         },
@@ -131,6 +133,8 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       if (requestId !== statusCountsRequestIdRef.current) {
         return;
       }
+
+      const response = await fetchPromise;
 
       const data = await response.json();
 

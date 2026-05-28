@@ -221,11 +221,14 @@ export default function Select({
     };
   }, [isOpen, disabled, handleSelect]);
 
-  const handleSelect = useCallback((selectedValue) => {
-    onChange({ target: { value: selectedValue } });
-    setIsOpen(false);
-    selectRef.current?.focus();
-  }, [onChange, setIsOpen]);
+  const handleSelect = useCallback(
+    (selectedValue) => {
+      onChange({ target: { value: selectedValue } });
+      setIsOpen(false);
+      selectRef.current?.focus();
+    },
+    [onChange, setIsOpen]
+  );
 
   const handleToggle = () => {
     if (!disabled) {

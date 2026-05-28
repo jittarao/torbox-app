@@ -2,6 +2,28 @@ import { create } from 'zustand';
 import { createApiClient } from '@/utils/apiClient';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 
+function getClearedNotifications() {
+  try {
+    return JSON.parse(
+      localStorage.getItem('clearedNotifications:v1') ??
+        (localStorage.getItem('clearedNotifications') || '[]')
+    );
+  } catch {
+    return [];
+  }
+}
+
+function getReadNotifications() {
+  try {
+    return JSON.parse(
+      localStorage.getItem('readNotifications:v1') ??
+        (localStorage.getItem('readNotifications') || '[]')
+    );
+  } catch {
+    return [];
+  }
+}
+
 export const useNotificationsStore = create((set, get) => ({
   notifications: [],
   loading: false,
@@ -69,13 +91,12 @@ export const useNotificationsStore = create((set, get) => ({
     }
     set({ fetchingNotifications: true, error: null });
 
-    const apiClient = createApiClient(apiKey);
-
     try {
       if (get().currentApiKey !== apiKey) {
         return;
       }
 
+      const apiClient = createApiClient(apiKey);
       const response = await apiClient.getNotifications();
       if (get().currentApiKey !== apiKey) {
         return;
@@ -104,26 +125,14 @@ export const useNotificationsStore = create((set, get) => ({
         }
 
         // Filter out notifications that have been cleared locally (due to TorBox API bug)
-        let clearedNotifications;
-        try {
-          clearedNotifications = JSON.parse(localStorage.getItem('clearedNotifications:v1') ?? (localStorage.getItem('clearedNotifications') || '[]'));
-        } catch (error) {
-          console.error('Error reading cleared notifications from localStorage:', error);
-          clearedNotifications = [];
-        }
+        const clearedNotifications = getClearedNotifications();
 
         const filteredNotifications = notificationData.filter(
           (notification) => !clearedNotifications.includes(notification.id)
         );
 
         // Get read notifications from localStorage
-        let readNotifications;
-        try {
-          readNotifications = JSON.parse(localStorage.getItem('readNotifications:v1') ?? (localStorage.getItem('readNotifications') || '[]'));
-        } catch (error) {
-          console.error('Error reading read status from localStorage:', error);
-          readNotifications = [];
-        }
+        const readNotifications = getReadNotifications();
 
         // Apply read status from localStorage
         const notificationsWithReadStatus = filteredNotifications.map((notification) => ({
@@ -212,13 +221,14 @@ export const useNotificationsStore = create((set, get) => ({
         // Store all current notification IDs as cleared to prevent them from showing up again
         try {
           const currentNotificationIds = notifications.map((n) => n.id);
-          const clearedNotifications = JSON.parse(
-            localStorage.getItem('clearedNotifications:v1') ?? (localStorage.getItem('clearedNotifications') || '[]')
-          );
+          const clearedNotifications = getClearedNotifications();
           const updatedClearedNotifications = [
             ...new Set([...clearedNotifications, ...currentNotificationIds]),
           ];
-          localStorage.setItem('clearedNotifications:v1', JSON.stringify(updatedClearedNotifications));
+          localStorage.setItem(
+            'clearedNotifications:v1',
+            JSON.stringify(updatedClearedNotifications)
+          );
         } catch (error) {
           console.error('Error storing cleared notifications in localStorage:', error);
         }
@@ -260,9 +270,7 @@ export const useNotificationsStore = create((set, get) => ({
       if (response && response.success) {
         // Store cleared notifications in localStorage to prevent them from showing up again
         try {
-          const clearedNotifications = JSON.parse(
-            localStorage.getItem('clearedNotifications:v1') ?? (localStorage.getItem('clearedNotifications') || '[]')
-          );
+          const clearedNotifications = getClearedNotifications();
           if (!clearedNotifications.includes(notificationId)) {
             clearedNotifications.push(notificationId);
             localStorage.setItem('clearedNotifications:v1', JSON.stringify(clearedNotifications));
@@ -282,7 +290,7 @@ export const useNotificationsStore = create((set, get) => ({
 
         // Remove from read status in localStorage
         try {
-          const readNotifications = JSON.parse(localStorage.getItem('readNotifications:v1') ?? (localStorage.getItem('readNotifications') || '[]'));
+          const readNotifications = getReadNotifications();
           const updatedReadNotifications = readNotifications.filter((id) => id !== notificationId);
           localStorage.setItem('readNotifications:v1', JSON.stringify(updatedReadNotifications));
         } catch (error) {
@@ -340,7 +348,7 @@ export const useNotificationsStore = create((set, get) => ({
 
     // Store read status in localStorage
     try {
-      const readNotifications = JSON.parse(localStorage.getItem('readNotifications:v1') ?? (localStorage.getItem('readNotifications') || '[]'));
+      const readNotifications = getReadNotifications();
       if (!readNotifications.includes(notificationId)) {
         readNotifications.push(notificationId);
         localStorage.setItem('readNotifications:v1', JSON.stringify(readNotifications));
