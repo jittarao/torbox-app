@@ -10,6 +10,10 @@ import { useTranslations } from 'next-intl';
 import { isVideoFile, isAudioFile } from './utils/videoDetection';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import {
+  useIsFileSelected,
+  useIsItemBlockingFileSelect,
+} from '@/components/shared/hooks/useSelection';
+import {
   getActionsColumnWidthPx,
   getCheckboxColumnWidthPx,
   getTableRowSurfaceClasses,
@@ -30,7 +34,6 @@ const FILE_ACTION_SLOT_CLASS =
 
 function FileRow({
   item,
-  selectedItems,
   handleFileSelection,
   handleFileDownload,
   handleFileStream,
@@ -43,14 +46,14 @@ function FileRow({
   isMobile = false,
   isBlurred = false,
   tableWidth,
-  file = null, // Single file row (preferred when list is filtered)
-  fileIndex = null, // Legacy: index into item.files when file is not passed
+  file = null,
+  fileIndex = null,
   measureRef,
   dataIndex,
 }) {
   const t = useTranslations('FileActions');
   const selectionId = getDownloadSelectionId(item);
-  const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
+  const isItemSelected = useIsItemBlockingFileSelect(selectionId);
 
   const filesToRender =
     file != null
@@ -59,31 +62,87 @@ function FileRow({
         ? [item.files[fileIndex]].filter(Boolean)
         : item.files;
 
+  const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
+
   return (
     <>
       {filesToRender.map((file, index) => {
-        // Use the provided fileIndex for the actual index, or use the map index
         const actualIndex = fileIndex !== null ? fileIndex : index;
-        const isChecked = selectedItems.files.get(selectionId)?.has(file.id) || false;
-        const isDisabled = selectedItems.items?.has(selectionId);
-        const itemKey = `${item.assetType}:${String(item.id)}`;
-        const isDownloaded =
-          downloadHistoryLookup.itemDownloads.has(itemKey) ||
-          downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
-
-        const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses(
-          {
-            selected: isChecked,
-            downloaded: isDownloaded,
-          }
-        );
-
         return (
-          <tr
-            ref={fileIndex !== null ? measureRef : undefined}
-            data-index={fileIndex !== null ? dataIndex : undefined}
-            key={`${item.id}-${file.id}`}
-            className={`${rowSurfaceClass} transition-colors ${!isDisabled && 'cursor-pointer'}`}
+          <FileRowInner
+            key={`${selectionId}-${file.id}`}
+            file={file}
+            actualIndex={actualIndex}
+            selectionId={selectionId}
+            isItemSelected={isItemSelected}
+            item={item}
+            handleFileSelection={handleFileSelection}
+            handleFileDownload={handleFileDownload}
+            handleFileStream={handleFileStream}
+            handleAudioPlay={handleAudioPlay}
+            activeColumns={activeColumns}
+            downloadHistoryLookup={downloadHistoryLookup}
+            isCopying={isCopying}
+            isDownloading={isDownloading}
+            isStreaming={isStreaming}
+            isMobile={isMobile}
+            isBlurred={isBlurred}
+            tableWidth={tableWidth}
+            measureRef={measureRef}
+            dataIndex={dataIndex}
+            fileIndex={fileIndex}
+            attachMeasureRef={fileIndex !== null}
+            assetKey={assetKey}
+            t={t}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function FileRowInner({
+  file,
+  actualIndex,
+  selectionId,
+  isItemSelected,
+  item,
+  handleFileSelection,
+  handleFileDownload,
+  handleFileStream,
+  handleAudioPlay,
+  activeColumns,
+  downloadHistoryLookup,
+  isCopying,
+  isDownloading,
+  isStreaming,
+  isMobile,
+  isBlurred,
+  tableWidth,
+  measureRef,
+  dataIndex,
+  assetKey,
+  t,
+  fileIndex,
+  attachMeasureRef,
+}) {
+  const isChecked = useIsFileSelected(selectionId, file.id);
+  const isDisabled = isItemSelected;
+  const itemKey = `${item.assetType}:${String(item.id)}`;
+  const isDownloaded =
+    downloadHistoryLookup.itemDownloads.has(itemKey) ||
+    downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
+
+  const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
+    selected: isChecked,
+    downloaded: isDownloaded,
+  });
+
+  return (
+    <tr
+      ref={attachMeasureRef ? measureRef : undefined}
+      data-index={attachMeasureRef ? dataIndex : undefined}
+      className={`${rowSurfaceClass} transition-colors ${!isDisabled && 'cursor-pointer'}`}
             onMouseDown={(e) => {
               // Prevent text selection on shift+click
               if (e.shiftKey) {
@@ -231,9 +290,6 @@ function FileRow({
               </div>
             </td>
           </tr>
-        );
-      })}
-    </>
   );
 }
 

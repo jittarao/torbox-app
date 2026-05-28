@@ -22,8 +22,7 @@ export default function ItemsTable({
   setSelectedItems,
   handleSelectAll,
   handleFileSelect,
-  handleRowSelect,
-  downloadHistory,
+  downloadHistoryLookup,
   isBlurred,
   deleteItem,
   setToast,
@@ -243,10 +242,9 @@ export default function ItemsTable({
             activeColumns={activeColumns}
             resolvedColumnWidths={columnLayout.resolved}
             selectedItems={selectedItems}
-            onRowSelect={handleRowSelect}
             onFileSelect={handleFileSelect}
             setSelectedItems={setSelectedItems}
-            downloadHistory={downloadHistory}
+            downloadHistoryLookup={downloadHistoryLookup}
             apiKey={apiKey}
             onDelete={deleteItem}
             setToast={setToast}

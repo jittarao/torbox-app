@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import LinkHistory from '@/components/LinkHistory';
 import { Inter } from 'next/font/google';
+import { useSession } from '@/components/shared/hooks/useSession';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function LinkHistoryPage() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
+  const { apiKey, hydrated } = useSession();
+
+  if (!hydrated) {
+    return null;
+  }
 
   return (
     <AppShell

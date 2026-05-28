@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { isBackendAvailable } from '@/store/backendModeStore';
+import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
 
 /**
  * Automation rules store
@@ -9,19 +10,7 @@ export const useAutomationRulesStore = create((set, get) => ({
   rules: [],
   loading: false,
   error: null,
-  currentApiKey: null,
-
-  // Reset rules when API key changes
-  setApiKey: (apiKey) => {
-    const { currentApiKey } = get();
-    if (currentApiKey !== apiKey) {
-      set({
-        currentApiKey: apiKey,
-        rules: [],
-        error: null,
-      });
-    }
-  },
+  ...createApiKeyScopedSlice(set, get, { rules: [], error: null }),
 
   // Load rules from API
   loadRules: async (apiKey) => {

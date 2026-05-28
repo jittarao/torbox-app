@@ -56,6 +56,29 @@ export const useSessionStore = create((set, get) => ({
     }
   },
 
+  /** Sync session from route/AppShell apiKey prop (fan-out + permissions). */
+  syncApiKey: (apiKey) => {
+    const trimmed = (apiKey || '').trim();
+    if (trimmed !== '' && !isValidTorboxApiKey(trimmed)) {
+      return;
+    }
+
+    const { apiKey: current } = get();
+    set({ hydrated: true });
+
+    if (current !== trimmed) {
+      set({ apiKey: trimmed, permissions: trimmed ? get().permissions : null });
+    }
+
+    fanOutApiKey(trimmed);
+
+    if (trimmed) {
+      get().loadPermissions(trimmed);
+    } else {
+      set({ permissions: null, permissionsLoading: false });
+    }
+  },
+
   setApiKey: (newKey) => {
     const trimmed = (newKey || '').trim();
     if (trimmed !== '' && !isValidTorboxApiKey(trimmed)) {

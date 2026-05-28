@@ -122,14 +122,23 @@ export const useDownloadsSelectionStore = create((set, get) => ({
   activeType: 'all',
   selectedItems: emptySelection(),
   listSignature: '',
+  hasHydratedSelection: false,
 
   setActiveType: (activeType) => {
-    const { activeType: prevType, selectedItems } = get();
-    if (prevType === activeType) return;
+    const { activeType: prevType, selectedItems, hasHydratedSelection } = get();
+    if (prevType === activeType && hasHydratedSelection) return;
 
-    persistSelection(prevType, selectedItems);
+    if (prevType !== activeType) {
+      persistSelection(prevType, selectedItems);
+    }
+
     const nextSelection = loadStoredSelections(activeType, []);
-    set({ activeType, selectedItems: nextSelection, listSignature: '' });
+    set({
+      activeType,
+      selectedItems: nextSelection,
+      listSignature: '',
+      hasHydratedSelection: true,
+    });
   },
 
   setSelectedItems: (updaterOrValue) => {

@@ -9,18 +9,19 @@ import FileList from './FileList';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import {
+  useIsDownloadSelected,
+  useIsItemBlockingFileSelect,
+} from '@/components/shared/hooks/useSelection';
 import { cardContainerPad, tableActionsCellInner } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
 function ItemCard({
   item,
   index,
-  selectedItems,
-  downloadHistory,
   isItemDownloaded,
   isFileDownloaded,
   isBlurred,
-  isDisabled,
   activeColumns,
   onItemSelect,
   onFileSelect,
@@ -31,7 +32,6 @@ function ItemCard({
   toggleFiles,
   expandedItems,
   fileSearch = '',
-  setSelectedItems,
   setToast,
   activeType,
   viewMode,
@@ -272,11 +272,12 @@ function ItemCard({
   };
 
   const selectionId = getDownloadSelectionId(item);
+  const isSelected = useIsDownloadSelected(selectionId);
+  const isItemSelectDisabled = useIsItemBlockingFileSelect(selectionId);
 
   const handleCardSelect = (shiftKey) => {
-    if (isDisabled(selectionId)) return;
-    const isChecked = selectedItems.items?.has(selectionId);
-    onItemSelect(selectionId, !isChecked, index, shiftKey);
+    if (isItemSelectDisabled) return;
+    onItemSelect(selectionId, !isSelected, index, shiftKey);
   };
 
   const renderSpeedIndicators = () =>
@@ -319,7 +320,7 @@ function ItemCard({
       }}
       tabIndex={0}
       className={`${
-        selectedItems.items?.has(selectionId)
+        isSelected
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
           : isItemDownloaded(item.id)
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
@@ -345,10 +346,10 @@ function ItemCard({
           >
             <input
               type="checkbox"
-              checked={selectedItems.items?.has(selectionId)}
+              checked={isSelected}
               onChange={(e) => onItemSelect(selectionId, e.target.checked, index)}
               onClick={(e) => e.stopPropagation()}
-              disabled={isDisabled(selectionId)}
+              disabled={isItemSelectDisabled}
               className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
             />
             <h3
@@ -448,10 +449,8 @@ function ItemCard({
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
                 expandedItems={expandedItems}
-                setSelectedItems={setSelectedItems}
                 setToast={setToast}
                 activeType={activeType}
-                downloadHistory={downloadHistory}
                 mobileBar
               />
             </div>
@@ -467,10 +466,8 @@ function ItemCard({
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
                 expandedItems={expandedItems}
-                setSelectedItems={setSelectedItems}
                 setToast={setToast}
                 activeType={activeType}
-                downloadHistory={downloadHistory}
               />
             </div>
 
@@ -483,9 +480,6 @@ function ItemCard({
         <FileList
           files={visibleFiles}
           itemId={selectionId}
-          selectedItems={selectedItems}
-          isFileDownloaded={isFileDownloaded}
-          isDisabled={isDisabled(selectionId)}
           isBlurred={isBlurred}
           onFileSelect={onFileSelect}
           onFileDownload={onFileDownload}
@@ -495,6 +489,7 @@ function ItemCard({
           isDownloading={isDownloading}
           isStreaming={isStreaming}
           isMobile={isMobile}
+          isFileDownloaded={isFileDownloaded}
         />
       )}
 

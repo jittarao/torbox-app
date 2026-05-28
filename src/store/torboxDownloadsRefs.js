@@ -3,7 +3,28 @@ import { createDownloadFetchRateLimiter } from '@/components/shared/hooks/downlo
 /** Imperative refs for download sync (not Zustand state). */
 export const deltaCursorRef = { current: { torrents: null, usenet: null, webdl: null } };
 export const processedQueueIdsRef = { current: new Set() };
-export const fetchInProgressRef = { current: false };
+/** Active initial-fetch key: `${apiKey}:${viewType}` */
+export const fetchInProgressKeyRef = { current: null };
+
+export function getFetchInProgressKey(apiKey, viewType) {
+  return `${apiKey || ''}:${viewType || 'torrents'}`;
+}
+
+export function isFetchInProgress(apiKey, viewType) {
+  return fetchInProgressKeyRef.current === getFetchInProgressKey(apiKey, viewType);
+}
+
+export function beginFetchInProgress(apiKey, viewType) {
+  fetchInProgressKeyRef.current = getFetchInProgressKey(apiKey, viewType);
+}
+
+export function endFetchInProgress(apiKey, viewType) {
+  const key = getFetchInProgressKey(apiKey, viewType);
+  if (fetchInProgressKeyRef.current === key) {
+    fetchInProgressKeyRef.current = null;
+  }
+}
+
 export const prevApiKeyRef = { current: null };
 export const lastAutoStartCheckRef = { current: 0 };
 
@@ -22,6 +43,6 @@ export function resetDownloadSyncRefs(apiKey) {
   deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
   getRateLimiter().reset();
   processedQueueIdsRef.current = new Set();
-  fetchInProgressRef.current = false;
+  fetchInProgressKeyRef.current = null;
   lastAutoStartCheckRef.current = 0;
 }

@@ -25,7 +25,7 @@ export default function CardList({
   apiKey,
   activeColumns,
   onFileSelect,
-  downloadHistory,
+  downloadHistoryLookup,
   onDelete,
   expandedItems,
   toggleFiles,
@@ -476,23 +476,6 @@ export default function CardList({
     return map;
   }, [items]);
 
-  const downloadHistoryLookup = useMemo(() => {
-    const itemDownloads = new Set();
-    const fileDownloads = new Set();
-
-    downloadHistory.forEach((download) => {
-      const itemKey = `${download.assetType}:${String(download.itemId)}`;
-      if (download.fileId == null) {
-        itemDownloads.add(itemKey);
-        return;
-      }
-
-      fileDownloads.add(`${itemKey}:${String(download.fileId)}`);
-    });
-
-    return { itemDownloads, fileDownloads };
-  }, [downloadHistory]);
-
   const isItemDownloaded = (itemId) => {
     const itemAssetType = itemAssetTypeMap.get(String(itemId));
     return downloadHistoryLookup.itemDownloads.has(`${itemAssetType}:${String(itemId)}`);
@@ -646,12 +629,9 @@ export default function CardList({
               <ItemCard
                 item={row.item}
                 index={row.itemIndex}
-                selectedItems={selectedItems}
-                downloadHistory={downloadHistory}
                 isItemDownloaded={isItemDownloaded}
                 isFileDownloaded={isFileDownloaded}
                 isBlurred={isBlurred}
-                isDisabled={isDisabled}
                 activeColumns={activeColumns}
                 onItemSelect={handleItemSelection}
                 onFileSelect={handleFileSelection}
@@ -662,7 +642,6 @@ export default function CardList({
                 toggleFiles={toggleFiles}
                 expandedItems={expandedItems}
                 fileSearch={fileSearch}
-                setSelectedItems={setSelectedItems}
                 setToast={setToast}
                 activeType={activeType}
                 viewMode={viewMode}

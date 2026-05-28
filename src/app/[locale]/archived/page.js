@@ -3,28 +3,27 @@
 import ArchivedDownloads from '@/components/ArchivedDownloads';
 import AppShell from '@/components/navigation/AppShell';
 import { Inter } from 'next/font/google';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useSession } from '@/components/shared/hooks/useSession';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function ArchivedDownloadsPage() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
+  const { apiKey, hydrated } = useSession();
 
   useEffect(() => {
     if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
-          .then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for existing API key');
-            }
-          })
-          .catch((error) => {
-            console.error('Error ensuring user database on load:', error);
-          });
+        ensureUserDb(apiKey).catch((error) => {
+          console.error('Error ensuring user database on load:', error);
+        });
       });
     }
-  }, []);
+  }, [apiKey]);
+
+  if (!hydrated) {
+    return null;
+  }
 
   return (
     <AppShell

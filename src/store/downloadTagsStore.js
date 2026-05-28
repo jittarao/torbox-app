@@ -1,22 +1,11 @@
 import { create } from 'zustand';
+import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
 
 export const useDownloadTagsStore = create((set, get) => ({
-  tagMappings: {}, // { downloadId: [{ id, name }] }
+  tagMappings: {},
   loading: false,
   error: null,
-  currentApiKey: null,
-
-  // Reset mappings when API key changes
-  setApiKey: (apiKey) => {
-    const { currentApiKey } = get();
-    if (currentApiKey !== apiKey) {
-      set({
-        currentApiKey: apiKey,
-        tagMappings: {},
-        error: null,
-      });
-    }
-  },
+  ...createApiKeyScopedSlice(set, get, { tagMappings: {}, error: null }),
 
   // Fetch all download-tag mappings from /api/downloads/tags
   fetchDownloadTags: async (apiKey) => {
