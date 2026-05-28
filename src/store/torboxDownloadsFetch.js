@@ -1,5 +1,5 @@
 import { isQueuedItem, getAutoStartOptions } from '@/utils/utility';
-import { mergeDownloadList } from '@/utils/downloadListMerge';
+import { mergeDownloadEntities } from '@/utils/downloadListMerge';
 import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
 import { perfMonitor } from '@/utils/performance';
@@ -271,10 +271,12 @@ export async function fetchDownloadType(
       const assetType =
         activeType === 'usenet' ? 'usenet' : activeType === 'webdl' ? 'webdl' : 'torrents';
       const listKey = getListKeyForAssetType(assetType);
-      const currentList = useTorboxDownloadsStore.getState()[listKey];
+      const torboxState = useTorboxDownloadsStore.getState();
+      const prevOrder = torboxState.order[listKey] || [];
 
-      const sortedItems = mergeDownloadList(
-        currentList,
+      const { entities, orderKeys } = mergeDownloadEntities(
+        torboxState.entities,
+        prevOrder,
         {
           delta: data.delta === true,
           data: data.data,
@@ -282,6 +284,10 @@ export async function fetchDownloadType(
         },
         assetType
       );
+
+      const sortedItems = orderKeys
+        .map((key) => entities[key])
+        .filter(Boolean);
 
       if (data.cursor) {
         deltaCursorRef.current[activeType] = data.cursor;
@@ -291,16 +297,13 @@ export async function fetchDownloadType(
         return [];
       }
 
+      store.setListFromMerge(assetType, entities, orderKeys);
+
       if (listKey === 'torrents') {
-        store.setTorrents(sortedItems);
         if (now - lastAutoStartCheckRef.current >= AUTO_START_CHECK_INTERVAL) {
           await checkAndAutoStartTorrents(sortedItems, apiKey, viewType);
           lastAutoStartCheckRef.current = now;
         }
-      } else if (listKey === 'usenet') {
-        store.setUsenet(sortedItems);
-      } else {
-        store.setWebdl(sortedItems);
       }
 
       if (affectsCurrentView(activeType, viewType)) {

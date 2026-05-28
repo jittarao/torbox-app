@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { useFilter } from '@/components/shared/hooks/useFilter';
+import { useShallow } from 'zustand/react/shallow';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
+import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import {
   EMPTY_FILTERS,
   buildTagFilter,
@@ -14,23 +15,42 @@ import {
 } from '@/components/downloads/filters/filterHelpers';
 
 export function useDownloadsFilters({
-  enrichedDownloads,
   apiKey,
   isBackendAvailable,
   activeType,
-  setSort,
-  sortField,
-  sortDirection,
   setToast,
   handleColumnChange,
   updateTagName,
 }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
 
-  const [columnFilters, setColumnFilters] = useState(() =>
-    JSON.parse(JSON.stringify(EMPTY_FILTERS))
+  const {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    appliedFilters,
+    setAppliedFilters,
+    sortField,
+    sortDirection,
+    setSort,
+    resetFilters,
+  } = useDownloadsUiStore(
+    useShallow((s) => ({
+      search: s.search,
+      setSearch: s.setSearch,
+      statusFilter: s.statusFilter,
+      setStatusFilter: s.setStatusFilter,
+      appliedFilters: s.appliedFilters,
+      setAppliedFilters: s.setAppliedFilters,
+      sortField: s.sortField,
+      sortDirection: s.sortDirection,
+      setSort: s.setSort,
+      resetFilters: s.resetFilters,
+    }))
   );
-  const [appliedFilters, setAppliedFilters] = useState(() =>
+
+  const [columnFilters, setColumnFilters] = useState(() =>
     JSON.parse(JSON.stringify(EMPTY_FILTERS))
   );
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -39,13 +59,6 @@ export function useDownloadsFilters({
   const [tagManagerOpen, setTagManagerOpen] = useState(false);
   const [tagManagerAutoCreate, setTagManagerAutoCreate] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-
-  const { search, setSearch, statusFilter, setStatusFilter, filteredItems } = useFilter(
-    enrichedDownloads,
-    '',
-    'all',
-    appliedFilters
-  );
 
   const {
     views,
@@ -57,7 +70,7 @@ export function useDownloadsFilters({
     loading: viewsLoading,
   } = useCustomViews(apiKey);
 
-  const activeTagIds = useMemo(() => getActiveTagIds(appliedFilters), [appliedFilters]);
+  const activeTagIds = getActiveTagIds(appliedFilters);
 
   useEffect(() => {
     if (isBackendAvailable && apiKey && views.length === 0 && !viewsLoading) {
@@ -103,8 +116,7 @@ export function useDownloadsFilters({
     clearView();
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
     setColumnFilters(empty);
-    setAppliedFilters(empty);
-    setSearch('');
+    resetFilters();
   };
 
   const handleApplyTag = (tagId) => {
@@ -245,7 +257,19 @@ export function useDownloadsFilters({
       sortField,
       setSearch,
       setStatusFilter,
+      setAppliedFilters,
     ]
+  );
+
+  const handleSort = useCallback(
+    (field) => {
+      if (sortField === field) {
+        setSort(field, sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSort(field, 'asc');
+      }
+    },
+    [sortField, sortDirection, setSort]
   );
 
   return {
@@ -269,7 +293,10 @@ export function useDownloadsFilters({
     setSearch,
     statusFilter,
     setStatusFilter,
-    filteredItems,
+    sortField,
+    sortDirection,
+    handleSort,
+    setSort,
     views,
     activeView,
     applyView,

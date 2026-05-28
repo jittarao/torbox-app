@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { entityKey } from '@/utils/downloadListMerge';
+import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 
 const INITIAL_VIDEO_STATE = {
   isOpen: false,
@@ -31,7 +34,6 @@ const INITIAL_AUDIO_STATE = {
 export function useDownloadsPlayers({
   apiKey,
   activeType,
-  enrichedDownloads,
   requestDownloadLink,
   setToast,
 }) {
@@ -39,13 +41,34 @@ export function useDownloadsPlayers({
   const [videoPlayerState, setVideoPlayerState] = useState(INITIAL_VIDEO_STATE);
   const [audioPlayerState, setAudioPlayerState] = useState(INITIAL_AUDIO_STATE);
 
+  const findItemById = useCallback(
+    (itemId) => {
+      const entities = useTorboxDownloadsStore.getState().entities;
+      const assetType = resolveItemAssetType(null, activeType);
+      const key = entityKey(
+        activeType === 'all' ? 'torrents' : assetType,
+        itemId
+      );
+      if (entities[key]) return entities[key];
+      if (activeType === 'all') {
+        for (const type of ['torrents', 'usenet', 'webdl']) {
+          const row = entities[entityKey(type, itemId)];
+          if (row) return row;
+        }
+      }
+      return undefined;
+    },
+    [activeType]
+  );
+
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
       const idField =
         activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
+      const item = findItemById(itemId);
       const metadata = {
         assetType: activeType,
-        item: enrichedDownloads.find((i) => i.id === itemId),
+        item,
       };
       const result = await requestDownloadLink(
         itemId,
@@ -71,7 +94,7 @@ export function useDownloadsPlayers({
         });
       }
     },
-    [activeType, enrichedDownloads, requestDownloadLink, setToast, apiKey, setPauseReason]
+    [activeType, findItemById, requestDownloadLink, setToast, apiKey, setPauseReason]
   );
 
   const handleAudioRefreshUrl = useCallback(async () => {
@@ -82,7 +105,7 @@ export function useDownloadsPlayers({
     const idField = at === 'usenet' ? 'usenet_id' : at === 'webdl' ? 'web_id' : 'torrent_id';
     const metadata = {
       assetType: at,
-      item: enrichedDownloads.find((i) => i.id === itemId),
+      item: findItemById(itemId),
     };
     const result = await requestDownloadLink(itemId, { fileId }, idField, metadata);
     if (result.success && result.data?.url) {
@@ -90,7 +113,7 @@ export function useDownloadsPlayers({
       return result.data.url;
     }
     throw new Error(result.error || 'Failed to refresh link');
-  }, [audioPlayerState, enrichedDownloads, requestDownloadLink]);
+  }, [audioPlayerState, findItemById, requestDownloadLink]);
 
   const openVideoPlayer = useCallback(
     (

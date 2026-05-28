@@ -26,7 +26,6 @@ export default function ItemsTable({
   isBlurred,
   deleteItem,
   setToast,
-  expandedItems,
   toggleFiles,
   viewMode = 'table',
   isFullscreen,
@@ -251,7 +250,6 @@ export default function ItemsTable({
             activeType={activeType}
             isBlurred={isBlurred}
             viewMode={viewMode}
-            expandedItems={expandedItems}
             toggleFiles={toggleFiles}
             tableWidth={tableWidth}
             isFullscreen={isFullscreen}

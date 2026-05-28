@@ -17,6 +17,7 @@ import TrackSelectionModal from './TrackSelectionModal';
 import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 
 export default function CardList({
   items,
@@ -27,7 +28,6 @@ export default function CardList({
   onFileSelect,
   downloadHistoryLookup,
   onDelete,
-  expandedItems,
   toggleFiles,
   setToast,
   activeType,
@@ -111,12 +111,16 @@ export default function CardList({
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const deferredExpandedById = useDeferredValue(expandedById);
 
-  const expandedItemsArray = useMemo(() => {
-    return Array.from(expandedItems).sort();
-  }, [expandedItems]);
-
-  const expandedItemsSet = useMemo(() => new Set(expandedItemsArray), [expandedItemsArray]);
+  const expandedItemsSet = useMemo(() => {
+    return new Set(
+      Object.keys(deferredExpandedById).map((id) =>
+        Number.isNaN(Number(id)) ? id : Number(id)
+      )
+    );
+  }, [deferredExpandedById]);
 
   const flattenedRows = useMemo(() => {
     return deferredItems.map((item, itemIndex) => ({
@@ -547,7 +551,10 @@ export default function CardList({
     return () => cancelAnimationFrame(rafId);
   }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
-  const expandedItemsKey = useMemo(() => expandedItemsArray.join(','), [expandedItemsArray]);
+  const expandedItemsKey = useMemo(
+    () => Object.keys(deferredExpandedById).sort().join(','),
+    [deferredExpandedById]
+  );
 
   useLayoutEffect(() => {
     remeasureAndSync();
@@ -640,7 +647,6 @@ export default function CardList({
                 onAudioPlay={handleAudioPlay}
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
-                expandedItems={expandedItems}
                 fileSearch={fileSearch}
                 setToast={setToast}
                 activeType={activeType}

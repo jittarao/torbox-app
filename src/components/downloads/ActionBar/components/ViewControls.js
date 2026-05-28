@@ -3,6 +3,7 @@
 import Icons from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
+import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 
 const toolbarBtnBase =
   'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
@@ -52,10 +53,10 @@ export default function ViewControls({
   onViewModeChange,
   expandAllFiles,
   collapseAllFiles,
-  expandedItems,
   unfilteredItems,
 }) {
   const t = useTranslations('ViewControls');
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
 
   const handleViewModeChange = (mode) => {
     onViewModeChange(mode);
@@ -66,7 +67,7 @@ export default function ViewControls({
     unfilteredItems?.filter((item) => item.files && item.files.length > 0) ?? [];
   const hasItemsWithFiles = itemsWithFiles.length > 0;
   const allExpanded =
-    hasItemsWithFiles && itemsWithFiles.every((item) => expandedItems.has(item.id));
+    hasItemsWithFiles && itemsWithFiles.every((item) => expandedById[item.id]);
 
   return (
     <div

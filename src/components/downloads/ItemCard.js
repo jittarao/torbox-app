@@ -13,6 +13,7 @@ import {
   useIsDownloadSelected,
   useIsItemBlockingFileSelect,
 } from '@/components/shared/hooks/useSelection';
+import { selectIsRowExpanded, useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { cardContainerPad, tableActionsCellInner } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
@@ -30,7 +31,6 @@ function ItemCard({
   onAudioPlay,
   onDelete,
   toggleFiles,
-  expandedItems,
   fileSearch = '',
   setToast,
   activeType,
@@ -43,6 +43,7 @@ function ItemCard({
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
+  const isExpanded = useDownloadsUiStore(selectIsRowExpanded(item.id));
   const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
 
   const filteredColumns = activeColumns.filter(
@@ -326,7 +327,7 @@ function ItemCard({
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } ${cardContainerPad} relative ${
-        expandedItems.has(item.id) ? 'overflow-visible' : 'overflow-hidden'
+        isExpanded ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer w-full text-left`}
     >
       <div
@@ -448,7 +449,7 @@ function ItemCard({
                 apiKey={apiKey}
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
-                expandedItems={expandedItems}
+                isExpanded={isExpanded}
                 setToast={setToast}
                 activeType={activeType}
                 mobileBar
@@ -465,7 +466,7 @@ function ItemCard({
                 apiKey={apiKey}
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
-                expandedItems={expandedItems}
+                isExpanded={isExpanded}
                 setToast={setToast}
                 activeType={activeType}
               />
@@ -476,7 +477,7 @@ function ItemCard({
         )}
       </div>
 
-      {expandedItems.has(item.id) && visibleFiles.length > 0 && (
+      {isExpanded && visibleFiles.length > 0 && (
         <FileList
           files={visibleFiles}
           itemId={selectionId}

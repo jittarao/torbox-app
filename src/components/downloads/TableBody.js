@@ -10,13 +10,16 @@ import {
   useLayoutEffect,
 } from 'react';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
-import ItemRow from './ItemRow';
+import DownloadRowContainer from './DownloadRowContainer';
+import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { entityKey as toEntityKey } from '@/utils/downloadListMerge';
 import FileRow from './FileRow';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
-import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 
 export default function TableBody({
   items,
@@ -26,7 +29,6 @@ export default function TableBody({
   onFileSelect,
   setSelectedItems,
   downloadHistoryLookup,
-  expandedItems,
   toggleFiles,
   apiKey,
   onDelete,
@@ -95,13 +97,14 @@ export default function TableBody({
 
   // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
-  const deferredExpandedItems = useDeferredValue(expandedItems);
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const deferredExpandedById = useDeferredValue(expandedById);
 
-  // Create a stable representation of expanded items for memoization
-  // Convert Set to sorted array for stable comparison
   const expandedItemsArray = useMemo(() => {
-    return Array.from(deferredExpandedItems).sort();
-  }, [deferredExpandedItems]);
+    return Object.keys(deferredExpandedById)
+      .map((id) => (Number.isNaN(Number(id)) ? id : Number(id)))
+      .sort((a, b) => String(a).localeCompare(String(b)));
+  }, [deferredExpandedById]);
 
   // Create flattened array of rows (item rows + file rows when expanded)
   const flattenedRows = useMemo(() => {
@@ -113,6 +116,7 @@ export default function TableBody({
       rows.push({
         type: 'item',
         item,
+        entityKey: getDownloadSelectionId(item),
         itemIndex,
         virtualIndex: rows.length,
       });
@@ -185,25 +189,25 @@ export default function TableBody({
   const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
   // Define isDisabled first so it can be used in handlers
-  const isDisabled = useCallback(
-    (selectionId) => {
-      return selectedItems.files?.has(selectionId) && selectedItems.files.get(selectionId).size > 0;
-    },
-    [selectedItems]
-  );
+  const isSelectionDisabled = (selectionId) => {
+    const files = useDownloadsSelectionStore.getState().selectedItems.files;
+    return files?.has(selectionId) && files.get(selectionId).size > 0;
+  };
 
   const handleItemSelection = useCallback(
     (selectionId, checked, rowIndex, isShiftKey = false) => {
+      const setSelected = useDownloadsSelectionStore.getState().setSelectedItems;
+
       if (isShiftKey && typeof rowIndex === 'number' && lastClickedItemIndexRef.current !== null) {
         const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
         const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
 
-        setSelectedItems((prev) => {
+        setSelected((prev) => {
           const newItems = new Set(prev.items);
           for (let i = start; i <= end; i++) {
             const t = items[i];
             const sid = getDownloadSelectionId(t);
-            if (checked && !isDisabled(sid)) {
+            if (checked && !isSelectionDisabled(sid)) {
               newItems.add(sid);
             } else {
               newItems.delete(sid);
@@ -215,9 +219,9 @@ export default function TableBody({
           };
         });
       } else {
-        setSelectedItems((prev) => {
+        setSelected((prev) => {
           const newItems = new Set(prev.items);
-          if (checked && !isDisabled(selectionId)) {
+          if (checked && !isSelectionDisabled(selectionId)) {
             newItems.add(selectionId);
           } else {
             newItems.delete(selectionId);
@@ -230,7 +234,7 @@ export default function TableBody({
       }
       lastClickedItemIndexRef.current = rowIndex;
     },
-    [items, setSelectedItems, isDisabled]
+    [items]
   );
 
   const handleFileSelection = useCallback(
@@ -505,14 +509,16 @@ export default function TableBody({
         const row = flattenedRows[virtualRow.index];
 
         if (row.type === 'item') {
+          const rowEntityKey =
+            row.entityKey ||
+            toEntityKey(row.item.assetType || activeType, row.item.id);
           return (
-            <ItemRow
-              key={`item-${row.item.id}`}
-              item={row.item}
+            <DownloadRowContainer
+              key={`item-${rowEntityKey}`}
+              entityKey={rowEntityKey}
               activeColumns={activeColumns}
               resolvedColumnWidths={resolvedColumnWidths}
               downloadHistoryLookup={downloadHistoryLookup}
-              expandedItems={expandedItems}
               toggleFiles={toggleFiles}
               apiKey={apiKey}
               onDelete={onDelete}
