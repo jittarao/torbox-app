@@ -14,7 +14,11 @@ import {
   useIsItemBlockingFileSelect,
 } from '@/components/shared/hooks/useSelection';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
-import { cardContainerPad, tableActionsCellInner } from './utils/responsiveLayout';
+import {
+  cardContainerPad,
+  tableActionsCellInner,
+  tableRowFocusClasses,
+} from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 
 function ItemCard({
@@ -309,6 +313,7 @@ function ItemCard({
       onClick={(e) => {
         if (e.target.closest('button, input, a, select, textarea')) return;
         handleCardSelect(e.shiftKey);
+        e.currentTarget.blur();
       }}
       onKeyDown={(e) => {
         if (
@@ -326,7 +331,7 @@ function ItemCard({
           : isItemDownloaded(item.id)
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
-      } ${cardContainerPad} relative ${
+      } ${cardContainerPad} ${tableRowFocusClasses} relative ${
         isExpanded ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer w-full text-left`}
     >
