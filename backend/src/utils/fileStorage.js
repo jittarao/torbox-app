@@ -2,8 +2,9 @@ import path from 'path';
 import { mkdir, writeFile, unlink, access, stat, readdir } from 'fs/promises';
 import { constants } from 'fs';
 import logger from './logger.js';
+import { getUploadStorageDir } from './dataPaths.js';
 
-const UPLOAD_STORAGE_DIR = process.env.UPLOAD_STORAGE_DIR || '/app/data/uploads';
+const UPLOAD_STORAGE_DIR = getUploadStorageDir();
 
 /**
  * Get the upload directory path for a user

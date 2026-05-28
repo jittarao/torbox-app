@@ -1,4 +1,5 @@
 import { sendSuccess, sendError } from './helpers.js';
+import { getMasterDbPath, getUserDbDir } from '../../utils/dataPaths.js';
 
 /**
  * System Configuration Routes
@@ -24,8 +25,8 @@ export function setupConfigRoutes(router, backend) {
         },
         database: {
           max_db_connections: parseInt(process.env.MAX_DB_CONNECTIONS || '50', 10),
-          master_db_path: process.env.MASTER_DB_PATH || '/app/data/master.db',
-          user_db_dir: process.env.USER_DB_DIR || '/app/data/users',
+          master_db_path: getMasterDbPath(),
+          user_db_dir: getUserDbDir(),
         },
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',
         node_env: process.env.NODE_ENV || 'development',

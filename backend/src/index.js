@@ -17,6 +17,7 @@ import { validateJsonPayloadSize } from './middleware/validation.js';
 import { initSentry, getSentry } from './utils/sentry.js';
 import { serverErrorPayload } from './utils/httpErrors.js';
 import { validateEnv } from './config/validateEnv.js';
+import { getUserDbDir } from './utils/dataPaths.js';
 import { isPrivateOrLoopbackIp, parseRateLimitMax } from './utils/ip.js';
 import { setupAdminRoutes } from './routes/admin.js';
 import { setupHealthRoutes } from './routes/health.js';
@@ -211,7 +212,7 @@ class TorBoxBackend {
       logger.info('Master database initialized');
 
       // Initialize user database manager
-      const userDbDir = process.env.USER_DB_DIR || '/app/data/users';
+      const userDbDir = getUserDbDir();
       this.userDatabaseManager = new UserDatabaseManager(this.masterDatabase, userDbDir);
       logger.info('User database manager initialized', { userDbDir });
 
