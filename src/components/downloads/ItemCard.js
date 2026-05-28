@@ -277,6 +277,24 @@ function ItemCard({
     onItemSelect(item.id, !isChecked, index, shiftKey);
   };
 
+  const renderSpeedIndicators = () =>
+    item.active ? (
+      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
+        <div className="flex items-center gap-1">
+          <span className="text-label-success-text-dark dark:text-label-success-text-dark">
+            ↓
+          </span>
+          <span>{formatSpeed(item.download_speed)}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
+            ↑
+          </span>
+          <span>{formatSpeed(item.upload_speed)}</span>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div
       onMouseDown={(e) => {
@@ -384,6 +402,7 @@ function ItemCard({
             } text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
           >
             <DownloadStateBadge item={item} size={isMobile ? 'xs' : 'sm'} />
+            {isMobile && renderSpeedIndicators()}
             {!isMobile ? (
               <>
                 {filteredColumns.map((column) => (
@@ -453,39 +472,7 @@ function ItemCard({
               />
             </div>
 
-            {item.active && (
-              <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
-                <div className="flex items-center gap-1">
-                  <span className="text-label-success-text-dark dark:text-label-success-text-dark">
-                    ↓
-                  </span>
-                  <span>{formatSpeed(item.download_speed)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
-                    ↑
-                  </span>
-                  <span>{formatSpeed(item.upload_speed)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {isMobile && item.active && (
-          <div className="flex items-center gap-3 pl-6 text-xs text-primary-text/70 dark:text-primary-text-dark/70">
-            <div className="flex items-center gap-1">
-              <span className="text-label-success-text-dark dark:text-label-success-text-dark">
-                ↓
-              </span>
-              <span>{formatSpeed(item.download_speed)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
-                ↑
-              </span>
-              <span>{formatSpeed(item.upload_speed)}</span>
-            </div>
+            {renderSpeedIndicators()}
           </div>
         )}
       </div>
