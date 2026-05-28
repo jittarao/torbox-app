@@ -8,7 +8,58 @@ import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from './Tags/TagAssignmentModal';
 
+function menuButtonClass(menuVariant, tone = 'neutral') {
+  if (menuVariant === 'sheet') {
+    if (tone === 'accent') {
+      return 'ui-mobile-more-link text-accent dark:text-accent-dark disabled:opacity-50';
+    }
+    if (tone === 'danger') {
+      return 'ui-mobile-more-link text-red-600 dark:text-red-400 disabled:opacity-50';
+    }
+    return 'ui-mobile-more-link disabled:opacity-50';
+  }
+  if (tone === 'accent') {
+    return 'flex items-center w-full px-4 py-2 text-sm text-left text-accent dark:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark';
+  }
+  if (tone === 'danger') {
+    return 'flex items-center w-full px-4 py-2 text-sm text-left text-red-500 dark:text-red-400 hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50';
+  }
+  return 'flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50';
+}
+
+function menuDividerClass(menuVariant) {
+  return menuVariant === 'sheet'
+    ? 'my-2 mx-3 border-t border-border/50 dark:border-border-dark/50'
+    : 'my-1 border-t border-border dark:border-border-dark';
+}
+
+function MenuItemButton({ menuVariant, tone, onClick, disabled, icon, children }) {
+  const labelClass =
+    menuVariant === 'sheet' ? 'min-w-0 flex-1 text-left' : 'ml-2';
+  const iconWrapClass =
+    menuVariant === 'sheet'
+      ? 'flex size-5 shrink-0 items-center justify-center [&_svg]:size-5'
+      : '';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={menuButtonClass(menuVariant, tone)}
+    >
+      {menuVariant === 'sheet' ? (
+        <span className={iconWrapClass}>{icon}</span>
+      ) : (
+        icon
+      )}
+      <span className={labelClass}>{children}</span>
+    </button>
+  );
+}
+
 function MenuItems({
+  menuVariant = 'dropdown',
   activeType,
   t,
   actionT,
@@ -31,132 +82,125 @@ function MenuItems({
 
   if (showDownload && onDownload) {
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="download"
+        menuVariant={menuVariant}
+        tone="accent"
         onClick={onDownload}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-accent dark:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+        icon={<Icons.Download />}
       >
-        <Icons.Download />
-        <span className="ml-2">{actionT('download.label')}</span>
-      </button>
+        {actionT('download.label')}
+      </MenuItemButton>
     );
   }
 
   if (showDelete && onDelete) {
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="delete"
+        menuVariant={menuVariant}
+        tone="danger"
         onClick={onDelete}
         disabled={isDeleting}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-red-500 dark:text-red-400 hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+        icon={isDeleting ? <Spinner size="xs" /> : <Icons.Delete />}
       >
-        {isDeleting ? <Spinner size="xs" /> : <Icons.Delete />}
-        <span className="ml-2">{actionT('delete.label')}</span>
-      </button>
+        {actionT('delete.label')}
+      </MenuItemButton>
     );
   }
 
   if (items.length > 0) {
     items.push(
-      <div
-        key="primary-divider"
-        className="my-1 border-t border-border dark:border-border-dark"
-        role="separator"
-      />
+      <div key="primary-divider" className={menuDividerClass(menuVariant)} role="separator" />
     );
   }
 
   items.push(
-    <button
-      type="button"
+    <MenuItemButton
       key="copy-id"
+      menuVariant={menuVariant}
       onClick={onCopyId}
-      className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      icon={<Icons.Copy />}
     >
-      <Icons.Copy />
-      <span className="ml-2">{t('copyId')}</span>
-    </button>
+      {t('copyId')}
+    </MenuItemButton>
   );
 
   items.push(
-    <button
-      type="button"
+    <MenuItemButton
       key="copy-hash"
+      menuVariant={menuVariant}
       onClick={onCopyHash}
-      className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      icon={<Icons.Copy />}
     >
-      <Icons.Copy />
-      <span className="ml-2">{t('copyHash')}</span>
-    </button>
+      {t('copyHash')}
+    </MenuItemButton>
   );
 
   if (activeType === 'torrents') {
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="copy-short-magnet"
+        menuVariant={menuVariant}
         onClick={onCopyShortMagnet}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+        icon={<Icons.Copy />}
       >
-        <Icons.Copy />
-        <span className="ml-2">{t('copyShortMagnet')}</span>
-      </button>
+        {t('copyShortMagnet')}
+      </MenuItemButton>
     );
 
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="copy-full-magnet"
+        menuVariant={menuVariant}
         onClick={onCopyFullMagnet}
         disabled={isExporting}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+        icon={isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
       >
-        {isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
-        <span className="ml-2">{t('copyFullMagnet')}</span>
-      </button>
+        {t('copyFullMagnet')}
+      </MenuItemButton>
     );
 
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="reannounce"
+        menuVariant={menuVariant}
         onClick={onReannounce}
         disabled={isReannouncing}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+        icon={isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
       >
-        {isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
-        <span className="ml-2">{t('reannounce')}</span>
-      </button>
+        {t('reannounce')}
+      </MenuItemButton>
     );
 
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="export-torrent"
+        menuVariant={menuVariant}
         onClick={onExportTorrent}
         disabled={isExporting}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+        icon={isExporting ? <Spinner size="xs" /> : <Icons.Download />}
       >
-        {isExporting ? <Spinner size="xs" /> : <Icons.Download />}
-        <span className="ml-2">{t('exportTorrent')}</span>
-      </button>
+        {t('exportTorrent')}
+      </MenuItemButton>
     );
   }
 
   if (activeType === 'webdl') {
     items.push(
-      <button
-        type="button"
+      <MenuItemButton
         key="copy-source-url"
+        menuVariant={menuVariant}
         onClick={onCopySourceUrl}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+        icon={<Icons.Copy />}
       >
-        <Icons.Copy />
-        <span className="ml-2">{t('copySourceUrl')}</span>
-      </button>
+        {t('copySourceUrl')}
+      </MenuItemButton>
     );
+  }
+
+  if (menuVariant === 'sheet') {
+    return <ul className="space-y-0.5 px-2 py-1">{items.map((node) => <li key={node.key}>{node}</li>)}</ul>;
   }
 
   return items;
@@ -173,6 +217,7 @@ export default function MoreOptionsDropdown({
   onDelete,
   isDeleting = false,
   compact = false,
+  mobileBar = false,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -190,10 +235,31 @@ export default function MoreOptionsDropdown({
   );
   const t = useTranslations('MoreOptionsDropdown');
   const actionT = useTranslations('ItemActionButtons');
+  const filtersT = useTranslations('DownloadsFilters');
   const apiClient = createApiClient(apiKey);
+
+  useEffect(() => {
+    if (!mobileBar || !isMenuOpen) return;
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prev;
+    };
+  }, [mobileBar, isMenuOpen]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMenuOpen]);
 
   // Close menu when clicking outside and handle window resize
   useEffect(() => {
+    if (mobileBar) return;
+
     const handleClickOutside = (event) => {
       if (
         isMenuOpen &&
@@ -227,11 +293,16 @@ export default function MoreOptionsDropdown({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, mobileBar]);
 
   // Calculate menu position when it opens
   const toggleMenu = (e) => {
     e.stopPropagation();
+
+    if (mobileBar) {
+      setIsMenuOpen((open) => !open);
+      return;
+    }
 
     if (!isMenuOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -273,7 +344,7 @@ export default function MoreOptionsDropdown({
       setMenuPosition({ top, left });
     }
 
-    setIsMenuOpen(!isMenuOpen);
+    setIsMenuOpen((open) => !open);
   };
 
   // Copy text to clipboard
@@ -553,23 +624,141 @@ export default function MoreOptionsDropdown({
     return providers[providerId] || providerId;
   };
 
+  const menuItemsElement = (
+    <MenuItems
+      menuVariant={mobileBar ? 'sheet' : 'dropdown'}
+      activeType={activeType}
+      t={t}
+      actionT={actionT}
+      isExporting={isExporting}
+      isReannouncing={isReannouncing}
+      isDeleting={isDeleting}
+      showDownload={showDownload}
+      showDelete={showDelete}
+      onDownload={
+        onDownload
+          ? (e) => {
+              e.stopPropagation();
+              onDownload();
+              setIsMenuOpen(false);
+            }
+          : undefined
+      }
+      onDelete={
+        onDelete
+          ? (e) => {
+              e.stopPropagation();
+              onDelete(e);
+              setIsMenuOpen(false);
+            }
+          : undefined
+      }
+      onCopyId={handleCopyId}
+      onCopyHash={handleCopyHash}
+      onCopyShortMagnet={handleCopyShortMagnet}
+      onCopyFullMagnet={handleCopyFullMagnet}
+      onReannounce={handleReannounce}
+      onExportTorrent={handleExportTorrent}
+      onCopySourceUrl={handleCopySourceUrl}
+    />
+  );
+
+  const itemSubtitle = item.name?.trim() || item.id;
+
   return (
-    <div className="relative" ref={menuRef}>
+    <div className={mobileBar ? 'shrink-0' : 'relative'} ref={mobileBar ? undefined : menuRef}>
       <button
         type="button"
         ref={buttonRef}
         onClick={toggleMenu}
-        className={`${
-          compact ? 'p-1 [&_svg]:size-4' : 'p-1.5'
-        } rounded-full text-primary-text/70 dark:text-primary-text-dark/70 hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors`}
+        className={
+          mobileBar
+            ? 'ui-header-icon-btn !h-11 !w-11 !min-w-11 shrink-0 touch-manipulation'
+            : `${
+                compact ? 'p-1 [&_svg]:size-4' : 'p-1.5'
+              } rounded-full text-primary-text/70 dark:text-primary-text-dark/70 hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors`
+        }
         title={t('title')}
         aria-label={t('label')}
+        aria-haspopup="menu"
+        aria-expanded={isMenuOpen}
       >
-        <Icons.VerticalEllipsis />
+        <Icons.VerticalEllipsis className={mobileBar ? 'size-5' : undefined} />
       </button>
 
       {isMenuOpen &&
         isMounted &&
+        mobileBar &&
+        createPortal(
+          <>
+            <div
+              className="z-overlay-backdrop fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200"
+              role="presentation"
+              onClick={() => setIsMenuOpen(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsMenuOpen(false);
+                }
+              }}
+              aria-hidden={!isMenuOpen}
+            />
+            <dialog
+              ref={menuRef}
+              aria-label={t('title')}
+              className="z-overlay-panel fixed inset-x-0 bottom-0 flex max-h-[min(85dvh,28rem)] flex-col rounded-t-2xl border border-border/60 bg-surface shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:border-border-dark/60 dark:bg-surface-dark"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex' }}
+              open={isMenuOpen}
+            >
+              <div className="flex shrink-0 justify-center pt-2.5 pb-1">
+                <div
+                  className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600"
+                  aria-hidden
+                />
+              </div>
+              <div className="flex items-start justify-between gap-3 border-b border-border/40 px-4 py-2 dark:border-border-dark/40">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
+                    {t('title')}
+                  </h2>
+                  <p className="mt-0.5 truncate text-xs text-primary-text/55 dark:text-primary-text-dark/55">
+                    {itemSubtitle}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="ui-header-icon-btn shrink-0"
+                  aria-label={filtersT('close')}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    className="size-5"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
+                {menuItemsElement}
+              </div>
+            </dialog>
+          </>,
+          document.body
+        )}
+
+      {isMenuOpen &&
+        isMounted &&
+        !mobileBar &&
         createPortal(
           <div
             ref={menuRef}
@@ -579,43 +768,7 @@ export default function MoreOptionsDropdown({
               left: `${menuPosition.left}px`,
             }}
           >
-            <div className="py-1">
-              <MenuItems
-                activeType={activeType}
-                t={t}
-                actionT={actionT}
-                isExporting={isExporting}
-                isReannouncing={isReannouncing}
-                isDeleting={isDeleting}
-                showDownload={showDownload}
-                showDelete={showDelete}
-                onDownload={
-                  onDownload
-                    ? (e) => {
-                        e.stopPropagation();
-                        onDownload();
-                        setIsMenuOpen(false);
-                      }
-                    : undefined
-                }
-                onDelete={
-                  onDelete
-                    ? (e) => {
-                        e.stopPropagation();
-                        onDelete(e);
-                        setIsMenuOpen(false);
-                      }
-                    : undefined
-                }
-                onCopyId={handleCopyId}
-                onCopyHash={handleCopyHash}
-                onCopyShortMagnet={handleCopyShortMagnet}
-                onCopyFullMagnet={handleCopyFullMagnet}
-                onReannounce={handleReannounce}
-                onExportTorrent={handleExportTorrent}
-                onCopySourceUrl={handleCopySourceUrl}
-              />
-            </div>
+            <div className="py-1">{menuItemsElement}</div>
           </div>,
           document.body
         )}

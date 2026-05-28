@@ -360,23 +360,6 @@ function ItemCard({
                 )}
               </div>
             </h3>
-            {isMobile && (
-              <div className="flex shrink-0 items-center gap-0.5 -mr-1">
-                <ItemActions
-                  item={item}
-                  apiKey={apiKey}
-                  onDelete={onDelete}
-                  toggleFiles={toggleFiles}
-                  expandedItems={expandedItems}
-                  setItems={setItems}
-                  setSelectedItems={setSelectedItems}
-                  setToast={setToast}
-                  activeType={activeType}
-                  downloadHistory={downloadHistory}
-                  compact
-                />
-              </div>
-            )}
           </div>
 
           <div
@@ -422,6 +405,24 @@ function ItemCard({
             {/* Tags display */}
             {item.tags && item.tags.length > 0 && <TagDisplay tags={item.tags} />}
           </div>
+
+          {isMobile && (
+            <div className="mt-2 border-t border-border/40 pt-2 pl-6 dark:border-border-dark/40">
+              <ItemActions
+                item={item}
+                apiKey={apiKey}
+                onDelete={onDelete}
+                toggleFiles={toggleFiles}
+                expandedItems={expandedItems}
+                setItems={setItems}
+                setSelectedItems={setSelectedItems}
+                setToast={setToast}
+                activeType={activeType}
+                downloadHistory={downloadHistory}
+                mobileBar
+              />
+            </div>
+          )}
         </div>
 
         {!isMobile && (

@@ -546,7 +546,8 @@
       "title": "Torrent exportieren"
     },
     "files": {
-      "hide": "Dateien ausblenden ",
+      "count": "{count} Dateien",
+      "hide": "Dateien ausblenden",
       "label": "Dateien",
       "show": "Dateien anzeigen"
     },
