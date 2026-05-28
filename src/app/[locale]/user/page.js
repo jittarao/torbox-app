@@ -10,11 +10,6 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata = {
-  title: 'User Profile',
-  description: 'View and manage your TorBox account profile and subscription.',
-};
-
 export default function UserPage() {
   const [toast, setToast] = useState(null);
   const [apiKey, setApiKey] = useState(() => {

@@ -7,11 +7,6 @@ import { useState, useEffect } from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata = {
-  title: 'Uploads',
-  description: 'Upload torrents, usenet files, and magnet links to TorBox.',
-};
-
 export default function UploadsPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 

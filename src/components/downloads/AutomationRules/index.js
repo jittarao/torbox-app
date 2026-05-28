@@ -149,7 +149,7 @@ function ExecutionResult({ executionResult, t, onClose }) {
         </div>
         <button
           type="button"
-          onClick={() => setExecutionResult(null)}
+          onClick={onClose}
           className="text-primary-text/50 dark:text-primary-text-dark/50 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
           aria-label={t('close') || 'Close'}
         >

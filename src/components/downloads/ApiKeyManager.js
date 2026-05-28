@@ -23,6 +23,10 @@ export default function ApiKeyManager({
       return [];
     }
   });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
+  const [showKeys, setShowKeys] = useState(false);
 
   const saveKeys = (newKeys) => {
     localStorage.setItem('torboxApiKeys:v1', JSON.stringify(newKeys));

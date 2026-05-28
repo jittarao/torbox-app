@@ -7,11 +7,6 @@ import { useState, useEffect } from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata = {
-  title: 'Automation Rules',
-  description: 'Create and manage automation rules for your TorBox downloads.',
-};
-
 export default function AutomationPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 

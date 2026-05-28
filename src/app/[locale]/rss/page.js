@@ -14,11 +14,6 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata = {
-  title: 'RSS Feeds',
-  description: 'Manage your RSS feeds and automate TorBox downloads from feed items.',
-};
-
 export default function RssPage() {
   const [toast, setToast] = useState(null);
   const [apiKey, setApiKey] = useState(() => {
