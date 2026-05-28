@@ -48,7 +48,7 @@ export function DropZone({
       type="button"
       disabled={disabled}
       className={`
-        border-2 border-dashed rounded-lg p-6 h-40 flex flex-col items-center justify-center
+        w-full border-2 border-dashed rounded-lg p-6 h-40 flex flex-col items-center justify-center
         transition-colors duration-200 cursor-pointer
         ${
           isDragging
