@@ -11,8 +11,14 @@ import TagAssignmentModal from './Tags/TagAssignmentModal';
 function MenuItems({
   activeType,
   t,
+  actionT,
   isExporting,
   isReannouncing,
+  isDeleting,
+  showDownload,
+  showDelete,
+  onDownload,
+  onDelete,
   onCopyId,
   onCopyHash,
   onCopyShortMagnet,
@@ -22,6 +28,45 @@ function MenuItems({
   onCopySourceUrl,
 }) {
   const items = [];
+
+  if (showDownload && onDownload) {
+    items.push(
+      <button
+        type="button"
+        key="download"
+        onClick={onDownload}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-accent dark:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      >
+        <Icons.Download />
+        <span className="ml-2">{actionT('download.label')}</span>
+      </button>
+    );
+  }
+
+  if (showDelete && onDelete) {
+    items.push(
+      <button
+        type="button"
+        key="delete"
+        onClick={onDelete}
+        disabled={isDeleting}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-red-500 dark:text-red-400 hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+      >
+        {isDeleting ? <Spinner size="xs" /> : <Icons.Delete />}
+        <span className="ml-2">{actionT('delete.label')}</span>
+      </button>
+    );
+  }
+
+  if (items.length > 0) {
+    items.push(
+      <div
+        key="primary-divider"
+        className="my-1 border-t border-border dark:border-border-dark"
+        role="separator"
+      />
+    );
+  }
 
   items.push(
     <button
@@ -117,7 +162,18 @@ function MenuItems({
   return items;
 }
 
-export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType = 'torrents' }) {
+export default function MoreOptionsDropdown({
+  item,
+  apiKey,
+  setToast,
+  activeType = 'torrents',
+  showDownload = false,
+  onDownload,
+  showDelete = false,
+  onDelete,
+  isDeleting = false,
+  compact = false,
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isExporting, setIsExporting] = useState(false);
@@ -133,6 +189,7 @@ export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType
     () => false
   );
   const t = useTranslations('MoreOptionsDropdown');
+  const actionT = useTranslations('ItemActionButtons');
   const apiClient = createApiClient(apiKey);
 
   // Close menu when clicking outside and handle window resize
@@ -502,7 +559,9 @@ export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType
         type="button"
         ref={buttonRef}
         onClick={toggleMenu}
-        className="p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
+        className={`${
+          compact ? 'p-1 [&_svg]:size-4' : 'p-1.5'
+        } rounded-full text-primary-text/70 dark:text-primary-text-dark/70 hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors`}
         title={t('title')}
         aria-label={t('label')}
       >
@@ -524,8 +583,30 @@ export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType
               <MenuItems
                 activeType={activeType}
                 t={t}
+                actionT={actionT}
                 isExporting={isExporting}
                 isReannouncing={isReannouncing}
+                isDeleting={isDeleting}
+                showDownload={showDownload}
+                showDelete={showDelete}
+                onDownload={
+                  onDownload
+                    ? (e) => {
+                        e.stopPropagation();
+                        onDownload();
+                        setIsMenuOpen(false);
+                      }
+                    : undefined
+                }
+                onDelete={
+                  onDelete
+                    ? (e) => {
+                        e.stopPropagation();
+                        onDelete(e);
+                        setIsMenuOpen(false);
+                      }
+                    : undefined
+                }
                 onCopyId={handleCopyId}
                 onCopyHash={handleCopyHash}
                 onCopyShortMagnet={handleCopyShortMagnet}

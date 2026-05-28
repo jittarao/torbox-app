@@ -19,6 +19,7 @@ export default function ItemActions({
   setToast,
   activeType = 'torrents',
   downloadHistory,
+  compact = false,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
@@ -129,6 +130,7 @@ export default function ItemActions({
         onStopSeeding={handleStopSeeding}
         onForceStart={handleForceStart}
         onDownload={handleDownload}
+        compact={compact}
       />
 
       <MoreOptionsDropdown
@@ -136,6 +138,12 @@ export default function ItemActions({
         apiKey={apiKey}
         setToast={setToast}
         activeType={activeType}
+        compact={compact}
+        showDownload={compact && item.download_present}
+        onDownload={handleDownload}
+        showDelete={compact}
+        onDelete={handleDelete}
+        isDeleting={isDeleting}
       />
     </>
   );

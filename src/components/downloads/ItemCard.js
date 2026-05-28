@@ -308,26 +308,40 @@ function ItemCard({
         expandedItems.has(item.id) ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer w-full text-left`}
     >
-      <div className="flex justify-between gap-2 md:gap-3">
+      <div
+        className={
+          isMobile
+            ? 'flex flex-col gap-2'
+            : 'flex justify-between gap-2 md:gap-3'
+        }
+      >
         <div className="flex flex-col justify-center gap-1.5 md:gap-2 min-w-0 flex-1">
-          <div className="flex items-center gap-2 md:gap-2.5">
+          <div
+            className={
+              isMobile
+                ? 'flex items-start gap-2'
+                : 'flex items-center gap-2 md:gap-2.5'
+            }
+          >
             <input
               type="checkbox"
               checked={selectedItems.items?.has(item.id)}
               onChange={(e) => onItemSelect(item.id, e.target.checked, index)}
               onClick={(e) => e.stopPropagation()}
               disabled={isDisabled(item.id)}
-              className="accent-accent dark:accent-accent-dark flex-shrink-0"
+              className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
             />
             <h3
-              className={`text-sm md:text-base lg:text-[18px] font-medium break-all md:truncate text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${
+              className={`text-sm md:text-base lg:text-[18px] font-medium ${
+                isMobile ? 'break-words' : 'break-all md:truncate'
+              } text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${
                 isBlurred ? 'blur-[6px] select-none' : ''
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className={`flex gap-2 ${isMobile ? 'items-start' : 'items-center'}`}>
                 <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
                   <span
-                    className={`inline-block size-2 rounded-full ${
+                    className={`inline-block size-2 rounded-full shrink-0 mt-1.5 ${
                       item.cached
                         ? 'bg-label-success-text-dark dark:bg-label-success-text-dark'
                         : 'bg-label-danger-text-dark dark:bg-label-danger-text-dark'
@@ -336,7 +350,7 @@ function ItemCard({
                 </Tooltip>
                 {item.private && (
                   <Tooltip content="Private Tracker">
-                    <Icons.Private className="size-4 text-orange-500 dark:text-orange-400" />
+                    <Icons.Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
                   </Tooltip>
                 )}
                 {item.name && (
@@ -346,11 +360,28 @@ function ItemCard({
                 )}
               </div>
             </h3>
+            {isMobile && (
+              <div className="flex shrink-0 items-center gap-0.5 -mr-1">
+                <ItemActions
+                  item={item}
+                  apiKey={apiKey}
+                  onDelete={onDelete}
+                  toggleFiles={toggleFiles}
+                  expandedItems={expandedItems}
+                  setItems={setItems}
+                  setSelectedItems={setSelectedItems}
+                  setToast={setToast}
+                  activeType={activeType}
+                  downloadHistory={downloadHistory}
+                  compact
+                />
+              </div>
+            )}
           </div>
 
           <div
             className={`flex items-center flex-wrap ${
-              isMobile ? 'gap-2' : 'gap-2 md:gap-x-2.5 md:gap-y-1 lg:gap-4'
+              isMobile ? 'gap-2 pl-6' : 'gap-2 md:gap-x-2.5 md:gap-y-1 lg:gap-4'
             } text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
           >
             <DownloadStateBadge item={item} size={isMobile ? 'xs' : 'sm'} />
@@ -393,39 +424,58 @@ function ItemCard({
           </div>
         </div>
 
-        <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 flex-shrink-0">
-          <div className={`${tableActionsCellInner} max-md:flex-wrap`}>
-            <ItemActions
-              item={item}
-              apiKey={apiKey}
-              onDelete={onDelete}
-              toggleFiles={toggleFiles}
-              expandedItems={expandedItems}
-              setItems={setItems}
-              setSelectedItems={setSelectedItems}
-              setToast={setToast}
-              activeType={activeType}
-              downloadHistory={downloadHistory}
-            />
-          </div>
-
-          {item.active && (
-            <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
-              <div className="flex items-center gap-1">
-                <span className="text-label-success-text-dark dark:text-label-success-text-dark">
-                  ↓
-                </span>
-                <span>{formatSpeed(item.download_speed)}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
-                  ↑
-                </span>
-                <span>{formatSpeed(item.upload_speed)}</span>
-              </div>
+        {!isMobile && (
+          <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 flex-shrink-0">
+            <div className={tableActionsCellInner}>
+              <ItemActions
+                item={item}
+                apiKey={apiKey}
+                onDelete={onDelete}
+                toggleFiles={toggleFiles}
+                expandedItems={expandedItems}
+                setItems={setItems}
+                setSelectedItems={setSelectedItems}
+                setToast={setToast}
+                activeType={activeType}
+                downloadHistory={downloadHistory}
+              />
             </div>
-          )}
-        </div>
+
+            {item.active && (
+              <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
+                <div className="flex items-center gap-1">
+                  <span className="text-label-success-text-dark dark:text-label-success-text-dark">
+                    ↓
+                  </span>
+                  <span>{formatSpeed(item.download_speed)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
+                    ↑
+                  </span>
+                  <span>{formatSpeed(item.upload_speed)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isMobile && item.active && (
+          <div className="flex items-center gap-3 pl-6 text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+            <div className="flex items-center gap-1">
+              <span className="text-label-success-text-dark dark:text-label-success-text-dark">
+                ↓
+              </span>
+              <span>{formatSpeed(item.download_speed)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
+                ↑
+              </span>
+              <span>{formatSpeed(item.upload_speed)}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {expandedItems.has(item.id) && visibleFiles.length > 0 && (
