@@ -240,6 +240,8 @@ export default function VideoPlayer({
       playsInline
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-    />
+    >
+      <track kind="captions" />
+    </video>
   );
 }

@@ -209,12 +209,13 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
             <div className="z-overlay-panel fixed inset-0 flex items-end justify-center p-3 sm:items-center sm:p-4 pointer-events-none">
               <dialog
                 className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl dark:border-border-dark dark:bg-surface-alt-dark"
-                onClick={(e) => e.stopPropagation()}
                 style={{ display: 'flex' }}
                 open
               >
-                <div className="overflow-y-auto overflow-x-hidden min-h-0 flex-1">
-                  <SystemStatusPanel {...panelProps} />
+                <div onClick={(e) => e.stopPropagation()} className="flex flex-col h-full">
+                  <div className="overflow-y-auto overflow-x-hidden min-h-0 flex-1">
+                    <SystemStatusPanel {...panelProps} />
+                  </div>
                 </div>
               </dialog>
             </div>

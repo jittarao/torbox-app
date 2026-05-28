@@ -26,6 +26,11 @@ import { useUpload } from '@/components/shared/hooks/useUpload';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
+export const metadata = {
+  title: 'Downloads',
+  description: 'Manage your TorBox downloads, torrents, and usenet files.',
+};
+
 export default function Home() {
   const [apiKey, setApiKey] = useState(() => {
     try {
@@ -78,10 +83,9 @@ export default function Home() {
   }, [setLinkInput]);
 
   useEffect(() => {
-    const key = localStorage.getItem('torboxApiKey');
-    if (key) {
+    if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(key)
+        ensureUserDb(apiKey)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');

@@ -108,11 +108,9 @@ export default function ResizableColumn({
     >
       <div className="flex items-center min-w-0 pr-3">{children}</div>
       {!(isMobile && columnId === 'name') && (
-        <div
-          role="separator"
-          aria-orientation="vertical"
+        <button
+          type="button"
           aria-label="Resize column"
-          tabIndex={0}
           className="absolute right-0 top-0 bottom-0 z-20 w-3 cursor-col-resize touch-none flex items-center justify-center hover:bg-accent/15 dark:hover:bg-accent-dark/15"
           onMouseDown={handleMouseDown}
           onClick={(e) => e.stopPropagation()}
@@ -122,6 +120,11 @@ export default function ResizableColumn({
             }
           }}
         >
+          <hr
+            aria-orientation="vertical"
+            aria-label="Resize column"
+            className="sr-only border-none"
+          />
           <div
             className={`w-0.5 h-5 rounded-full transition-opacity ${
               isResizing
@@ -129,7 +132,7 @@ export default function ResizableColumn({
                 : 'opacity-0 group-hover:opacity-100 bg-accent/60 dark:bg-accent-dark/60'
             }`}
           />
-        </div>
+        </button>
       )}
     </th>
   );

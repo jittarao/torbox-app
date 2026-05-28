@@ -589,23 +589,23 @@ class UserPoller {
       checkCancelled = null,
     } = options;
 
-    await this._ensureDbManager();
+    if (!this.dbManager) await this._ensureDbManager();
     if (!this.dbManager) {
       throw new Error('No database connection for runPipeline');
     }
-    await this.ensureDatabaseConnection();
+    if (this.dbManager) await this.ensureDatabaseConnection();
 
     let torrents = prefetchedTorrents;
     if (torrents === undefined) {
-      torrents = await this.fetchTorrents();
       if (checkCancelled) checkCancelled();
+      torrents = await this.fetchTorrents();
     }
     if (!Array.isArray(torrents)) {
       throw new Error('Torrents must be an array');
     }
 
-    const changes = await this.processStateChanges(torrents);
     if (checkCancelled) checkCancelled();
+    const changes = await this.processStateChanges(torrents);
     if (!changes || typeof changes !== 'object') {
       throw new Error('processStateChanges returned invalid changes object');
     }
@@ -614,13 +614,13 @@ class UserPoller {
     if (!Array.isArray(changes.removed)) changes.removed = [];
     if (!Array.isArray(changes.stateTransitions)) changes.stateTransitions = [];
 
+    if (checkCancelled) checkCancelled();
     await this.updateDerivedFields(changes);
     if (checkCancelled) checkCancelled();
     await this.processSpeedUpdates(changes.updated);
-    if (checkCancelled) checkCancelled();
 
-    const ruleResults = await this.evaluateRules(torrents, changes);
     if (checkCancelled) checkCancelled();
+    const ruleResults = await this.evaluateRules(torrents, changes);
     const nonTerminalCount = this.countNonTerminalTorrents(torrents, changes);
     const nextPollAt = await this.calculateNextPollAt(
       nonTerminalCount,

@@ -18,8 +18,7 @@ export default function SidebarNav({ nav, isActive, getLabel, onNavigate }) {
         getLabel={getLabel}
         onNavigate={onNavigate}
       />
-      <div
-        role="separator"
+      <hr
         className={
           collapsed
             ? 'mx-auto my-2 h-px w-8 bg-border/60 dark:bg-border-dark/60'

@@ -50,7 +50,7 @@ export default function SearchResults({ apiKey }) {
   }, [searchType, sortKey]);
 
   const sortedResults = useMemo(() => {
-    return [...filteredResults].sort((a, b) => {
+    return filteredResults.toSorted((a, b) => {
       const modifier = sortDir === 'desc' ? -1 : 1;
 
       switch (sortKey) {

@@ -215,7 +215,7 @@ export default function MultiSelect({
 
   const dropdownContent =
     isOpen && dropdownLayout && portalTarget ? (
-      <div
+      <datalist
         ref={dropdownRef}
         className="fixed z-[100] bg-surface dark:bg-surface-dark
             border border-border dark:border-border-dark rounded-md shadow-lg
@@ -226,7 +226,6 @@ export default function MultiSelect({
           width: dropdownLayout.width,
           maxHeight: dropdownLayout.maxHeight,
         }}
-        role="listbox"
       >
         {searchable && (
           <div className="p-2 border-b border-border dark:border-border-dark flex-shrink-0">
@@ -309,7 +308,7 @@ export default function MultiSelect({
             })
           )}
         </div>
-      </div>
+      </datalist>
     ) : null;
 
   return (
@@ -343,9 +342,8 @@ export default function MultiSelect({
                   className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-accent/10 dark:bg-accent-dark/10 text-accent dark:text-accent-dark"
                 >
                   {opt.label}
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     onClick={(e) => handleRemoveOption(opt.value, e)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -353,11 +351,11 @@ export default function MultiSelect({
                         handleRemoveOption(opt.value, e);
                       }
                     }}
-                    className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none cursor-pointer"
+                    className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none"
                     aria-label={`Remove ${opt.label}`}
                   >
                     ×
-                  </span>
+                  </button>
                 </span>
               ))}
             </div>

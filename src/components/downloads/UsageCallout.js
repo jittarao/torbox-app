@@ -35,8 +35,7 @@ export default function UsageCallout({ apiKey, planId }) {
   const barPercent = Math.min(percent, 100);
 
   return (
-    <div
-      role="status"
+    <output
       className={
         isDanger
           ? 'mb-2 rounded-lg border border-label-danger-text/25 bg-label-danger-bg dark:bg-label-danger-bg-dark px-3 py-2'
@@ -99,6 +98,6 @@ export default function UsageCallout({ apiKey, planId }) {
           style={{ width: `${barPercent}%` }}
         />
       </div>
-    </div>
+    </output>
   );
 }

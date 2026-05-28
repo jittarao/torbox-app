@@ -651,85 +651,81 @@ export default function CardList({
         }}
       >
         {/* Virtualized rows - only ItemCards */}
-        {
-          virtualRows
-            .flatMap((virtualRow) => {
-              if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
+        {virtualRows.flatMap((virtualRow) => {
+          if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
 
-              const row = flattenedRows[virtualRow.index];
+          const row = flattenedRows[virtualRow.index];
 
-              if (!row || !row.item) return [];
+          if (!row || !row.item) return [];
 
-              // Position cards using the virtualizer's scrollMargin (must match container offset)
-              const scrollMargin = isFullscreen ? 0 : (virtualizer.options.scrollMargin ?? 0);
-              let cardTop = 0;
+          // Position cards using the virtualizer's scrollMargin (must match container offset)
+          const scrollMargin = isFullscreen ? 0 : (virtualizer.options.scrollMargin ?? 0);
+          let cardTop = 0;
 
-              if (isFullscreen) {
-                cardTop = virtualRow.start;
-              } else if (scrollMargin > 0) {
-                cardTop = virtualRow.start - scrollMargin;
-              } else {
-                for (let i = 0; i < virtualRow.index; i++) {
-                  cardTop += estimateSize(i);
-                }
-              }
+          if (isFullscreen) {
+            cardTop = virtualRow.start;
+          } else if (scrollMargin > 0) {
+            cardTop = virtualRow.start - scrollMargin;
+          } else {
+            for (let i = 0; i < virtualRow.index; i++) {
+              cardTop += estimateSize(i);
+            }
+          }
 
-              const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
-              const isExpanded = expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;
+          const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
+          const isExpanded = expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;
 
-              const itemCardStyle = {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                transform: `translateY(${cardTop}px)`,
-                willChange: 'transform',
-                // Expanded cards must stack above neighbors until layout remeasures
-                zIndex: isExpanded ? 20 + virtualRow.index : virtualRow.index + 1,
-              };
+          const itemCardStyle = {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            transform: `translateY(${cardTop}px)`,
+            willChange: 'transform',
+            // Expanded cards must stack above neighbors until layout remeasures
+            zIndex: isExpanded ? 20 + virtualRow.index : virtualRow.index + 1,
+          };
 
-              return (
-                <div
-                  key={`item-${row.item.id}`}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={itemCardStyle}
-                  className={cardListItemGap}
-                >
-                  <ItemCard
-                    item={row.item}
-                    index={row.itemIndex}
-                    selectedItems={selectedItems}
-                    downloadHistory={downloadHistory}
-                    isItemDownloaded={isItemDownloaded}
-                    isFileDownloaded={isFileDownloaded}
-                    isBlurred={isBlurred}
-                    isDisabled={isDisabled}
-                    activeColumns={activeColumns}
-                    onItemSelect={handleItemSelection}
-                    onFileSelect={handleFileSelection}
-                    onFileDownload={handleFileDownload}
-                    onFileStream={handleFileStream}
-                    onAudioPlay={handleAudioPlay}
-                    onDelete={onDelete}
-                    toggleFiles={toggleFiles}
-                    expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
-                    fileSearch={fileSearch}
-                    setItems={setItems}
-                    setSelectedItems={setSelectedItems}
-                    setToast={setToast}
-                    activeType={activeType}
-                    viewMode={viewMode}
-                    isCopying={isCopying}
-                    isDownloading={isDownloading}
-                    isStreaming={isStreaming}
-                    apiKey={apiKey}
-                  />
-                </div>
-              );
-            })
-            .filter(Boolean) // Remove null entries
-        }
+          return (
+            <div
+              key={`item-${row.item.id}`}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              style={itemCardStyle}
+              className={cardListItemGap}
+            >
+              <ItemCard
+                item={row.item}
+                index={row.itemIndex}
+                selectedItems={selectedItems}
+                downloadHistory={downloadHistory}
+                isItemDownloaded={isItemDownloaded}
+                isFileDownloaded={isFileDownloaded}
+                isBlurred={isBlurred}
+                isDisabled={isDisabled}
+                activeColumns={activeColumns}
+                onItemSelect={handleItemSelection}
+                onFileSelect={handleFileSelection}
+                onFileDownload={handleFileDownload}
+                onFileStream={handleFileStream}
+                onAudioPlay={handleAudioPlay}
+                onDelete={onDelete}
+                toggleFiles={toggleFiles}
+                expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
+                fileSearch={fileSearch}
+                setItems={setItems}
+                setSelectedItems={setSelectedItems}
+                setToast={setToast}
+                activeType={activeType}
+                viewMode={viewMode}
+                isCopying={isCopying}
+                isDownloading={isDownloading}
+                isStreaming={isStreaming}
+                apiKey={apiKey}
+              />
+            </div>
+          );
+        })}
         {/* Bottom spacer for cards after last visible */}
         {virtualRows.length > 0 &&
           (() => {

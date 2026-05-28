@@ -76,9 +76,9 @@ export function useDelete(
 
         // Delete each group in parallel
         const results = await Promise.all(
-          Object.entries(groupedItems)
-            .filter(([, typeIds]) => typeIds.length > 0)
-            .map(([type, typeIds]) => batchDeleteHelper(typeIds, apiKey, type))
+          Object.entries(groupedItems).flatMap(([type, typeIds]) =>
+            typeIds.length > 0 ? [batchDeleteHelper(typeIds, apiKey, type)] : []
+          )
         );
         for (const ids of results) {
           successfulIds.push(...ids);

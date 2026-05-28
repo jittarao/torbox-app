@@ -31,8 +31,10 @@ function FileList({
           const assetKey = `${itemId}-${file.id}`;
 
           return (
-            <div
+            <button
+              type="button"
               key={`${itemId}-${file.id}`}
+              disabled={isDisabled}
               className={`${
                 isChecked
                   ? 'bg-accent/15 hover:bg-accent/20 dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
@@ -41,9 +43,7 @@ function FileList({
                     : isFileDownloaded(itemId, file.id)
                       ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
                       : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
-              } rounded-md p-2 md:p-1.5 lg:p-2 ${!isDisabled && 'cursor-pointer'}`}
-              role="button"
-              tabIndex={isDisabled ? -1 : 0}
+              } rounded-md p-2 md:p-1.5 lg:p-2 ${!isDisabled && 'cursor-pointer'} w-full text-left`}
               onMouseDown={(e) => {
                 if (e.shiftKey) e.preventDefault();
               }}
@@ -161,7 +161,7 @@ function FileList({
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

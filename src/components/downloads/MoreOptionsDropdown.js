@@ -8,6 +8,115 @@ import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from './Tags/TagAssignmentModal';
 
+function MenuItems({
+  activeType,
+  t,
+  isExporting,
+  isReannouncing,
+  onCopyId,
+  onCopyHash,
+  onCopyShortMagnet,
+  onCopyFullMagnet,
+  onReannounce,
+  onExportTorrent,
+  onCopySourceUrl,
+}) {
+  const items = [];
+
+  items.push(
+    <button
+      type="button"
+      key="copy-id"
+      onClick={onCopyId}
+      className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+    >
+      <Icons.Copy />
+      <span className="ml-2">{t('copyId')}</span>
+    </button>
+  );
+
+  items.push(
+    <button
+      type="button"
+      key="copy-hash"
+      onClick={onCopyHash}
+      className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+    >
+      <Icons.Copy />
+      <span className="ml-2">{t('copyHash')}</span>
+    </button>
+  );
+
+  if (activeType === 'torrents') {
+    items.push(
+      <button
+        type="button"
+        key="copy-short-magnet"
+        onClick={onCopyShortMagnet}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      >
+        <Icons.Copy />
+        <span className="ml-2">{t('copyShortMagnet')}</span>
+      </button>
+    );
+
+    items.push(
+      <button
+        type="button"
+        key="copy-full-magnet"
+        onClick={onCopyFullMagnet}
+        disabled={isExporting}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+      >
+        {isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
+        <span className="ml-2">{t('copyFullMagnet')}</span>
+      </button>
+    );
+
+    items.push(
+      <button
+        type="button"
+        key="reannounce"
+        onClick={onReannounce}
+        disabled={isReannouncing}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+      >
+        {isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
+        <span className="ml-2">{t('reannounce')}</span>
+      </button>
+    );
+
+    items.push(
+      <button
+        type="button"
+        key="export-torrent"
+        onClick={onExportTorrent}
+        disabled={isExporting}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
+      >
+        {isExporting ? <Spinner size="xs" /> : <Icons.Download />}
+        <span className="ml-2">{t('exportTorrent')}</span>
+      </button>
+    );
+  }
+
+  if (activeType === 'webdl') {
+    items.push(
+      <button
+        type="button"
+        key="copy-source-url"
+        onClick={onCopySourceUrl}
+        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+      >
+        <Icons.Copy />
+        <span className="ml-2">{t('copySourceUrl')}</span>
+      </button>
+    );
+  }
+
+  return items;
+}
+
 export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType = 'torrents' }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -387,182 +496,6 @@ export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType
     return providers[providerId] || providerId;
   };
 
-  const renderMenuItems = () => {
-    const items = [];
-
-    // Tag assignment option
-    // items.push(
-    //   <button type="button"
-    //     key="assign-tags"
-    //     onClick={(e) => {
-    //       e.stopPropagation();
-    //       setShowTagAssignment(true);
-    //       setIsMenuOpen(false);
-    //     }}
-    //     className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-    //   >
-    //     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-    //     </svg>
-    //     <span className="ml-2">Assign Tags</span>
-    //   </button>,
-    // );
-
-    // Common options for all types
-    items.push(
-      <button
-        type="button"
-        key="copy-id"
-        onClick={handleCopyId}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-      >
-        <Icons.Copy />
-        <span className="ml-2">{t('copyId')}</span>
-      </button>
-    );
-
-    items.push(
-      <button
-        type="button"
-        key="copy-hash"
-        onClick={handleCopyHash}
-        className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-      >
-        <Icons.Copy />
-        <span className="ml-2">{t('copyHash')}</span>
-      </button>
-    );
-
-    // Cloud upload option - HIDDEN FOR NOW
-    // items.push(
-    //   <button type="button"
-    //     key="cloud-upload"
-    //     onClick={() => {
-    //       setToast({
-    //         message: 'Please connect to a cloud provider first in the Cloud Storage Manager',
-    //         type: 'info',
-    //       });
-    //       setShowCloudUpload(false);
-    //       setIsMenuOpen(false);
-    //     }}
-    //     className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-    //   >
-    //     <Icons.Cloud />
-    //     <span className="ml-2">{t('uploadToCloud')}</span>
-    //     <Icons.ChevronDown className={`ml-auto w-4 h-4 transition-transform ${showCloudUpload ? 'rotate-180' : ''}`} />
-    //   </button>,
-    // );
-
-    // Cloud upload submenu - HIDDEN FOR NOW
-    // if (showCloudUpload) {
-    //   // Add help message
-    //   items.push(
-    //     <div
-    //       key="cloud-upload-help"
-    //       className="px-4 py-2 text-xs text-primary-text/60 dark:text-primary-text-dark/60 border-b border-border dark:border-border-dark"
-    //     >
-    //       Connect to providers in Cloud Storage Manager first
-    //     </div>,
-    //   );
-
-    //   const providers = [
-    //     { id: INTEGRATION_TYPES.GOOGLE_DRIVE, name: 'Google Drive', icon: Icons.GoogleDrive },
-    //     { id: INTEGRATION_TYPES.DROPBOX, name: 'Dropbox', icon: Icons.Dropbox },
-    //     { id: INTEGRATION_TYPES.ONEDRIVE, name: 'OneDrive', icon: Icons.OneDrive },
-    //     { id: INTEGRATION_TYPES.GOFILE, name: 'GoFile', icon: Icons.GoFile },
-    //     { id: INTEGRATION_TYPES.FICHIER, name: '1Fichier', icon: Icons.Fichier },
-    //     { id: INTEGRATION_TYPES.PIXELDRAIN, name: 'Pixeldrain', icon: Icons.Pixeldrain },
-    //   ];
-
-    //   providers.forEach((provider) => {
-    //     items.push(
-    //       <button type="button"
-    //         key={`upload-${provider.id}`}
-    //         onClick={() => handleCloudUpload(provider.id)}
-    //         disabled={isUploading}
-    //         className="flex items-center w-full px-4 py-2 pl-8 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
-    //       >
-    //         {isUploading ? <Spinner size="xs" /> : <provider.icon className="w-4 h-4" />}
-    //         <span className="ml-2">{provider.name}</span>
-    //       </button>,
-    //     );
-    //   });
-    // }
-
-    // Torrent-specific options
-    if (activeType === 'torrents') {
-      items.push(
-        <button
-          type="button"
-          key="copy-short-magnet"
-          onClick={handleCopyShortMagnet}
-          className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-        >
-          <Icons.Copy />
-          <span className="ml-2">{t('copyShortMagnet')}</span>
-        </button>
-      );
-
-      if (item.active) {
-        items.push(
-          <button
-            type="button"
-            key="copy-full-magnet"
-            onClick={handleCopyFullMagnet}
-            disabled={isExporting}
-            className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
-          >
-            {isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
-            <span className="ml-2">{t('copyFullMagnet')}</span>
-          </button>
-        );
-
-        items.push(
-          <button
-            type="button"
-            key="reannounce"
-            onClick={handleReannounce}
-            disabled={isReannouncing}
-            className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
-          >
-            {isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
-            <span className="ml-2">{t('reannounce')}</span>
-          </button>
-        );
-      }
-
-      items.push(
-        <button
-          type="button"
-          key="export-torrent"
-          onClick={handleExportTorrent}
-          disabled={isExporting}
-          className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark disabled:opacity-50"
-        >
-          {isExporting ? <Spinner size="xs" /> : <Icons.Download />}
-          <span className="ml-2">{t('exportTorrent')}</span>
-        </button>
-      );
-    }
-
-    // WebDL-specific options
-    if (activeType === 'webdl') {
-      items.push(
-        <button
-          type="button"
-          key="copy-source-url"
-          onClick={handleCopySourceUrl}
-          className="flex items-center w-full px-4 py-2 text-sm text-left text-primary-text dark:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-        >
-          <Icons.Copy />
-          <span className="ml-2">{t('copySourceUrl')}</span>
-        </button>
-      );
-    }
-
-    return items;
-  };
-
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -587,7 +520,21 @@ export default function MoreOptionsDropdown({ item, apiKey, setToast, activeType
               left: `${menuPosition.left}px`,
             }}
           >
-            <div className="py-1">{renderMenuItems()}</div>
+            <div className="py-1">
+              <MenuItems
+                activeType={activeType}
+                t={t}
+                isExporting={isExporting}
+                isReannouncing={isReannouncing}
+                onCopyId={handleCopyId}
+                onCopyHash={handleCopyHash}
+                onCopyShortMagnet={handleCopyShortMagnet}
+                onCopyFullMagnet={handleCopyFullMagnet}
+                onReannounce={handleReannounce}
+                onExportTorrent={handleExportTorrent}
+                onCopySourceUrl={handleCopySourceUrl}
+              />
+            </div>
           </div>,
           document.body
         )}

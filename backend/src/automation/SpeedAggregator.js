@@ -222,16 +222,18 @@ class SpeedAggregator {
     let errors = 0;
 
     const results = await Promise.allSettled(
-      updatedTorrents
-        .filter(({ torrent }) => torrent && torrent.id && this._isTorrentActive(torrent))
-        .map(({ torrent }) =>
-          this.recordSample(
-            torrent.id,
-            torrent.total_downloaded || 0,
-            torrent.total_uploaded || 0,
-            now
-          )
-        )
+      updatedTorrents.flatMap(({ torrent }) =>
+        torrent && torrent.id && this._isTorrentActive(torrent)
+          ? [
+              this.recordSample(
+                torrent.id,
+                torrent.total_downloaded || 0,
+                torrent.total_uploaded || 0,
+                now
+              ),
+            ]
+          : []
+      )
     );
 
     for (const r of results) {

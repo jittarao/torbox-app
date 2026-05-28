@@ -28,7 +28,7 @@ export function useBandwidthUsage(apiKey, planId) {
       return;
     }
 
-    let cancelled = false;
+    const abortController = new AbortController();
 
     const fetchUsage = async () => {
       setLoading(true);
@@ -40,11 +40,12 @@ export function useBandwidthUsage(apiKey, planId) {
 
         const response = await fetch(`/api/user/stats?${params.toString()}`, {
           headers: { 'x-api-key': apiKey },
+          signal: abortController.signal,
         });
 
         const data = await response.json();
 
-        if (cancelled) return;
+        if (abortController.signal.aborted) return;
 
         if (!response.ok || !data.success) {
           setUsedBytes(0);
@@ -53,17 +54,15 @@ export function useBandwidthUsage(apiKey, planId) {
 
         setUsedBytes(sumBandwidthBytes(data.data?.bandwidth));
       } catch {
-        if (!cancelled) setUsedBytes(0);
+        if (!abortController.signal.aborted) setUsedBytes(0);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!abortController.signal.aborted) setLoading(false);
       }
     };
 
     fetchUsage();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => abortController.abort();
   }, [apiKey, planId, limitBytes]);
 
   return { level, usedBytes, limitBytes, percent, loading };

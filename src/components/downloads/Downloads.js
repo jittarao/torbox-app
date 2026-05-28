@@ -59,6 +59,21 @@ import { useTranslations } from 'next-intl';
 const FILTERS_SIDEBAR_EXPANDED = '14rem';
 const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
 
+function Uploaders({ apiKey, activeType, permissions }) {
+  if (activeType === 'all') {
+    return (
+      <div className="space-y-2">
+        <ItemUploader apiKey={apiKey} activeType="torrents" />
+        {hasDownloadAccess('usenet', permissions) && (
+          <ItemUploader apiKey={apiKey} activeType="usenet" />
+        )}
+        <ItemUploader apiKey={apiKey} activeType="webdl" />
+      </div>
+    );
+  }
+  return <ItemUploader key={activeType} apiKey={apiKey} activeType={activeType} />;
+}
+
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
   const downloadPanelT = useTranslations('DownloadPanel');
@@ -656,22 +671,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     return formatSize(filesSize + itemsSize);
   }, [enrichedDownloads, selectedItems]);
 
-  // Render uploaders based on active type (permissions control which types are allowed)
-  const renderUploaders = () => {
-    if (activeType === 'all') {
-      return (
-        <div className="space-y-2">
-          <ItemUploader apiKey={apiKey} activeType="torrents" />
-          {hasDownloadAccess('usenet', permissions) && (
-            <ItemUploader apiKey={apiKey} activeType="usenet" />
-          )}
-          <ItemUploader apiKey={apiKey} activeType="webdl" />
-        </div>
-      );
-    }
-    return <ItemUploader key={activeType} apiKey={apiKey} activeType={activeType} />;
-  };
-
   const handleApplyView = (view) => {
     applyView(view);
     setStatusFilter('all');
@@ -1125,7 +1124,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       ) : (
         <>
           {/* Upload section */}
-          <div className="space-y-2">{renderUploaders()}</div>
+          <Uploaders apiKey={apiKey} activeType={activeType} permissions={permissions} />
 
           {/* Speed Chart - Collapsible by default */}
           <SpeedChart items={items} />

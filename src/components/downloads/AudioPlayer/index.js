@@ -495,7 +495,9 @@ export default function AudioPlayer({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0d1117] text-gray-100">
-      <audio ref={audioRef} preload="auto" crossOrigin="anonymous" />
+      <audio ref={audioRef} preload="auto" crossOrigin="anonymous">
+        <track kind="captions" />
+      </audio>
 
       <PlayerHeader fileName={fileName} onClose={onClose} />
 

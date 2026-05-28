@@ -75,7 +75,7 @@ export default function ViewControls({
       aria-label={t('toolbarLabel')}
     >
       {!isMobile && (
-        <div className="flex items-center gap-0" role="group" aria-label={t('viewModeGroup')}>
+        <fieldset className="flex items-center gap-0" aria-label={t('viewModeGroup')}>
           <ToolbarButton
             active={viewMode === 'table'}
             otherActive={viewMode === 'card'}
@@ -96,7 +96,7 @@ export default function ViewControls({
           >
             <Icons.List />
           </ToolbarButton>
-        </div>
+        </fieldset>
       )}
 
       <ToolbarButton
