@@ -17,6 +17,14 @@ const initialMeta = {
 
 const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 
+function pollScheduleEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.mode === b.mode && a.nextPollAt === b.nextPollAt && a.intervalMs === b.intervalMs
+  );
+}
+
 /**
  * TorBox API download lists (normalized entities + order) and fetch metadata.
  */
@@ -83,7 +91,10 @@ export const useTorboxDownloadsStore = create((set, get) => ({
   setError: (error) => set({ error }),
   setLastSuccessfulFetchAt: (lastSuccessfulFetchAt) => set({ lastSuccessfulFetchAt }),
   setRefreshBlockedReason: (refreshBlockedReason) => set({ refreshBlockedReason }),
-  setPollSchedule: (pollSchedule) => set({ pollSchedule }),
+  setPollSchedule: (pollSchedule) => {
+    if (pollScheduleEqual(get().pollSchedule, pollSchedule)) return;
+    set({ pollSchedule });
+  },
   setCanManualRefresh: (canManualRefresh) => set({ canManualRefresh }),
 
   markFetchSuccess: () =>

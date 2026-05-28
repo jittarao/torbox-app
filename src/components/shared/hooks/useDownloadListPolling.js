@@ -26,7 +26,20 @@ export function useDownloadListPolling({
   onPollSkipped,
   onScheduleUpdate,
 }) {
-  const torrentOrderLen = useTorboxDownloadsStore((s) => s.order?.torrents?.length ?? 0);
+  /** Restart hidden-tab queue polling when queued torrents appear/disappear (not on every list length change). */
+  const needsQueuedTorrentPoll = useTorboxDownloadsStore((s) => {
+    if (type !== 'torrents' && type !== 'all') return false;
+    const options = getAutoStartOptions();
+    if (!options?.autoStart) return false;
+    const order = s.order?.torrents;
+    if (!order?.length) return false;
+    const entities = s.entities || {};
+    for (let i = 0; i < order.length; i++) {
+      const row = entities[order[i]];
+      if (row && isQueuedItem(row)) return true;
+    }
+    return false;
+  });
 
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);
@@ -271,5 +284,5 @@ export function useDownloadListPolling({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [type, pollingPaused, torrentOrderLen]);
+  }, [type, pollingPaused, needsQueuedTorrentPoll]);
 }

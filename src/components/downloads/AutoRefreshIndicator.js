@@ -65,7 +65,8 @@ export default function AutoRefreshIndicator({
 
   useEffect(() => {
     if (!nextPollAt || mode === 'paused' || mode === 'inactive') return;
-    const id = setInterval(() => setTick((n) => n + 1), 250);
+    // Countdown is second-granular; 1s ticks avoid 4 renders/sec in dev (Styles pane flash).
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(id);
   }, [nextPollAt, mode]);
 

@@ -70,7 +70,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       ) {
         store.setRefreshBlockedReason(null);
       }
-    }, 1000);
+    }, 2000);
     return () => clearInterval(id);
   }, [type, syncManualRefreshAllowed]);
 
