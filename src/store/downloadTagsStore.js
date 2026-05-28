@@ -26,7 +26,8 @@ export const useDownloadTagsStore = create((set, get) => ({
       get().setApiKey(apiKey);
     }
 
-    set({ loading: true, error: null });
+    const requestId = get().activeRequestId + 1;
+    set({ loading: true, error: null, activeRequestId: requestId });
     try {
       const url = new URL('/api/downloads/tags', window.location.origin);
 
@@ -36,11 +37,19 @@ export const useDownloadTagsStore = create((set, get) => ({
         },
       });
 
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to load download tags');
       }
 
       const data = await response.json();
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
+
       if (data.success) {
         set({ tagMappings: data.mappings || {}, loading: false });
         return data.mappings || {};
@@ -48,6 +57,9 @@ export const useDownloadTagsStore = create((set, get) => ({
         throw new Error(data.error || 'Failed to load download tags');
       }
     } catch (err) {
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
       console.error('Error loading download tags:', err);
       set({ error: err.message, loading: false });
       throw err;

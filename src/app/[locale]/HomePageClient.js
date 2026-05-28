@@ -3,13 +3,10 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import dynamic from 'next/dynamic';
-import { Inter } from 'next/font/google';
 import { useFileHandler } from '@/hooks/useFileHandler';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 const landingShell = <div className="min-h-screen bg-[#0a0a0b]" aria-hidden />;
 
@@ -86,7 +83,7 @@ export default function HomePageClient() {
   };
 
   if (!isClient || !hydrated) {
-    return <div className={`min-h-screen bg-[#0a0a0b] ${inter.variable} font-sans`} aria-hidden />;
+    return <div className={`min-h-screen bg-[#0a0a0b] font-sans`} aria-hidden />;
   }
 
   if (!apiKey) {
@@ -96,7 +93,7 @@ export default function HomePageClient() {
   return (
     <AppShell
       apiKey={apiKey}
-      className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}
+      className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
     >
       <div className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4">
         <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />

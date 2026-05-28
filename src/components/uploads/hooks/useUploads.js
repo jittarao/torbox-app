@@ -11,7 +11,8 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const statusCountsRequestIdRef = useRef(0);
 
   // Subscribe to backend mode store to react to changes
-  const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
+  const backendMode = useBackendModeStore((s) => s.mode);
+  const backendIsLoading = useBackendModeStore((s) => s.isLoading);
 
   const fetchUploads = useCallback(async () => {
     if (!apiKey) return;

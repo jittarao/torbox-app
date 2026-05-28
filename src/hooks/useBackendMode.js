@@ -7,7 +7,10 @@ import { useBackendModeStore } from '@/store/backendModeStore';
  * @returns {Object} { mode: 'local' | 'backend', isLoading: boolean, error: string | null }
  */
 export const useBackendMode = () => {
-  const { mode, isLoading, error, checkBackend } = useBackendModeStore();
+  const mode = useBackendModeStore((s) => s.mode);
+  const isLoading = useBackendModeStore((s) => s.isLoading);
+  const error = useBackendModeStore((s) => s.error);
+  const checkBackend = useBackendModeStore((s) => s.checkBackend);
 
   useEffect(() => {
     checkBackend();

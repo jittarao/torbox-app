@@ -50,9 +50,12 @@ export default function DatabaseList({ databases }) {
 
       // Get download URL
       const downloadUrl = await adminApiClient.downloadBackup(authId, backupFilename);
+      const adminKey = adminApiClient.getAdminKey();
 
       // Fetch the file as a blob
-      const response = await fetch(downloadUrl);
+      const response = await fetch(downloadUrl, {
+        headers: adminKey ? { 'x-admin-key': adminKey } : undefined,
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Download failed' }));
         throw new Error(errorData.error || `HTTP ${response.status}`);

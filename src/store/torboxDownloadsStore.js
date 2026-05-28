@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { isQueuedItem } from '@/utils/utility';
 import { downloadRowEqual, mergeListIntoEntities } from '@/utils/downloadListMerge';
 import {
   entityKey,
@@ -8,12 +9,23 @@ import {
 
 const initialMeta = {
   loading: true,
+  refreshing: false,
   error: null,
   lastSuccessfulFetchAt: null,
   refreshBlockedReason: null,
   pollSchedule: null,
   canManualRefresh: true,
+  hasQueuedTorrents: false,
 };
+
+function computeHasQueuedTorrents(entities, orderKeys) {
+  if (!orderKeys?.length) return false;
+  for (let i = 0; i < orderKeys.length; i++) {
+    const row = entities[orderKeys[i]];
+    if (row && isQueuedItem(row)) return true;
+  }
+  return false;
+}
 
 const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 
@@ -76,10 +88,14 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       }
     }
 
-    set({
+    const nextState = {
       entities,
       order: { ...state.order, [listKey]: orderKeys },
-    });
+    };
+    if (listKey === 'torrents') {
+      nextState.hasQueuedTorrents = computeHasQueuedTorrents(entities, orderKeys);
+    }
+    set(nextState);
   },
 
   /** @deprecated Use applyListMerge — kept for callers that still pass arrays */
@@ -88,6 +104,7 @@ export const useTorboxDownloadsStore = create((set, get) => ({
   setWebdl: (webdl) => get().applyListMerge('webdl', webdl || []),
 
   setLoading: (loading) => set({ loading }),
+  setRefreshing: (refreshing) => set({ refreshing }),
   setError: (error) => set({ error }),
   setLastSuccessfulFetchAt: (lastSuccessfulFetchAt) => set({ lastSuccessfulFetchAt }),
   setRefreshBlockedReason: (refreshBlockedReason) => set({ refreshBlockedReason }),
@@ -116,11 +133,13 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       entities: {},
       order: { ...emptyOrder },
       loading: !!hasApiKey,
+      refreshing: false,
       error: null,
       lastSuccessfulFetchAt: null,
       refreshBlockedReason: null,
       pollSchedule: null,
       canManualRefresh: true,
+      hasQueuedTorrents: false,
     }),
 
   /**
@@ -155,10 +174,14 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       }
     }
 
-    set({
+    const nextState = {
       entities: nextEntities,
       order: { ...state.order, [listKey]: nextOrder },
-    });
+    };
+    if (listKey === 'torrents') {
+      nextState.hasQueuedTorrents = computeHasQueuedTorrents(nextEntities, nextOrder);
+    }
+    set(nextState);
   },
 
   /**

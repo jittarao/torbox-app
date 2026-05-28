@@ -94,11 +94,13 @@ export function useAutomationTorrentEvents({ enabled, apiKey, onTorrentsChanged 
 
     connect();
 
-    const debounceTimer = debounceTimerRef.current;
     return () => {
       ac.abort();
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (debounceTimer) clearTimeout(debounceTimer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
     };
   }, [enabled, apiKey]);
 }

@@ -204,13 +204,6 @@ export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHis
   });
 }
 
-let allViewIdsCache = {
-  torrentsRef: null,
-  usenetRef: null,
-  webdlRef: null,
-  result: [],
-};
-
 /**
  * @param {import('@/store/torboxDownloadsStore').TorboxDownloadsState} torboxState
  * @param {'torrents'|'usenet'|'webdl'|'all'} viewType
@@ -220,11 +213,14 @@ export function selectVisibleSortedIds(
   viewType,
   criteria,
   tagMappings = {},
-  downloadHistory = []
+  downloadHistoryOrLookup = []
 ) {
   const viewIds = selectViewOrderedIds(torboxState, viewType);
   const entities = torboxState.entities || {};
-  const lookup = buildDownloadHistoryLookup(downloadHistory);
+  const lookup =
+    downloadHistoryOrLookup?.itemDownloads != null
+      ? downloadHistoryOrLookup
+      : buildDownloadHistoryLookup(downloadHistoryOrLookup || []);
 
   const filtered = filterIds(viewIds, entities, criteria, tagMappings, lookup);
   return sortIds(filtered, entities, criteria.sortField || 'created_at', criteria.sortDirection || 'desc');

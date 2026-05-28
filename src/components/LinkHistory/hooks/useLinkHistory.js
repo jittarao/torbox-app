@@ -13,7 +13,8 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const skipPageChangeFetchRef = useRef(false);
 
   // Subscribe to backend mode store to react to changes
-  const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore();
+  const backendMode = useBackendModeStore((s) => s.mode);
+  const backendIsLoading = useBackendModeStore((s) => s.isLoading);
 
   // Reset page to 1 when search changes (runs synchronously before fetch)
   useEffect(() => {

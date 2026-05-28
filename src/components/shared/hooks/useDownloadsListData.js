@@ -78,9 +78,9 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
         activeType,
         filterCriteria,
         tagMappings,
-        downloadHistory
+        downloadHistoryLookup
       ),
-    [torboxSlice, activeType, filterCriteria, tagMappings, downloadHistory]
+    [torboxSlice, activeType, filterCriteria, tagMappings, downloadHistoryLookup]
   );
 
   const sortedItems = useMemo(

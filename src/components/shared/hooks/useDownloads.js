@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
@@ -166,6 +166,16 @@ export function useDownloads(
     current: 0,
     total: 0,
   });
+  const focusCopyHandlerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (focusCopyHandlerRef.current) {
+        window.removeEventListener('focus', focusCopyHandlerRef.current);
+        focusCopyHandlerRef.current = null;
+      }
+    };
+  }, []);
 
   const getDownloadEndpoint = () => {
     switch (assetType) {
@@ -363,15 +373,22 @@ export function useDownloads(
             await navigator.clipboard.writeText(urlWithFilename);
           } catch (error) {
             if (error.name === 'NotAllowedError') {
-              // Store URL and set up focus listener
+              if (focusCopyHandlerRef.current) {
+                window.removeEventListener('focus', focusCopyHandlerRef.current);
+              }
               const handleFocus = async () => {
                 try {
                   await navigator.clipboard.writeText(urlWithFilename);
-                  window.removeEventListener('focus', handleFocus);
                 } catch (err) {
                   console.error('Error copying to clipboard on focus:', err);
+                } finally {
+                  window.removeEventListener('focus', handleFocus);
+                  if (focusCopyHandlerRef.current === handleFocus) {
+                    focusCopyHandlerRef.current = null;
+                  }
                 }
               };
+              focusCopyHandlerRef.current = handleFocus;
               window.addEventListener('focus', handleFocus);
             } else {
               console.error('Clipboard error:', error);

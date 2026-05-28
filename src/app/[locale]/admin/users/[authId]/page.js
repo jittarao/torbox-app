@@ -11,7 +11,8 @@ export default function UserDetailPage() {
   const params = useParams();
   const { push } = useRouter();
   const authId = params.authId;
-  const { selectedUserData, fetchUser } = useAdminStore();
+  const selectedUserData = useAdminStore((s) => s.selectedUserData);
+  const fetchUser = useAdminStore((s) => s.fetchUser);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 

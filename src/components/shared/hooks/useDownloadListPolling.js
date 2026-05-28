@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { isQueuedItem, getAutoStartOptions } from '@/utils/utility';
+import { getAutoStartOptions } from '@/utils/utility';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
-import { selectItemsForView } from '@/store/torboxDownloadsSelectors';
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
 
@@ -26,19 +25,11 @@ export function useDownloadListPolling({
   onPollSkipped,
   onScheduleUpdate,
 }) {
-  /** Restart hidden-tab queue polling when queued torrents appear/disappear (not on every list length change). */
   const needsQueuedTorrentPoll = useTorboxDownloadsStore((s) => {
     if (type !== 'torrents' && type !== 'all') return false;
     const options = getAutoStartOptions();
     if (!options?.autoStart) return false;
-    const order = s.order?.torrents;
-    if (!order?.length) return false;
-    const entities = s.entities || {};
-    for (let i = 0; i < order.length; i++) {
-      const row = entities[order[i]];
-      if (row && isQueuedItem(row)) return true;
-    }
-    return false;
+    return s.hasQueuedTorrents;
   });
 
   const onPollRef = useRef(onPoll);

@@ -5,6 +5,7 @@ export const useRssStore = create((set, get) => ({
   loading: false,
   error: null,
   currentApiKey: null,
+  activeRequestId: 0,
 
   setApiKey: (apiKey) => {
     const { currentApiKey } = get();
@@ -13,9 +14,13 @@ export const useRssStore = create((set, get) => ({
         currentApiKey: apiKey,
         feeds: [],
         error: null,
+        activeRequestId: get().activeRequestId + 1,
       });
     }
   },
+
+  isRequestCurrent: (apiKey, requestId) =>
+    get().activeRequestId === requestId && get().currentApiKey === apiKey,
 
   fetchFeeds: async (apiKey) => {
     if (!apiKey) return;
@@ -27,7 +32,8 @@ export const useRssStore = create((set, get) => ({
       get().setApiKey(apiKey);
     }
 
-    set({ loading: true, error: null });
+    const requestId = get().activeRequestId + 1;
+    set({ loading: true, error: null, activeRequestId: requestId });
 
     try {
       const response = await fetch('/api/rss', {
@@ -36,11 +42,19 @@ export const useRssStore = create((set, get) => ({
         },
       });
 
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch RSS feeds');
       }
 
       const data = await response.json();
+
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
 
       if (data.success) {
         set({ feeds: data.data || [], loading: false });
@@ -48,6 +62,9 @@ export const useRssStore = create((set, get) => ({
         throw new Error(data.error || 'Failed to fetch RSS feeds');
       }
     } catch (err) {
+      if (!get().isRequestCurrent(apiKey, requestId)) {
+        return;
+      }
       console.error('Error fetching RSS feeds:', err);
       set({ error: err.message, loading: false });
     }
