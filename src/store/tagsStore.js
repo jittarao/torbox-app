@@ -1,23 +1,12 @@
 import { create } from 'zustand';
 import { isBackendAvailable } from '@/store/backendModeStore';
+import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
 
 export const useTagsStore = create((set, get) => ({
   tags: [],
   loading: false,
   error: null,
-  currentApiKey: null,
-
-  // Reset tags when API key changes
-  setApiKey: (apiKey) => {
-    const { currentApiKey } = get();
-    if (currentApiKey !== apiKey) {
-      set({
-        currentApiKey: apiKey,
-        tags: [],
-        error: null,
-      });
-    }
-  },
+  ...createApiKeyScopedSlice(set, get, { tags: [], error: null }),
 
   // Load tags from API
   loadTags: async (apiKey) => {

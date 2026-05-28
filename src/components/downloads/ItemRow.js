@@ -19,17 +19,17 @@ import {
 } from './utils/responsiveLayout';
 import { getResolvedColumnStyle } from './utils/tableColumnLayout';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import {
+  useIsDownloadSelected,
+  useItemHasSelectedFiles,
+} from '@/components/shared/hooks/useSelection';
 
 function ItemRow({
   item,
   activeColumns,
   resolvedColumnWidths,
-  selectedItems,
-  setSelectedItems,
   handleItemSelection,
-  downloadHistory,
   downloadHistoryLookup,
-  onRowSelect,
   expandedItems,
   toggleFiles,
   apiKey,
@@ -282,7 +282,8 @@ function ItemRow({
   );
 
   const selectionId = getDownloadSelectionId(item);
-  const isSelected = selectedItems.items?.has(selectionId);
+  const isSelected = useIsDownloadSelected(selectionId);
+  const hasSelectedFiles = useItemHasSelectedFiles(selectionId);
   const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
     selected: isSelected,
     downloaded: isDownloaded,
@@ -292,7 +293,7 @@ function ItemRow({
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      className={`${rowSurfaceClass} ${!onRowSelect(selectionId, selectedItems.files) && 'cursor-pointer'}`}
+      className={`${rowSurfaceClass} ${!hasSelectedFiles && 'cursor-pointer'}`}
       style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
@@ -302,19 +303,17 @@ function ItemRow({
       }}
       onClick={(e) => {
         // Ignore clicks on buttons or if has selected files
-        if (e.target.closest('button') || onRowSelect(selectionId, selectedItems.files)) return;
-        const isChecked = selectedItems.items?.has(selectionId);
-        handleItemSelection(selectionId, !isChecked, rowIndex, e.shiftKey);
+        if (e.target.closest('button') || hasSelectedFiles) return;
+        handleItemSelection(selectionId, !isSelected, rowIndex, e.shiftKey);
       }}
       onKeyDown={(e) => {
         if (
           (e.key === 'Enter' || e.key === ' ') &&
           !e.target.closest('button') &&
-          !onRowSelect(selectionId, selectedItems.files)
+          !hasSelectedFiles
         ) {
           e.preventDefault();
-          const isChecked = selectedItems.items?.has(selectionId);
-          handleItemSelection(selectionId, !isChecked, rowIndex, e.shiftKey);
+          handleItemSelection(selectionId, !isSelected, rowIndex, e.shiftKey);
         }
       }}
       tabIndex={0}
@@ -322,8 +321,8 @@ function ItemRow({
       <td className={tableCheckboxCell}>
         <input
           type="checkbox"
-          checked={selectedItems.items?.has(selectionId)}
-          disabled={onRowSelect(selectionId, selectedItems.files)}
+          checked={isSelected}
+          disabled={hasSelectedFiles}
           onChange={(e) => handleItemSelection(selectionId, e.target.checked, rowIndex, e.shiftKey)}
           style={{ pointerEvents: 'none' }}
           className="accent-accent dark:accent-accent-dark"
@@ -338,10 +337,8 @@ function ItemRow({
             onDelete={onDelete}
             toggleFiles={toggleFiles}
             expandedItems={expandedItems}
-            setSelectedItems={setSelectedItems}
             setToast={setToast}
             activeType={activeType}
-            downloadHistory={downloadHistory}
           />
         </div>
       </td>

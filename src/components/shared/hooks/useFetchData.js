@@ -11,8 +11,10 @@ import {
   peekRateLimited,
 } from '@/store/torboxDownloadsFetch';
 import {
-  fetchInProgressRef,
+  beginFetchInProgress,
+  endFetchInProgress,
   getRateLimiter,
+  isFetchInProgress,
   prevApiKeyRef,
   resetDownloadSyncRefs,
 } from '@/store/torboxDownloadsRefs';
@@ -104,15 +106,15 @@ export function useFetchData(apiKey, type = 'torrents') {
   useEffect(() => {
     if (!apiKey) {
       useTorboxDownloadsStore.getState().setLoading(false);
-      fetchInProgressRef.current = false;
+      endFetchInProgress(apiKey, type);
       return;
     }
 
-    if (fetchInProgressRef.current) {
+    if (isFetchInProgress(apiKey, type)) {
       return;
     }
 
-    fetchInProgressRef.current = true;
+    beginFetchInProgress(apiKey, type);
 
     const hasCached = hasCachedDataForView(useTorboxDownloadsStore.getState(), type);
 
@@ -120,7 +122,7 @@ export function useFetchData(apiKey, type = 'torrents') {
       try {
         await fetchDownloadsForView(apiKey, type, { bypassCache: true, skipLoading: hasCached });
       } finally {
-        fetchInProgressRef.current = false;
+        endFetchInProgress(apiKey, type);
         useTorboxDownloadsStore.getState().setLoading(false);
       }
     };

@@ -4,10 +4,12 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } fr
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDownloadsEnrichment } from '../shared/hooks/useDownloadsEnrichment';
+import { useDownloadsHistoryMigration } from '../shared/hooks/useDownloadsHistoryMigration';
+import { useDownloadsPlayers } from '../shared/hooks/useDownloadsPlayers';
+import { useDownloadsFilters } from '../shared/hooks/useDownloadsFilters';
 import { DownloadsActionsProvider } from './DownloadsActionsContext';
 import { useDelete } from '../shared/hooks/useDelete';
 import { useFetchData } from '../shared/hooks/useFetchData';
-import { useFilter } from '../shared/hooks/useFilter';
 import { useSelection } from '../shared/hooks/useSelection';
 import { useSort } from '../shared/hooks/useSort';
 import useIsMobile from '../../hooks/useIsMobile';
@@ -33,17 +35,7 @@ import FilterEditorModal from './FilterEditorModal';
 import TagManager from './Tags/TagManager';
 import ActiveFiltersBar from './ActiveFiltersBar';
 import { itemHasFileNameSearchMatch } from './utils/downloadSearch';
-import {
-  EMPTY_FILTERS,
-  buildTagFilter,
-  normalizeFilters,
-  mergeViewAssetTypeFilter,
-  getActiveTagIds,
-} from './filters/filterHelpers';
-import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
-import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
-import { migrateDownloadHistory } from '@/utils/migrateDownloadHistory';
 import { formatSize } from './utils/formatters';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 import { hasDownloadAccess } from '@/utils/userProfile';
@@ -75,7 +67,6 @@ function Uploaders({ apiKey, activeType, permissions }) {
 }
 
 export default function Downloads({ apiKey, onApiKeyChange }) {
-  const downloadsFiltersT = useTranslations('DownloadsFilters');
   const downloadPanelT = useTranslations('DownloadPanel');
   const fetchStatusT = useTranslations('FetchStatus');
   const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
@@ -89,33 +80,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
 
-  // Use Zustand store for download history
-  const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
-  const downloadHistoryLoading = useDownloadHistoryStore((state) => state.isLoading);
-  const clearDownloadHistory = useDownloadHistoryStore((state) => state.clearDownloadHistory);
-  const [videoPlayerState, setVideoPlayerState] = useState({
-    isOpen: false,
-    streamUrl: null,
-    fileName: null,
-    subtitles: [],
-    audios: [],
-    metadata: {},
-    itemId: null,
-    fileId: null,
-    streamType: 'torrent',
-    introInformation: null,
-    initialAudioIndex: 0,
-    initialSubtitleIndex: null,
-  });
-  const [audioPlayerState, setAudioPlayerState] = useState({
-    isOpen: false,
-    url: null,
-    itemId: null,
-    fileId: null,
-    assetType: 'torrent',
-    fileName: null,
-    apiKey: null,
-  });
   const [isBlurred, setIsBlurred] = useState(false);
   const [viewMode, setViewMode] = useState(
     () => localStorage.getItem('downloads-view-mode') || 'table'
@@ -126,9 +90,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   /** Item ids auto-expanded for file-name search; collapsed when search is cleared. */
   const searchExpandedItemIdsRef = useRef(new Set());
   const scrollContainerRef = useRef(null);
-  const fetchDownloadHistoryRef = useRef(false);
-  const migrationAttemptedRef = useRef(false);
-  const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
   /** Mobile always uses card layout; desktop preference is preserved in viewMode. */
   const displayViewMode = isMobile ? 'card' : viewMode;
@@ -177,10 +138,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const showFullPageSpinner = loading && items.length === 0;
   const isRefreshing = loading && items.length > 0;
 
-  const { enrichedDownloads, downloadHistory, tags, updateTagName } = useDownloadsEnrichment(
-    items,
+  const { enrichedDownloads, downloadHistory, downloadHistoryLookup, tags, updateTagName } =
+    useDownloadsEnrichment(items, apiKey, isBackendAvailable);
+
+  const { fetchDownloadHistory } = useDownloadsHistoryMigration(
     apiKey,
-    isBackendAvailable
+    isBackendAvailable,
+    backendIsLoading
   );
 
   const expandAllFiles = () => {
@@ -195,7 +159,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleSelectAll,
     handleFileSelect,
     hasSelectedFiles,
-    handleRowSelect,
     setSelectedItems,
   } = useSelection(enrichedDownloads, activeType);
 
@@ -254,48 +217,70 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const { activeColumns, handleColumnChange } = useColumnManager(activeType);
   const { sortField, sortDirection, handleSort, setSort, sortTorrents } = useSort();
 
-  const [columnFilters, setColumnFilters] = useState(() =>
-    JSON.parse(JSON.stringify(EMPTY_FILTERS))
-  );
-  const [appliedFilters, setAppliedFilters] = useState(() =>
-    JSON.parse(JSON.stringify(EMPTY_FILTERS))
-  );
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  /** @type {[null | 'create' | 'edit' | 'filter', Function]} */
-  const [filterModalMode, setFilterModalMode] = useState(null);
-  const [editingView, setEditingView] = useState(null);
-  const [tagManagerOpen, setTagManagerOpen] = useState(false);
-  const [tagManagerAutoCreate, setTagManagerAutoCreate] = useState(false);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const { search, setSearch, statusFilter, setStatusFilter, filteredItems } = useFilter(
-    enrichedDownloads,
-    '',
-    'all',
-    appliedFilters
-  );
-
-  // Load custom views (only if backend is available)
   const {
+    columnFilters,
+    appliedFilters,
+    filterModalOpen,
+    filterModalMode,
+    editingView,
+    tagManagerOpen,
+    setTagManagerOpen,
+    tagManagerAutoCreate,
+    mobileFiltersOpen,
+    setMobileFiltersOpen,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    filteredItems,
     views,
     activeView,
-    applyView,
-    clearView,
-    loadViews,
-    updateView,
-    loading: viewsLoading,
-  } = useCustomViews(apiKey);
+    activeTagIds,
+    handleApplyView,
+    handleClearFilters,
+    handleClearView,
+    handleApplyTag,
+    handleCloseFilterModal,
+    handleEditView,
+    handleViewCreated,
+    handleViewUpdated,
+    handleRenameView,
+    handleRenameTag,
+    handleTagDeleted,
+    handleOpenNewFilter,
+    handleOpenNewView,
+    handleNewTag,
+    handleManageTags,
+    handleApplyFiltersFromModal,
+    handlePreviewFiltersFromModal,
+  } = useDownloadsFilters({
+    enrichedDownloads,
+    apiKey,
+    isBackendAvailable,
+    activeType,
+    setSort,
+    sortField,
+    sortDirection,
+    setToast,
+    handleColumnChange,
+    updateTagName,
+  });
 
-  const activeTagIds = useMemo(() => getActiveTagIds(appliedFilters), [appliedFilters]);
-
-  // Load custom views once when component mounts (only if backend is available)
-  useEffect(() => {
-    if (isBackendAvailable && apiKey && views.length === 0 && !viewsLoading) {
-      loadViews();
-    }
-    // views.length, viewsLoading, loadViews intentionally omitted to prevent
-    // infinite loop — should only run on mount/key change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, isBackendAvailable]);
+  const {
+    videoPlayerState,
+    setVideoPlayerState,
+    audioPlayerState,
+    setAudioPlayerState,
+    handleAudioPlay,
+    handleAudioRefreshUrl,
+    openVideoPlayer,
+  } = useDownloadsPlayers({
+    apiKey,
+    activeType,
+    enrichedDownloads,
+    requestDownloadLink,
+    setToast,
+  });
 
   const sortedItems = sortTorrents(filteredItems);
 
@@ -388,10 +373,10 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
             } else {
-              console.error(`Failed to export torrent ${itemId}`);
+              console.error(`Failed to export torrent ${selectionId}`);
             }
           } catch (error) {
-            console.error(`Error exporting torrent ${itemId}:`, error);
+            console.error(`Error exporting torrent ${selectionId}:`, error);
           }
         })
       );
@@ -411,59 +396,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     }
   };
 
-  const handleAudioPlay = useCallback(
-    async (itemId, file) => {
-      const idField =
-        activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
-      const metadata = {
-        assetType: activeType,
-        item: enrichedDownloads.find((i) => i.id === itemId),
-      };
-      const result = await requestDownloadLink(
-        itemId,
-        { fileId: file.id, filename: file.name || file.short_name },
-        idField,
-        metadata
-      );
-      if (result.success && result.data?.url) {
-        setAudioPlayerState({
-          isOpen: true,
-          url: result.data.url,
-          itemId,
-          fileId: file.id,
-          assetType: activeType,
-          fileName: file.name || file.short_name || 'Audio',
-          apiKey,
-        });
-        setPauseReason('audioPlayer', true);
-      } else {
-        setToast({
-          message: result.error || 'Could not get audio link',
-          type: 'error',
-        });
-      }
-    },
-    [activeType, enrichedDownloads, requestDownloadLink, setToast, apiKey, setPauseReason]
-  );
-
-  const handleAudioRefreshUrl = useCallback(async () => {
-    const { itemId, fileId, assetType: at, apiKey: key } = audioPlayerState;
-    if (itemId == null || fileId == null || !key) {
-      throw new Error('Cannot refresh link: missing item, file, or API key');
-    }
-    const idField = at === 'usenet' ? 'usenet_id' : at === 'webdl' ? 'web_id' : 'torrent_id';
-    const metadata = {
-      assetType: at,
-      item: enrichedDownloads.find((i) => i.id === itemId),
-    };
-    const result = await requestDownloadLink(itemId, { fileId }, idField, metadata);
-    if (result.success && result.data?.url) {
-      setAudioPlayerState((prev) => ({ ...prev, url: result.data.url }));
-      return result.data.url;
-    }
-    throw new Error(result.error || 'Failed to refresh link');
-  }, [audioPlayerState, enrichedDownloads, requestDownloadLink]);
-
   const toggleFiles = (itemId) => {
     setExpandedItems((prev) => {
       const newSet = new Set(prev);
@@ -476,85 +408,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       return newSet;
     });
   };
-
-  // One-time migration from localStorage to backend, then fetch from backend
-  useEffect(() => {
-    // Wait for backend check to complete before deciding
-    if (backendIsLoading) {
-      return;
-    }
-
-    // Check if API key has changed (even from one valid key to another)
-    const apiKeyChanged =
-      previousApiKeyRef.current !== null && previousApiKeyRef.current !== apiKey;
-
-    if (!apiKey) {
-      fetchDownloadHistoryRef.current = false;
-      migrationAttemptedRef.current = false;
-      previousApiKeyRef.current = null;
-      clearDownloadHistory();
-      return;
-    }
-
-    // If API key changed, reset refs and clear old download history
-    if (apiKeyChanged) {
-      fetchDownloadHistoryRef.current = false;
-      migrationAttemptedRef.current = false;
-      clearDownloadHistory();
-    }
-
-    // Update previous API key ref
-    previousApiKeyRef.current = apiKey;
-
-    // Only fetch if backend is available
-    if (!isBackendAvailable) {
-      return;
-    }
-
-    // Only run migration once per API key
-    if (migrationAttemptedRef.current) {
-      // Migration already attempted, just fetch if needed
-      if (
-        downloadHistory.length === 0 &&
-        !downloadHistoryLoading &&
-        !fetchDownloadHistoryRef.current
-      ) {
-        fetchDownloadHistoryRef.current = true;
-        fetchDownloadHistory(apiKey);
-      }
-      return;
-    }
-
-    const runMigrationAndFetch = async () => {
-      migrationAttemptedRef.current = true;
-
-      // Run migration first (it will skip if already done)
-      const migrationResult = await migrateDownloadHistory(apiKey);
-      if (migrationResult.success && migrationResult.migrated > 0) {
-        console.log(`Migrated ${migrationResult.migrated} entries from localStorage`);
-      }
-
-      // Then fetch from backend (will include migrated entries)
-      if (
-        downloadHistory.length === 0 &&
-        !downloadHistoryLoading &&
-        !fetchDownloadHistoryRef.current
-      ) {
-        fetchDownloadHistoryRef.current = true;
-        fetchDownloadHistory(apiKey);
-      }
-    };
-
-    runMigrationAndFetch();
-  }, [
-    apiKey,
-    downloadHistory.length,
-    downloadHistoryLoading,
-    fetchDownloadHistory,
-    clearDownloadHistory,
-    isBackendAvailable,
-    backendIsLoading,
-  ]);
 
   // Expand rows with selected files on initial load
   useEffect(() => {
@@ -597,197 +450,11 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     return formatSize(filesSize + itemsSize);
   }, [enrichedDownloads, selectedItems]);
 
-  const handleApplyView = (view) => {
-    applyView(view);
-    setStatusFilter('all');
-
-    const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
-    setColumnFilters(normalizedFilters);
-    setAppliedFilters(normalizedFilters);
-
-    if (view.sort_field) {
-      setSort(view.sort_field, view.sort_direction || 'desc');
-    }
-
-    let visibleColumns = view.visible_columns;
-    if (visibleColumns) {
-      if (typeof visibleColumns === 'string') {
-        try {
-          visibleColumns = JSON.parse(visibleColumns);
-        } catch (e) {
-          console.error('Error parsing visible columns:', e);
-          visibleColumns = null;
-        }
-      }
-      if (Array.isArray(visibleColumns) && visibleColumns.length > 0) {
-        handleColumnChange(visibleColumns);
-      }
-    }
-
-    setSearch(view.search_query || '');
-
-    setMobileFiltersOpen(false);
-  };
-
-  const handleClearFilters = () => {
-    clearView();
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
-    setColumnFilters(empty);
-    setAppliedFilters(empty);
-    setSearch('');
-  };
-
-  const handleClearView = handleClearFilters;
-
-  const handleApplyTag = (tagId) => {
-    const id = Number(tagId);
-    const isActive = activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
-
-    if (isActive) {
-      handleClearFilters();
-      return;
-    }
-
-    clearView();
-    setStatusFilter('all');
-    setSearch('');
-    const tagFilter = buildTagFilter(id);
-    setColumnFilters(tagFilter);
-    setAppliedFilters(tagFilter);
-    setMobileFiltersOpen(false);
-  };
-
-  const handleCloseFilterModal = useCallback(() => {
-    setFilterModalOpen(false);
-    setFilterModalMode(null);
-    setEditingView(null);
-  }, []);
-
-  const handleEditView = (view) => {
-    setEditingView(view);
-    setColumnFilters(filtersFromView(view));
-    setFilterModalMode('edit');
-    setFilterModalOpen(true);
-    setMobileFiltersOpen(false);
-  };
-
-  const handleViewCreated = (view) => {
-    handleApplyView(view);
-    setToast({
-      message: downloadsFiltersT('viewCreated', { name: view.name }),
-      type: 'success',
-    });
-  };
-
-  const handleViewUpdated = (view) => {
-    if (activeView?.id === view.id) {
-      handleApplyView(view);
-    }
-    setToast({
-      message: downloadsFiltersT('viewUpdated', { name: view.name }),
-      type: 'success',
-    });
-  };
-
-  const handleRenameView = async (view) => {
-    const newName = window.prompt('Rename view:', view.name);
-    if (!newName?.trim() || newName.trim() === view.name) return;
-    try {
-      await updateView(view.id, { name: newName.trim() });
-    } catch (error) {
-      alert(`Failed to rename view: ${error.message}`);
-    }
-  };
-
-  const handleRenameTag = async (tag) => {
-    const newName = window.prompt('Rename tag:', tag.name);
-    if (!newName?.trim() || newName.trim() === tag.name) return;
-    try {
-      await updateTagName(tag.id, newName.trim());
-    } catch (error) {
-      alert(`Failed to rename tag: ${error.message}`);
-    }
-  };
-
-  const handleTagDeleted = (tagId) => {
-    if (activeTagIds?.includes(Number(tagId))) {
-      handleClearFilters();
-    }
-  };
-
-  const handleOpenNewFilter = () => {
-    setEditingView(null);
-    setColumnFilters(normalizeFilters(appliedFilters));
-    setFilterModalMode('filter');
-    setFilterModalOpen(true);
-    setMobileFiltersOpen(false);
-  };
-
-  const handleOpenNewView = () => {
-    clearView();
-    setEditingView(null);
-    setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
-    setFilterModalMode('create');
-    setFilterModalOpen(true);
-    setMobileFiltersOpen(false);
-  };
-
-  const handleOpenTagManager = (autoCreate = false) => {
-    setTagManagerAutoCreate(autoCreate);
-    setTagManagerOpen(true);
-    setMobileFiltersOpen(false);
-  };
-
-  const handleNewTag = () => handleOpenTagManager(true);
-
-  const handleManageTags = () => handleOpenTagManager(false);
-
   const showDesktopFiltersSidebar = isBackendAvailable && !isMobile && !isFullscreen;
   const filtersSidebarExpanded = showDesktopFiltersSidebar && !filtersSidebarCollapsed;
   const filtersSidebarWidth = filtersSidebarCollapsed
     ? FILTERS_SIDEBAR_COLLAPSED
     : FILTERS_SIDEBAR_EXPANDED;
-
-  const handleApplyFiltersFromModal = (filters) => {
-    setAppliedFilters(normalizeFilters(filters));
-  };
-
-  const handlePreviewFiltersFromModal = useCallback(
-    (filters, { includeSort = false, includeSearch = false } = {}) => {
-      const assetType =
-        filterModalMode === 'edit' && editingView?.asset_type ? editingView.asset_type : activeType;
-      const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);
-      setColumnFilters(normalized);
-      setAppliedFilters(normalized);
-      clearView();
-
-      if (includeSort && sortField) {
-        setSort(sortField, sortDirection || 'desc');
-      }
-
-      if (includeSearch && search?.trim()) {
-        setSearch(search.trim());
-      } else if (!includeSearch) {
-        setSearch('');
-      }
-
-      setStatusFilter('all');
-    },
-    [
-      activeType,
-      clearView,
-      editingView,
-      filterModalMode,
-      search,
-      setSort,
-      sortDirection,
-      sortField,
-      setColumnFilters,
-      setAppliedFilters,
-      setSearch,
-      setStatusFilter,
-    ]
-  );
 
   const sidebarProps = {
     apiKey,
@@ -824,9 +491,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       <ActionBar
         unfilteredItems={enrichedDownloads}
         filteredItems={filteredItems}
-        selectedItems={selectedItems}
-        setSelectedItems={setSelectedItems}
-        hasSelectedFiles={hasSelectedFiles}
         activeColumns={activeColumns}
         onColumnChange={handleColumnChange}
         search={search}
@@ -871,9 +535,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           selectedItems={selectedItems}
           handleSelectAll={handleSelectAll}
           handleFileSelect={handleFileSelect}
-          handleRowSelect={handleRowSelect}
           setSelectedItems={setSelectedItems}
-          downloadHistory={downloadHistory}
+          downloadHistoryLookup={downloadHistoryLookup}
           isBlurred={isBlurred}
           deleteItem={deleteItem}
           sortedItems={sortedItems}
@@ -885,36 +548,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           toggleFiles={toggleFiles}
           isFullscreen={isFullscreen}
           scrollContainerRef={scrollContainerRef}
-          onOpenVideoPlayer={(
-            streamUrl,
-            fileName,
-            subtitles,
-            audios,
-            metadata,
-            itemId,
-            fileId,
-            streamType,
-            introInformation,
-            initialAudioIndex,
-            initialSubtitleIndex
-          ) => {
-            setVideoPlayerState({
-              isOpen: true,
-              streamUrl,
-              fileName,
-              subtitles,
-              audios,
-              metadata: metadata || {},
-              itemId,
-              fileId,
-              streamType,
-              introInformation: introInformation || null,
-              initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
-              initialSubtitleIndex:
-                initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
-            });
-            setPauseReason('videoPlayer', true);
-          }}
+          onOpenVideoPlayer={openVideoPlayer}
           onAudioPlay={handleAudioPlay}
           fileSearch={search}
         />
@@ -927,7 +561,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           apiKey={apiKey}
           activeColumns={activeColumns}
           onFileSelect={handleFileSelect}
-          downloadHistory={downloadHistory}
+          downloadHistoryLookup={downloadHistoryLookup}
           onDelete={deleteItem}
           expandedItems={expandedItems}
           toggleFiles={toggleFiles}
@@ -937,36 +571,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           isFullscreen={isFullscreen}
           viewMode={displayViewMode}
           scrollContainerRef={scrollContainerRef}
-          onOpenVideoPlayer={(
-            streamUrl,
-            fileName,
-            subtitles,
-            audios,
-            metadata,
-            itemId,
-            fileId,
-            streamType,
-            introInformation,
-            initialAudioIndex,
-            initialSubtitleIndex
-          ) => {
-            setVideoPlayerState({
-              isOpen: true,
-              streamUrl,
-              fileName,
-              subtitles,
-              audios,
-              metadata: metadata || {},
-              itemId,
-              fileId,
-              streamType,
-              introInformation: introInformation || null,
-              initialAudioIndex: initialAudioIndex !== undefined ? initialAudioIndex : 0,
-              initialSubtitleIndex:
-                initialSubtitleIndex !== undefined ? initialSubtitleIndex : null,
-            });
-            setPauseReason('videoPlayer', true);
-          }}
+          onOpenVideoPlayer={openVideoPlayer}
           onAudioPlay={handleAudioPlay}
         />
       )}

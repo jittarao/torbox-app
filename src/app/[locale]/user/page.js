@@ -1,62 +1,33 @@
 'use client';
 
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import UserProfile from '@/components/user/UserProfile';
 import ReferralUpgradeCard from '@/components/referral/ReferralUpgradeCard';
 import Toast from '@/components/shared/Toast';
 import { Inter } from 'next/font/google';
+import { useSession } from '@/components/shared/hooks/useSession';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function UserPage() {
   const [toast, setToast] = useState(null);
-  const [apiKey, setApiKey] = useState(() => {
-    try {
-      const storedKey = localStorage.getItem('torboxApiKey');
-      if (storedKey) return storedKey;
-      const storedKeys = localStorage.getItem('torboxApiKeys');
-      if (storedKeys) {
-        const keys = JSON.parse(storedKeys);
-        if (keys.length > 0) {
-          localStorage.setItem('torboxApiKey', keys[0].key);
-          return keys[0].key;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading API key from localStorage:', error);
-    }
-    return '';
-  });
+  const { apiKey, hydrated, setApiKey } = useSession();
   const t = useTranslations('User');
-
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
 
   useEffect(() => {
     if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
-          .then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for existing API key');
-            }
-          })
-          .catch((error) => {
-            console.error('Error ensuring user database on load:', error);
-          });
+        ensureUserDb(apiKey).catch((error) => {
+          console.error('Error ensuring user database on load:', error);
+        });
       });
     }
-  }, []);
+  }, [apiKey]);
 
-  // Handle API key change
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
-    localStorage.setItem('torboxApiKey', newKey);
     if (newKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
         ensureUserDb(newKey).catch((error) => {
@@ -66,8 +37,7 @@ export default function UserPage() {
     }
   };
 
-  // Don't render anything until client-side hydration is complete
-  if (!isClient) {
+  if (!hydrated) {
     return (
       <div
         className={`min-h-screen bg-surface dark:bg-surface-dark ${inter.variable} font-sans`}

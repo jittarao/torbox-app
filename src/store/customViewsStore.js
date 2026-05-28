@@ -1,25 +1,13 @@
 import { create } from 'zustand';
 import { isBackendAvailable } from '@/store/backendModeStore';
+import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
 
 export const useCustomViewsStore = create((set, get) => ({
   views: [],
   activeView: null,
   loading: false,
   error: null,
-  currentApiKey: null,
-
-  // Reset views when API key changes
-  setApiKey: (apiKey) => {
-    const { currentApiKey } = get();
-    if (currentApiKey !== apiKey) {
-      set({
-        currentApiKey: apiKey,
-        views: [],
-        activeView: null,
-        error: null,
-      });
-    }
-  },
+  ...createApiKeyScopedSlice(set, get, { views: [], activeView: null, error: null }),
 
   // Load views from API
   loadViews: async (apiKey) => {

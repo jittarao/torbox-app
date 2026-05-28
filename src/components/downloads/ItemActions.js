@@ -18,7 +18,6 @@ export default function ItemActions({
   expandedItems,
   setToast,
   activeType = 'torrents',
-  downloadHistory,
   compact = false,
   mobileBar = false,
 }) {

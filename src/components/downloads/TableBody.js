@@ -23,10 +23,9 @@ export default function TableBody({
   activeColumns,
   resolvedColumnWidths,
   selectedItems,
-  onRowSelect,
   onFileSelect,
   setSelectedItems,
-  downloadHistory,
+  downloadHistoryLookup,
   expandedItems,
   toggleFiles,
   apiKey,
@@ -135,23 +134,6 @@ export default function TableBody({
     });
     return rows;
   }, [deferredItems, expandedItemsArray, fileSearch]);
-
-  const downloadHistoryLookup = useMemo(() => {
-    const itemDownloads = new Set();
-    const fileDownloads = new Set();
-
-    downloadHistory.forEach((download) => {
-      const itemKey = `${download.assetType}:${String(download.itemId)}`;
-      if (download.fileId == null) {
-        itemDownloads.add(itemKey);
-        return;
-      }
-
-      fileDownloads.add(`${itemKey}:${String(download.fileId)}`);
-    });
-
-    return { itemDownloads, fileDownloads };
-  }, [downloadHistory]);
 
   // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
@@ -529,11 +511,7 @@ export default function TableBody({
               item={row.item}
               activeColumns={activeColumns}
               resolvedColumnWidths={resolvedColumnWidths}
-              selectedItems={selectedItems}
-              setSelectedItems={setSelectedItems}
-              downloadHistory={downloadHistory}
               downloadHistoryLookup={downloadHistoryLookup}
-              onRowSelect={onRowSelect}
               expandedItems={expandedItems}
               toggleFiles={toggleFiles}
               apiKey={apiKey}
@@ -557,7 +535,6 @@ export default function TableBody({
             <FileRow
               key={`file-${row.item.id}-${row.file.id}`}
               item={row.item}
-              selectedItems={selectedItems}
               handleFileSelection={handleFileSelection}
               handleFileDownload={handleFileDownload}
               handleFileStream={handleFileStream}

@@ -12,13 +12,11 @@ import { useStatusCounts } from './hooks/useStatusCounts';
 import Dropdown from '@/components/shared/Dropdown';
 import { useTranslations } from 'next-intl';
 import useIsMobile from '@/hooks/useIsMobile';
+import { useDownloadsSelectionStore, selectHasSelectedFiles } from '@/store/downloadsSelectionStore';
 
 export default function ActionBar({
   unfilteredItems,
   filteredItems,
-  selectedItems,
-  setSelectedItems,
-  hasSelectedFiles,
   activeColumns,
   onColumnChange,
   search,
@@ -52,6 +50,9 @@ export default function ActionBar({
   scrollContainerRef,
   hasFiltersSidebar = false,
 }) {
+  const selectedItems = useDownloadsSelectionStore((state) => state.selectedItems);
+  const setSelectedItems = useDownloadsSelectionStore((state) => state.setSelectedItems);
+  const hasSelectedFiles = useDownloadsSelectionStore(selectHasSelectedFiles);
   const isMobile = useIsMobile();
   const [isSticky, setIsSticky] = useState(false);
   const [spacerHeight, setSpacerHeight] = useState(0);

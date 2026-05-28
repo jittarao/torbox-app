@@ -3,12 +3,13 @@
 import UploadManager from '@/components/uploads/UploadManager';
 import AppShell from '@/components/navigation/AppShell';
 import { Inter } from 'next/font/google';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useSession } from '@/components/shared/hooks/useSession';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function UploadsPage() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
+  const { apiKey, hydrated } = useSession();
 
   useEffect(() => {
     if (apiKey) {
@@ -24,7 +25,11 @@ export default function UploadsPage() {
           });
       });
     }
-  }, []);
+  }, [apiKey]);
+
+  if (!hydrated) {
+    return null;
+  }
 
   return (
     <AppShell

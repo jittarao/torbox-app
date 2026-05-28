@@ -36,15 +36,10 @@ export function useSelection(items, activeType = 'all') {
     return Array.from(selectedItems.files.values()).some((files) => files.size > 0);
   };
 
-  const handleRowSelect = (selectionId, selectedFiles) => {
-    return selectedFiles.has(selectionId) && selectedFiles.get(selectionId).size > 0;
-  };
-
   return {
     selectedItems,
     setSelectedItems,
     hasSelectedFiles,
-    handleRowSelect,
     handleFileSelect,
     handleSelectAll,
     getDownloadSelectionId,
@@ -53,5 +48,22 @@ export function useSelection(items, activeType = 'all') {
 
 /** Granular row subscription — re-renders only when this item's selected state changes. */
 export function useIsDownloadSelected(selectionId) {
+  return useDownloadsSelectionStore((state) => state.selectedItems.items.has(selectionId));
+}
+
+export function useItemHasSelectedFiles(selectionId) {
+  return useDownloadsSelectionStore((state) => {
+    const files = state.selectedItems.files.get(selectionId);
+    return files != null && files.size > 0;
+  });
+}
+
+export function useIsFileSelected(selectionId, fileId) {
+  return useDownloadsSelectionStore(
+    (state) => state.selectedItems.files.get(selectionId)?.has(fileId) ?? false
+  );
+}
+
+export function useIsItemBlockingFileSelect(selectionId) {
   return useDownloadsSelectionStore((state) => state.selectedItems.items.has(selectionId));
 }

@@ -56,6 +56,7 @@ export function useDownloadsEnrichment(items, apiKey, isBackendAvailable) {
   return {
     enrichedDownloads,
     downloadHistory,
+    downloadHistoryLookup,
     tags,
     tagsLoading,
     updateTagName,
