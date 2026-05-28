@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { phEvent } from '@/utils/sa';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
@@ -32,18 +32,22 @@ export default function ActionButtons({
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
   const isMobile = useIsMobile();
-  const apiClient = createApiClient(apiKey);
+  const apiClient = useMemo(() => createApiClient(apiKey), [apiKey]);
   const cloudUploadRef = useRef(null);
   const showCloudUploadRef = useRef(false);
   const isUploadingRef = useRef(false);
 
-  // Check for connected providers on mount
+  // Check for connected providers once per API key (not on every ActionBar re-render)
   useEffect(() => {
+    if (!apiKey) {
+      connectedProviders.current = {};
+      return;
+    }
+
     const checkConnectedProviders = async () => {
       try {
         const response = await apiClient.getIntegrationJobs();
         if (response && response.jobs) {
-          // Extract unique provider types from active jobs
           const providers = new Set();
           response.jobs.forEach((job) => {
             if (job.provider) {
@@ -57,15 +61,12 @@ export default function ActionButtons({
           });
           connectedProviders.current = connected;
         }
-      } catch (error) {
-        console.log('No connected providers found or integration not available');
-        // Don't show error toast for this as it's expected when integration is not available
+      } catch {
+        // Expected when integration is not available
       }
     };
 
-    if (apiKey) {
-      checkConnectedProviders();
-    }
+    checkConnectedProviders();
   }, [apiKey, apiClient]);
 
   // Close cloud upload dropdown when clicking outside

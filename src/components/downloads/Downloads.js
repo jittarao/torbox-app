@@ -374,7 +374,9 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         clearInterval(interval);
       };
     }
-  }, [apiKey, pollingPaused, fetchNotificationsStore, isPollingPaused]);
+    // Only re-run when apiKey changes; pause state is read inside the interval callback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
 
   const sortedItems = sortTorrents(filteredItems);
 
