@@ -8,7 +8,7 @@ export default function AdminLoginPage() {
   const [adminKey, setAdminKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const router = useRouter();
+  const { push } = useRouter();
   const { authenticate, isAuthenticated, verifyAuth } = useAdminStore();
 
   useEffect(() => {
@@ -17,11 +17,11 @@ export default function AdminLoginPage() {
       const authenticated = await verifyAuth();
       if (authenticated) {
         const locale = window.location.pathname.split('/')[1] || 'en';
-        router.push(`/${locale}/admin/dashboard`);
+        push(`/${locale}/admin/dashboard`);
       }
     };
     checkAuth();
-  }, [router, verifyAuth]);
+  }, [push, verifyAuth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
       const result = await authenticate(adminKey);
       if (result.success) {
         const locale = window.location.pathname.split('/')[1] || 'en';
-        router.push(`/${locale}/admin/dashboard`);
+        push(`/${locale}/admin/dashboard`);
       } else {
         setError(result.error || 'Authentication failed');
       }

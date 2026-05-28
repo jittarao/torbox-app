@@ -11,9 +11,10 @@ export default function ArchivedDownloadsPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 
   useEffect(() => {
-    if (apiKey) {
+    const key = localStorage.getItem('torboxApiKey');
+    if (key) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
+        ensureUserDb(key)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -24,7 +25,7 @@ export default function ArchivedDownloadsPage() {
           });
       });
     }
-  }, [apiKey]);
+  }, []);
 
   return (
     <AppShell

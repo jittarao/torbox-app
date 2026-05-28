@@ -144,7 +144,7 @@ export default function CardList({
       const isTablet =
         typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
       const gap = getCardListItemGapPx();
-      const baseHeight = isMobile ? 170 : isTablet ? 74 : 82;
+      const baseHeight = isMobile ? 96 : isTablet ? 74 : 82;
       if (!row) {
         return baseHeight + gap;
       }
@@ -185,11 +185,8 @@ export default function CardList({
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
-  // Use the appropriate virtualizer based on mode - memoize to ensure stable reference
-  const virtualizer = useMemo(
-    () => (isFullscreen ? containerVirtualizer : windowVirtualizer),
-    [isFullscreen, containerVirtualizer, windowVirtualizer]
-  );
+  // Use the appropriate virtualizer based on mode
+  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
   // Define isDisabled first so it can be used in handlers
   const isDisabled = useCallback(

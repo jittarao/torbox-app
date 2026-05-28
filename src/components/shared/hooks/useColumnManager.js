@@ -1,173 +1,73 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { COLUMNS } from '@/components/constants';
 
+function getDefaultColumns(activeType) {
+  const defaults = {
+    all: [
+      'id',
+      'name',
+      'size',
+      'created_at',
+      'download_state',
+      'asset_type',
+      'download_progress',
+    ],
+    torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
+    usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
+    webdl: [
+      'id',
+      'name',
+      'size',
+      'created_at',
+      'download_state',
+      'download_progress',
+      'original_url',
+    ],
+  };
+  return defaults[activeType] || defaults.torrents;
+}
+
+function loadColumns(activeType) {
+  if (typeof window === 'undefined') return getDefaultColumns(activeType);
+
+  const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
+  const stored = localStorage.getItem(storageKey);
+  if (!stored) return getDefaultColumns(activeType);
+
+  try {
+    const storedColumns = JSON.parse(stored);
+    const validColumns = storedColumns.filter((col) => {
+      const column = COLUMNS[col];
+      if (activeType === 'all') {
+        return (
+          column &&
+          (!column.assetTypes ||
+            column.assetTypes.includes('all') ||
+            column.assetTypes.includes(activeType))
+        );
+      }
+      return column && (!column.assetTypes || column.assetTypes.includes(activeType));
+    });
+
+    if (validColumns.length === 0) return getDefaultColumns(activeType);
+    localStorage.setItem(storageKey, JSON.stringify(validColumns));
+    return validColumns;
+  } catch (e) {
+    return getDefaultColumns(activeType);
+  }
+}
+
 export function useColumnManager(activeType = 'torrents') {
-  const [isClient, setIsClient] = useState(false);
-  const [activeColumns, setActiveColumns] = useState(() => {
-    // Default columns for each type - used for initial server-side rendering
-    const defaultColumns = {
-      all: [
-        'id',
-        'name',
-        'size',
-        'created_at',
-        'download_state',
-        'asset_type',
-        'download_progress',
-      ],
-      torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
-      usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
-      webdl: [
-        'id',
-        'name',
-        'size',
-        'created_at',
-        'download_state',
-        'download_progress',
-        'original_url',
-      ],
-    };
+  const [activeColumns, setActiveColumns] = useState(() => loadColumns(activeType));
+  const prevTypeRef = useRef(activeType);
 
-    // Return default columns for server-side rendering
-    return defaultColumns[activeType] || defaultColumns.torrents;
-  });
-
-  // Initialize columns from localStorage after component is mounted
-  useEffect(() => {
-    setIsClient(true);
-
-    // Get columns from localStorage based on asset type
-    const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
-
-    // Default columns for each type
-    const defaultColumns = {
-      all: [
-        'id',
-        'name',
-        'size',
-        'created_at',
-        'download_state',
-        'asset_type',
-        'download_progress',
-      ],
-      torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
-      usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
-      webdl: [
-        'id',
-        'name',
-        'size',
-        'created_at',
-        'download_state',
-        'download_progress',
-        'original_url',
-      ],
-    };
-
-    if (!stored) {
-      setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
-      return;
-    }
-
-    try {
-      const storedColumns = JSON.parse(stored);
-      // Filter for valid columns that are applicable to this asset type
-      const validColumns = storedColumns.filter((col) => {
-        const column = COLUMNS[col];
-        // For "all" tab, include columns that are either universal or specifically allowed for "all"
-        if (activeType === 'all') {
-          return (
-            column &&
-            (!column.assetTypes ||
-              column.assetTypes.includes('all') ||
-              column.assetTypes.includes(activeType))
-          );
-        }
-        // For specific tabs, include column if it exists and either has no assetTypes restriction or includes the current type
-        return column && (!column.assetTypes || column.assetTypes.includes(activeType));
-      });
-
-      // If no valid columns, return defaults
-      if (validColumns.length === 0) {
-        setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
-        return;
-      }
-
-      // Update storage with only valid columns
-      localStorage.setItem(storageKey, JSON.stringify(validColumns));
-      setActiveColumns(validColumns);
-    } catch (e) {
-      // If there's an error parsing, return defaults
-      setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
-    }
-  }, [activeType]);
-
-  // Update columns when asset type changes
-  useEffect(() => {
-    if (!isClient) return;
-
-    const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
-    const stored = localStorage.getItem(storageKey);
-
-    const defaultColumns = {
-      all: [
-        'id',
-        'name',
-        'size',
-        'created_at',
-        'download_state',
-        'asset_type',
-        'download_progress',
-      ],
-      torrents: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
-      usenet: ['id', 'name', 'size', 'created_at', 'download_state', 'download_progress'],
-      webdl: [
-        'id',
-        'name',
-        'size',
-        'created_at',
-        'download_state',
-        'download_progress',
-        'original_url',
-      ],
-    };
-
-    if (!stored) {
-      setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
-      return;
-    }
-
-    try {
-      const storedColumns = JSON.parse(stored);
-      // Filter for valid columns that are applicable to this asset type
-      const validColumns = storedColumns.filter((col) => {
-        const column = COLUMNS[col];
-        // For "all" tab, include columns that are either universal or specifically allowed for "all"
-        if (activeType === 'all') {
-          return (
-            column &&
-            (!column.assetTypes ||
-              column.assetTypes.includes('all') ||
-              column.assetTypes.includes(activeType))
-          );
-        }
-        return column && (!column.assetTypes || column.assetTypes.includes(activeType));
-      });
-
-      // If no valid columns, use defaults
-      if (validColumns.length === 0) {
-        setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
-      } else {
-        setActiveColumns(validColumns);
-      }
-    } catch (e) {
-      // If there's an error parsing, use defaults
-      setActiveColumns(defaultColumns[activeType] || defaultColumns.torrents);
-    }
-  }, [activeType, isClient]);
+  if (prevTypeRef.current !== activeType) {
+    prevTypeRef.current = activeType;
+    setActiveColumns(loadColumns(activeType));
+  }
 
   const handleColumnChange = (newColumns) => {
-    if (!isClient) return;
+    if (typeof window === 'undefined') return;
 
     // Filter for valid columns that are applicable to this asset type
     const validColumns = newColumns.filter((col) => {

@@ -4,14 +4,14 @@ import { useRouter, useParams } from 'next/navigation';
 import useAdminStore from '@/store/adminStore';
 
 export default function AdminHeader() {
-  const router = useRouter();
+  const { push } = useRouter();
   const params = useParams();
   const locale = params?.locale || 'en';
   const { logout } = useAdminStore();
 
   const handleLogout = () => {
     logout();
-    router.push(`/${locale}/admin`);
+    push(`/${locale}/admin`);
   };
 
   return (

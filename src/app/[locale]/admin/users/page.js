@@ -8,7 +8,7 @@ import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
 
 export default function AdminUsersPage() {
-  const router = useRouter();
+  const { push } = useRouter();
   const { users, usersLoading, usersPagination, userFilters, fetchUsers, setUserFilter } =
     useAdminStore();
   const [toast, setToast] = useState(null);
@@ -19,7 +19,7 @@ export default function AdminUsersPage() {
 
   const handleUserClick = (authId) => {
     const locale = window.location.pathname.split('/')[1] || 'en';
-    router.push(`/${locale}/admin/users/${authId}`);
+    push(`/${locale}/admin/users/${authId}`);
   };
 
   const handlePageChange = (page) => {

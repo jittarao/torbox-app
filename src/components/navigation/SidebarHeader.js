@@ -41,7 +41,7 @@ function SidebarBrand() {
   );
 }
 
-export function SidebarCollapseToggle() {
+function SidebarCollapseToggle() {
   const t = useTranslations('Header');
   const { collapsed, toggleCollapsed } = useSidebar();
 

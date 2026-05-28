@@ -59,7 +59,6 @@ export default function ActionBar({
   const [stickyBounds, setStickyBounds] = useState(null);
   const stickyRef = useRef(null);
   const isStickyRef = useRef(false);
-  const scrollTimeoutRef = useRef(null);
   const initialTopRef = useRef(0);
 
   const getScrollTop = useCallback(() => {
@@ -200,17 +199,18 @@ export default function ActionBar({
     };
 
     // Trailing rAF: always run check for the latest scroll position
+    let pendingRaf = null;
     const handleScroll = () => {
-      if (scrollTimeoutRef.current) {
-        cancelAnimationFrame(scrollTimeoutRef.current);
+      if (pendingRaf) {
+        cancelAnimationFrame(pendingRaf);
       }
 
-      scrollTimeoutRef.current = requestAnimationFrame(() => {
+      pendingRaf = requestAnimationFrame(() => {
+        pendingRaf = null;
         checkSticky();
         if (isStickyRef.current && !isFullscreen) {
           updateStickyBounds();
         }
-        scrollTimeoutRef.current = null;
       });
     };
 
@@ -228,8 +228,8 @@ export default function ActionBar({
     return () => {
       clearTimeout(initTimer);
       clearTimeout(checkTimer);
-      if (scrollTimeoutRef.current) {
-        cancelAnimationFrame(scrollTimeoutRef.current);
+      if (pendingRaf) {
+        cancelAnimationFrame(pendingRaf);
       }
       scrollElement.removeEventListener('scroll', handleScroll);
     };
@@ -321,7 +321,7 @@ export default function ActionBar({
               className="min-w-0 w-full basis-full sm:basis-auto sm:w-44 sm:flex-none md:w-52 lg:w-60"
             />
 
-            {(viewMode === 'card' || (isMobile && viewMode === 'table')) && (
+            {viewMode === 'card' && (
               <div className="flex shrink-0 items-center gap-1">
                 <Dropdown
                   options={sortOptions}

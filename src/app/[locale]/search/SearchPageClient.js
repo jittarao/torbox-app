@@ -18,10 +18,10 @@ export default function SearchPageClient() {
   const searchType = useSearchStore((state) => state.searchType);
   const setSearchType = useSearchStore((state) => state.setSearchType);
 
-  useEffect(() => {
-    if (apiKey) {
+  const initEnsureUserDb = (key) => {
+    if (key) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
+        ensureUserDb(key)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -32,12 +32,17 @@ export default function SearchPageClient() {
           });
       });
     }
-  }, [apiKey]);
+  };
+
+  useEffect(() => {
+    initEnsureUserDb(localStorage.getItem('torboxApiKey'));
+  }, []);
 
   // Fetch user profile and derive permissions (usenet search requires Pro)
   useEffect(() => {
-    if (apiKey && apiKey.length >= 20) {
-      fetchUserProfile(apiKey)
+    const key = localStorage.getItem('torboxApiKey');
+    if (key && key.length >= 20) {
+      fetchUserProfile(key)
         .then((userData) => {
           setPermissions(userData ? getUserPermissions(userData) : null);
         })
@@ -45,7 +50,7 @@ export default function SearchPageClient() {
     } else {
       setPermissions(null);
     }
-  }, [apiKey]);
+  }, []);
 
   // If usenet is selected but user doesn't have access, switch to torrents
   useEffect(() => {
@@ -64,6 +69,16 @@ export default function SearchPageClient() {
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
     localStorage.setItem('torboxApiKey', newKey);
+    initEnsureUserDb(newKey);
+    if (newKey && newKey.length >= 20) {
+      fetchUserProfile(newKey)
+        .then((userData) => {
+          setPermissions(userData ? getUserPermissions(userData) : null);
+        })
+        .catch(() => setPermissions(null));
+    } else {
+      setPermissions(null);
+    }
   };
 
   return (

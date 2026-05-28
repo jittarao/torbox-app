@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import ReferralHeaderBanner from '@/components/referral/ReferralHeaderBanner';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -58,9 +58,11 @@ export default function AppShell({ apiKey, children, className = '' }) {
   const closeMore = useCallback(() => setIsMoreOpen(false), []);
   const toggleMore = useCallback(() => setIsMoreOpen((open) => !open), []);
 
-  useEffect(() => {
-    closeMore();
-  }, [pathname, closeMore]);
+  const prevPathnameRef = useRef(pathname);
+  if (pathname !== prevPathnameRef.current) {
+    prevPathnameRef.current = pathname;
+    setIsMoreOpen(false);
+  }
 
   const isMoreRouteActive = useMemo(() => {
     if (isActive(USER_NAV_ITEM.href)) return true;

@@ -15,17 +15,13 @@ export default function HeaderDropdownPanel({
 }) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const portalReady = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_MEDIA_QUERY).matches
   );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
     const update = () => setIsMobile(mediaQuery.matches);
-    update();
     mediaQuery.addEventListener('change', update);
     return () => mediaQuery.removeEventListener('change', update);
   }, []);

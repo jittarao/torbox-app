@@ -29,6 +29,7 @@ export default function VideoInfoOverlay({
 
   return (
     <div
+      role="presentation"
       className="absolute inset-0 z-30 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
       onClick={onClose}
       onKeyDown={(e) => {

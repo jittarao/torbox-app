@@ -37,6 +37,7 @@ export default function AdminDashboard() {
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
               className="rounded"
+              aria-label="Auto-refresh every 30 seconds"
             />
             Auto-refresh (30s)
           </label>

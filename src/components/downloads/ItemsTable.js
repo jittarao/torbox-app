@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
@@ -9,9 +9,6 @@ import TrackSelectionModal from './TrackSelectionModal';
 import { useStream } from '../shared/hooks/useStream';
 import { tableContainerClass } from './utils/responsiveLayout';
 import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
-
-// Local storage key for mobile notice dismissal
-const MOBILE_NOTICE_DISMISSED_KEY = 'mobile-notice-dismissed';
 
 export default function ItemsTable({
   apiKey,
@@ -40,13 +37,8 @@ export default function ItemsTable({
   onAudioPlay,
   fileSearch = '',
 }) {
-  const [showMobileNotice, setShowMobileNotice] = useState(true);
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
   const [tableWidth, setTableWidth] = useState(0);
+  const [isClient, setIsClient] = useState(false);
   const tableContainerRef = useRef(null);
   const [trackSelectionModal, setTrackSelectionModal] = useState({
     isOpen: false,
@@ -196,16 +188,6 @@ export default function ItemsTable({
     [trackSelectionModal, getStreamType, createStream, onOpenVideoPlayer]
   );
 
-  // Load mobile notice dismissal preference from localStorage
-  useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      const noticeDismissed = localStorage.getItem(MOBILE_NOTICE_DISMISSED_KEY);
-      if (noticeDismissed === 'true') {
-        setShowMobileNotice(false);
-      }
-    }
-  }, []);
-
   useEffect(() => {
     updateTableWidth();
     window.addEventListener('resize', updateTableWidth);
@@ -221,13 +203,9 @@ export default function ItemsTable({
     }
   };
 
-  // Save mobile notice dismissal preference to localStorage
-  const handleDismissMobileNotice = () => {
-    setShowMobileNotice(false);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(MOBILE_NOTICE_DISMISSED_KEY, 'true');
-    }
-  };
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const { columnWidths, updateColumnWidth } = useColumnWidths(activeType);
   const isMobile = useIsMobile();
@@ -243,36 +221,6 @@ export default function ItemsTable({
 
   return (
     <>
-      {/* Mobile notice - only show if isClient (client-side) to prevent hydration mismatch */}
-      {isClient && showMobileNotice && (
-        <div className="md:hidden p-3 mb-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark text-primary-text/80 dark:text-primary-text-dark/80 rounded-lg text-sm flex justify-between items-center">
-          <p>
-            Viewing simplified table on mobile. Rotate device or use larger screen for full view.
-          </p>
-          <button
-            type="button"
-            onClick={handleDismissMobileNotice}
-            className="ml-2 text-primary-text/60 dark:text-primary-text-dark/60 hover:text-primary-text dark:hover:text-primary-text-dark"
-            aria-label="Dismiss notice"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="size-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-      )}
-
       <div ref={tableContainerRef} id="items-table" className={tableContainerClass}>
         <table
           className="w-full table-fixed border-separate border-spacing-0 relative md:text-xs lg:text-sm"

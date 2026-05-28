@@ -1,4 +1,4 @@
-export const HEALTH_HISTORY_LENGTH = 30;
+const HEALTH_HISTORY_LENGTH = 30;
 const STORAGE_KEY = 'torbox-health-history-v2';
 
 export function statusToSegment(status, responseTime) {

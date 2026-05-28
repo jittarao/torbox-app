@@ -1,15 +1,15 @@
 const TB = 1024 ** 4;
 
 /** Minimum monthly floors per plan (TorBox abuse policy). Plan IDs match userProfile.getPlanName. */
-export const PLAN_MONTHLY_FLOOR_BYTES = {
+const PLAN_MONTHLY_FLOOR_BYTES = {
   0: 5 * TB,
   1: 10 * TB,
   2: 30 * TB,
   3: 20 * TB,
 };
 
-export const USAGE_WARNING_PERCENT = 70;
-export const USAGE_DANGER_PERCENT = 90;
+const USAGE_WARNING_PERCENT = 70;
+const USAGE_DANGER_PERCENT = 90;
 
 /**
  * @param {Array<{ bytes_downloaded?: number }>} bandwidth

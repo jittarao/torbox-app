@@ -37,14 +37,12 @@
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
-    "react-dropzone": "^14.4.0",
     "shaka-player": "^4.16.15",
     "zod": "^4.4.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
-    "@types/minimatch": "^6.0.0",
     "@types/node": "25.5.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
@@ -52,7 +50,6 @@
     "@typescript-eslint/parser": "8.57.1",
     "eslint": "^9.39.2",
     "eslint-config-next": "16.2.0",
-    "minimatch": "^10.1.1",
     "postcss": "^8.5.8",
     "prettier": "3.8.1",
     "react-doctor": "^0.2.8",

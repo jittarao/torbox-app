@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Icons from '@/components/icons';
 
+const EMPTY_OBJECT = {};
+
 /**
  * TrackSelectionModal - Modal for selecting video/audio/subtitle tracks before playback
  * @param {Object} props
@@ -17,7 +19,7 @@ export default function TrackSelectionModal({
   isOpen,
   onClose,
   onPlay,
-  metadata = {},
+  metadata = EMPTY_OBJECT,
   introInformation = null,
   fileName = 'Video',
 }) {
@@ -56,7 +58,16 @@ export default function TrackSelectionModal({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+      />
 
       {/* Modal */}
       <div

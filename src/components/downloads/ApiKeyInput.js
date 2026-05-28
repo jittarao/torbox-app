@@ -21,12 +21,9 @@ export default function ApiKeyInput({
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const lastAutoApplyKeyRef = useRef('');
-  const [showManager, setShowManager] = useState(() => {
-    return localStorage.getItem('torboxKeepManagerOpen') === 'true';
-  });
-  const [keepManagerOpen, setKeepManagerOpen] = useState(() => {
-    return localStorage.getItem('torboxKeepManagerOpen') === 'true';
-  });
+  const cachedKeepManagerOpen = localStorage.getItem('torboxKeepManagerOpen') === 'true';
+  const [showManager, setShowManager] = useState(() => cachedKeepManagerOpen);
+  const [keepManagerOpen, setKeepManagerOpen] = useState(() => cachedKeepManagerOpen);
   const [draft, setDraft] = useState(undefined);
   const ensureDbTimeoutRef = useRef(null);
 

@@ -6,7 +6,7 @@ import { MIN_INTERVAL_MINUTES } from './constants.js';
  * RuleValidator resolves trigger via `rule.trigger || rule.trigger_config`; clients may send
  * only `trigger_config`, so both keys are normalized here.
  */
-export function normalizeIntervalTriggerOnRule(rule) {
+function normalizeIntervalTriggerOnRule(rule) {
   if (!rule || typeof rule !== 'object') return rule;
 
   const fromTrigger = rule.trigger;

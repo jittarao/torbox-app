@@ -12,13 +12,13 @@ export default function ResizableColumn({
   onClick,
 }) {
   const [isResizing, setIsResizing] = useState(false);
-  const [wasResizing, setWasResizing] = useState(false);
   const isMobile = useIsMobile();
   const minWidth = getColumnMinWidth(columnId);
   const resizeRef = useRef({
     startX: 0,
     startWidth: 0,
   });
+  const wasResizingRef = useRef(false);
 
   const handleMouseDown = useCallback(
     (e) => {
@@ -53,8 +53,9 @@ export default function ResizableColumn({
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      setWasResizing(isResizing);
+      wasResizingRef.current = isResizing;
       setIsResizing(false);
+      setTimeout(() => { wasResizingRef.current = false; }, 0);
     },
     [isResizing]
   );
@@ -78,13 +79,6 @@ export default function ResizableColumn({
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
-  useEffect(() => {
-    if (wasResizing) {
-      const timer = setTimeout(() => setWasResizing(false), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [wasResizing]);
-
   const pixelWidth = Math.max(minWidth, parseInt(width, 10) || minWidth);
 
   return (
@@ -102,7 +96,7 @@ export default function ResizableColumn({
             }
       }
       onClick={(e) => {
-        if (wasResizing) {
+        if (wasResizingRef.current) {
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -116,9 +110,15 @@ export default function ResizableColumn({
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize column"
+          tabIndex={0}
           className="absolute right-0 top-0 bottom-0 z-20 w-3 cursor-col-resize touch-none flex items-center justify-center hover:bg-accent/15 dark:hover:bg-accent-dark/15"
           onMouseDown={handleMouseDown}
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+            }
+          }}
         >
           <div
             className={`w-0.5 h-5 rounded-full transition-opacity ${

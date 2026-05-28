@@ -1,6 +1,6 @@
 // Simple performance monitoring
 
-export class PerformanceMonitor {
+class PerformanceMonitor {
   constructor() {
     this.metrics = new Map();
   }

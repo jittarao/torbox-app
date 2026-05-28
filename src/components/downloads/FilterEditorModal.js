@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import FilterGroup from './CustomViews/components/FilterGroup';
 import ViewFilterPreview from './CustomViews/components/ViewFilterPreview';
 import { getFilterableColumns } from './CustomViews/utils';
@@ -62,39 +62,17 @@ export default function FilterEditorModal({
     return downloadsFiltersT('modalTitle');
   })();
 
-  useEffect(() => {
-    if (!isOpen) {
-      setSaveViewName('');
-      setShowSaveInput(false);
-      setSaveSort(false);
-      setSaveColumns(false);
-      setSaveSearch(false);
-      setPreviewApplied(false);
-      return;
-    }
-
-    if (isCreateMode) {
-      setSaveViewName('');
-      setShowSaveInput(true);
-      setSaveSort(false);
-      setSaveColumns(false);
-      setSaveSearch(!!search?.trim());
-      return;
-    }
-
-    if (isEditMode) {
-      setSaveSort(!!editingView.sort_field);
-      setSaveColumns(!!editingView.visible_columns);
-      setSaveSearch(!!editingView.search_query);
-      setShowSaveInput(false);
-      return;
-    }
-
-    setSaveSort(false);
-    setSaveColumns(false);
-    setSaveSearch(false);
-    setShowSaveInput(false);
-  }, [isOpen, isCreateMode, isEditMode, editingView, search]);
+  const modeKey = isCreateMode ? 'create' : isEditMode ? `edit-${editingView?.id || ''}` : null;
+  const prevModeKeyRef = useRef(null);
+  if (prevModeKeyRef.current !== modeKey) {
+    prevModeKeyRef.current = modeKey;
+    setSaveViewName('');
+    setShowSaveInput(isCreateMode);
+    setSaveSort(isEditMode ? !!editingView?.sort_field : false);
+    setSaveColumns(isEditMode ? !!editingView?.visible_columns : false);
+    setSaveSearch(isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false);
+    setPreviewApplied(false);
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -513,7 +491,6 @@ export default function FilterEditorModal({
                           setSaveViewName('');
                         }
                       }}
-                      autoFocus
                     />
                     <button
                       type="button"

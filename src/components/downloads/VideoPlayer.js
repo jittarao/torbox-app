@@ -91,6 +91,7 @@ export default function VideoPlayer({
 
         const player = new shaka.Player(video);
         playerRef.current = player;
+        shakaPlayer = player;
 
         video.controls = false;
 
@@ -195,6 +196,7 @@ export default function VideoPlayer({
 
     initPlayer();
 
+    let shakaPlayer = null;
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('play', handlePlay);
@@ -202,13 +204,9 @@ export default function VideoPlayer({
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('volumechange', handleVolumeChange);
-      if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {
-          console.error('Error destroying player:', e);
-        }
-        playerRef.current = null;
+
+      if (shakaPlayer) {
+        shakaPlayer.destroy();
       }
     };
   }, [

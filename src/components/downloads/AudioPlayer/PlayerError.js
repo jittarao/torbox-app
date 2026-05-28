@@ -8,7 +8,7 @@ export default function PlayerError({ errorMessage, onRetry, showRetry }) {
         <button
           type="button"
           onClick={onRetry}
-          className="px-4 py-2 rounded-full bg-amber-500/90 hover:bg-amber-500 text-gray-900 font-medium"
+          className="px-4 py-2 rounded-full bg-amber-500/90 hover:bg-amber-500 text-white font-medium"
         >
           Retry
         </button>

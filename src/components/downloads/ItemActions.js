@@ -18,7 +18,6 @@ export default function ItemActions({
   setItems,
   setToast,
   activeType = 'torrents',
-  isMobile = false,
   downloadHistory,
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -119,7 +118,7 @@ export default function ItemActions({
   };
 
   return (
-    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'contents'}`}>
+    <>
       <ItemActionButtons
         item={item}
         onDelete={handleDelete}
@@ -127,7 +126,6 @@ export default function ItemActions({
         toggleFiles={toggleFiles}
         expandedItems={expandedItems}
         activeType={activeType}
-        isMobile={isMobile}
         onStopSeeding={handleStopSeeding}
         onForceStart={handleForceStart}
         onDownload={handleDownload}
@@ -137,9 +135,8 @@ export default function ItemActions({
         item={item}
         apiKey={apiKey}
         setToast={setToast}
-        isMobile={isMobile}
         activeType={activeType}
       />
-    </div>
+    </>
   );
 }

@@ -78,9 +78,10 @@ export default function Home() {
   }, [setLinkInput]);
 
   useEffect(() => {
-    if (apiKey) {
+    const key = localStorage.getItem('torboxApiKey');
+    if (key) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
+        ensureUserDb(key)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -91,7 +92,7 @@ export default function Home() {
           });
       });
     }
-  }, [apiKey]);
+  }, []);
 
   // Handle received files
   useFileHandler((file) => {
@@ -116,6 +117,13 @@ export default function Home() {
     if (trimmed === '' || isValidTorboxApiKey(trimmed)) {
       setApiKey(trimmed);
       localStorage.setItem('torboxApiKey', trimmed);
+      if (trimmed) {
+        import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+          ensureUserDb(trimmed).catch((error) => {
+            console.error('Error ensuring user database:', error);
+          });
+        });
+      }
     }
   };
 

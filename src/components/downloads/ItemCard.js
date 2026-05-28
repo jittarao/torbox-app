@@ -390,7 +390,7 @@ function ItemCard({
         </div>
 
         <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 flex-shrink-0">
-          <div className={isMobile ? 'w-full' : tableActionsCellInner}>
+          <div className={`${tableActionsCellInner} max-md:flex-wrap`}>
             <ItemActions
               item={item}
               apiKey={apiKey}
@@ -401,7 +401,6 @@ function ItemCard({
               setSelectedItems={setSelectedItems}
               setToast={setToast}
               activeType={activeType}
-              isMobile={isMobile}
               downloadHistory={downloadHistory}
             />
           </div>

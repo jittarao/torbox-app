@@ -111,9 +111,6 @@ export function useSpeedData(items, timeRange = '10m') {
       });
     };
 
-    // Initial update
-    updateSpeedData();
-
     // Set up interval for regular updates
     intervalRef.current = setInterval(updateSpeedData, UPDATE_INTERVAL);
 

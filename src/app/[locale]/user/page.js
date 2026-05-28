@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import UserProfile from '@/components/user/UserProfile';
@@ -29,16 +29,19 @@ export default function UserPage() {
     }
     return '';
   });
-  const [isClient, setIsClient] = useState(false);
-
-  // Move translations hook to top level - always call it
   const t = useTranslations('User');
 
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   useEffect(() => {
-    setIsClient(true);
-    if (apiKey) {
+    const key = localStorage.getItem('torboxApiKey');
+    if (key) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
+        ensureUserDb(key)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -49,12 +52,19 @@ export default function UserPage() {
           });
       });
     }
-  }, [apiKey]);
+  }, []);
 
   // Handle API key change
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
     localStorage.setItem('torboxApiKey', newKey);
+    if (newKey) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(newKey).catch((error) => {
+          console.error('Error ensuring user database:', error);
+        });
+      });
+    }
   };
 
   // Don't render anything until client-side hydration is complete

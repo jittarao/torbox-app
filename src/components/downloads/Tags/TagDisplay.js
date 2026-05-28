@@ -19,7 +19,15 @@ export default function TagDisplay({ tags = EMPTY_ARRAY, onTagClick, className =
       {tags.map((tag) => (
         <span
           key={tag.id}
+          role={onTagClick ? 'button' : undefined}
+          tabIndex={onTagClick ? 0 : undefined}
           onClick={() => onTagClick && onTagClick(tag)}
+          onKeyDown={(e) => {
+            if (onTagClick && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              onTagClick(tag);
+            }
+          }}
           className={`
             inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md
             bg-accent/10 dark:bg-accent-dark/10

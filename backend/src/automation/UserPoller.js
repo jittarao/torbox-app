@@ -590,10 +590,10 @@ class UserPoller {
     } = options;
 
     await this._ensureDbManager();
-    await this.ensureDatabaseConnection();
     if (!this.dbManager) {
       throw new Error('No database connection for runPipeline');
     }
+    await this.ensureDatabaseConnection();
 
     let torrents = prefetchedTorrents;
     if (torrents === undefined) {

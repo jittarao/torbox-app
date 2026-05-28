@@ -61,7 +61,9 @@ function ItemRow({
             <div
               className={`text-sm md:text-xs lg:text-sm text-primary-text dark:text-primary-text-dark min-w-0 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div
+                className={`flex gap-2 min-w-0 ${isMobile ? 'items-start flex-wrap' : 'items-center'}`}
+              >
                 <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
                   <span
                     className={`inline-block shrink-0 size-2 rounded-full ${
@@ -78,7 +80,13 @@ function ItemRow({
                 )}
                 {item.name && (
                   <Tooltip content={!isBlurred ? item.name : ''}>
-                    <span className="truncate">{item.name || 'Unnamed Item'}</span>
+                    <span
+                      className={
+                        isMobile ? 'break-words min-w-0' : 'truncate'
+                      }
+                    >
+                      {item.name || 'Unnamed Item'}
+                    </span>
                   </Tooltip>
                 )}
               </div>
@@ -338,7 +346,6 @@ function ItemRow({
             setSelectedItems={setSelectedItems}
             setToast={setToast}
             activeType={activeType}
-            isMobile={isMobile}
             downloadHistory={downloadHistory}
           />
         </div>

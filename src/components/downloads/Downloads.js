@@ -116,6 +116,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const migrationAttemptedRef = useRef(false);
   const previousApiKeyRef = useRef(null);
   const isMobile = useIsMobile();
+  /** Mobile always uses card layout; desktop preference is preserved in viewMode. */
+  const displayViewMode = isMobile ? 'card' : viewMode;
   const { collapsed: filtersSidebarCollapsed, toggleCollapsed: toggleFiltersSidebar } =
     useFiltersSidebarCollapsed();
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
@@ -667,7 +669,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         </div>
       );
     }
-    return <ItemUploader apiKey={apiKey} activeType={activeType} />;
+    return <ItemUploader key={activeType} apiKey={apiKey} activeType={activeType} />;
   };
 
   const handleApplyView = (view) => {
@@ -906,7 +908,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         onBlurToggle={() => setIsBlurred(!isBlurred)}
         isFullscreen={isFullscreen}
         onFullscreenToggle={onFullscreenToggle}
-        viewMode={viewMode}
+        viewMode={displayViewMode}
         onViewModeChange={setViewMode}
         sortField={sortField}
         sortDir={sortDirection}
@@ -923,7 +925,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         hasFiltersSidebar={filtersSidebarExpanded}
       />
 
-      {viewMode === 'table' ? (
+      {displayViewMode === 'table' ? (
         <ItemsTable
           apiKey={apiKey}
           activeType={activeType}
@@ -997,7 +999,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           activeType={activeType}
           isBlurred={isBlurred}
           isFullscreen={isFullscreen}
-          viewMode={viewMode}
+          viewMode={displayViewMode}
           scrollContainerRef={scrollContainerRef}
           onOpenVideoPlayer={(
             streamUrl,

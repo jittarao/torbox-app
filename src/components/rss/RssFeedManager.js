@@ -82,11 +82,6 @@ export default function RssFeedManager({ apiKey, setToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [componentError, setComponentError] = useState(null);
 
-  // Reset component error when apiKey changes
-  useEffect(() => {
-    setComponentError(null);
-  }, [apiKey]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

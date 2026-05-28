@@ -25,11 +25,6 @@ export default function RssItemsManager({ apiKey, setToast }) {
   const [downloadingItems, setDownloadingItems] = useState(new Set());
   const [componentError, setComponentError] = useState(null);
 
-  // Reset component error when apiKey changes
-  useEffect(() => {
-    setComponentError(null);
-  }, [apiKey]);
-
   // Fetch items for selected feed
   const fetchItems = useCallback(
     async (feedId) => {

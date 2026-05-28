@@ -8,7 +8,7 @@ import AdminHeader from './AdminHeader';
 import useAdminStore from '@/store/adminStore';
 
 export default function AdminLayout({ children }) {
-  const router = useRouter();
+  const { push } = useRouter();
   const pathname = usePathname();
   const params = useParams();
   const locale = params?.locale || 'en';
@@ -21,12 +21,12 @@ export default function AdminLayout({ children }) {
       if (!isLoginPage) {
         const authenticated = await verifyAuth();
         if (!authenticated) {
-          router.push(`/${locale}/admin`);
+          push(`/${locale}/admin`);
         }
       }
     };
     checkAuth();
-  }, [pathname, router, verifyAuth, locale]);
+  }, [pathname, push, verifyAuth, locale]);
 
   // Don't render layout on login page
   const isLoginPage = pathname === `/${locale}/admin` || pathname === '/admin';
