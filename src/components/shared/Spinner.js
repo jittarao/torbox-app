@@ -6,11 +6,9 @@ export default function Spinner({ size = 'md', className = '' }) {
   };
 
   return (
-    <div
-      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${sizeClasses[size]} ${className}`}
-      role="status"
-    >
-      <span className="sr-only">Loading…</span>
-    </div>
+    <progress
+      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent appearance-none [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-transparent [&::-moz-progress-bar]:bg-transparent ${sizeClasses[size]} ${className}`}
+      aria-label="Loading…"
+    />
   );
 }

@@ -26,13 +26,10 @@ export default function VolumeControl({
   const timeoutRef = useRef(null);
 
   useEffect(() => {
+    const timer = timeoutRef.current;
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timer) clearTimeout(timer);
     };
-    // timeoutRef is a ref (stable) — no deps needed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMouseEnter = () => {
@@ -111,6 +108,12 @@ export default function VolumeControl({
       </button>
       {showSlider && (
         <div
+          role="slider"
+          tabIndex={0}
+          aria-valuenow={Math.round((isMuted ? 0 : volume) * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Volume"
           className="absolute bottom-full right-0 mb-2 w-12 h-32 bg-black/90 backdrop-blur-md rounded-lg border border-white/20 p-2 cursor-pointer pointer-events-auto"
           onClick={handleVolumeChange}
           onMouseMove={(e) => {
@@ -119,6 +122,16 @@ export default function VolumeControl({
             }
           }}
           onMouseEnter={handleMouseEnter}
+          onKeyDown={(e) => {
+            const step = 0.05;
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              onVolumeChange(Math.min(1, (isMuted ? 0 : volume) + step));
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              onVolumeChange(Math.max(0, (isMuted ? 0 : volume) - step));
+            }
+          }}
         >
           <div className="relative h-full w-2 bg-white/20 rounded-full mx-auto">
             <div

@@ -33,39 +33,31 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   } = useUploaderStore();
 
   const [linkInput, setLinkInput] = useState(''); // Input for links (magnet, nzb, webdl)
-  const [isClient, setIsClient] = useState(false); // Track if component is mounted
   const [webdlPassword, setWebdlPassword] = useState(''); // Add password state
 
   // Global upload options to apply to all uploaded assets + auto start options
-  const [globalOptions, setGlobalOptions] = useState(DEFAULT_OPTIONS);
-
-  // Show/hide options state
-  const [showOptions, setShowOptions] = useState(false);
-
-  // Initialize from localStorage after component is mounted
-  useEffect(() => {
-    setIsClient(true);
-
-    // Load global options from localStorage
+  const [globalOptions, setGlobalOptions] = useState(() => {
+    if (typeof window === 'undefined') return DEFAULT_OPTIONS;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setGlobalOptions(JSON.parse(saved));
-      }
+      return saved ? JSON.parse(saved) : DEFAULT_OPTIONS;
     } catch (err) {
-      console.warn(`Failed to load ${assetType} upload options:`, err);
+      console.warn(`Failed to load upload options:`, err);
+      return DEFAULT_OPTIONS;
     }
+  });
 
-    // Load show/hide options from localStorage
+  // Show/hide options state
+  const [showOptions, setShowOptions] = useState(() => {
+    if (typeof window === 'undefined') return false;
     try {
       const showOptionsValue = localStorage.getItem(SHOW_OPTIONS_KEY);
-      if (showOptionsValue !== null) {
-        setShowOptions(showOptionsValue === 'true');
-      }
+      return showOptionsValue !== null ? showOptionsValue === 'true' : false;
     } catch (err) {
-      console.warn(`Failed to load ${assetType} options visibility:`, err);
+      console.warn(`Failed to load options visibility:`, err);
+      return false;
     }
-  }, [assetType]);
+  });
 
   // Get API endpoint based on asset type
   const getApiEndpoint = (activeType = assetType) => {
@@ -199,25 +191,25 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Save global upload options to localStorage whenever they change
   useEffect(() => {
-    if (!isClient) return;
+    if (typeof window === 'undefined') return;
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(globalOptions));
     } catch (err) {
-      console.warn(`Failed to save ${assetType} upload options:`, err);
+      console.warn(`Failed to save upload options:`, err);
     }
-  }, [globalOptions, assetType, isClient]);
+  }, [globalOptions]);
 
   // Save show/hide options to localStorage whenever they change
   useEffect(() => {
-    if (!isClient) return;
+    if (typeof window === 'undefined') return;
 
     try {
       localStorage.setItem(SHOW_OPTIONS_KEY, showOptions);
     } catch (err) {
-      console.warn(`Failed to save ${assetType} options visibility:`, err);
+      console.warn(`Failed to save options visibility:`, err);
     }
-  }, [showOptions, assetType, isClient]);
+  }, [showOptions]);
 
   // Validate and add files to the upload list
   const validateAndAddFiles = (newFiles) => {

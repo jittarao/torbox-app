@@ -22,7 +22,7 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
   const t = useTranslations('Header');
   const currentLanguage = languages[locale];
   const pathname = usePathname();
-  const router = useRouter();
+  const { push } = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -30,9 +30,9 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
     const savedLanguage = localStorage.getItem('preferredLanguage');
     if (savedLanguage && savedLanguage !== locale) {
       const newPath = pathname.replace(locale, savedLanguage);
-      router.push(newPath);
+      push(newPath);
     }
-  }, [locale, pathname, router]);
+  }, [locale, pathname, push]);
 
   const closeDropdown = useCallback(() => setIsOpen(false), []);
   useHeaderDropdownDismiss({ isOpen, onClose: closeDropdown, anchorRef: dropdownRef });
@@ -40,7 +40,7 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
   const handleLanguageChange = (newLocale) => {
     setIsOpen(false);
     localStorage.setItem('preferredLanguage', newLocale);
-    router.push(pathname.replace(locale, newLocale));
+    push(pathname.replace(locale, newLocale));
   };
 
   const sidebarCell = variant === 'sidebar-cell';

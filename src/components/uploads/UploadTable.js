@@ -36,6 +36,7 @@ export default function UploadTable({
                 }}
                 onChange={(e) => onSelectAll(e.target.checked)}
                 className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
+                aria-label="Select all uploads"
               />
             </th>
             <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">

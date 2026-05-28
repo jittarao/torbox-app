@@ -42,6 +42,8 @@ function FileList({
                       ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
                       : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
               } rounded-md p-2 md:p-1.5 lg:p-2 ${!isDisabled && 'cursor-pointer'}`}
+              role="button"
+              tabIndex={isDisabled ? -1 : 0}
               onMouseDown={(e) => {
                 if (e.shiftKey) e.preventDefault();
               }}
@@ -49,6 +51,13 @@ function FileList({
                 e.stopPropagation();
                 if (e.target.closest('button') || isDisabled) return;
                 onFileSelect(itemId, fileIndex, file, !isChecked, e.shiftKey);
+              }}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && !isDisabled) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onFileSelect(itemId, fileIndex, file, !isChecked, e.shiftKey);
+                }
               }}
             >
               <div className="flex items-center justify-between gap-4">

@@ -259,11 +259,12 @@ export function useDownloadListPolling({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
 
+    const emitUpdate = onScheduleUpdateRef.current;
     return () => {
       cancelled = true;
       stopPolling();
       clearGraceStopTimeout();
-      onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
+      emitUpdate?.(createPollSchedule('inactive', null, 0));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
     };

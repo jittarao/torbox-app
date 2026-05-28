@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
@@ -21,9 +21,11 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
   const closePanel = useCallback(() => setIsOpen(false), []);
   useHeaderDropdownDismiss({ isOpen, onClose: closePanel, anchorRef: rootRef });
 
-  useEffect(() => {
+  const prevIsOpenRef = useRef(isOpen);
+  if (prevIsOpenRef.current !== isOpen) {
+    prevIsOpenRef.current = isOpen;
     setIsPolling(!isOpen);
-  }, [isOpen, setIsPolling]);
+  }
 
   if (!apiKey) {
     return null;

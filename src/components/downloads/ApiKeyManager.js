@@ -15,20 +15,16 @@ export default function ApiKeyManager({
   const tInput = useTranslations('ApiKeyInput');
   const [keys, setKeys] = useState(() => {
     try {
-      const storedKeys = localStorage.getItem('torboxApiKeys');
+      const storedKeys = localStorage.getItem('torboxApiKeys:v1') ?? localStorage.getItem('torboxApiKeys');
       return storedKeys ? JSON.parse(storedKeys) : [];
     } catch (error) {
       console.error('Error parsing API keys from localStorage:', error);
       return [];
     }
   });
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newKeyLabel, setNewKeyLabel] = useState('');
-  const [newKeyValue, setNewKeyValue] = useState('');
-  const [showKeys, setShowKeys] = useState(false);
 
   const saveKeys = (newKeys) => {
-    localStorage.setItem('torboxApiKeys', JSON.stringify(newKeys));
+    localStorage.setItem('torboxApiKeys:v1', JSON.stringify(newKeys));
     setKeys(newKeys);
   };
 

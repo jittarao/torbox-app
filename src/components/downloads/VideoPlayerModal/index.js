@@ -13,6 +13,7 @@ import { useVideoPlayerKeyboard } from './hooks/useVideoPlayerKeyboard';
 import { useControlsVisibility } from './hooks/useControlsVisibility';
 
 const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
 
 /**
  * VideoPlayerModal - Full-screen edge-to-edge video player with themed UI
@@ -40,7 +41,7 @@ export default function VideoPlayerModal({
   fileName,
   subtitles = EMPTY_ARRAY,
   audios = EMPTY_ARRAY,
-  metadata = {},
+  metadata = EMPTY_OBJECT,
   apiKey,
   itemId,
   fileId,
@@ -190,12 +191,11 @@ export default function VideoPlayerModal({
       }
     };
 
+    const sliderTimeout = volumeSliderTimeoutRef.current;
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      if (volumeSliderTimeoutRef.current) {
-        clearTimeout(volumeSliderTimeoutRef.current);
-      }
+      if (sliderTimeout) clearTimeout(sliderTimeout);
     };
   }, [isOpen, setShowVolumeSlider, setShowAudioMenu, setShowSubtitleMenu, setShowPlaybackSpeedMenu]);
 
@@ -578,7 +578,7 @@ export default function VideoPlayerModal({
     currentTime <= introInfo.end_time;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black" ref={containerRef}>
+    <div className="fixed inset-0 z-50 bg-neutral-950" ref={containerRef}>
       {/* Video Container */}
       <div
         className="relative w-full h-full flex items-center justify-center"

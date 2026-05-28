@@ -108,8 +108,15 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
         width: menuLayout.width,
       }}
       role="menu"
+      tabIndex={-1}
       onClick={stopMenuEvent}
       onMouseDown={stopMenuEvent}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+        }
+      }}
     >
       {items.map((item) => (
         <button

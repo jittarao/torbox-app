@@ -22,7 +22,14 @@ export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
         className={`fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
+        role="presentation"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
         aria-hidden={!isOpen}
       />
       <dialog

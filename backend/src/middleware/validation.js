@@ -10,7 +10,7 @@ const MIN_API_KEY_LENGTH = 16;
  * Validate API key format before hashing (length and basic character set).
  * Used to avoid hashing short or malformed probe values in extractAuthIdMiddleware.
  */
-export function validateApiKeyFormat(apiKey) {
+function validateApiKeyFormat(apiKey) {
   if (!apiKey || typeof apiKey !== 'string') return false;
   const trimmed = apiKey.trim();
   return trimmed.length >= MIN_API_KEY_LENGTH && /^[\w\-+.=]+$/i.test(trimmed);
@@ -19,7 +19,7 @@ export function validateApiKeyFormat(apiKey) {
 /**
  * Validate authId format (64-character hex string)
  */
-export function validateAuthId(authId) {
+function validateAuthId(authId) {
   if (!authId || typeof authId !== 'string') return false;
   // authId should be a hex string (SHA-256 hash = 64 chars)
   return /^[a-f0-9]{64}$/.test(authId);

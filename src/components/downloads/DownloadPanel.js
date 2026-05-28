@@ -120,15 +120,12 @@ function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, o
           </p>
         )}
 
-        {isDownloading && downloadProgress.total > 0 && (
+          {isDownloading && downloadProgress.total > 0 && (
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-progress-track dark:bg-progress-track-dark">
-            <div
-              className="h-full rounded-full bg-accent transition-all duration-300 dark:bg-accent-dark"
-              style={{ width: `${progressPercent}%` }}
-              role="progressbar"
-              aria-valuenow={downloadProgress.current}
-              aria-valuemin={0}
-              aria-valuemax={downloadProgress.total}
+            <progress
+              className="block h-full w-full appearance-none border-none [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-accent dark:[&::-webkit-progress-value]:bg-accent-dark [&::-moz-progress-bar]:bg-accent dark:[&::-moz-progress-bar]:bg-accent-dark"
+              value={downloadProgress.current}
+              max={downloadProgress.total}
             />
           </div>
         )}
@@ -317,7 +314,7 @@ export default function DownloadPanel({
                 <p className="text-sm text-muted dark:text-muted-dark">{t('status.generating')}</p>
               </div>
             ) : (
-              <ul className="flex flex-col gap-2" role="list">
+              <ul className="flex flex-col gap-2">
                 {downloadLinks.map((link, idx) => (
                   <LinkRow
                     key={link.id}

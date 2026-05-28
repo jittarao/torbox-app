@@ -125,12 +125,11 @@ export function useControlsVisibility({
       document.addEventListener('mouseleave', handleMouseLeave);
     }
 
+    const controlsTimeout = controlsTimeoutRef.current;
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
-      }
+      if (controlsTimeout) clearTimeout(controlsTimeout);
     };
   }, [
     isOpen,

@@ -99,7 +99,15 @@ export default function StatusSection({
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-primary-text dark:text-primary-text-dark">
       <span
         className={`min-w-0 font-semibold lg:shrink-0 lg:whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
+        role={statusFilter === 'all' ? undefined : 'button'}
+        tabIndex={statusFilter === 'all' ? undefined : 0}
         onClick={() => handleStatusClick('all')}
+        onKeyDown={(e) => {
+          if (statusFilter !== 'all' && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            handleStatusClick('all');
+          }
+        }}
       >
         {getSelectionText()}
       </span>
@@ -132,7 +140,15 @@ export default function StatusSection({
               return (
                 <span
                   key={status}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleStatusClick(status)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleStatusClick(status);
+                    }
+                  }}
                   className={`text-xs font-medium border-b border-dashed cursor-pointer sm:text-sm
                     ${getStatusStyles(status)}
                     ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-70' : 'opacity-100'}

@@ -170,9 +170,8 @@ export default function TableBody({
     (index) => {
       const row = flattenedRows[index];
       // Height estimates for mobile vs desktop
-      // Mobile rows are much taller due to vertical action layout and extra info
       if (isMobile) {
-        return row?.type === 'item' ? 170 : 60;
+        return row?.type === 'item' ? 100 : 60;
       }
       const isTablet =
         typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
@@ -207,11 +206,8 @@ export default function TableBody({
     useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
   });
 
-  // Use the appropriate virtualizer based on mode - memoize to ensure stable reference
-  const virtualizer = useMemo(
-    () => (isFullscreen ? containerVirtualizer : windowVirtualizer),
-    [isFullscreen, containerVirtualizer, windowVirtualizer]
-  );
+  // Use the appropriate virtualizer based on mode
+  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
   // Define isDisabled first so it can be used in handlers
   const isDisabled = useCallback(
@@ -519,8 +515,9 @@ export default function TableBody({
     <tbody ref={tbodyRef} className="bg-surface dark:bg-surface-dark">
       {/* Top spacer */}
       {paddingTop > 0 && (
-        <tr aria-hidden="true">
+        <tr>
           <td
+            aria-hidden
             colSpan={activeColumns.length + 2}
             style={{ height: paddingTop, padding: 0, border: 0 }}
           />
@@ -592,8 +589,9 @@ export default function TableBody({
       })}
       {/* Bottom spacer */}
       {paddingBottom > 0 && (
-        <tr aria-hidden="true">
+        <tr>
           <td
+            aria-hidden
             colSpan={activeColumns.length + 2}
             style={{ height: paddingBottom, padding: 0, border: 0 }}
           />

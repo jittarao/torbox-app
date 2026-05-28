@@ -98,9 +98,15 @@ export default function VideoControls({
       className="absolute inset-0 z-20 flex flex-col justify-end
         bg-gradient-to-t from-black/80 via-black/40 to-transparent
         transition-opacity duration-300 pointer-events-none"
+      role="presentation"
       onClick={(e) => {
-        // Only handle clicks on the overlay itself (not on child elements)
         if (e.target === e.currentTarget && onOverlayClick) {
+          onOverlayClick(e);
+        }
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && onOverlayClick && e.target === e.currentTarget) {
+          e.preventDefault();
           onOverlayClick(e);
         }
       }}

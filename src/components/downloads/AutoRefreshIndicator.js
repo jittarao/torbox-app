@@ -69,9 +69,13 @@ export default function AutoRefreshIndicator({
     return () => clearInterval(id);
   }, [nextPollAt, mode]);
 
-  const secondsLeft = useMemo(() => getSecondsUntil(nextPollAt), [nextPollAt, tick]);
+  const secondsLeft = useMemo(() => {
+    tick;
+    return getSecondsUntil(nextPollAt);
+  }, [nextPollAt, tick]);
 
   const progress = useMemo(() => {
+    tick;
     if (!nextPollAt || !intervalMs || mode === 'paused' || mode === 'inactive') return 0;
     const remaining = Math.max(0, nextPollAt - Date.now());
     return 1 - remaining / intervalMs;

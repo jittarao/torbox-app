@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRef, useMemo, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   Chart as ChartJS,
@@ -13,7 +14,8 @@ import {
   Filler,
   LogarithmicScale,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+
+const Line = dynamic(() => import('react-chartjs-2').then((mod) => mod.Line), { ssr: false });
 import { formatSpeed } from './utils/formatters';
 import { useSpeedData } from '../shared/hooks/useSpeedData';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -76,45 +78,33 @@ export default function SpeedChart({ items }) {
   const isMobile = useIsMobile();
 
   // State to track if the chart is expanded or collapsed
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      const savedState = localStorage.getItem(CHART_EXPANDED_KEY);
+      if (savedState !== null) return savedState === 'true';
+    }
+    if (typeof window !== 'undefined') return window.innerWidth >= 1024;
+    return false;
+  });
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
 
-  // Set initial expanded state based on localStorage or screen size
+  // Listen for resize when no localStorage preference exists
   useEffect(() => {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(CHART_EXPANDED_KEY) !== null) return;
 
     const handleResize = () => {
-      // Only set default state if no localStorage value exists
-      if (
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem(CHART_EXPANDED_KEY) === null
-      ) {
-        // Desktop (>= 1024px) is expanded by default, mobile/tablet is collapsed
-        setIsExpanded(window.innerWidth >= 1024);
+      if (window.innerWidth >= 1024) {
+        setIsExpanded(true);
+      } else {
+        setIsExpanded(false);
       }
     };
 
-    // Try to get saved preference from localStorage
-    if (typeof localStorage !== 'undefined') {
-      const savedState = localStorage.getItem(CHART_EXPANDED_KEY);
-      if (savedState !== null) {
-        setIsExpanded(savedState === 'true');
-      } else {
-        // If no saved preference, set based on screen size
-        handleResize();
-      }
-    } else {
-      // Fallback if localStorage is not available
-      handleResize();
-    }
-
-    // Add resize listener (only affects initial state when no localStorage value exists)
     window.addEventListener('resize', handleResize);
-
-    // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -354,7 +344,7 @@ export default function SpeedChart({ items }) {
 
           {/* Current speeds */}
           {hasActivity && (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-x-4">
               <div className="flex items-center">
                 <span className="inline-block size-2 rounded-full bg-label-success-text-dark dark:bg-label-success-text-dark mr-1"></span>
                 <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">

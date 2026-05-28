@@ -53,10 +53,11 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         },
       });
 
-      const data = await response.json();
       if (requestId !== uploadsRequestIdRef.current) {
         return;
       }
+
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch uploads');
@@ -127,10 +128,11 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         },
       });
 
-      const data = await response.json();
       if (requestId !== statusCountsRequestIdRef.current) {
         return;
       }
+
+      const data = await response.json();
 
       if (data.statusCounts) {
         setStatusCounts(data.statusCounts);

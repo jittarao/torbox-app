@@ -57,18 +57,24 @@ export default function ProgressBar({
       <div
         className="h-1.5 rounded-full bg-white/10 cursor-pointer relative overflow-visible"
         onClick={onSeek}
-        onMouseDown={onSeekStart}
-        onMouseLeave={handleMouseLeave}
-        onMouseMove={handleMouseMove}
-        onMouseUp={onSeekEnd}
-        onTouchStart={onSeekStart}
-        onTouchEnd={(e) => {
-          onSeekEnd();
-          onSeekEndTouch(e);
-          e.preventDefault(); // suppress synthetic click to avoid double seek
-        }}
-        role="slider"
-        tabIndex={0}
+          onMouseDown={onSeekStart}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={handleMouseMove}
+          onMouseUp={onSeekEnd}
+          onTouchStart={onSeekStart}
+          onTouchEnd={(e) => {
+            onSeekEnd();
+            onSeekEndTouch(e);
+            e.preventDefault();
+          }}
+          role="slider"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+              e.preventDefault();
+              onSeek(e);
+            }
+          }}
         aria-valuenow={seekValue}
         aria-valuemin={0}
         aria-valuemax={100}

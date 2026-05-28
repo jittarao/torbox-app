@@ -47,7 +47,7 @@ export default function useHeaderDropdownDismiss({
     };
 
     document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown, { passive: true });
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleResize);
     document.addEventListener('keydown', handleKeyDown);

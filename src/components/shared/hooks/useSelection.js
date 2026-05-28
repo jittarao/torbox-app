@@ -69,11 +69,11 @@ export function useSelection(items) {
   const [selectedItems, setSelectedItems] = useState(() => loadStoredSelections());
 
   // Validate when items become available
-  useEffect(() => {
-    if (items?.length) {
-      setSelectedItems(loadStoredSelections(items));
-    }
-  }, [items]);
+  const prevItemsRef = useRef(items);
+  if (items?.length && prevItemsRef.current !== items) {
+    prevItemsRef.current = items;
+    setSelectedItems(loadStoredSelections(items));
+  }
 
   // Save to localStorage when selections change
   useEffect(() => {

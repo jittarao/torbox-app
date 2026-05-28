@@ -195,7 +195,7 @@ export default function ColumnManager({
               <div className="overflow-y-auto" style={{ maxHeight: '600px' }}>
                 <div className="flex flex-col gap-2 pb-2">
                   {availableColumns.map(([id, column]) => (
-                    <label key={id} className="flex items-center space-x-2">
+                    <label key={id} className="flex items-center gap-x-2">
                       <input
                         type="checkbox"
                         checked={activeColumns.includes(id)}

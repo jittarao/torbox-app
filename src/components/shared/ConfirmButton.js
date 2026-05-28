@@ -48,8 +48,6 @@ export default function ConfirmButton({
   className = '',
   title,
   timeout = 2000,
-  isMobile = false,
-  mobileText = '',
 }) {
   const [isConfirming, setIsConfirming] = useState(false);
   const timeoutRef = useRef(null);
@@ -67,13 +65,10 @@ export default function ConfirmButton({
   }, [isConfirming, timeout]);
 
   useEffect(() => {
+    const timer = timeoutRef.current;
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timer) clearTimeout(timer);
     };
-    // timeoutRef is a ref (stable) — no deps needed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleConfirmClick = async (e) => {
@@ -113,7 +108,6 @@ export default function ConfirmButton({
           </>
         )}
       </div>
-      {isMobile && <span className="ml-2 text-xs">{mobileText}</span>}
     </button>
   );
 }

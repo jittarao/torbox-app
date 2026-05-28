@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 import { LOGIC_OPERATORS } from '@/components/downloads/AutomationRules/constants';
 import { itemMatchesFilters } from '@/components/downloads/filters/filterEvaluation';
@@ -14,17 +14,12 @@ export function useFilter(
 ) {
   const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
-  const [columnFilters, setColumnFilters] = useState(customFilters);
 
-  // Sync columnFilters with external customFilters prop
-  // Deep copy to ensure React detects changes
-  useEffect(() => {
+  const columnFilters = useMemo(() => {
     if (customFilters) {
-      const deepCopied = JSON.parse(JSON.stringify(customFilters));
-      setColumnFilters(deepCopied);
-    } else {
-      setColumnFilters(customFilters);
+      return JSON.parse(JSON.stringify(customFilters));
     }
+    return customFilters;
   }, [customFilters]);
 
   const filteredItems = useMemo(() => {
@@ -85,7 +80,6 @@ export function useFilter(
     statusFilter,
     setStatusFilter,
     columnFilters,
-    setColumnFilters,
     filteredItems,
   };
 }

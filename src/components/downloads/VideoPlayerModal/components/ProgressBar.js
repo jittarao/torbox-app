@@ -12,6 +12,8 @@ export default function ProgressBar({ progress, isSeeking, onSeek, onSeekStart }
   return (
     <div
       data-seekbar
+      role="button"
+      tabIndex={0}
       className="w-full h-1.5 bg-white/20 cursor-pointer group pointer-events-auto"
       onClick={(e) => {
         e.stopPropagation();
@@ -20,6 +22,13 @@ export default function ProgressBar({ progress, isSeeking, onSeek, onSeekStart }
       onMouseDown={(e) => {
         e.stopPropagation();
         onSeekStart(e);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onSeek(e);
+        }
       }}
     >
       <div

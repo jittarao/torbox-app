@@ -10,7 +10,7 @@ import { useBackendModeStore } from '@/store/backendModeStore';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 
 /** Interval between automatic platform / TorBox / backend status checks */
-export const HEALTH_CHECK_INTERVAL_MS = 180000; // 3 minutes
+const HEALTH_CHECK_INTERVAL_MS = 180000; // 3 minutes
 
 /** Minimum time between non-forced health checks (e.g. opening the status panel) */
 const MIN_HEALTH_CHECK_GAP_MS = 60000; // 1 minute
@@ -109,6 +109,10 @@ export const useHealthStore = create((set, get) => ({
     get().setApiKey(apiKey);
 
     try {
+      if (get().currentApiKey !== apiKey) {
+        return;
+      }
+
       const response = await fetch('/api/health/torbox', {
         method: 'GET',
         headers: {

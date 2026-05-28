@@ -1,5 +1,5 @@
 // API Response Types
-export const API_RESPONSE_TYPES = {
+const API_RESPONSE_TYPES = {
   // Base response structure
   BASE_RESPONSE: {
     success: 'boolean',
@@ -290,7 +290,7 @@ export const API_RESPONSE_TYPES = {
 };
 
 // API Error types
-export const API_ERROR_TYPES = {
+const API_ERROR_TYPES = {
   DATABASE_ERROR: 'DATABASE_ERROR',
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
   NO_AUTH: 'NO_AUTH',
@@ -327,7 +327,7 @@ export const API_ERROR_TYPES = {
 };
 
 // Download state types
-export const DOWNLOAD_STATES = {
+const DOWNLOAD_STATES = {
   DOWNLOADING: 'downloading',
   UPLOADING: 'uploading',
   STALLED: 'stalled (no seeds)',
@@ -340,7 +340,7 @@ export const DOWNLOAD_STATES = {
 };
 
 // Operation types
-export const OPERATION_TYPES = {
+const OPERATION_TYPES = {
   DELETE: 'delete',
   PAUSE: 'pause',
   RESUME: 'resume',
@@ -352,14 +352,14 @@ export const OPERATION_TYPES = {
 };
 
 // Asset types
-export const ASSET_TYPES = {
+const ASSET_TYPES = {
   TORRENTS: 'torrents',
   USENET: 'usenet',
   WEBDL: 'webdl',
 };
 
 // Notification types
-export const NOTIFICATION_TYPES = {
+const NOTIFICATION_TYPES = {
   INFO: 'info',
   WARNING: 'warning',
   ERROR: 'error',
@@ -367,7 +367,7 @@ export const NOTIFICATION_TYPES = {
 };
 
 // RSS filter types
-export const RSS_FILTER_TYPES = {
+const RSS_FILTER_TYPES = {
   TITLE: 'title',
   DESCRIPTION: 'description',
   CATEGORY: 'category',
@@ -384,7 +384,7 @@ export const INTEGRATION_TYPES = {
 };
 
 // Job status types
-export const JOB_STATUS_TYPES = {
+const JOB_STATUS_TYPES = {
   PENDING: 'pending',
   PROCESSING: 'processing',
   COMPLETED: 'completed',

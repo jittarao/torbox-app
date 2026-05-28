@@ -64,7 +64,14 @@ export default function MobileMoreSheet({
         className={`z-overlay-backdrop fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 md:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
+        role="presentation"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
         aria-hidden={!open}
       />
       <dialog

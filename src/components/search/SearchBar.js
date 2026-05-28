@@ -59,7 +59,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
     if (allowedValues.length > 0 && !allowedValues.includes(searchType)) {
       setSearchType(allowedValues[0]);
     }
-  }, [searchTypeOptionsProp, searchType, setSearchType]);
+  }, [allowedValues, searchType, setSearchType]);
 
   // Load search history on mount
   useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useUpload } from '../shared/hooks/useUpload';
 import { DropZone } from '../shared/DropZone';
 import TorrentOptions from './TorrentOptions';
@@ -46,11 +46,27 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   } = useUpload(apiKey, activeType);
 
   // State to track if the uploader is expanded or collapsed
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const states = getExpandedStates();
+    return states[activeType] || false;
+  });
   const isMobile = useIsMobile();
   const [toast, setToast] = useState(null);
-  const [nzbTipsHidden, setNzbTipsHidden] = useState(false);
+  const [nzbTipsHidden, setNzbTipsHidden] = useState(() => {
+    if (typeof localStorage === 'undefined') return false;
+    try {
+      const saved = localStorage.getItem(NZB_TIPS_HIDDEN_KEY);
+      return saved !== null ? saved === 'true' : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   // Helper function to get expanded states from localStorage
   const getExpandedStates = () => {
@@ -83,59 +99,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     }
   };
 
-  // Set initial expanded state based on localStorage
-  useEffect(() => {
-    setIsClient(true);
-
-    // Get saved preference from localStorage for this specific uploader type
-    if (typeof localStorage !== 'undefined') {
-      const expandedStates = getExpandedStates();
-      setIsExpanded(expandedStates[activeType] || false);
-
-      // Also load options expanded state
-      if (activeType === 'torrents') {
-        const savedOptionsState = localStorage.getItem(UPLOADER_OPTIONS_KEY);
-        if (savedOptionsState !== null) {
-          setShowOptions(savedOptionsState === 'true');
-        }
-      }
-
-      // Load NZB tips hidden state
-      const savedNzbTipsHidden = localStorage.getItem(NZB_TIPS_HIDDEN_KEY);
-      if (savedNzbTipsHidden !== null) {
-        setNzbTipsHidden(savedNzbTipsHidden === 'true');
-      }
-    }
-  }, [activeType, setShowOptions]);
-
-  // Save expanded state to localStorage when it changes
-  useEffect(() => {
-    if (isClient && typeof localStorage !== 'undefined') {
-      const expandedStates = getExpandedStates();
-      expandedStates[activeType] = isExpanded;
-      saveExpandedStates(expandedStates);
-    }
-  }, [isExpanded, isClient, activeType]);
-
-  // Save options expanded state to localStorage when it changes
-  useEffect(() => {
-    if (isClient && typeof localStorage !== 'undefined' && activeType === 'torrents') {
-      localStorage.setItem(UPLOADER_OPTIONS_KEY, showOptions.toString());
-    }
-  }, [showOptions, isClient, activeType]);
-
-  // Save NZB tips hidden state to localStorage when it changes
-  useEffect(() => {
-    if (isClient && typeof localStorage !== 'undefined') {
-      localStorage.setItem(NZB_TIPS_HIDDEN_KEY, nzbTipsHidden.toString());
-    }
-  }, [nzbTipsHidden, isClient]);
-
-  // Clear items when switching asset types
-  useEffect(() => {
-    setError(null);
-  }, [activeType, setItems, setError]);
-
   // Show toast notification when error occurs
   useEffect(() => {
     if (error) {
@@ -146,19 +109,6 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     }
   }, [error]);
 
-  // Show success notification when upload completes
-  const handleUploadComplete = () => {
-    const successCount = items.filter((item) => item.status === 'success').length;
-    const totalCount = items.length;
-
-    if (successCount > 0 && successCount === totalCount) {
-      setToast({
-        message: `Successfully uploaded ${successCount} ${activeType === 'usenet' ? 'NZB' : activeType === 'torrents' ? 'torrent' : 'download'}${successCount > 1 ? 's' : ''}`,
-        type: 'success',
-      });
-    }
-  };
-
   // Monitor upload completion
   useEffect(() => {
     const hasCompletedUploads = items.some((item) => item.status === 'success');
@@ -167,9 +117,17 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
     );
 
     if (hasCompletedUploads && hasNoQueuedItems && !isUploading) {
-      handleUploadComplete();
+      const successCount = items.filter((item) => item.status === 'success').length;
+      const totalCount = items.length;
+
+      if (successCount > 0 && successCount === totalCount) {
+        setToast({
+          message: `Successfully uploaded ${successCount} ${activeType === 'usenet' ? 'NZB' : activeType === 'torrents' ? 'torrent' : 'download'}${successCount > 1 ? 's' : ''}`,
+          type: 'success',
+        });
+      }
     }
-  }, [items, isUploading, activeType, handleUploadComplete]);
+  }, [items, isUploading, activeType]);
 
   // Get asset type specific labels
   const getAssetTypeInfo = () => {
@@ -239,7 +197,13 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           {activeType === 'torrents' && isExpanded && (
             <button
               type="button"
-              onClick={() => setShowOptions(!showOptions)}
+              onClick={() => {
+                const next = !showOptions;
+                setShowOptions(next);
+                if (typeof window !== 'undefined' && activeType === 'torrents') {
+                  localStorage.setItem(UPLOADER_OPTIONS_KEY, next.toString());
+                }
+              }}
               className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             >
               {showOptions ? t('options.hide') : t('options.show')}
@@ -259,7 +223,13 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
           )}
           <button
             type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+              const next = !isExpanded;
+              setIsExpanded(next);
+              const expandedStates = getExpandedStates();
+              expandedStates[activeType] = next;
+              saveExpandedStates(expandedStates);
+            }}
             className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
             aria-expanded={isExpanded}
           >
@@ -445,7 +415,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setNzbTipsHidden(true)}
+                  onClick={() => {
+                    setNzbTipsHidden(true);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem(NZB_TIPS_HIDDEN_KEY, 'true');
+                    }
+                  }}
                   className="ml-2 p-1 text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
                   aria-label="Hide tips"
                 >
@@ -467,7 +442,12 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
             <div className="mt-3 flex justify-center">
               <button
                 type="button"
-                onClick={() => setNzbTipsHidden(false)}
+                onClick={() => {
+                  setNzbTipsHidden(false);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(NZB_TIPS_HIDDEN_KEY, 'false');
+                  }
+                }}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-lg transition-all duration-200"
               >
                 <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

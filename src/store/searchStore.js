@@ -95,12 +95,12 @@ export const useSearchStore = create((set, get) => ({
     const { searchHistory } = get();
     const newHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 10);
     set({ searchHistory: newHistory });
-    localStorage.setItem('torboxSearchHistory', JSON.stringify(newHistory));
+    localStorage.setItem('torboxSearchHistory:v1', JSON.stringify(newHistory));
   },
 
   loadHistory: () => {
     try {
-      const history = localStorage.getItem('torboxSearchHistory');
+      const history = localStorage.getItem('torboxSearchHistory:v1') ?? localStorage.getItem('torboxSearchHistory');
       if (history) {
         set({ searchHistory: JSON.parse(history) });
       }
@@ -111,7 +111,7 @@ export const useSearchStore = create((set, get) => ({
 
   clearHistory: () => {
     set({ searchHistory: [] });
-    localStorage.removeItem('torboxSearchHistory');
+    localStorage.removeItem('torboxSearchHistory:v1');
   },
 
   // Apply filters to results

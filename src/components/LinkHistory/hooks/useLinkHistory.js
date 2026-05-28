@@ -160,12 +160,10 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
         fetchLinkHistory();
       }
     }, 60000);
+    const ac = abortControllerRef.current;
     return () => {
       clearInterval(interval);
-      // Cancel any in-flight request on unmount
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      if (ac) ac.abort();
     };
   }, [
     apiKey,

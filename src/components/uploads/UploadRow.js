@@ -124,6 +124,7 @@ export default function UploadRow({
               disabled={downloading.has(upload.id)}
               className="p-1.5 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
               title="Download original file"
+              aria-label="Download original file"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -152,6 +153,7 @@ export default function UploadRow({
                   : 'text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
               }`}
               title={copySuccess === upload.id ? 'Copied!' : 'Copy link'}
+              aria-label={copySuccess === upload.id ? 'Copied!' : 'Copy link'}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

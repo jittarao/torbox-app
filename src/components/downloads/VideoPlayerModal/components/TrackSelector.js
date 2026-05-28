@@ -94,7 +94,7 @@ export default function TrackSelector({
             {tracks.map((track, idx) => (
               <button
                 type="button"
-                key={`${track.language || ''}-${track.language_full || ''}-${idx}`}
+                key={`${track.language || ''}-${track.language_full || ''}-${track.index || track.id || idx}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(idx);

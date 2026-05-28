@@ -502,4 +502,3 @@ export const createApiClient = (apiKey) => {
 };
 
 // Default export for backward compatibility
-export default ApiClient;

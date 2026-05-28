@@ -8,7 +8,7 @@
  * In development, can use DEV_INTERVAL_MULTIPLIER to speed up intervals
  * @returns {number} - Multiplier (1.0 = normal, 0.1 = 10x faster, 0.01 = 100x faster)
  */
-export function getIntervalMultiplier() {
+function getIntervalMultiplier() {
   const isDev = process.env.NODE_ENV === 'development';
 
   if (!isDev) {

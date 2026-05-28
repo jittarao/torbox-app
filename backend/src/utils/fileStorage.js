@@ -224,7 +224,7 @@ export async function fileExists(filePath) {
  * @param {string} filePath - File path (relative to storage root or absolute)
  * @returns {Promise<{size: number, mtime: Date}|null>} File stats or null if not found
  */
-export async function getFileStats(filePath) {
+async function getFileStats(filePath) {
   try {
     const absolutePath = getUploadFilePath(filePath);
     const stats = await stat(absolutePath);

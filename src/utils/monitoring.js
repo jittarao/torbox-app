@@ -1,6 +1,6 @@
 // Security monitoring for cross-user data detection
 
-export const logSecurityEvent = (event, details = {}) => {
+const logSecurityEvent = (event, details = {}) => {
   if (!details || typeof details !== 'object') {
     details = {};
   }
@@ -27,7 +27,7 @@ export const logSecurityEvent = (event, details = {}) => {
   console.error(`SECURITY EVENT: ${event}`, safeDetails);
 };
 
-export const detectCrossUserData = (items, apiKey) => {
+const detectCrossUserData = (items, apiKey) => {
   if (!items || !Array.isArray(items)) return false;
 
   const authIds = [...new Set(items.flatMap((item) => (item?.auth_id ? [item.auth_id] : [])))];

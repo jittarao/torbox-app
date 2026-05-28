@@ -1,6 +1,18 @@
 const sizeFormatters = new Map();
 const speedFormatters = new Map();
 
+const EN_SIZE_FORMATTER = new Intl.NumberFormat('en', {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 1,
+});
+
+const EN_SPEED_FORMATTER = new Intl.NumberFormat('en', {
+  maximumFractionDigits: 0,
+});
+
+sizeFormatters.set('en', EN_SIZE_FORMATTER);
+speedFormatters.set('en', EN_SPEED_FORMATTER);
+
 const getSizeFormatter = (locale) => {
   if (!sizeFormatters.has(locale)) {
     sizeFormatters.set(

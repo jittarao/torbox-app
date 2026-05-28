@@ -28,7 +28,7 @@ export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm 
 
 /** ~6 icon buttons (stop seeding, files, download, delete, menu) — export lives in More dropdown */
 const actionsColumnWidthClass =
-  'w-[200px] min-w-[200px] max-w-[200px] md:w-[188px] md:min-w-[188px] md:max-w-[188px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
+  'w-[132px] min-w-[132px] max-w-[132px] md:w-[188px] md:min-w-[188px] md:max-w-[188px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
 
 /** Shared sticky shell for the right-pinned actions column */
 const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tableActionsCellShadows}`;
@@ -46,7 +46,8 @@ export const tableActionsCellInner =
 export function getActionsColumnWidthPx() {
   if (typeof window === 'undefined') return 200;
   const w = window.innerWidth;
-  if (w >= 768 && w < 1024) return 188;
+  if (w < 768) return 132;
+  if (w < 1024) return 188;
   return 200;
 }
 

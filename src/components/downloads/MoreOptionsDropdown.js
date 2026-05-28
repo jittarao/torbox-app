@@ -12,15 +12,14 @@ export default function MoreOptionsDropdown({
   item,
   apiKey,
   setToast,
-  isMobile = false,
   activeType = 'torrents',
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isExporting, setIsExporting] = useState(false);
   const [isReannouncing, setIsReannouncing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
+  const isUploadingRef = useRef(false);
   // const [showCloudUpload, setShowCloudUpload] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
@@ -310,8 +309,8 @@ export default function MoreOptionsDropdown({
 
   // Handle cloud upload
   const handleCloudUpload = async (providerId) => {
-    if (isUploading) return;
-    setIsUploading(true);
+    if (isUploadingRef.current) return;
+    isUploadingRef.current = true;
     try {
       const uploadData = {
         id: item.id,
@@ -375,7 +374,7 @@ export default function MoreOptionsDropdown({
         });
       }
     } finally {
-      setIsUploading(false);
+      isUploadingRef.current = false;
       // setShowCloudUpload(false);
       setIsMenuOpen(false);
     }
@@ -575,13 +574,11 @@ export default function MoreOptionsDropdown({
         type="button"
         ref={buttonRef}
         onClick={toggleMenu}
-        className={`p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 
-          hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors
-          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+        className="p-1.5 rounded-full text-primary-text/70 dark:text-primary-text-dark/70 hover:bg-surface-alt dark:hover:bg-surface-alt-dark hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
         title={t('title')}
+        aria-label={t('label')}
       >
         <Icons.VerticalEllipsis />
-        {isMobile && <span className="ml-2 text-xs">{t('label')}</span>}
       </button>
 
       {isMenuOpen &&

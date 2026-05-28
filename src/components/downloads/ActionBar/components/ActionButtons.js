@@ -29,13 +29,13 @@ export default function ActionButtons({
   const t = useTranslations('ActionButtons');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
-  const [showCloudUpload, setShowCloudUpload] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState({});
   const isMobile = useIsMobile();
   const apiClient = createApiClient(apiKey);
   const cloudUploadRef = useRef(null);
+  const showCloudUploadRef = useRef(false);
+  const isUploadingRef = useRef(false);
 
   // Check for connected providers on mount
   useEffect(() => {
@@ -66,24 +66,22 @@ export default function ActionButtons({
     if (apiKey) {
       checkConnectedProviders();
     }
-  }, [apiKey, setConnectedProviders]);
+  }, [apiKey, setConnectedProviders, apiClient]);
 
   // Close cloud upload dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (cloudUploadRef.current && !cloudUploadRef.current.contains(event.target)) {
-        setShowCloudUpload(false);
+        showCloudUploadRef.current = false;
       }
     };
 
-    if (showCloudUpload) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showCloudUpload]);
+  }, []);
 
   const handleDownloadClick = () => {
     onBulkDownload();
@@ -106,7 +104,7 @@ export default function ActionButtons({
   };
 
   const handleBulkCloudUpload = async (providerId) => {
-    if (isUploading || !selectedItems.items?.size) return;
+    if (isUploadingRef.current || !selectedItems.items?.size) return;
 
     // Check if any providers are connected
     if (Object.keys(connectedProviders).length === 0) {
@@ -119,7 +117,7 @@ export default function ActionButtons({
       return;
     }
 
-    setIsUploading(true);
+    isUploadingRef.current = true;
 
     try {
       const selectedItemsArray = Array.from(selectedItems.items);
@@ -179,8 +177,8 @@ export default function ActionButtons({
               message: `Please connect to ${getProviderName(providerId)} first in the Cloud Storage Manager`,
               type: 'error',
             });
-            setIsUploading(false);
-            setShowCloudUpload(false);
+            isUploadingRef.current = false;
+            showCloudUploadRef.current = false;
             return;
           }
           errorCount++;
@@ -213,8 +211,8 @@ export default function ActionButtons({
         type: 'error',
       });
     } finally {
-      setIsUploading(false);
-      setShowCloudUpload(false);
+      isUploadingRef.current = false;
+      showCloudUploadRef.current = false;
     }
   };
 
@@ -282,7 +280,7 @@ export default function ActionButtons({
           </button>
 
           {showDeleteConfirm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-neutral-950 bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-surface dark:bg-surface-dark p-6 rounded-lg shadow-lg max-w-md">
                 <h3 className="text-lg font-semibold mb-4 text-primary-text dark:text-primary-text-dark">
                   {t('deleteConfirm.title')}

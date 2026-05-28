@@ -3,7 +3,7 @@
  * @param {string|undefined} ip
  * @returns {string}
  */
-export function normalizeIp(ip) {
+function normalizeIp(ip) {
   if (!ip || typeof ip !== 'string') {
     return '';
   }

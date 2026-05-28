@@ -9,7 +9,7 @@ import Toast from '@/components/shared/Toast';
 
 export default function UserDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const authId = params.authId;
   const { selectedUserData, fetchUser } = useAdminStore();
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function UserDetailPage() {
             type="button"
             onClick={() => {
               const locale = window.location.pathname.split('/')[1] || 'en';
-              router.push(`/${locale}/admin/users`);
+              push(`/${locale}/admin/users`);
             }}
             className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
@@ -65,7 +65,7 @@ export default function UserDetailPage() {
             type="button"
             onClick={() => {
               const locale = window.location.pathname.split('/')[1] || 'en';
-              router.push(`/${locale}/admin/users`);
+              push(`/${locale}/admin/users`);
             }}
             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >

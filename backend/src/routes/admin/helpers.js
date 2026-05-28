@@ -7,7 +7,7 @@ import { serverErrorPayload } from '../../utils/httpErrors.js';
  * @param {string} authId - Auth ID to validate
  * @returns {boolean} - True if valid
  */
-export function validateAuthId(authId) {
+function validateAuthId(authId) {
   return /^[a-f0-9]{64}$/.test(authId);
 }
 

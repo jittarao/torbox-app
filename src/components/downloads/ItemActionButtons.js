@@ -12,7 +12,6 @@ export default function ItemActionButtons({
   toggleFiles,
   expandedItems,
   activeType = 'torrents',
-  isMobile = false,
   onStopSeeding,
   onForceStart,
   onDownload,
@@ -70,11 +69,8 @@ export default function ItemActionButtons({
             confirmIcon={<Icons.Check />}
             defaultIcon={<Icons.Stop />}
             className={`${tableIconButtonClass} text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500
-              hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
-              ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+              hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200`}
             title={t('stop.title')}
-            isMobile={isMobile}
-            mobileText={t('stop.label')}
           />
         )}
 
@@ -84,13 +80,12 @@ export default function ItemActionButtons({
           type="button"
           onClick={handleForceStart}
           disabled={isDownloading}
-          className={`stroke-2 text-accent dark:text-accent-dark 
+          className={`${tableIconButtonClass} stroke-2 text-accent dark:text-accent-dark 
             hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors
-            disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'w-full flex items-center justify-center py-1' : ''}`}
+            disabled:opacity-50 disabled:cursor-not-allowed`}
           title={t('start.title')}
         >
           {isDownloading ? <Spinner size="sm" /> : <Icons.Play />}
-          {isMobile && <span className="ml-2 text-xs">{t('start.label')}</span>}
         </button>
       )}
 
@@ -103,16 +98,10 @@ export default function ItemActionButtons({
             toggleFiles(item.id);
           }}
           className={`${tableIconButtonClass} text-primary-text/70 dark:text-primary-text-dark/70 
-            hover:bg-primary-text/10 dark:hover:bg-primary-text-dark/10 hover:text-primary-text dark:hover:text-primary-text-dark
-            ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+            hover:bg-primary-text/10 dark:hover:bg-primary-text-dark/10 hover:text-primary-text dark:hover:text-primary-text-dark`}
           title={expandedItems.has(item.id) ? t('files.hide') : t('files.show')}
         >
           {expandedItems.has(item.id) ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
-          {isMobile && (
-            <span className="ml-2 text-xs">
-              {expandedItems.has(item.id) ? t('files.hide') : t('files.label')}
-            </span>
-          )}
         </button>
       )}
 
@@ -123,12 +112,10 @@ export default function ItemActionButtons({
           onClick={handleDownload}
           disabled={isDownloading}
           className={`${tableIconButtonClass} text-accent dark:text-accent-dark 
-          hover:bg-accent/5 dark:hover:bg-accent-dark/5
-          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+          hover:bg-accent/5 dark:hover:bg-accent-dark/5`}
           title={t('download.title')}
         >
           {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
-          {isMobile && <span className="ml-2 text-xs">{t('download.label')}</span>}
         </button>
       )}
 
@@ -139,11 +126,8 @@ export default function ItemActionButtons({
         confirmIcon={<Icons.Check />}
         defaultIcon={<Icons.Delete />}
         className={`${tableIconButtonClass} text-red-500 dark:text-red-400 
-          hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
-          ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+          hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200`}
         title={t('delete.title')}
-        isMobile={isMobile}
-        mobileText={t('delete.label')}
       />
     </>
   );

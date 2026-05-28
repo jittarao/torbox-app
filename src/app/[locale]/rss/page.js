@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import RssFeedManager from '@/components/rss/RssFeedManager';
@@ -33,20 +33,24 @@ export default function RssPage() {
     }
     return '';
   });
-  const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState('feeds');
   const [error, setError] = useState(null);
   const [userPlan, setUserPlan] = useState(null);
   const [checkingPlan, setCheckingPlan] = useState(false);
 
-  // Move translations hook to top level - always call it
   const t = useTranslations('RssFeeds');
 
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   useEffect(() => {
-    setIsClient(true);
-    if (apiKey) {
+    const key = localStorage.getItem('torboxApiKey');
+    if (key) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
+        ensureUserDb(key)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -57,21 +61,19 @@ export default function RssPage() {
           });
       });
     }
-  }, [apiKey]);
+  }, []);
 
-  // Fetch user plan when apiKey is available
+  // Fetch user plan on mount
   useEffect(() => {
-    if (!apiKey) {
-      setUserPlan(null);
-      return;
-    }
+    const key = localStorage.getItem('torboxApiKey');
+    if (!key) return;
 
     const fetchUserPlan = async () => {
       setCheckingPlan(true);
       try {
         const response = await fetch('/api/user/me', {
           headers: {
-            'x-api-key': apiKey,
+            'x-api-key': key,
           },
         });
 
@@ -81,11 +83,9 @@ export default function RssPage() {
 
         const data = await response.json();
 
-        // Response structure: { success: true, data: { plan: ... } }
         if (data.success && data.data) {
           setUserPlan(data.data.plan);
         } else {
-          // If response doesn't have success/data structure, try direct access
           setUserPlan(data.plan || data.data?.plan || null);
         }
       } catch (err) {
@@ -97,12 +97,40 @@ export default function RssPage() {
     };
 
     fetchUserPlan();
-  }, [apiKey]);
+  }, []);
 
   // Handle API key change
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
     localStorage.setItem('torboxApiKey', newKey);
+    if (newKey) {
+      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+        ensureUserDb(newKey).catch((error) => {
+          console.error('Error ensuring user database:', error);
+        });
+      });
+
+      setCheckingPlan(true);
+      fetch('/api/user/me', {
+        headers: { 'x-api-key': newKey },
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        })
+        .then((data) => {
+          if (data.success && data.data) {
+            setUserPlan(data.data.plan);
+          } else {
+            setUserPlan(data.plan || data.data?.plan || null);
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching user plan:', err);
+          setUserPlan(null);
+        })
+        .finally(() => setCheckingPlan(false));
+    }
   };
 
   // Tab configuration
@@ -213,7 +241,7 @@ export default function RssPage() {
 
               <div className="mb-6">
                 <div className="border-b border-border dark:border-border-dark">
-                  <nav className="-mb-px flex space-x-8">
+                  <nav className="-mb-px flex gap-x-8">
                     {tabs.map((tab) => {
                       const IconComponent = tab.icon;
                       const isActive = activeTab === tab.id;
@@ -245,7 +273,7 @@ export default function RssPage() {
                   const TabComponent = tab.component;
                   return (
                     <div key={tab.id} className="p-6">
-                      <TabComponent apiKey={apiKey} setToast={setToast} />
+                      <TabComponent key={apiKey} apiKey={apiKey} setToast={setToast} />
                     </div>
                   );
                 })}

@@ -6,7 +6,7 @@
 export default function LoadingOverlay() {
   return (
     <>
-      <style jsx>{`
+      <style>{`
         .lds-ring,
         .lds-ring div {
           box-sizing: border-box;

@@ -37,7 +37,7 @@ export default function MultiSelect({
   const searchInputRef = useRef(null);
   const optionsRef = useRef([]);
 
-  const selectedValues = Array.isArray(value) ? value : [];
+  const selectedValues = useMemo(() => (Array.isArray(value) ? value : []), [value]);
 
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -123,7 +123,7 @@ export default function MultiSelect({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside, { passive: true });
     }
 
     return () => {
@@ -189,17 +189,13 @@ export default function MultiSelect({
     if (!disabled) {
       if (!isOpen) {
         setSearchQuery('');
+      } else {
+        optionsRef.current = [];
+        setSearchQuery('');
       }
       setIsOpen(!isOpen);
     }
   };
-
-  useEffect(() => {
-    if (!isOpen) {
-      optionsRef.current = [];
-      setSearchQuery('');
-    }
-  }, [isOpen]);
 
   const displayText = useMemo(() => {
     if (selectedOptions.length === 0) {

@@ -45,6 +45,8 @@ export function DropZone({
 
   return (
     <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
       className={`
         border-2 border-dashed rounded-lg p-6 h-40 flex flex-col items-center justify-center
         transition-colors duration-200 cursor-pointer
@@ -59,6 +61,12 @@ export function DropZone({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={handleDropZoneClick}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+          e.preventDefault();
+          handleDropZoneClick();
+        }
+      }}
     >
       <input
         type="file"
