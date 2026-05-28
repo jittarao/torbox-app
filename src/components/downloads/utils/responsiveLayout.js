@@ -3,8 +3,6 @@
  * Tablet range (md, below lg): tighter padding and type for iPad-sized viewports.
  */
 
-import { getResolvedColumnStyle } from './tableColumnLayout';
-
 /** Inset divider — reliable with virtualization (unlike collapsed cell borders) */
 export const tableRowSeparator =
   '[box-shadow:inset_0_-1px_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c]';
@@ -18,11 +16,6 @@ export const tableActionsCellShadows =
   '[box-shadow:inset_0_-1px_0_0_#cecece,inset_12px_0_10px_-12px_rgba(15,23,42,0.05)] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c,inset_12px_0_10px_-12px_rgba(0,0,0,0.2)]';
 
 export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
-
-/** @deprecated Use getResolvedColumnStyle with computeResolvedColumnWidths */
-function getTableColumnStyle(columnId, resolvedWidths, options = {}) {
-  return getResolvedColumnStyle(columnId, resolvedWidths, options);
-}
 
 export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 

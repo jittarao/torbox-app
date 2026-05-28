@@ -7,11 +7,6 @@ import { useState, useEffect } from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata = {
-  title: 'Archived Downloads',
-  description: 'View and manage your archived downloads in TorBox.',
-};
-
 export default function ArchivedDownloadsPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 
