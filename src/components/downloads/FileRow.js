@@ -8,6 +8,7 @@ import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { isVideoFile, isAudioFile } from './utils/videoDetection';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import {
   getActionsColumnWidthPx,
   getCheckboxColumnWidthPx,
@@ -48,6 +49,7 @@ function FileRow({
   dataIndex,
 }) {
   const t = useTranslations('FileActions');
+  const selectionId = getDownloadSelectionId(item);
   const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
 
   const filesToRender =
@@ -62,8 +64,8 @@ function FileRow({
       {filesToRender.map((file, index) => {
         // Use the provided fileIndex for the actual index, or use the map index
         const actualIndex = fileIndex !== null ? fileIndex : index;
-        const isChecked = selectedItems.files.get(item.id)?.has(file.id) || false;
-        const isDisabled = selectedItems.items?.has(item.id);
+        const isChecked = selectedItems.files.get(selectionId)?.has(file.id) || false;
+        const isDisabled = selectedItems.items?.has(selectionId);
         const itemKey = `${item.assetType}:${String(item.id)}`;
         const isDownloaded =
           downloadHistoryLookup.itemDownloads.has(itemKey) ||
@@ -91,7 +93,7 @@ function FileRow({
             onClick={(e) => {
               // Ignore clicks on buttons or if disabled
               if (e.target.closest('button') || isDisabled) return;
-              handleFileSelection(item.id, actualIndex, file, !isChecked, e.shiftKey);
+              handleFileSelection(selectionId, actualIndex, file, !isChecked, e.shiftKey);
             }}
           >
             {/* Checkbox */}
@@ -101,7 +103,7 @@ function FileRow({
                 checked={isChecked}
                 disabled={isDisabled}
                 onChange={(e) =>
-                  handleFileSelection(item.id, actualIndex, file, e.target.checked, e.shiftKey)
+                  handleFileSelection(selectionId, actualIndex, file, e.target.checked, e.shiftKey)
                 }
                 style={{ pointerEvents: 'none' }}
                 className="accent-accent dark:accent-accent-dark"

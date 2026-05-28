@@ -18,6 +18,7 @@ import {
   tableDataCellText,
 } from './utils/responsiveLayout';
 import { getResolvedColumnStyle } from './utils/tableColumnLayout';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 function ItemRow({
   item,
@@ -281,7 +282,8 @@ function ItemRow({
     `${item.assetType}:${String(item.id)}`
   );
 
-  const isSelected = selectedItems.items?.has(item.id);
+  const selectionId = getDownloadSelectionId(item);
+  const isSelected = selectedItems.items?.has(selectionId);
   const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
     selected: isSelected,
     downloaded: isDownloaded,
@@ -291,7 +293,7 @@ function ItemRow({
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      className={`${rowSurfaceClass} ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
+      className={`${rowSurfaceClass} ${!onRowSelect(selectionId, selectedItems.files) && 'cursor-pointer'}`}
       style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
@@ -301,19 +303,19 @@ function ItemRow({
       }}
       onClick={(e) => {
         // Ignore clicks on buttons or if has selected files
-        if (e.target.closest('button') || onRowSelect(item.id, selectedItems.files)) return;
-        const isChecked = selectedItems.items?.has(item.id);
-        handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
+        if (e.target.closest('button') || onRowSelect(selectionId, selectedItems.files)) return;
+        const isChecked = selectedItems.items?.has(selectionId);
+        handleItemSelection(selectionId, !isChecked, rowIndex, e.shiftKey);
       }}
       onKeyDown={(e) => {
         if (
           (e.key === 'Enter' || e.key === ' ') &&
           !e.target.closest('button') &&
-          !onRowSelect(item.id, selectedItems.files)
+          !onRowSelect(selectionId, selectedItems.files)
         ) {
           e.preventDefault();
-          const isChecked = selectedItems.items?.has(item.id);
-          handleItemSelection(item.id, !isChecked, rowIndex, e.shiftKey);
+          const isChecked = selectedItems.items?.has(selectionId);
+          handleItemSelection(selectionId, !isChecked, rowIndex, e.shiftKey);
         }
       }}
       tabIndex={0}
@@ -321,9 +323,9 @@ function ItemRow({
       <td className={tableCheckboxCell}>
         <input
           type="checkbox"
-          checked={selectedItems.items?.has(item.id)}
-          disabled={onRowSelect(item.id, selectedItems.files)}
-          onChange={(e) => handleItemSelection(item.id, e.target.checked, rowIndex, e.shiftKey)}
+          checked={selectedItems.items?.has(selectionId)}
+          disabled={onRowSelect(selectionId, selectedItems.files)}
+          onChange={(e) => handleItemSelection(selectionId, e.target.checked, rowIndex, e.shiftKey)}
           style={{ pointerEvents: 'none' }}
           className="accent-accent dark:accent-accent-dark"
         />

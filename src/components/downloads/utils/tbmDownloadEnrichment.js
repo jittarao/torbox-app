@@ -9,7 +9,7 @@
  * Build Sets for O(1) link-history lookups (item-level and per-file).
  * @param {Array<{ assetType: string, itemId: string|number, fileId?: string|number|null }>} downloadHistory
  */
-function buildDownloadHistoryLookup(downloadHistory) {
+export function buildDownloadHistoryLookup(downloadHistory) {
   const itemDownloads = new Set();
   const fileDownloads = new Set();
 
@@ -49,13 +49,17 @@ function isFileDownloaded(item, fileId, lookup) {
 }
 
 /** Add link-history `is_downloaded` for filters and view counts. */
-function applyLinkHistoryToDownloads(downloads, downloadHistory) {
+function applyLinkHistoryToDownloads(downloads, lookupOrHistory) {
   if (!downloads?.length) return downloads || [];
-  const lookup = buildDownloadHistoryLookup(downloadHistory);
-  return downloads.map((download) => ({
-    ...download,
-    is_downloaded: isItemDownloaded(download, lookup),
-  }));
+  const lookup =
+    lookupOrHistory?.itemDownloads != null
+      ? lookupOrHistory
+      : buildDownloadHistoryLookup(lookupOrHistory);
+  return downloads.map((download) => {
+    const is_downloaded = isItemDownloaded(download, lookup);
+    if (download.is_downloaded === is_downloaded) return download;
+    return { ...download, is_downloaded };
+  });
 }
 
 /**
@@ -64,8 +68,17 @@ function applyLinkHistoryToDownloads(downloads, downloadHistory) {
  * @param {(downloads: Array) => Array} mapTagsToDownloads — from useDownloadTags
  * @param {Array} downloadHistory — link history from TBM backend
  */
-export function enrichDownloadsWithTbm(torboxDownloads, mapTagsToDownloads, downloadHistory) {
+/**
+ * @param {Array} torboxDownloads
+ * @param {(downloads: Array) => Array} mapTagsToDownloads
+ * @param {Array|{ itemDownloads: Set, fileDownloads: Set }} downloadHistoryOrLookup
+ */
+export function enrichDownloadsWithTbm(
+  torboxDownloads,
+  mapTagsToDownloads,
+  downloadHistoryOrLookup
+) {
   if (!torboxDownloads?.length) return torboxDownloads || [];
   const tagged = mapTagsToDownloads(torboxDownloads);
-  return applyLinkHistoryToDownloads(tagged, downloadHistory);
+  return applyLinkHistoryToDownloads(tagged, downloadHistoryOrLookup);
 }

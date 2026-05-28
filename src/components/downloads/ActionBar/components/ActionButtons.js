@@ -7,6 +7,7 @@ import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from '../../Tags/TagAssignmentModal';
+import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 
 export default function ActionButtons({
   selectedItems,
@@ -25,6 +26,7 @@ export default function ActionButtons({
   activeType = 'torrents',
   apiKey,
   setToast,
+  allItems = [],
 }) {
   const t = useTranslations('ActionButtons');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -121,7 +123,9 @@ export default function ActionButtons({
     isUploadingRef.current = true;
 
     try {
-      const selectedItemsArray = Array.from(selectedItems.items);
+      const selectedItemsArray = Array.from(selectedItems.items)
+        .map((selectionId) => findItemBySelectionId(allItems, selectionId)?.id)
+        .filter((id) => id != null);
 
       const uploadOne = async (itemId) => {
         const uploadData = {
@@ -354,7 +358,9 @@ export default function ActionButtons({
         <TagAssignmentModal
           isOpen={showTagAssignment}
           onClose={() => setShowTagAssignment(false)}
-          downloadIds={Array.from(selectedItems.items || [])}
+          downloadIds={Array.from(selectedItems.items || [])
+            .map((selectionId) => findItemBySelectionId(allItems, selectionId)?.id?.toString())
+            .filter(Boolean)}
           apiKey={apiKey}
           onSuccess={() => {
             setSelectedItems({ items: new Set(), files: new Map() });

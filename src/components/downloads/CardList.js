@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
 import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 export default function CardList({
   items,
@@ -190,14 +191,14 @@ export default function CardList({
 
   // Define isDisabled first so it can be used in handlers
   const isDisabled = useCallback(
-    (itemId) => {
-      return selectedItems.files?.has(itemId) && selectedItems.files.get(itemId).size > 0;
+    (selectionId) => {
+      return selectedItems.files?.has(selectionId) && selectedItems.files.get(selectionId).size > 0;
     },
     [selectedItems]
   );
 
   const handleItemSelection = useCallback(
-    (itemId, checked, rowIndex, isShiftKey = false) => {
+    (selectionId, checked, rowIndex, isShiftKey = false) => {
       if (isShiftKey && typeof rowIndex === 'number' && lastClickedItemIndexRef.current !== null) {
         const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
         const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
@@ -206,10 +207,11 @@ export default function CardList({
           const newItems = new Set(prev.items);
           for (let i = start; i <= end; i++) {
             const t = items[i];
-            if (checked && !isDisabled(t.id)) {
-              newItems.add(t.id);
+            const sid = getDownloadSelectionId(t);
+            if (checked && !isDisabled(sid)) {
+              newItems.add(sid);
             } else {
-              newItems.delete(t.id);
+              newItems.delete(sid);
             }
           }
           return {
@@ -220,10 +222,10 @@ export default function CardList({
       } else {
         setSelectedItems((prev) => {
           const newItems = new Set(prev.items);
-          if (checked && !isDisabled(itemId)) {
-            newItems.add(itemId);
+          if (checked && !isDisabled(selectionId)) {
+            newItems.add(selectionId);
           } else {
-            newItems.delete(itemId);
+            newItems.delete(selectionId);
           }
           return {
             items: newItems,
@@ -237,20 +239,20 @@ export default function CardList({
   );
 
   const handleFileSelection = useCallback(
-    (itemId, fileIndex, file, checked, isShiftKey = false) => {
+    (selectionId, fileIndex, file, checked, isShiftKey = false) => {
       if (isShiftKey && lastClickedFileIndexRef.current !== null) {
         const start = Math.min(lastClickedFileIndexRef.current, fileIndex);
         const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
-        const item = items.find((i) => i.id === itemId);
+        const item = items.find((i) => getDownloadSelectionId(i) === selectionId);
         if (item) {
           getFilesVisibleForDownloadSearch(item, fileSearch)
             .slice(start, end + 1)
             .forEach((f) => {
-              onFileSelect(itemId, f.id, checked);
+              onFileSelect(selectionId, f.id, checked);
             });
         }
       } else {
-        onFileSelect(itemId, file.id, checked);
+        onFileSelect(selectionId, file.id, checked);
       }
       lastClickedFileIndexRef.current = fileIndex;
     },

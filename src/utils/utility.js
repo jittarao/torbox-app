@@ -1,3 +1,5 @@
+import { sortItemsNonMutating } from '@/utils/downloadListMerge';
+
 export const isQueuedItem = (item) =>
   !item.download_state && !item.download_finished && !item.active;
 
@@ -6,5 +8,5 @@ export const getAutoStartOptions = () => {
   return savedOptions ? JSON.parse(savedOptions) : null;
 };
 
-export const sortItems = (items) =>
-  items.sort((a, b) => new Date(b.added || 0) - new Date(a.added || 0));
+/** @deprecated Prefer sortItemsNonMutating — this wrapper avoids mutating the input array. */
+export const sortItems = (items) => sortItemsNonMutating(items ?? []);

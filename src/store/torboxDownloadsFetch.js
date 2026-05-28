@@ -1,0 +1,379 @@
+import { isQueuedItem, getAutoStartOptions } from '@/utils/utility';
+import { mergeDownloadList } from '@/utils/downloadListMerge';
+import { retryFetch } from '@/utils/retryFetch';
+import { validateUserData } from '@/utils/monitoring';
+import { perfMonitor } from '@/utils/performance';
+import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { getListKeyForAssetType } from '@/store/torboxDownloadsSelectors';
+import {
+  deltaCursorRef,
+  getRateLimiter,
+  lastAutoStartCheckRef,
+  prevApiKeyRef,
+  processedQueueIdsRef,
+} from '@/store/torboxDownloadsRefs';
+
+const { autoStartCheckIntervalMs: AUTO_START_CHECK_INTERVAL } = POLLING_CONFIG;
+
+function affectsCurrentView(activeType, viewType) {
+  return (
+    activeType === viewType ||
+    (viewType === 'all' && ['torrents', 'usenet', 'webdl'].includes(activeType))
+  );
+}
+
+function getErrorMessage(statusCode, activeType) {
+  const status = typeof statusCode === 'number' ? statusCode : null;
+  const message = typeof statusCode === 'string' ? statusCode : null;
+
+  if (status === 502) {
+    return `TorBox servers are temporarily unavailable. ${activeType} data may not be up to date.`;
+  }
+  if (status === 503) {
+    return `TorBox servers are temporarily overloaded. ${activeType} data may not be up to date.`;
+  }
+  if (status === 504) {
+    return `TorBox servers are taking too long to respond. ${activeType} data may not be up to date.`;
+  }
+  if (status === 401) {
+    return 'Authentication failed. Please check your API key.';
+  }
+  if (status === 403) {
+    return 'Access denied. Please check your API key and account status.';
+  }
+  if (status === 429) {
+    return 'Too many requests to TorBox servers. Please wait a moment.';
+  }
+  if (message && (message.includes('NetworkError') || message.includes('Failed to fetch'))) {
+    return `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
+  }
+  return `Failed to fetch ${activeType} data`;
+}
+
+function pruneProcessedQueueIds(items) {
+  const queuedIds = new Set(
+    items.reduce((acc, item) => {
+      if (isQueuedItem(item)) acc.push(item.id);
+      return acc;
+    }, [])
+  );
+  for (const id of processedQueueIdsRef.current) {
+    if (!queuedIds.has(id)) {
+      processedQueueIdsRef.current.delete(id);
+    }
+  }
+}
+
+async function checkAndAutoStartTorrents(items, apiKey, viewType) {
+  if (viewType !== 'torrents' && viewType !== 'all') return;
+
+  try {
+    const options = getAutoStartOptions();
+    if (!options?.autoStart) return;
+
+    pruneProcessedQueueIds(items);
+
+    const activeCount = items.filter((item) => item.active).length;
+    const queuedItems = items.filter(isQueuedItem);
+
+    if (activeCount < options.autoStartLimit && queuedItems.length > 0) {
+      const queuedId = queuedItems[0].id;
+      if (processedQueueIdsRef.current.has(queuedId)) return;
+
+      processedQueueIdsRef.current.add(queuedId);
+
+      await retryFetch('/api/torrents/controlqueued', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          queued_id: queuedId,
+          operation: 'start',
+          type: 'torrent',
+        }),
+      });
+    }
+  } catch (autoStartError) {
+    console.error('Error in auto-start check:', autoStartError);
+  }
+}
+
+function handleFetchError(fetchError, activeType, viewType, currentFetchId, skipLoading, responseStatus) {
+  const store = useTorboxDownloadsStore.getState();
+  perfMonitor.endTimer(`fetch-${activeType}`);
+
+  const statusCode =
+    responseStatus ||
+    (fetchError?.message?.match(/\d{3}/)?.[0]
+      ? parseInt(fetchError.message.match(/\d{3}/)[0], 10)
+      : null);
+  const errorMessage =
+    fetchError?.error ||
+    fetchError?.message ||
+    `Error fetching ${activeType} data${statusCode ? `: ${statusCode}` : ''}`;
+
+  if (statusCode && statusCode >= 500) {
+    console.warn(`Backend error fetching ${activeType} data (${statusCode}):`, errorMessage);
+  } else {
+    console.warn(
+      `Error fetching ${activeType} data${statusCode ? ` (${statusCode})` : ''}:`,
+      errorMessage
+    );
+  }
+
+  const rateLimiter = getRateLimiter();
+  if (
+    currentFetchId === rateLimiter.getLatestFetchId(activeType) &&
+    affectsCurrentView(activeType, viewType)
+  ) {
+    store.setError(getErrorMessage(statusCode || fetchError?.message, activeType));
+  }
+
+  if (!skipLoading) {
+    store.setLoading(false);
+  }
+  return [];
+}
+
+/**
+ * Fetch one asset type from TorBox API and update the store.
+ *
+ * @param {string} apiKey
+ * @param {'torrents' | 'usenet' | 'webdl'} activeType
+ * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType — active UI tab (poll scope + errors)
+ * @param {{ bypassCache?: boolean, retryCount?: number, skipLoading?: boolean }} [options]
+ */
+export async function fetchDownloadType(
+  apiKey,
+  activeType,
+  viewType,
+  { bypassCache = false, retryCount = 0, skipLoading = false } = {}
+) {
+  const store = useTorboxDownloadsStore.getState();
+
+  if (retryCount > 1) {
+    console.error('Max retry attempts reached, giving up');
+    if (!skipLoading) store.setLoading(false);
+    return [];
+  }
+
+  if (!apiKey) {
+    if (!skipLoading) store.setLoading(false);
+    return [];
+  }
+
+  if (!skipLoading) {
+    store.setLoading(true);
+  }
+
+  const rateLimiter = getRateLimiter();
+  const currentFetchId = rateLimiter.acquire(activeType);
+  if (currentFetchId == null) {
+    console.warn(`Rate limit reached for ${activeType}, skipping fetch`);
+    if (affectsCurrentView(activeType, viewType)) {
+      store.markRateLimited();
+    }
+    if (!skipLoading) store.setLoading(false);
+    return [];
+  }
+
+  const now = Date.now();
+  const isLatestFetch = () =>
+    rateLimiter.getLatestFetchId(activeType) === currentFetchId &&
+    prevApiKeyRef.current === apiKey;
+
+  let endpoint;
+  switch (activeType) {
+    case 'usenet':
+      endpoint = '/api/usenet';
+      break;
+    case 'webdl':
+      endpoint = '/api/webdl';
+      break;
+    default:
+      endpoint = '/api/torrents';
+  }
+  const cursor = deltaCursorRef.current[activeType];
+  if (cursor) {
+    endpoint += `?delta=1&cursor=${encodeURIComponent(cursor)}`;
+  }
+
+  try {
+    if (!isLatestFetch()) {
+      if (!skipLoading) store.setLoading(false);
+      return [];
+    }
+
+    perfMonitor.startTimer(`fetch-${activeType}`);
+    const response = await fetch(endpoint, {
+      headers: {
+        'x-api-key': apiKey,
+        ...(bypassCache && { 'bypass-cache': 'true' }),
+        'Cache-Control': 'no-cache',
+      },
+    });
+
+    if (!response.ok) {
+      let errorData = {};
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return handleFetchError(
+        errorData,
+        activeType,
+        viewType,
+        currentFetchId,
+        skipLoading,
+        response.status
+      );
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      return handleFetchError(
+        { message: `Failed to parse JSON: ${jsonError.message}` },
+        activeType,
+        viewType,
+        currentFetchId,
+        skipLoading
+      );
+    }
+
+    if (!isLatestFetch()) {
+      return [];
+    }
+
+    perfMonitor.endTimer(`fetch-${activeType}`);
+
+    if (data.success && data.data && Array.isArray(data.data)) {
+      if (!validateUserData(data.data, apiKey)) {
+        console.warn(
+          `Invalid user data detected (attempt ${retryCount + 1}/2), retrying with cache bypass`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return fetchDownloadType(apiKey, activeType, viewType, {
+          bypassCache: true,
+          retryCount: retryCount + 1,
+          skipLoading,
+        });
+      }
+
+      const assetType =
+        activeType === 'usenet' ? 'usenet' : activeType === 'webdl' ? 'webdl' : 'torrents';
+      const listKey = getListKeyForAssetType(assetType);
+      const currentList = useTorboxDownloadsStore.getState()[listKey];
+
+      const sortedItems = mergeDownloadList(
+        currentList,
+        {
+          delta: data.delta === true,
+          data: data.data,
+          removed: data.removed,
+        },
+        assetType
+      );
+
+      if (data.cursor) {
+        deltaCursorRef.current[activeType] = data.cursor;
+      }
+
+      if (!isLatestFetch()) {
+        return [];
+      }
+
+      if (listKey === 'torrents') {
+        store.setTorrents(sortedItems);
+        if (now - lastAutoStartCheckRef.current >= AUTO_START_CHECK_INTERVAL) {
+          await checkAndAutoStartTorrents(sortedItems, apiKey, viewType);
+          lastAutoStartCheckRef.current = now;
+        }
+      } else if (listKey === 'usenet') {
+        store.setUsenet(sortedItems);
+      } else {
+        store.setWebdl(sortedItems);
+      }
+
+      if (affectsCurrentView(activeType, viewType)) {
+        store.setError(null);
+        store.markFetchSuccess();
+        syncCanManualRefresh(viewType);
+      }
+
+      if (!skipLoading) {
+        store.setLoading(false);
+      }
+
+      return sortedItems;
+    }
+
+    if (data.success && data.data && Array.isArray(data.data) && data.data.length === 0) {
+      if (affectsCurrentView(activeType, viewType)) {
+        store.markFetchSuccess();
+      }
+      if (!skipLoading) store.setLoading(false);
+      return [];
+    }
+
+    if (Object.keys(data).length === 0) {
+      console.warn(`Backend returned empty response for ${activeType} data`);
+    } else {
+      console.warn(`Invalid ${activeType} data format:`, data);
+    }
+
+    if (!skipLoading) store.setLoading(false);
+    return [];
+  } catch (err) {
+    return handleFetchError(err, activeType, viewType, currentFetchId, skipLoading);
+  }
+}
+
+/**
+ * @param {string} apiKey
+ * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType
+ * @param {{ bypassCache?: boolean, skipLoading?: boolean }} [options]
+ */
+export async function fetchDownloadsForView(
+  apiKey,
+  viewType,
+  { bypassCache = false, skipLoading = false, retryCount = 0 } = {}
+) {
+  if (viewType === 'all') {
+    const results = await Promise.allSettled([
+      fetchDownloadType(apiKey, 'torrents', viewType, { bypassCache, retryCount, skipLoading: true }),
+      fetchDownloadType(apiKey, 'usenet', viewType, { bypassCache, retryCount, skipLoading: true }),
+      fetchDownloadType(apiKey, 'webdl', viewType, { bypassCache, retryCount, skipLoading: true }),
+    ]);
+
+    const flattened = results
+      .map((r) => (r.status === 'fulfilled' ? r.value : []))
+      .flat();
+
+    if (!skipLoading) {
+      useTorboxDownloadsStore.getState().setLoading(false);
+    }
+    return flattened;
+  }
+
+  const activeType = viewType === 'usenet' ? 'usenet' : viewType === 'webdl' ? 'webdl' : 'torrents';
+  return fetchDownloadType(apiKey, activeType, viewType, { bypassCache, retryCount, skipLoading });
+}
+
+export function syncCanManualRefresh(viewType) {
+  const allowed = getRateLimiter().canManualRefresh(viewType);
+  useTorboxDownloadsStore.getState().setCanManualRefresh(allowed);
+  return allowed;
+}
+
+export function peekRateLimited(activeType) {
+  return getRateLimiter().peekWouldBlock(activeType);
+}

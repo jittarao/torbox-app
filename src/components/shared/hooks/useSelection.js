@@ -1,6 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { downloadListIdSignature } from '@/utils/downloadListMerge';
+import {
+  getDownloadSelectionId,
+  selectionIdMatchesItem,
+} from '@/utils/downloadSelectionId';
 
 const STORAGE_KEY = 'torboxSelectedItems';
+
+function parseFileMapKey(key) {
+  if (typeof key === 'string' && key.includes(':')) {
+    return key;
+  }
+  const numeric = parseInt(key, 10);
+  return Number.isNaN(numeric) ? key : numeric;
+}
 
 export function useSelection(items) {
   const loadStoredSelections = (currentItems) => {
@@ -10,72 +23,67 @@ export function useSelection(items) {
 
       const { items: storedItems, files: storedFiles } = JSON.parse(stored);
 
-      // If no items available yet, just convert to Set/Map without validation
-      // Guard against corrupt/old localStorage (missing items or files)
       if (!currentItems?.length) {
         return {
           items: new Set(Array.isArray(storedItems) ? storedItems : []),
           files: new Map(
             Object.entries(storedFiles && typeof storedFiles === 'object' ? storedFiles : {}).map(
-              ([key, value]) => [parseInt(key), new Set(Array.isArray(value) ? value : [])]
+              ([key, value]) => [parseFileMapKey(key), new Set(Array.isArray(value) ? value : [])]
             )
           ),
         };
       }
 
-      // Validate items and files separately
       const validItems = new Set(
-        storedItems.filter((id) => currentItems.some((item) => item.id === id))
+        (storedItems || []).filter((storedId) =>
+          currentItems.some((item) => selectionIdMatchesItem(storedId, item))
+        )
       );
 
       const validFiles = new Map();
-      Object.entries(storedFiles).forEach(([itemId, fileIds]) => {
-        // Check if item exists in the current items (not just selected items)
-        const numericItemId = parseInt(itemId);
-        const item = currentItems.find((i) => i.id === numericItemId);
+      Object.entries(storedFiles || {}).forEach(([itemKey, fileIds]) => {
+        const mapKey = parseFileMapKey(itemKey);
+        const item = currentItems.find((i) => selectionIdMatchesItem(mapKey, i));
 
-        // If item exists but files aren't loaded yet, keep all files
         if (item && (!item.files || !item.files.length)) {
-          validFiles.set(numericItemId, new Set(fileIds));
+          validFiles.set(getDownloadSelectionId(item), new Set(fileIds));
           return;
         }
 
         if (!item) return;
 
         const validFileIds = new Set(
-          fileIds.filter((fileId) => {
-            const isValid = item.files?.some((file) => file.id === fileId);
-            return isValid;
-          })
+          fileIds.filter((fileId) => item.files?.some((file) => file.id === fileId))
         );
 
         if (validFileIds.size > 0) {
-          validFiles.set(numericItemId, validFileIds);
+          validFiles.set(getDownloadSelectionId(item), validFileIds);
         }
       });
 
-      const result = {
+      return {
         items: validItems,
         files: validFiles,
       };
-      return result;
     } catch (error) {
       console.error('Error loading selections from localStorage:', error);
       return { items: new Set(), files: new Map() };
     }
   };
 
-  // Initial load without validation
+  const itemsIdSignature = useMemo(() => downloadListIdSignature(items), [items]);
+
   const [selectedItems, setSelectedItems] = useState(() => loadStoredSelections());
 
-  // Validate when items become available
-  const prevItemsRef = useRef(items);
-  if (items?.length && prevItemsRef.current !== items) {
-    prevItemsRef.current = items;
-    setSelectedItems(loadStoredSelections(items));
-  }
+  const prevIdSignatureRef = useRef(itemsIdSignature);
 
-  // Save to localStorage when selections change
+  useEffect(() => {
+    if (!items?.length) return;
+    if (prevIdSignatureRef.current === itemsIdSignature) return;
+    prevIdSignatureRef.current = itemsIdSignature;
+    setSelectedItems(loadStoredSelections(items));
+  }, [items, itemsIdSignature]);
+
   useEffect(() => {
     if (!selectedItems) return;
 
@@ -96,30 +104,30 @@ export function useSelection(items) {
     return Array.from(selectedItems.files.values()).some((files) => files.size > 0);
   };
 
-  const handleRowSelect = (itemId, selectedFiles) => {
-    return selectedFiles.has(itemId) && selectedFiles.get(itemId).size > 0;
+  const handleRowSelect = (selectionId, selectedFiles) => {
+    return selectedFiles.has(selectionId) && selectedFiles.get(selectionId).size > 0;
   };
 
   const handleSelectAll = (items, checked) => {
     setSelectedItems((prev) => ({
-      items: checked ? new Set(items.map((t) => t.id)) : new Set(),
+      items: checked ? new Set(items.map((t) => getDownloadSelectionId(t))) : new Set(),
       files: new Map(),
     }));
   };
 
-  const handleFileSelect = (itemId, fileId, checked) => {
+  const handleFileSelect = (selectionId, fileId, checked) => {
     setSelectedItems((prev) => {
       const newFiles = new Map(prev.files);
-      if (!newFiles.has(itemId)) {
-        newFiles.set(itemId, new Set());
+      if (!newFiles.has(selectionId)) {
+        newFiles.set(selectionId, new Set());
       }
 
       if (checked) {
-        newFiles.get(itemId).add(fileId);
+        newFiles.get(selectionId).add(fileId);
       } else {
-        newFiles.get(itemId).delete(fileId);
-        if (newFiles.get(itemId).size === 0) {
-          newFiles.delete(itemId);
+        newFiles.get(selectionId).delete(fileId);
+        if (newFiles.get(selectionId).size === 0) {
+          newFiles.delete(selectionId);
         }
       }
 
@@ -137,5 +145,6 @@ export function useSelection(items) {
     handleRowSelect,
     handleFileSelect,
     handleSelectAll,
+    getDownloadSelectionId,
   };
 }

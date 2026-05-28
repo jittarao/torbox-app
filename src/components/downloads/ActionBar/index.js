@@ -316,6 +316,7 @@ export default function ActionBar({
                 activeType={activeType}
                 apiKey={apiKey}
                 setToast={setToast}
+                allItems={unfilteredItems}
               />
             )}
           </div>

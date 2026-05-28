@@ -8,6 +8,8 @@ import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
 import { useTranslations } from 'next-intl';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 
 export default function ItemActions({
   item,
@@ -15,13 +17,14 @@ export default function ItemActions({
   onDelete,
   toggleFiles,
   expandedItems,
-  setItems,
+  setItems: _setItems,
   setToast,
   activeType = 'torrents',
   downloadHistory,
   compact = false,
   mobileBar = false,
 }) {
+  const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [isDeleting, setIsDeleting] = useState(false);
   const fetchDownloadHistory = useDownloadHistoryStore((state) => state.fetchDownloadHistory);
   const { downloadSingle } = useDownloads(
@@ -83,18 +86,11 @@ export default function ItemActions({
     if (!result.success) {
       throw new Error(result.error);
     } else {
-      setItems((prev) =>
-        prev.map((localItem) =>
-          localItem.id === item.id
-            ? {
-                ...localItem,
-                active: false,
-                download_state: 'completed',
-                download_present: true,
-              }
-            : localItem
-        )
-      );
+      patchItem(resolveItemAssetType(item, activeType), item.id, {
+        active: false,
+        download_state: 'completed',
+        download_present: true,
+      });
     }
   };
 

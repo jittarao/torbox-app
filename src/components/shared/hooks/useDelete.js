@@ -3,13 +3,12 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
-
-// Parallel deletes
-const CONCURRENT_DELETES = 3;
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 export function useDelete(
   apiKey,
-  setItems,
+  _setItems,
   setSelectedItems,
   setToast,
   fetchItems,
@@ -18,17 +17,38 @@ export function useDelete(
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
 
+  const applyLocalRemovals = (successfulIds, itemsForGrouping = []) => {
+    const store = useTorboxDownloadsStore.getState();
+
+    if (assetType === 'all' && itemsForGrouping.length > 0) {
+      const grouped = { torrents: [], usenet: [], webdl: [] };
+      const idSet = new Set(successfulIds);
+
+      itemsForGrouping.forEach((item) => {
+        if (!idSet.has(item.id)) return;
+        const type = item.assetType || 'torrents';
+        if (grouped[type]) grouped[type].push(item.id);
+      });
+
+      for (const [type, ids] of Object.entries(grouped)) {
+        if (ids.length > 0) store.removeByIds(type, ids);
+      }
+    } else {
+      const type =
+        assetType === 'usenet' ? 'usenet' : assetType === 'webdl' ? 'webdl' : 'torrents';
+      store.removeByIds(type, successfulIds);
+    }
+  };
+
   const deleteItem = async (id, bulk = false, itemAssetType = null) => {
     if (!apiKey) return;
 
     try {
       setIsDeleting(true);
-      // For 'all' type, determine the actual asset type from the item
       const actualAssetType = assetType === 'all' && itemAssetType ? itemAssetType : assetType;
       const result = await deleteItemHelper(id, apiKey, actualAssetType);
 
       if (result.success) {
-        // Refresh the list after deletion
         if (!bulk) {
           await fetchItems(true);
         }
@@ -58,7 +78,6 @@ export function useDelete(
     try {
       let successfulIds = [];
 
-      // For 'all' type, we need to group items by their asset type and delete them separately
       if (assetType === 'all' && items.length > 0) {
         const groupedItems = {
           torrents: [],
@@ -66,7 +85,6 @@ export function useDelete(
           webdl: [],
         };
 
-        // Group items by their asset type
         items.forEach((item) => {
           const itemAssetType = item.assetType || 'torrents';
           if (groupedItems[itemAssetType]) {
@@ -74,36 +92,35 @@ export function useDelete(
           }
         });
 
-        // Delete each group in parallel
         const results = await Promise.all(
           Object.entries(groupedItems).flatMap(([type, typeIds]) =>
             typeIds.length > 0 ? [batchDeleteHelper(typeIds, apiKey, type)] : []
           )
         );
-        for (const ids of results) {
-          successfulIds.push(...ids);
+        for (const batchIds of results) {
+          successfulIds.push(...batchIds);
         }
       } else {
         successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
       }
 
-      // Update UI for successful deletes
       if (successfulIds.length > 0) {
-        setItems((prev) => {
-          // Safety check: ensure prev is an array
-          if (!Array.isArray(prev)) {
-            console.warn('setItems called with non-array prev:', prev);
-            return prev || [];
-          }
-          return prev.filter((t) => !successfulIds.includes(t.id));
-        });
+        applyLocalRemovals(successfulIds, items);
+
+        const removedSelectionIds = new Set(
+          items
+            .filter((item) => successfulIds.includes(item.id))
+            .map((item) => getDownloadSelectionId(item))
+        );
+
         setSelectedItems((prev) => ({
-          items: new Set([...prev.items].filter((id) => !successfulIds.includes(id))),
-          files: new Map([...prev.files].filter(([itemId]) => !successfulIds.includes(itemId))),
+          items: new Set([...prev.items].filter((id) => !removedSelectionIds.has(id))),
+          files: new Map(
+            [...prev.files].filter(([selectionId]) => !removedSelectionIds.has(selectionId))
+          ),
         }));
       }
 
-      // Show appropriate toast based on results
       if (successfulIds.length === ids.length) {
         setToast({
           message: t('deleteAllSuccess'),
@@ -124,7 +141,6 @@ export function useDelete(
         });
       }
 
-      // Fetch fresh data only after all deletes are complete
       await fetchItems(true);
 
       return successfulIds;
@@ -144,20 +160,21 @@ export function useDelete(
     try {
       setIsDeleting(true);
 
-      // Start with explicitly selected items
       const itemsToDelete = new Set(selectedItems.items);
 
-      // If deleteParentDownloads is true, add parent download IDs to the deletion set
       if (deleteParentDownloads && selectedItems.files.size > 0) {
-        selectedItems.files.forEach((_, parentId) => {
-          itemsToDelete.add(parentId);
+        selectedItems.files.forEach((_, parentSelectionId) => {
+          itemsToDelete.add(parentSelectionId);
         });
       }
 
-      // Filter the items to only include the ones being deleted
-      const itemsToDeleteList = allItems.filter((item) => itemsToDelete.has(item.id));
+      const itemsToDeleteList = allItems.filter((item) =>
+        itemsToDelete.has(getDownloadSelectionId(item))
+      );
 
-      return await batchDelete(Array.from(itemsToDelete), itemsToDeleteList);
+      const numericIds = itemsToDeleteList.map((item) => item.id);
+
+      return await batchDelete(numericIds, itemsToDeleteList);
     } catch (error) {
       console.error('Error bulk deleting:', error);
       setToast({
