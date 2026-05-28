@@ -3,7 +3,10 @@
  * Tablet range (md, below lg): tighter padding and type for iPad-sized viewports.
  */
 
-/** Inset divider — reliable with virtualization (unlike collapsed cell borders) */
+/**
+ * Inset row divider on table cells (not <tr> — Safari/WebKit does not paint box-shadow on rows).
+ * Reliable with virtualization (unlike collapsed cell borders).
+ */
 export const tableRowSeparator =
   '[box-shadow:inset_0_-1px_0_0_#cecece] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c]';
 
@@ -15,7 +18,7 @@ export const tableRowSeparator =
 export const tableActionsCellShadows =
   '[box-shadow:inset_0_-1px_0_0_#cecece,inset_12px_0_10px_-12px_rgba(15,23,42,0.05)] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c,inset_12px_0_10px_-12px_rgba(0,0,0,0.2)]';
 
-export const tableDataCellPad = 'px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5';
+export const tableDataCellPad = `px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5 ${tableRowSeparator}`;
 
 export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
@@ -26,8 +29,7 @@ const actionsColumnWidthClass =
 /** Shared sticky shell for the right-pinned actions column */
 const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tableActionsCellShadows}`;
 
-export const tableCheckboxCell =
-  'px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap';
+export const tableCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap ${tableRowSeparator}`;
 
 export const tableActionsCell = `px-2 md:px-2.5 lg:px-3 py-2 md:py-1.5 lg:py-2 whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium z-[1] overflow-hidden ${tableActionsStickyShell}`;
 

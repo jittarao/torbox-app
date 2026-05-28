@@ -16,7 +16,6 @@ import {
   tableCheckboxCell,
   tableDataCellPad,
   tableDataCellText,
-  tableRowSeparator,
 } from './utils/responsiveLayout';
 import { getResolvedColumnStyle } from './utils/tableColumnLayout';
 
@@ -292,7 +291,7 @@ function ItemRow({
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      className={`${rowSurfaceClass} ${tableRowSeparator} ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
+      className={`${rowSurfaceClass} ${!onRowSelect(item.id, selectedItems.files) && 'cursor-pointer'}`}
       style={style}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
