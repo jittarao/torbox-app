@@ -14,6 +14,11 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
+export const metadata = {
+  title: 'RSS Feeds',
+  description: 'Manage your RSS feeds and automate TorBox downloads from feed items.',
+};
+
 export default function RssPage() {
   const [toast, setToast] = useState(null);
   const [apiKey, setApiKey] = useState(() => {
@@ -47,10 +52,9 @@ export default function RssPage() {
   );
 
   useEffect(() => {
-    const key = localStorage.getItem('torboxApiKey');
-    if (key) {
+    if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(key)
+        ensureUserDb(apiKey)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');
@@ -65,16 +69,18 @@ export default function RssPage() {
 
   // Fetch user plan on mount
   useEffect(() => {
-    const key = localStorage.getItem('torboxApiKey');
-    if (!key) return;
+    if (!apiKey) return;
+
+    const abortController = new AbortController();
 
     const fetchUserPlan = async () => {
       setCheckingPlan(true);
       try {
         const response = await fetch('/api/user/me', {
           headers: {
-            'x-api-key': key,
+            'x-api-key': apiKey,
           },
+          signal: abortController.signal,
         });
 
         if (!response.ok) {
@@ -89,14 +95,20 @@ export default function RssPage() {
           setUserPlan(data.plan || data.data?.plan || null);
         }
       } catch (err) {
-        console.error('Error fetching user plan:', err);
-        setUserPlan(null);
+        if (err.name !== 'AbortError') {
+          console.error('Error fetching user plan:', err);
+          setUserPlan(null);
+        }
       } finally {
-        setCheckingPlan(false);
+        if (!abortController.signal.aborted) {
+          setCheckingPlan(false);
+        }
       }
     };
 
     fetchUserPlan();
+
+    return () => abortController.abort();
   }, []);
 
   // Handle API key change

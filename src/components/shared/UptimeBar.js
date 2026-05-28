@@ -92,11 +92,7 @@ export default function UptimeBar({ label, history, currentStatus }) {
         </span>
       </div>
 
-      <div
-        className="status-uptime-bar min-w-0 w-full"
-        role="img"
-        aria-label={t('uptime.barLabel', { label, percent: uptime?.toFixed(1) ?? '—' })}
-      >
+      <div className="status-uptime-bar min-w-0 w-full" aria-hidden>
         {padded.map((entry, index) => {
           const segment = entry.s || 'empty';
           const title = entry.at
@@ -111,6 +107,9 @@ export default function UptimeBar({ label, history, currentStatus }) {
             />
           );
         })}
+      </div>
+      <div aria-live="polite" className="sr-only">
+        {t('uptime.barLabel', { label, percent: uptime?.toFixed(1) ?? '—' })}
       </div>
     </div>
   );

@@ -200,102 +200,103 @@ export default function ApiKeyManager({
               rounded-lg shadow-xl
               w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[min(90vh,32rem)]
               overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
             aria-labelledby="api-key-add-dialog-title"
             open
           >
-            <div className="flex items-center justify-between gap-3 p-4 sm:p-6 pb-0 sm:pb-0 shrink-0">
-              <h3
-                id="api-key-add-dialog-title"
-                className="text-base sm:text-lg font-medium text-primary-text dark:text-primary-text-dark"
-              >
-                {t('addNewKey')}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="p-2 -mr-1 rounded-lg min-h-9 min-w-9 flex items-center justify-center touch-manipulation
+            <div onClick={(e) => e.stopPropagation()} className="flex flex-col h-full">
+              <div className="flex items-center justify-between gap-3 p-4 sm:p-6 pb-0 sm:pb-0 shrink-0">
+                <h3
+                  id="api-key-add-dialog-title"
+                  className="text-base sm:text-lg font-medium text-primary-text dark:text-primary-text-dark"
+                >
+                  {t('addNewKey')}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="p-2 -mr-1 rounded-lg min-h-9 min-w-9 flex items-center justify-center touch-manipulation
                   text-primary-text/70 dark:text-primary-text-dark/70
                   hover:text-primary-text dark:hover:text-primary-text-dark
                   hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
-                aria-label={t('close')}
-              >
-                <Icons.Times className="size-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pt-4 space-y-4">
-              <div>
-                <label
-                  htmlFor="api-key-label"
-                  className="block text-sm font-medium mb-1 text-primary-text dark:text-primary-text-dark"
+                  aria-label={t('close')}
                 >
-                  {t('keyLabel')}
-                </label>
-                <input
-                  id="api-key-label"
-                  type="text"
-                  value={newKeyLabel}
-                  onChange={(e) => setNewKeyLabel(e.target.value)}
-                  placeholder={t('keyLabelPlaceholder')}
-                  className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-border dark:border-border-dark rounded-lg
-                    bg-transparent text-primary-text dark:text-primary-text-dark"
-                  autoComplete="off"
-                />
+                  <Icons.Times className="size-5" />
+                </button>
               </div>
-              <div>
-                <label
-                  htmlFor="api-key-value"
-                  className="block text-sm font-medium mb-1 text-primary-text dark:text-primary-text-dark"
-                >
-                  {t('apiKey')}
-                </label>
-                <div className="relative">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pt-4 space-y-4">
+                <div>
+                  <label
+                    htmlFor="api-key-label"
+                    className="block text-sm font-medium mb-1 text-primary-text dark:text-primary-text-dark"
+                  >
+                    {t('keyLabel')}
+                  </label>
                   <input
-                    id="api-key-value"
-                    type={showKeys ? 'text' : 'password'}
-                    value={newKeyValue}
-                    onChange={(e) => setNewKeyValue(e.target.value)}
-                    placeholder={t('apiKeyPlaceholder')}
-                    className="w-full px-3 py-2.5 sm:py-2 pr-11 text-base sm:text-sm border border-border dark:border-border-dark rounded-lg
-                      bg-transparent text-primary-text dark:text-primary-text-dark"
+                    id="api-key-label"
+                    type="text"
+                    value={newKeyLabel}
+                    onChange={(e) => setNewKeyLabel(e.target.value)}
+                    placeholder={t('keyLabelPlaceholder')}
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-border dark:border-border-dark rounded-lg
+                    bg-transparent text-primary-text dark:text-primary-text-dark"
                     autoComplete="off"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowKeys(!showKeys)}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-primary-text/50 
+                </div>
+                <div>
+                  <label
+                    htmlFor="api-key-value"
+                    className="block text-sm font-medium mb-1 text-primary-text dark:text-primary-text-dark"
+                  >
+                    {t('apiKey')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="api-key-value"
+                      type={showKeys ? 'text' : 'password'}
+                      value={newKeyValue}
+                      onChange={(e) => setNewKeyValue(e.target.value)}
+                      placeholder={t('apiKeyPlaceholder')}
+                      className="w-full px-3 py-2.5 sm:py-2 pr-11 text-base sm:text-sm border border-border dark:border-border-dark rounded-lg
+                      bg-transparent text-primary-text dark:text-primary-text-dark"
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKeys(!showKeys)}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-primary-text/50 
                       dark:text-primary-text-dark/50 hover:text-primary-text 
                       dark:hover:text-primary-text-dark transition-colors p-2 touch-manipulation min-h-9 min-w-9 flex items-center justify-center"
-                    aria-label={showKeys ? tInput('hide') : tInput('show')}
-                  >
-                    {showKeys ? (
-                      <Icons.Eye className="size-4" />
-                    ) : (
-                      <Icons.EyeOff className="size-4" />
-                    )}
-                  </button>
+                      aria-label={showKeys ? tInput('hide') : tInput('show')}
+                    >
+                      {showKeys ? (
+                        <Icons.Eye className="size-4" />
+                      ) : (
+                        <Icons.EyeOff className="size-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-4 sm:p-6 pt-0 shrink-0 border-t border-border/60 dark:border-border-dark/60 sm:border-0">
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm text-primary-text dark:text-primary-text-dark
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-4 sm:p-6 pt-0 shrink-0 border-t border-border/60 dark:border-border-dark/60 sm:border-0">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm text-primary-text dark:text-primary-text-dark
                   hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded-lg transition-colors touch-manipulation min-h-10"
-              >
-                {t('cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={addKey}
-                disabled={!newKeyLabel || !newKeyValue}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-accent dark:bg-accent-dark text-white rounded-lg text-sm
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={addKey}
+                  disabled={!newKeyLabel || !newKeyValue}
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-accent dark:bg-accent-dark text-white rounded-lg text-sm
                   hover:bg-accent/90 dark:hover:bg-accent-dark/90 transition-colors touch-manipulation min-h-10
                   disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('add')}
-              </button>
+                >
+                  {t('add')}
+                </button>
+              </div>
             </div>
           </dialog>
         </>

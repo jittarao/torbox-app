@@ -30,7 +30,7 @@ export default function ActionButtons({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
-  const [connectedProviders, setConnectedProviders] = useState({});
+  const connectedProviders = useRef({});
   const isMobile = useIsMobile();
   const apiClient = createApiClient(apiKey);
   const cloudUploadRef = useRef(null);
@@ -55,7 +55,7 @@ export default function ActionButtons({
           providers.forEach((provider) => {
             connected[provider] = true;
           });
-          setConnectedProviders(connected);
+          connectedProviders.current = connected;
         }
       } catch (error) {
         console.log('No connected providers found or integration not available');
@@ -66,7 +66,7 @@ export default function ActionButtons({
     if (apiKey) {
       checkConnectedProviders();
     }
-  }, [apiKey, setConnectedProviders, apiClient]);
+  }, [apiKey, apiClient]);
 
   // Close cloud upload dropdown when clicking outside
   useEffect(() => {
@@ -107,7 +107,7 @@ export default function ActionButtons({
     if (isUploadingRef.current || !selectedItems.items?.size) return;
 
     // Check if any providers are connected
-    if (Object.keys(connectedProviders).length === 0) {
+    if (Object.keys(connectedProviders.current).length === 0) {
       setToast({
         message:
           'Please connect to a cloud provider first in the Cloud Storage Manager. Only Google Drive, Dropbox, and OneDrive support OAuth authentication.',

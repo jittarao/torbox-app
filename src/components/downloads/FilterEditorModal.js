@@ -381,241 +381,242 @@ export default function FilterEditorModal({
       <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
       <dialog
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:w-[min(92vw,56rem)] lg:w-[min(88vw,64rem)] max-h-[min(90vh,52rem)] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
         aria-labelledby="filter-editor-title"
         open
       >
-        <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark shrink-0">
-          <h2
-            id="filter-editor-title"
-            className="text-lg font-semibold text-primary-text dark:text-primary-text-dark"
-          >
-            {modalTitle}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
-            aria-label={downloadsFiltersT('close')}
-          >
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
+        <div onClick={(e) => e.stopPropagation()} className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark shrink-0">
+            <h2
+              id="filter-editor-title"
+              className="text-lg font-semibold text-primary-text dark:text-primary-text-dark"
+            >
+              {modalTitle}
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
+              aria-label={downloadsFiltersT('close')}
+            >
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {isViewMode && saveOptionsRow}
+
+            {isViewMode && previewItems && (filtersActive || previewSearchQuery) && (
+              <ViewFilterPreview
+                filters={columnFilters}
+                previewItems={previewItems}
+                assetType={previewAssetType}
+                searchQuery={previewSearchQuery}
+                onPreview={onPreview ? handlePreview : undefined}
+                showPreviewButton={!!onPreview}
               />
-            </svg>
-          </button>
-        </div>
+            )}
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {isViewMode && saveOptionsRow}
+            {previewApplied && isViewMode && (
+              <p className="text-xs text-accent dark:text-accent-dark -mt-2">
+                {customViewsT('previewApplied')}
+              </p>
+            )}
 
-          {isViewMode && previewItems && (filtersActive || previewSearchQuery) && (
-            <ViewFilterPreview
-              filters={columnFilters}
-              previewItems={previewItems}
-              assetType={previewAssetType}
-              searchQuery={previewSearchQuery}
-              onPreview={onPreview ? handlePreview : undefined}
-              showPreviewButton={!!onPreview}
-            />
-          )}
+            {filterGroups.length === 0 ? (
+              <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 italic text-center py-6">
+                {customViewsT('noFilters')}
+              </p>
+            ) : (
+              filterGroups.map((group, groupIndex) => (
+                <div key={group._key || groupIndex} className="relative">
+                  {groupIndex > 0 && (
+                    <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
+                      <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
+                        {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
+                          ? automationRulesT('logicOperators.and')
+                          : automationRulesT('logicOperators.or')}
+                      </div>
+                    </div>
+                  )}
+                  <FilterGroup
+                    group={group}
+                    groupIndex={groupIndex}
+                    totalGroups={filterGroups.length}
+                    onUpdateGroup={handleUpdateGroup}
+                    onRemoveGroup={handleRemoveGroup}
+                    onAddFilter={handleAddFilter}
+                    onUpdateFilter={handleUpdateFilter}
+                    onRemoveFilter={handleRemoveFilter}
+                    availableColumns={availableColumns}
+                    apiKey={apiKey}
+                    activeType={activeType}
+                  />
+                </div>
+              ))
+            )}
 
-          {previewApplied && isViewMode && (
-            <p className="text-xs text-accent dark:text-accent-dark -mt-2">
-              {customViewsT('previewApplied')}
-            </p>
-          )}
-
-          {filterGroups.length === 0 ? (
-            <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 italic text-center py-6">
-              {customViewsT('noFilters')}
-            </p>
-          ) : (
-            filterGroups.map((group, groupIndex) => (
-              <div key={group._key || groupIndex} className="relative">
-                {groupIndex > 0 && (
-                  <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
-                    <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
-                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
-                        ? automationRulesT('logicOperators.and')
-                        : automationRulesT('logicOperators.or')}
+            {apiKey && filtersActive && !isCreateMode && !isEditMode && (
+              <div className="pt-3 border-t border-border dark:border-border-dark">
+                {!showSaveInput ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap sm:ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => setShowSaveInput(true)}
+                        className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+                      >
+                        {customViewsT('saveAsNew')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {saveOptionsRow}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={saveViewName}
+                        onChange={(e) => setSaveViewName(e.target.value)}
+                        placeholder={customViewsT('viewNamePlaceholder')}
+                        className="flex-1 px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveAsView();
+                          if (e.key === 'Escape') {
+                            setShowSaveInput(false);
+                            setSaveViewName('');
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveAsView}
+                        disabled={isSaving || !saveViewName.trim()}
+                        className="px-3 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md disabled:opacity-50"
+                      >
+                        {isSaving ? customViewsT('saving') : customViewsT('save')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSaveInput(false);
+                          setSaveViewName('');
+                        }}
+                        className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
+                      >
+                        {customViewsT('cancel')}
+                      </button>
                     </div>
                   </div>
                 )}
-                <FilterGroup
-                  group={group}
-                  groupIndex={groupIndex}
-                  totalGroups={filterGroups.length}
-                  onUpdateGroup={handleUpdateGroup}
-                  onRemoveGroup={handleRemoveGroup}
-                  onAddFilter={handleAddFilter}
-                  onUpdateFilter={handleUpdateFilter}
-                  onRemoveFilter={handleRemoveFilter}
-                  availableColumns={availableColumns}
-                  apiKey={apiKey}
-                  activeType={activeType}
-                />
               </div>
-            ))
-          )}
+            )}
+          </div>
 
-          {apiKey && filtersActive && !isCreateMode && !isEditMode && (
-            <div className="pt-3 border-t border-border dark:border-border-dark">
-              {!showSaveInput ? (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap sm:ml-auto">
-                    <button
-                      type="button"
-                      onClick={() => setShowSaveInput(true)}
-                      className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
-                    >
-                      {customViewsT('saveAsNew')}
-                    </button>
-                  </div>
+          <div className="flex flex-col gap-3 p-4 border-t border-border dark:border-border-dark shrink-0">
+            {isCreateMode && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={saveViewName}
+                    onChange={(e) => setSaveViewName(e.target.value)}
+                    placeholder={customViewsT('viewNamePlaceholder')}
+                    className="flex-1 px-3 py-2 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && filtersActive && saveViewName.trim()) {
+                        handleCreateView();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateView}
+                    disabled={isSaving || !saveViewName.trim() || !filtersActive}
+                    className="px-4 py-2 text-sm font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
+                  >
+                    {isSaving ? customViewsT('creating') : customViewsT('createView')}
+                  </button>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {saveOptionsRow}
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={saveViewName}
-                      onChange={(e) => setSaveViewName(e.target.value)}
-                      placeholder={customViewsT('viewNamePlaceholder')}
-                      className="flex-1 px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveAsView();
-                        if (e.key === 'Escape') {
-                          setShowSaveInput(false);
-                          setSaveViewName('');
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveAsView}
-                      disabled={isSaving || !saveViewName.trim()}
-                      className="px-3 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md disabled:opacity-50"
-                    >
-                      {isSaving ? customViewsT('saving') : customViewsT('save')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSaveInput(false);
-                        setSaveViewName('');
-                      }}
-                      className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
-                    >
-                      {customViewsT('cancel')}
-                    </button>
-                  </div>
+                {!filtersActive && (
+                  <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+                    {customViewsT('noFilters')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              {filtersActive && !isCreateMode && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleApply}
+                    className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90"
+                  >
+                    {downloadsFiltersT('applyFilters')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
+                  >
+                    {downloadsFiltersT('clearAll')}
+                  </button>
+                </>
+              )}
+              {isEditMode && filtersActive && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveInput(true)}
+                    className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
+                  >
+                    {customViewsT('saveAsNew')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUpdateView}
+                    disabled={isSaving}
+                    className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isSaving ? customViewsT('updating') : customViewsT('updateView')}
+                  </button>
+                </>
+              )}
+              {filterGroups.length > 1 && (
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-xs text-primary-text/70">
+                    {customViewsT('betweenGroups')}
+                  </span>
+                  <Select
+                    value={groupLogicOperator}
+                    onChange={(e) => handleGroupLogicChange(e.target.value)}
+                    className="min-w-[80px] text-xs"
+                  >
+                    <option value={LOGIC_OPERATORS.AND}>
+                      {automationRulesT('logicOperators.and')}
+                    </option>
+                    <option value={LOGIC_OPERATORS.OR}>
+                      {automationRulesT('logicOperators.or')}
+                    </option>
+                  </Select>
                 </div>
               )}
+              <button
+                type="button"
+                onClick={handleAddGroup}
+                className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
+              >
+                + {customViewsT('addGroup')}
+              </button>
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 p-4 border-t border-border dark:border-border-dark shrink-0">
-          {isCreateMode && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={saveViewName}
-                  onChange={(e) => setSaveViewName(e.target.value)}
-                  placeholder={customViewsT('viewNamePlaceholder')}
-                  className="flex-1 px-3 py-2 text-sm border border-border dark:border-border-dark rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-accent"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && filtersActive && saveViewName.trim()) {
-                      handleCreateView();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateView}
-                  disabled={isSaving || !saveViewName.trim() || !filtersActive}
-                  className="px-4 py-2 text-sm font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
-                >
-                  {isSaving ? customViewsT('creating') : customViewsT('createView')}
-                </button>
-              </div>
-              {!filtersActive && (
-                <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
-                  {customViewsT('noFilters')}
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {filtersActive && !isCreateMode && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleApply}
-                  className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90"
-                >
-                  {downloadsFiltersT('applyFilters')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
-                >
-                  {downloadsFiltersT('clearAll')}
-                </button>
-              </>
-            )}
-            {isEditMode && filtersActive && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowSaveInput(true)}
-                  className="px-3 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent dark:border-accent-dark rounded-md hover:bg-accent/10"
-                >
-                  {customViewsT('saveAsNew')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdateView}
-                  disabled={isSaving}
-                  className="px-4 py-1.5 text-xs font-medium bg-accent dark:bg-accent-dark text-white rounded-md hover:opacity-90 disabled:opacity-50"
-                >
-                  {isSaving ? customViewsT('updating') : customViewsT('updateView')}
-                </button>
-              </>
-            )}
-            {filterGroups.length > 1 && (
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="text-xs text-primary-text/70">
-                  {customViewsT('betweenGroups')}
-                </span>
-                <Select
-                  value={groupLogicOperator}
-                  onChange={(e) => handleGroupLogicChange(e.target.value)}
-                  className="min-w-[80px] text-xs"
-                >
-                  <option value={LOGIC_OPERATORS.AND}>
-                    {automationRulesT('logicOperators.and')}
-                  </option>
-                  <option value={LOGIC_OPERATORS.OR}>
-                    {automationRulesT('logicOperators.or')}
-                  </option>
-                </Select>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleAddGroup}
-              className="px-3 py-1.5 text-xs border border-border dark:border-border-dark rounded-md"
-            >
-              + {customViewsT('addGroup')}
-            </button>
           </div>
         </div>
       </dialog>

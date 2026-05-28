@@ -388,12 +388,14 @@ export function useFetchData(apiKey, type = 'torrents') {
                   ? webdlRef.current
                   : torrentsRef.current;
             let list = (currentList || []).filter((item) => !removedSet.has(item.id));
+            const listIndexMap = new Map(list.map((i, idx) => [i.id, idx]));
             for (const item of data.data) {
               const withType = { ...item, assetType };
-              const idx = list.findIndex((i) => i.id === item.id);
-              if (idx >= 0) {
-                list[idx] = withType;
+              const existingIdx = listIndexMap.get(item.id);
+              if (existingIdx !== undefined) {
+                list[existingIdx] = withType;
               } else {
+                listIndexMap.set(item.id, list.length);
                 list.push(withType);
               }
             }

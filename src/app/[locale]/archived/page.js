@@ -7,14 +7,18 @@ import { useState, useEffect } from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
+export const metadata = {
+  title: 'Archived Downloads',
+  description: 'View and manage your archived downloads in TorBox.',
+};
+
 export default function ArchivedDownloadsPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 
   useEffect(() => {
-    const key = localStorage.getItem('torboxApiKey');
-    if (key) {
+    if (apiKey) {
       import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(key)
+        ensureUserDb(apiKey)
           .then((result) => {
             if (result.success && result.wasCreated) {
               console.log('User database created for existing API key');

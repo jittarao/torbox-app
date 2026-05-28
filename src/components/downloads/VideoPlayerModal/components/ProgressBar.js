@@ -10,10 +10,9 @@
  */
 export default function ProgressBar({ progress, isSeeking, onSeek, onSeekStart }) {
   return (
-    <div
+    <button
+      type="button"
       data-seekbar
-      role="button"
-      tabIndex={0}
       className="w-full h-1.5 bg-white/20 cursor-pointer group pointer-events-auto"
       onClick={(e) => {
         e.stopPropagation();
@@ -43,6 +42,6 @@ export default function ProgressBar({ progress, isSeeking, onSeek, onSeekStart }
           transition-opacity pointer-events-none ${isSeeking ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
         />
       </div>
-    </div>
+    </button>
   );
 }

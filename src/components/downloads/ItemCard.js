@@ -272,7 +272,8 @@ function ItemCard({
   };
 
   return (
-    <div
+    <button
+      type="button"
       onMouseDown={(e) => {
         if (e.shiftKey) {
           e.preventDefault();
@@ -300,9 +301,7 @@ function ItemCard({
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } ${cardContainerPad} relative ${
         expandedItems.has(item.id) ? 'overflow-visible' : 'overflow-hidden'
-      } cursor-pointer`}
-      role="button"
-      tabIndex={0}
+      } cursor-pointer w-full text-left`}
     >
       <div className="flex justify-between gap-2 md:gap-3">
         <div className="flex flex-col justify-center gap-1.5 md:gap-2 min-w-0 flex-1">
@@ -453,7 +452,7 @@ function ItemCard({
           )}
         </div>
       )}
-    </div>
+    </button>
   );
 }
 

@@ -7,6 +7,11 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
+export const metadata = {
+  title: 'Link History',
+  description: 'Browse your TorBox link history and past downloads.',
+};
+
 export default function LinkHistoryPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('torboxApiKey') || '');
 

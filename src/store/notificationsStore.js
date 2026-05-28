@@ -98,9 +98,6 @@ export const useNotificationsStore = create((set, get) => ({
 
       const apiClient = createApiClient(apiKey);
       const response = await apiClient.getNotifications();
-      if (get().currentApiKey !== apiKey) {
-        return;
-      }
 
       if (response.success) {
         // Reset error state on successful fetch

@@ -97,10 +97,10 @@ export default function StatusSection({
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-primary-text dark:text-primary-text-dark">
-      <span
+      <button
+        type="button"
+        disabled={statusFilter === 'all'}
         className={`min-w-0 font-semibold lg:shrink-0 lg:whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
-        role={statusFilter === 'all' ? undefined : 'button'}
-        tabIndex={statusFilter === 'all' ? undefined : 0}
         onClick={() => handleStatusClick('all')}
         onKeyDown={(e) => {
           if (statusFilter !== 'all' && (e.key === 'Enter' || e.key === ' ')) {
@@ -110,7 +110,7 @@ export default function StatusSection({
         }}
       >
         {getSelectionText()}
-      </span>
+      </button>
 
       {!(selectedItems.items?.size > 0 || hasSelectedFiles()) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -138,10 +138,9 @@ export default function StatusSection({
                 : isStatusSelected(status, statusFilter);
 
               return (
-                <span
+                <button
+                  type="button"
                   key={status}
-                  role="button"
-                  tabIndex={0}
                   onClick={() => handleStatusClick(status)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -156,7 +155,7 @@ export default function StatusSection({
                     transition-all`}
                 >
                   {count} {statusT(`${status.toLowerCase()}`)}
-                </span>
+                </button>
               );
             })}
         </div>

@@ -106,7 +106,7 @@ export function useSort() {
       const compare =
         fieldTypeMap[sortField] === 'status' ? comparator : (a, b) => comparator(a, b, sortField);
 
-      return [...torrents].sort((a, b) => {
+      return torrents.toSorted((a, b) => {
         if (!a || !b) return 0;
         return sortDirection === 'desc' ? compare(b, a) : compare(a, b);
       });

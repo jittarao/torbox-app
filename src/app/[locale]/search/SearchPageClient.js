@@ -35,29 +35,25 @@ export default function SearchPageClient() {
   };
 
   useEffect(() => {
-    initEnsureUserDb(localStorage.getItem('torboxApiKey'));
+    initEnsureUserDb(apiKey);
   }, []);
 
   // Fetch user profile and derive permissions (usenet search requires Pro)
   useEffect(() => {
-    const key = localStorage.getItem('torboxApiKey');
-    if (key && key.length >= 20) {
-      fetchUserProfile(key)
+    if (apiKey && apiKey.length >= 20) {
+      fetchUserProfile(apiKey)
         .then((userData) => {
-          setPermissions(userData ? getUserPermissions(userData) : null);
+          const perms = userData ? getUserPermissions(userData) : null;
+          setPermissions(perms);
+          if (perms && searchType === 'usenet' && !hasDownloadAccess('usenet', perms)) {
+            setSearchType('torrents');
+          }
         })
         .catch(() => setPermissions(null));
     } else {
       setPermissions(null);
     }
-  }, []);
-
-  // If usenet is selected but user doesn't have access, switch to torrents
-  useEffect(() => {
-    if (permissions && searchType === 'usenet' && !hasDownloadAccess('usenet', permissions)) {
-      setSearchType('torrents');
-    }
-  }, [permissions, searchType, setSearchType]);
+  }, [apiKey, searchType, setSearchType]);
 
   const searchTypeOptions = useMemo(() => {
     const torrents = { value: 'torrents', labelKey: 'itemTypes.Torrents' };

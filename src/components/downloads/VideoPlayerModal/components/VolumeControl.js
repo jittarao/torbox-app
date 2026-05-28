@@ -45,30 +45,6 @@ export default function VolumeControl({
     }, 300);
   };
 
-  const handleVolumeChange = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pos = 1 - (e.clientY - rect.top) / rect.height;
-    const newVolume = Math.max(0, Math.min(1, pos));
-    onVolumeChange(newVolume);
-  };
-
-  const handleSliderDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const handleMouseMove = (moveEvent) => {
-      const rect = e.currentTarget.parentElement.parentElement.getBoundingClientRect();
-      const pos = 1 - (moveEvent.clientY - rect.top) / rect.height;
-      const newVolume = Math.max(0, Math.min(1, pos));
-      onVolumeChange(newVolume);
-    };
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
   return (
     <div
       className="relative"
@@ -107,42 +83,27 @@ export default function VolumeControl({
         )}
       </button>
       {showSlider && (
-        <div
-          role="slider"
-          tabIndex={0}
-          aria-valuenow={Math.round((isMuted ? 0 : volume) * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Volume"
-          className="absolute bottom-full right-0 mb-2 w-12 h-32 bg-black/90 backdrop-blur-md rounded-lg border border-white/20 p-2 cursor-pointer pointer-events-auto"
-          onClick={handleVolumeChange}
-          onMouseMove={(e) => {
-            if (e.buttons === 1) {
-              handleVolumeChange(e);
-            }
-          }}
-          onMouseEnter={handleMouseEnter}
-          onKeyDown={(e) => {
-            const step = 0.05;
-            if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              onVolumeChange(Math.min(1, (isMuted ? 0 : volume) + step));
-            } else if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              onVolumeChange(Math.max(0, (isMuted ? 0 : volume) - step));
-            }
-          }}
-        >
-          <div className="relative h-full w-2 bg-white/20 rounded-full mx-auto">
+        <div className="absolute bottom-full right-0 mb-2 w-12 h-32 bg-black/90 backdrop-blur-md rounded-lg border border-white/20 p-2 pointer-events-auto">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={isMuted ? 0 : volume}
+            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+            onMouseEnter={handleMouseEnter}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 m-0 p-0 [writing-mode:vertical-lr] [direction:rtl]"
+            aria-label="Volume"
+          />
+          <div className="relative h-full w-2 bg-white/20 rounded-full mx-auto pointer-events-none">
             <div
               className="absolute bottom-0 w-full bg-accent dark:bg-accent-dark rounded-full transition-all"
               style={{ height: `${(isMuted ? 0 : volume) * 100}%` }}
             />
             <div
               className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2
-                size-4 rounded-full bg-accent dark:bg-accent-dark cursor-grab active:cursor-grabbing pointer-events-auto"
+                size-4 rounded-full bg-accent dark:bg-accent-dark"
               style={{ bottom: `${(isMuted ? 0 : volume) * 100}%` }}
-              onMouseDown={handleSliderDrag}
             />
           </div>
         </div>

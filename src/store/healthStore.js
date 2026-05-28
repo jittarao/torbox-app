@@ -121,10 +121,6 @@ export const useHealthStore = create((set, get) => ({
         signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
 
-      if (get().currentApiKey !== apiKey) {
-        return;
-      }
-
       const data = await response.json().catch(() => ({}));
       const status = data.status || 'unhealthy';
 

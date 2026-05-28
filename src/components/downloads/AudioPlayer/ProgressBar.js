@@ -54,49 +54,58 @@ export default function ProgressBar({
 
   return (
     <div className="mb-2 relative">
-      <div
-        className="h-1.5 rounded-full bg-white/10 cursor-pointer relative overflow-visible"
-        onClick={onSeek}
-        onMouseDown={onSeekStart}
-        onMouseLeave={handleMouseLeave}
-        onMouseMove={handleMouseMove}
-        onMouseUp={onSeekEnd}
-        onTouchStart={onSeekStart}
-        onTouchEnd={(e) => {
-          onSeekEnd();
-          onSeekEndTouch(e);
-          e.preventDefault();
-        }}
-        role="slider"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      <div className="relative h-1.5">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={seekValue}
+          onChange={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            if (rect.width > 0) {
+              const pct = parseFloat(e.target.value) / 100;
+              onSeek({
+                ...e,
+                clientX: rect.left + pct * rect.width,
+                currentTarget: e.currentTarget,
+              });
+            }
+          }}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 m-0 p-0"
+          onMouseDown={onSeekStart}
+          onMouseUp={onSeekEnd}
+          onTouchStart={onSeekStart}
+          onTouchEnd={(e) => {
+            onSeekEnd();
+            onSeekEndTouch(e);
             e.preventDefault();
-            onSeek(e);
-          }
-        }}
-        aria-valuenow={seekValue}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div className="absolute inset-0 rounded-full overflow-hidden">
-          <div
-            className="absolute inset-y-0 left-0 bg-white/20"
-            style={{ width: `${buffered}%` }}
-          />
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-amber-500"
-            style={{ width: `${seekValue}%` }}
-          />
+          }}
+          aria-label="Audio progress"
+        />
+        <div
+          className="h-1.5 rounded-full bg-white/10 cursor-pointer relative overflow-visible pointer-events-none"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="absolute inset-0 rounded-full overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 bg-white/20"
+              style={{ width: `${buffered}%` }}
+            />
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-amber-500"
+              style={{ width: `${seekValue}%` }}
+            />
+          </div>
+          {chapterTicks.map((pct) => (
+            <div
+              key={pct}
+              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 -ml-px rounded-full bg-white/25 pointer-events-none"
+              style={{ left: `${pct}%` }}
+              aria-hidden
+            />
+          ))}
         </div>
-        {chapterTicks.map((pct) => (
-          <div
-            key={pct}
-            className="absolute top-1/2 -translate-y-1/2 w-0.5 h-2 -ml-px rounded-full bg-white/25 pointer-events-none"
-            style={{ left: `${pct}%` }}
-            aria-hidden
-          />
-        ))}
       </div>
       {showHoverPreview && (
         <div

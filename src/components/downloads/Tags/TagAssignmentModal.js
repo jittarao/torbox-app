@@ -75,15 +75,11 @@ export default function TagAssignmentModal({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40"
+      <button
+        type="button"
+        className="fixed inset-0 bg-black/50 z-40 cursor-default"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClose();
-          }
-        }}
+        aria-label="Close"
       />
 
       {/* Modal */}

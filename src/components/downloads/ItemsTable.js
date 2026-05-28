@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
@@ -38,7 +38,11 @@ export default function ItemsTable({
   fileSearch = '',
 }) {
   const [tableWidth, setTableWidth] = useState(0);
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const tableContainerRef = useRef(null);
   const [trackSelectionModal, setTrackSelectionModal] = useState({
     isOpen: false,
@@ -202,10 +206,6 @@ export default function ItemsTable({
       setTableWidth(width);
     }
   };
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const { columnWidths, updateColumnWidth } = useColumnWidths(activeType);
   const isMobile = useIsMobile();

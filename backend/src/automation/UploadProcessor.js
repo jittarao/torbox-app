@@ -1587,29 +1587,35 @@ class UploadProcessor {
 
       // First, delete files older than retention period (in parallel)
       const retentionResults = await Promise.allSettled(
-        files
-          .filter((file) => file.mtime < retentionCutoff)
-          .map(async (file) => {
-            await deleteUploadFile(authId, file.relativePath);
+        files.flatMap((file) =>
+          file.mtime < retentionCutoff
+            ? [
+                (async () => {
+                  await deleteUploadFile(authId, file.relativePath);
 
-            const uploadBeforeDelete = userDb.db
-              .prepare(`SELECT status FROM uploads WHERE file_path = ? AND file_deleted = false`)
-              .get(file.relativePath);
+                  const uploadBeforeDelete = userDb.db
+                    .prepare(
+                      `SELECT status FROM uploads WHERE file_path = ? AND file_deleted = false`
+                    )
+                    .get(file.relativePath);
 
-            const wasQueued = uploadBeforeDelete?.status === 'queued';
+                  const wasQueued = uploadBeforeDelete?.status === 'queued';
 
-            userDb.db
-              .prepare(
-                `UPDATE uploads SET file_deleted = true WHERE file_path = ? AND file_deleted = false`
-              )
-              .run(file.relativePath);
+                  userDb.db
+                    .prepare(
+                      `UPDATE uploads SET file_deleted = true WHERE file_path = ? AND file_deleted = false`
+                    )
+                    .run(file.relativePath);
 
-            if (wasQueued) {
-              this.masterDatabase.decrementUploadCounter(authId);
-            }
+                  if (wasQueued) {
+                    this.masterDatabase.decrementUploadCounter(authId);
+                  }
 
-            return { size: file.size, wasQueued };
-          })
+                  return { size: file.size, wasQueued };
+                })(),
+              ]
+            : []
+        )
       );
 
       for (const r of retentionResults) {

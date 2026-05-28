@@ -44,9 +44,9 @@ export function DropZone({
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={disabled ? -1 : 0}
+    <button
+      type="button"
+      disabled={disabled}
       className={`
         border-2 border-dashed rounded-lg p-6 h-40 flex flex-col items-center justify-center
         transition-colors duration-200 cursor-pointer
@@ -86,6 +86,6 @@ export function DropZone({
       <p className="text-center text-primary-text/50 dark:text-primary-text-dark/50 text-xs mt-1">
         or click to browse
       </p>
-    </div>
+    </button>
   );
 }

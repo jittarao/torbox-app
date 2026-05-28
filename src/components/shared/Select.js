@@ -16,6 +16,79 @@ import { createPortal } from 'react-dom';
  * @param {string} props.placeholder - Placeholder text when no value selected
  * @param {boolean} props.disabled - Whether select is disabled
  */
+function OptionsList({ options, optgroups, value, onSelect, optionsRef }) {
+  const items = [];
+  let optionIndex = 0;
+
+  options.forEach((opt, idx) => {
+    const isSelected = String(opt.value) === String(value);
+    items.push(
+      <button
+        key={`opt-standalone-${idx}-${opt.value}`}
+        ref={(el) => {
+          if (el) optionsRef.current[optionIndex] = el;
+        }}
+        type="button"
+        data-value={opt.value}
+        onClick={() => onSelect(opt.value)}
+        onMouseEnter={(e) => e.currentTarget.focus()}
+        title={opt.title || undefined}
+        className={`block w-full text-left px-4 py-2 text-sm transition-colors
+          ${
+            isSelected
+              ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
+              : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
+          }
+          focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
+          touch-manipulation`}
+      >
+        {opt.label}
+      </button>
+    );
+    optionIndex++;
+  });
+
+  optgroups.forEach((group, groupIdx) => {
+    items.push(
+      <div key={`group-${groupIdx}-${group.label}`} className="sticky top-0 z-10">
+        <div className="px-3 py-1.5 text-xs font-semibold text-primary-text/60 dark:text-primary-text-dark/60 bg-surface/50 dark:bg-surface-dark/50 border-b border-border dark:border-border-dark">
+          {group.label}
+        </div>
+      </div>
+    );
+
+    group.options.forEach((opt, optIdx) => {
+      const isSelected = String(opt.value) === String(value);
+      items.push(
+        <button
+          key={`opt-group-${groupIdx}-${optIdx}-${opt.value}`}
+          ref={(el) => {
+            if (el) optionsRef.current[optionIndex] = el;
+          }}
+          type="button"
+          data-value={opt.value}
+          onClick={() => onSelect(opt.value)}
+          onMouseEnter={(e) => e.currentTarget.focus()}
+          title={opt.title || undefined}
+          className={`block w-full text-left px-4 py-2 pl-6 text-sm transition-colors
+            ${
+              isSelected
+                ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
+                : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
+            }
+            focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
+            touch-manipulation`}
+        >
+          {opt.label}
+        </button>
+      );
+      optionIndex++;
+    });
+  });
+
+  return items;
+}
+
 export default function Select({
   value,
   onChange,
@@ -243,82 +316,6 @@ export default function Select({
     }
   }, [isOpen]);
 
-  // Build options list with optgroups
-  const renderOptions = () => {
-    const items = [];
-    let optionIndex = 0;
-
-    // Add standalone options first
-    options.forEach((opt, idx) => {
-      const isSelected = String(opt.value) === String(value);
-      items.push(
-        <button
-          key={`opt-standalone-${idx}-${opt.value}`}
-          ref={(el) => {
-            if (el) optionsRef.current[optionIndex] = el;
-          }}
-          type="button"
-          data-value={opt.value}
-          onClick={() => handleSelect(opt.value)}
-          onMouseEnter={(e) => e.currentTarget.focus()}
-          title={opt.title || undefined}
-          className={`block w-full text-left px-4 py-2 text-sm transition-colors
-            ${
-              isSelected
-                ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
-                : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
-            }
-            focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
-            touch-manipulation`}
-        >
-          {opt.label}
-        </button>
-      );
-      optionIndex++;
-    });
-
-    // Add optgroups
-    optgroups.forEach((group, groupIdx) => {
-      items.push(
-        <div key={`group-${groupIdx}-${group.label}`} className="sticky top-0 z-10">
-          <div className="px-3 py-1.5 text-xs font-semibold text-primary-text/60 dark:text-primary-text-dark/60 bg-surface/50 dark:bg-surface-dark/50 border-b border-border dark:border-border-dark">
-            {group.label}
-          </div>
-        </div>
-      );
-
-      group.options.forEach((opt, optIdx) => {
-        const isSelected = String(opt.value) === String(value);
-        items.push(
-          <button
-            key={`opt-group-${groupIdx}-${optIdx}-${opt.value}`}
-            ref={(el) => {
-              if (el) optionsRef.current[optionIndex] = el;
-            }}
-            type="button"
-            data-value={opt.value}
-            onClick={() => handleSelect(opt.value)}
-            onMouseEnter={(e) => e.currentTarget.focus()}
-            title={opt.title || undefined}
-            className={`block w-full text-left px-4 py-2 pl-6 text-sm transition-colors
-              ${
-                isSelected
-                  ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
-                  : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
-              }
-              focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
-              touch-manipulation`}
-          >
-            {opt.label}
-          </button>
-        );
-        optionIndex++;
-      });
-    });
-
-    return items;
-  };
-
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
   const dropdownContent =
@@ -329,7 +326,7 @@ export default function Select({
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
-        <div
+        <datalist
           ref={dropdownRef}
           className="fixed z-[100] bg-surface dark:bg-surface-dark
               border border-border dark:border-border-dark rounded-md shadow-lg
@@ -341,10 +338,15 @@ export default function Select({
             maxHeight: dropdownLayout.maxHeight,
             maxWidth: `calc(100vw - ${dropdownLayout.left}px - 8px)`,
           }}
-          role="listbox"
         >
-          {renderOptions()}
-        </div>
+          <OptionsList
+            options={options}
+            optgroups={optgroups}
+            value={value}
+            onSelect={handleSelect}
+            optionsRef={optionsRef}
+          />
+        </datalist>
       </>
     ) : null;
 

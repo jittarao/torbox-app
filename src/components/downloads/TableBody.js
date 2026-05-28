@@ -517,7 +517,6 @@ export default function TableBody({
       {paddingTop > 0 && (
         <tr>
           <td
-            aria-hidden
             colSpan={activeColumns.length + 2}
             style={{ height: paddingTop, padding: 0, border: 0 }}
           />
@@ -591,7 +590,6 @@ export default function TableBody({
       {paddingBottom > 0 && (
         <tr>
           <td
-            aria-hidden
             colSpan={activeColumns.length + 2}
             style={{ height: paddingBottom, padding: 0, border: 0 }}
           />

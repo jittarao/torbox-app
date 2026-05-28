@@ -66,8 +66,7 @@ export default function ReferralCallout({
 
   return (
     <>
-      <div
-        role="status"
+      <output
         className={
           isSlim
             ? 'mb-2 flex flex-col gap-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between'
@@ -107,7 +106,7 @@ export default function ReferralCallout({
             <Icons.X className="size-4" />
           </button>
         </div>
-      </div>
+      </output>
 
       <ReferralConfirmDialog
         isOpen={actions.showConfirm}
