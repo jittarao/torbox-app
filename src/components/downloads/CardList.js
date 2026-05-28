@@ -132,10 +132,10 @@ export default function CardList({
     }));
   }, [deferredItems]);
 
-  // Memoize measureElement to prevent unnecessary re-renders
+  // Include margin-bottom (cardListItemGap) so variable-height cards stack with correct spacing
   const measureElement = useCallback((element) => {
     const marginBottom = parseFloat(window.getComputedStyle(element).marginBottom) || 0;
-    return element.getBoundingClientRect().height + marginBottom;
+    return Math.ceil(element.getBoundingClientRect().height + marginBottom);
   }, []);
 
   const estimateSize = useCallback(
@@ -561,19 +561,20 @@ export default function CardList({
     if (viewModeChanged || fullscreenChanged) {
       isTransitioningRef.current = true;
       setVirtualRows([]);
-      isTransitioningRef.current = false;
     }
-  }, [viewMode, isFullscreen]);
+
+    const rafId = requestAnimationFrame(() => {
+      remeasureAndSync();
+      isTransitioningRef.current = false;
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
   const expandedItemsKey = useMemo(() => expandedItemsArray.join(','), [expandedItemsArray]);
 
-  // Keep virtual row positions in sync after layout (fixes stacked cards on mobile refresh)
   useLayoutEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      remeasureAndSync();
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [flattenedRows.length, containerOffsetTop, expandedItemsKey, remeasureAndSync]);
+    remeasureAndSync();
+  }, [containerOffsetTop, expandedItemsKey, fileSearch, remeasureAndSync]);
 
   useEffect(() => {
     const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
@@ -607,64 +608,45 @@ export default function CardList({
   }, [isFullscreen, fullscreenScrollEl, flattenedRows.length, syncVirtualRows]);
 
   useEffect(() => {
-    const scrollEl = isFullscreen ? fullscreenScrollEl : null;
-    const layoutEl = scrollEl ?? parentRef.current;
-    if (!layoutEl) {
+    if (!isFullscreen || !fullscreenScrollEl) {
       return;
     }
 
     const observer = new ResizeObserver(() => {
       remeasureAndSync();
     });
-    observer.observe(layoutEl);
+    observer.observe(fullscreenScrollEl);
 
     return () => observer.disconnect();
   }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
 
-  const totalSize = virtualizer.getTotalSize();
-  const scrollMargin = isFullscreen ? 0 : containerOffsetTop;
+  const currentVirtualRows = virtualRows;
+  const totalVirtualSize = virtualizer.getTotalSize();
+  // useWindowVirtualizer bakes scrollMargin into item start; subtract for top spacer (see TableBody)
+  const scrollMargin = isFullscreen ? 0 : containerOffsetTopRef.current || containerOffsetTop;
+  const paddingTop =
+    currentVirtualRows.length > 0
+      ? Math.max(0, currentVirtualRows[0].start - scrollMargin)
+      : 0;
+  const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
+  const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
   return (
     <>
-      <div
-        ref={parentRef}
-        className={`${isFullscreen ? 'p-4' : 'p-0'}`}
-        style={{
-          position: 'relative',
-          height: `${totalSize}px`,
-        }}
-      >
-        {/* Virtualized rows - only ItemCards */}
-        {virtualRows.flatMap((virtualRow) => {
+      <div ref={parentRef} className={isFullscreen ? 'p-4' : 'p-0'}>
+        {paddingTop > 0 && <div aria-hidden style={{ height: paddingTop }} />}
+        {currentVirtualRows.flatMap((virtualRow) => {
           if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
 
           const row = flattenedRows[virtualRow.index];
 
           if (!row || !row.item) return [];
 
-          // useWindowVirtualizer bakes scrollMargin into item start; subtract for container-local Y
-          const cardTop = isFullscreen ? virtualRow.start : virtualRow.start - scrollMargin;
-
-          const visibleFiles = getFilesVisibleForDownloadSearch(row.item, fileSearch);
-          const isExpanded = expandedItemsSet.has(row.item.id) && visibleFiles.length > 0;
-
-          const itemCardStyle = {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            transform: `translateY(${cardTop}px)`,
-            willChange: 'transform',
-            // Expanded cards must stack above neighbors until layout remeasures
-            zIndex: isExpanded ? 20 + virtualRow.index : virtualRow.index + 1,
-          };
-
           return (
             <div
               key={`item-${row.item.id}`}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
-              style={itemCardStyle}
               className={cardListItemGap}
             >
               <ItemCard
@@ -684,7 +666,7 @@ export default function CardList({
                 onAudioPlay={handleAudioPlay}
                 onDelete={onDelete}
                 toggleFiles={toggleFiles}
-                expandedItems={expandedItems} // Pass expandedItems so ItemCard can render FileList
+                expandedItems={expandedItems}
                 fileSearch={fileSearch}
                 setItems={setItems}
                 setSelectedItems={setSelectedItems}
@@ -699,15 +681,7 @@ export default function CardList({
             </div>
           );
         })}
-        {/* Bottom spacer for cards after last visible */}
-        {virtualRows.length > 0 &&
-          (() => {
-            const lastVisibleRow = virtualRows[virtualRows.length - 1];
-            const bottomOffset = Math.max(0, totalSize - (lastVisibleRow?.end || 0));
-
-            // Only show bottom spacer if there are cards after the last visible one
-            return bottomOffset > 0 ? <div style={{ height: bottomOffset }} /> : null;
-          })()}
+        {paddingBottom > 0 && <div aria-hidden style={{ height: paddingBottom }} />}
       </div>
       <TrackSelectionModal
         isOpen={trackSelectionModal.isOpen}
