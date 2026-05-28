@@ -40,6 +40,7 @@ import { formatSize } from './utils/formatters';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 import { hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { useSessionStore } from '@/store/sessionStore';
 import ReferralCallout from '@/components/referral/ReferralCallout';
 import UsageCallout from '@/components/downloads/UsageCallout';
@@ -70,7 +71,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadPanelT = useTranslations('DownloadPanel');
   const fetchStatusT = useTranslations('FetchStatus');
   const downloadsFiltersT = useTranslations('DownloadsFilters');
-  const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
     Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
   );
@@ -102,22 +102,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const isBackendAvailable = backendMode === 'backend';
 
-  // Ensure user database exists when API key is provided
-  useEffect(() => {
-    if (apiKey && apiKey.length >= 20) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(apiKey)
-          .then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for API key in Downloads component');
-            }
-          })
-          .catch((error) => {
-            console.error('Error ensuring user database:', error);
-          });
-      });
-    }
-  }, [apiKey]);
+  useEnsureUserDb(apiKey);
 
   const canUseUsenet = hasDownloadAccess('usenet', permissions);
 
@@ -227,6 +212,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const {
     columnFilters,
+    setColumnFilters,
     appliedFilters,
     filterModalOpen,
     filterModalMode,
@@ -333,19 +319,26 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         return;
       }
 
+      let successCount = 0;
+      let failCount = 0;
+
       await Promise.all(
         selectedItemIds.map(async (selectionId) => {
           const item = findItemBySelectionId(viewItems, selectionId);
-          if (!item) return;
+          if (!item) {
+            failCount += 1;
+            return;
+          }
 
           try {
             const response = await fetch(
               `/api/torrents/export?torrent_id=${item.id}&type=torrent`,
               {
-              headers: {
-                'x-api-key': apiKey,
-              },
-            });
+                headers: {
+                  'x-api-key': apiKey,
+                },
+              }
+            );
 
             if (response.ok) {
               const blob = await response.blob();
@@ -357,19 +350,34 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               a.click();
               window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
+              successCount += 1;
             } else {
+              failCount += 1;
               console.error(`Failed to export torrent ${selectionId}`);
             }
           } catch (error) {
+            failCount += 1;
             console.error(`Error exporting torrent ${selectionId}:`, error);
           }
         })
       );
 
-      setToast({
-        message: `Exported ${selectedItemIds.length} torrent files`,
-        type: 'success',
-      });
+      if (failCount === 0) {
+        setToast({
+          message: `Exported ${successCount} torrent file${successCount === 1 ? '' : 's'}`,
+          type: 'success',
+        });
+      } else if (successCount === 0) {
+        setToast({
+          message: 'Failed to export torrent files',
+          type: 'error',
+        });
+      } else {
+        setToast({
+          message: `Exported ${successCount} of ${selectedItemIds.length} torrent files`,
+          type: 'warning',
+        });
+      }
     } catch (error) {
       console.error('Error during bulk export:', error);
       setToast({
@@ -385,6 +393,10 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     searchExpandedItemIdsRef.current.delete(itemId);
     toggleExpanded(itemId);
   };
+
+  useEffect(() => {
+    hasExpandedRef.current = false;
+  }, [activeType, apiKey]);
 
   useEffect(() => {
     if (!viewItems?.length || !selectedItems?.files?.size) return;

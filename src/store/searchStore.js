@@ -6,6 +6,7 @@ export const useSearchStore = create((set, get) => ({
   results: [],
   loading: false,
   error: null,
+  activeRequestId: 0,
   searchType: 'torrents',
   includeCustomEngines: false,
   searchHistory: [],
@@ -89,6 +90,24 @@ export const useSearchStore = create((set, get) => ({
     localStorage.removeItem('torboxSearchHistory:v1');
   },
 
+  resetForSession: () => {
+    set({
+      query: '',
+      results: [],
+      loading: false,
+      error: null,
+      seasonFilter: '',
+      episodeFilter: '',
+      yearFilter: '',
+      qualityFilter: '',
+      sizeFilter: '',
+      seedersFilter: '',
+    });
+    if (typeof localStorage !== 'undefined') {
+      get().loadHistory();
+    }
+  },
+
   fetchResults: async () => {
     const { query, searchType, includeCustomEngines } = get();
     if (!query) return;
@@ -99,10 +118,12 @@ export const useSearchStore = create((set, get) => ({
       return;
     }
 
-    set({ loading: true, error: null });
+    const requestId = get().activeRequestId + 1;
+    set({ loading: true, error: null, activeRequestId: requestId });
+
     try {
       const searchParams = new URLSearchParams({
-        query: encodeURIComponent(query),
+        query,
         search_user_engines: includeCustomEngines.toString(),
       });
 
@@ -119,6 +140,10 @@ export const useSearchStore = create((set, get) => ({
 
       const data = await res.json();
 
+      if (get().activeRequestId !== requestId) {
+        return;
+      }
+
       if (!res.ok || data.error) {
         set({
           loading: false,
@@ -134,6 +159,9 @@ export const useSearchStore = create((set, get) => ({
         loading: false,
       });
     } catch (error) {
+      if (get().activeRequestId !== requestId) {
+        return;
+      }
       set({
         loading: false,
         error: 'Failed to fetch results',

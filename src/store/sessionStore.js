@@ -9,6 +9,9 @@ import { useNotificationsStore } from '@/store/notificationsStore';
 import { useHealthStore } from '@/store/healthStore';
 import { useRssStore } from '@/store/rssStore';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
+import { useSearchStore } from '@/store/searchStore';
+import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
 
 function readStoredApiKey() {
   if (typeof localStorage === 'undefined') return '';
@@ -39,6 +42,9 @@ function fanOutApiKey(apiKey, prevApiKey) {
   const keyChanged = prevApiKey !== apiKey;
   if (keyChanged) {
     useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
+    useSearchStore.getState().resetForSession();
+    useDownloadsUiStore.getState().resetUi();
+    useDownloadsPlayerStore.getState().closeAll();
   } else {
     useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);
   }

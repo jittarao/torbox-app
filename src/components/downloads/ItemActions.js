@@ -8,7 +8,7 @@ import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
 import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
-import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
+import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloadsSelectors';
 
 export default function ItemActions({
   item,
@@ -37,11 +37,11 @@ export default function ItemActions({
       return;
     }
 
-    const idField =
-      activeType === 'usenet' ? 'usenet_id' : activeType === 'webdl' ? 'web_id' : 'torrent_id';
+    const idField = getIdFieldForItem(item, activeType);
+    const resolvedAssetType = resolveItemAssetType(item, activeType);
 
     const metadata = {
-      assetType: activeType,
+      assetType: resolvedAssetType,
       item: item,
     };
     // If there's only one file, download it directly

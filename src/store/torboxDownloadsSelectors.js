@@ -85,6 +85,18 @@ export function resolveItemAssetType(item, activeType) {
   return 'torrents';
 }
 
+/**
+ * TorBox API id field for download/stream requests.
+ * @param {object} [item]
+ * @param {string} [activeType] — UI tab; may be 'all'
+ */
+export function getIdFieldForItem(item, activeType) {
+  const asset = resolveItemAssetType(item, activeType);
+  if (asset === 'usenet') return 'usenet_id';
+  if (asset === 'webdl') return 'web_id';
+  return 'torrent_id';
+}
+
 export function getListKeyForAssetType(assetType) {
   switch (assetType) {
     case 'usenet':

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import AdminLayout from '@/components/admin/AdminLayout';
 import MetricCard from '@/components/admin/MetricCard';
 import SystemOverview from '@/components/admin/SystemOverview';
@@ -8,7 +9,13 @@ import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
 
 export default function AdminDashboard() {
-  const { overviewMetrics, overviewLoading, fetchOverviewMetrics } = useAdminStore();
+  const { overviewMetrics, overviewLoading, fetchOverviewMetrics } = useAdminStore(
+    useShallow((s) => ({
+      overviewMetrics: s.overviewMetrics,
+      overviewLoading: s.overviewLoading,
+      fetchOverviewMetrics: s.fetchOverviewMetrics,
+    }))
+  );
   const [toast, setToast] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 

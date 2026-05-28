@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { useUploaderStore } from '@/store/uploaderStore';
@@ -30,7 +31,20 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     setIsUploading,
     setProgress,
     updateItemStatus,
-  } = useUploaderStore();
+  } = useUploaderStore(
+    useShallow((s) => ({
+      items: s.items,
+      error: s.error,
+      isUploading: s.isUploading,
+      progress: s.progress,
+      addItems: s.addItems,
+      setItems: s.setItems,
+      setError: s.setError,
+      setIsUploading: s.setIsUploading,
+      setProgress: s.setProgress,
+      updateItemStatus: s.updateItemStatus,
+    }))
+  );
 
   const [linkInput, setLinkInput] = useState(''); // Input for links (magnet, nzb, webdl)
   const [webdlPassword, setWebdlPassword] = useState(''); // Add password state

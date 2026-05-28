@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useHealthStore } from '@/store/healthStore';
 
@@ -17,7 +18,19 @@ export function useApiHealth(apiKey) {
     checkingHealth,
     platformHistory,
     loadHistory,
-  } = useHealthStore();
+  } = useHealthStore(
+    useShallow((s) => ({
+      platformHealth: s.platformHealth,
+      connectionHealth: s.connectionHealth,
+      backendHealth: s.backendHealth,
+      lastCheck: s.lastCheck,
+      performHealthCheck: s.performHealthCheck,
+      setApiKey: s.setApiKey,
+      checkingHealth: s.checkingHealth,
+      platformHistory: s.platformHistory,
+      loadHistory: s.loadHistory,
+    }))
+  );
 
   useEffect(() => {
     loadHistory();

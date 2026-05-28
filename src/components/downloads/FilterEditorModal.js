@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useModalFocusTrap } from '@/components/shared/hooks/useModalFocusTrap';
 import FilterGroup from './CustomViews/components/FilterGroup';
 import ViewFilterPreview from './CustomViews/components/ViewFilterPreview';
 import { getFilterableColumns } from './CustomViews/utils';
@@ -61,6 +62,9 @@ export default function FilterEditorModal({
     if (isEditMode) return downloadsFiltersT('modalTitleEditNamed', { name: editingView.name });
     return downloadsFiltersT('modalTitle');
   })();
+
+  const dialogRef = useRef(null);
+  useModalFocusTrap(isOpen, dialogRef);
 
   const modeKey = isCreateMode ? 'create' : isEditMode ? `edit-${editingView?.id || ''}` : null;
   const prevModeKeyRef = useRef(null);
@@ -380,8 +384,10 @@ export default function FilterEditorModal({
     <>
       <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
       <dialog
+        ref={dialogRef}
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:w-[min(92vw,56rem)] lg:w-[min(88vw,64rem)] max-h-[min(90vh,52rem)] overflow-hidden flex flex-col"
         aria-labelledby="filter-editor-title"
+        aria-modal="true"
         open
       >
         <div onClick={(e) => e.stopPropagation()} className="flex flex-col h-full">

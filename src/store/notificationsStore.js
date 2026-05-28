@@ -304,6 +304,10 @@ export const useNotificationsStore = create((set, get) => ({
           fetchingNotifications: false,
         });
       }
+    } finally {
+      if (get().fetchingNotifications) {
+        set({ fetchingNotifications: false, loading: false });
+      }
     }
   },
 

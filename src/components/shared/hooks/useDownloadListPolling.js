@@ -26,6 +26,8 @@ export function useDownloadListPolling({
   onPollSkipped,
   onScheduleUpdate,
 }) {
+  const torrentOrderLen = useTorboxDownloadsStore((s) => s.order?.torrents?.length ?? 0);
+
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);
   const onPollSkippedRef = useRef(onPollSkipped);
@@ -269,5 +271,5 @@ export function useDownloadListPolling({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [type, pollingPaused, torrentsRef]);
+  }, [type, pollingPaused, torrentOrderLen]);
 }

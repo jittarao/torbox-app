@@ -49,6 +49,25 @@ export const useTorboxDownloadsStore = create((set, get) => ({
   setListFromMerge: (assetType, entities, orderKeys) => {
     const listKey = getListKeyForAssetType(assetType);
     const state = get();
+    const prevOrder = state.order[listKey] || [];
+
+    if (
+      prevOrder.length === orderKeys.length &&
+      prevOrder.every((key, index) => key === orderKeys[index])
+    ) {
+      let rowsUnchanged = true;
+      for (let i = 0; i < orderKeys.length; i++) {
+        const key = orderKeys[i];
+        if (state.entities[key] !== entities[key]) {
+          rowsUnchanged = false;
+          break;
+        }
+      }
+      if (rowsUnchanged) {
+        return;
+      }
+    }
+
     set({
       entities,
       order: { ...state.order, [listKey]: orderKeys },

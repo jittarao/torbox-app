@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import VideoPlayerModal from './VideoPlayerModal';
 import AudioPlayer from './AudioPlayer';
@@ -71,32 +71,23 @@ export function useDownloadsPlayerActions(apiKey, activeType, requestDownloadLin
     useDownloadsPlayerStore.getState().setActiveType(activeType);
   }, [activeType]);
 
-  const handleAudioPlay = async (itemId, file) => {
-    const result = await playAudio({
-      itemId,
-      file,
-      apiKey,
-      activeType,
-      requestDownloadLink,
-      onError: (message) => setToast({ message, type: 'error' }),
-    });
-    return result;
-  };
+  const handleAudioPlay = useCallback(
+    async (itemId, file) => {
+      const result = await playAudio({
+        itemId,
+        file,
+        apiKey,
+        activeType,
+        requestDownloadLink,
+        onError: (message) => setToast({ message, type: 'error' }),
+      });
+      return result;
+    },
+    [playAudio, apiKey, activeType, requestDownloadLink, setToast]
+  );
 
-  const openVideoPlayer = (
-    streamUrl,
-    fileName,
-    subtitles,
-    audios,
-    metadata,
-    itemId,
-    fileId,
-    streamType,
-    introInformation,
-    initialAudioIndex,
-    initialSubtitleIndex
-  ) => {
-    openVideo({
+  const openVideoPlayer = useCallback(
+    (
       streamUrl,
       fileName,
       subtitles,
@@ -107,9 +98,24 @@ export function useDownloadsPlayerActions(apiKey, activeType, requestDownloadLin
       streamType,
       introInformation,
       initialAudioIndex,
-      initialSubtitleIndex,
-    });
-  };
+      initialSubtitleIndex
+    ) => {
+      openVideo({
+        streamUrl,
+        fileName,
+        subtitles,
+        audios,
+        metadata,
+        itemId,
+        fileId,
+        streamType,
+        introInformation,
+        initialAudioIndex,
+        initialSubtitleIndex,
+      });
+    },
+    [openVideo]
+  );
 
   return { handleAudioPlay, openVideoPlayer };
 }
