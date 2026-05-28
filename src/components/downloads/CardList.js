@@ -18,6 +18,8 @@ import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout'
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
+import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
 export default function CardList({
   items,
@@ -186,25 +188,25 @@ export default function CardList({
   const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
 
   // Define isDisabled first so it can be used in handlers
-  const isDisabled = useCallback(
-    (selectionId) => {
-      return selectedItems.files?.has(selectionId) && selectedItems.files.get(selectionId).size > 0;
-    },
-    [selectedItems]
-  );
+  const isSelectionDisabled = (selectionId) => {
+    const files = useDownloadsSelectionStore.getState().selectedItems.files;
+    return files?.has(selectionId) && files.get(selectionId).size > 0;
+  };
 
   const handleItemSelection = useCallback(
     (selectionId, checked, rowIndex, isShiftKey = false) => {
+      const setSelected = useDownloadsSelectionStore.getState().setSelectedItems;
+
       if (isShiftKey && typeof rowIndex === 'number' && lastClickedItemIndexRef.current !== null) {
         const start = Math.min(lastClickedItemIndexRef.current, rowIndex);
         const end = Math.max(lastClickedItemIndexRef.current, rowIndex);
 
-        setSelectedItems((prev) => {
+        setSelected((prev) => {
           const newItems = new Set(prev.items);
           for (let i = start; i <= end; i++) {
             const t = items[i];
             const sid = getDownloadSelectionId(t);
-            if (checked && !isDisabled(sid)) {
+            if (checked && !isSelectionDisabled(sid)) {
               newItems.add(sid);
             } else {
               newItems.delete(sid);
@@ -216,9 +218,9 @@ export default function CardList({
           };
         });
       } else {
-        setSelectedItems((prev) => {
+        setSelected((prev) => {
           const newItems = new Set(prev.items);
-          if (checked && !isDisabled(selectionId)) {
+          if (checked && !isSelectionDisabled(selectionId)) {
             newItems.add(selectionId);
           } else {
             newItems.delete(selectionId);
@@ -231,7 +233,7 @@ export default function CardList({
       }
       lastClickedItemIndexRef.current = rowIndex;
     },
-    [items, setSelectedItems, isDisabled]
+    [items]
   );
 
   const handleFileSelection = useCallback(
@@ -494,117 +496,19 @@ export default function CardList({
     );
   };
 
-  const prevViewModeRef = useRef(viewMode);
-  const prevIsFullscreenRef = useRef(isFullscreen);
-  const isTransitioningRef = useRef(false);
-  const [virtualRows, setVirtualRows] = useState([]);
-  const virtualizerRef = useRef(virtualizer);
-  virtualizerRef.current = virtualizer;
-
-  const syncVirtualRows = useCallback(() => {
-    try {
-      const rows = virtualizerRef.current.getVirtualItems();
-      setVirtualRows((previousRows) => {
-        if (
-          previousRows.length === rows.length &&
-          previousRows.every(
-            (row, index) =>
-              row.index === rows[index]?.index &&
-              row.start === rows[index]?.start &&
-              row.size === rows[index]?.size
-          )
-        ) {
-          return previousRows;
-        }
-
-        return rows;
-      });
-    } catch (error) {
-      // Silently handle errors and retry on the next sync event
-    }
-  }, []);
-
-  const remeasureAndSync = useCallback(() => {
-    try {
-      virtualizerRef.current.measure?.();
-    } catch (error) {
-      // ignore
-    }
-    syncVirtualRows();
-  }, [syncVirtualRows]);
-
-  useLayoutEffect(() => {
-    const viewModeChanged = prevViewModeRef.current !== viewMode;
-    const fullscreenChanged = prevIsFullscreenRef.current !== isFullscreen;
-    prevViewModeRef.current = viewMode;
-    prevIsFullscreenRef.current = isFullscreen;
-
-    if (viewModeChanged || fullscreenChanged) {
-      isTransitioningRef.current = true;
-      setVirtualRows([]);
-    }
-
-    const rafId = requestAnimationFrame(() => {
-      remeasureAndSync();
-      isTransitioningRef.current = false;
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [viewMode, flattenedRows.length, isFullscreen, fullscreenScrollEl, remeasureAndSync]);
-
   const expandedItemsKey = useMemo(
     () => Object.keys(deferredExpandedById).sort().join(','),
     [deferredExpandedById]
   );
 
-  useLayoutEffect(() => {
-    remeasureAndSync();
-  }, [containerOffsetTop, expandedItemsKey, fileSearch, remeasureAndSync]);
-
-  useEffect(() => {
-    const scrollTarget = isFullscreen ? fullscreenScrollEl : window;
-    if (!scrollTarget) {
-      return;
-    }
-
-    let rafId = null;
-    const scheduleSync = () => {
-      if (isTransitioningRef.current || rafId !== null) {
-        return;
-      }
-
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        syncVirtualRows();
-      });
-    };
-
-    scheduleSync();
-    scrollTarget.addEventListener('scroll', scheduleSync, { passive: true });
-    window.addEventListener('resize', scheduleSync);
-
-    return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      scrollTarget.removeEventListener('scroll', scheduleSync);
-      window.removeEventListener('resize', scheduleSync);
-    };
-  }, [isFullscreen, fullscreenScrollEl, flattenedRows.length, syncVirtualRows]);
-
-  useEffect(() => {
-    if (!isFullscreen || !fullscreenScrollEl) {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      remeasureAndSync();
-    });
-    observer.observe(fullscreenScrollEl);
-
-    return () => observer.disconnect();
-  }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
-
-  const currentVirtualRows = virtualRows;
+  const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
+    virtualizer,
+    viewMode,
+    isFullscreen,
+    fullscreenScrollEl,
+    rowCount: flattenedRows.length,
+    remeasureDeps: [containerOffsetTop, expandedItemsKey, fileSearch],
+  });
   const totalVirtualSize = virtualizer.getTotalSize();
   // useWindowVirtualizer bakes scrollMargin into item start; subtract for top spacer (see TableBody)
   const scrollMargin = isFullscreen ? 0 : containerOffsetTopRef.current || containerOffsetTop;

@@ -4,7 +4,9 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } fr
 import { useColumnManager } from '../shared/hooks/useColumnManager';
 import { useDownloads } from '../shared/hooks/useDownloads';
 import { useDownloadsHistoryMigration } from '../shared/hooks/useDownloadsHistoryMigration';
-import { useDownloadsPlayers } from '../shared/hooks/useDownloadsPlayers';
+import DownloadsPlayersHost, {
+  useDownloadsPlayerActions,
+} from './DownloadsPlayersHost';
 import { useDownloadsFilters } from '../shared/hooks/useDownloadsFilters';
 import { useDownloadsListData } from '../shared/hooks/useDownloadsListData';
 import { DownloadsActionsProvider } from './DownloadsActionsContext';
@@ -13,7 +15,6 @@ import { useFetchData } from '../shared/hooks/useFetchData';
 import { useSelection } from '../shared/hooks/useSelection';
 import useIsMobile from '../../hooks/useIsMobile';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
-import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 
 import AssetTypeTabs, {
   getStoredAssetType,
@@ -27,8 +28,6 @@ import Spinner from '../shared/Spinner';
 import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
-import VideoPlayerModal from './VideoPlayerModal';
-import AudioPlayer from './AudioPlayer';
 import FiltersSidebar, { filtersFromView } from './FiltersSidebar';
 import useFiltersSidebarCollapsed from './FiltersSidebar/useFiltersSidebarCollapsed';
 import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
@@ -71,7 +70,6 @@ export default function DownloadsPage({ apiKey, onApiKeyChange }) {
   const downloadPanelT = useTranslations('DownloadPanel');
   const fetchStatusT = useTranslations('FetchStatus');
   const downloadsFiltersT = useTranslations('DownloadsFilters');
-  const setPauseReason = usePollingPauseStore((state) => state.setPauseReason);
   const isPollingPaused = usePollingPauseStore((state) => state.isPollingPaused);
   const pollingPaused = usePollingPauseStore((state) =>
     Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
@@ -138,8 +136,6 @@ export default function DownloadsPage({ apiKey, onApiKeyChange }) {
     pollSchedule,
     canManualRefresh,
   } = useFetchData(apiKey, activeType);
-
-  const torrentsForChart = useTorboxDownloadsStore((state) => state.torrents);
 
   const {
     viewItems,
@@ -277,20 +273,12 @@ export default function DownloadsPage({ apiKey, onApiKeyChange }) {
     updateTagName,
   });
 
-  const {
-    videoPlayerState,
-    setVideoPlayerState,
-    audioPlayerState,
-    setAudioPlayerState,
-    handleAudioPlay,
-    handleAudioRefreshUrl,
-    openVideoPlayer,
-  } = useDownloadsPlayers({
+  const { handleAudioPlay, openVideoPlayer } = useDownloadsPlayerActions(
     apiKey,
     activeType,
     requestDownloadLink,
-    setToast,
-  });
+    setToast
+  );
 
   // Expand items that contain matching files so file rows are visible; undo on clear
   useEffect(() => {
@@ -447,7 +435,6 @@ export default function DownloadsPage({ apiKey, onApiKeyChange }) {
     views,
     activeView,
     tags,
-    enrichedDownloads: viewItems,
     activeAssetType: activeType,
     activeTagIds,
     onApplyView: handleApplyView,
@@ -638,7 +625,7 @@ export default function DownloadsPage({ apiKey, onApiKeyChange }) {
           <Uploaders apiKey={apiKey} activeType={activeType} permissions={permissions} />
 
           {/* Speed Chart - Collapsible by default */}
-          <SpeedChart items={torrentsForChart} />
+          <SpeedChart />
 
           {/* Download Panel */}
           <DownloadPanel
@@ -737,65 +724,11 @@ export default function DownloadsPage({ apiKey, onApiKeyChange }) {
               />
             </>
           )}
-          <VideoPlayerModal
-            isOpen={videoPlayerState.isOpen}
-            onClose={() => {
-              setPauseReason('videoPlayer', false);
-              setVideoPlayerState({
-                isOpen: false,
-                streamUrl: null,
-                fileName: null,
-                subtitles: [],
-                audios: [],
-                metadata: {},
-                itemId: null,
-                fileId: null,
-                streamType: 'torrent',
-                introInformation: null,
-                initialAudioIndex: 0,
-                initialSubtitleIndex: null,
-              });
-            }}
-            streamUrl={videoPlayerState.streamUrl}
-            fileName={videoPlayerState.fileName}
-            subtitles={videoPlayerState.subtitles}
-            audios={videoPlayerState.audios}
-            metadata={videoPlayerState.metadata}
+          <DownloadsPlayersHost
             apiKey={apiKey}
-            itemId={videoPlayerState.itemId}
-            fileId={videoPlayerState.fileId}
-            streamType={videoPlayerState.streamType}
-            introInformation={videoPlayerState.introInformation}
-            initialAudioIndex={videoPlayerState.initialAudioIndex}
-            initialSubtitleIndex={videoPlayerState.initialSubtitleIndex}
-            onStreamUrlChange={(newUrl) =>
-              setVideoPlayerState((prev) => ({ ...prev, streamUrl: newUrl }))
-            }
+            activeType={activeType}
+            requestDownloadLink={requestDownloadLink}
           />
-          {audioPlayerState.isOpen && (
-            <AudioPlayer
-              key={`${audioPlayerState.fileId}-${audioPlayerState.itemId}`}
-              audioUrl={audioPlayerState.url}
-              fileName={audioPlayerState.fileName}
-              itemId={audioPlayerState.itemId}
-              fileId={audioPlayerState.fileId}
-              assetType={audioPlayerState.assetType}
-              apiKey={audioPlayerState.apiKey}
-              onClose={() => {
-                setPauseReason('audioPlayer', false);
-                setAudioPlayerState({
-                  isOpen: false,
-                  url: null,
-                  itemId: null,
-                  fileId: null,
-                  assetType: 'torrent',
-                  fileName: null,
-                  apiKey: null,
-                });
-              }}
-              onRefreshUrl={handleAudioRefreshUrl}
-            />
-          )}
         </>
       )}
 
