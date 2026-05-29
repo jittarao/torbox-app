@@ -9,7 +9,7 @@ import { useSearchStore } from '@/store/searchStore';
 import { useSession } from '@/components/shared/hooks/useSession';
 
 export default function SearchPageClient() {
-  const { apiKey, permissions, setApiKey } = useSession();
+  const { apiKey, hydrated, permissions, setApiKey } = useSession();
 
   const searchType = useSearchStore((state) => state.searchType);
   const setSearchType = useSearchStore((state) => state.setSearchType);
@@ -51,6 +51,12 @@ export default function SearchPageClient() {
     setApiKey(newKey);
     initEnsureUserDb(newKey);
   };
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-surface dark:bg-surface-dark font-sans" aria-hidden />
+    );
+  }
 
   return (
     <AppShell
