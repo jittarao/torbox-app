@@ -22,4 +22,11 @@ describe('all-tab poll stagger config', () => {
     const totalStagger = POLLING_CONFIG.allTabStaggerMs * 2;
     expect(totalStagger).toBeLessThan(POLLING_CONFIG.activeIntervalMs);
   });
+
+  it('engagement grace uses active interval before falling back to slow or inactive', async () => {
+    const { POLLING_CONFIG } = await import('../pollingConfig');
+    expect(POLLING_CONFIG.engagementGracePeriodMs).toBe(3 * 60_000);
+    expect(POLLING_CONFIG.userIdleThresholdMs).toBeLessThan(POLLING_CONFIG.engagementGracePeriodMs);
+    expect(POLLING_CONFIG.inactiveIntervalMs).toBeGreaterThan(POLLING_CONFIG.activeIntervalMs);
+  });
 });

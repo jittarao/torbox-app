@@ -12,10 +12,15 @@ export const POLLING_CONFIG = {
   minIntervalByType: { torrents: 2_000, usenet: 2_000, webdl: 2_000 },
   /** Poll interval while tab is visible and refresh is not paused */
   activeIntervalMs: 15_000,
-  /** Poll interval while tab is hidden (grace period only) */
+  /** Poll interval after engagement grace (hidden tab, idle, or auto-start queue) */
   inactiveIntervalMs: 60_000,
-  /** Keep slow polling after tab hide for this long, then stop (ms) */
-  hiddenGracePeriodMs: 3 * 60_000,
+  /**
+   * After tab hide or user idle, keep active-interval polling for this long, then stop
+   * (unless auto-start has queued torrents).
+   */
+  engagementGracePeriodMs: 3 * 60_000,
+  /** No pointer/keyboard activity for this long while tab is visible → treat as idle */
+  userIdleThresholdMs: 2 * 60_000,
   /** Minimum time between auto-start control API calls (ms) */
   autoStartCheckIntervalMs: 30_000,
   /** Stagger delay between asset types on All-tab poll ticks (ms) */

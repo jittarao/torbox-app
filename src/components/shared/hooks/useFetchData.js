@@ -22,9 +22,9 @@ import { useDownloadListPolling } from './useDownloadListPolling';
 import { useAutomationTorrentEvents } from './useAutomationTorrentEvents';
 
 // Polling rules (intervals in pollingConfig.js):
-// 1. 15s polling when the browser tab is focused and refresh is not paused
-// 2. 60s polling for hiddenGracePeriodMs after the tab is hidden, then stop (unless rule 3)
-// 3. 60s polling while hidden when auto-start is on and queued torrents exist (torrents or All tab)
+// 1. 15s polling when the tab is visible, the user is active, and refresh is not paused
+// 2. 15s polling for engagementGracePeriodMs after tab hide or user idle, then stop (unless rule 3)
+// 3. 60s polling while disengaged when auto-start is on and queued torrents exist (torrents or All tab)
 // 4. On the All tab, fetches torrents, usenet, and webdl on each poll tick
 
 export function useFetchData(apiKey, type = 'torrents') {
