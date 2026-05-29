@@ -69,6 +69,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         getRateLimiter().canManualRefresh(type)
       ) {
         store.setRefreshBlockedReason(null);
+        store.setCanManualRefresh(true);
       }
     }, 2000);
     return () => clearInterval(id);
