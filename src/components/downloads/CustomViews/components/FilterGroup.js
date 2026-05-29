@@ -36,8 +36,8 @@ export default function FilterGroup({
   return (
     <div className="border border-border dark:border-border-dark rounded-md bg-surface-alt dark:bg-surface-alt-dark">
       {/* Group Header */}
-      <div className="flex items-center justify-between p-2 border-b border-border dark:border-border-dark">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 p-2 border-b border-border dark:border-border-dark sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
@@ -72,12 +72,12 @@ export default function FilterGroup({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:justify-start">
           {isExpanded && (
             <button
               type="button"
               onClick={handleAddFilter}
-              className="px-2 py-1 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface dark:hover:bg-surface-dark rounded transition-colors"
+              className="whitespace-nowrap px-2 py-1 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface dark:hover:bg-surface-dark rounded transition-colors"
               title={customViewsT('addFilterToGroup')}
             >
               + {customViewsT('addFilter')}

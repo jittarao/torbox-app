@@ -101,7 +101,7 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-[100] min-w-[140px] py-1 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
+      className="z-overlay-popover fixed min-w-[140px] py-1 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
       style={{
         top: menuLayout.top,
         left: menuLayout.left,
