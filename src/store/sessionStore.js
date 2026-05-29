@@ -65,11 +65,15 @@ export const useSessionStore = create((set, get) => ({
   permissionsLoading: false,
 
   hydrateFromStorage: () => {
-    if (get().hydrated) return;
-    const apiKey = readStoredApiKey();
-    set({ apiKey, hydrated: true });
-    if (apiKey) {
-      fanOutApiKey(apiKey, '');
+    const { hydrated, apiKey: current } = get();
+    const storedKey = readStoredApiKey();
+
+    if (hydrated && current) return;
+    if (hydrated && !storedKey) return;
+
+    set({ apiKey: storedKey, hydrated: true });
+    if (storedKey && storedKey !== current) {
+      fanOutApiKey(storedKey, current);
     }
   },
 
@@ -81,6 +85,10 @@ export const useSessionStore = create((set, get) => ({
     }
 
     const { apiKey: current } = get();
+    // AppShell can mount before useSession reads localStorage; ignore stale empty props.
+    if (trimmed === '' && current) {
+      return;
+    }
     set({ hydrated: true });
 
     if (current !== trimmed) {
