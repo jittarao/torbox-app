@@ -1,4 +1,4 @@
-const TORBOX_NATIVE_TRACKERS = ['Newznab'];
+export const TORBOX_NATIVE_TRACKERS = ['Newznab'];
 
 /**
  * Apply server-side search filters to raw results (derived, not stored).
