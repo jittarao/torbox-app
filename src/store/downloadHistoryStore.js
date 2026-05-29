@@ -14,6 +14,7 @@ export const useDownloadHistoryStore = create((set, get) => ({
   currentApiKey: null,
   activeRequestId: 0,
   fetchPromise: null,
+  abortController: null,
 
   // Fetch download history from backend
   fetchDownloadHistory: async (apiKey) => {
@@ -39,6 +40,13 @@ export const useDownloadHistoryStore = create((set, get) => ({
       return fetchPromise;
     }
 
+    // Abort any previous in-flight request
+    const prevController = get().abortController;
+    if (prevController) {
+      prevController.abort();
+    }
+
+    const controller = new AbortController();
     const requestId = get().activeRequestId + 1;
     const fetchPromiseForRequest = (async () => {
       set({
@@ -46,6 +54,7 @@ export const useDownloadHistoryStore = create((set, get) => ({
         error: null,
         currentApiKey: apiKey,
         activeRequestId: requestId,
+        abortController: controller,
       });
 
       try {
@@ -68,6 +77,7 @@ export const useDownloadHistoryStore = create((set, get) => ({
             headers: {
               'x-api-key': apiKey,
             },
+            signal: controller.signal,
           });
 
           if (!response.ok) {
@@ -126,6 +136,7 @@ export const useDownloadHistoryStore = create((set, get) => ({
         });
         return merged;
       } catch (error) {
+        if (error.name === 'AbortError') return [];
         console.error('Error fetching link history from backend:', error);
         if (get().activeRequestId === requestId && get().currentApiKey === apiKey) {
           set({
@@ -137,7 +148,7 @@ export const useDownloadHistoryStore = create((set, get) => ({
         return [];
       } finally {
         if (get().activeRequestId === requestId) {
-          set({ fetchPromise: null });
+          set({ fetchPromise: null, abortController: null });
         }
       }
     })();
@@ -148,12 +159,15 @@ export const useDownloadHistoryStore = create((set, get) => ({
 
   // Clear download history (useful when API key changes)
   clearDownloadHistory: () => {
+    const controller = get().abortController;
+    if (controller) controller.abort();
     set({
       downloadHistory: [],
       error: null,
       lastFetched: null,
       currentApiKey: null,
       fetchPromise: null,
+      abortController: null,
     });
   },
 }));

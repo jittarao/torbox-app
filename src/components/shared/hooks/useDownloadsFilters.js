@@ -75,8 +75,7 @@ export function useDownloadsFilters({
     if (isBackendAvailable && apiKey && views.length === 0 && !viewsLoading) {
       loadViews();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, isBackendAvailable]);
+  }, [apiKey, isBackendAvailable, views.length, viewsLoading, loadViews]);
 
   const handleApplyView = (view) => {
     applyView(view);

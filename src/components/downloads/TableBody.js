@@ -22,31 +22,32 @@ import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 
-export default function TableBody({
-  items,
-  activeColumns,
-  resolvedColumnWidths,
-  selectedItems,
-  onFileSelect,
-  setSelectedItems,
-  tagMappings,
-  downloadHistoryLookup,
-  toggleFiles,
-  apiKey,
-  onDelete,
-  setToast,
-  activeType = 'torrents',
-  isBlurred = false,
-  viewMode = 'table',
-  tableWidth,
-  isFullscreen,
-  scrollContainerRef,
-  onFileStreamInit,
-  onAudioPlay,
-  fileSearch = '',
-}) {
-  const t = useTranslations('TableBody');
+function useTableBodyState(props) {
+  const {
+    items,
+    activeColumns,
+    resolvedColumnWidths,
+    selectedItems,
+    onFileSelect,
+    setSelectedItems,
+    tagMappings,
+    downloadHistoryLookup,
+    toggleFiles,
+    apiKey,
+    onDelete,
+    setToast,
+    activeType = 'torrents',
+    isBlurred = false,
+    viewMode = 'table',
+    tableWidth,
+    isFullscreen,
+    scrollContainerRef,
+    onFileStreamInit,
+    onAudioPlay,
+    fileSearch = '',
+  } = props;
 
+  const t = useTranslations('TableBody');
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
   const [isStreaming, setIsStreaming] = useState({});
@@ -55,24 +56,18 @@ export default function TableBody({
   const tbodyRef = useRef(null);
   const tableOffsetTopRef = useRef(0);
   const [tableOffsetTop, setTableOffsetTop] = useState(0);
-  // State (not ref) so binding the fullscreen scroll container triggers a re-render
   const [fullscreenScrollEl, setFullscreenScrollEl] = useState(null);
 
-  // Bind scroll container before paint when entering fullscreen
   useLayoutEffect(() => {
     if (isFullscreen) {
-      const el = scrollContainerRef?.current ?? null;
-      setFullscreenScrollEl(el);
+      setFullscreenScrollEl(scrollContainerRef?.current ?? null);
     } else {
       setFullscreenScrollEl(null);
     }
   }, [isFullscreen, scrollContainerRef]);
 
-  // In normal mode, track table position for window scroll
   useEffect(() => {
-    if (isFullscreen) {
-      return;
-    }
+    if (isFullscreen) return;
 
     const updateTableOffset = () => {
       if (tbodyRef.current) {
@@ -86,15 +81,12 @@ export default function TableBody({
 
     updateTableOffset();
     requestAnimationFrame(updateTableOffset);
-
     window.addEventListener('resize', updateTableOffset);
-
     return () => {
       window.removeEventListener('resize', updateTableOffset);
     };
   }, [isFullscreen]);
 
-  // Defer items update to prevent synchronous updates during render
   const deferredItems = useDeferredValue(items);
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const deferredExpandedById = useDeferredValue(expandedById);
@@ -105,13 +97,11 @@ export default function TableBody({
       .sort((a, b) => String(a).localeCompare(String(b)));
   }, [deferredExpandedById]);
 
-  // Create flattened array of rows (item rows + file rows when expanded)
   const flattenedRows = useMemo(() => {
     const rows = [];
     const expandedSet = new Set(expandedItemsArray);
 
     deferredItems.forEach((item, itemIndex) => {
-      // Add item row
       rows.push({
         type: 'item',
         item,
@@ -120,7 +110,6 @@ export default function TableBody({
         virtualIndex: rows.length,
       });
 
-      // Add file rows if expanded
       const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
       if (expandedSet.has(item.id) && visibleFiles.length > 0) {
         visibleFiles.forEach((file, fileIndex) => {
@@ -138,16 +127,13 @@ export default function TableBody({
     return rows;
   }, [deferredItems, expandedItemsArray, fileSearch]);
 
-  // Memoize measureElement to prevent unnecessary re-renders
   const measureElement = useCallback((element) => {
     return Math.ceil(element.getBoundingClientRect().height);
   }, []);
 
-  // Memoize estimateSize to prevent recalculation on every render
   const estimateSize = useCallback(
     (index) => {
       const row = flattenedRows[index];
-      // Height estimates for mobile vs desktop
       if (isMobile) {
         return row?.type === 'item' ? 100 : 60;
       }
@@ -161,32 +147,6 @@ export default function TableBody({
     [flattenedRows, isMobile]
   );
 
-  const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
-
-  // Use different virtualizers based on fullscreen mode
-  // In fullscreen: use useVirtualizer with scroll container
-  // In normal mode: use useWindowVirtualizer for window scroll
-  const windowVirtualizer = useWindowVirtualizer({
-    count: flattenedRows.length,
-    estimateSize,
-    measureElement,
-    overscan: 30,
-    scrollMargin: tableOffsetTopRef.current || tableOffsetTop,
-    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
-  });
-
-  const containerVirtualizer = useVirtualizer({
-    count: flattenedRows.length,
-    getScrollElement,
-    estimateSize,
-    measureElement,
-    overscan: 30,
-    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
-  });
-
-  // Use the appropriate virtualizer based on mode
-  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
-
   const toastMessages = useMemo(
     () => ({
       copyLinkSuccess: t('toast.copyLink'),
@@ -195,15 +155,7 @@ export default function TableBody({
     [t]
   );
 
-  const {
-    handleItemSelection,
-    handleFileSelection,
-    handleFileDownload,
-    isSelectionDisabled,
-    assetKey,
-    lastClickedItemIndexRef,
-    lastClickedFileIndexRef,
-  } = useDownloadRowInteractions({
+  const interactions = useDownloadRowInteractions({
     items,
     activeType,
     fileSearch,
@@ -217,11 +169,9 @@ export default function TableBody({
 
   const handleFileStream = useCallback(
     async (itemId, file) => {
-      const key = assetKey(itemId, file.id);
+      const key = interactions.assetKey(itemId, file.id);
       setIsStreaming((prev) => ({ ...prev, [key]: true }));
-
       try {
-        // Call the parent's handler to get metadata and show track selection modal
         if (onFileStreamInit) {
           await onFileStreamInit(itemId, file);
         }
@@ -235,12 +185,12 @@ export default function TableBody({
         setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [assetKey, onFileStreamInit, setToast]
+    [interactions.assetKey, onFileStreamInit, setToast]
   );
 
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
-      const key = assetKey(itemId, file.id);
+      const key = interactions.assetKey(itemId, file.id);
       setIsStreaming((prev) => ({ ...prev, [key]: true }));
       try {
         if (onAudioPlay) {
@@ -256,45 +206,70 @@ export default function TableBody({
         setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [assetKey, onAudioPlay, setToast]
+    [interactions.assetKey, onAudioPlay, setToast]
   );
 
-  const rowStyle = useMemo(
-    () => ({
-      willChange: 'transform',
-    }),
-    []
-  );
-
-  const expandedItemsKey = expandedItemsArray.join(',');
-
-  const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
-    virtualizer,
-    viewMode,
-    isFullscreen,
+  return {
+    tbodyRef,
+    tableOffsetTopRef,
+    tableOffsetTop,
     fullscreenScrollEl,
-    rowCount: flattenedRows.length,
-    remeasureDeps: [resolvedColumnWidths, tableOffsetTop, expandedItemsKey, fileSearch],
-  });
+    flattenedRows,
+    measureElement,
+    estimateSize,
+    toastMessages,
+    interactions,
+    isDownloading,
+    isCopying,
+    isStreaming,
+    setIsDownloading,
+    setIsCopying,
+    handleFileStream,
+    handleAudioPlay,
+    activeColumns,
+    resolvedColumnWidths,
+    selectedItems,
+    tagMappings,
+    downloadHistoryLookup,
+    toggleFiles,
+    apiKey,
+    onDelete,
+    setToast,
+    activeType,
+    isMobile,
+    isBlurred,
+    viewMode,
+    tableWidth,
+    fileSearch,
+    t,
+  };
+}
 
+function VirtualizedTableBodyInner({
+  virtualizer,
+  state,
+  currentVirtualRows,
+  scrollMargin,
+}) {
   const totalVirtualSize = virtualizer.getTotalSize();
-  // useWindowVirtualizer bakes scrollMargin into item start; subtract it for tbody spacers (see CardList)
-  const scrollMargin = isFullscreen ? 0 : tableOffsetTopRef.current || tableOffsetTop;
   const paddingTop =
-    currentVirtualRows.length > 0 ? Math.max(0, currentVirtualRows[0].start - scrollMargin) : 0;
+    currentVirtualRows.length > 0
+      ? Math.max(0, currentVirtualRows[0].start - scrollMargin)
+      : 0;
   const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
   const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
-  // Show empty state when there are no items
-  if (deferredItems.length === 0) {
+  const rowStyle = { willChange: 'transform' };
+
+  if (state.flattenedRows.length === 0) {
     return (
-      <tbody ref={tbodyRef} className="bg-surface dark:bg-surface-dark">
+      <tbody ref={state.tbodyRef} className="bg-surface dark:bg-surface-dark">
         <tr>
           <td
-            colSpan={activeColumns.length + 2}
+            colSpan={state.activeColumns.length + 2}
             className="text-center py-8 text-text-secondary dark:text-text-secondary-dark"
           >
-            {t('noDownloads')}
+            {state.t('noDownloads')}
           </td>
         </tr>
       </tbody>
@@ -302,86 +277,176 @@ export default function TableBody({
   }
 
   return (
-    <tbody ref={tbodyRef} className="bg-surface dark:bg-surface-dark">
-      {/* Top spacer */}
+    <tbody ref={state.tbodyRef} className="bg-surface dark:bg-surface-dark">
       {paddingTop > 0 && (
         <tr>
           <td
-            colSpan={activeColumns.length + 2}
+            colSpan={state.activeColumns.length + 2}
             style={{ height: paddingTop, padding: 0, border: 0 }}
           />
         </tr>
       )}
-      {/* Virtualized rows */}
       {currentVirtualRows.flatMap((virtualRow) => {
-        if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
+        if (virtualRow.index < 0 || virtualRow.index >= state.flattenedRows.length) return [];
 
-        const row = flattenedRows[virtualRow.index];
+        const row = state.flattenedRows[virtualRow.index];
 
         if (row.type === 'item') {
           const rowEntityKey =
             row.entityKey ||
-            toEntityKey(row.item.assetType || activeType, row.item.id);
+            toEntityKey(row.item.assetType || state.activeType, row.item.id);
           return (
             <DownloadRowContainer
               key={`item-${rowEntityKey}`}
               entityKey={rowEntityKey}
-              tagMappings={tagMappings}
-              activeColumns={activeColumns}
-              resolvedColumnWidths={resolvedColumnWidths}
-              downloadHistoryLookup={downloadHistoryLookup}
-              toggleFiles={toggleFiles}
-              apiKey={apiKey}
-              onDelete={onDelete}
+              tagMappings={state.tagMappings}
+              activeColumns={state.activeColumns}
+              resolvedColumnWidths={state.resolvedColumnWidths}
+              downloadHistoryLookup={state.downloadHistoryLookup}
+              toggleFiles={state.toggleFiles}
+              apiKey={state.apiKey}
+              onDelete={state.onDelete}
               rowIndex={row.itemIndex}
-              handleItemSelection={handleItemSelection}
-              setToast={setToast}
-              activeType={activeType}
-              isMobile={isMobile}
-              isBlurred={isBlurred}
-              viewMode={viewMode}
-              tableWidth={tableWidth}
-              measureRef={virtualizer.measureElement}
-              dataIndex={virtualRow.index}
-              style={rowStyle}
-            />
-          );
-        } else {
-          // File row - use FileRow component to render the specific file
-          return (
-            <FileRow
-              key={`file-${row.item.id}-${row.file.id}`}
-              item={row.item}
-              handleFileSelection={handleFileSelection}
-              handleFileDownload={handleFileDownload}
-              handleFileStream={handleFileStream}
-              handleAudioPlay={handleAudioPlay}
-              activeColumns={activeColumns}
-              downloadHistoryLookup={downloadHistoryLookup}
-              isCopying={isCopying}
-              isDownloading={isDownloading}
-              isStreaming={isStreaming}
-              isMobile={isMobile}
-              isBlurred={isBlurred}
-              tableWidth={tableWidth}
-              file={row.file}
-              fileIndex={row.fileIndex}
+              handleItemSelection={state.interactions.handleItemSelection}
+              setToast={state.setToast}
+              activeType={state.activeType}
+              isMobile={state.isMobile}
+              isBlurred={state.isBlurred}
+              viewMode={state.viewMode}
+              tableWidth={state.tableWidth}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
               style={rowStyle}
             />
           );
         }
+
+        return (
+          <FileRow
+            key={`file-${row.item.id}-${row.file.id}`}
+            item={row.item}
+            handleFileSelection={state.interactions.handleFileSelection}
+            handleFileDownload={state.interactions.handleFileDownload}
+            handleFileStream={state.handleFileStream}
+            handleAudioPlay={state.handleAudioPlay}
+            activeColumns={state.activeColumns}
+            downloadHistoryLookup={state.downloadHistoryLookup}
+            isCopying={state.isCopying}
+            isDownloading={state.isDownloading}
+            isStreaming={state.isStreaming}
+            isMobile={state.isMobile}
+            isBlurred={state.isBlurred}
+            tableWidth={state.tableWidth}
+            file={row.file}
+            fileIndex={row.fileIndex}
+            measureRef={virtualizer.measureElement}
+            dataIndex={virtualRow.index}
+            style={rowStyle}
+          />
+        );
       })}
-      {/* Bottom spacer */}
       {paddingBottom > 0 && (
         <tr>
           <td
-            colSpan={activeColumns.length + 2}
+            colSpan={state.activeColumns.length + 2}
             style={{ height: paddingBottom, padding: 0, border: 0 }}
           />
         </tr>
       )}
     </tbody>
   );
+}
+
+function WindowVirtualizedBody(props) {
+  const state = useTableBodyState(props);
+
+  const windowVirtualizer = useWindowVirtualizer({
+    count: state.flattenedRows.length,
+    estimateSize: state.estimateSize,
+    measureElement: state.measureElement,
+    overscan: 30,
+    scrollMargin: state.tableOffsetTopRef.current || state.tableOffsetTop,
+    useFlushSync: false,
+  });
+
+  const expandedItemsKey = Object.keys(useDownloadsUiStore.getState().expandedById)
+    .sort()
+    .join(',');
+
+  const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
+    virtualizer: windowVirtualizer,
+    viewMode: state.viewMode,
+    isFullscreen: false,
+    fullscreenScrollEl: null,
+    rowCount: state.flattenedRows.length,
+    remeasureDeps: [
+      state.resolvedColumnWidths,
+      state.tableOffsetTop,
+      expandedItemsKey,
+      state.fileSearch,
+    ],
+  });
+
+  const scrollMargin = state.tableOffsetTopRef.current || state.tableOffsetTop;
+
+  return (
+    <VirtualizedTableBodyInner
+      virtualizer={windowVirtualizer}
+      state={state}
+      currentVirtualRows={currentVirtualRows}
+      scrollMargin={scrollMargin}
+    />
+  );
+}
+
+function ContainerVirtualizedBody(props) {
+  const state = useTableBodyState(props);
+
+  const getScrollElement = useCallback(
+    () => state.fullscreenScrollEl,
+    [state.fullscreenScrollEl]
+  );
+
+  const containerVirtualizer = useVirtualizer({
+    count: state.flattenedRows.length,
+    getScrollElement,
+    estimateSize: state.estimateSize,
+    measureElement: state.measureElement,
+    overscan: 30,
+    useFlushSync: false,
+  });
+
+  const expandedItemsKey = Object.keys(useDownloadsUiStore.getState().expandedById)
+    .sort()
+    .join(',');
+
+  const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
+    virtualizer: containerVirtualizer,
+    viewMode: state.viewMode,
+    isFullscreen: true,
+    fullscreenScrollEl: state.fullscreenScrollEl,
+    rowCount: state.flattenedRows.length,
+    remeasureDeps: [
+      state.resolvedColumnWidths,
+      state.tableOffsetTop,
+      expandedItemsKey,
+      state.fileSearch,
+    ],
+  });
+
+  return (
+    <VirtualizedTableBodyInner
+      virtualizer={containerVirtualizer}
+      state={state}
+      currentVirtualRows={currentVirtualRows}
+      scrollMargin={0}
+    />
+  );
+}
+
+export default function TableBody(props) {
+  if (props.isFullscreen) {
+    return <ContainerVirtualizedBody {...props} />;
+  }
+  return <WindowVirtualizedBody {...props} />;
 }

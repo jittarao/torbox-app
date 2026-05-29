@@ -30,31 +30,10 @@ const NOTIFICATION_POLL_INTERVAL_MS = 120_000;
 const RATE_LIMIT_BACKOFF_BASE_MS = 60_000;
 const MAX_RATE_LIMIT_BACKOFF_MS = 600_000;
 
-let notificationPollTimer = null;
-let notificationPollApiKey = null;
-let notificationPollSubscribers = 0;
-
-function clearNotificationPollTimer() {
-  if (notificationPollTimer) {
-    clearInterval(notificationPollTimer);
-    notificationPollTimer = null;
+function clearNotificationPollTimer(timer) {
+  if (timer) {
+    clearInterval(timer);
   }
-}
-
-function tickNotificationPoll() {
-  if (!notificationPollApiKey) return;
-
-  if (usePollingPauseStore.getState().isPollingPaused()) return;
-
-  const { isPolling, fetchNotifications } = useNotificationsStore.getState();
-  if (isPolling) {
-    fetchNotifications(notificationPollApiKey);
-  }
-}
-
-function ensureNotificationPollTimer() {
-  if (notificationPollTimer) return;
-  notificationPollTimer = setInterval(tickNotificationPoll, NOTIFICATION_POLL_INTERVAL_MS);
 }
 
 function isRateLimitMessage(message) {
@@ -72,6 +51,8 @@ export const useNotificationsStore = create((set, get) => ({
   lastFetchTime: null,
   currentApiKey: null,
   fetchingNotifications: false,
+  _pollTimer: null,
+  _pollSubscribers: 0,
 
   // Reset notifications when API key changes
   setApiKey: (apiKey) => {
@@ -499,18 +480,32 @@ export const useNotificationsStore = create((set, get) => ({
     if (!apiKey) return;
 
     get().setApiKey(apiKey);
-    notificationPollSubscribers += 1;
-    notificationPollApiKey = apiKey;
+    const { _pollSubscribers, _pollTimer } = get();
+    set({ _pollSubscribers: _pollSubscribers + 1 });
+
+    if (!_pollTimer) {
+      const tick = () => {
+        const state = get();
+        if (!state.currentApiKey) return;
+        if (usePollingPauseStore.getState().isPollingPaused()) return;
+        if (state.isPolling) {
+          state.fetchNotifications(state.currentApiKey);
+        }
+      };
+      set({ _pollTimer: setInterval(tick, NOTIFICATION_POLL_INTERVAL_MS) });
+    }
 
     get().fetchNotifications(apiKey);
-    ensureNotificationPollTimer();
   },
 
   stopPolling: () => {
-    notificationPollSubscribers = Math.max(0, notificationPollSubscribers - 1);
-    if (notificationPollSubscribers === 0) {
-      clearNotificationPollTimer();
-      notificationPollApiKey = null;
+    const { _pollSubscribers, _pollTimer } = get();
+    const next = Math.max(0, _pollSubscribers - 1);
+    if (next === 0) {
+      clearNotificationPollTimer(_pollTimer);
+      set({ _pollTimer: null, _pollSubscribers: 0 });
+    } else {
+      set({ _pollSubscribers: next });
     }
   },
 

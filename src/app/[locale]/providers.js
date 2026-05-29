@@ -7,12 +7,15 @@ import { usePostHog } from 'posthog-js/react';
 import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 
+let posthogInitialized = false;
+
 export function PostHogProvider({ children }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.__TBM_RYBBIT__) {
       return;
     }
-    if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    if (process.env.NEXT_PUBLIC_POSTHOG_KEY && !posthogInitialized) {
+      posthogInitialized = true;
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
         person_profiles: 'identified_only',

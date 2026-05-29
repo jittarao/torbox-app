@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
@@ -11,9 +10,14 @@ import { selectVisibleSortedIds, idsToRows } from '@/store/downloadsDerivedSelec
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
-/**
- * View + visible download rows (derived from stores, not persisted arrays).
- */
+function useStableShallow(value) {
+  const ref = useRef(value);
+  if (value !== ref.current) {
+    ref.current = value;
+  }
+  return ref.current;
+}
+
 export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
   const downloadHistory = useDownloadHistoryStore((state) => state.downloadHistory);
 
@@ -34,8 +38,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     if (isBackendAvailable && apiKey && tags.length === 0 && !tagsLoading) {
       loadTags();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, isBackendAvailable]);
+  }, [apiKey, isBackendAvailable, tags.length, tagsLoading, loadTags]);
 
   useEffect(() => {
     if (
@@ -46,46 +49,48 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     ) {
       fetchDownloadTags();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, isBackendAvailable]);
+  }, [apiKey, isBackendAvailable, tagMappings, downloadTagsLoading, fetchDownloadTags]);
 
-  const torboxSlice = useTorboxDownloadsStore(
-    useShallow((s) => ({
-      entities: s.entities,
-      order: s.order,
-    }))
-  );
+  // Subscribe to individual store fields — entities reference is stable when unchanged
+  const entities = useTorboxDownloadsStore((state) => state.entities);
+  const order = useTorboxDownloadsStore((state) => state.order);
 
-  const filterCriteria = useDownloadsUiStore(
-    useShallow((s) => ({
-      search: s.search,
-      statusFilter: s.statusFilter,
-      appliedFilters: s.appliedFilters,
-      sortField: s.sortField,
-      sortDirection: s.sortDirection,
-    }))
+  const filterCriteria = useDownloadsUiStore((state) => ({
+    search: state.search,
+    statusFilter: state.statusFilter,
+    appliedFilters: state.appliedFilters,
+    sortField: state.sortField,
+    sortDirection: state.sortDirection,
+  }));
+  const stableFilterCriteria = useStableShallow(filterCriteria);
+  const stableTagMappings = useStableShallow(tagMappings);
+  const stableDownloadHistory = useStableShallow(downloadHistory);
+
+  const combinedState = useMemo(
+    () => ({ entities, order }),
+    [entities, order]
   );
 
   const viewItems = useMemo(() => {
-    const ids = selectViewOrderedIds(torboxSlice, activeType);
-    return idsToRows(ids, torboxSlice.entities, tagMappings, downloadHistory);
-  }, [torboxSlice, activeType, tagMappings, downloadHistory]);
+    const ids = selectViewOrderedIds(combinedState, activeType);
+    return idsToRows(ids, entities, stableTagMappings, stableDownloadHistory);
+  }, [combinedState, activeType, stableTagMappings, stableDownloadHistory]);
 
   const visibleIds = useMemo(
     () =>
       selectVisibleSortedIds(
-        torboxSlice,
+        combinedState,
         activeType,
-        filterCriteria,
-        tagMappings,
+        stableFilterCriteria,
+        stableTagMappings,
         downloadHistoryLookup
       ),
-    [torboxSlice, activeType, filterCriteria, tagMappings, downloadHistoryLookup]
+    [combinedState, activeType, stableFilterCriteria, stableTagMappings, downloadHistoryLookup]
   );
 
   const sortedItems = useMemo(
-    () => idsToRows(visibleIds, torboxSlice.entities, tagMappings, downloadHistory),
-    [visibleIds, torboxSlice.entities, tagMappings, downloadHistory]
+    () => idsToRows(visibleIds, entities, stableTagMappings, stableDownloadHistory),
+    [visibleIds, entities, stableTagMappings, stableDownloadHistory]
   );
 
   return {
