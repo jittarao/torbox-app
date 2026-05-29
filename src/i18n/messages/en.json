@@ -723,6 +723,9 @@
       "title": "No Download Links"
     },
     "expired": "Expired",
+    "status": {
+      "failed": "Failed"
+    },
     "title": "Link History"
   },
   "MoreOptionsDropdown": {

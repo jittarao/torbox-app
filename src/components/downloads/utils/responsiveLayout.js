@@ -53,7 +53,11 @@ export function getActionsColumnWidthPx() {
  * Row + sticky actions backgrounds. Sticky cells need their own bg; use group/group-hover
  * so hovering anywhere on the row updates the actions column (tr:hover alone is not enough).
  */
-export function getTableRowSurfaceClasses({ selected = false, downloaded = false } = {}) {
+export function getTableRowSurfaceClasses({
+  selected = false,
+  downloaded = false,
+  linkFailed = false,
+} = {}) {
   if (selected) {
     const base = 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark';
     const hover =
@@ -61,6 +65,14 @@ export function getTableRowSurfaceClasses({ selected = false, downloaded = false
     return {
       row: `group ${base} ${hover}`,
       stickyCell: `${base} group-hover:bg-surface-alt-selected-hover dark:group-hover:bg-surface-alt-selected-hover-dark`,
+    };
+  }
+  if (linkFailed) {
+    const base = 'bg-link-failed dark:bg-link-failed-dark';
+    const hover = 'hover:bg-link-failed-hover dark:hover:bg-link-failed-hover-dark';
+    return {
+      row: `group ${base} ${hover}`,
+      stickyCell: `${base} group-hover:bg-link-failed-hover dark:group-hover:bg-link-failed-hover-dark`,
     };
   }
   if (downloaded) {

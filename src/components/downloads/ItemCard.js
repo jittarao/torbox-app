@@ -26,6 +26,8 @@ function ItemCard({
   index,
   isItemDownloaded,
   isFileDownloaded,
+  isItemLinkFailed,
+  isFileLinkFailed,
   isBlurred,
   activeColumns,
   onItemSelect,
@@ -328,9 +330,11 @@ function ItemCard({
       className={`${
         isSelected
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-          : isItemDownloaded(item.id)
-            ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
-            : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
+          : isItemLinkFailed?.(item.id)
+            ? 'bg-link-failed dark:bg-link-failed-dark hover:bg-link-failed-hover dark:hover:bg-link-failed-hover-dark'
+            : isItemDownloaded(item.id)
+              ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+              : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } ${cardContainerPad} ${tableRowFocusClasses} relative ${
         isExpanded ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer w-full text-left`}
@@ -496,6 +500,7 @@ function ItemCard({
           isStreaming={isStreaming}
           isMobile={isMobile}
           isFileDownloaded={isFileDownloaded}
+          isFileLinkFailed={isFileLinkFailed}
         />
       )}
 

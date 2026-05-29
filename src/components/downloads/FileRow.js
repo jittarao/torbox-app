@@ -129,13 +129,18 @@ function FileRowInner({
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = isItemSelected;
   const itemKey = `${item.assetType}:${String(item.id)}`;
+  const fileKey = `${itemKey}:${String(file.id)}`;
   const isDownloaded =
     downloadHistoryLookup.itemDownloads.has(itemKey) ||
-    downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(file.id)}`);
+    downloadHistoryLookup.fileDownloads.has(fileKey);
+  const isLinkFailed =
+    downloadHistoryLookup.itemLinkFailed?.has(itemKey) ||
+    downloadHistoryLookup.fileLinkFailed?.has(fileKey);
 
   const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
     selected: isChecked,
     downloaded: isDownloaded,
+    linkFailed: isLinkFailed,
   });
 
   return (

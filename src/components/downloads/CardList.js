@@ -431,6 +431,36 @@ export default function CardList({
     [deferredEntityKeys, downloadHistoryLookup]
   );
 
+  const isItemLinkFailed = useCallback(
+    (itemId) => {
+      const key = deferredEntityKeys.find((entityKey) => {
+        const { id } = parseEntityKey(entityKey);
+        return String(id) === String(itemId);
+      });
+      if (!key) return false;
+      const { assetType, id } = parseEntityKey(key);
+      return downloadHistoryLookup.itemLinkFailed?.has(`${assetType}:${String(id)}`);
+    },
+    [deferredEntityKeys, downloadHistoryLookup]
+  );
+
+  const isFileLinkFailed = useCallback(
+    (itemId, fileId) => {
+      const key = deferredEntityKeys.find((entityKey) => {
+        const { id } = parseEntityKey(entityKey);
+        return String(id) === String(itemId);
+      });
+      if (!key) return false;
+      const { assetType, id } = parseEntityKey(key);
+      const itemKey = `${assetType}:${String(id)}`;
+      return (
+        downloadHistoryLookup.itemLinkFailed?.has(itemKey) ||
+        downloadHistoryLookup.fileLinkFailed?.has(`${itemKey}:${String(fileId)}`)
+      );
+    },
+    [deferredEntityKeys, downloadHistoryLookup]
+  );
+
   const expandedItemsKey = useMemo(
     () => Object.keys(deferredExpandedById).sort().join(','),
     [deferredExpandedById]
@@ -479,6 +509,8 @@ export default function CardList({
                 index={row.itemIndex}
                 isItemDownloaded={isItemDownloaded}
                 isFileDownloaded={isFileDownloaded}
+                isItemLinkFailed={isItemLinkFailed}
+                isFileLinkFailed={isFileLinkFailed}
                 isBlurred={isBlurred}
                 activeColumns={activeColumns}
                 onItemSelect={handleItemSelection}

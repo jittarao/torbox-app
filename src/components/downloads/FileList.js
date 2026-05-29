@@ -33,6 +33,7 @@ function FileListFile({
   isStreaming,
   isMobile,
   isFileDownloaded,
+  isFileLinkFailed,
 }) {
   const t = useTranslations('FileActions');
   const isChecked = useIsFileSelected(selectionId, file.id);
@@ -119,9 +120,11 @@ function FileListFile({
           ? 'bg-accent/15 hover:bg-accent/20 dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
           : isDisabled
             ? 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-            : isFileDownloaded(itemId, file.id)
-              ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
-              : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
+            : isFileLinkFailed?.(itemId, file.id)
+              ? 'bg-link-failed dark:bg-link-failed-dark hover:bg-link-failed-hover dark:hover:bg-link-failed-hover-dark'
+              : isFileDownloaded(itemId, file.id)
+                ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
+                : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
       } rounded-md p-2 md:p-1.5 lg:p-2 ${!isDisabled && 'cursor-pointer'} w-full text-left`}
       onMouseDown={(e) => {
         if (e.shiftKey) e.preventDefault();
@@ -219,6 +222,7 @@ function FileList({
   isStreaming,
   isMobile,
   isFileDownloaded,
+  isFileLinkFailed,
 }) {
   return (
     <div className="mt-3 md:mt-2.5 lg:mt-4 border-t border-border/50 dark:border-border-dark/50 pt-3 md:pt-2.5 lg:pt-4">
@@ -240,6 +244,7 @@ function FileList({
             isStreaming={isStreaming}
             isMobile={isMobile}
             isFileDownloaded={isFileDownloaded}
+            isFileLinkFailed={isFileLinkFailed}
           />
         ))}
       </div>

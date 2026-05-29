@@ -701,6 +701,9 @@
       "title": "Brak linków do pobierania"
     },
     "expired": "Wygasł",
+    "status": {
+      "failed": "Nieudane"
+    },
     "title": "Historia linków"
   },
   "MoreOptionsDropdown": {
