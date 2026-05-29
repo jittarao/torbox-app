@@ -45,8 +45,8 @@ export default function ApiKeyManager({
     setShowAddForm(false);
   };
 
-  const deleteKey = (index) => {
-    const newKeys = keys.filter((_, i) => i !== index);
+  const deleteKey = (keyToDelete) => {
+    const newKeys = keys.filter((k) => k.key !== keyToDelete);
     saveKeys(newKeys);
   };
 
@@ -174,7 +174,7 @@ export default function ApiKeyManager({
               </div>
               <button
                 type="button"
-                onClick={() => deleteKey(index)}
+                onClick={() => deleteKey(keyItem.key)}
                 className="shrink-0 text-primary-text/50 hover:text-red-500 dark:text-primary-text-dark/50 
                   dark:hover:text-red-500 p-2 -mr-1 rounded-lg transition-colors touch-manipulation min-h-9 min-w-9 flex items-center justify-center"
                 aria-label={t('deleteKey')}
