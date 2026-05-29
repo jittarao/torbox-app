@@ -23,6 +23,7 @@ export default function ItemsTable({
   handleSelectAll,
   handleFileSelect,
   downloadHistoryLookup,
+  tagMappings,
   isBlurred,
   deleteItem,
   setToast,
@@ -244,6 +245,7 @@ export default function ItemsTable({
             onFileSelect={handleFileSelect}
             setSelectedItems={setSelectedItems}
             downloadHistoryLookup={downloadHistoryLookup}
+            tagMappings={tagMappings}
             apiKey={apiKey}
             onDelete={deleteItem}
             setToast={setToast}
