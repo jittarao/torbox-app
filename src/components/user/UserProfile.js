@@ -6,6 +6,7 @@ import Spinner from '@/components/shared/Spinner';
 import Icons from '@/components/icons';
 import BandwidthChart from '@/components/user/BandwidthChart';
 import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
+import { buildTorboxSubscriptionReferralUrl } from '@/utils/referralLinks';
 
 export default function UserProfile({ apiKey, setToast }) {
   const t = useTranslations('User');
@@ -69,7 +70,7 @@ export default function UserProfile({ apiKey, setToast }) {
   const copyReferralLink = async () => {
     if (!userData?.user_referral) return;
 
-    const referralLink = `https://torbox.app/subscription?referral=${userData.user_referral}`;
+    const referralLink = buildTorboxSubscriptionReferralUrl(userData.user_referral);
 
     try {
       await navigator.clipboard.writeText(referralLink);
@@ -261,7 +262,7 @@ export default function UserProfile({ apiKey, setToast }) {
                     </span>
                     <div className="flex items-center gap-2 p-3 bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark">
                       <span className="text-primary-text dark:text-primary-text-dark font-mono text-xs break-all flex-1">
-                        https://torbox.app/subscription?referral={userData.user_referral}
+                        {buildTorboxSubscriptionReferralUrl(userData.user_referral)}
                       </span>
                       <button
                         type="button"

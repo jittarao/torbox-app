@@ -815,7 +815,7 @@
     "steps": {
       "title": "How it works",
       "step1": "Apply the code to your TorBox account (button above or paste on the subscription page).",
-      "step2": "Subscribe at torbox.app — allow popups if you use the referral link.",
+      "step2": "Sign in at torbox.app if prompted, then confirm the referral popup on the subscription page.",
       "step3": "Complete your first paid purchase; bonus days are added automatically.",
       "popupNote": "If you use the link instead of Apply, confirm the popup on TorBox before purchasing."
     },

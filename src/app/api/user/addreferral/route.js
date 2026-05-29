@@ -26,6 +26,7 @@ export async function POST(request) {
   }
 
   try {
+    // Match torbox.app: POST with referral query param only (no JSON body).
     const response = await fetch(
       `${API_BASE}/${API_VERSION}/api/user/addreferral?referral=${encodeURIComponent(referral)}`,
       {
@@ -33,10 +34,8 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
-        body: JSON.stringify({ referral }),
       }
     );
 

@@ -177,8 +177,9 @@ export async function applyReferralToAccount(apiKey, referralCode) {
 
   const data = await response.json().catch(() => ({}));
 
-  if (response.ok && data.success !== false) {
-    return { success: true };
+  // TorBox API: { success: true, error: null, detail: "Successfully added referral.", data: null }
+  if (response.ok && data.success === true) {
+    return { success: true, detail: data.detail };
   }
 
   const { alreadyHasReferrer, isSelfReferral } = classifyReferralApplyError(data);
