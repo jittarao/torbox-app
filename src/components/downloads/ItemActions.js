@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDownloadsActions } from './DownloadsActionsContext';
-import { useUpload } from '../shared/hooks/useUpload';
+import { controlTorrent, controlQueuedItem } from '@/utils/uploadActions';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
@@ -24,7 +24,6 @@ export default function ItemActions({
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [isDeleting, setIsDeleting] = useState(false);
   const { downloadSingle } = useDownloadsActions();
-  const { controlTorrent, controlQueuedItem } = useUpload(apiKey);
   const t = useTranslations('ItemActions');
 
   // Downloads a torrent or a webdl/usenet item
@@ -56,7 +55,7 @@ export default function ItemActions({
 
   // Forces a torrent or a webdl/usenet item to start downloading
   const handleForceStart = async () => {
-    const result = await controlQueuedItem(item.id, 'start');
+    const result = await controlQueuedItem(apiKey, item.id, 'start');
     setToast({
       message: result.success ? t('toast.downloadStarted') : t('toast.downloadFailed'),
       type: result.success ? 'success' : 'error',
@@ -69,7 +68,7 @@ export default function ItemActions({
   // Stops seeding a torrent
   const handleStopSeeding = async () => {
     if (activeType !== 'torrents') return;
-    const result = await controlTorrent(item.id, 'stop_seeding');
+    const result = await controlTorrent(apiKey, item.id, 'stop_seeding');
     setToast({
       message: result.success ? t('toast.seedingStopped') : t('toast.seedingStopFailed'),
       type: result.success ? 'success' : 'error',

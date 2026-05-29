@@ -81,8 +81,8 @@ export function useDownloadListPolling({
     const shouldPollForAutoStartQueued = () => {
       if (type !== 'torrents' && type !== 'all') return false;
       const options = getAutoStartOptions();
-      const torrents = selectItemsForView(useTorboxDownloadsStore.getState(), 'torrents');
-      return Boolean(options?.autoStart && torrents.some(isQueuedItem));
+      if (!options?.autoStart) return false;
+      return useTorboxDownloadsStore.getState().hasQueuedTorrents;
     };
 
     const shouldPollWhileHidden = () => {
@@ -109,16 +109,32 @@ export function useDownloadListPolling({
 
     const pollAllAssetTypes = (bypassCache) => {
       let anySkipped = false;
-      for (const assetType of ALL_ASSET_TYPES) {
-        if (isRateLimitedRef.current(assetType)) {
-          anySkipped = true;
-        } else {
-          onPollRef.current(assetType, bypassCache);
+      let completed = 0;
+
+      const finishIfDone = () => {
+        completed += 1;
+        if (completed === ALL_ASSET_TYPES.length && anySkipped) {
+          onPollSkippedRef.current?.();
         }
-      }
-      if (anySkipped) {
-        onPollSkippedRef.current?.();
-      }
+      };
+
+      ALL_ASSET_TYPES.forEach((assetType, index) => {
+        const runPoll = () => {
+          if (cancelled) return;
+          if (isRateLimitedRef.current(assetType)) {
+            anySkipped = true;
+          } else {
+            onPollRef.current(assetType, bypassCache);
+          }
+          finishIfDone();
+        };
+
+        if (index === 0) {
+          runPoll();
+        } else {
+          setTimeout(runPoll, index * POLLING_CONFIG.allTabStaggerMs);
+        }
+      });
     };
 
     const runPollTick = (bypassCache = false) => {

@@ -3,26 +3,23 @@ import { createDownloadFetchRateLimiter } from '@/components/shared/hooks/downlo
 /** Imperative refs for download sync (not Zustand state). */
 export const deltaCursorRef = { current: { torrents: null, usenet: null, webdl: null } };
 export const processedQueueIdsRef = { current: new Set() };
-/** Active initial-fetch key: `${apiKey}:${viewType}` */
-export const fetchInProgressKeyRef = { current: null };
+/** Active initial-fetch keys: `${apiKey}:${viewType}` — supports concurrent fetches per view. */
+export const fetchInProgressKeysRef = { current: new Set() };
 
 export function getFetchInProgressKey(apiKey, viewType) {
   return `${apiKey || ''}:${viewType || 'torrents'}`;
 }
 
 export function isFetchInProgress(apiKey, viewType) {
-  return fetchInProgressKeyRef.current === getFetchInProgressKey(apiKey, viewType);
+  return fetchInProgressKeysRef.current.has(getFetchInProgressKey(apiKey, viewType));
 }
 
 export function beginFetchInProgress(apiKey, viewType) {
-  fetchInProgressKeyRef.current = getFetchInProgressKey(apiKey, viewType);
+  fetchInProgressKeysRef.current.add(getFetchInProgressKey(apiKey, viewType));
 }
 
 export function endFetchInProgress(apiKey, viewType) {
-  const key = getFetchInProgressKey(apiKey, viewType);
-  if (fetchInProgressKeyRef.current === key) {
-    fetchInProgressKeyRef.current = null;
-  }
+  fetchInProgressKeysRef.current.delete(getFetchInProgressKey(apiKey, viewType));
 }
 
 export const prevApiKeyRef = { current: null };
@@ -43,6 +40,6 @@ export function resetDownloadSyncRefs(apiKey) {
   deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
   getRateLimiter().reset();
   processedQueueIdsRef.current = new Set();
-  fetchInProgressKeyRef.current = null;
+  fetchInProgressKeysRef.current = new Set();
   lastAutoStartCheckRef.current = 0;
 }

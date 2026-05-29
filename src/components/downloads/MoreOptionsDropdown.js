@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useSyncExternalStore } from 'react';
+import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Icons from '@/components/icons';
 import Spinner from '../shared/Spinner';
@@ -244,7 +244,7 @@ export default function MoreOptionsDropdown({
   const t = useTranslations('MoreOptionsDropdown');
   const actionT = useTranslations('ItemActionButtons');
   const filtersT = useTranslations('DownloadsFilters');
-  const apiClient = createApiClient(apiKey);
+  const apiClient = useMemo(() => createApiClient(apiKey), [apiKey]);
 
   useEffect(() => {
     if (!mobileBar || !isMenuOpen) return;

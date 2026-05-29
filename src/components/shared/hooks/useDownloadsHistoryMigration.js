@@ -18,8 +18,12 @@ export function useDownloadsHistoryMigration(apiKey, isBackendAvailable, backend
   const previousApiKeyRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (backendIsLoading) {
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const apiKeyChanged =
@@ -61,6 +65,7 @@ export function useDownloadsHistoryMigration(apiKey, isBackendAvailable, backend
       migrationAttemptedRef.current = true;
 
       const migrationResult = await migrateDownloadHistory(apiKey);
+      if (cancelled) return;
       if (migrationResult.success && migrationResult.migrated > 0) {
         console.log(`Migrated ${migrationResult.migrated} entries from localStorage`);
       }
@@ -76,6 +81,10 @@ export function useDownloadsHistoryMigration(apiKey, isBackendAvailable, backend
     };
 
     runMigrationAndFetch();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     apiKey,
     downloadHistory.length,

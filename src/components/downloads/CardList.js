@@ -17,7 +17,6 @@ import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
 import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
-import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
@@ -31,8 +30,6 @@ function parseEntityKey(entityKey) {
 export default function CardList({
   entityKeys,
   tagMappings = {},
-  selectedItems,
-  setSelectedItems,
   apiKey,
   activeColumns,
   onFileSelect,
@@ -118,11 +115,6 @@ export default function CardList({
   }, [isFullscreen, viewMode]);
 
   const deferredEntityKeys = useDeferredValue(entityKeys);
-  const entities = useTorboxDownloadsStore((state) => state.entities);
-  const rowItems = useMemo(
-    () => deferredEntityKeys.map((key) => entities[key]).filter(Boolean),
-    [deferredEntityKeys, entities]
-  );
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const deferredExpandedById = useDeferredValue(expandedById);
 
@@ -218,7 +210,7 @@ export default function CardList({
     lastClickedItemIndexRef,
     lastClickedFileIndexRef,
   } = useDownloadRowInteractions({
-    items: rowItems,
+    entityKeys: deferredEntityKeys,
     activeType,
     fileSearch,
     onFileSelect,

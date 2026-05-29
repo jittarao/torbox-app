@@ -2,15 +2,42 @@
 
 import { useCallback, useRef } from 'react';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { getIdFieldForItem, resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { getFilesVisibleForDownloadSearch } from '../utils/downloadSearch';
 
+function findEntityBySelectionId(entityKeys, selectionId) {
+  if (!entityKeys?.length) return null;
+  const entities = useTorboxDownloadsStore.getState().entities;
+  for (const key of entityKeys) {
+    const row = entities[key];
+    if (row && getDownloadSelectionId(row) === selectionId) {
+      return row;
+    }
+  }
+  return null;
+}
+
+function findEntityByItemId(entityKeys, itemId) {
+  if (!entityKeys?.length) return null;
+  const entities = useTorboxDownloadsStore.getState().entities;
+  for (const key of entityKeys) {
+    const row = entities[key];
+    if (row && String(row.id) === String(itemId)) {
+      return row;
+    }
+  }
+  return null;
+}
+
 /**
  * Shared row selection + per-file download handlers for table and card lists.
+ * Pass `entityKeys` to resolve rows via getState() and avoid whole-map store subscriptions.
  */
 export function useDownloadRowInteractions({
   items,
+  entityKeys,
   activeType,
   fileSearch,
   onFileSelect,
@@ -22,6 +49,19 @@ export function useDownloadRowInteractions({
 }) {
   const lastClickedItemIndexRef = useRef(null);
   const lastClickedFileIndexRef = useRef(null);
+  const entityKeysRef = useRef(entityKeys);
+  entityKeysRef.current = entityKeys;
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const getItemAtIndex = useCallback((index) => {
+    const keys = entityKeysRef.current;
+    if (keys?.length) {
+      const key = keys[index];
+      return key ? useTorboxDownloadsStore.getState().entities[key] ?? null : null;
+    }
+    return itemsRef.current?.[index] ?? null;
+  }, []);
 
   const isSelectionDisabled = useCallback((selectionId) => {
     const files = useDownloadsSelectionStore.getState().selectedItems.files;
@@ -39,7 +79,8 @@ export function useDownloadRowInteractions({
         setSelected((prev) => {
           const newItems = new Set(prev.items);
           for (let i = start; i <= end; i++) {
-            const row = items[i];
+            const row = getItemAtIndex(i);
+            if (!row) continue;
             const sid = getDownloadSelectionId(row);
             if (checked && !isSelectionDisabled(sid)) {
               newItems.add(sid);
@@ -68,7 +109,7 @@ export function useDownloadRowInteractions({
       }
       lastClickedItemIndexRef.current = rowIndex;
     },
-    [items, isSelectionDisabled]
+    [getItemAtIndex, isSelectionDisabled]
   );
 
   const handleFileSelection = useCallback(
@@ -76,7 +117,10 @@ export function useDownloadRowInteractions({
       if (isShiftKey && lastClickedFileIndexRef.current !== null) {
         const start = Math.min(lastClickedFileIndexRef.current, fileIndex);
         const end = Math.max(lastClickedFileIndexRef.current, fileIndex);
-        const item = items.find((row) => getDownloadSelectionId(row) === selectionId);
+        const keys = entityKeysRef.current;
+        const item = keys?.length
+          ? findEntityBySelectionId(keys, selectionId)
+          : itemsRef.current?.find((row) => getDownloadSelectionId(row) === selectionId);
         if (item) {
           getFilesVisibleForDownloadSearch(item, fileSearch)
             .slice(start, end + 1)
@@ -89,7 +133,7 @@ export function useDownloadRowInteractions({
       }
       lastClickedFileIndexRef.current = fileIndex;
     },
-    [items, onFileSelect, fileSearch]
+    [fileSearch, onFileSelect]
   );
 
   const assetKey = useCallback((itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId), []);
@@ -104,7 +148,10 @@ export function useDownloadRowInteractions({
       }
       const options = { fileId: file.id, filename: file.name };
 
-      const item = items.find((row) => row.id === itemId);
+      const keys = entityKeysRef.current;
+      const item = keys?.length
+        ? findEntityByItemId(keys, itemId)
+        : itemsRef.current?.find((row) => row.id === itemId);
       const idField = getIdFieldForItem(item, activeType);
 
       const metadata = {
@@ -136,7 +183,6 @@ export function useDownloadRowInteractions({
     [
       assetKey,
       activeType,
-      items,
       downloadSingle,
       setToast,
       toastMessages,
