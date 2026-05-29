@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
@@ -55,14 +56,15 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
   const entities = useTorboxDownloadsStore((state) => state.entities);
   const order = useTorboxDownloadsStore((state) => state.order);
 
-  const filterCriteria = useDownloadsUiStore((state) => ({
-    search: state.search,
-    statusFilter: state.statusFilter,
-    appliedFilters: state.appliedFilters,
-    sortField: state.sortField,
-    sortDirection: state.sortDirection,
-  }));
-  const stableFilterCriteria = useStableShallow(filterCriteria);
+  const filterCriteria = useDownloadsUiStore(
+    useShallow((state) => ({
+      search: state.search,
+      statusFilter: state.statusFilter,
+      appliedFilters: state.appliedFilters,
+      sortField: state.sortField,
+      sortDirection: state.sortDirection,
+    }))
+  );
   const stableTagMappings = useStableShallow(tagMappings);
   const stableDownloadHistory = useStableShallow(downloadHistory);
 
@@ -81,11 +83,11 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
       selectVisibleSortedIds(
         combinedState,
         activeType,
-        stableFilterCriteria,
+        filterCriteria,
         stableTagMappings,
         downloadHistoryLookup
       ),
-    [combinedState, activeType, stableFilterCriteria, stableTagMappings, downloadHistoryLookup]
+    [combinedState, activeType, filterCriteria, stableTagMappings, downloadHistoryLookup]
   );
 
   const sortedItems = useMemo(
