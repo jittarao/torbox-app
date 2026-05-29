@@ -112,6 +112,7 @@ export const useDownloadsPlayerStore = create((set, get) => ({
 
   setAudioUrl: (url) => set((state) => ({ audio: { ...state.audio, url } })),
 
+  // TODO: Refactor into useAudioPlayback hook
   playAudio: async ({ itemId, file, apiKey, activeType, requestDownloadLink, onError }) => {
     const item = findItemById(itemId, activeType);
     const resolvedAssetType = resolveItemAssetType(item, activeType);
@@ -137,6 +138,7 @@ export const useDownloadsPlayerStore = create((set, get) => ({
     return { success: false, error: result.error };
   },
 
+  // TODO: Refactor into useAudioPlayback hook
   refreshAudioUrl: async (requestDownloadLink) => {
     const { audio, activeType } = get();
     const { itemId, fileId, assetType: at, apiKey: key } = audio;

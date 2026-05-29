@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { Check, Edit, Hash, MagnifyingGlass, Plus, Trash, X } from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
@@ -64,7 +64,7 @@ function TagRow({
             {loading ? (
               <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             ) : (
-              <Icons.Trash className="size-3.5" aria-hidden />
+              <Trash className="size-3.5" aria-hidden />
             )}
             {t('menuDelete')}
           </button>
@@ -81,7 +81,7 @@ function TagRow({
             className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent dark:bg-accent-dark/15 dark:text-accent-dark"
             aria-hidden
           >
-            <Icons.Hash className="size-4" />
+            <Hash className="size-4" />
           </span>
           <input
             type="text"
@@ -115,7 +115,7 @@ function TagRow({
               transition-colors"
             title={tActions('save')}
           >
-            <Icons.Check className="size-4" aria-hidden />
+            <Check className="size-4" aria-hidden />
           </button>
           <button
             type="button"
@@ -126,7 +126,7 @@ function TagRow({
               transition-colors"
             title={tActions('cancel')}
           >
-            <Icons.X className="size-4" aria-hidden />
+            <X className="size-4" aria-hidden />
           </button>
         </div>
       </li>
@@ -144,7 +144,7 @@ function TagRow({
           bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark"
         aria-hidden
       >
-        <Icons.Hash className="size-3.5" />
+        <Hash className="size-3.5" />
       </span>
       <span className="min-w-0 flex-1 truncate text-sm font-medium text-primary-text dark:text-primary-text-dark">
         {tag.name}
@@ -166,7 +166,7 @@ function TagRow({
             transition-colors"
           title={t('menuRename')}
         >
-          <Icons.Edit className="size-3.5" aria-hidden />
+          <Edit className="size-3.5" aria-hidden />
         </button>
         <button
           type="button"
@@ -177,7 +177,7 @@ function TagRow({
             transition-colors"
           title={t('menuDelete')}
         >
-          <Icons.Trash className="size-3.5" aria-hidden />
+          <Trash className="size-3.5" aria-hidden />
         </button>
       </div>
     </li>
@@ -327,7 +327,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                 className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25 sm:flex"
                 aria-hidden
               >
-                <Icons.Hash className="size-5" />
+                <Hash className="size-5" />
               </div>
               <div className="min-w-0 flex-1 sm:pt-0.5">
                 <div className="flex min-w-0 items-center gap-2">
@@ -357,7 +357,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                 className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark sm:-mt-1 sm:size-9 sm:rounded-xl"
                 aria-label={t('close')}
               >
-                <Icons.X className="size-5" aria-hidden />
+                <X className="size-5" aria-hidden />
               </button>
             </div>
           </div>
@@ -372,7 +372,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
               }}
             >
               <div className="relative min-w-0 flex-1">
-                <Icons.Plus
+                <Plus
                   className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary-text/35 dark:text-primary-text-dark/35"
                   aria-hidden
                 />
@@ -407,7 +407,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
 
             {showSearch && (
               <div className="relative mt-3">
-                <Icons.MagnifyingGlass
+                <MagnifyingGlass
                   className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary-text/35 dark:text-primary-text-dark/35"
                   aria-hidden
                 />
@@ -441,7 +441,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                   className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark"
                   aria-hidden
                 >
-                  <Icons.Hash className="size-7 opacity-80" />
+                  <Hash className="size-7 opacity-80" />
                 </div>
                 <p className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
                   {t('noTags')}

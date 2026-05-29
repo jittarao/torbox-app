@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { X } from '@/components/icons';
 
 function MoreIcon({ className = 'size-5' }) {
   return (
@@ -72,7 +72,7 @@ export default function MobileBottomNav({
         })}
         <TabButton
           label={t('menu.more')}
-          Icon={isMoreOpen ? Icons.X : MoreIcon}
+          Icon={isMoreOpen ? X : MoreIcon}
           active={isMoreActive || isMoreOpen}
           onClick={onMorePress}
           ariaCurrent={isMoreActive ? 'page' : undefined}

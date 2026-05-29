@@ -5,7 +5,7 @@ import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import Icons from '@/components/icons';
+import { All, ArrowLeftRight, Clock, ClockArrowDown, CloudDownload, CloudUpload, DownArrow, Download, Files, Hash, Layers, Link, Percent, Private, UpArrow } from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
@@ -110,38 +110,38 @@ function ItemCard({
   const getColumnIcon = (column) => {
     switch (column) {
       case 'id':
-        return <Icons.ArrowLeftRight />;
+        return <ArrowLeftRight />;
       case 'hash':
-        return <Icons.Hash />;
+        return <Hash />;
       case 'seeds':
-        return <Icons.UpArrow />;
+        return <UpArrow />;
       case 'peers':
-        return <Icons.DownArrow />;
+        return <DownArrow />;
       case 'ratio':
-        return <Icons.Percent />;
+        return <Percent />;
       case 'size':
-        return <Icons.Layers />;
+        return <Layers />;
       case 'file_count':
-        return <Icons.Files />;
+        return <Files />;
       case 'created_at':
       case 'cached_at':
       case 'updated_at':
       case 'expires_at':
-        return <Icons.Clock />;
+        return <Clock />;
       case 'eta':
-        return <Icons.ClockArrowDown />;
+        return <ClockArrowDown />;
       case 'total_downloaded':
-        return <Icons.CloudDownload />;
+        return <CloudDownload />;
       case 'total_uploaded':
-        return <Icons.CloudUpload />;
+        return <CloudUpload />;
       case 'original_url':
-        return <Icons.Link />;
+        return <Link />;
       case 'download_progress':
-        return <Icons.Download />;
+        return <Download />;
       case 'asset_type':
-        return <Icons.All />;
+        return <All />;
       case 'private':
-        return <Icons.Private />;
+        return <Private />;
     }
   };
 
@@ -271,7 +271,7 @@ function ItemCard({
       case 'private':
         return item.private ? (
           <div className="flex items-center gap-2">
-            <Icons.Private className="size-4 text-orange-500 dark:text-orange-400" />
+            <Private className="size-4 text-orange-500 dark:text-orange-400" />
             <span>Private</span>
           </div>
         ) : (
@@ -390,7 +390,7 @@ function ItemCard({
                   </Tooltip>
                   {item.private && (
                     <Tooltip content="Private Tracker">
-                      <Icons.Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
+                      <Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
                     </Tooltip>
                   )}
                 </div>

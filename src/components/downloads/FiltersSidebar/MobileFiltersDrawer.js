@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
-import Icons from '@/components/icons';
+import { X } from '@/components/icons';
 import FiltersSidebar from './index';
 
 export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
@@ -62,7 +62,7 @@ export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
                 className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
                 aria-label={t('close')}
               >
-                <Icons.X className="size-5" aria-hidden />
+                <X className="size-5" aria-hidden />
               </button>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, jest } from 'bun:test';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import NotificationBell from '../NotificationBell';
 import { useNotifications } from '../../shared/hooks/useNotifications';

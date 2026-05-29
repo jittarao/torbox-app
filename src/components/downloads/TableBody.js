@@ -364,7 +364,7 @@ function WindowVirtualizedBody(props) {
     count: state.flattenedRows.length,
     estimateSize: state.estimateSize,
     measureElement: state.measureElement,
-    overscan: 30,
+    overscan: 10,
     scrollMargin: state.tableOffsetTopRef.current || state.tableOffsetTop,
     useFlushSync: false,
   });
@@ -412,7 +412,7 @@ function ContainerVirtualizedBody(props) {
     getScrollElement,
     estimateSize: state.estimateSize,
     measureElement: state.measureElement,
-    overscan: 30,
+    overscan: 10,
     useFlushSync: false,
   });
 

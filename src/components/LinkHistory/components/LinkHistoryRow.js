@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import Icons from '@/components/icons';
+import { Copy, Download, Times } from '@/components/icons';
 import { getExpirationDate } from '../utils/formatters';
 
 const LinkHistoryRow = memo(
@@ -65,10 +65,10 @@ const LinkHistoryRow = memo(
           >
             {isMobile ? (
               <div className="flex items-center justify-center gap-2">
-                <Icons.Copy /> {linkHistoryT('actions.copy')}
+                <Copy /> {linkHistoryT('actions.copy')}
               </div>
             ) : (
-              <Icons.Copy />
+              <Copy />
             )}
           </button>
           <button
@@ -84,10 +84,10 @@ const LinkHistoryRow = memo(
           >
             {isMobile ? (
               <div className="flex items-center justify-center gap-2">
-                <Icons.Download /> {linkHistoryT('actions.download')}
+                <Download /> {linkHistoryT('actions.download')}
               </div>
             ) : (
-              <Icons.Download />
+              <Download />
             )}
           </button>
           <button
@@ -102,10 +102,10 @@ const LinkHistoryRow = memo(
           >
             {isMobile ? (
               <div className="flex items-center justify-center gap-2">
-                <Icons.Times /> {linkHistoryT('actions.remove')}
+                <Times /> {linkHistoryT('actions.remove')}
               </div>
             ) : (
-              <Icons.Times />
+              <Times />
             )}
           </button>
         </td>

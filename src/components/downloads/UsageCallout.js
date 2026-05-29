@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import Icons from '@/components/icons';
+import { AlertCircle, ExclamationTriangle, ExternalLink } from '@/components/icons';
 import { ABUSE_POLICY_URL } from '@/components/constants';
 import { Link } from '@/i18n/navigation';
 import { useBandwidthUsage } from '@/hooks/useBandwidthUsage';
@@ -45,12 +45,12 @@ export default function UsageCallout({ apiKey, planId }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-2 min-w-0">
           {isDanger ? (
-            <Icons.AlertCircle
+            <AlertCircle
               className="size-4 shrink-0 text-label-danger-text dark:text-label-danger-text-dark mt-0.5"
               aria-hidden
             />
           ) : (
-            <Icons.ExclamationTriangle
+            <ExclamationTriangle
               className="size-4 shrink-0 text-label-warning-text dark:text-label-warning-text-dark mt-0.5"
               aria-hidden
             />
@@ -81,7 +81,7 @@ export default function UsageCallout({ apiKey, planId }) {
             className="ui-btn-ghost !py-1.5 !px-3 !text-xs inline-flex items-center gap-1"
           >
             {t('learnMore')}
-            <Icons.ExternalLink className="size-3" aria-hidden />
+            <ExternalLink className="size-3" aria-hidden />
           </a>
         </div>
       </div>

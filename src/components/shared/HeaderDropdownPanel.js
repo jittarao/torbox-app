@@ -50,7 +50,7 @@ export default function HeaderDropdownPanel({
     </div>
   );
 
-  if (isMobile && portalReady) {
+  if (isMobile && mounted) {
     return createPortal(
       <div data-header-overlay>
         <div

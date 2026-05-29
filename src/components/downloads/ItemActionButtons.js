@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Icons from '@/components/icons';
+import { Check, ChevronDown, ChevronUp, Delete, Download, Files, Play, Stop } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
@@ -92,8 +92,8 @@ export default function ItemActionButtons({
           <ConfirmButton
             onClick={handleStopSeeding}
             isLoading={isStopping}
-            confirmIcon={<Icons.Check />}
-            defaultIcon={<Icons.Stop />}
+            confirmIcon={<Check />}
+            defaultIcon={<Stop />}
             className={`${tableIconButtonClass} text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500
               hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200`}
             title={t('stop.title')}
@@ -111,7 +111,7 @@ export default function ItemActionButtons({
             disabled:opacity-50 disabled:cursor-not-allowed`}
           title={t('start.title')}
         >
-          {isDownloading ? <Spinner size="sm" /> : <Icons.Play />}
+          {isDownloading ? <Spinner size="sm" /> : <Play />}
         </button>
       )}
 
@@ -129,7 +129,7 @@ export default function ItemActionButtons({
           title={t('download.title')}
           aria-label={t('download.label')}
         >
-          {isDownloading ? <Spinner size="sm" /> : <Icons.Download />}
+          {isDownloading ? <Spinner size="sm" /> : <Download />}
         </button>
       )}
 
@@ -153,18 +153,18 @@ export default function ItemActionButtons({
         >
           {mobileBar ? (
             <>
-              <Icons.Files className="shrink-0 opacity-70" aria-hidden />
+              <Files className="shrink-0 opacity-70" aria-hidden />
               <span className="tabular-nums">{fileCount ?? '—'}</span>
               {filesExpanded ? (
-                <Icons.ChevronUp className="shrink-0 opacity-50" aria-hidden />
+                <ChevronUp className="shrink-0 opacity-50" aria-hidden />
               ) : (
-                <Icons.ChevronDown className="shrink-0 opacity-50" aria-hidden />
+                <ChevronDown className="shrink-0 opacity-50" aria-hidden />
               )}
             </>
           ) : filesExpanded ? (
-            <Icons.ChevronUp />
+            <ChevronUp />
           ) : (
-            <Icons.ChevronDown />
+            <ChevronDown />
           )}
         </button>
       )}
@@ -173,8 +173,8 @@ export default function ItemActionButtons({
         <ConfirmButton
           onClick={handleDelete}
           isLoading={isDeleting}
-          confirmIcon={<Icons.Check />}
-          defaultIcon={<Icons.Delete />}
+          confirmIcon={<Check />}
+          defaultIcon={<Delete />}
           className={`${tableIconButtonClass} text-red-500 dark:text-red-400 
           hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200`}
           title={t('delete.title')}

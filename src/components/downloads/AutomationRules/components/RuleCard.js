@@ -1,6 +1,6 @@
 'use client';
 
-import Icons from '@/components/icons';
+import { Clock, Delete, Edit, Play } from '@/components/icons';
 import { getConditionText } from '../utils';
 import { LOGIC_OPERATORS } from '../constants';
 
@@ -62,7 +62,7 @@ export default function RuleCard({
                   />
                 </svg>
               ) : (
-                <Icons.Play />
+                <Play />
               )}
             </button>
           )}
@@ -73,7 +73,7 @@ export default function RuleCard({
             title={t('viewLogs')}
             aria-label={t('viewLogs')}
           >
-            <Icons.Clock />
+            <Clock />
           </button>
           <button
             type="button"
@@ -82,7 +82,7 @@ export default function RuleCard({
             title={t('editRule') || 'Edit rule'}
             aria-label={t('editRule') || 'Edit rule'}
           >
-            <Icons.Edit />
+            <Edit />
           </button>
           <button
             type="button"
@@ -91,7 +91,7 @@ export default function RuleCard({
             title={t('deleteRule') || 'Delete rule'}
             aria-label={t('deleteRule') || 'Delete rule'}
           >
-            <Icons.Delete />
+            <Delete />
           </button>
         </div>
       </div>

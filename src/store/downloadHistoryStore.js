@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { isBackendAvailable } from '@/store/backendModeStore';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 
+let fetchPromiseForRequest = null;
+let abortControllerForRequest = null;
+
 /**
  * Download history store
  * Manages link history state and fetching from backend
@@ -13,8 +16,6 @@ export const useDownloadHistoryStore = create((set, get) => ({
   lastFetched: null,
   currentApiKey: null,
   activeRequestId: 0,
-  fetchPromise: null,
-  abortController: null,
 
   // Fetch download history from backend
   fetchDownloadHistory: async (apiKey) => {
@@ -35,26 +36,25 @@ export const useDownloadHistoryStore = create((set, get) => ({
       return;
     }
 
-    const { fetchPromise, currentApiKey } = get();
-    if (fetchPromise && currentApiKey === apiKey) {
-      return fetchPromise;
+    const { currentApiKey } = get();
+    if (fetchPromiseForRequest && currentApiKey === apiKey) {
+      return fetchPromiseForRequest;
     }
 
     // Abort any previous in-flight request
-    const prevController = get().abortController;
-    if (prevController) {
-      prevController.abort();
+    if (abortControllerForRequest) {
+      abortControllerForRequest.abort();
     }
 
     const controller = new AbortController();
+    abortControllerForRequest = controller;
     const requestId = get().activeRequestId + 1;
-    const fetchPromiseForRequest = (async () => {
+    const fetchPromise = (async () => {
       set({
         isLoading: true,
         error: null,
         currentApiKey: apiKey,
         activeRequestId: requestId,
-        abortController: controller,
       });
 
       try {
@@ -148,26 +148,26 @@ export const useDownloadHistoryStore = create((set, get) => ({
         return [];
       } finally {
         if (get().activeRequestId === requestId) {
-          set({ fetchPromise: null, abortController: null });
+          fetchPromiseForRequest = null;
+          abortControllerForRequest = null;
         }
       }
     })();
 
-    set({ fetchPromise: fetchPromiseForRequest });
-    return fetchPromiseForRequest;
+    fetchPromiseForRequest = fetchPromise;
+    return fetchPromise;
   },
 
   // Clear download history (useful when API key changes)
   clearDownloadHistory: () => {
-    const controller = get().abortController;
-    if (controller) controller.abort();
+    if (abortControllerForRequest) abortControllerForRequest.abort();
+    abortControllerForRequest = null;
+    fetchPromiseForRequest = null;
     set({
       downloadHistory: [],
       error: null,
       lastFetched: null,
       currentApiKey: null,
-      fetchPromise: null,
-      abortController: null,
     });
   },
 }));

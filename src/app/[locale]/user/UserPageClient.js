@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import UserProfile from '@/components/user/UserProfile';
@@ -69,45 +69,52 @@ export default function UserPageClient() {
 }
 
 // Simple Error Boundary Component
-function ErrorBoundary({ children }) {
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return (
-      <div className="p-6">
-        <div className="text-center py-8">
-          <div className="size-12 text-red-500 mx-auto mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-          <p className="text-red-600 dark:text-red-400 mb-4">
-            Something went wrong with this component
-          </p>
-          <button
-            type="button"
-            onClick={() => setHasError(false)}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
   }
 
-  try {
-    return children;
-  } catch (error) {
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
     console.error('Error in user page component:', error);
-    setHasError(true);
-    return null;
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6">
+          <div className="text-center py-8">
+            <div className="size-12 text-red-500 mx-auto mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <p className="text-red-600 dark:text-red-400 mb-4">
+              Something went wrong with this component
+            </p>
+            <button
+              type="button"
+              onClick={() => this.setState({ hasError: false })}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
   }
 }

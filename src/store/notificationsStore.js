@@ -3,6 +3,9 @@ import { createApiClient } from '@/utils/apiClient';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 
+let pollTimer = null;
+let pollSubscribers = 0;
+
 function getClearedNotifications() {
   try {
     return JSON.parse(
@@ -30,12 +33,6 @@ const NOTIFICATION_POLL_INTERVAL_MS = 120_000;
 const RATE_LIMIT_BACKOFF_BASE_MS = 60_000;
 const MAX_RATE_LIMIT_BACKOFF_MS = 600_000;
 
-function clearNotificationPollTimer(timer) {
-  if (timer) {
-    clearInterval(timer);
-  }
-}
-
 function isRateLimitMessage(message) {
   return /429|too many requests/i.test(message || '');
 }
@@ -51,8 +48,6 @@ export const useNotificationsStore = create((set, get) => ({
   lastFetchTime: null,
   currentApiKey: null,
   fetchingNotifications: false,
-  _pollTimer: null,
-  _pollSubscribers: 0,
 
   // Reset notifications when API key changes
   setApiKey: (apiKey) => {
@@ -480,10 +475,9 @@ export const useNotificationsStore = create((set, get) => ({
     if (!apiKey) return;
 
     get().setApiKey(apiKey);
-    const { _pollSubscribers, _pollTimer } = get();
-    set({ _pollSubscribers: _pollSubscribers + 1 });
+    pollSubscribers += 1;
 
-    if (!_pollTimer) {
+    if (!pollTimer) {
       const tick = () => {
         const state = get();
         if (!state.currentApiKey) return;
@@ -492,20 +486,19 @@ export const useNotificationsStore = create((set, get) => ({
           state.fetchNotifications(state.currentApiKey);
         }
       };
-      set({ _pollTimer: setInterval(tick, NOTIFICATION_POLL_INTERVAL_MS) });
+      pollTimer = setInterval(tick, NOTIFICATION_POLL_INTERVAL_MS);
     }
 
     get().fetchNotifications(apiKey);
   },
 
   stopPolling: () => {
-    const { _pollSubscribers, _pollTimer } = get();
-    const next = Math.max(0, _pollSubscribers - 1);
-    if (next === 0) {
-      clearNotificationPollTimer(_pollTimer);
-      set({ _pollTimer: null, _pollSubscribers: 0 });
-    } else {
-      set({ _pollSubscribers: next });
+    pollSubscribers = Math.max(0, pollSubscribers - 1);
+    if (pollSubscribers === 0) {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
     }
   },
 
