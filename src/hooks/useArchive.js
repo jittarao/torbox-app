@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useUpload } from '../components/shared/hooks/useUpload';
+import { uploadItem } from '@/utils/uploadActions';
 
 export function useArchive(apiKey) {
-  const { uploadItem } = useUpload(apiKey);
   const [archivedDownloads, setArchivedDownloads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -158,7 +157,7 @@ export function useArchive(apiKey) {
     const magnetLink = `magnet:?xt=urn:btih:${download.hash}&dn=${encodedName}`;
 
     try {
-      const result = await uploadItem({
+      const result = await uploadItem(apiKey, {
         type: 'magnet',
         data: magnetLink,
         name: download.name,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
@@ -169,6 +169,17 @@ export function useDownloads(
     total: 0,
   });
   const focusCopyHandlerRef = useRef(null);
+  const downloadHistoryRef = useRef(downloadHistory);
+  const apiKeyRef = useRef(apiKey);
+  const assetTypeRef = useRef(assetType);
+  const fetchDownloadHistoryRef = useRef(fetchDownloadHistory);
+  const onBulkCompleteRef = useRef(onBulkComplete);
+
+  downloadHistoryRef.current = downloadHistory;
+  apiKeyRef.current = apiKey;
+  assetTypeRef.current = assetType;
+  fetchDownloadHistoryRef.current = fetchDownloadHistory;
+  onBulkCompleteRef.current = onBulkComplete;
 
   useEffect(() => {
     return () => {
@@ -179,8 +190,8 @@ export function useDownloads(
     };
   }, []);
 
-  const getDownloadEndpoint = () => {
-    switch (assetType) {
+  const getDownloadEndpoint = (type = assetTypeRef.current) => {
+    switch (type) {
       case 'usenet':
         return '/api/usenet/download';
       case 'webdl':
@@ -193,8 +204,8 @@ export function useDownloads(
     }
   };
 
-  const getIdField = () => {
-    switch (assetType) {
+  const getIdField = (type = assetTypeRef.current) => {
+    switch (type) {
       case 'usenet':
         return 'usenet_id';
       case 'webdl':
@@ -217,18 +228,23 @@ export function useDownloads(
     return null;
   };
 
-  const requestDownloadLink = async (
+  const requestDownloadLink = useCallback(async (
     id,
     options = {},
     idField = null,
     metadata = {},
     skipHistorySave = false
   ) => {
+    const apiKey = apiKeyRef.current;
+    const assetType = assetTypeRef.current;
+    const downloadHistory = downloadHistoryRef.current;
+    const fetchDownloadHistory = fetchDownloadHistoryRef.current;
+
     if (!apiKey) return false;
 
     const actualAssetType = resolveDownloadAssetType(assetType, metadata);
-    let actualEndpoint = getDownloadEndpoint();
-    let actualIdField = idField || getIdField();
+    let actualEndpoint = getDownloadEndpoint(assetType);
+    let actualIdField = idField || getIdField(assetType);
 
     if (assetType === 'all') {
       // Determine the correct endpoint and ID field based on the actual asset type
@@ -368,15 +384,18 @@ export function useDownloads(
       error: result.error || 'Unknown error',
       linkHistory: skipHistorySave ? failedDownloadHistory : null,
     };
-  };
+  }, []);
 
-  const downloadSingle = async (
+  const downloadSingle = useCallback(async (
     id,
     options = {},
     idField = null,
     copyLink = false,
     metadata = {}
   ) => {
+    const fetchDownloadHistory = fetchDownloadHistoryRef.current;
+    const apiKey = apiKeyRef.current;
+
     try {
       const result = await requestDownloadLink(id, options, idField, metadata);
       if (result.success) {
@@ -443,9 +462,14 @@ export function useDownloads(
     } catch (error) {
       console.error('Download error:', error);
     }
-  };
+  }, [requestDownloadLink]);
 
-  const handleBulkDownload = async (selectedItems, items) => {
+  const handleBulkDownload = useCallback(async (selectedItems, items) => {
+    const apiKey = apiKeyRef.current;
+    const assetType = assetTypeRef.current;
+    const fetchDownloadHistory = fetchDownloadHistoryRef.current;
+    const onBulkComplete = onBulkCompleteRef.current;
+
     const totalItems = selectedItems.items.size;
     const totalFiles = Array.from(selectedItems.files.entries()).reduce(
       (acc, [_, files]) => acc + files.size,
@@ -602,7 +626,7 @@ export function useDownloads(
     if (fetchDownloadHistory && apiKey) {
       fetchDownloadHistory(apiKey);
     }
-  };
+  }, [requestDownloadLink]);
 
   return {
     downloadLinks,

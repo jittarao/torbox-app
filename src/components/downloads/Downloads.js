@@ -16,12 +16,9 @@ import { useSelection } from '../shared/hooks/useSelection';
 import useIsMobile from '../../hooks/useIsMobile';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 
-import AssetTypeTabs, {
-  getStoredAssetType,
-  ASSET_TYPE_STORAGE_KEY,
-} from '@/components/shared/AssetTypeTabs';
+import AssetTypeTabs from '@/components/shared/AssetTypeTabs';
 import DownloadPanel from './DownloadPanel';
-import ItemUploader from './ItemUploader';
+import DownloadsUploaders from './DownloadsUploaders';
 import SpeedChart from './SpeedChart';
 import Toast from '@/components/shared/Toast';
 import Spinner from '../shared/Spinner';
@@ -34,12 +31,14 @@ import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
 import FilterEditorModal from './FilterEditorModal';
 import TagManager from './Tags/TagManager';
 import ActiveFiltersBar from './ActiveFiltersBar';
-import { itemHasFileNameSearchMatch } from './utils/downloadSearch';
+import { useDownloadsSearchExpand } from './hooks/useDownloadsSearchExpand';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 import { formatSize } from './utils/formatters';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 import { hasDownloadAccess } from '@/utils/userProfile';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import useDownloadsViewMode from '@/hooks/useDownloadsViewMode';
+import useStoredAssetType from '@/hooks/useStoredAssetType';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { useSessionStore } from '@/store/sessionStore';
 import ReferralCallout from '@/components/referral/ReferralCallout';
@@ -52,21 +51,6 @@ import { useTranslations } from 'next-intl';
 const FILTERS_SIDEBAR_EXPANDED = '14rem';
 const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
 
-function Uploaders({ apiKey, activeType, permissions }) {
-  if (activeType === 'all') {
-    return (
-      <div className="space-y-2">
-        <ItemUploader apiKey={apiKey} activeType="torrents" />
-        {hasDownloadAccess('usenet', permissions) && (
-          <ItemUploader apiKey={apiKey} activeType="usenet" />
-        )}
-        <ItemUploader apiKey={apiKey} activeType="webdl" />
-      </div>
-    );
-  }
-  return <ItemUploader key={activeType} apiKey={apiKey} activeType={activeType} />;
-}
-
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const downloadPanelT = useTranslations('DownloadPanel');
   const fetchStatusT = useTranslations('FetchStatus');
@@ -75,15 +59,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
   );
   const [toast, setToast] = useState(null);
-  const [activeType, setActiveType] = useState(getStoredAssetType);
+  const { activeType, setActiveType } = useStoredAssetType();
   const permissions = useSessionStore((state) => state.permissions);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
 
   const [isBlurred, setIsBlurred] = useState(false);
-  const [viewMode, setViewMode] = useState(
-    () => localStorage.getItem('downloads-view-mode') || 'table'
-  );
+  const { viewMode, setViewMode } = useDownloadsViewMode();
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const expandIds = useDownloadsUiStore((state) => state.expandIds);
   const collapseAllExpanded = useDownloadsUiStore((state) => state.collapseAll);
@@ -91,8 +73,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const setExpanded = useDownloadsUiStore((state) => state.setExpanded);
   const [isExporting, setIsExporting] = useState(false);
   const hasExpandedRef = useRef(false);
-  /** Item ids auto-expanded for file-name search; collapsed when search is cleared. */
-  const searchExpandedItemIdsRef = useRef(new Set());
   const scrollContainerRef = useRef(null);
   const isMobile = useIsMobile();
   /** Mobile always uses card layout; desktop preference is preserved in viewMode. */
@@ -105,11 +85,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   useEnsureUserDb(apiKey);
 
   const canUseUsenet = hasDownloadAccess('usenet', permissions);
-
-  const collapseAllFiles = useCallback(() => {
-    searchExpandedItemIdsRef.current = new Set();
-    collapseAllExpanded();
-  }, [collapseAllExpanded]);
 
   const {
     loading,
@@ -143,14 +118,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     backendIsLoading
   );
 
-  const expandAllFiles = useCallback(() => {
-    searchExpandedItemIdsRef.current = new Set();
-    const itemIds = viewItems
-      .filter((item) => item.files && item.files.length > 0)
-      .map((item) => item.id);
-    expandIds(itemIds);
-  }, [viewItems, expandIds]);
-
   const {
     selectedItems,
     handleSelectAll,
@@ -163,7 +130,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   useEffect(() => {
     if (!canUseUsenet && activeType === 'usenet') {
       setActiveType('all');
-      localStorage.setItem(ASSET_TYPE_STORAGE_KEY, 'all');
       setSelectedItems({ items: new Set(), files: new Map() });
     }
   }, [canUseUsenet, activeType, setActiveType, setSelectedItems]);
@@ -231,13 +197,11 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     sortField,
     sortDirection,
     handleSort,
-    setSort,
     views,
     activeView,
     activeTagIds,
     handleApplyView,
     handleClearFilters,
-    handleClearView,
     handleApplyTag,
     handleCloseFilterModal,
     handleEditView,
@@ -267,32 +231,22 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     setToast
   );
 
-  // Expand items that contain matching files so file rows are visible; undo on clear
-  useEffect(() => {
-    const query = search.trim();
-    if (!query) {
-      const searchExpanded = searchExpandedItemIdsRef.current;
-      if (searchExpanded.size === 0) return;
+  const { searchExpandedItemIdsRef, collapseAllFiles } = useDownloadsSearchExpand({
+    search,
+    sortedItems,
+    selectedItems,
+    expandedById,
+    setExpanded,
+    collapseAllExpanded,
+  });
 
-      for (const id of searchExpanded) {
-        if (selectedItems.files.has(id)) continue;
-        setExpanded(id, false);
-      }
-      searchExpandedItemIdsRef.current = new Set();
-      return;
-    }
-
-    for (const item of sortedItems) {
-      if (
-        itemHasFileNameSearchMatch(item, query) &&
-        item.files?.length > 0 &&
-        !expandedById[item.id]
-      ) {
-        setExpanded(item.id, true);
-        searchExpandedItemIdsRef.current.add(item.id);
-      }
-    }
-  }, [search, sortedItems, selectedItems.files, expandedById, setExpanded]);
+  const expandAllFiles = useCallback(() => {
+    searchExpandedItemIdsRef.current = new Set();
+    const itemIds = viewItems
+      .filter((item) => item.files && item.files.length > 0)
+      .map((item) => item.id);
+    expandIds(itemIds);
+  }, [viewItems, expandIds, searchExpandedItemIdsRef]);
 
   const onFullscreenToggle = useCallback(() => {
     setIsFullscreen((prev) => !prev);
@@ -615,7 +569,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
             activeType={activeType}
             onTypeChange={(type) => {
               setActiveType(type);
-              localStorage.setItem(ASSET_TYPE_STORAGE_KEY, type);
             }}
             isTypeAvailable={(type) => {
               if (type === 'all') return true;
@@ -661,7 +614,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       ) : (
         <>
           {/* Upload section */}
-          <Uploaders apiKey={apiKey} activeType={activeType} permissions={permissions} />
+          <DownloadsUploaders apiKey={apiKey} activeType={activeType} permissions={permissions} />
 
           {/* Speed Chart - Collapsible by default */}
           <SpeedChart />

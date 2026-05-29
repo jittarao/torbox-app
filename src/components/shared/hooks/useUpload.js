@@ -5,6 +5,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { useUploaderStore } from '@/store/uploaderStore';
+import {
+  controlTorrent as controlTorrentAction,
+  controlQueuedItem as controlQueuedItemAction,
+  uploadItem as uploadItemAction,
+  getUploadApiEndpoint,
+} from '@/utils/uploadActions';
 
 // Local storage keys
 const STORAGE_KEY = 'torrent-upload-options';
@@ -74,16 +80,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   });
 
   // Get API endpoint based on asset type
-  const getApiEndpoint = (activeType = assetType) => {
-    switch (activeType) {
-      case 'usenet':
-        return '/api/usenet';
-      case 'webdl':
-        return '/api/webdl';
-      default:
-        return '/api/torrents';
-    }
-  };
+  const getApiEndpoint = (activeType = assetType) => getUploadApiEndpoint(activeType);
 
   // Create base item with default status and global options
   const createBaseItem = (data, type) => ({
@@ -258,62 +255,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   };
 
   // Upload a single item
-  const uploadItem = async (item) => {
-    const formData = new FormData();
-
-    // Handle different item types
-    if (item.type === 'magnet') {
-      formData.append('magnet', item.data);
-    } else {
-      // Handle torrent, usenet and webdl type
-      if (typeof item.data === 'string') {
-        formData.append('link', item.data);
-      } else {
-        formData.append('file', item.data);
-      }
-    }
-
-    if (item.type === 'torrent' || item.type === 'magnet') {
-      // Use nullish coalescing to get defaults from globalOptions or DEFAULT_OPTIONS
-      const seedValue = item.seed ?? globalOptions.seed ?? DEFAULT_OPTIONS.seed;
-      const allowZipValue = item.allowZip ?? globalOptions.allowZip ?? DEFAULT_OPTIONS.allowZip;
-      formData.append('seed', seedValue);
-      formData.append('allow_zip', allowZipValue);
-    }
-
-    // Add password if activeType is webdl
-    if (assetType === 'webdl' && webdlPassword) {
-      formData.append('password', webdlPassword);
-    }
-
-    // Add name if it exists
-    if (item.name) {
-      formData.append('name', item.name);
-    }
-
-    // Add as_queued only if it's true
-    if (item.asQueued === true || item.asQueued === 'true') {
-      formData.append('as_queued', 'true');
-    }
-
-    // Queue upload via NextJS API (which handles backend queuing).
-    // maxRetries: 1 — one retry only for upload/control calls to fail fast and avoid long hangs.
-    const result = await retryFetch(getApiEndpoint(item.type), {
-      maxRetries: 1,
-      method: 'POST',
-      headers: { 'x-api-key': apiKey },
-      body: formData,
-      permanent: [
-        (data) =>
-          Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err)
-          ),
-      ],
-    });
-
-    // The upload is queued and will be processed in the background by the backend
-    return result;
-  };
+  const uploadItem = async (item) =>
+    uploadItemAction(apiKey, item, { assetType, globalOptions, webdlPassword });
 
   // Batch upload items (for large batches)
   const uploadItemsBatch = async (itemsToUpload) => {
@@ -537,53 +480,12 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   };
 
   // Control queued items. Operation can be start
-  const controlQueuedItem = async (queuedId, operation) => {
-    const result = await retryFetch(`${getApiEndpoint()}/controlqueued`, {
-      maxRetries: 1,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: {
-        queued_id: queuedId,
-        operation,
-        type: assetType === 'torrents' ? 'torrent' : assetType,
-      },
-      permanent: [
-        (data) =>
-          Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err)
-          ),
-      ],
-    });
-
-    return result;
-  };
+  const controlQueuedItem = async (queuedId, operation) =>
+    controlQueuedItemAction(apiKey, queuedId, operation, assetType);
 
   // Control active torrents. Operation can be stop_seeding
-  const controlTorrent = async (torrent_id, operation) => {
-    const result = await retryFetch('/api/torrents/control', {
-      maxRetries: 1,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: {
-        torrent_id,
-        operation,
-      },
-      permanent: [
-        (data) =>
-          Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err)
-          ),
-      ],
-    });
-
-    return result;
-  };
+  const controlTorrent = async (torrent_id, operation) =>
+    controlTorrentAction(apiKey, torrent_id, operation);
 
   return {
     items,

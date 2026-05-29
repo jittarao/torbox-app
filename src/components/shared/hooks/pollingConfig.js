@@ -18,6 +18,8 @@ export const POLLING_CONFIG = {
   hiddenGracePeriodMs: 3 * 60_000,
   /** Minimum time between auto-start control API calls (ms) */
   autoStartCheckIntervalMs: 30_000,
+  /** Stagger delay between asset types on All-tab poll ticks (ms) */
+  allTabStaggerMs: 2_000,
   /** Debounce trailing window for SSE-driven torrent refetches (ms) */
   sseDebounceMs: 2_000,
 };

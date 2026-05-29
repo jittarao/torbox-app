@@ -95,14 +95,20 @@ export function useFetchData(apiKey, type = 'torrents') {
   }, [apiKey]);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!apiKey) {
       useTorboxDownloadsStore.getState().setLoading(false);
       endFetchInProgress(apiKey, type);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (isFetchInProgress(apiKey, type)) {
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     beginFetchInProgress(apiKey, type);
@@ -113,12 +119,18 @@ export function useFetchData(apiKey, type = 'torrents') {
       try {
         await fetchDownloadsForView(apiKey, type, { bypassCache: true, skipLoading: hasCached });
       } finally {
+        if (cancelled) return;
         endFetchInProgress(apiKey, type);
         useTorboxDownloadsStore.getState().setLoading(false);
       }
     };
 
     initialFetch();
+
+    return () => {
+      cancelled = true;
+      endFetchInProgress(apiKey, type);
+    };
   }, [type, apiKey]);
 
   const fetchItems = useMemo(() => {
