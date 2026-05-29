@@ -683,7 +683,8 @@
     "actions": {
       "copy": "Kopieren",
       "download": "Herunterladen",
-      "remove": "Entfernen"
+      "remove": "Entfernen",
+      "selectItem": "Link auswählen"
     },
     "columns": {
       "actions": "Aktionen",
