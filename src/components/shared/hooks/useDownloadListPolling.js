@@ -6,8 +6,10 @@ import { createPollSchedule } from './pollSchedule';
 
 const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 
+const USER_ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+
 /**
- * Visibility-aware polling for download lists.
+ * Visibility- and idle-aware polling for download lists.
  *
  * @param {Object} options
  * @param {string} options.type - Active view type: torrents | usenet | webdl | all
@@ -56,14 +58,17 @@ export function useDownloadListPolling({
   useEffect(() => {
     let pollTimeoutId = null;
     let graceStopTimeoutId = null;
-    let wasTabHidden = false;
-    let hiddenSince = null;
+    let idleTimeoutId = null;
+    let wasDisengaged = false;
+    let awaySince = null;
+    let userIdle = false;
     let isVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
     let currentPollingInterval = POLLING_CONFIG.activeIntervalMs;
     let cancelled = false;
 
     if (!isVisible) {
-      hiddenSince = Date.now();
+      awaySince = Date.now();
+      wasDisengaged = true;
     }
 
     const clearGraceStopTimeout = () => {
@@ -73,9 +78,18 @@ export function useDownloadListPolling({
       }
     };
 
-    const isWithinHiddenGracePeriod = () => {
-      if (isVisible || hiddenSince == null) return false;
-      return Date.now() - hiddenSince < POLLING_CONFIG.hiddenGracePeriodMs;
+    const clearIdleTimeout = () => {
+      if (idleTimeoutId) {
+        clearTimeout(idleTimeoutId);
+        idleTimeoutId = null;
+      }
+    };
+
+    const isDisengaged = () => !isVisible || userIdle;
+
+    const isWithinEngagementGrace = () => {
+      if (!isDisengaged() || awaySince == null) return false;
+      return Date.now() - awaySince < POLLING_CONFIG.engagementGracePeriodMs;
     };
 
     const shouldPollForAutoStartQueued = () => {
@@ -85,19 +99,24 @@ export function useDownloadListPolling({
       return useTorboxDownloadsStore.getState().hasQueuedTorrents;
     };
 
-    const shouldPollWhileHidden = () => {
+    const shouldPollWhileDisengaged = () => {
       if (pollingPaused) return false;
-      return isWithinHiddenGracePeriod() || shouldPollForAutoStartQueued();
+      return isWithinEngagementGrace() || shouldPollForAutoStartQueued();
     };
 
-    const isEffectivelyInactive = () => pollingPaused || !isVisible;
+    const getPollIntervalMs = () => {
+      if (!isDisengaged()) return POLLING_CONFIG.activeIntervalMs;
+      if (isWithinEngagementGrace()) return POLLING_CONFIG.activeIntervalMs;
+      if (shouldPollForAutoStartQueued()) return POLLING_CONFIG.inactiveIntervalMs;
+      return currentPollingInterval;
+    };
 
     const getScheduleMode = () => {
       if (pollingPaused) return 'paused';
-      if (!isVisible) {
-        return shouldPollWhileHidden() ? 'slow' : 'inactive';
-      }
-      return 'active';
+      if (!isDisengaged()) return 'active';
+      if (isWithinEngagementGrace()) return 'active';
+      if (shouldPollForAutoStartQueued()) return 'slow';
+      return 'inactive';
     };
 
     const emitSchedule = (delayMs, mode = getScheduleMode()) => {
@@ -155,18 +174,13 @@ export function useDownloadListPolling({
       emitSchedule(delayMs);
       pollTimeoutId = setTimeout(() => {
         if (cancelled) return;
-        const effectivelyInactive = isEffectivelyInactive();
-        if (!effectivelyInactive || shouldPollWhileHidden()) {
+        const disengaged = isDisengaged();
+        if (!disengaged || shouldPollWhileDisengaged()) {
           runPollTick(false);
         }
-        const interval = !effectivelyInactive
-          ? POLLING_CONFIG.activeIntervalMs
-          : shouldPollWhileHidden()
-            ? POLLING_CONFIG.inactiveIntervalMs
-            : currentPollingInterval;
-        currentPollingInterval = interval;
-        if (!effectivelyInactive || shouldPollWhileHidden()) {
-          scheduleNextPoll(interval);
+        currentPollingInterval = getPollIntervalMs();
+        if (!disengaged || shouldPollWhileDisengaged()) {
+          scheduleNextPoll(currentPollingInterval);
         } else {
           emitSchedule(0, 'inactive');
         }
@@ -184,15 +198,19 @@ export function useDownloadListPolling({
 
     const scheduleGraceStop = () => {
       clearGraceStopTimeout();
-      if (isVisible || hiddenSince == null || !isWithinHiddenGracePeriod()) return;
+      if (!isDisengaged() || awaySince == null || !isWithinEngagementGrace()) return;
 
-      const remainingMs = hiddenSince + POLLING_CONFIG.hiddenGracePeriodMs - Date.now();
+      const remainingMs = awaySince + POLLING_CONFIG.engagementGracePeriodMs - Date.now();
       if (remainingMs <= 0) return;
 
       graceStopTimeoutId = setTimeout(() => {
         graceStopTimeoutId = null;
-        if (cancelled || isVisible) return;
-        if (shouldPollWhileHidden()) return;
+        if (cancelled || !isDisengaged()) return;
+        if (shouldPollWhileDisengaged()) {
+          stopPolling();
+          startPolling(getPollIntervalMs());
+          return;
+        }
         stopPolling();
       }, remainingMs);
     };
@@ -204,16 +222,12 @@ export function useDownloadListPolling({
         return;
       }
 
-      const effectivelyInactive = isEffectivelyInactive();
-      if (!effectivelyInactive) {
-        currentPollingInterval = POLLING_CONFIG.activeIntervalMs;
-      } else if (shouldPollWhileHidden()) {
-        currentPollingInterval = POLLING_CONFIG.inactiveIntervalMs;
-      }
+      currentPollingInterval = getPollIntervalMs();
+      const disengaged = isDisengaged();
 
-      if (!effectivelyInactive || shouldPollWhileHidden()) {
+      if (!disengaged || shouldPollWhileDisengaged()) {
         scheduleNextPoll(firstDelayMs);
-        if (effectivelyInactive) {
+        if (disengaged) {
           scheduleGraceStop();
         }
       } else {
@@ -221,28 +235,75 @@ export function useDownloadListPolling({
       }
     };
 
-    /** Immediate refresh after the user returns — do not wait for the next poll tick. */
-    const handleBecameVisible = () => {
+    const runImmediateRefresh = () => {
+      if (type === 'all') {
+        pollAllAssetTypes(true);
+      } else if (!isRateLimitedRef.current(type)) {
+        onPollRef.current(type, true);
+      } else {
+        onPollSkippedRef.current?.();
+      }
+    };
+
+    /** Immediate refresh after re-engagement — do not wait for the next poll tick. */
+    const handleReEngaged = () => {
       if (pollingPaused) {
         stopPolling();
         return;
       }
 
-      if (wasTabHidden) {
-        wasTabHidden = false;
-        if (type === 'all') {
-          pollAllAssetTypes(true);
-        } else if (!isRateLimitedRef.current(type)) {
-          onPollRef.current(type, true);
-        } else {
-          onPollSkippedRef.current?.();
-        }
+      if (wasDisengaged) {
+        wasDisengaged = false;
+        runImmediateRefresh();
       }
 
-      if (!isEffectivelyInactive() || shouldPollWhileHidden()) {
+      awaySince = null;
+      clearGraceStopTimeout();
+      userIdle = false;
+      startPolling(POLLING_CONFIG.activeIntervalMs);
+    };
+
+    const resetIdleTimer = () => {
+      clearIdleTimeout();
+      if (!isVisible || pollingPaused) return;
+      idleTimeoutId = setTimeout(() => {
+        idleTimeoutId = null;
+        if (cancelled || !isVisible || pollingPaused) return;
+        userIdle = true;
+        if (awaySince == null) {
+          awaySince = Date.now();
+        }
+        wasDisengaged = true;
+        stopPolling();
+        if (shouldPollWhileDisengaged()) {
+          startPolling(POLLING_CONFIG.activeIntervalMs);
+        } else {
+          emitSchedule(0, 'inactive');
+        }
+      }, POLLING_CONFIG.userIdleThresholdMs);
+    };
+
+    const markUserActive = () => {
+      if (!isVisible || pollingPaused) return;
+      const wasIdle = userIdle;
+      userIdle = false;
+      resetIdleTimer();
+      if (wasIdle) {
+        handleReEngaged();
+      }
+    };
+
+    const handleDisengaged = () => {
+      if (awaySince == null) {
+        awaySince = Date.now();
+      }
+      wasDisengaged = true;
+      clearIdleTimeout();
+      stopPolling();
+      if (shouldPollWhileDisengaged()) {
         startPolling(POLLING_CONFIG.activeIntervalMs);
       } else {
-        stopPolling();
+        emitSchedule(0, 'inactive');
       }
     };
 
@@ -250,46 +311,58 @@ export function useDownloadListPolling({
       isVisible = document.visibilityState === 'visible';
 
       if (!isVisible) {
-        wasTabHidden = true;
-        if (hiddenSince == null) {
-          hiddenSince = Date.now();
-        }
-        stopPolling();
-        if (shouldPollWhileHidden()) {
-          startPolling(POLLING_CONFIG.inactiveIntervalMs);
-        }
+        handleDisengaged();
         return;
       }
 
-      hiddenSince = null;
-      clearGraceStopTimeout();
-      handleBecameVisible();
+      userIdle = false;
+      handleReEngaged();
+      resetIdleTimer();
     };
 
     const handleWindowFocus = () => {
       if (typeof document === 'undefined' || document.visibilityState !== 'visible') {
         return;
       }
-      if (pollingPaused || !wasTabHidden) return;
-      handleBecameVisible();
+      if (pollingPaused) return;
+      if (wasDisengaged) {
+        handleReEngaged();
+      }
+      markUserActive();
+    };
+
+    const onUserActivity = () => {
+      markUserActive();
     };
 
     const initialDelayMs =
-      !isVisible && shouldPollWhileHidden()
-        ? POLLING_CONFIG.inactiveIntervalMs
+      isDisengaged() && shouldPollWhileDisengaged()
+        ? getPollIntervalMs()
         : POLLING_CONFIG.activeIntervalMs;
     startPolling(initialDelayMs);
+
+    if (isVisible) {
+      markUserActive();
+    }
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
+    USER_ACTIVITY_EVENTS.forEach((eventName) => {
+      document.addEventListener(eventName, onUserActivity, { passive: true });
+    });
 
     const emitUpdate = onScheduleUpdateRef.current;
     return () => {
       cancelled = true;
       stopPolling();
       clearGraceStopTimeout();
+      clearIdleTimeout();
       emitUpdate?.(createPollSchedule('inactive', null, 0));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
+      USER_ACTIVITY_EVENTS.forEach((eventName) => {
+        document.removeEventListener(eventName, onUserActivity);
+      });
     };
   }, [type, pollingPaused, needsQueuedTorrentPoll]);
 }

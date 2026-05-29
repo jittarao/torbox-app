@@ -25,7 +25,7 @@ import Spinner from '../shared/Spinner';
 import ItemsTable from './ItemsTable';
 import ActionBar from './ActionBar/index';
 import CardList from './CardList';
-import FiltersSidebar, { filtersFromView } from './FiltersSidebar';
+import FiltersSidebar from './FiltersSidebar';
 import useFiltersSidebarCollapsed from './FiltersSidebar/useFiltersSidebarCollapsed';
 import MobileFiltersDrawer from './FiltersSidebar/MobileFiltersDrawer';
 import FilterEditorModal from './FilterEditorModal';
@@ -122,7 +122,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     selectedItems,
     handleSelectAll,
     handleFileSelect,
-    hasSelectedFiles,
     setSelectedItems,
   } = useSelection(viewItems, activeType, apiKey);
 
