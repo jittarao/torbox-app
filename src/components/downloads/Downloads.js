@@ -222,7 +222,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     editingView,
     tagManagerOpen,
     setTagManagerOpen,
-    tagManagerAutoCreate,
     mobileFiltersOpen,
     setMobileFiltersOpen,
     search,
@@ -249,8 +248,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     handleTagDeleted,
     handleOpenNewFilter,
     handleOpenNewView,
-    handleNewTag,
-    handleManageTags,
+    handleOpenTagManager,
     handleApplyFiltersFromModal,
     handlePreviewFiltersFromModal,
   } = useDownloadsFilters({
@@ -465,8 +463,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       onDeleteTag: handleTagDeleted,
       onNewFilter: handleOpenNewFilter,
       onNewView: handleOpenNewView,
-      onNewTag: handleNewTag,
-      onManageTags: handleManageTags,
+      onOpenTagManager: handleOpenTagManager,
     }),
     [
       apiKey,
@@ -484,8 +481,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       handleTagDeleted,
       handleOpenNewFilter,
       handleOpenNewView,
-      handleNewTag,
-      handleManageTags,
+      handleOpenTagManager,
     ]
   );
 
@@ -757,12 +753,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               />
               <TagManager
                 isOpen={tagManagerOpen}
-                onClose={() => {
-                  setTagManagerOpen(false);
-                  setTagManagerAutoCreate(false);
-                }}
+                onClose={() => setTagManagerOpen(false)}
                 apiKey={apiKey}
-                initialCreating={tagManagerAutoCreate}
               />
             </>
           )}

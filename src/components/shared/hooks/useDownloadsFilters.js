@@ -57,7 +57,6 @@ export function useDownloadsFilters({
   const [filterModalMode, setFilterModalMode] = useState(null);
   const [editingView, setEditingView] = useState(null);
   const [tagManagerOpen, setTagManagerOpen] = useState(false);
-  const [tagManagerAutoCreate, setTagManagerAutoCreate] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const {
@@ -212,14 +211,10 @@ export function useDownloadsFilters({
     setMobileFiltersOpen(false);
   };
 
-  const handleOpenTagManager = (autoCreate = false) => {
-    setTagManagerAutoCreate(autoCreate);
+  const handleOpenTagManager = () => {
     setTagManagerOpen(true);
     setMobileFiltersOpen(false);
   };
-
-  const handleNewTag = () => handleOpenTagManager(true);
-  const handleManageTags = () => handleOpenTagManager(false);
 
   const handleApplyFiltersFromModal = (filters) => {
     setAppliedFilters(normalizeFilters(filters));
@@ -285,8 +280,6 @@ export function useDownloadsFilters({
     setEditingView,
     tagManagerOpen,
     setTagManagerOpen,
-    tagManagerAutoCreate,
-    setTagManagerAutoCreate,
     mobileFiltersOpen,
     setMobileFiltersOpen,
     search,
@@ -317,8 +310,6 @@ export function useDownloadsFilters({
     handleOpenNewFilter,
     handleOpenNewView,
     handleOpenTagManager,
-    handleNewTag,
-    handleManageTags,
     handleApplyFiltersFromModal,
     handlePreviewFiltersFromModal,
   };
