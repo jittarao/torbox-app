@@ -2,70 +2,76 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
+import Icons from '@/components/icons';
 import FiltersSidebar from './index';
 
 export default function MobileFiltersDrawer({ isOpen, onClose, sidebarProps }) {
   const t = useTranslations('DownloadsFilters');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return undefined;
+
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prev;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
     };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
   return (
-    <>
-      <div
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        role="presentation"
+    <OverlayPortal open={isOpen}>
+      <button
+        type="button"
+        className="z-overlay-backdrop fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm md:hidden"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClose();
-          }
-        }}
-        aria-hidden={!isOpen}
+        aria-label={t('close')}
       />
+
       <dialog
-        className={`fixed inset-y-0 left-0 z-50 hidden open:flex flex-col w-[min(85vw,var(--downloads-sidebar-width,16rem))] bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark shadow-xl transition-transform duration-300 ease-out md:hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        aria-label={t('sidebarLabel')}
+        className="ui-modal-sheet ui-modal-sheet--dock flex flex-col md:hidden"
+        aria-labelledby="mobile-filters-title"
+        aria-modal="true"
         open={isOpen}
       >
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border dark:border-border-dark shrink-0">
-          <span className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
-            {t('sidebarLabel')}
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-            aria-label={t('close')}
-          >
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <div className="flex-1 overflow-hidden p-2">
-          <FiltersSidebar
-            {...sidebarProps}
-            className="w-full h-full border-0 rounded-none bg-transparent"
-          />
+        <div className="flex min-h-0 flex-1 flex-col" onClick={(e) => e.stopPropagation()}>
+          <ModalSheetHandle />
+
+          <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 dark:border-border-dark/50">
+            <div className="flex items-center gap-2">
+              <h2
+                id="mobile-filters-title"
+                className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-primary-text dark:text-primary-text-dark"
+              >
+                {t('sidebarLabel')}
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
+                aria-label={t('close')}
+              >
+                <Icons.X className="size-5" aria-hidden />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-2">
+            <FiltersSidebar {...sidebarProps} variant="sheet" className="min-h-0 flex-1" />
+          </div>
         </div>
       </dialog>
-    </>
+    </OverlayPortal>
   );
 }

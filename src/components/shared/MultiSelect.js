@@ -340,8 +340,9 @@ export default function MultiSelect({
                   className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-accent/10 dark:bg-accent-dark/10 text-accent dark:text-accent-dark"
                 >
                   {opt.label}
-                  <button
-                    type="button"
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => handleRemoveOption(opt.value, e)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -349,11 +350,11 @@ export default function MultiSelect({
                         handleRemoveOption(opt.value, e);
                       }
                     }}
-                    className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none"
+                    className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none cursor-pointer"
                     aria-label={`Remove ${opt.label}`}
                   >
                     ×
-                  </button>
+                  </span>
                 </span>
               ))}
             </div>

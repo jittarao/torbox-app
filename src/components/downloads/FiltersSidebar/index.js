@@ -8,9 +8,9 @@ import SidebarListItem from './SidebarListItem';
 import SidebarOverflowMenu from './SidebarOverflowMenu';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 
-function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
+function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall, sheet }) {
   return (
-    <div className="flex flex-col min-h-0">
+    <div className={`flex min-h-0 flex-col ${sheet ? 'min-h-0 flex-1' : ''}`}>
       <div className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'p-1'}`}>
         <h3 className="px-1 text-[10px] font-semibold uppercase tracking-wider text-primary-text/50 dark:text-primary-text-dark/50">
           {title}
@@ -41,8 +41,8 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
         )}
       </div>
       <div
-        className={`flex-1 overflow-y-auto min-h-[60px] pb-2 ${
-          tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1 max-h-[200px]'
+        className={`min-h-[60px] flex-1 overflow-y-auto overscroll-contain pb-2 ${
+          tall ? 'space-y-1 px-0' : 'max-h-[200px] space-y-0.5 px-1'
         }`}
       >
         {children}
@@ -183,6 +183,8 @@ export default function FiltersSidebar({
   const { deleteView } = useCustomViews(apiKey);
   const { deleteTag } = useTags(apiKey);
   const isFixed = variant === 'fixed';
+  const isSheet = variant === 'sheet';
+  const sectionTall = isFixed || isSheet;
   const [overflowMenu, setOverflowMenu] = useState(null);
 
   const closeOverflowMenu = () => setOverflowMenu(null);
@@ -233,23 +235,30 @@ export default function FiltersSidebar({
   return (
     <aside
       className={`flex flex-col overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-        isFixed
-          ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl p-2.5'
-          : 'w-[var(--downloads-sidebar-width,14rem)] shrink-0 border border-border dark:border-border-dark rounded-lg bg-surface/50 dark:bg-surface-dark/50'
+        isSheet
+          ? 'h-full min-h-0 w-full bg-transparent'
+          : isFixed
+            ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl p-2.5'
+            : 'w-[var(--downloads-sidebar-width,14rem)] shrink-0 border border-border dark:border-border-dark rounded-lg bg-surface/50 dark:bg-surface-dark/50'
       } ${className}`}
       style={isFixed ? { left: 'var(--sidebar-width, 0px)' } : undefined}
-      aria-label={t('sidebarLabel')}
+      aria-label={isSheet ? undefined : t('sidebarLabel')}
     >
       {isFixed && onToggleCollapsed && (
         <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
       )}
-      <div className="flex-1 overflow-y-auto divide-y divide-border/60 dark:divide-border-dark/60">
+      <div
+        className={`min-h-0 flex-1 divide-y divide-border/60 dark:divide-border-dark/60 ${
+          isSheet ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+        }`}
+      >
         <SidebarSection
           title={t('viewsSection')}
           emptyMessage={views.length === 0 ? t('noViews') : null}
           onAdd={onNewView}
           addLabel={t('newView')}
-          tall={isFixed}
+          tall={sectionTall}
+          sheet={isSheet}
         >
           {views.map((view) => {
             const menuKey = `view-${view.id}`;
@@ -302,7 +311,8 @@ export default function FiltersSidebar({
           emptyMessage={tags.length === 0 ? t('noTags') : null}
           onAdd={onOpenTagManager}
           addLabel={t('manageTags')}
-          tall={isFixed}
+          tall={sectionTall}
+          sheet={isSheet}
         >
           {tags.map((tag) => {
             const menuKey = `tag-${tag.id}`;
@@ -347,14 +357,18 @@ export default function FiltersSidebar({
       </div>
 
       <div
-        className={`shrink-0 space-y-1.5 border-t border-border/60 dark:border-border-dark/60 bg-surface/50 dark:bg-surface-dark/50 ${
-          isFixed ? 'pt-2.5' : 'p-2'
-        }`}
+        className={`shrink-0 space-y-1.5 border-t border-border/60 dark:border-border-dark/60 ${
+          isSheet ? 'bg-transparent pt-2' : 'bg-surface/50 dark:bg-surface-dark/50'
+        } ${isFixed ? 'pt-2.5' : isSheet ? '' : 'p-2'}`}
       >
         <button
           type="button"
           onClick={onNewView || onNewFilter}
-          className="w-full px-2 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent/40 dark:border-accent-dark/40 rounded-md hover:bg-accent/10 dark:hover:bg-accent-dark/10 transition-colors"
+          className={
+            isSheet
+              ? 'ui-btn-accent w-full justify-center !rounded-xl !text-xs'
+              : 'w-full rounded-md border border-accent/40 px-2 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10 dark:border-accent-dark/40 dark:text-accent-dark dark:hover:bg-accent-dark/10'
+          }
         >
           {t('newView')}
         </button>

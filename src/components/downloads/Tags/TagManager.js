@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import Icons from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
 import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 
 function TagRowSkeleton() {
   return (
@@ -307,54 +308,53 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
 
       <dialog
         ref={dialogRef}
-        className="z-overlay-dialog fixed top-1/2 left-1/2 flex max-h-[min(85dvh,36rem)] w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark"
+        className="ui-modal-sheet"
         aria-labelledby="tag-manager-title"
         aria-describedby="tag-manager-description"
         aria-modal="true"
         open
       >
         <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
+          <ModalSheetHandle />
           {/* Header */}
-          <div className="relative shrink-0 overflow-hidden border-b border-border/50 px-5 pb-4 pt-5 dark:border-border-dark/50">
+          <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 sm:overflow-hidden sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
             <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10"
+              className="pointer-events-none absolute inset-0 hidden bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
               aria-hidden
             />
-            <div className="relative flex items-start gap-3">
+            <div className="relative flex items-center gap-2 sm:items-start sm:gap-3">
               <div
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25"
+                className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25 sm:flex"
                 aria-hidden
               >
                 <Icons.Hash className="size-5" />
               </div>
-              <div className="min-w-0 flex-1 pt-0.5">
-                <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1 sm:pt-0.5">
+                <div className="flex min-w-0 items-center gap-2">
                   <h2
                     id="tag-manager-title"
-                    className="text-lg font-semibold tracking-tight text-primary-text dark:text-primary-text-dark"
+                    className="truncate text-base font-semibold tracking-tight text-primary-text dark:text-primary-text-dark sm:text-lg"
                   >
                     {t('manageTags')}
                   </h2>
                   {tags.length > 0 && (
-                    <span className="rounded-full bg-surface-alt px-2 py-0.5 text-[11px] font-medium tabular-nums text-primary-text/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/60">
+                    <span className="shrink-0 rounded-full bg-surface-alt px-2 py-0.5 text-[11px] font-medium tabular-nums text-primary-text/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/60">
                       {t('tagCountBadge', { count: tags.length })}
                     </span>
                   )}
                 </div>
                 <p
                   id="tag-manager-description"
-                  className="mt-1 text-sm leading-relaxed text-primary-text/60 dark:text-primary-text-dark/60"
+                  className="mt-1 hidden text-sm leading-relaxed text-primary-text/60 dark:text-primary-text-dark/60 sm:block"
                 >
                   {t('tagManagerDescription')}
                 </p>
+                <p className="sr-only sm:hidden">{t('tagManagerDescription')}</p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="-mr-1 -mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-xl
-                  text-primary-text/60 hover:bg-surface-alt hover:text-primary-text
-                  dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark
-                  transition-colors"
+                className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark sm:-mt-1 sm:size-9 sm:rounded-xl"
                 aria-label={t('close')}
               >
                 <Icons.X className="size-5" aria-hidden />
@@ -363,9 +363,9 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
           </div>
 
           {/* Composer */}
-          <div className="shrink-0 border-b border-border/40 px-5 py-4 dark:border-border-dark/40">
+          <div className="shrink-0 border-b border-border/40 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/40">
             <form
-              className="flex gap-2"
+              className="flex flex-col gap-2 sm:flex-row"
               onSubmit={(e) => {
                 e.preventDefault();
                 handleCreate();
@@ -395,10 +395,10 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
               <button
                 type="submit"
                 disabled={!newTagName.trim() || loading}
-                className="ui-btn-primary shrink-0 !rounded-xl !px-4"
+                className="ui-btn-accent w-full shrink-0 justify-center !rounded-xl !px-4 sm:w-auto"
               >
                 {loading ? (
-                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-zinc-950/20 border-t-zinc-950" />
+                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 ) : (
                   t('newTag')
                 )}
@@ -428,7 +428,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
           </div>
 
           {/* Tag list */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
             {loading && tags.length === 0 ? (
               <ul className="space-y-2" aria-busy="true" aria-label={tCommon('loading')}>
                 {[0, 1, 2].map((i) => (
@@ -480,13 +480,6 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                 ))}
               </ul>
             )}
-          </div>
-
-          {/* Footer */}
-          <div className="shrink-0 border-t border-border/50 px-5 py-3 dark:border-border-dark/50">
-            <button type="button" onClick={onClose} className="ui-btn-ghost w-full justify-center !rounded-xl">
-              {t('close')}
-            </button>
           </div>
         </div>
       </dialog>

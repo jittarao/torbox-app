@@ -9,6 +9,7 @@ import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
 import Select from '@/components/shared/Select';
 import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { EMPTY_FILTERS, hasActiveFilters, normalizeFilters } from './filters/filterHelpers';
@@ -16,7 +17,7 @@ import { EMPTY_FILTERS, hasActiveFilters, normalizeFilters } from './filters/fil
 function SaveOptionToggle({ checked, disabled, onChange, label, hint }) {
   return (
     <label
-      className={`flex min-w-[7.5rem] flex-1 cursor-pointer flex-col gap-0.5 rounded-xl border px-3 py-2 transition-colors ${
+      className={`flex min-w-0 flex-1 basis-[calc(50%-0.25rem)] cursor-pointer flex-col gap-0.5 rounded-xl border px-3 py-2 transition-colors sm:min-w-[7.5rem] sm:basis-auto ${
         disabled
           ? 'cursor-not-allowed border-border/40 opacity-50 dark:border-border-dark/40'
           : checked
@@ -431,44 +432,46 @@ export default function FilterEditorModal({
 
       <dialog
         ref={dialogRef}
-        className="z-overlay-dialog fixed top-1/2 left-1/2 flex max-h-[min(90dvh,52rem)] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark sm:w-[min(92vw,48rem)]"
+        className="ui-modal-sheet ui-modal-sheet--wide"
         aria-labelledby="filter-editor-title"
         aria-describedby="filter-editor-description"
         aria-modal="true"
         open
       >
         <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
+          <ModalSheetHandle />
           {/* Header */}
-          <div className="relative shrink-0 overflow-hidden border-b border-border/50 px-5 pb-4 pt-5 dark:border-border-dark/50">
+          <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 sm:overflow-hidden sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
             <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10"
+              className="pointer-events-none absolute inset-0 hidden bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
               aria-hidden
             />
-            <div className="relative flex items-start gap-3">
+            <div className="relative flex items-center gap-2 sm:items-start sm:gap-3">
               <div
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25"
+                className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25 sm:flex"
                 aria-hidden
               >
                 <Icons.Filter className="size-5" />
               </div>
-              <div className="min-w-0 flex-1 pt-0.5">
+              <div className="min-w-0 flex-1 sm:pt-0.5">
                 <h2
                   id="filter-editor-title"
-                  className="text-lg font-semibold tracking-tight text-primary-text dark:text-primary-text-dark"
+                  className="truncate text-base font-semibold tracking-tight text-primary-text dark:text-primary-text-dark sm:text-lg"
                 >
                   {modalTitle}
                 </h2>
                 <p
                   id="filter-editor-description"
-                  className="mt-1 text-sm leading-relaxed text-primary-text/60 dark:text-primary-text-dark/60"
+                  className="mt-1 hidden text-sm leading-relaxed text-primary-text/60 dark:text-primary-text-dark/60 sm:block"
                 >
                   {modalDescription}
                 </p>
+                <p className="sr-only sm:hidden">{modalDescription}</p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="-mr-1 -mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
+                className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark sm:-mt-1 sm:size-9 sm:rounded-xl"
                 aria-label={downloadsFiltersT('close')}
               >
                 <Icons.X className="size-5" aria-hidden />
@@ -478,7 +481,7 @@ export default function FilterEditorModal({
 
           {/* Create view: name + primary action */}
           {isCreateMode && (
-            <div className="shrink-0 border-b border-border/40 px-5 py-4 dark:border-border-dark/40">
+            <div className="shrink-0 border-b border-border/40 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/40">
               <form
                 className="flex flex-col gap-2 sm:flex-row sm:items-start"
                 onSubmit={(e) => {
@@ -506,10 +509,10 @@ export default function FilterEditorModal({
                 <button
                   type="submit"
                   disabled={isSaving || !saveViewName.trim() || !filtersActive}
-                  className="ui-btn-primary mt-5 shrink-0 self-stretch sm:self-end sm:!mt-6 !rounded-xl !px-5 sm:min-w-[8.5rem]"
+                  className="ui-btn-accent w-full shrink-0 !rounded-xl !px-5 sm:mt-6 sm:w-auto sm:min-w-[8.5rem]"
                 >
                   {isSaving ? (
-                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-zinc-950/20 border-t-zinc-950" />
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                   ) : (
                     customViewsT('createView')
                   )}
@@ -523,7 +526,7 @@ export default function FilterEditorModal({
             </div>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-4 sm:px-5 sm:py-4">
             {isViewMode && (
               <SaveOptionsPanel
                 saveSort={saveSort}
@@ -556,12 +559,12 @@ export default function FilterEditorModal({
             )}
 
             <div>
-              <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-[10px] font-semibold uppercase tracking-wider text-primary-text/45 dark:text-primary-text-dark/45">
                   {customViewsT('viewEditorFiltersSection')}
                 </h3>
                 {filterGroups.length > 1 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] text-primary-text/50 dark:text-primary-text-dark/50">
                       {customViewsT('betweenGroups')}
                     </span>
@@ -654,11 +657,11 @@ export default function FilterEditorModal({
                       }
                     }}
                   />
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
                     <button
                       type="submit"
                       disabled={isSaving || !saveViewName.trim()}
-                      className="ui-btn-primary !rounded-xl !py-2 !text-xs"
+                      className="ui-btn-accent w-full !rounded-xl !py-2 !text-xs sm:w-auto"
                     >
                       {isSaving ? customViewsT('saving') : customViewsT('save')}
                     </button>
@@ -668,7 +671,7 @@ export default function FilterEditorModal({
                         setShowSaveInput(false);
                         setSaveViewName('');
                       }}
-                      className="ui-btn-ghost !rounded-xl !py-2 !text-xs"
+                      className="ui-btn-ghost w-full !rounded-xl !py-2 !text-xs sm:w-auto"
                     >
                       {customViewsT('cancel')}
                     </button>
@@ -679,65 +682,65 @@ export default function FilterEditorModal({
           </div>
 
           {/* Footer */}
-          <div className="shrink-0 space-y-3 border-t border-border/50 px-5 py-4 dark:border-border-dark/50">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="shrink-0 border-t border-border/50 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/50">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               {filtersActive && !isCreateMode && !isEditMode && (
-                <>
-                  <button type="button" onClick={handleApply} className="ui-btn-primary !rounded-xl !text-xs">
+                <div className="flex flex-col gap-2 sm:contents">
+                  <button
+                    type="button"
+                    onClick={handleApply}
+                    className="ui-btn-accent w-full justify-center !rounded-xl !text-xs sm:w-auto"
+                  >
                     {downloadsFiltersT('applyFilters')}
                   </button>
-                  <button type="button" onClick={handleClear} className="ui-btn-ghost !rounded-xl !text-xs">
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs sm:w-auto"
+                  >
                     {downloadsFiltersT('clearAll')}
                   </button>
                   {!showSaveInput && (
                     <button
                       type="button"
                       onClick={() => setShowSaveInput(true)}
-                      className="ui-btn-ghost !rounded-xl !text-xs border border-border/60 dark:border-border-dark/60"
+                      className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
                     >
                       {customViewsT('saveAsNew')}
                     </button>
                   )}
-                </>
+                </div>
               )}
 
               {isEditMode && filtersActive && (
-                <>
+                <div className="flex flex-col gap-2 sm:contents">
                   <button
                     type="button"
                     onClick={handleUpdateView}
                     disabled={isSaving}
-                    className="ui-btn-primary !rounded-xl !text-xs"
+                    className="ui-btn-accent w-full justify-center !rounded-xl !text-xs sm:w-auto"
                   >
                     {isSaving ? customViewsT('updating') : customViewsT('updateView')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowSaveInput(true)}
-                    className="ui-btn-ghost !rounded-xl !text-xs border border-border/60 dark:border-border-dark/60"
+                    className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
                   >
                     {customViewsT('saveAsNew')}
                   </button>
-                </>
+                </div>
               )}
 
               <button
                 type="button"
                 onClick={handleAddGroup}
-                className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-border/60 px-3 py-2 text-xs font-medium text-primary-text transition-colors hover:bg-surface-alt dark:border-border-dark/60 dark:text-primary-text-dark dark:hover:bg-surface-alt-dark"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border/60 px-3 py-2 text-xs font-medium text-primary-text transition-colors hover:bg-surface-alt dark:border-border-dark/60 dark:text-primary-text-dark dark:hover:bg-surface-alt-dark sm:ml-auto sm:w-auto"
               >
                 <Icons.Plus className="size-3.5" aria-hidden />
                 {customViewsT('addGroup')}
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs"
-            >
-              {downloadsFiltersT('close')}
-            </button>
           </div>
         </div>
       </dialog>
