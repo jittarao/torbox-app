@@ -403,7 +403,13 @@
     "previewHint": "Zastosuj filtry do listy pobierań bez zapisywania.",
     "previewMatchCount": "{count, plural, =0 {Brak pasujących pobrań} one {# pobranie pasuje} few {# pobrania pasują} many {# pobrań pasuje} other {# pobrania pasuje}}",
     "previewMatchCountOfTotal": "{matched} z {total} w tej karcie",
-    "previewApplied": "Podgląd zastosowany do listy. Zapisz, gdy gotowe, lub dalej dostosowuj filtry."
+    "previewApplied": "Podgląd zastosowany do listy. Zapisz, gdy gotowe, lub dalej dostosowuj filtry.",
+    "viewEditorDescriptionCreate": "Nazwij widok i ustaw filtry, aby szybko przełączać listy pobrań.",
+    "viewEditorDescriptionEdit": "Zaktualizuj filtry i opcjonalnie dołącz sortowanie, kolumny lub wyszukiwanie do tego widoku.",
+    "viewEditorDescriptionFilter": "Utwórz filtry do zastosowania na liście lub zapisz je jako widok wielokrotnego użytku.",
+    "viewEditorSaveOptions": "Dołącz do widoku",
+    "viewEditorFiltersSection": "Reguły filtrów",
+    "viewEditorNameLabel": "Nazwa widoku"
   },
   "FetchStatus": {
     "autoRefreshInactive": "Automatyczne odświeżanie wznowi się po powrocie do tej karty.",

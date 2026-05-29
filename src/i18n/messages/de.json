@@ -403,7 +403,13 @@
     "previewHint": "Filter auf die Download-Liste anwenden, ohne zu speichern.",
     "previewMatchCount": "{count, plural, =0 {Keine Downloads passen} one {# Download passt} other {# Downloads passen}}",
     "previewMatchCountOfTotal": "{matched} von {total} in diesem Tab",
-    "previewApplied": "Vorschau auf die Liste angewendet. Speichern, wenn alles passt, oder Filter weiter anpassen."
+    "previewApplied": "Vorschau auf die Liste angewendet. Speichern, wenn alles passt, oder Filter weiter anpassen.",
+    "viewEditorDescriptionCreate": "Benennen Sie Ihre Ansicht und legen Sie Filter fest, um schnell zwischen Download-Listen zu wechseln.",
+    "viewEditorDescriptionEdit": "Aktualisieren Sie Filter und optional Sortierung, Spalten oder Suche für diese Ansicht.",
+    "viewEditorDescriptionFilter": "Erstellen Sie Filter für Ihre Liste oder speichern Sie sie als wiederverwendbare Ansicht.",
+    "viewEditorSaveOptions": "Zusätzlich in Ansicht speichern",
+    "viewEditorFiltersSection": "Filterregeln",
+    "viewEditorNameLabel": "Ansichtsname"
   },
   "FetchStatus": {
     "autoRefreshInactive": "Auto-Aktualisierung setzt fort, wenn Sie zu diesem Tab zurückkehren.",
