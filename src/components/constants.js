@@ -1,6 +1,19 @@
-export const REFERRAL_CODE =
-  process.env.NEXT_PUBLIC_TORBOX_REFERRAL_CODE || '7908ea44-023c-45f5-86ce-564bc6edaf34';
-export const REFERRAL_LINK = `https://torbox.app/subscription?referral=${REFERRAL_CODE}`;
+import {
+  buildTorboxSignupReferralUrl,
+  buildTorboxSubscriptionReferralUrl,
+} from '@/utils/referralLinks';
+
+const DEFAULT_REFERRAL_CODE = '7908ea44-023c-45f5-86ce-564bc6edaf34';
+
+export const REFERRAL_CODE = (
+  process.env.NEXT_PUBLIC_TORBOX_REFERRAL_CODE || DEFAULT_REFERRAL_CODE
+).trim();
+
+/** Opens torbox.app subscription with referral (logged-in users; confirm dialog on site). */
+export const REFERRAL_LINK = buildTorboxSubscriptionReferralUrl(REFERRAL_CODE);
+
+/** Sign-up flow that preserves referral through TorBox login redirect. */
+export const REFERRAL_SIGNUP_LINK = buildTorboxSignupReferralUrl(REFERRAL_CODE);
 export const REFERRAL_HELP_URL =
   'https://support.torbox.app/en/articles/9875657-how-does-the-torbox-referral-system-work';
 export const ABUSE_POLICY_URL =

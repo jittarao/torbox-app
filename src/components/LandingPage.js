@@ -6,7 +6,7 @@ import ApiKeyInput from './downloads/ApiKeyInput';
 import {
   GITHUB_REPO_URL,
   REFERRAL_CODE,
-  REFERRAL_LINK,
+  REFERRAL_SIGNUP_LINK,
   REFERRAL_HELP_URL,
 } from '@/components/constants';
 import ReferralBenefitChips from '@/components/referral/ReferralBenefitChips';
@@ -195,7 +195,7 @@ export default function LandingPage({ onKeyChange }) {
             <ReferralBenefitChips className="justify-center" />
             <div>
               <a
-                href={REFERRAL_LINK}
+                href={REFERRAL_SIGNUP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
