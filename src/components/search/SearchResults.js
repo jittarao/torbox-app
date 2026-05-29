@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
-import { selectDisplayResults } from '@/store/searchSelectors';
+import { selectDisplayResults, TORBOX_NATIVE_TRACKERS } from '@/store/searchSelectors';
 import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
