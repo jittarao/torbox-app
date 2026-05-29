@@ -1,40 +1,258 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import Icons from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 
+function TagRowSkeleton() {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-surface-alt/40 px-3 py-2.5 dark:border-border-dark/50 dark:bg-surface-alt-dark/30 animate-pulse">
+      <div className="h-4 w-24 rounded-md bg-zinc-200 dark:bg-zinc-700" />
+      <div className="ml-auto h-3 w-12 rounded bg-zinc-200/80 dark:bg-zinc-700/80" />
+    </div>
+  );
+}
+
+function TagRow({
+  tag,
+  isEditing,
+  editName,
+  onEditNameChange,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  pendingDelete,
+  onRequestDelete,
+  onConfirmDelete,
+  onCancelDelete,
+  loading,
+  t,
+  tActions,
+}) {
+  const isPendingDelete = pendingDelete?.id === tag.id;
+
+  if (isPendingDelete) {
+    return (
+      <li
+        className="rounded-xl border border-red-500/25 bg-red-500/5 px-3 py-3 dark:border-red-400/25 dark:bg-red-500/10"
+        role="alert"
+      >
+        <p className="text-sm text-primary-text dark:text-primary-text-dark leading-snug">
+          {t('confirmDeleteTag', { name: tag.name })}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onCancelDelete}
+            disabled={loading}
+            className="ui-btn-ghost !py-1.5 !px-3 !text-xs"
+          >
+            {tActions('cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirmDelete}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold
+              text-white bg-red-600 hover:bg-red-500
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+          >
+            {loading ? (
+              <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              <Icons.Trash className="size-3.5" aria-hidden />
+            )}
+            {t('menuDelete')}
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <li className="rounded-xl border border-accent/30 bg-accent/5 px-2 py-2 dark:border-accent-dark/30 dark:bg-accent-dark/5">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent dark:bg-accent-dark/15 dark:text-accent-dark"
+            aria-hidden
+          >
+            <Icons.Hash className="size-4" />
+          </span>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => onEditNameChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onSaveEdit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                onCancelEdit();
+              }
+            }}
+            className="min-w-0 flex-1 rounded-lg border border-border/80 bg-surface px-3 py-2 text-sm
+              text-primary-text placeholder:text-primary-text/40
+              focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20
+              dark:border-border-dark/80 dark:bg-surface-dark dark:text-primary-text-dark
+              dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/20"
+            aria-label={t('menuRename')}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={onSaveEdit}
+            disabled={loading || !editName.trim()}
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg
+              bg-accent text-white hover:bg-accent/90
+              disabled:opacity-50 disabled:cursor-not-allowed
+              dark:bg-accent-dark dark:hover:bg-accent-dark/90
+              transition-colors"
+            title={tActions('save')}
+          >
+            <Icons.Check className="size-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg
+              text-primary-text/70 hover:bg-surface-alt hover:text-primary-text
+              dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark
+              transition-colors"
+            title={tActions('cancel')}
+          >
+            <Icons.X className="size-4" aria-hidden />
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li
+      className="group flex items-center gap-2 rounded-xl border border-border/50 bg-surface-alt/30 px-2 py-1.5
+        transition-colors hover:border-border hover:bg-surface-alt/60
+        dark:border-border-dark/50 dark:bg-surface-alt-dark/20 dark:hover:border-border-dark dark:hover:bg-surface-alt-dark/40"
+    >
+      <span
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg
+          bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark"
+        aria-hidden
+      >
+        <Icons.Hash className="size-3.5" />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-primary-text dark:text-primary-text-dark">
+        {tag.name}
+      </span>
+      {tag.usage_count !== undefined && (
+        <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums text-primary-text/55 dark:bg-surface-dark dark:text-primary-text-dark/55">
+          {t('tagUsageCount', { count: tag.usage_count })}
+        </span>
+      )}
+      <div
+        className="flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity"
+      >
+        <button
+          type="button"
+          onClick={onStartEdit}
+          className="inline-flex size-8 items-center justify-center rounded-lg
+            text-primary-text/60 hover:bg-surface hover:text-accent
+            dark:text-primary-text-dark/60 dark:hover:bg-surface-dark dark:hover:text-accent-dark
+            transition-colors"
+          title={t('menuRename')}
+        >
+          <Icons.Edit className="size-3.5" aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={onRequestDelete}
+          className="inline-flex size-8 items-center justify-center rounded-lg
+            text-primary-text/60 hover:bg-red-500/10 hover:text-red-600
+            dark:text-primary-text-dark/60 dark:hover:bg-red-500/15 dark:hover:text-red-400
+            transition-colors"
+          title={t('menuDelete')}
+        >
+          <Icons.Trash className="size-3.5" aria-hidden />
+        </button>
+      </div>
+    </li>
+  );
+}
+
 /**
- * TagManager component - modal for managing tags (create, edit, delete)
- * @param {Object} props
- * @param {boolean} props.isOpen - Whether modal is open
- * @param {Function} props.onClose - Callback to close modal
- * @param {string} props.apiKey - API key for authentication
+ * TagManager — modal for creating, renaming, and deleting tags.
  */
-export default function TagManager({ isOpen, onClose, apiKey, initialCreating = false }) {
+export default function TagManager({ isOpen, onClose, apiKey }) {
+  const t = useTranslations('DownloadsFilters');
+  const tActions = useTranslations('CustomViews');
+  const tCommon = useTranslations('Common');
   const { tags, loading, createTag, updateTag, deleteTag } = useTags(apiKey);
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [newTagName, setNewTagName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
+
+  const createInputRef = useRef(null);
+  const dialogRef = useRef(null);
+
+  const resetState = useCallback(() => {
+    setEditingId(null);
+    setEditName('');
+    setNewTagName('');
+    setSearchQuery('');
+    setPendingDelete(null);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
-      setIsCreating(false);
-      setNewTagName('');
-      setEditingId(null);
-      setEditName('');
+      resetState();
       return;
     }
-    if (initialCreating) {
-      setIsCreating(true);
-    }
-  }, [isOpen, initialCreating]);
+    requestAnimationFrame(() => createInputRef.current?.focus());
+  }, [isOpen, resetState]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      if (editingId != null) {
+        setEditingId(null);
+        setEditName('');
+        return;
+      }
+      if (pendingDelete) {
+        setPendingDelete(null);
+        return;
+      }
+      onClose();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, editingId, pendingDelete, onClose]);
+
+  const sortedTags = useMemo(
+    () => [...tags].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    [tags]
+  );
+
+  const filteredTags = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return sortedTags;
+    return sortedTags.filter((tag) => tag.name.toLowerCase().includes(q));
+  }, [sortedTags, searchQuery]);
+
+  const showSearch = sortedTags.length > 4;
 
   const handleStartEdit = (tag) => {
+    setPendingDelete(null);
     setEditingId(tag.id);
     setEditName(tag.name);
   };
@@ -44,278 +262,230 @@ export default function TagManager({ isOpen, onClose, apiKey, initialCreating = 
     setEditName('');
   };
 
-  const handleSaveEdit = async (tagId) => {
+  const handleSaveEdit = async () => {
+    if (!editingId || !editName.trim()) return;
     try {
-      await updateTag(tagId, editName);
-      setEditingId(null);
-      setEditName('');
-    } catch (error) {
-      // Error is handled by useTags hook
-    }
-  };
-
-  const handleDelete = async (tagId) => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this tag? It will be removed from all downloads.'
-      )
-    ) {
-      try {
-        await deleteTag(tagId);
-      } catch (error) {
-        // Error is handled by useTags hook
-      }
+      await updateTag(editingId, editName.trim());
+      handleCancelEdit();
+    } catch {
+      // useTags surfaces errors
     }
   };
 
   const handleCreate = async () => {
-    if (!newTagName.trim()) return;
+    const name = newTagName.trim();
+    if (!name) return;
     try {
-      await createTag(newTagName.trim());
+      await createTag(name);
       setNewTagName('');
-      setIsCreating(false);
-    } catch (error) {
-      // Error is handled by useTags hook
+      createInputRef.current?.focus();
+    } catch {
+      // useTags surfaces errors
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await deleteTag(pendingDelete.id);
+      setPendingDelete(null);
+    } catch {
+      // useTags surfaces errors
+    }
+  };
+
+  if (!isOpen) return null;
+
   const modalContent = (
     <>
-      <div className="fixed inset-0 bg-black/50 z-[60]" onClick={onClose} aria-hidden />
+      <button
+        type="button"
+        className="z-overlay-backdrop fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label={t('close')}
+      />
 
       <dialog
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70]
-          bg-surface dark:bg-surface-dark
-          border border-border dark:border-border-dark
-          rounded-lg shadow-xl
-          w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[80vh]
-          overflow-hidden flex flex-col"
+        ref={dialogRef}
+        className="z-overlay-dialog fixed top-1/2 left-1/2 flex max-h-[min(85dvh,36rem)] w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark"
+        aria-labelledby="tag-manager-title"
+        aria-describedby="tag-manager-description"
+        aria-modal="true"
         open
       >
-        <div onClick={(e) => e.stopPropagation()} className="flex flex-col h-full">
+        <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark">
-            <h2 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
-              Manage Tags
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 rounded hover:bg-surface-alt dark:hover:bg-surface-alt-dark
-              text-primary-text dark:text-primary-text-dark
-              transition-colors"
-            >
-              <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+          <div className="relative shrink-0 overflow-hidden border-b border-border/50 px-5 pb-4 pt-5 dark:border-border-dark/50">
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10"
+              aria-hidden
+            />
+            <div className="relative flex items-start gap-3">
+              <div
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25"
+                aria-hidden
+              >
+                <Icons.Hash className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="flex items-center gap-2">
+                  <h2
+                    id="tag-manager-title"
+                    className="text-lg font-semibold tracking-tight text-primary-text dark:text-primary-text-dark"
+                  >
+                    {t('manageTags')}
+                  </h2>
+                  {tags.length > 0 && (
+                    <span className="rounded-full bg-surface-alt px-2 py-0.5 text-[11px] font-medium tabular-nums text-primary-text/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/60">
+                      {t('tagCountBadge', { count: tags.length })}
+                    </span>
+                  )}
+                </div>
+                <p
+                  id="tag-manager-description"
+                  className="mt-1 text-sm leading-relaxed text-primary-text/60 dark:text-primary-text-dark/60"
+                >
+                  {t('tagManagerDescription')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="-mr-1 -mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-xl
+                  text-primary-text/60 hover:bg-surface-alt hover:text-primary-text
+                  dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark
+                  transition-colors"
+                aria-label={t('close')}
+              >
+                <Icons.X className="size-5" aria-hidden />
+              </button>
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Create new tag */}
-            <div className="mb-4">
-              {!isCreating ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(true)}
-                  className="w-full px-3 py-2 text-sm font-medium rounded-md
-                  border border-border dark:border-border-dark
-                  text-primary-text dark:text-primary-text-dark
-                  hover:bg-surface-alt dark:hover:bg-surface-alt-dark
-                  transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Create New Tag
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleCreate();
-                      } else if (e.key === 'Escape') {
-                        setIsCreating(false);
-                        setNewTagName('');
-                      }
-                    }}
-                    placeholder="Tag name..."
-                    className="flex-1 px-3 py-2 text-sm rounded border border-border dark:border-border-dark
-                    bg-surface dark:bg-surface-dark
-                    text-primary-text dark:text-primary-text-dark
-                    focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreate}
-                    disabled={!newTagName.trim() || loading}
-                    className="px-3 py-2 text-sm font-medium rounded bg-accent dark:bg-accent-dark
-                    text-white hover:bg-accent/90 dark:hover:bg-accent-dark/90
-                    disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCreating(false);
-                      setNewTagName('');
-                    }}
-                    className="px-3 py-2 text-sm rounded border border-border dark:border-border-dark
-                    text-primary-text dark:text-primary-text-dark
-                    hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
+          {/* Composer */}
+          <div className="shrink-0 border-b border-border/40 px-5 py-4 dark:border-border-dark/40">
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreate();
+              }}
+            >
+              <div className="relative min-w-0 flex-1">
+                <Icons.Plus
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary-text/35 dark:text-primary-text-dark/35"
+                  aria-hidden
+                />
+                <input
+                  ref={createInputRef}
+                  type="text"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder={t('newTagPrompt')}
+                  disabled={loading}
+                  className="w-full rounded-xl border border-border/80 bg-surface-alt/50 py-2.5 pl-9 pr-3 text-sm
+                    text-primary-text placeholder:text-primary-text/40
+                    focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15
+                    disabled:opacity-60
+                    dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark
+                    dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
+                  aria-label={t('newTag')}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!newTagName.trim() || loading}
+                className="ui-btn-primary shrink-0 !rounded-xl !px-4"
+              >
+                {loading ? (
+                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-zinc-950/20 border-t-zinc-950" />
+                ) : (
+                  t('newTag')
+                )}
+              </button>
+            </form>
 
-            {/* Tags list */}
-            {loading && tags.length === 0 ? (
-              <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-                Loading tags…
-              </div>
-            ) : tags.length === 0 ? (
-              <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-                No tags yet. Create your first tag above.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {tags.map((tag) => (
-                  <div
-                    key={tag.id}
-                    className="flex items-center gap-2 p-2 rounded border border-border dark:border-border-dark
-                    hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-                  >
-                    {editingId === tag.id ? (
-                      <>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleSaveEdit(tag.id);
-                            } else if (e.key === 'Escape') {
-                              handleCancelEdit();
-                            }
-                          }}
-                          className="flex-1 px-2 py-1 text-sm rounded border border-border dark:border-border-dark
-                          bg-surface dark:bg-surface-dark
-                          text-primary-text dark:text-primary-text-dark
-                          focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEdit(tag.id)}
-                          disabled={loading || !editName.trim()}
-                          className="px-2 py-1 text-xs font-medium rounded bg-accent dark:bg-accent-dark
-                          text-white hover:bg-accent/90 dark:hover:bg-accent-dark/90
-                          disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancelEdit}
-                          className="px-2 py-1 text-xs rounded border border-border dark:border-border-dark
-                          text-primary-text dark:text-primary-text-dark
-                          hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="flex-1 text-sm text-primary-text dark:text-primary-text-dark">
-                          {tag.name}
-                        </span>
-                        {tag.usage_count !== undefined && (
-                          <span className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
-                            {tag.usage_count} {tag.usage_count === 1 ? 'download' : 'downloads'}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleStartEdit(tag)}
-                          className="p-1 rounded hover:bg-surface-alt dark:hover:bg-surface-alt-dark
-                          text-primary-text dark:text-primary-text-dark
-                          transition-colors"
-                          title="Edit tag"
-                        >
-                          <svg
-                            className="size-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(tag.id)}
-                          className="p-1 rounded hover:bg-red-500/10 dark:hover:bg-red-500/20
-                          text-red-500 dark:text-red-400
-                          transition-colors"
-                          title="Delete tag"
-                        >
-                          <svg
-                            className="size-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
+            {showSearch && (
+              <div className="relative mt-3">
+                <Icons.MagnifyingGlass
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary-text/35 dark:text-primary-text-dark/35"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('tagManagerSearchPlaceholder')}
+                  className="w-full rounded-xl border border-border/60 bg-transparent py-2 pl-9 pr-3 text-sm
+                    text-primary-text placeholder:text-primary-text/40
+                    focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10
+                    dark:border-border-dark/60 dark:text-primary-text-dark
+                    dark:focus:border-accent-dark/40 dark:focus:ring-accent-dark/10"
+                  aria-label={t('tagManagerSearchPlaceholder')}
+                />
               </div>
             )}
           </div>
 
+          {/* Tag list */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">
+            {loading && tags.length === 0 ? (
+              <ul className="space-y-2" aria-busy="true" aria-label={tCommon('loading')}>
+                {[0, 1, 2].map((i) => (
+                  <TagRowSkeleton key={i} />
+                ))}
+              </ul>
+            ) : tags.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div
+                  className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark"
+                  aria-hidden
+                >
+                  <Icons.Hash className="size-7 opacity-80" />
+                </div>
+                <p className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
+                  {t('noTags')}
+                </p>
+                <p className="mt-1 max-w-[16rem] text-sm text-primary-text/55 dark:text-primary-text-dark/55">
+                  {t('tagManagerEmptyHint')}
+                </p>
+              </div>
+            ) : filteredTags.length === 0 ? (
+              <p className="py-8 text-center text-sm text-primary-text/60 dark:text-primary-text-dark/60">
+                {t('tagManagerNoResults', { query: searchQuery.trim() })}
+              </p>
+            ) : (
+              <ul className="space-y-1.5" role="list">
+                {filteredTags.map((tag) => (
+                  <TagRow
+                    key={tag.id}
+                    tag={tag}
+                    isEditing={editingId === tag.id}
+                    editName={editName}
+                    onEditNameChange={setEditName}
+                    onStartEdit={() => handleStartEdit(tag)}
+                    onCancelEdit={handleCancelEdit}
+                    onSaveEdit={handleSaveEdit}
+                    pendingDelete={pendingDelete}
+                    onRequestDelete={() => {
+                      handleCancelEdit();
+                      setPendingDelete({ id: tag.id, name: tag.name });
+                    }}
+                    onConfirmDelete={handleConfirmDelete}
+                    onCancelDelete={() => setPendingDelete(null)}
+                    loading={loading}
+                    t={t}
+                    tActions={tActions}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+
           {/* Footer */}
-          <div className="p-4 border-t border-border dark:border-border-dark">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full px-4 py-2 text-sm font-medium rounded-md
-              bg-accent dark:bg-accent-dark
-              text-white hover:bg-accent/90 dark:hover:bg-accent-dark/90
-              transition-colors"
-            >
-              Close
+          <div className="shrink-0 border-t border-border/50 px-5 py-3 dark:border-border-dark/50">
+            <button type="button" onClick={onClose} className="ui-btn-ghost w-full justify-center !rounded-xl">
+              {t('close')}
             </button>
           </div>
         </div>

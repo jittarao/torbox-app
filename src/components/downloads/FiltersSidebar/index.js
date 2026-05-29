@@ -173,8 +173,7 @@ export default function FiltersSidebar({
   onDeleteTag,
   onNewFilter,
   onNewView,
-  onNewTag,
-  onManageTags,
+  onOpenTagManager,
   variant = 'inline',
   className = '',
   collapsed = false,
@@ -301,8 +300,8 @@ export default function FiltersSidebar({
         <SidebarSection
           title={t('tagsSection')}
           emptyMessage={tags.length === 0 ? t('noTags') : null}
-          onAdd={onNewTag}
-          addLabel={t('newTag')}
+          onAdd={onOpenTagManager}
+          addLabel={t('manageTags')}
           tall={isFixed}
         >
           {tags.map((tag) => {
@@ -358,20 +357,6 @@ export default function FiltersSidebar({
           className="w-full px-2 py-1.5 text-xs font-medium text-accent dark:text-accent-dark border border-accent/40 dark:border-accent-dark/40 rounded-md hover:bg-accent/10 dark:hover:bg-accent-dark/10 transition-colors"
         >
           {t('newView')}
-        </button>
-        <button
-          type="button"
-          onClick={onNewTag}
-          className="w-full px-2 py-1.5 text-xs font-medium text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
-        >
-          {t('newTag')}
-        </button>
-        <button
-          type="button"
-          onClick={onManageTags}
-          className="w-full px-2 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
-        >
-          {t('manageTags')}
         </button>
       </div>
 
