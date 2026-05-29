@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { phEvent } from '@/utils/sa';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { Question } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
@@ -315,7 +315,7 @@ export default function ActionButtons({
                     />
                     {t('deleteConfirm.includeParentDownloads')}
                     <Tooltip content={t('deleteConfirm.includeParentDownloadsTooltip')}>
-                      <Icons.Question />
+                      <Question />
                     </Tooltip>
                   </label>
                 )}

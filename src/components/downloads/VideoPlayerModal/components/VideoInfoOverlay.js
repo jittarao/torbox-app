@@ -1,6 +1,6 @@
 'use client';
 
-import Icons from '@/components/icons';
+import { Cog, Eye, Play, Question, X } from '@/components/icons';
 import { formatSize } from '../../utils/formatters';
 
 const EMPTY_ARRAY = [];
@@ -42,7 +42,7 @@ export default function VideoInfoOverlay({
       >
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
           <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Icons.Question className="size-6 text-accent dark:text-accent-dark" />
+            <Question className="size-6 text-accent dark:text-accent-dark" />
             Video Information
           </h3>
           <button
@@ -51,7 +51,7 @@ export default function VideoInfoOverlay({
             className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
             aria-label="Close Info"
           >
-            <Icons.X className="size-5" />
+            <X className="size-5" />
           </button>
         </div>
 
@@ -60,7 +60,7 @@ export default function VideoInfoOverlay({
           {metadata?.search_metadata && (
             <div className="bg-gradient-to-br from-accent/10 to-accent/5 dark:from-accent-dark/10 dark:to-accent-dark/5 rounded-lg p-5 border border-accent/20 dark:border-accent-dark/20">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Icons.Play className="size-5 text-accent dark:text-accent-dark" />
+                <Play className="size-5 text-accent dark:text-accent-dark" />
                 Media Information
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -193,7 +193,7 @@ export default function VideoInfoOverlay({
           {/* Technical Information Section */}
           <div className="bg-white/5 rounded-lg p-5 border border-white/10">
             <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Icons.Cog className="size-5 text-white/60" />
+              <Cog className="size-5 text-white/60" />
               Technical Details
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,7 +349,7 @@ export default function VideoInfoOverlay({
           {subtitles.length > 0 && (
             <div className="bg-white/5 rounded-lg p-5 border border-white/10">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Icons.Eye className="size-5 text-white/60" />
+                <Eye className="size-5 text-white/60" />
                 Subtitle Tracks ({subtitles.length})
               </h4>
               <div className="space-y-2">

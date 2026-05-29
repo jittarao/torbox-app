@@ -1,6 +1,6 @@
 'use client';
 
-import Icons from '@/components/icons';
+import { Question } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
@@ -101,7 +101,7 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
               <h4 className="text-sm font-medium text-primary-text dark:text-primary-text-dark flex items-center gap-2">
                 {t('autoStart.title')}
                 <Tooltip content={t('autoStart.tooltip')}>
-                  <Icons.Question />
+                  <Question />
                 </Tooltip>
               </h4>
             </div>

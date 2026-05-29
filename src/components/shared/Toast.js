@@ -13,6 +13,8 @@ export default function Toast({ message, type = 'success', onClose }) {
 
   return (
     <div
+      role="alert"
+      aria-live="polite"
       className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 border
       ${
         type === 'success'
@@ -21,7 +23,7 @@ export default function Toast({ message, type = 'success', onClose }) {
       }`}
     >
       {message}
-      <button type="button" onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
+      <button type="button" onClick={onClose} className="ml-2 opacity-70 hover:opacity-100" aria-label="Close notification">
         ✕
       </button>
     </div>

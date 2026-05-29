@@ -7,7 +7,7 @@ import { useHealthStore } from '@/store/healthStore';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
 import SystemStatusPanel from '@/components/shared/SystemStatusPanel';
-import Icons from '@/components/icons';
+import { CheckCircle, ExclamationTriangle, Key, QuestionMarkCircle } from '@/components/icons';
 import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import useIsMobile from '@/hooks/useIsMobile';
 
@@ -42,49 +42,49 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
 
   const statusConfig = {
     healthy: {
-      icon: Icons.CheckCircle,
+      icon: CheckCircle,
       iconClass: 'text-emerald-500 dark:text-emerald-400',
       dotClass: 'bg-emerald-500',
       label: t('status.healthy'),
       description: t('status.healthyDescription'),
     },
     'invalid-key': {
-      icon: Icons.Key,
+      icon: Key,
       iconClass: 'text-red-500 dark:text-red-400',
       dotClass: 'bg-red-500',
       label: t('status.invalidKey'),
       description: t('status.invalidKeyDescription'),
     },
     'api-unhealthy': {
-      icon: Icons.ExclamationTriangle,
+      icon: ExclamationTriangle,
       iconClass: 'text-amber-500 dark:text-amber-400',
       dotClass: 'bg-amber-500',
       label: t('status.apiUnhealthy'),
       description: t('status.apiUnhealthyDescription'),
     },
     'platform-unhealthy': {
-      icon: Icons.ExclamationTriangle,
+      icon: ExclamationTriangle,
       iconClass: 'text-amber-500 dark:text-amber-400',
       dotClass: 'bg-amber-500',
       label: t('status.platformUnhealthy'),
       description: t('status.platformUnhealthyDescription'),
     },
     'backend-unhealthy': {
-      icon: Icons.ExclamationTriangle,
+      icon: ExclamationTriangle,
       iconClass: 'text-amber-500 dark:text-amber-400',
       dotClass: 'bg-amber-500',
       label: t('status.backendUnhealthy'),
       description: t('status.backendUnhealthyDescription'),
     },
     'no-api-key': {
-      icon: Icons.Key,
+      icon: Key,
       iconClass: 'text-zinc-400',
       dotClass: 'bg-zinc-500',
       label: t('status.noApiKey'),
       description: t('status.noApiKeyDescription'),
     },
     unknown: {
-      icon: Icons.QuestionMarkCircle,
+      icon: QuestionMarkCircle,
       iconClass: 'text-zinc-400',
       dotClass: 'bg-zinc-500',
       label: t('status.unknown'),

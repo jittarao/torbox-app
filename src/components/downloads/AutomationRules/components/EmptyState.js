@@ -1,6 +1,6 @@
 'use client';
 
-import Icons from '@/components/icons';
+import { Bolt } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import PresetRulesSection from './PresetRulesSection';
 
@@ -10,7 +10,7 @@ export default function EmptyState({ isBackendMode, onCreateRule, onApplyPreset,
   return (
     <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
       <div className="text-center">
-        <Icons.Bolt className="size-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
+        <Bolt className="size-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
         <h2 className="text-lg font-medium text-primary-text dark:text-primary-text-dark mb-2">
           {t('emptyState.title')}
         </h2>

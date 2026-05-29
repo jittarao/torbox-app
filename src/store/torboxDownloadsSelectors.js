@@ -7,13 +7,6 @@ import { isQueuedItem } from '@/utils/utility';
 
 const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 
-let allViewIdsCache = {
-  torrentsRef: null,
-  usenetRef: null,
-  webdlRef: null,
-  result: [],
-};
-
 /**
  * @param {{ order?: { torrents?: string[], usenet?: string[], webdl?: string[] } }} state
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType
@@ -27,21 +20,7 @@ export function selectViewOrderedIds(state, viewType) {
       const t = order.torrents || [];
       const u = order.usenet || [];
       const w = order.webdl || [];
-      if (
-        allViewIdsCache.torrentsRef === t &&
-        allViewIdsCache.usenetRef === u &&
-        allViewIdsCache.webdlRef === w
-      ) {
-        return allViewIdsCache.result;
-      }
-      const result = [...t, ...u, ...w];
-      allViewIdsCache = {
-        torrentsRef: t,
-        usenetRef: u,
-        webdlRef: w,
-        result,
-      };
-      return result;
+      return [...t, ...u, ...w];
     }
     case 'usenet':
       return order.usenet || [];

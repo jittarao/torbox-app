@@ -10,6 +10,7 @@ import DownloadsPlayersHost, {
 import { useDownloadsFilters } from '../shared/hooks/useDownloadsFilters';
 import { useDownloadsListData } from '../shared/hooks/useDownloadsListData';
 import { DownloadsActionsProvider } from './DownloadsActionsContext';
+import { DownloadsProvider } from './DownloadsContext';
 import { useDelete } from '../shared/hooks/useDelete';
 import { useFetchData } from '../shared/hooks/useFetchData';
 import { useSelection } from '../shared/hooks/useSelection';
@@ -263,6 +264,114 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
   const showDesktopFiltersSidebar = isBackendAvailable && !isMobile && !isFullscreen;
   const filtersSidebarExpanded = showDesktopFiltersSidebar && !filtersSidebarCollapsed;
+
+  const downloadsContextValue = useMemo(
+    () => ({
+      isBackendAvailable,
+      appliedFilters: filterData.appliedFilters,
+      activeView: filterData.activeView,
+      tags,
+      handleClearFilters: filterData.handleClearFilters,
+      handleOpenNewFilter: filterData.handleOpenNewFilter,
+      viewItems,
+      sortedItems,
+      visibleIds,
+      activeColumns,
+      handleColumnChange,
+      search: filterData.search,
+      setSearch: filterData.setSearch,
+      statusFilter: filterData.statusFilter,
+      setStatusFilter: filterData.setStatusFilter,
+      isDownloading,
+      handleBulkDownload,
+      selectedItems,
+      isDeleting,
+      deleteItems,
+      isExporting,
+      handleBulkExport,
+      activeType,
+      isBlurred,
+      setIsBlurred,
+      isFullscreen,
+      onFullscreenToggle,
+      displayViewMode,
+      setViewMode,
+      sortField: filterData.sortField,
+      sortDirection: filterData.sortDirection,
+      handleSort: filterData.handleSort,
+      getTotalDownloadSize,
+      isDownloadPanelOpen,
+      setIsDownloadPanelOpen,
+      apiKey,
+      setToast,
+      expandAllFiles,
+      collapseAllFiles,
+      scrollContainerRef,
+      filtersSidebarExpanded,
+      handleFileSelect,
+      setSelectedItems,
+      handleSelectAll,
+      downloadHistoryLookup,
+      tagMappings,
+      deleteItem,
+      toggleFiles,
+      onOpenVideoPlayer: openVideoPlayer,
+      onAudioPlay: handleAudioPlay,
+      fileSearch: filterData.search,
+    }),
+    [
+      isBackendAvailable,
+      filterData.appliedFilters,
+      filterData.activeView,
+      tags,
+      filterData.handleClearFilters,
+      filterData.handleOpenNewFilter,
+      viewItems,
+      sortedItems,
+      visibleIds,
+      activeColumns,
+      handleColumnChange,
+      filterData.search,
+      filterData.setSearch,
+      filterData.statusFilter,
+      filterData.setStatusFilter,
+      isDownloading,
+      handleBulkDownload,
+      selectedItems,
+      isDeleting,
+      deleteItems,
+      isExporting,
+      handleBulkExport,
+      activeType,
+      isBlurred,
+      setIsBlurred,
+      isFullscreen,
+      onFullscreenToggle,
+      displayViewMode,
+      setViewMode,
+      filterData.sortField,
+      filterData.sortDirection,
+      filterData.handleSort,
+      getTotalDownloadSize,
+      isDownloadPanelOpen,
+      setIsDownloadPanelOpen,
+      apiKey,
+      setToast,
+      expandAllFiles,
+      collapseAllFiles,
+      scrollContainerRef,
+      filtersSidebarExpanded,
+      handleFileSelect,
+      setSelectedItems,
+      handleSelectAll,
+      downloadHistoryLookup,
+      tagMappings,
+      deleteItem,
+      toggleFiles,
+      openVideoPlayer,
+      handleAudioPlay,
+    ]
+  );
   const filtersSidebarWidth = filtersSidebarCollapsed
     ? FILTERS_SIDEBAR_COLLAPSED
     : FILTERS_SIDEBAR_EXPANDED;
@@ -382,59 +491,9 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
             }`}
           >
             <DownloadsActionsProvider value={downloadActions}>
-              <DownloadsContentArea
-                isBackendAvailable={isBackendAvailable}
-                appliedFilters={filterData.appliedFilters}
-                activeView={filterData.activeView}
-                tags={tags}
-                handleClearFilters={filterData.handleClearFilters}
-                handleOpenNewFilter={filterData.handleOpenNewFilter}
-                viewItems={viewItems}
-                sortedItems={sortedItems}
-                visibleIds={visibleIds}
-                activeColumns={activeColumns}
-                handleColumnChange={handleColumnChange}
-                search={filterData.search}
-                setSearch={filterData.setSearch}
-                statusFilter={filterData.statusFilter}
-                setStatusFilter={filterData.setStatusFilter}
-                isDownloading={isDownloading}
-                handleBulkDownload={handleBulkDownload}
-                selectedItems={selectedItems}
-                isDeleting={isDeleting}
-                deleteItems={deleteItems}
-                isExporting={isExporting}
-                handleBulkExport={handleBulkExport}
-                activeType={activeType}
-                isBlurred={isBlurred}
-                setIsBlurred={setIsBlurred}
-                isFullscreen={isFullscreen}
-                onFullscreenToggle={onFullscreenToggle}
-                displayViewMode={displayViewMode}
-                setViewMode={setViewMode}
-                sortField={filterData.sortField}
-                sortDirection={filterData.sortDirection}
-                handleSort={filterData.handleSort}
-                getTotalDownloadSize={getTotalDownloadSize}
-                isDownloadPanelOpen={isDownloadPanelOpen}
-                setIsDownloadPanelOpen={setIsDownloadPanelOpen}
-                apiKey={apiKey}
-                setToast={setToast}
-                expandAllFiles={expandAllFiles}
-                collapseAllFiles={collapseAllFiles}
-                scrollContainerRef={scrollContainerRef}
-                filtersSidebarExpanded={filtersSidebarExpanded}
-                handleFileSelect={handleFileSelect}
-                setSelectedItems={setSelectedItems}
-                handleSelectAll={handleSelectAll}
-                downloadHistoryLookup={downloadHistoryLookup}
-                tagMappings={tagMappings}
-                deleteItem={deleteItem}
-                toggleFiles={toggleFiles}
-                onOpenVideoPlayer={openVideoPlayer}
-                onAudioPlay={handleAudioPlay}
-                fileSearch={filterData.search}
-              />
+              <DownloadsProvider value={downloadsContextValue}>
+                <DownloadsContentArea />
+              </DownloadsProvider>
             </DownloadsActionsProvider>
           </div>
 

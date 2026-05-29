@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Icons from '@/components/icons';
+import { UpArrow, DownArrow } from '@/components/icons';
 
 export default function Dropdown({ options, value, onChange, className = '', sortDir }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +86,7 @@ export default function Dropdown({ options, value, onChange, className = '', sor
               <span>{option.label}</span>
               {sortDir &&
                 (option.value === value || JSON.stringify(option.value) === value) &&
-                (sortDir === 'asc' ? <Icons.UpArrow /> : <Icons.DownArrow />)}
+                (sortDir === 'asc' ? <UpArrow /> : <DownArrow />)}
             </button>
           ))}
         </div>

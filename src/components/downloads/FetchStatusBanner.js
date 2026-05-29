@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { AlertCircle } from '@/components/icons';
 
 /**
  * Error, stale-data, and refresh-paused feedback for the downloads list.
@@ -50,7 +50,7 @@ export default function FetchStatusBanner({
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-2 min-w-0">
-            <Icons.AlertCircle
+            <AlertCircle
               className="size-4 shrink-0 text-label-danger-text dark:text-label-danger-text-dark mt-0.5"
               aria-hidden
             />

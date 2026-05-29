@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Icons from '@/components/icons';
+import { Check, ChevronDown, ChevronUp, Copy, Download, File } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
@@ -57,7 +57,7 @@ function ExtensionBadge({ extension }) {
         className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt dark:bg-surface-alt-dark text-muted dark:text-muted-dark"
         aria-hidden
       >
-        <Icons.File className="size-4" />
+        <File className="size-4" />
       </span>
     );
   }
@@ -90,7 +90,7 @@ function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, o
       aria-label={isOpen ? t('aria.collapse') : t('aria.expand')}
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark">
-        <Icons.Download className="size-5" aria-hidden />
+        <Download className="size-5" aria-hidden />
       </span>
 
       <div className="min-w-0 flex-1">
@@ -133,9 +133,9 @@ function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, o
 
       <span className="shrink-0 text-primary-text/60 dark:text-primary-text-dark/60">
         {isOpen ? (
-          <Icons.ChevronDown className="size-5" aria-hidden />
+          <ChevronDown className="size-5" aria-hidden />
         ) : (
-          <Icons.ChevronUp className="size-5" aria-hidden />
+          <ChevronUp className="size-5" aria-hidden />
         )}
       </span>
     </button>
@@ -189,9 +189,9 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
           }
         >
           {isCopied ? (
-            <Icons.Check className="size-4" aria-hidden />
+            <Check className="size-4" aria-hidden />
           ) : (
-            <Icons.Copy className="size-4" aria-hidden />
+            <Copy className="size-4" aria-hidden />
           )}
           <span className="hidden sm:inline">
             {isCopied ? t('actions.copied') : t('actions.copy')}
@@ -207,7 +207,7 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
           title={t('actions.downloadFile')}
           aria-label={t('actions.downloadFileWithIndex', { index, total })}
         >
-          <Icons.Download className="size-4" aria-hidden />
+          <Download className="size-4" aria-hidden />
           <span className="hidden sm:inline">{t('actions.open')}</span>
         </button>
       </div>
@@ -356,9 +356,9 @@ export default function DownloadPanel({
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90 disabled:pointer-events-none disabled:opacity-40 dark:bg-accent-dark dark:hover:bg-accent-dark/90"
               >
                 {copiedAll ? (
-                  <Icons.Check className="size-4" aria-hidden />
+                  <Check className="size-4" aria-hidden />
                 ) : (
-                  <Icons.Copy className="size-4" aria-hidden />
+                  <Copy className="size-4" aria-hidden />
                 )}
                 {copiedAll ? t('actions.copied') : t('actions.copyAll')}
               </button>

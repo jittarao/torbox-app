@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { All, Torrent, Usenet, Webdl } from '@/components/icons';
 
 export const ASSET_TYPE_STORAGE_KEY = 'downloads-asset-type';
 export const ASSET_TYPE_IDS = ['all', 'torrents', 'usenet', 'webdl'];
@@ -21,34 +21,36 @@ export default function AssetTypeTabs({ activeType, onTypeChange, isTypeAvailabl
     {
       id: 'all',
       label: t('itemTypes.All'),
-      icon: <Icons.All className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <All className="w-4 h-4 md:w-5 md:h-5" />,
     },
     {
       id: 'torrents',
       label: t('itemTypes.Torrents'),
-      icon: <Icons.Torrent className="w-4 h-4 md:w-5 md:h-5 rotate-[135deg]" />,
+      icon: <Torrent className="w-4 h-4 md:w-5 md:h-5 rotate-[135deg]" />,
     },
     {
       id: 'usenet',
       label: t('itemTypes.Usenet'),
-      icon: <Icons.Usenet className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <Usenet className="w-4 h-4 md:w-5 md:h-5" />,
     },
     {
       id: 'webdl',
       label: t('itemTypes.Webdl'),
-      icon: <Icons.Webdl className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <Webdl className="w-4 h-4 md:w-5 md:h-5" />,
     },
   ];
 
   return (
     <div className="border-b border-border dark:border-border-dark overflow-x-auto overflow-y-hidden">
-      <nav className="-mb-px flex justify-start md:justify-center gap-x-2 md:gap-x-8 px-4 md:px-0">
+      <nav className="-mb-px flex justify-start md:justify-center gap-x-2 md:gap-x-8 px-4 md:px-0" role="tablist">
         {tabs.flatMap((tab) => {
           if (!isTypeAvailable(tab.id)) return [];
           return [
             <button
               type="button"
               key={tab.id}
+              role="tab"
+              aria-selected={activeType === tab.id}
               onClick={() => onTypeChange(tab.id)}
               className={`
               whitespace-nowrap py-3 md:py-4 px-3 md:px-1 border-b-2 font-medium text-sm flex items-center gap-2 md:gap-1 flex-1 md:flex-initial justify-center

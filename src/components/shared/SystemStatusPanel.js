@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import UptimeBar from '@/components/shared/UptimeBar';
-import Icons from '@/components/icons';
+import { CheckCircle, QuestionMarkCircle, XCircle } from '@/components/icons';
 
 const TORBOX_STATUS_PAGE_URL = 'https://status.torbox.app/';
 
@@ -18,10 +18,10 @@ function StatusCheckRow({ status, label, detail, responseTime, responseTimeLabel
 
   const StatusIcon =
     status === 'healthy'
-      ? Icons.CheckCircle
+      ? CheckCircle
       : status === 'invalid-key' || status === 'unhealthy'
-        ? Icons.XCircle
-        : Icons.QuestionMarkCircle;
+        ? XCircle
+        : QuestionMarkCircle;
 
   const iconClass =
     status === 'healthy'

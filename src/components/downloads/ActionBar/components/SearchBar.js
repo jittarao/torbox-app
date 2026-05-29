@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useId, useRef } from 'react';
-import Icons from '@/components/icons';
+import { MagnifyingGlass, Times } from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 
@@ -46,7 +46,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
           className="pointer-events-none absolute left-2.5 flex shrink-0 text-primary-text/40 dark:text-primary-text-dark/40"
           aria-hidden
         >
-          <Icons.MagnifyingGlass />
+          <MagnifyingGlass />
         </span>
         <input
           ref={inputRef}
@@ -73,7 +73,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
               transition-colors"
             aria-label={t('clearSearch')}
           >
-            <Icons.Times />
+            <Times />
           </button>
         )}
       </div>

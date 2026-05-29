@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { AlertCircle, Bell, Check, CheckCircle, ExclamationTriangle, Times, Trash, XCircle } from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -67,16 +67,16 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'success':
-        return <Icons.CheckCircle className="size-4 text-green-600 dark:text-green-400" />;
+        return <CheckCircle className="size-4 text-green-600 dark:text-green-400" />;
       case 'warning':
         return (
-          <Icons.ExclamationTriangle className="size-4 text-yellow-600 dark:text-yellow-400" />
+          <ExclamationTriangle className="size-4 text-yellow-600 dark:text-yellow-400" />
         );
       case 'error':
-        return <Icons.XCircle className="size-4 text-red-600 dark:text-red-400" />;
+        return <XCircle className="size-4 text-red-600 dark:text-red-400" />;
       case 'info':
       default:
-        return <Icons.AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />;
+        return <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />;
     }
   };
 
@@ -118,8 +118,8 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
             {operationStatus.type === 'loading' && (
               <div className="animate-spin rounded-full size-3 border-2 border-current border-t-transparent" />
             )}
-            {operationStatus.type === 'success' && <Icons.Check className="size-3" />}
-            {operationStatus.type === 'error' && <Icons.Times className="size-3" />}
+            {operationStatus.type === 'success' && <Check className="size-3" />}
+            {operationStatus.type === 'error' && <Times className="size-3" />}
             <span>{operationStatus.message}</span>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
 
       <div className="ui-dropdown-header flex items-center justify-between !py-2.5">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 min-w-0">
-          <Icons.Bell className="size-4 shrink-0 text-amber-500" />
+          <Bell className="size-4 shrink-0 text-amber-500" />
           <span className="truncate">{t('notifications')}</span>
           {notifications.length > 0 && (
             <span className="px-1.5 py-0.5 text-xs font-medium bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full shrink-0">
@@ -146,7 +146,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
                 title={t('markAllAsRead')}
                 aria-label={t('markAllAsRead')}
               >
-                <Icons.Check className="size-3.5" />
+                <Check className="size-3.5" />
               </button>
               <button
                 type="button"
@@ -155,7 +155,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
                 title={t('clearAll')}
                 aria-label={t('clearAll')}
               >
-                <Icons.Trash className="size-3.5" />
+                <Trash className="size-3.5" />
               </button>
             </>
           )}
@@ -165,7 +165,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
             className={headerActionClass}
             aria-label="Close notifications"
           >
-            <Icons.Times className="size-4" />
+            <Times className="size-4" />
           </button>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
           </div>
         ) : error ? (
           <div className="p-4 text-center">
-            <Icons.AlertCircle className="size-8 text-red-500 mx-auto mb-2" />
+            <AlertCircle className="size-8 text-red-500 mx-auto mb-2" />
             <p className="text-xs text-red-500 font-medium mb-1 px-2">{error}</p>
             {consecutiveErrors >= 3 && (
               <p className="text-xs text-zinc-500 mb-3 px-2">Automatic retries paused</p>
@@ -193,7 +193,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-6 text-center">
-            <Icons.Bell className="size-8 text-zinc-600 mx-auto mb-2" />
+            <Bell className="size-8 text-zinc-600 mx-auto mb-2" />
             <p className="text-xs text-zinc-500">{t('noNotifications')}</p>
           </div>
         ) : (
@@ -240,7 +240,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
                               title={t('markAsRead')}
                               aria-label={t('markAsRead')}
                             >
-                              <Icons.Check className="size-3" />
+                              <Check className="size-3" />
                             </button>
                           )}
                           <button
@@ -250,7 +250,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
                             title={t('clear')}
                             aria-label={t('clear')}
                           >
-                            <Icons.Times className="size-3" />
+                            <Times className="size-3" />
                           </button>
                         </div>
                       </div>

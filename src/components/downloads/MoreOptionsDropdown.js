@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import Icons from '@/components/icons';
+import { Copy, Delete, Download, Refresh, VerticalEllipsis } from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
@@ -87,7 +87,7 @@ function MenuItems({
         menuVariant={menuVariant}
         tone="accent"
         onClick={onDownload}
-        icon={<Icons.Download />}
+        icon={<Download />}
       >
         {actionT('download.label')}
       </MenuItemButton>
@@ -102,7 +102,7 @@ function MenuItems({
         tone="danger"
         onClick={onDelete}
         disabled={isDeleting}
-        icon={isDeleting ? <Spinner size="xs" /> : <Icons.Delete />}
+        icon={isDeleting ? <Spinner size="xs" /> : <Delete />}
       >
         {actionT('delete.label')}
       </MenuItemButton>
@@ -120,7 +120,7 @@ function MenuItems({
       key="copy-id"
       menuVariant={menuVariant}
       onClick={onCopyId}
-      icon={<Icons.Copy />}
+      icon={<Copy />}
     >
       {t('copyId')}
     </MenuItemButton>
@@ -131,7 +131,7 @@ function MenuItems({
       key="copy-hash"
       menuVariant={menuVariant}
       onClick={onCopyHash}
-      icon={<Icons.Copy />}
+      icon={<Copy />}
     >
       {t('copyHash')}
     </MenuItemButton>
@@ -143,7 +143,7 @@ function MenuItems({
         key="copy-short-magnet"
         menuVariant={menuVariant}
         onClick={onCopyShortMagnet}
-        icon={<Icons.Copy />}
+        icon={<Copy />}
       >
         {t('copyShortMagnet')}
       </MenuItemButton>
@@ -155,7 +155,7 @@ function MenuItems({
         menuVariant={menuVariant}
         onClick={onCopyFullMagnet}
         disabled={isExporting}
-        icon={isExporting ? <Spinner size="xs" /> : <Icons.Copy />}
+        icon={isExporting ? <Spinner size="xs" /> : <Copy />}
       >
         {t('copyFullMagnet')}
       </MenuItemButton>
@@ -167,7 +167,7 @@ function MenuItems({
         menuVariant={menuVariant}
         onClick={onReannounce}
         disabled={isReannouncing}
-        icon={isReannouncing ? <Spinner size="xs" /> : <Icons.Refresh />}
+        icon={isReannouncing ? <Spinner size="xs" /> : <Refresh />}
       >
         {t('reannounce')}
       </MenuItemButton>
@@ -179,7 +179,7 @@ function MenuItems({
         menuVariant={menuVariant}
         onClick={onExportTorrent}
         disabled={isExporting}
-        icon={isExporting ? <Spinner size="xs" /> : <Icons.Download />}
+        icon={isExporting ? <Spinner size="xs" /> : <Download />}
       >
         {t('exportTorrent')}
       </MenuItemButton>
@@ -192,7 +192,7 @@ function MenuItems({
         key="copy-source-url"
         menuVariant={menuVariant}
         onClick={onCopySourceUrl}
-        icon={<Icons.Copy />}
+        icon={<Copy />}
       >
         {t('copySourceUrl')}
       </MenuItemButton>
@@ -689,7 +689,7 @@ export default function MoreOptionsDropdown({
         aria-haspopup="menu"
         aria-expanded={isMenuOpen}
       >
-        <Icons.VerticalEllipsis className={mobileBar ? 'size-5' : undefined} />
+        <VerticalEllipsis className={mobileBar ? 'size-5' : undefined} />
       </button>
 
       {isMenuOpen &&

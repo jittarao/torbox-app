@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { calculateUptimePercent, padHistoryForDisplay } from '@/utils/healthHistory';
-import Icons from '@/components/icons';
+import { CheckCircle, ExclamationTriangle } from '@/components/icons';
 
 const SEGMENT_CLASS = {
   up: 'status-uptime-segment--up',
@@ -59,7 +59,7 @@ export default function UptimeBar({ label, history, currentStatus }) {
   }, [history, currentStatus]);
 
   const isHealthy = currentStatus === 'healthy';
-  const HeaderIcon = isHealthy ? Icons.CheckCircle : Icons.ExclamationTriangle;
+  const HeaderIcon = isHealthy ? CheckCircle : ExclamationTriangle;
   const headerIconClass = isHealthy
     ? 'text-emerald-500 dark:text-emerald-400'
     : currentStatus === 'invalid-key' || currentStatus === 'unhealthy'

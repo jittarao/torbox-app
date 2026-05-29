@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import Icons from '@/components/icons';
+import { Delete, Eye, EyeOff, Plus, Times } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { ensureUserDb } from '@/utils/ensureUserDb';
 import { useModalFocusTrap } from '@/components/shared/hooks/useModalFocusTrap';
@@ -100,7 +100,7 @@ export default function ApiKeyManager({
               flex items-center gap-1"
             aria-label={t('addKey')}
           >
-            <Icons.Plus className="size-4 shrink-0" />
+            <Plus className="size-4 shrink-0" />
             <span className={compact ? 'hidden min-[400px]:inline' : 'hidden sm:inline'}>
               {t('addKey')}
             </span>
@@ -122,7 +122,7 @@ export default function ApiKeyManager({
             }
             disabled={closeDisabled}
           >
-            <Icons.Times className="size-5" />
+            <Times className="size-5" />
           </button>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function ApiKeyManager({
                 aria-label={t('deleteKey')}
                 title={t('deleteKey')}
               >
-                <Icons.Delete className="size-4" />
+                <Delete className="size-4" />
               </button>
             </div>
           ))}
@@ -229,7 +229,7 @@ export default function ApiKeyManager({
                   hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-colors"
                   aria-label={t('close')}
                 >
-                  <Icons.Times className="size-5" />
+                  <Times className="size-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 pt-4 space-y-4">
@@ -278,9 +278,9 @@ export default function ApiKeyManager({
                       aria-label={showKeys ? tInput('hide') : tInput('show')}
                     >
                       {showKeys ? (
-                        <Icons.Eye className="size-4" />
+                        <Eye className="size-4" />
                       ) : (
-                        <Icons.EyeOff className="size-4" />
+                        <EyeOff className="size-4" />
                       )}
                     </button>
                   </div>

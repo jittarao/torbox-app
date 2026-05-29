@@ -272,7 +272,6 @@ export default function MultiSelect({
                   type="button"
                   data-value={opt.value}
                   onClick={() => handleToggleOption(opt.value)}
-                  onMouseEnter={(e) => e.currentTarget.focus()}
                   className={`flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm transition-colors
                     ${
                       isSelected
