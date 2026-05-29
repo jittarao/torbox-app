@@ -701,6 +701,9 @@
       "title": "Aucun lien de téléchargement"
     },
     "expired": "Expiré",
+    "status": {
+      "failed": "Échec"
+    },
     "title": "Historique des liens"
   },
   "MoreOptionsDropdown": {

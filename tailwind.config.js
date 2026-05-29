@@ -109,6 +109,14 @@ module.exports = {
             dark: '#1c2026',
           },
         },
+        'link-failed': {
+          DEFAULT: '#faf0f0',
+          dark: '#221518',
+          hover: {
+            DEFAULT: '#f5e6e6',
+            dark: '#2a1a1e',
+          },
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui'],

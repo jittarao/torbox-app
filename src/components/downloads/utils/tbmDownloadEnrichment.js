@@ -9,20 +9,41 @@
  * Build Sets for O(1) link-history lookups (item-level and per-file).
  * @param {Array<{ assetType: string, itemId: string|number, fileId?: string|number|null }>} downloadHistory
  */
+function linkHistoryStatus(download) {
+  if (download.status === 'failed' || download.status === 'success') {
+    return download.status;
+  }
+  return download.url ? 'success' : 'failed';
+}
+
 export function buildDownloadHistoryLookup(downloadHistory) {
   const itemDownloads = new Set();
   const fileDownloads = new Set();
+  const itemLinkFailed = new Set();
+  const fileLinkFailed = new Set();
 
   for (const download of downloadHistory || []) {
     const itemKey = `${download.assetType}:${String(download.itemId)}`;
+    const isFailed = linkHistoryStatus(download) === 'failed';
+
     if (download.fileId == null) {
-      itemDownloads.add(itemKey);
+      if (isFailed) {
+        itemLinkFailed.add(itemKey);
+      } else {
+        itemDownloads.add(itemKey);
+      }
       continue;
     }
-    fileDownloads.add(`${itemKey}:${String(download.fileId)}`);
+
+    const fileKey = `${itemKey}:${String(download.fileId)}`;
+    if (isFailed) {
+      fileLinkFailed.add(fileKey);
+    } else {
+      fileDownloads.add(fileKey);
+    }
   }
 
-  return { itemDownloads, fileDownloads };
+  return { itemDownloads, fileDownloads, itemLinkFailed, fileLinkFailed };
 }
 
 /**

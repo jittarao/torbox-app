@@ -279,9 +279,9 @@ function ItemRow({
   // For mobile, we'll only show the name column
   const visibleColumns = isMobile ? ['name'] : activeColumns;
 
-  const isDownloaded = downloadHistoryLookup.itemDownloads.has(
-    `${item.assetType}:${String(item.id)}`
-  );
+  const itemKey = `${item.assetType}:${String(item.id)}`;
+  const isDownloaded = downloadHistoryLookup.itemDownloads.has(itemKey);
+  const isLinkFailed = downloadHistoryLookup.itemLinkFailed?.has(itemKey);
 
   const selectionId = getDownloadSelectionId(item);
   const isSelected = useIsDownloadSelected(selectionId);
@@ -289,6 +289,7 @@ function ItemRow({
   const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
     selected: isSelected,
     downloaded: isDownloaded,
+    linkFailed: isLinkFailed,
   });
 
   return (

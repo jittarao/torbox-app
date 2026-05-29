@@ -63,10 +63,11 @@ const addToDownloadHistory = async (link, apiKey) => {
       body: JSON.stringify({
         item_id: link.itemId,
         file_id: link.fileId || null,
-        url: link.url,
+        url: link.url || '',
         asset_type: link.assetType,
         item_name: link.itemName || null,
         file_name: link.fileName || null,
+        status: link.status || 'success',
       }),
     });
 
@@ -98,11 +99,12 @@ const addBulkToDownloadHistory = async (links, apiKey) => {
     const entries = links.map((link) => ({
       item_id: link.itemId,
       file_id: link.fileId || null,
-      url: link.url,
+      url: link.url || '',
       asset_type: link.assetType,
       item_name: link.itemName || null,
       file_name: link.fileName || null,
       generated_at: link.generatedAt || new Date().toISOString(),
+      status: link.status || 'success',
     }));
 
     const response = await fetch('/api/link-history/bulk', {
@@ -254,14 +256,19 @@ export function useDownloads(
     // Check if the download already exists in the download history
     let existingDownload = null;
 
+    const isSuccessfulHistoryEntry = (download) =>
+      download.status !== 'failed' &&
+      Boolean(download.url) &&
+      Math.abs(new Date().getTime() - parseUtcDate(download.generatedAt).getTime()) <=
+        1000 * 60 * 60 * 3; // within 3 hours
+
     if (fileId) {
       existingDownload = downloadHistory.find(
         (download) =>
           String(download.itemId) === String(id) &&
           String(download.fileId) === String(fileId) &&
           download.assetType === actualAssetType &&
-          Math.abs(new Date().getTime() - parseUtcDate(download.generatedAt).getTime()) <=
-            1000 * 60 * 60 * 3 // within 3 hours
+          isSuccessfulHistoryEntry(download)
       );
     } else {
       existingDownload = downloadHistory.find(
@@ -269,8 +276,7 @@ export function useDownloads(
           String(download.itemId) === String(id) &&
           download.assetType === actualAssetType &&
           !download.fileId &&
-          Math.abs(new Date().getTime() - parseUtcDate(download.generatedAt).getTime()) <=
-            1000 * 60 * 60 * 3 // within 3 hours
+          isSuccessfulHistoryEntry(download)
       );
     }
 
@@ -288,6 +294,7 @@ export function useDownloads(
     });
 
     const result = await retryFetch(`${actualEndpoint}?${params}`, {
+      maxRetries: 1,
       headers: { 'x-api-key': apiKey },
       permanent: [
         (data) =>
@@ -318,6 +325,7 @@ export function useDownloads(
           generatedAt: new Date().toISOString(),
           itemName,
           fileName,
+          status: 'success',
         };
 
         // Only save immediately if not in bulk mode
@@ -333,10 +341,32 @@ export function useDownloads(
       }
     }
 
+    const resultId = fileId !== undefined && fileId !== null ? `${id}-${fileId}` : id;
+    const itemName = metadata.item?.name || null;
+    const fileName = fileId
+      ? metadata.item?.files?.find((file) => file.id === fileId)?.short_name || null
+      : null;
+
+    const failedDownloadHistory = {
+      id: resultId,
+      itemId: id,
+      fileId: fileId || null,
+      url: null,
+      assetType: actualAssetType,
+      generatedAt: new Date().toISOString(),
+      itemName,
+      fileName,
+      status: 'failed',
+    };
+
+    if (!skipHistorySave) {
+      await addToDownloadHistory(failedDownloadHistory, apiKey);
+    }
+
     return {
       success: false,
       error: result.error || 'Unknown error',
-      linkHistory: null,
+      linkHistory: skipHistorySave ? failedDownloadHistory : null,
     };
   };
 
@@ -404,6 +434,10 @@ export function useDownloads(
         }
 
         return true;
+      }
+
+      if (fetchDownloadHistory && apiKey) {
+        fetchDownloadHistory(apiKey);
       }
       return false;
     } catch (error) {
@@ -525,6 +559,10 @@ export function useDownloads(
                 linkHistoryEntries.push(result.linkHistory);
               }
               return;
+            }
+
+            if (result.linkHistory) {
+              linkHistoryEntries.push(result.linkHistory);
             }
 
             failures.push({

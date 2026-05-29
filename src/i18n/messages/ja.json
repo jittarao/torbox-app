@@ -701,6 +701,9 @@
       "title": "ダウンロードリンクがありません"
     },
     "expired": "期限切れ",
+    "status": {
+      "failed": "失敗"
+    },
     "title": "リンク履歴"
   },
   "MoreOptionsDropdown": {

@@ -701,6 +701,9 @@
       "title": "Keine Download-Links"
     },
     "expired": "Abgelaufen",
+    "status": {
+      "failed": "Fehlgeschlagen"
+    },
     "title": "Link-Verlauf"
   },
   "MoreOptionsDropdown": {

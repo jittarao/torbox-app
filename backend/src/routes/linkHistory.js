@@ -68,7 +68,7 @@ export function setupLinkHistoryRoutes(app, backend) {
 
         const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
         const dataQuery = `
-          SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at
+          SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at, status
           FROM link_history
           ${whereClause}
           ORDER BY generated_at DESC, id DESC
@@ -92,7 +92,7 @@ export function setupLinkHistoryRoutes(app, backend) {
       // Build query with optional search (offset / page mode)
       let countQuery = 'SELECT COUNT(*) as count FROM link_history';
       let dataQuery = `
-          SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at
+          SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at, status
           FROM link_history
         `;
       const queryParams = [];
@@ -151,12 +151,22 @@ export function setupLinkHistoryRoutes(app, backend) {
         });
       }
 
-      const { item_id, file_id, url, asset_type, item_name, file_name } = req.body;
+      const { item_id, file_id, url, asset_type, item_name, file_name, status: rawStatus } =
+        req.body;
+      const status = rawStatus === 'failed' ? 'failed' : 'success';
+      const urlValue = url != null ? String(url) : '';
 
-      if (!item_id || !url || !asset_type) {
+      if (!item_id || !asset_type) {
         return res.status(400).json({
           success: false,
-          error: 'item_id, url, and asset_type are required',
+          error: 'item_id and asset_type are required',
+        });
+      }
+
+      if (status === 'success' && !urlValue) {
+        return res.status(400).json({
+          success: false,
+          error: 'url is required for successful link history entries',
         });
       }
 
@@ -184,16 +194,24 @@ export function setupLinkHistoryRoutes(app, backend) {
       const result = userDb.db
         .prepare(
           `
-            INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
           `
         )
-        .run(item_id, file_id || null, url, asset_type, item_name || null, file_name || null);
+        .run(
+          item_id,
+          file_id || null,
+          urlValue,
+          asset_type,
+          item_name || null,
+          file_name || null,
+          status
+        );
 
       const linkHistory = userDb.db
         .prepare(
           `
-            SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at
+            SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at, status
             FROM link_history
             WHERE id = ?
           `
@@ -244,10 +262,25 @@ export function setupLinkHistoryRoutes(app, backend) {
       const seenKeys = new Set(); // Track item_id + file_id combinations to deduplicate
 
       for (const entry of entries) {
-        const { item_id, file_id, url, asset_type, item_name, file_name, generated_at } = entry;
+        const {
+          item_id,
+          file_id,
+          url,
+          asset_type,
+          item_name,
+          file_name,
+          generated_at,
+          status: entryStatus,
+        } = entry;
+        const status = entryStatus === 'failed' ? 'failed' : 'success';
+        const urlValue = url != null ? String(url) : '';
 
-        if (!item_id || !url || !asset_type) {
+        if (!item_id || !asset_type) {
           continue; // Skip invalid entries
+        }
+
+        if (status === 'success' && !urlValue) {
+          continue;
         }
 
         if (!VALID_ASSET_TYPES.has(asset_type)) {
@@ -269,11 +302,12 @@ export function setupLinkHistoryRoutes(app, backend) {
         validatedEntries.push({
           item_id: itemIdStr,
           file_id: fileIdStr,
-          url: String(url),
+          url: urlValue,
           asset_type: String(asset_type),
           item_name: item_name || null,
           file_name: file_name || null,
           generated_at: generated_at || null,
+          status,
         });
       }
 
@@ -292,8 +326,8 @@ export function setupLinkHistoryRoutes(app, backend) {
 
       const insertStmt = userDb.db.prepare(
         `
-        INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at)
-        VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+        INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at, status)
+        VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), ?)
       `
       );
 
@@ -314,7 +348,8 @@ export function setupLinkHistoryRoutes(app, backend) {
             entry.asset_type,
             entry.item_name,
             entry.file_name,
-            entry.generated_at
+            entry.generated_at,
+            entry.status
           );
           insertedCount++;
         }

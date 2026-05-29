@@ -701,6 +701,9 @@
       "title": "No hay enlaces de descarga"
     },
     "expired": "Expirado",
+    "status": {
+      "failed": "Fallido"
+    },
     "title": "Historial de enlaces"
   },
   "MoreOptionsDropdown": {

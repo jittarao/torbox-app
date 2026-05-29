@@ -99,11 +99,12 @@ export const useDownloadHistoryStore = create((set, get) => ({
               id: item.file_id ? `${item.item_id}-${item.file_id}` : item.item_id,
               itemId: item.item_id,
               fileId: item.file_id || null,
-              url: item.url,
+              url: item.url || null,
               assetType: item.asset_type,
               generatedAt: item.generated_at,
               itemName: item.item_name || null,
               fileName: item.file_name || null,
+              status: item.status === 'failed' ? 'failed' : 'success',
             });
           }
 

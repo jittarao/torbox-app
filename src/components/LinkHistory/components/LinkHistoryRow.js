@@ -15,10 +15,19 @@ const LinkHistoryRow = memo(
     t,
     linkHistoryT,
   }) => {
-    const expirationDate = getExpirationDate(item.generated_at, t, linkHistoryT);
+    const isFailed = item.status === 'failed';
+    const expirationDate = isFailed
+      ? linkHistoryT('status.failed')
+      : getExpirationDate(item.generated_at, t, linkHistoryT);
 
     return (
-      <tr className="bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark">
+      <tr
+        className={
+          isFailed
+            ? 'bg-link-failed hover:bg-link-failed-hover dark:bg-link-failed-dark dark:hover:bg-link-failed-hover-dark'
+            : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
+        }
+      >
         <td className="px-3 md:px-4 py-4 whitespace-nowrap">
           <input
             type="checkbox"
@@ -46,8 +55,10 @@ const LinkHistoryRow = memo(
           <button
             type="button"
             onClick={() => onCopy(item.url)}
+            disabled={isFailed}
             className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
               hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
+              disabled:opacity-40 disabled:pointer-events-none
               ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={linkHistoryT('actions.copy')}
             aria-label={linkHistoryT('actions.copy')}
@@ -63,8 +74,10 @@ const LinkHistoryRow = memo(
           <button
             type="button"
             onClick={() => onOpen(item.url)}
+            disabled={isFailed}
             className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
               hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
+              disabled:opacity-40 disabled:pointer-events-none
               ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={linkHistoryT('actions.download')}
             aria-label={linkHistoryT('actions.download')}
