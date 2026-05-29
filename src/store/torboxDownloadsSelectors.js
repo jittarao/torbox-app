@@ -3,6 +3,7 @@
  */
 
 import { entityKey } from '@/utils/downloadListMerge';
+import { isQueuedItem } from '@/utils/utility';
 
 const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 
@@ -125,6 +126,17 @@ export function hasCachedDataForView(state, viewType) {
     default:
       return (order.torrents?.length || 0) > 0;
   }
+}
+
+export function selectHasQueuedTorrents(state) {
+  const orderKeys = state.order?.torrents;
+  if (!orderKeys?.length) return false;
+  const entities = state.entities || {};
+  for (let i = 0; i < orderKeys.length; i++) {
+    const row = entities[orderKeys[i]];
+    if (row && isQueuedItem(row)) return true;
+  }
+  return false;
 }
 
 export { entityKey };

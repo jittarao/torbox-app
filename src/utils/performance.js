@@ -24,6 +24,7 @@ class PerformanceMonitor {
         console.warn(`Slow API call: ${label} took ${metric.duration.toFixed(2)}ms`);
       }
 
+      this.metrics.delete(label);
       return metric.duration;
     }
     return null;

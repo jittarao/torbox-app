@@ -2,14 +2,13 @@
 
 import { useEffect, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useNotificationsStore } from '@/store/notificationsStore';
+import { useNotificationsStore, selectUnreadCount } from '@/store/notificationsStore';
 
 export function useNotifications(apiKey) {
   const {
     notifications,
     loading,
     error,
-    unreadCount,
     consecutiveErrors,
     fetchNotifications: fetchNotificationsStore,
     clearAllNotifications: clearAllNotificationsStore,
@@ -27,7 +26,6 @@ export function useNotifications(apiKey) {
       notifications: s.notifications,
       loading: s.loading,
       error: s.error,
-      unreadCount: s.unreadCount,
       consecutiveErrors: s.consecutiveErrors,
       fetchNotifications: s.fetchNotifications,
       clearAllNotifications: s.clearAllNotifications,
@@ -42,6 +40,8 @@ export function useNotifications(apiKey) {
       setApiKey: s.setApiKey,
     }))
   );
+
+  const unreadCount = useNotificationsStore(selectUnreadCount);
 
   useEffect(() => {
     if (apiKey) {

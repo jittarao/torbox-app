@@ -16,7 +16,8 @@ function parseRetryAfterMs(retryAfter) {
 class ApiClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.etags = new Map(); // Store ETags per endpoint
+    this.etags = new Map();
+    this.etagMaxSize = 100;
     this.baseHeaders = {
       'Content-Type': 'application/json',
       'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -55,9 +56,13 @@ class ApiClient {
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
 
-      // Store ETag for future requests
+      // Store ETag for future requests (LRU eviction at etagMaxSize)
       const responseETag = response.headers.get('ETag');
       if (responseETag) {
+        if (!this.etags.has(endpoint) && this.etags.size >= this.etagMaxSize) {
+          const oldest = this.etags.keys().next().value;
+          if (oldest !== undefined) this.etags.delete(oldest);
+        }
         this.etags.set(endpoint, responseETag);
       }
 
