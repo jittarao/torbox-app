@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import { isQueuedItem } from '@/utils/utility';
 import { downloadRowEqual, mergeListIntoEntities } from '@/utils/downloadListMerge';
 import {
   entityKey,
   getListKeyForAssetType,
+  selectHasQueuedTorrents,
   selectItemsForView,
 } from '@/store/torboxDownloadsSelectors';
+
+export { selectHasQueuedTorrents };
 
 const initialMeta = {
   loading: true,
@@ -15,17 +17,7 @@ const initialMeta = {
   refreshBlockedReason: null,
   pollSchedule: null,
   canManualRefresh: true,
-  hasQueuedTorrents: false,
 };
-
-function computeHasQueuedTorrents(entities, orderKeys) {
-  if (!orderKeys?.length) return false;
-  for (let i = 0; i < orderKeys.length; i++) {
-    const row = entities[orderKeys[i]];
-    if (row && isQueuedItem(row)) return true;
-  }
-  return false;
-}
 
 const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 
@@ -88,14 +80,10 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       }
     }
 
-    const nextState = {
+    set({
       entities,
       order: { ...state.order, [listKey]: orderKeys },
-    };
-    if (listKey === 'torrents') {
-      nextState.hasQueuedTorrents = computeHasQueuedTorrents(entities, orderKeys);
-    }
-    set(nextState);
+    });
   },
 
   /** @deprecated Use applyListMerge — kept for callers that still pass arrays */
@@ -139,7 +127,6 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       refreshBlockedReason: null,
       pollSchedule: null,
       canManualRefresh: true,
-      hasQueuedTorrents: false,
     }),
 
   /**
@@ -174,14 +161,10 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       }
     }
 
-    const nextState = {
+    set({
       entities: nextEntities,
       order: { ...state.order, [listKey]: nextOrder },
-    };
-    if (listKey === 'torrents') {
-      nextState.hasQueuedTorrents = computeHasQueuedTorrents(nextEntities, nextOrder);
-    }
-    set(nextState);
+    });
   },
 
   /**

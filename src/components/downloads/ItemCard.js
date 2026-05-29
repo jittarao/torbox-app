@@ -1,3 +1,5 @@
+'use client';
+
 import { memo } from 'react';
 import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';

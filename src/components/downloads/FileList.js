@@ -1,3 +1,5 @@
+'use client';
+
 import { memo } from 'react';
 import { formatSize } from './utils/formatters';
 import { getDisplayMimetype } from './utils/mimetypeDisplay';

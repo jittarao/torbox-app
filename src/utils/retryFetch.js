@@ -76,7 +76,7 @@ export async function retryFetch(url, options = {}) {
       lastStatus = response.status;
 
       if (!response.ok) {
-        // For 502, 503, 504 errors, we want to retry
+        // For 502, 503, 504, 429 errors, we want to retry
         if (RETRYABLE_STATUSES.has(response.status)) {
           lastError = new Error(`HTTP error! status: ${response.status}`);
           retries++;
@@ -87,7 +87,12 @@ export async function retryFetch(url, options = {}) {
             continue;
           }
         } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // Fail immediately for non-retryable errors (4xx, etc.)
+          return {
+            success: false,
+            error: `HTTP error! status: ${response.status}`,
+            userMessage: getErrorMessage(null, response.status, url),
+          };
         }
       }
 

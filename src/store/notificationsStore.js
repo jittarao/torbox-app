@@ -65,7 +65,6 @@ export const useNotificationsStore = create((set, get) => ({
   notifications: [],
   loading: false,
   error: null,
-  unreadCount: 0,
   isPolling: true,
   consecutiveErrors: 0,
   lastErrorTime: null,
@@ -81,7 +80,6 @@ export const useNotificationsStore = create((set, get) => ({
       set({
         currentApiKey: apiKey,
         notifications: [],
-        unreadCount: 0,
         error: null,
         consecutiveErrors: 0,
         lastErrorTime: null,
@@ -198,13 +196,8 @@ export const useNotificationsStore = create((set, get) => ({
           read: notification.read || readNotifications.includes(notification.id),
         }));
 
-        const unread = notificationsWithReadStatus.filter(
-          (notification) => !notification.read
-        ).length;
-
         set({
           notifications: notificationsWithReadStatus,
-          unreadCount: unread,
           loading: false,
           fetchingNotifications: false,
         });
@@ -339,7 +332,7 @@ export const useNotificationsStore = create((set, get) => ({
           console.error('Error storing cleared notifications in localStorage:', error);
         }
 
-        set({ notifications: [], unreadCount: 0 });
+        set({ notifications: [] });
 
         // Clear read status from localStorage
         try {
@@ -385,13 +378,11 @@ export const useNotificationsStore = create((set, get) => ({
           console.error('Error storing cleared notification in localStorage:', error);
         }
 
-        const { notifications, unreadCount } = get();
+        const { notifications } = get();
         const updatedNotifications = notifications.filter((n) => n.id !== notificationId);
-        const updatedUnreadCount = Math.max(0, unreadCount - 1);
 
         set({
           notifications: updatedNotifications,
-          unreadCount: updatedUnreadCount,
         });
 
         // Remove from read status in localStorage
@@ -441,15 +432,13 @@ export const useNotificationsStore = create((set, get) => ({
 
   // Mark notification as read
   markAsRead: (notificationId) => {
-    const { notifications, unreadCount } = get();
+    const { notifications } = get();
     const updatedNotifications = notifications.map((notification) =>
       notification.id === notificationId ? { ...notification, read: true } : notification
     );
-    const updatedUnreadCount = Math.max(0, unreadCount - 1);
 
     set({
       notifications: updatedNotifications,
-      unreadCount: updatedUnreadCount,
     });
 
     // Store read status in localStorage
@@ -474,7 +463,6 @@ export const useNotificationsStore = create((set, get) => ({
 
     set({
       notifications: updatedNotifications,
-      unreadCount: 0,
     });
 
     // Store all notification IDs as read in localStorage
@@ -488,19 +476,17 @@ export const useNotificationsStore = create((set, get) => ({
 
   // Add new notification (for real-time updates)
   addNotification: (notification) => {
-    const { notifications, unreadCount } = get();
+    const { notifications } = get();
     set({
       notifications: [notification, ...notifications],
-      unreadCount: notification.read ? unreadCount : unreadCount + 1,
     });
   },
 
   // Remove notification
   removeNotification: (notificationId) => {
-    const { notifications, unreadCount } = get();
+    const { notifications } = get();
     set({
       notifications: notifications.filter((n) => n.id !== notificationId),
-      unreadCount: Math.max(0, unreadCount - 1),
     });
   },
 
@@ -540,3 +526,11 @@ export const useNotificationsStore = create((set, get) => ({
     get().fetchNotifications(apiKey, { force: true });
   },
 }));
+
+export function selectUnreadCount(state) {
+  let count = 0;
+  for (let i = 0; i < state.notifications.length; i++) {
+    if (!state.notifications[i].read) count++;
+  }
+  return count;
+}
