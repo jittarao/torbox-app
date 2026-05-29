@@ -399,7 +399,7 @@
     "viewNamePlaceholder": "Ansichtname...",
     "createView": "Ansicht erstellen",
     "creating": "Erstellen...",
-    "previewFilters": "In Liste anzeigen",
+    "previewFilters": "Vorschau",
     "previewHint": "Filter auf die Download-Liste anwenden, ohne zu speichern.",
     "previewMatchCount": "{count, plural, =0 {Keine Downloads passen} one {# Download passt} other {# Downloads passen}}",
     "previewMatchCountOfTotal": "{matched} von {total} in diesem Tab",

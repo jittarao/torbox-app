@@ -399,7 +399,7 @@
     "viewNamePlaceholder": "Nom de la vue...",
     "createView": "Créer une vue",
     "creating": "Création...",
-    "previewFilters": "Aperçu sur la liste",
+    "previewFilters": "Aperçu",
     "previewHint": "Appliquer les filtres à la liste des téléchargements sans enregistrer.",
     "previewMatchCount": "{count, plural, =0 {Aucun téléchargement ne correspond} one {# téléchargement correspond} other {# téléchargements correspondent}}",
     "previewMatchCountOfTotal": "{matched} sur {total} dans cet onglet",

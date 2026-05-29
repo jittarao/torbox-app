@@ -118,8 +118,6 @@ export default function FilterEditorModal({
   const [saveSort, setSaveSort] = useState(false);
   const [saveColumns, setSaveColumns] = useState(false);
   const [saveSearch, setSaveSearch] = useState(false);
-  const [previewApplied, setPreviewApplied] = useState(false);
-
   const availableColumns = getFilterableColumns(columnsT, activeType);
   const isViewMode = isCreateMode || isEditMode;
   const trimmedSearch = search?.trim() || '';
@@ -160,7 +158,6 @@ export default function FilterEditorModal({
     setSaveSearch(
       isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false
     );
-    setPreviewApplied(false);
   }
 
   useEffect(() => {
@@ -216,10 +213,6 @@ export default function FilterEditorModal({
     // avoid resetting filters on every change — effect should only run on open/close.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, setColumnFilters]);
-
-  useEffect(() => {
-    if (isOpen) setPreviewApplied(false);
-  }, [columnFilters, isOpen]);
 
   if (!isOpen) return null;
 
@@ -411,7 +404,7 @@ export default function FilterEditorModal({
       includeSort: saveSort,
       includeSearch: saveSearch,
     });
-    setPreviewApplied(true);
+    onClose();
   };
 
   const handleClear = () => {
@@ -549,13 +542,6 @@ export default function FilterEditorModal({
                 onPreview={onPreview ? handlePreview : undefined}
                 showPreviewButton={!!onPreview}
               />
-            )}
-
-            {previewApplied && isViewMode && (
-              <p className="flex items-center gap-1.5 text-xs text-accent dark:text-accent-dark">
-                <Icons.Check className="size-3.5 shrink-0" aria-hidden />
-                {customViewsT('previewApplied')}
-              </p>
             )}
 
             <div>

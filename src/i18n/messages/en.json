@@ -413,7 +413,7 @@
     "viewNamePlaceholder": "View name...",
     "createView": "Create view",
     "creating": "Creating...",
-    "previewFilters": "Preview on list",
+    "previewFilters": "Preview",
     "previewHint": "Apply filters to the downloads list without saving.",
     "previewMatchCount": "{count, plural, =0 {No downloads match} one {# download matches} other {# downloads match}}",
     "previewMatchCountOfTotal": "{matched} of {total} on this tab",

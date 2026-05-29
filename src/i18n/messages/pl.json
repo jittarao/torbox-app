@@ -399,7 +399,7 @@
     "viewNamePlaceholder": "Nazwa widoku...",
     "createView": "Utwórz widok",
     "creating": "Tworzenie...",
-    "previewFilters": "Podgląd na liście",
+    "previewFilters": "Podgląd",
     "previewHint": "Zastosuj filtry do listy pobierań bez zapisywania.",
     "previewMatchCount": "{count, plural, =0 {Brak pasujących pobrań} one {# pobranie pasuje} few {# pobrania pasują} many {# pobrań pasuje} other {# pobrania pasuje}}",
     "previewMatchCountOfTotal": "{matched} z {total} w tej karcie",

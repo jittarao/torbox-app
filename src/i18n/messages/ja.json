@@ -399,7 +399,7 @@
     "viewNamePlaceholder": "ビュー名...",
     "createView": "ビューを作成",
     "creating": "作成中...",
-    "previewFilters": "リストでプレビュー",
+    "previewFilters": "プレビュー",
     "previewHint": "保存せずにダウンロード一覧へフィルターを適用します。",
     "previewMatchCount": "{count, plural, =0 {一致するダウンロードはありません} other {# 件のダウンロードが一致}}",
     "previewMatchCountOfTotal": "このタブの {total} 件中 {matched} 件",
