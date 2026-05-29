@@ -544,6 +544,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           handleFileSelect={handleFileSelect}
           setSelectedItems={setSelectedItems}
           downloadHistoryLookup={downloadHistoryLookup}
+          tagMappings={tagMappings}
           isBlurred={isBlurred}
           deleteItem={deleteItem}
           sortedItems={sortedItems}

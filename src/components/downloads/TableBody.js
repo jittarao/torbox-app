@@ -29,6 +29,7 @@ export default function TableBody({
   selectedItems,
   onFileSelect,
   setSelectedItems,
+  tagMappings,
   downloadHistoryLookup,
   toggleFiles,
   apiKey,
@@ -325,6 +326,7 @@ export default function TableBody({
             <DownloadRowContainer
               key={`item-${rowEntityKey}`}
               entityKey={rowEntityKey}
+              tagMappings={tagMappings}
               activeColumns={activeColumns}
               resolvedColumnWidths={resolvedColumnWidths}
               downloadHistoryLookup={downloadHistoryLookup}
