@@ -6,8 +6,9 @@ export const useSearchStore = create((set, get) => ({
   results: [],
   loading: false,
   error: null,
+  hasSearchCompleted: false,
   activeRequestId: 0,
-  searchType: 'torrents',
+  searchType: 'usenet',
   includeCustomEngines: false,
   searchHistory: [],
   showAdvancedOptions: false,
@@ -20,17 +21,17 @@ export const useSearchStore = create((set, get) => ({
   seedersFilter: '',
 
   setSearchType: (type) => {
-    set({ searchType: type, results: [], error: null });
+    set({ searchType: type, results: [], error: null, hasSearchCompleted: false });
     const { query } = get();
     if (query) get().fetchResults();
   },
 
   clearResults: () => {
-    set({ results: [], error: null });
+    set({ results: [], error: null, hasSearchCompleted: false });
   },
 
   setQuery: (query) => {
-    set({ query, results: [], error: null });
+    set({ query, results: [], error: null, hasSearchCompleted: false });
     if (query) {
       get().addToHistory(query);
       get().fetchResults();
@@ -96,6 +97,7 @@ export const useSearchStore = create((set, get) => ({
       results: [],
       loading: false,
       error: null,
+      hasSearchCompleted: false,
       seasonFilter: '',
       episodeFilter: '',
       yearFilter: '',
@@ -148,6 +150,7 @@ export const useSearchStore = create((set, get) => ({
         set({
           loading: false,
           error: data.error || `Request failed: ${res.status}`,
+          hasSearchCompleted: true,
         });
         return;
       }
@@ -157,6 +160,7 @@ export const useSearchStore = create((set, get) => ({
       set({
         results,
         loading: false,
+        hasSearchCompleted: true,
       });
     } catch (error) {
       if (get().activeRequestId !== requestId) {

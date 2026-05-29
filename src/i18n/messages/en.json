@@ -975,6 +975,7 @@
     "season": "Season",
     "seasonPlaceholder": "S01",
     "showAdvanced": "Show Advanced",
+    "torrentSearchWarning": "TorBox torrent search is currently unreliable and may return incomplete or incorrect results. Usenet search is recommended when available.",
     "year": "Year",
     "yearPlaceholder": "2024"
   },
@@ -993,6 +994,7 @@
       "days": "days"
     },
     "noResults": "No results found",
+    "noResultsHint": "Try a different query, enable custom engines, or switch search type.",
     "results": "{count} results",
     "sort": {
       "age": "Most Recent",
