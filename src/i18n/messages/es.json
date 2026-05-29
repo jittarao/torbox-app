@@ -403,7 +403,13 @@
     "previewHint": "Aplica los filtros a la lista de descargas sin guardar.",
     "previewMatchCount": "{count, plural, =0 {Ninguna descarga coincide} one {# descarga coincide} other {# descargas coinciden}}",
     "previewMatchCountOfTotal": "{matched} de {total} en esta pestaña",
-    "previewApplied": "Vista previa aplicada a la lista. Guarda cuando estés listo o sigue ajustando los filtros."
+    "previewApplied": "Vista previa aplicada a la lista. Guarda cuando estés listo o sigue ajustando los filtros.",
+    "viewEditorDescriptionCreate": "Pon nombre a tu vista y define filtros para cambiar rápidamente entre listas de descargas.",
+    "viewEditorDescriptionEdit": "Actualiza los filtros e incluye opcionalmente orden, columnas o búsqueda en esta vista.",
+    "viewEditorDescriptionFilter": "Crea filtros para aplicar a tu lista o guárdalos como una vista reutilizable.",
+    "viewEditorSaveOptions": "Incluir también en la vista",
+    "viewEditorFiltersSection": "Reglas de filtro",
+    "viewEditorNameLabel": "Nombre de la vista"
   },
   "FetchStatus": {
     "autoRefreshInactive": "La actualización automática se reanuda al volver a esta pestaña.",

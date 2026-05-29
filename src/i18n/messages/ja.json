@@ -403,7 +403,13 @@
     "previewHint": "保存せずにダウンロード一覧へフィルターを適用します。",
     "previewMatchCount": "{count, plural, =0 {一致するダウンロードはありません} other {# 件のダウンロードが一致}}",
     "previewMatchCountOfTotal": "このタブの {total} 件中 {matched} 件",
-    "previewApplied": "リストにプレビューを適用しました。問題なければ保存するか、フィルターを調整し続けてください。"
+    "previewApplied": "リストにプレビューを適用しました。問題なければ保存するか、フィルターを調整し続けてください。",
+    "viewEditorDescriptionCreate": "ビューに名前を付け、フィルターを設定してダウンロード一覧を素早く切り替えます。",
+    "viewEditorDescriptionEdit": "フィルターを更新し、必要に応じて並べ替え・列・検索もこのビューに含めます。",
+    "viewEditorDescriptionFilter": "リストに適用するフィルターを作成するか、再利用可能なビューとして保存します。",
+    "viewEditorSaveOptions": "ビューに含める項目",
+    "viewEditorFiltersSection": "フィルター条件",
+    "viewEditorNameLabel": "ビュー名"
   },
   "FetchStatus": {
     "autoRefreshInactive": "このタブに戻ると自動更新が再開されます。",

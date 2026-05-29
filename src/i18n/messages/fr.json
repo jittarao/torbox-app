@@ -403,7 +403,13 @@
     "previewHint": "Appliquer les filtres à la liste des téléchargements sans enregistrer.",
     "previewMatchCount": "{count, plural, =0 {Aucun téléchargement ne correspond} one {# téléchargement correspond} other {# téléchargements correspondent}}",
     "previewMatchCountOfTotal": "{matched} sur {total} dans cet onglet",
-    "previewApplied": "Aperçu appliqué à la liste. Enregistrez quand vous êtes prêt ou continuez à ajuster les filtres."
+    "previewApplied": "Aperçu appliqué à la liste. Enregistrez quand vous êtes prêt ou continuez à ajuster les filtres.",
+    "viewEditorDescriptionCreate": "Nommez votre vue et définissez des filtres pour basculer rapidement entre les listes de téléchargements.",
+    "viewEditorDescriptionEdit": "Mettez à jour les filtres et incluez éventuellement le tri, les colonnes ou la recherche avec cette vue.",
+    "viewEditorDescriptionFilter": "Créez des filtres à appliquer à votre liste ou enregistrez-les comme vue réutilisable.",
+    "viewEditorSaveOptions": "Inclure aussi dans la vue",
+    "viewEditorFiltersSection": "Règles de filtre",
+    "viewEditorNameLabel": "Nom de la vue"
   },
   "FetchStatus": {
     "autoRefreshInactive": "L'actualisation automatique reprend lorsque vous revenez sur cet onglet.",

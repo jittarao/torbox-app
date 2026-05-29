@@ -33,12 +33,12 @@ export default function ViewFilterPreview({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-surface-alt/80 dark:bg-surface-alt-dark/50 border border-border/60 dark:border-border-dark/60">
-      <div className="flex-1 min-w-0">
+    <div className="flex flex-col gap-3 rounded-xl border border-accent/20 bg-accent/5 p-4 dark:border-accent-dark/25 dark:bg-accent-dark/5 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
           {t('previewMatchCount', { count: matched })}
         </p>
-        <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 mt-0.5">
+        <p className="mt-0.5 text-xs text-primary-text/60 dark:text-primary-text-dark/60">
           {total > 0 ? t('previewMatchCountOfTotal', { matched, total }) : t('previewHint')}
         </p>
       </div>
@@ -47,7 +47,7 @@ export default function ViewFilterPreview({
           type="button"
           onClick={onPreview}
           disabled={!canPreview}
-          className="shrink-0 px-4 py-2 text-sm font-medium border border-accent dark:border-accent-dark text-accent dark:text-accent-dark rounded-md hover:bg-accent/10 dark:hover:bg-accent-dark/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="ui-btn-ghost shrink-0 !rounded-xl border border-accent/30 !text-xs text-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-accent-dark/30 dark:text-accent-dark dark:hover:bg-accent-dark/10"
         >
           {t('previewFilters')}
         </button>
