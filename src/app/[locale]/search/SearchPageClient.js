@@ -44,7 +44,7 @@ export default function SearchPageClient() {
     const torrents = { value: 'torrents', labelKey: 'itemTypes.Torrents' };
     const usenet = { value: 'usenet', labelKey: 'itemTypes.Usenet' };
     const canUsenet = hasDownloadAccess('usenet', permissions);
-    return [torrents, ...(canUsenet ? [usenet] : [])];
+    return [...(canUsenet ? [usenet] : []), torrents];
   }, [permissions]);
 
   const handleKeyChange = (newKey) => {

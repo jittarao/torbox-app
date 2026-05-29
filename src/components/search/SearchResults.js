@@ -27,6 +27,8 @@ const SORT_OPTIONS = {
 export default function SearchResults({ apiKey }) {
   const searchState = useSearchStore(
     useShallow((s) => ({
+      query: s.query,
+      hasSearchCompleted: s.hasSearchCompleted,
       results: s.results,
       loading: s.loading,
       error: s.error,
@@ -40,7 +42,8 @@ export default function SearchResults({ apiKey }) {
       seedersFilter: s.seedersFilter,
     }))
   );
-  const { results, loading, error, searchType, clearResults } = searchState;
+  const { query, hasSearchCompleted, results, loading, error, searchType, clearResults } =
+    searchState;
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
@@ -136,7 +139,11 @@ export default function SearchResults({ apiKey }) {
     setSortKey(newSortKey);
   };
 
-  if (!results.length && !loading && !error) return null;
+  const showNoResults =
+    hasSearchCompleted && Boolean(query) && !loading && !error && results.length === 0;
+  const hasContent = loading || error || showNoResults || results.length > 0;
+
+  if (!hasContent) return null;
 
   return (
     <div>
@@ -362,9 +369,14 @@ export default function SearchResults({ apiKey }) {
 
       {error && <div className="text-center py-4 text-red-500 dark:text-red-400">{error}</div>}
 
-      {!results.length && !loading && !error && (
-        <div className="text-center py-4">
-          <h2 className="text-xl font-semibold">{t('noResults')}</h2>
+      {showNoResults && (
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark">
+            {t('noResults')}
+          </h2>
+          <p className="mt-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+            {t('noResultsHint')}
+          </p>
         </div>
       )}
 

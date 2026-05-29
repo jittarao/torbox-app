@@ -7,8 +7,8 @@ import Icons from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 const DEFAULT_SEARCH_OPTIONS = [
-  { value: 'torrents', labelKey: 'itemTypes.Torrents' },
   { value: 'usenet', labelKey: 'itemTypes.Usenet' },
+  { value: 'torrents', labelKey: 'itemTypes.Torrents' },
 ];
 
 export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) {
@@ -220,6 +220,15 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
           {t('search') || 'Search'}
         </button>
       </div>
+
+      {searchType === 'torrents' && (
+        <div
+          className="p-3 text-sm rounded-lg border border-label-warning-text/20 bg-label-warning-bg dark:bg-label-warning-bg-dark text-label-warning-text dark:text-label-warning-text-dark"
+          role="status"
+        >
+          {t('torrentSearchWarning')}
+        </div>
+      )}
 
       {/* Search History Dropdown */}
       {showHistory && searchHistory.length > 0 && (
