@@ -683,7 +683,8 @@
     "actions": {
       "copy": "コピー",
       "download": "ダウンロード",
-      "remove": "削除"
+      "remove": "削除",
+      "selectItem": "リンクを選択"
     },
     "columns": {
       "actions": "アクション",

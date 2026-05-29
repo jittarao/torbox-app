@@ -705,7 +705,8 @@
     "actions": {
       "copy": "Copy",
       "download": "Download",
-      "remove": "Remove"
+      "remove": "Remove",
+      "selectItem": "Select link"
     },
     "columns": {
       "actions": "Actions",
