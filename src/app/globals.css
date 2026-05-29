@@ -15,6 +15,8 @@
   --z-overlay-backdrop: 300;
   --z-overlay-panel: 301;
   --z-overlay-dialog: 310;
+  /* Portaled selects/multiselects inside modals */
+  --z-overlay-popover: 320;
   --downloads-sidebar-width: 14rem;
   /* Left edge of main downloads column when fixed filters sidebar is shown (desktop) */
   --downloads-content-left: calc(var(--sidebar-width, 0px) + var(--downloads-sidebar-width, 0px));
@@ -512,6 +514,14 @@ select option {
 
   .z-overlay-dialog {
     z-index: var(--z-overlay-dialog);
+  }
+
+  .z-overlay-popover {
+    z-index: var(--z-overlay-popover);
+  }
+
+  .z-overlay-popover-backdrop {
+    z-index: calc(var(--z-overlay-popover) - 1);
   }
 }
 
