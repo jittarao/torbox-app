@@ -22,19 +22,17 @@ export const useAppStore = create((set, get) => ({
   // Mark that database is being ensured
   setEnsuringDb: (apiKey, isEnsuring) => {
     const { ensuringDb } = get();
-    if (isEnsuring) {
-      ensuringDb.add(apiKey);
-    } else {
-      ensuringDb.delete(apiKey);
-    }
-    set({ ensuringDb: new Set(ensuringDb) });
+    const next = new Set(ensuringDb);
+    isEnsuring ? next.add(apiKey) : next.delete(apiKey);
+    set({ ensuringDb: next });
   },
 
   // Mark that database has been ensured for an API key
   markDbEnsured: (apiKey) => {
     const { ensuredDbKeys } = get();
-    ensuredDbKeys.add(apiKey);
-    set({ ensuredDbKeys: new Set(ensuredDbKeys) });
+    const next = new Set(ensuredDbKeys);
+    next.add(apiKey);
+    set({ ensuredDbKeys: next });
   },
 
   // Clear ensured keys (useful when API key changes)

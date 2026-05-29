@@ -18,27 +18,29 @@ export function applySearchFilters(results, filters) {
   let filtered = [...results];
 
   if (seasonFilter) {
+    const s0 = seasonFilter.padStart(2, '0');
+    const seasonPatterns = [
+      new RegExp(`s${s0}`, 'i'),
+      new RegExp(`season\\s*${seasonFilter}`, 'i'),
+      new RegExp(`\\b${seasonFilter}x\\d+`, 'i'),
+      new RegExp(`season\\s*${s0}`, 'i'),
+    ];
     filtered = filtered.filter((item) => {
       const title = (item.raw_title || item.title || '').toLowerCase();
-      const seasonPatterns = [
-        new RegExp(`s${seasonFilter.padStart(2, '0')}`, 'i'),
-        new RegExp(`season\\s*${seasonFilter}`, 'i'),
-        new RegExp(`\\b${seasonFilter}x\\d+`, 'i'),
-        new RegExp(`season\\s*${seasonFilter.padStart(2, '0')}`, 'i'),
-      ];
       return seasonPatterns.some((pattern) => pattern.test(title));
     });
   }
 
   if (episodeFilter) {
+    const e0 = episodeFilter.padStart(2, '0');
+    const episodePatterns = [
+      new RegExp(`e${e0}`, 'i'),
+      new RegExp(`episode\\s*${episodeFilter}`, 'i'),
+      new RegExp(`\\b\\d+x${e0}`, 'i'),
+      new RegExp(`episode\\s*${e0}`, 'i'),
+    ];
     filtered = filtered.filter((item) => {
       const title = (item.raw_title || item.title || '').toLowerCase();
-      const episodePatterns = [
-        new RegExp(`e${episodeFilter.padStart(2, '0')}`, 'i'),
-        new RegExp(`episode\\s*${episodeFilter}`, 'i'),
-        new RegExp(`\\b\\d+x${episodeFilter.padStart(2, '0')}`, 'i'),
-        new RegExp(`episode\\s*${episodeFilter.padStart(2, '0')}`, 'i'),
-      ];
       return episodePatterns.some((pattern) => pattern.test(title));
     });
   }

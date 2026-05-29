@@ -98,7 +98,7 @@ export function handleChunkError(error, retryCount = 0) {
         registrations.forEach((registration) => {
           registration.update();
         });
-      });
+      }).catch(() => {});
     }
 
     scheduleReload(0);
@@ -142,13 +142,13 @@ export function handleServiceWorkerError(error) {
             .then(() => {
               console.log('All caches cleared');
               scheduleReload(500);
-            });
+            }).catch(() => {});
         } else {
           scheduleReload(500);
         }
-      });
+      }).catch(() => {});
     });
-  });
+  }).catch(() => {});
 
   return true;
 }

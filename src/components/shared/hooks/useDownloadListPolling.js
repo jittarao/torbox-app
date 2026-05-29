@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { getAutoStartOptions } from '@/utils/utility';
-import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torboxDownloadsStore';
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
 
@@ -31,7 +31,7 @@ export function useDownloadListPolling({
     if (type !== 'torrents' && type !== 'all') return false;
     const options = getAutoStartOptions();
     if (!options?.autoStart) return false;
-    return s.hasQueuedTorrents;
+    return selectHasQueuedTorrents(s);
   });
 
   const onPollRef = useRef(onPoll);
@@ -96,7 +96,7 @@ export function useDownloadListPolling({
       if (type !== 'torrents' && type !== 'all') return false;
       const options = getAutoStartOptions();
       if (!options?.autoStart) return false;
-      return useTorboxDownloadsStore.getState().hasQueuedTorrents;
+      return selectHasQueuedTorrents(useTorboxDownloadsStore.getState());
     };
 
     const shouldPollWhileDisengaged = () => {
