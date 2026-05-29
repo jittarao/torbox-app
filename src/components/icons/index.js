@@ -81,6 +81,7 @@ import ExpandAllIcon from './ExpandAll';
 import CollapseAllIcon from './CollapseAll';
 import PrivateIcon from './Private';
 import AllIcon from './All';
+import GitHubIcon from './GitHub';
 
 const Icons = {
   Link: LinkIcon,
@@ -165,6 +166,7 @@ const Icons = {
   CollapseAll: CollapseAllIcon,
   Private: PrivateIcon,
   All: AllIcon,
+  GitHub: GitHubIcon,
 };
 
 export default Icons;
@@ -250,3 +252,4 @@ export { default as ExpandAll } from './ExpandAll';
 export { default as CollapseAll } from './CollapseAll';
 export { default as Private } from './Private';
 export { default as All } from './All';
+export { default as GitHub } from './GitHub';
