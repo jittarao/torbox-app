@@ -601,7 +601,7 @@ export default function FilterEditorModal({
                           </span>
                         </div>
                       )}
-                      <div className="overflow-hidden rounded-xl ring-1 ring-border/50 dark:ring-border-dark/50">
+                      <div className="rounded-xl ring-1 ring-border/50 dark:ring-border-dark/50">
                         <FilterGroup
                           group={group}
                           groupIndex={groupIndex}

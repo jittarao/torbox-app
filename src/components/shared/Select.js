@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { Children, isValidElement, Fragment } from 'react';
-import { createPortal } from 'react-dom';
+import OverlayPortal from '@/components/shared/OverlayPortal';
 
 /**
  * Custom Select component with mobile-responsive design
@@ -112,7 +112,8 @@ export default function Select({
     const vw = window.innerWidth;
     const margin = 8;
     const gap = 4;
-    const preferredMax = Math.min(320, Math.round(vh * 0.55));
+    // Use most of the viewport below/above the trigger (capped for very tall screens)
+    const preferredMax = Math.min(560, Math.round(vh * 0.72));
     const minUsable = 140;
 
     const spaceBelow = vh - rect.bottom - margin;
@@ -316,21 +317,18 @@ export default function Select({
     }
   }, [isOpen]);
 
-  const portalTarget = typeof document !== 'undefined' ? document.body : null;
-
   const dropdownContent =
-    isOpen && dropdownLayout && portalTarget ? (
+    isOpen && dropdownLayout ? (
       <>
         <div
-          className="fixed inset-0 bg-black/20 z-[90] sm:hidden"
+          className="z-overlay-popover-backdrop fixed inset-0 bg-black/20 sm:hidden"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
-        <datalist
+        <div
           ref={dropdownRef}
-          className="fixed z-[100] bg-surface dark:bg-surface-dark
-              border border-border dark:border-border-dark rounded-md shadow-lg
-              overflow-y-auto overscroll-contain"
+          role="listbox"
+          className="z-overlay-popover fixed overflow-y-auto overscroll-contain rounded-md border border-border bg-surface shadow-lg dark:border-border-dark dark:bg-surface-dark"
           style={{
             top: dropdownLayout.top,
             left: dropdownLayout.left,
@@ -346,7 +344,7 @@ export default function Select({
             onSelect={handleSelect}
             optionsRef={optionsRef}
           />
-        </datalist>
+        </div>
       </>
     ) : null;
 
@@ -384,7 +382,9 @@ export default function Select({
         </svg>
       </button>
 
-      {portalTarget && dropdownContent ? createPortal(dropdownContent, portalTarget) : null}
+      {dropdownContent ? (
+        <OverlayPortal open={isOpen}>{dropdownContent}</OverlayPortal>
+      ) : null}
     </div>
   );
 }

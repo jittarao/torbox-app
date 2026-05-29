@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import OverlayPortal from '@/components/shared/OverlayPortal';
 
 const EMPTY_ARRAY = [];
 
@@ -58,7 +58,7 @@ export default function MultiSelect({
     const vw = window.innerWidth;
     const margin = 8;
     const gap = 4;
-    const preferredMax = Math.min(320, Math.round(vh * 0.55));
+    const preferredMax = Math.min(560, Math.round(vh * 0.72));
     const minUsable = 140;
 
     const spaceBelow = vh - rect.bottom - margin;
@@ -207,19 +207,17 @@ export default function MultiSelect({
     return `${selectedOptions.length} selected`;
   }, [selectedOptions, placeholder]);
 
-  const portalTarget = typeof document !== 'undefined' ? document.body : null;
-
   if (isOpen) {
     optionsRef.current = [];
   }
 
   const dropdownContent =
-    isOpen && dropdownLayout && portalTarget ? (
-      <datalist
+    isOpen && dropdownLayout ? (
+      <div
         ref={dropdownRef}
-        className="fixed z-[100] bg-surface dark:bg-surface-dark
-            border border-border dark:border-border-dark rounded-md shadow-lg
-            flex flex-col overflow-hidden"
+        role="listbox"
+        aria-multiselectable="true"
+        className="z-overlay-popover fixed flex flex-col overflow-hidden rounded-md border border-border bg-surface shadow-lg dark:border-border-dark dark:bg-surface-dark"
         style={{
           top: dropdownLayout.top,
           left: dropdownLayout.left,
@@ -308,7 +306,7 @@ export default function MultiSelect({
             })
           )}
         </div>
-      </datalist>
+      </div>
     ) : null;
 
   return (
@@ -374,7 +372,7 @@ export default function MultiSelect({
         </svg>
       </button>
 
-      {portalTarget && dropdownContent ? createPortal(dropdownContent, portalTarget) : null}
+      {dropdownContent ? <OverlayPortal open={isOpen}>{dropdownContent}</OverlayPortal> : null}
     </div>
   );
 }
