@@ -21,7 +21,14 @@ function DownloadRowContainer({
   }, [entity, tagMappings, downloadHistoryLookup]);
 
   if (!item) return null;
-  return <ItemRow item={item} entityKey={entityKey} {...rowProps} />;
+  return (
+    <ItemRow
+      item={item}
+      entityKey={entityKey}
+      downloadHistoryLookup={downloadHistoryLookup}
+      {...rowProps}
+    />
+  );
 }
 
 export default memo(DownloadRowContainer);
