@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import Icons from '@/components/icons';
+import { Copy, Download, Play } from '@/components/icons';
 import { formatSize } from './utils/formatters';
 import { getDisplayMimetype } from './utils/mimetypeDisplay';
 import Spinner from '@/components/shared/Spinner';
@@ -238,7 +238,7 @@ function FileRowInner({
                       {isStreaming?.[assetKey(item.id, file.id)] ? (
                         <Spinner size="sm" />
                       ) : (
-                        <Icons.Play />
+                        <Play />
                       )}
                     </button>
                   ) : isAudioFile(file) && handleAudioPlay ? (
@@ -255,7 +255,7 @@ function FileRowInner({
                       {isStreaming?.[assetKey(item.id, file.id)] ? (
                         <Spinner size="sm" />
                       ) : (
-                        <Icons.Play />
+                        <Play />
                       )}
                     </button>
                   ) : null}
@@ -271,7 +271,7 @@ function FileRowInner({
                     className={FILE_ACTION_BUTTON_CLASS}
                     title={t('copyLink')}
                   >
-                    {isCopying[assetKey(item.id, file.id)] ? <Spinner size="sm" /> : <Icons.Copy />}
+                    {isCopying[assetKey(item.id, file.id)] ? <Spinner size="sm" /> : <Copy />}
                   </button>
                 </span>
                 <span className={FILE_ACTION_SLOT_CLASS}>
@@ -288,7 +288,7 @@ function FileRowInner({
                     {isDownloading[assetKey(item.id, file.id)] ? (
                       <Spinner size="sm" />
                     ) : (
-                      <Icons.Download />
+                      <Download />
                     )}
                   </button>
                 </span>

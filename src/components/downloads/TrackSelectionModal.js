@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Icons from '@/components/icons';
+import { Eye, Play, Question, X } from '@/components/icons';
 
 const EMPTY_OBJECT = {};
 
@@ -79,7 +79,7 @@ export default function TrackSelectionModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark">
           <div className="flex items-center gap-3">
-            <Icons.Play className="size-6 text-accent dark:text-accent-dark" />
+            <Play className="size-6 text-accent dark:text-accent-dark" />
             <div>
               <h2 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 Select Tracks
@@ -98,7 +98,7 @@ export default function TrackSelectionModal({
               text-primary-text dark:text-primary-text-dark
               transition-colors"
           >
-            <Icons.X className="size-5" />
+            <X className="size-5" />
           </button>
         </div>
 
@@ -108,7 +108,7 @@ export default function TrackSelectionModal({
           {video && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark flex items-center gap-2">
-                <Icons.Play className="size-4" />
+                <Play className="size-4" />
                 Video Track
               </h3>
               <div className="bg-surface-alt dark:bg-surface-alt-dark rounded-lg p-4 border border-border dark:border-border-dark">
@@ -229,7 +229,7 @@ export default function TrackSelectionModal({
           {subtitles.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark flex items-center gap-2">
-                <Icons.Eye className="size-4" />
+                <Eye className="size-4" />
                 Subtitle Tracks
               </h3>
               <div className="space-y-2">
@@ -309,7 +309,7 @@ export default function TrackSelectionModal({
             introInformation.end_time > 0 && (
               <div className="bg-accent/5 dark:bg-accent-dark/5 rounded-lg p-4 border border-accent/20 dark:border-accent-dark/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icons.Question className="size-4 text-accent dark:text-accent-dark" />
+                  <Question className="size-4 text-accent dark:text-accent-dark" />
                   <span className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
                     Intro Detected
                   </span>
@@ -346,7 +346,7 @@ export default function TrackSelectionModal({
               text-white
               transition-colors font-medium flex items-center gap-2"
           >
-            <Icons.Play className="size-4" />
+            <Play className="size-4" />
             Play
           </button>
         </div>

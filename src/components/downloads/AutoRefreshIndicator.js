@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { Refresh } from '@/components/icons';
 
 const RING_SIZE = 36;
 const RING_RADIUS = 14;
@@ -123,7 +123,7 @@ export default function AutoRefreshIndicator({
         `}
       >
         {!ringMuted && showCountdown && <ProgressRing progress={progress} />}
-        <Icons.Refresh
+        <Refresh
           className={`relative z-10 size-4 text-secondary-text dark:text-secondary-text-dark group-hover:text-accent dark:group-hover:text-accent-dark transition-colors ${
             isRefreshing ? 'animate-spin' : ''
           }`}

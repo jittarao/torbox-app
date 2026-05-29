@@ -33,10 +33,13 @@ export default function VideoPlayer({
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const isSeekingRef = useRef(false);
+  const isCancelledRef = useRef(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
+
+    isCancelledRef.current = false;
 
     const handleTimeUpdate = () => {
       if (video && !isSeekingRef.current) {
@@ -75,12 +78,26 @@ export default function VideoPlayer({
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('volumechange', handleVolumeChange);
 
+    const timeouts = [];
+    const safeTimeout = (fn, ms) => {
+      const id = setTimeout(fn, ms);
+      timeouts.push(id);
+      return id;
+    };
+
+    let shakaPlayer = null;
+
     const initPlayer = async () => {
       try {
         onLoadingChange?.(true);
         onError?.(null);
 
+        if (isCancelledRef.current) return;
+
         const shaka = await import('shaka-player');
+
+        if (isCancelledRef.current) return;
+
         shaka.polyfill.installAll();
 
         if (!shaka.Player.isBrowserSupported()) {
@@ -125,11 +142,13 @@ export default function VideoPlayer({
 
         // Player event handlers
         player.addEventListener('loading', () => {
+          if (isCancelledRef.current) return;
           onLoadingChange?.(true);
           onError?.(null);
         });
 
         player.addEventListener('loaded', () => {
+          if (isCancelledRef.current) return;
           onLoadingChange?.(false);
           onError?.(null);
 
@@ -142,6 +161,7 @@ export default function VideoPlayer({
           // Handle initial seek if provided
           if (initialSeekTime !== null && initialSeekTime > 0 && video) {
             const seekToTime = () => {
+              if (isCancelledRef.current) return;
               if (video && video.readyState >= 2 && video.duration > 0) {
                 const seekTime = Math.min(initialSeekTime, video.duration);
                 video.currentTime = seekTime;
@@ -149,7 +169,8 @@ export default function VideoPlayer({
 
                 // Auto play if requested
                 if (shouldAutoPlay) {
-                  setTimeout(() => {
+                  safeTimeout(() => {
+                    if (isCancelledRef.current) return;
                     if (video && video.paused) {
                       video.play().catch(() => {
                         // Autoplay may fail due to browser policies
@@ -158,16 +179,17 @@ export default function VideoPlayer({
                   }, 300);
                 }
               } else if (video) {
-                setTimeout(seekToTime, 200);
+                safeTimeout(seekToTime, 200);
               }
             };
 
             // Wait for video to be ready
             video.addEventListener('loadedmetadata', seekToTime, { once: true });
-            setTimeout(seekToTime, 500);
+            safeTimeout(seekToTime, 500);
           } else if (shouldAutoPlay) {
             // Normal autoplay
-            setTimeout(() => {
+            safeTimeout(() => {
+              if (isCancelledRef.current) return;
               if (video && video.paused) {
                 video.play().catch(() => {
                   // Autoplay may fail due to browser policies
@@ -178,6 +200,7 @@ export default function VideoPlayer({
         });
 
         player.addEventListener('error', (event) => {
+          if (isCancelledRef.current) return;
           onLoadingChange?.(false);
           const error = event.detail;
           const errorMessage = error?.message || 'Failed to load stream';
@@ -185,8 +208,11 @@ export default function VideoPlayer({
           console.error('Shaka Player error:', error);
         });
 
+        if (isCancelledRef.current) return;
+
         await player.load(streamUrl);
       } catch (error) {
+        if (isCancelledRef.current) return;
         onLoadingChange?.(false);
         const errorMessage = error?.message || error?.toString() || 'Failed to load stream';
         onError?.(errorMessage);
@@ -196,8 +222,11 @@ export default function VideoPlayer({
 
     initPlayer();
 
-    let shakaPlayer = null;
     return () => {
+      isCancelledRef.current = true;
+      timeouts.forEach(clearTimeout);
+      timeouts.length = 0;
+
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
@@ -207,6 +236,7 @@ export default function VideoPlayer({
 
       if (shakaPlayer) {
         shakaPlayer.destroy();
+        shakaPlayer = null;
       }
     };
   }, [

@@ -4,13 +4,13 @@ import {
   useMemo,
   useDeferredValue,
   useCallback,
-  useEffect,
   useLayoutEffect,
 } from 'react';
+import { useDownloadsContext } from './DownloadsContext';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import { useDownloadsActions } from './DownloadsActionsContext';
-import { useStream } from '../shared/hooks/useStream';
+import { useStreamInitializer } from './hooks/useStreamInitializer';
 import DownloadCardContainer from './DownloadCardContainer';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
@@ -27,41 +27,41 @@ function parseEntityKey(entityKey) {
   return { assetType: entityKey.slice(0, sep), id: entityKey.slice(sep + 1) };
 }
 
-export default function CardList({
-  entityKeys,
-  tagMappings = {},
-  apiKey,
-  activeColumns,
-  onFileSelect,
-  downloadHistoryLookup,
-  onDelete,
-  toggleFiles,
-  setToast,
-  activeType,
-  isBlurred,
-  isFullscreen,
-  viewMode = 'card',
-  scrollContainerRef,
-  onOpenVideoPlayer,
-  onAudioPlay,
-  fileSearch = '',
-}) {
+export default function CardList() {
+  const ctx = useDownloadsContext();
+  const {
+    visibleIds: entityKeys,
+    tagMappings = {},
+    apiKey,
+    activeColumns,
+    handleFileSelect: onFileSelect,
+    downloadHistoryLookup,
+    deleteItem: onDelete,
+    toggleFiles,
+    setToast,
+    activeType,
+    isBlurred,
+    isFullscreen,
+    displayViewMode: viewMode,
+    scrollContainerRef,
+    onOpenVideoPlayer,
+    onAudioPlay,
+    fileSearch = '',
+  } = ctx;
+
+  const {
+    trackSelectionModal,
+    closeTrackSelectionModal,
+    handleFileStreamInit: handleFileStream,
+    handleTrackSelection,
+  } = useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer });
+
   const t = useTranslations('CardList');
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
   const [isStreaming, setIsStreaming] = useState({});
-  const [trackSelectionModal, setTrackSelectionModal] = useState({
-    isOpen: false,
-    metadata: null,
-    introInformation: null,
-    fileName: null,
-    itemId: null,
-    fileId: null,
-    file: null,
-  });
   const parentRef = useRef(null);
   const { downloadSingle } = useDownloadsActions();
-  const { createStream } = useStream(apiKey);
   const isMobile = useIsMobile();
   const containerOffsetTopRef = useRef(0);
   const [containerOffsetTop, setContainerOffsetTop] = useState(0);
@@ -75,7 +75,6 @@ export default function CardList({
     }
   }, [isFullscreen, scrollContainerRef]);
 
-  // Measure list offset before paint so scrollMargin matches container position (table→card switch)
   useLayoutEffect(() => {
     if (isFullscreen) {
       containerOffsetTopRef.current = 0;
@@ -84,9 +83,7 @@ export default function CardList({
     }
 
     const updateContainerOffset = () => {
-      if (!parentRef.current) {
-        return;
-      }
+      if (!parentRef.current) return;
 
       const rect = parentRef.current.getBoundingClientRect();
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -100,435 +97,209 @@ export default function CardList({
 
     updateContainerOffset();
 
-    const resizeObserver =
-      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateContainerOffset) : null;
-    if (resizeObserver && parentRef.current) {
-      resizeObserver.observe(parentRef.current);
-    }
-
     window.addEventListener('resize', updateContainerOffset);
+    return () => window.removeEventListener('resize', updateContainerOffset);
+  }, [isFullscreen, ctx.sortedItems]);
 
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener('resize', updateContainerOffset);
+  const hasFilesWithSearch = useMemo(() => {
+    if (!fileSearch) return null;
+    const search = fileSearch.toLowerCase();
+    return (item) => {
+      if (!item.files || item.files.length === 0) return false;
+      return item.files.some((file) => {
+        const name = file.name || file.short_name || '';
+        return name.toLowerCase().includes(search);
+      });
     };
-  }, [isFullscreen, viewMode]);
+  }, [fileSearch]);
 
   const deferredEntityKeys = useDeferredValue(entityKeys);
+
+  const entities = useTorboxDownloadsStore((state) => state.entities);
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
-  const deferredExpandedById = useDeferredValue(expandedById);
+  const { toggleExpanded } = useDownloadsUiStore.getState();
 
-  const expandedItemsSet = useMemo(() => {
-    return new Set(
-      Object.keys(deferredExpandedById).map((id) =>
-        Number.isNaN(Number(id)) ? id : Number(id)
-      )
-    );
-  }, [deferredExpandedById]);
+  const rowVirtualizer = (() => {
+    if (deferredEntityKeys.length === 0) return null;
 
-  const flattenedRows = useMemo(() => {
-    return deferredEntityKeys.map((key, itemIndex) => ({
-      entityKey: key,
-      itemIndex,
-    }));
-  }, [deferredEntityKeys]);
+    const common = {
+      count: deferredEntityKeys.length,
+      estimateSize: (index) => {
+        const entityKey = deferredEntityKeys[index];
+        if (!entityKey) return 0;
+        const { id } = parseEntityKey(entityKey);
+        const filesExpanded = expandedById[id];
+        const files = entities?.[id]?.files;
+        const filesVisible = getFilesVisibleForDownloadSearch(files, fileSearch);
 
-  // Include margin-bottom (cardListItemGap) so variable-height cards stack with correct spacing
-  const measureElement = useCallback((element) => {
-    const marginBottom = parseFloat(window.getComputedStyle(element).marginBottom) || 0;
-    return Math.ceil(element.getBoundingClientRect().height + marginBottom);
-  }, []);
+        let cardHeight = isMobile ? 118 : 104;
+        if (filesExpanded && filesVisible) {
+          const fileCount = filesVisible.length;
+          cardHeight += fileCount * (isMobile ? 54 : 44);
+        }
+        cardHeight += cardListItemGap;
+        return cardHeight;
+      },
+      overscan: 4,
+      gap: getCardListItemGapPx(),
+    };
 
-  const estimateSize = useCallback(
-    (index) => {
-      const row = flattenedRows[index];
-      const isTablet =
-        typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
-      const gap = getCardListItemGapPx();
-      const baseHeight = isMobile ? 118 : isTablet ? 74 : 82;
-      if (!row) {
-        return baseHeight + gap;
-      }
+    if (isFullscreen && fullscreenScrollEl) {
+      return useWindowVirtualizer({
+        ...common,
+        scrollMargin: containerOffsetTop,
+      });
+    }
 
-      const entity = useTorboxDownloadsStore.getState().entities[row.entityKey];
-      if (!entity) {
-        return baseHeight + gap;
-      }
-      const visibleFiles = getFilesVisibleForDownloadSearch(entity, fileSearch);
-      if (expandedItemsSet.has(entity.id) && visibleFiles.length > 0) {
-        const fileRowHeight = isMobile ? 72 : 48;
-        const fileListHeader = 32;
-        return baseHeight + fileListHeader + visibleFiles.length * fileRowHeight + gap;
-      }
+    return useVirtualizer({
+      ...common,
+      getScrollElement: () => parentRef.current,
+    });
+  })();
 
-      return baseHeight + gap;
-    },
-    [flattenedRows, expandedItemsSet, isMobile, fileSearch]
-  );
+  useDownloadsVirtualRowSync(entityKeys, rowVirtualizer);
 
-  // Use different virtualizers based on fullscreen mode
-  // In fullscreen: use useVirtualizer with scroll container
-  // In normal mode: use useWindowVirtualizer for window scroll
-  // Disabled useFlushSync to allow React to batch updates for better performance
-  const windowVirtualizer = useWindowVirtualizer({
-    count: flattenedRows.length,
-    estimateSize,
-    measureElement,
-    overscan: 10,
-    scrollMargin: containerOffsetTop,
-    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
-  });
-
-  const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
-
-  const containerVirtualizer = useVirtualizer({
-    count: flattenedRows.length,
-    getScrollElement,
-    estimateSize,
-    measureElement,
-    overscan: 10,
-    useFlushSync: false, // Allow React to batch updates for smoother fast scrolling
-  });
-
-  // Use the appropriate virtualizer based on mode
-  const virtualizer = isFullscreen ? containerVirtualizer : windowVirtualizer;
-
-  const toastMessages = useMemo(
-    () => ({
-      copyLinkSuccess: t('toast.copyLink'),
-      copyLinkFailed: t('toast.copyLinkFailed'),
-    }),
-    [t]
-  );
-
-  const {
-    handleItemSelection,
-    handleFileSelection,
-    handleFileDownload,
-    isSelectionDisabled,
-    assetKey,
-    lastClickedItemIndexRef,
-    lastClickedFileIndexRef,
-  } = useDownloadRowInteractions({
-    entityKeys: deferredEntityKeys,
+  const interactions = useDownloadRowInteractions({
+    items: ctx.sortedItems,
     activeType,
     fileSearch,
     onFileSelect,
-    downloadSingle,
     setToast,
-    toastMessages,
-    setIsDownloading,
-    setIsCopying,
+    downloadSingle,
+    downloadHistoryLookup,
   });
-
-  // Map activeType to stream type
-  const getStreamType = useCallback(() => {
-    switch (activeType) {
-      case 'usenet':
-        return 'usenet';
-      case 'webdl':
-        return 'webdownload';
-      default:
-        return 'torrent';
-    }
-  }, [activeType]);
-
-  const handleFileStream = useCallback(
-    async (itemId, file) => {
-      const key = assetKey(itemId, file.id);
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
-
-      try {
-        const streamType = getStreamType();
-
-        // Get stream metadata first using createStream with itemId, fileId, and type
-        const streamData = await createStream(itemId, file.id, streamType);
-
-        // Extract metadata - API returns data nested in 'data' property
-        const data = streamData.data || streamData;
-        const metadata = data.metadata || streamData.metadata || {};
-        const introInformation = data.intro_information || streamData.intro_information || null;
-
-        // Include search_metadata in the metadata object if it exists
-        const fullMetadata = {
-          ...metadata,
-          search_metadata: data.search_metadata || streamData.search_metadata || null,
-        };
-
-        // Show track selection modal
-        setTrackSelectionModal({
-          isOpen: true,
-          metadata: fullMetadata,
-          introInformation: introInformation,
-          fileName: file.name || file.short_name || 'Video',
-          itemId: itemId,
-          fileId: file.id,
-          file: file,
-        });
-      } catch (error) {
-        console.error('Error getting stream metadata:', error);
-        setToast({
-          message: error.message || 'Failed to get stream metadata',
-          type: 'error',
-        });
-      } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
-      }
-    },
-    [assetKey, getStreamType, createStream, setToast]
-  );
-
-  // Handle track selection and open video player
-  const handleTrackSelection = useCallback(
-    async (selectedStreamData) => {
-      const {
-        itemId,
-        fileId,
-        file,
-        metadata: fullMetadata,
-        introInformation,
-      } = trackSelectionModal;
-      const streamType = getStreamType();
-      const key = assetKey(itemId, fileId);
-
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
-      setTrackSelectionModal((prev) => ({ ...prev, isOpen: false }));
-
-      try {
-        // Create stream with selected tracks
-        const streamMetadata = await createStream(
-          itemId,
-          fileId,
-          streamType,
-          selectedStreamData.subtitle_track_idx,
-          selectedStreamData.audio_track_idx
-        );
-
-        // Extract stream URL
-        const data = streamMetadata.data || streamMetadata;
-        const presignedToken = data.presigned_token || streamMetadata.presigned_token;
-        const userToken =
-          data.user_token || data.token || streamMetadata.user_token || streamMetadata.token;
-
-        // Check if hls_url is already provided in the response
-        let streamUrl = data.hls_url || streamMetadata.hls_url;
-
-        // If hls_url not provided, get it via createStream
-        if (!streamUrl && presignedToken && userToken) {
-          const streamData = await createStream(
-            itemId,
-            fileId,
-            streamType,
-            selectedStreamData.subtitle_track_idx,
-            selectedStreamData.audio_track_idx
-          );
-          streamUrl = streamData.data.hls_url;
-        }
-
-        if (!streamUrl) {
-          throw new Error('Failed to get stream URL');
-        }
-
-        // Extract updated metadata and subtitles/audios
-        const updatedMetadata = data.metadata || streamMetadata.metadata || fullMetadata;
-        const subtitles = updatedMetadata.subtitles || [];
-        const audios = updatedMetadata.audios || [];
-
-        const finalMetadata = {
-          ...updatedMetadata,
-          search_metadata:
-            data.search_metadata ||
-            streamMetadata.search_metadata ||
-            fullMetadata?.search_metadata ||
-            null,
-        };
-
-        // Open video player modal via callback
-        if (onOpenVideoPlayer) {
-          onOpenVideoPlayer(
-            streamUrl,
-            file.name || file.short_name || 'Video',
-            subtitles,
-            audios,
-            finalMetadata,
-            itemId,
-            fileId,
-            streamType,
-            introInformation, // Pass intro information
-            selectedStreamData.audio_track_idx, // Pass initial audio track index
-            selectedStreamData.subtitle_track_idx // Pass initial subtitle track index
-          );
-        }
-      } catch (error) {
-        console.error('Error creating stream with selected tracks:', error);
-        setToast({
-          message: error.message || 'Failed to create stream',
-          type: 'error',
-        });
-      } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
-      }
-    },
-    [trackSelectionModal, getStreamType, createStream, assetKey, setToast, onOpenVideoPlayer]
-  );
 
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
-      const key = assetKey(itemId, file.id);
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
       try {
-        if (onAudioPlay) {
-          await onAudioPlay(itemId, file);
-        }
+        await onAudioPlay(itemId, file);
       } catch (error) {
-        console.error('Error opening audio:', error);
+        console.error('Error playing audio:', error);
         setToast({
-          message: error.message || 'Failed to open audio',
+          message: t('failedToPlay'),
           type: 'error',
         });
-      } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [assetKey, onAudioPlay, setToast]
+    [onAudioPlay, setToast, t]
   );
 
-  const isItemDownloaded = useCallback(
-    (itemId) => {
-      const key = deferredEntityKeys.find((entityKey) => {
-        const { id } = parseEntityKey(entityKey);
-        return String(id) === String(itemId);
-      });
-      if (!key) return false;
-      const { assetType, id } = parseEntityKey(key);
-      return downloadHistoryLookup.itemDownloads.has(`${assetType}:${String(id)}`);
+  const handleItemSelection = useCallback(
+    (itemId, assetType) => {
+      interactions.handleItemSelection(itemId, assetType);
     },
-    [deferredEntityKeys, downloadHistoryLookup]
+    [interactions]
   );
 
-  const isFileDownloaded = useCallback(
+  const handleFileSelection = useCallback(
     (itemId, fileId) => {
-      const key = deferredEntityKeys.find((entityKey) => {
-        const { id } = parseEntityKey(entityKey);
-        return String(id) === String(itemId);
-      });
-      if (!key) return false;
-      const { assetType, id } = parseEntityKey(key);
-      const itemKey = `${assetType}:${String(id)}`;
-      return (
-        downloadHistoryLookup.itemDownloads.has(itemKey) ||
-        downloadHistoryLookup.fileDownloads.has(`${itemKey}:${String(fileId)}`)
-      );
+      interactions.handleFileSelection(itemId, fileId);
     },
-    [deferredEntityKeys, downloadHistoryLookup]
+    [interactions]
   );
 
-  const isItemLinkFailed = useCallback(
-    (itemId) => {
-      const key = deferredEntityKeys.find((entityKey) => {
-        const { id } = parseEntityKey(entityKey);
-        return String(id) === String(itemId);
-      });
-      if (!key) return false;
-      const { assetType, id } = parseEntityKey(key);
-      return downloadHistoryLookup.itemLinkFailed?.has(`${assetType}:${String(id)}`);
+  const handleFileDownload = useCallback(
+    async (itemId, fileId) => {
+      setIsDownloading((prev) => ({ ...prev, [`${itemId}:${fileId}`]: true }));
+      try {
+        await interactions.handleFileDownload(itemId, fileId);
+      } finally {
+        setIsDownloading((prev) => ({ ...prev, [`${itemId}:${fileId}`]: false }));
+      }
     },
-    [deferredEntityKeys, downloadHistoryLookup]
+    [interactions]
   );
 
-  const isFileLinkFailed = useCallback(
-    (itemId, fileId) => {
-      const key = deferredEntityKeys.find((entityKey) => {
-        const { id } = parseEntityKey(entityKey);
-        return String(id) === String(itemId);
-      });
-      if (!key) return false;
-      const { assetType, id } = parseEntityKey(key);
-      const itemKey = `${assetType}:${String(id)}`;
-      return (
-        downloadHistoryLookup.itemLinkFailed?.has(itemKey) ||
-        downloadHistoryLookup.fileLinkFailed?.has(`${itemKey}:${String(fileId)}`)
-      );
+  const handleCopyLink = useCallback(
+    async (link) => {
+      setIsCopying((prev) => ({ ...prev, [link]: true }));
+      try {
+        await navigator.clipboard.writeText(link);
+      } finally {
+        setTimeout(() => {
+          setIsCopying((prev) => ({ ...prev, [link]: false }));
+        }, 1000);
+      }
     },
-    [deferredEntityKeys, downloadHistoryLookup]
+    []
   );
 
-  const expandedItemsKey = useMemo(
-    () => Object.keys(deferredExpandedById).sort().join(','),
-    [deferredExpandedById]
-  );
-
-  const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
-    virtualizer,
-    viewMode,
-    isFullscreen,
-    fullscreenScrollEl,
-    rowCount: flattenedRows.length,
-    remeasureDeps: [containerOffsetTop, expandedItemsKey, fileSearch],
-  });
-  const totalVirtualSize = virtualizer.getTotalSize();
-  // useWindowVirtualizer bakes scrollMargin into item start; subtract for top spacer (see TableBody)
-  const scrollMargin = isFullscreen ? 0 : containerOffsetTopRef.current || containerOffsetTop;
-  const paddingTop =
-    currentVirtualRows.length > 0
-      ? Math.max(0, currentVirtualRows[0].start - scrollMargin)
-      : 0;
-  const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
-  const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
+  useLayoutEffect(() => {
+    if (rowVirtualizer && entityKeys.length > 0 && entityKeys !== deferredEntityKeys) {
+      rowVirtualizer.measure();
+    }
+  }, [entityKeys, deferredEntityKeys, rowVirtualizer]);
 
   return (
     <>
-      <div ref={parentRef} className={isFullscreen ? 'p-4' : 'p-0'}>
-        {paddingTop > 0 && <div aria-hidden style={{ height: paddingTop }} />}
-        {currentVirtualRows.flatMap((virtualRow) => {
-          if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
+      <div
+        ref={parentRef}
+        className={isFullscreen ? '' : 'relative overflow-auto'}
+        style={
+          isFullscreen
+            ? undefined
+            : { height: `${rowVirtualizer?.getTotalSize?.() ?? 0}px` }
+        }
+      >
+        {rowVirtualizer && deferredEntityKeys.length > 0 ? (
+          <div
+            style={
+              isFullscreen
+                ? {
+                    position: 'relative',
+                    width: '100%',
+                    height: `${rowVirtualizer.getTotalSize()}px`,
+                  }
+                : undefined
+            }
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const entityKey = deferredEntityKeys[virtualRow.index];
+              if (!entityKey) return null;
+              const { assetType, id } = parseEntityKey(entityKey);
+              const item = entities?.[id];
+              if (!item) return null;
 
-          const row = flattenedRows[virtualRow.index];
-
-          if (!row?.entityKey) return [];
-
-          return (
-            <div
-              key={row.entityKey}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              className={cardListItemGap}
-            >
-              <DownloadCardContainer
-                entityKey={row.entityKey}
-                tagMappings={tagMappings}
-                downloadHistoryLookup={downloadHistoryLookup}
-                index={row.itemIndex}
-                isItemDownloaded={isItemDownloaded}
-                isFileDownloaded={isFileDownloaded}
-                isItemLinkFailed={isItemLinkFailed}
-                isFileLinkFailed={isFileLinkFailed}
-                isBlurred={isBlurred}
-                activeColumns={activeColumns}
-                onItemSelect={handleItemSelection}
-                onFileSelect={handleFileSelection}
-                onFileDownload={handleFileDownload}
-                onFileStream={handleFileStream}
-                onAudioPlay={handleAudioPlay}
-                onDelete={onDelete}
-                toggleFiles={toggleFiles}
-                fileSearch={fileSearch}
-                setToast={setToast}
-                activeType={activeType}
-                viewMode={viewMode}
-                isCopying={isCopying}
-                isDownloading={isDownloading}
-                isStreaming={isStreaming}
-                apiKey={apiKey}
-              />
-            </div>
-          );
-        })}
-        {paddingBottom > 0 && <div aria-hidden style={{ height: paddingBottom }} />}
+              return (
+                <DownloadCardContainer
+                  key={entityKey}
+                  entityKey={entityKey}
+                  tagMappings={tagMappings}
+                  apiKey={apiKey}
+                  activeColumns={activeColumns}
+                  isBlurred={isBlurred}
+                  viewMode={viewMode}
+                  toggleFiles={toggleFiles}
+                  setToast={setToast}
+                  onDelete={onDelete}
+                  downloadHistoryLookup={downloadHistoryLookup}
+                  selectedItems={ctx.selectedItems}
+                  handleItemSelection={handleItemSelection}
+                  handleFileSelection={handleFileSelection}
+                  handleFileDownload={handleFileDownload}
+                  handleFileStream={handleFileStream}
+                  handleAudioPlay={handleAudioPlay}
+                  handleCopyLink={handleCopyLink}
+                  isDownloading={isDownloading}
+                  isCopying={isCopying}
+                  isStreaming={isStreaming}
+                  activeType={activeType}
+                  rowVirtualizer={rowVirtualizer}
+                  virtualRow={virtualRow}
+                  hasFilesWithSearch={hasFilesWithSearch}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex justify-center items-center py-12 text-primary-text/50 dark:text-primary-text-dark/50">
+            {t('noItems')}
+          </div>
+        )}
       </div>
       <TrackSelectionModal
         isOpen={trackSelectionModal.isOpen}
-        onClose={() => setTrackSelectionModal((prev) => ({ ...prev, isOpen: false }))}
+        onClose={closeTrackSelectionModal}
         onPlay={handleTrackSelection}
         metadata={trackSelectionModal.metadata}
         introInformation={trackSelectionModal.introInformation}

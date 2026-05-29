@@ -10,7 +10,7 @@ import { LOGIC_OPERATORS } from './AutomationRules/constants';
 import Select from '@/components/shared/Select';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
-import Icons from '@/components/icons';
+import { Filter, Plus, X } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { EMPTY_FILTERS, hasActiveFilters, normalizeFilters } from './filters/filterHelpers';
 
@@ -444,7 +444,7 @@ export default function FilterEditorModal({
                 className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25 sm:flex"
                 aria-hidden
               >
-                <Icons.Filter className="size-5" />
+                <Filter className="size-5" />
               </div>
               <div className="min-w-0 flex-1 sm:pt-0.5">
                 <h2
@@ -467,7 +467,7 @@ export default function FilterEditorModal({
                 className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark sm:-mt-1 sm:size-9 sm:rounded-xl"
                 aria-label={downloadsFiltersT('close')}
               >
-                <Icons.X className="size-5" aria-hidden />
+                <X className="size-5" aria-hidden />
               </button>
             </div>
           </div>
@@ -572,7 +572,7 @@ export default function FilterEditorModal({
 
               {filterGroups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-10 text-center dark:border-border-dark/60">
-                  <Icons.Filter className="mb-2 size-8 text-primary-text/25 dark:text-primary-text-dark/25" aria-hidden />
+                  <Filter className="mb-2 size-8 text-primary-text/25 dark:text-primary-text-dark/25" aria-hidden />
                   <p className="text-sm text-primary-text/60 dark:text-primary-text-dark/60">
                     {customViewsT('noFilters')}
                   </p>
@@ -723,7 +723,7 @@ export default function FilterEditorModal({
                 onClick={handleAddGroup}
                 className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border/60 px-3 py-2 text-xs font-medium text-primary-text transition-colors hover:bg-surface-alt dark:border-border-dark/60 dark:text-primary-text-dark dark:hover:bg-surface-alt-dark sm:ml-auto sm:w-auto"
               >
-                <Icons.Plus className="size-3.5" aria-hidden />
+                <Plus className="size-3.5" aria-hidden />
                 {customViewsT('addGroup')}
               </button>
             </div>

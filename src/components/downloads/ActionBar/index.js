@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, Fragment } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import ColumnManager from '../ColumnManager';
 import { COLUMNS } from '@/components/constants';
 import { getItemTypeName } from './utils/statusHelpers';
@@ -66,88 +66,19 @@ export default function ActionBar({
   const [stickyBounds, setStickyBounds] = useState(null);
   const stickyRef = useRef(null);
   const isStickyRef = useRef(false);
-  const initialTopRef = useRef(0);
-
-  const getScrollTop = useCallback(() => {
-    if (isFullscreen && scrollContainerRef?.current) {
-      return scrollContainerRef.current.scrollTop;
-    }
-    return window.scrollY || document.documentElement.scrollTop;
-  }, [isFullscreen, scrollContainerRef]);
-
-  /** Document Y of the bar in normal flow — invalid while `position: fixed` */
-  const measureInitialTop = useCallback(() => {
-    const element = stickyRef.current;
-    if (!element || isStickyRef.current) return;
-    const rect = element.getBoundingClientRect();
-    initialTopRef.current = rect.top + getScrollTop();
-  }, [getScrollTop]);
 
   const { statusCounts, statusOptions, isStatusSelected } = useDownloadsStatusCounts(activeType);
 
   const t = useTranslations('Columns');
 
-  const updateStickyBounds = useCallback(() => {
-    const column = scrollContainerRef?.current;
-    if (!column) {
-      setStickyBounds(null);
-      return;
-    }
-    const rect = column.getBoundingClientRect();
-    setStickyBounds({ left: rect.left, width: rect.width });
-  }, [scrollContainerRef]);
-
-  // Keep fixed ActionBar aligned with the downloads table column (nav + filter sidebars)
-  useEffect(() => {
-    if (!isSticky || isFullscreen) {
-      setStickyBounds(null);
-      return;
-    }
-
-    updateStickyBounds();
-
-    window.addEventListener('resize', updateStickyBounds);
-
-    const column = scrollContainerRef?.current;
-    const resizeObserver =
-      column && typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => updateStickyBounds())
-        : null;
-    resizeObserver?.observe(column);
-
-    // App nav sidebar width animates ~300ms
-    const transitionTimer = setTimeout(updateStickyBounds, 320);
-
-    return () => {
-      window.removeEventListener('resize', updateStickyBounds);
-      resizeObserver?.disconnect();
-      clearTimeout(transitionTimer);
-    };
-  }, [isSticky, isFullscreen, scrollContainerRef, updateStickyBounds]);
-
-  // Reset sticky state when switching modes (fullscreen, view mode, etc.)
-  useEffect(() => {
-    // Reset sticky state when mode changes
-    setIsSticky(false);
-    isStickyRef.current = false;
-
-    // Recalculate initial position after a brief delay to allow DOM to settle
-    const timer = setTimeout(measureInitialTop, 50);
-
-    return () => clearTimeout(timer);
-  }, [isFullscreen, scrollContainerRef, viewMode, measureInitialTop]);
-
-  // Re-anchor after unsticking once the bar is back in document flow
-  useLayoutEffect(() => {
-    if (!isSticky) {
-      measureInitialTop();
-    }
-  }, [isSticky, measureInitialTop]);
-
-  // Measure height
+  // Sticky detection via IntersectionObserver sentinel
   useEffect(() => {
     const element = stickyRef.current;
     if (!element) return;
+
+    // Reset sticky state when mode changes
+    setIsSticky(false);
+    isStickyRef.current = false;
 
     const measureHeight = () => {
       if (element) {
@@ -156,97 +87,71 @@ export default function ActionBar({
       }
     };
 
-    // Measure initially
-    measureHeight();
-
     let resizeTimeout;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(measureHeight, 100);
     };
 
+    const updateBounds = () => {
+      const column = scrollContainerRef?.current;
+      if (!column || !isStickyRef.current || isFullscreen) {
+        setStickyBounds(null);
+        return;
+      }
+      const rect = column.getBoundingClientRect();
+      setStickyBounds({ left: rect.left, width: rect.width });
+    };
+
+    const parent = element.parentElement;
+    if (!parent) return;
+
+    // Create sentinel element
+    const sentinel = document.createElement('div');
+    sentinel.style.position = 'absolute';
+    sentinel.style.top = '0';
+    sentinel.style.width = '1px';
+    sentinel.style.height = '1px';
+    sentinel.style.pointerEvents = 'none';
+    parent.insertBefore(sentinel, element);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const shouldBeSticky = !entry.isIntersecting;
+        if (shouldBeSticky !== isStickyRef.current) {
+          isStickyRef.current = shouldBeSticky;
+          setIsSticky(shouldBeSticky);
+          if (shouldBeSticky) {
+            measureHeight();
+          }
+        }
+        if (shouldBeSticky && !isFullscreen) {
+          updateBounds();
+        }
+      },
+      { threshold: [0], rootMargin: '-1px 0px 0px 0px' }
+    );
+    observer.observe(sentinel);
+
+    // Initial setup
+    measureHeight();
     window.addEventListener('resize', handleResize);
 
+    const column = scrollContainerRef?.current;
+    const resizeObserver =
+      column && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => updateBounds())
+        : null;
+    resizeObserver?.observe(column);
+
     return () => {
-      clearTimeout(resizeTimeout);
+      observer.disconnect();
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
+      sentinel.remove();
     };
-  }, []);
-
-  // Scroll-based sticky detection - compare scroll position to initial position
-  useEffect(() => {
-    const element = stickyRef.current;
-    if (!element) return;
-
-    // Recalculate after a brief delay to ensure DOM is ready
-    const initTimer = setTimeout(measureInitialTop, 100);
-
-    const checkSticky = () => {
-      if (!element) return;
-
-      const scrollTop = getScrollTop();
-
-      // ActionBar should be sticky when we've scrolled past its initial position
-      // We use >= instead of > to account for the exact moment it reaches the top
-      const shouldBeSticky = scrollTop >= initialTopRef.current;
-
-      // Only update if state actually changed
-      if (shouldBeSticky !== isStickyRef.current) {
-        isStickyRef.current = shouldBeSticky;
-        setIsSticky(shouldBeSticky);
-
-        // Measure height when becoming sticky
-        if (shouldBeSticky) {
-          const height = element.offsetHeight;
-          setSpacerHeight((prev) => (prev !== height ? height : prev));
-        }
-      }
-    };
-
-    // Trailing rAF: always run check for the latest scroll position
-    let pendingRaf = null;
-    const handleScroll = () => {
-      if (pendingRaf) {
-        cancelAnimationFrame(pendingRaf);
-      }
-
-      pendingRaf = requestAnimationFrame(() => {
-        pendingRaf = null;
-        checkSticky();
-        if (isStickyRef.current && !isFullscreen) {
-          updateStickyBounds();
-        }
-      });
-    };
-
-    // Initial check after initial position is calculated
-    const checkTimer = setTimeout(() => {
-      checkSticky();
-    }, 150);
-
-    // Attach scroll listener to appropriate element
-    const scrollElement =
-      isFullscreen && scrollContainerRef?.current ? scrollContainerRef.current : window;
-
-    scrollElement.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      clearTimeout(initTimer);
-      clearTimeout(checkTimer);
-      if (pendingRaf) {
-        cancelAnimationFrame(pendingRaf);
-      }
-      scrollElement.removeEventListener('scroll', handleScroll);
-    };
-  }, [
-    isFullscreen,
-    scrollContainerRef,
-    updateStickyBounds,
-    getScrollTop,
-    measureInitialTop,
-    setIsSticky,
-    setSpacerHeight,
-  ]);
+  }, [isFullscreen, scrollContainerRef, viewMode]);
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;

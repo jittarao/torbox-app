@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
-import Icons from '@/components/icons';
+import { Check, Delete, Edit, ExclamationTriangle, Plus, Refresh, Rss } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import Toast from '@/components/shared/Toast';
@@ -236,7 +236,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
   if (componentError) {
     return (
       <div className="text-center p-8 text-red-500">
-        <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
+        <ExclamationTriangle className="size-8 mx-auto mb-2" />
         <p>{t('error')}</p>
         <p className="text-sm text-gray-500">{componentError}</p>
         <button
@@ -262,7 +262,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
   if (error) {
     return (
       <div className="text-center p-8 text-red-500">
-        <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
+        <ExclamationTriangle className="size-8 mx-auto mb-2" />
         <p>{t('error')}</p>
         <p className="text-sm text-gray-500">{error}</p>
       </div>
@@ -284,9 +284,9 @@ export default function RssFeedManager({ apiKey, setToast }) {
             className="px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {refreshing ? (
-              <Icons.Loading className="size-4 animate-spin" />
+              <Spinner size="sm" />
             ) : (
-              <Icons.Refresh className="size-4" />
+              <Refresh className="size-4" />
             )}
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
@@ -295,7 +295,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
             onClick={() => setShowAddForm(true)}
             className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
           >
-            <Icons.Plus className="size-4" />
+            <Plus className="size-4" />
             {t('addFeed')}
           </button>
         </div>
@@ -456,7 +456,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
                 disabled={isSubmitting}
                 className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                {isSubmitting ? <Spinner size="sm" /> : <Icons.Check className="size-4" />}
+                {isSubmitting ? <Spinner size="sm" /> : <Check className="size-4" />}
                 {t('save')}
               </button>
               <button
@@ -475,7 +475,7 @@ export default function RssFeedManager({ apiKey, setToast }) {
       <div className="space-y-4">
         {feeds.length === 0 ? (
           <div className="text-center p-8 text-gray-500">
-            <Icons.Rss className="size-12 mx-auto mb-4 opacity-50" />
+            <Rss className="size-12 mx-auto mb-4 opacity-50" />
             <p>{t('noFeeds')}</p>
           </div>
         ) : (
@@ -531,12 +531,12 @@ export default function RssFeedManager({ apiKey, setToast }) {
                     className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     aria-label={t('editFeed') || 'Edit feed'}
                   >
-                    <Icons.Edit className="size-3" />
+                    <Edit className="size-3" />
                   </button>
                   <ConfirmButton
                     onClick={() => handleDelete(feed.id)}
-                    confirmIcon={<Icons.Check className="size-3" />}
-                    defaultIcon={<Icons.Delete className="size-3" />}
+                    confirmIcon={<Check className="size-3" />}
+                    defaultIcon={<Delete className="size-3" />}
                     className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     title={t('confirmDelete.title')}
                     message={t('confirmDelete.message')}

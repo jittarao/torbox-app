@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
-import Icons from '@/components/icons';
+import { AlertCircle, BarChart3, Check, CheckCircle, Copy, CreditCard, Download, User } from '@/components/icons';
 import BandwidthChart from '@/components/user/BandwidthChart';
 import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
 import { buildTorboxSubscriptionReferralUrl } from '@/utils/referralLinks';
@@ -132,20 +132,20 @@ export default function UserProfile({ apiKey, setToast }) {
         return {
           status: t('status.active'),
           color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-          icon: Icons.CheckCircle,
+          icon: CheckCircle,
         };
       } else {
         return {
           status: t('status.expired'),
           color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-          icon: Icons.AlertCircle,
+          icon: AlertCircle,
         };
       }
     } else {
       return {
         status: t('status.free'),
         color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-        icon: Icons.User,
+        icon: User,
       };
     }
   };
@@ -166,7 +166,7 @@ export default function UserProfile({ apiKey, setToast }) {
       return (
         <div className="p-6">
           <div className="max-w-md mx-auto text-center py-12">
-            <Icons.AlertCircle className="size-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+            <AlertCircle className="size-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
             <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">
               {t('errors.loadError') || 'Error loading profile'}
             </p>
@@ -187,7 +187,7 @@ export default function UserProfile({ apiKey, setToast }) {
       return (
         <div className="p-6">
           <div className="text-center py-12">
-            <Icons.User className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+            <User className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
             <p className="text-muted dark:text-muted-dark">{t('noData')}</p>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function UserProfile({ apiKey, setToast }) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="size-16 rounded-full bg-accent/10 dark:bg-accent-dark/10 flex items-center justify-center">
-                <Icons.User className="size-8 text-accent dark:text-accent-dark" />
+                <User className="size-8 text-accent dark:text-accent-dark" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark mb-1">
@@ -228,7 +228,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Basic Information Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.User className="size-5 text-accent dark:text-accent-dark" />
+              <User className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.basicInfo')}
               </h3>
@@ -272,9 +272,9 @@ export default function UserProfile({ apiKey, setToast }) {
                         aria-label={t('copyLink')}
                       >
                         {copiedLink ? (
-                          <Icons.Check className="size-5" />
+                          <Check className="size-5" />
                         ) : (
-                          <Icons.Copy className="size-5" />
+                          <Copy className="size-5" />
                         )}
                       </button>
                     </div>
@@ -305,7 +305,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Account Status Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.CreditCard className="size-5 text-accent dark:text-accent-dark" />
+              <CreditCard className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.accountStatus')}
               </h3>
@@ -335,7 +335,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Usage Statistics Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.BarChart3 className="size-5 text-accent dark:text-accent-dark" />
+              <BarChart3 className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.usage')}
               </h3>
@@ -392,7 +392,7 @@ export default function UserProfile({ apiKey, setToast }) {
           {/* Download Breakdown Card */}
           <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Icons.Download className="size-5 text-accent dark:text-accent-dark" />
+              <Download className="size-5 text-accent dark:text-accent-dark" />
               <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
                 {t('profile.downloadBreakdown')}
               </h3>
@@ -437,7 +437,7 @@ export default function UserProfile({ apiKey, setToast }) {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center py-12">
-          <Icons.AlertCircle className="size-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <AlertCircle className="size-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
           <p className="text-primary-text dark:text-primary-text-dark text-lg mb-2 font-medium">
             {t('errors.renderError') || 'Render Error'}
           </p>

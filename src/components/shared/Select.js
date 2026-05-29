@@ -31,7 +31,6 @@ function OptionsList({ options, optgroups, value, onSelect, optionsRef }) {
         type="button"
         data-value={opt.value}
         onClick={() => onSelect(opt.value)}
-        onMouseEnter={(e) => e.currentTarget.focus()}
         title={opt.title || undefined}
         className={`block w-full text-left px-4 py-2 text-sm transition-colors
           ${
@@ -68,7 +67,6 @@ function OptionsList({ options, optgroups, value, onSelect, optionsRef }) {
           type="button"
           data-value={opt.value}
           onClick={() => onSelect(opt.value)}
-          onMouseEnter={(e) => e.currentTarget.focus()}
           title={opt.title || undefined}
           className={`block w-full text-left px-4 py-2 pl-6 text-sm transition-colors
             ${

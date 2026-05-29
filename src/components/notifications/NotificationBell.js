@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { Bell, Times } from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
@@ -50,7 +50,7 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
               {loading ? (
                 <span className="size-4 animate-spin rounded-full border-2 border-amber-500/40 border-t-amber-500" />
               ) : (
-                <Icons.Bell className="size-[18px]" />
+                <Bell className="size-[18px]" />
               )}
             </span>
             <span className="min-w-0 flex-1 truncate text-left">{t('notifications')}</span>
@@ -64,7 +64,7 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
           </>
         ) : (
           <>
-            <Icons.Bell className="size-5" />
+            <Bell className="size-5" />
 
             {unreadCount > 0 && !loading && !error ? (
               <span
@@ -87,7 +87,7 @@ export default function NotificationBell({ apiKey, variant = 'icon' }) {
                 }}
                 role="presentation"
               >
-                <Icons.Times className="size-2.5 text-white" />
+                <Times className="size-2.5 text-white" />
               </span>
             ) : null}
           </>

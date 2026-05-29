@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Icons from '@/components/icons';
+import { X } from '@/components/icons';
 import { useStream } from '../../shared/hooks/useStream';
 import VideoPlayer from '../VideoPlayer';
 import LoadingOverlay from './components/LoadingOverlay';
@@ -654,7 +654,7 @@ export default function VideoPlayerModal({
               focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent"
             aria-label="Close"
           >
-            <Icons.X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
+            <X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
           </button>
         )}
 

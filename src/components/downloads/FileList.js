@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { formatSize } from './utils/formatters';
 import { getDisplayMimetype } from './utils/mimetypeDisplay';
-import Icons from '@/components/icons';
+import { Copy, Download, Play } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
@@ -61,7 +61,7 @@ function FileListFile({
               title={t('play')}
               aria-label={t('play')}
             >
-              {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Icons.Play />}
+              {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Play />}
             </button>
           ) : showAudioPlay ? (
             <button
@@ -75,7 +75,7 @@ function FileListFile({
               title={t('play')}
               aria-label={t('play')}
             >
-              {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Icons.Play />}
+              {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Play />}
             </button>
           ) : null}
         </span>
@@ -91,7 +91,7 @@ function FileListFile({
             title={t('copyLink')}
             aria-label={t('copyLink')}
           >
-            {isCopying[assetKey] ? <Spinner size="sm" /> : <Icons.Copy />}
+            {isCopying[assetKey] ? <Spinner size="sm" /> : <Copy />}
           </button>
         </span>
         <span className={FILE_ACTION_SLOT_CLASS}>
@@ -106,7 +106,7 @@ function FileListFile({
             title={t('download')}
             aria-label={t('download')}
           >
-            {isDownloading[assetKey] ? <Spinner size="sm" /> : <Icons.Download />}
+            {isDownloading[assetKey] ? <Spinner size="sm" /> : <Download />}
           </button>
         </span>
       </div>

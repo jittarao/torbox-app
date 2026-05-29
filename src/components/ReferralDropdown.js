@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { Check, Copy, ExternalLink, Gift } from '@/components/icons';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import ReferralBenefitChips from '@/components/referral/ReferralBenefitChips';
 import ReferralConfirmDialog from '@/components/referral/ReferralConfirmDialog';
@@ -78,7 +78,7 @@ export default function ReferralDropdown({
         aria-haspopup="menu"
         title={iconOnly ? t('referral') : undefined}
       >
-        <Icons.Gift className="size-[18px] shrink-0 opacity-90" aria-hidden />
+        <Gift className="size-[18px] shrink-0 opacity-90" aria-hidden />
         {!iconOnly ? (
           <>
             <span
@@ -117,7 +117,7 @@ export default function ReferralDropdown({
       >
         <div className="ui-dropdown-header border-t-2 border-amber-500/50">
           <div className="flex items-center gap-2">
-            <Icons.Gift className="size-5 text-amber-600 dark:text-amber-400" />
+            <Gift className="size-5 text-amber-600 dark:text-amber-400" />
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {t('panel.heroTitle')}
             </h3>
@@ -157,9 +157,9 @@ export default function ReferralDropdown({
               className="ui-btn-ghost w-full justify-center !text-sm gap-2 border border-zinc-200 dark:border-zinc-700"
             >
               {actions.copiedItem === 'link' ? (
-                <Icons.Check className="size-4" />
+                <Check className="size-4" />
               ) : (
-                <Icons.Copy className="size-4" />
+                <Copy className="size-4" />
               )}
               {t('copyLink')}
             </button>
@@ -169,7 +169,7 @@ export default function ReferralDropdown({
               rel="noopener noreferrer"
               className="ui-btn-ghost w-full justify-center !text-sm gap-2 border border-zinc-200 dark:border-zinc-700"
             >
-              <Icons.ExternalLink className="size-4" />
+              <ExternalLink className="size-4" />
               {t('panel.openSubscription')}
             </a>
           </div>
@@ -189,9 +189,9 @@ export default function ReferralDropdown({
                 title={t('copyCode')}
               >
                 {actions.copiedItem === 'code' ? (
-                  <Icons.Check className="size-4" />
+                  <Check className="size-4" />
                 ) : (
-                  <Icons.Copy className="size-4" />
+                  <Copy className="size-4" />
                 )}
               </button>
             </div>
@@ -225,7 +225,7 @@ export default function ReferralDropdown({
               className="text-xs text-amber-700 dark:text-amber-400 underline hover:no-underline inline-flex items-center gap-1"
             >
               {t('panel.helpLink')}
-              <Icons.ExternalLink className="size-3" />
+              <ExternalLink className="size-3" />
             </a>
             <div className="flex flex-wrap gap-3 pt-1">
               <button

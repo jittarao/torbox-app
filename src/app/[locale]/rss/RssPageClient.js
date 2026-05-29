@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import RssFeedManager from '@/components/rss/RssFeedManager';
@@ -8,15 +8,16 @@ import RssItemsManager from '@/components/rss/RssItemsManager';
 
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
-import Icons from '@/components/icons';
+import { Rss, List, ExclamationTriangle } from '@/components/icons';
 import ReferralInlineHint from '@/components/referral/ReferralInlineHint';
 import { useSession } from '@/components/shared/hooks/useSession';
+
+const PRO_PLAN_ID = 2;
 
 export default function RssPageClient() {
   const [toast, setToast] = useState(null);
   const { apiKey, hydrated, setApiKey } = useSession();
   const [activeTab, setActiveTab] = useState('feeds');
-  const [error, setError] = useState(null);
   const [userPlan, setUserPlan] = useState(null);
   const [checkingPlan, setCheckingPlan] = useState(false);
 
@@ -32,49 +33,39 @@ export default function RssPageClient() {
     }
   }, [apiKey]);
 
+  const fetchUserPlan = useCallback(async (key, abortSignal) => {
+    if (!key) return;
+    setCheckingPlan(true);
+    try {
+      const response = await fetch('/api/user/me', {
+        headers: { 'x-api-key': key },
+        signal: abortSignal,
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      const plan = data.success && data.data ? data.data.plan : data.plan || data.data?.plan || null;
+      if (!abortSignal?.aborted) {
+        setUserPlan(plan);
+      }
+    } catch (err) {
+      if (!abortSignal?.aborted) {
+        console.error('Error fetching user plan:', err);
+        setUserPlan(null);
+      }
+    } finally {
+      if (!abortSignal?.aborted) {
+        setCheckingPlan(false);
+      }
+    }
+  }, []);
+
   // Fetch user plan on mount
   useEffect(() => {
     if (!apiKey) return;
-
     const abortController = new AbortController();
-
-    const fetchUserPlan = async () => {
-      setCheckingPlan(true);
-      try {
-        const response = await fetch('/api/user/me', {
-          headers: {
-            'x-api-key': apiKey,
-          },
-          signal: abortController.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.data) {
-          setUserPlan(data.data.plan);
-        } else {
-          setUserPlan(data.plan || data.data?.plan || null);
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Error fetching user plan:', err);
-          setUserPlan(null);
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          setCheckingPlan(false);
-        }
-      }
-    };
-
-    fetchUserPlan();
-
+    fetchUserPlan(apiKey, abortController.signal);
     return () => abortController.abort();
-  }, [apiKey]);
+  }, [apiKey, fetchUserPlan]);
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
@@ -84,27 +75,7 @@ export default function RssPageClient() {
           console.error('Error ensuring user database:', error);
         });
       });
-
-      setCheckingPlan(true);
-      fetch('/api/user/me', {
-        headers: { 'x-api-key': newKey },
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          return response.json();
-        })
-        .then((data) => {
-          if (data.success && data.data) {
-            setUserPlan(data.data.plan);
-          } else {
-            setUserPlan(data.plan || data.data?.plan || null);
-          }
-        })
-        .catch((err) => {
-          console.error('Error fetching user plan:', err);
-          setUserPlan(null);
-        })
-        .finally(() => setCheckingPlan(false));
+      fetchUserPlan(newKey);
     }
   };
 
@@ -113,13 +84,13 @@ export default function RssPageClient() {
     {
       id: 'feeds',
       label: t('tabs.feeds'),
-      icon: Icons.Rss,
+      icon: Rss,
       component: RssFeedManager,
     },
     {
       id: 'items',
       label: t('tabs.items'),
-      icon: Icons.List,
+      icon: List,
       component: RssItemsManager,
     },
   ];
@@ -130,27 +101,6 @@ export default function RssPageClient() {
       <div
         className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
       ></div>
-    );
-  }
-
-  // Handle errors
-  if (error) {
-    return (
-      <div className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}>
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4 text-red-600">Error Loading RSS Page</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-            >
-              Reload Page
-            </button>
-          </div>
-        </div>
-      </div>
     );
   }
 
@@ -190,10 +140,10 @@ export default function RssPageClient() {
                 </p>
               </div>
             </div>
-          ) : userPlan !== 2 ? (
+          ) : userPlan !== PRO_PLAN_ID ? (
             <div className="flex min-h-[60vh] items-center justify-center">
               <div className="max-w-md rounded-lg border border-border bg-surface-alt p-8 text-center dark:border-border-dark dark:bg-surface-alt-dark">
-                <Icons.ExclamationTriangle className="mx-auto mb-4 size-16 text-yellow-500" />
+                <ExclamationTriangle className="mx-auto mb-4 size-16 text-yellow-500" />
                 <h2 className="mb-4 text-2xl font-bold text-primary-text dark:text-primary-text-dark">
                   {t('proSubscriptionRequired')}
                 </h2>

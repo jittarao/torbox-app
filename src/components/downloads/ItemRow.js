@@ -6,7 +6,7 @@ import DownloadStateBadge from './DownloadStateBadge';
 import DownloadProgressDisplay from './DownloadProgressDisplay';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import Icons from '@/components/icons';
+import { Private } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
 import {
@@ -76,7 +76,7 @@ function ItemRow({
                 </Tooltip>
                 {item.private && (
                   <Tooltip content="Private Tracker">
-                    <Icons.Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400" />
+                    <Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400" />
                   </Tooltip>
                 )}
                 {item.name && (
@@ -235,7 +235,7 @@ function ItemRow({
           <td key={columnId} className={tableDataCellText} style={baseStyle}>
             {item.private ? (
               <div className="flex items-center gap-2">
-                <Icons.Private className="size-4 text-orange-500 dark:text-orange-400" />
+                <Private className="size-4 text-orange-500 dark:text-orange-400" />
                 <span>Private</span>
               </div>
             ) : (

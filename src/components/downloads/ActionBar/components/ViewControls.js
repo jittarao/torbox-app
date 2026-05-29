@@ -1,6 +1,6 @@
 'use client';
 
-import Icons from '@/components/icons';
+import { CollapseAll, ExpandAll, Eye, EyeOff, List, Maximize, Minimize, Table } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
@@ -85,7 +85,7 @@ export default function ViewControls({
             segment="left"
             className="rounded-r-none"
           >
-            <Icons.Table />
+            <Table />
           </ToolbarButton>
           <ToolbarButton
             active={viewMode === 'card'}
@@ -95,7 +95,7 @@ export default function ViewControls({
             segment="right"
             className="rounded-l-none -ml-px"
           >
-            <Icons.List />
+            <List />
           </ToolbarButton>
         </fieldset>
       )}
@@ -105,7 +105,7 @@ export default function ViewControls({
         onClick={onBlurToggle}
         title={isBlurred ? t('showSensitive') : t('hideSensitive')}
       >
-        {isBlurred ? <Icons.Eye /> : <Icons.EyeOff />}
+        {isBlurred ? <Eye /> : <EyeOff />}
       </ToolbarButton>
 
       <ToolbarButton
@@ -113,7 +113,7 @@ export default function ViewControls({
         onClick={onFullscreenToggle}
         title={isFullscreen ? t('exitFullscreen') : t('enterFullscreen')}
       >
-        {isFullscreen ? <Icons.Minimize /> : <Icons.Maximize />}
+        {isFullscreen ? <Minimize /> : <Maximize />}
       </ToolbarButton>
 
       {hasItemsWithFiles && (
@@ -122,7 +122,7 @@ export default function ViewControls({
           onClick={() => (allExpanded ? collapseAllFiles() : expandAllFiles())}
           title={allExpanded ? t('collapseAllFiles') : t('expandAllFiles')}
         >
-          {allExpanded ? <Icons.CollapseAll /> : <Icons.ExpandAll />}
+          {allExpanded ? <CollapseAll /> : <ExpandAll />}
         </ToolbarButton>
       )}
     </div>

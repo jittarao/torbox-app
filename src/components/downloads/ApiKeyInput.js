@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Icons from '@/components/icons';
+import { Eye, EyeOff, Preferences } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
 import { ensureUserDb } from '@/utils/ensureUserDb';
@@ -153,9 +153,9 @@ export default function ApiKeyInput({
             aria-label={showKey ? t('hide') : t('show')}
           >
             {showKey ? (
-              <Icons.Eye className={isCompact ? 'w-3.5 h-3.5' : undefined} />
+              <Eye className={isCompact ? 'w-3.5 h-3.5' : undefined} />
             ) : (
-              <Icons.EyeOff className={isCompact ? 'w-3.5 h-3.5' : undefined} />
+              <EyeOff className={isCompact ? 'w-3.5 h-3.5' : undefined} />
             )}
           </button>
         </div>
@@ -168,7 +168,7 @@ export default function ApiKeyInput({
             aria-label={t('manageKeys')}
             aria-expanded={showManager}
           >
-            <Icons.Preferences className={isCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+            <Preferences className={isCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
             <span className="hidden md:inline">{t('manageKeys')}</span>
           </button>
         )}

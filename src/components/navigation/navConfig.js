@@ -1,25 +1,25 @@
-import Icons from '@/components/icons';
+import { Archive, Bolt, Download, History, MagnifyingGlass, Rss, Upload, User } from '@/components/icons';
 
 /** Profile link — rendered after main nav items with a separator */
 export const USER_NAV_ITEM = {
   href: '/user',
   labelKey: 'user',
-  Icon: Icons.User,
+  Icon: User,
 };
 
 const NAV_ITEMS = [
-  { href: '/', labelKey: 'downloads', Icon: Icons.Download },
+  { href: '/', labelKey: 'downloads', Icon: Download },
   {
     href: '/search',
     labelKey: 'search',
-    Icon: Icons.MagnifyingGlass,
+    Icon: MagnifyingGlass,
     visible: ({ searchPageDisabled }) => !searchPageDisabled,
   },
-  { href: '/rss', labelKey: 'rss', Icon: Icons.Rss },
-  { href: '/automation', labelKey: 'automation', Icon: Icons.Bolt },
-  { href: '/link-history', labelKey: 'linkHistory', Icon: Icons.History },
-  { href: '/uploads', labelKey: 'uploads', Icon: Icons.Upload },
-  { href: '/archived', labelKey: 'archived', Icon: Icons.Archive },
+  { href: '/rss', labelKey: 'rss', Icon: Rss },
+  { href: '/automation', labelKey: 'automation', Icon: Bolt },
+  { href: '/link-history', labelKey: 'linkHistory', Icon: History },
+  { href: '/uploads', labelKey: 'uploads', Icon: Upload },
+  { href: '/archived', labelKey: 'archived', Icon: Archive },
 ];
 
 function filterVisible(items, ctx) {

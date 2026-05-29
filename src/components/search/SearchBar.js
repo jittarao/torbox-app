@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
 import Dropdown from '@/components/shared/Dropdown';
-import Icons from '@/components/icons';
+import { Cog, Filter, MagnifyingGlass, Times } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 const DEFAULT_SEARCH_OPTIONS = [
@@ -200,14 +200,14 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
                 transition-colors"
               aria-label={t('clearSearch')}
             >
-              <Icons.Times />
+              <Times />
             </button>
           )}
           <div
             className="absolute left-3 top-1/2 transform -translate-y-1/2 
                        text-primary-text/40 dark:text-primary-text-dark/40"
           >
-            <Icons.MagnifyingGlass />
+            <MagnifyingGlass />
           </div>
         </div>
         <button
@@ -291,7 +291,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2">
             <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-              <Icons.Cog className="size-4" />
+              <Cog className="size-4" />
               {t('customEngines')}
             </span>
             <div
@@ -324,7 +324,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
             onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
             className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
           >
-            <Icons.Filter className="size-4" />
+            <Filter className="size-4" />
             {showAdvancedOptions
               ? t('hideAdvanced') || 'Hide Advanced'
               : t('showAdvanced') || 'Show Advanced'}

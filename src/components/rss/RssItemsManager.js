@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
 import { useUpload } from '@/components/shared/hooks/useUpload';
-import Icons from '@/components/icons';
+import { Download, ExclamationTriangle, ExternalLink, Refresh, Rss } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import Toast from '@/components/shared/Toast';
 import { formatSize } from '@/components/downloads/utils/formatters';
@@ -205,7 +205,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
   if (componentError) {
     return (
       <div className="text-center p-8 text-red-500">
-        <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
+        <ExclamationTriangle className="size-8 mx-auto mb-2" />
         <p>{t('error')}</p>
         <p className="text-sm text-gray-500">{componentError}</p>
         <button
@@ -232,7 +232,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
           disabled={!selectedFeed || loading}
           className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
         >
-          <Icons.Refresh className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+          <Refresh className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           {t('refresh')}
         </button>
       </div>
@@ -335,13 +335,13 @@ export default function RssItemsManager({ apiKey, setToast }) {
             </div>
           ) : error ? (
             <div className="text-center p-8 text-red-500">
-              <Icons.ExclamationTriangle className="size-8 mx-auto mb-2" />
+              <ExclamationTriangle className="size-8 mx-auto mb-2" />
               <p>{t('error')}</p>
               <p className="text-sm text-gray-500">{error}</p>
             </div>
           ) : filteredAndSortedItems.length === 0 ? (
             <div className="text-center p-8 text-gray-500">
-              <Icons.Rss className="size-12 mx-auto mb-4 opacity-50" />
+              <Rss className="size-12 mx-auto mb-4 opacity-50" />
               <p>{searchTerm || filterType !== 'all' ? t('noMatchingItems') : t('noItems')}</p>
             </div>
           ) : (
@@ -393,7 +393,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                         {downloadingItems.has(item.id) ? (
                           <Spinner size="sm" />
                         ) : (
-                          <Icons.Download className="size-3" />
+                          <Download className="size-3" />
                         )}
                         {t('download')}
                       </button>
@@ -405,7 +405,7 @@ export default function RssItemsManager({ apiKey, setToast }) {
                           className="px-3 py-1 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                           aria-label={t('openLink') || 'Open link'}
                         >
-                          <Icons.ExternalLink className="size-3" />
+                          <ExternalLink className="size-3" />
                         </button>
                       )}
                     </div>

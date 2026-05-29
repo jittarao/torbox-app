@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Icons from '@/components/icons';
+import { Archive, Copy, Restore, Times } from '@/components/icons';
 import { useArchive } from '@/hooks/useArchive';
 import { timeAgo } from '@/components/downloads/utils/formatters';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -106,7 +106,7 @@ export default function ArchivedDownloads({ apiKey }) {
       {archivedItems.length === 0 ? (
         <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
           <div className="text-center">
-            <Icons.Archive className="size-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
+            <Archive className="size-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
             <h2 className="text-lg font-medium text-primary-text dark:text-primary-text-dark mb-2">
               {archivedT('emptyState.title')}
             </h2>
@@ -175,10 +175,10 @@ export default function ArchivedDownloads({ apiKey }) {
                     >
                       {isMobile ? (
                         <div className="flex items-center justify-center gap-2">
-                          <Icons.Restore /> {archivedT('actions.addToTorBox')}
+                          <Restore /> {archivedT('actions.addToTorBox')}
                         </div>
                       ) : (
-                        <Icons.Restore />
+                        <Restore />
                       )}
                     </button>
 
@@ -193,10 +193,10 @@ export default function ArchivedDownloads({ apiKey }) {
                     >
                       {isMobile ? (
                         <div className="flex items-center justify-center gap-2">
-                          <Icons.Copy /> {archivedT('actions.copyMagnet')}
+                          <Copy /> {archivedT('actions.copyMagnet')}
                         </div>
                       ) : (
-                        <Icons.Copy className="size-4" />
+                        <Copy className="size-4" />
                       )}
                     </button>
 
@@ -211,10 +211,10 @@ export default function ArchivedDownloads({ apiKey }) {
                     >
                       {isMobile ? (
                         <div className="flex items-center justify-center gap-2">
-                          <Icons.Times /> {archivedT('actions.remove')}
+                          <Times /> {archivedT('actions.remove')}
                         </div>
                       ) : (
-                        <Icons.Times />
+                        <Times />
                       )}
                     </button>
                   </td>
