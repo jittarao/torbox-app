@@ -178,8 +178,14 @@ export default function ConditionFilterInput({
     return { value: op, label };
   });
 
+  const showRemove = totalConditions > 1;
+
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-surface-alt dark:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark">
+    <div
+      className={`relative flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-surface-alt dark:bg-surface-alt-dark rounded-md border border-border dark:border-border-dark ${
+        showRemove ? 'pr-10 sm:pr-2' : ''
+      }`}
+    >
       {/* Condition Type Selector */}
       <Select
         value={String(condition.type || '')}
@@ -318,13 +324,13 @@ export default function ConditionFilterInput({
         </>
       )}
 
-      {/* Remove Button */}
-      {totalConditions > 1 && (
+      {showRemove && (
         <button
           type="button"
           onClick={() => onRemove(index)}
-          className="px-2 py-1 text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded transition-colors self-start sm:self-auto"
+          className="absolute right-1.5 top-1.5 z-10 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-base leading-none text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-400 dark:hover:bg-red-500/20 sm:static sm:size-auto sm:px-2 sm:py-1 sm:text-xs"
           title="Remove condition"
+          aria-label="Remove condition"
         >
           ×
         </button>
