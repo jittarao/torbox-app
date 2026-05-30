@@ -15,8 +15,10 @@ import OverlayPortal from '@/components/shared/OverlayPortal';
  * @param {string} props.className - Additional CSS classes
  * @param {string} props.placeholder - Placeholder text when no value selected
  * @param {boolean} props.disabled - Whether select is disabled
+ * @param {boolean} props.searchable - Show search field in the dropdown
+ * @param {string} props.searchPlaceholder - Placeholder for search input
  */
-function OptionsList({ options, optgroups, value, onSelect, optionsRef }) {
+function OptionsList({ options, optgroups, value, onSelect, optionsRef, emptyMessage = 'No matches' }) {
   const items = [];
   let optionIndex = 0;
 
@@ -84,6 +86,14 @@ function OptionsList({ options, optgroups, value, onSelect, optionsRef }) {
     });
   });
 
+  if (items.length === 0) {
+    return (
+      <div className="px-4 py-3 text-sm text-primary-text/60 dark:text-primary-text-dark/60">
+        {emptyMessage}
+      </div>
+    );
+  }
+
   return items;
 }
 
@@ -94,11 +104,16 @@ export default function Select({
   className = '',
   placeholder = 'Select...',
   disabled = false,
+  searchable = false,
+  searchPlaceholder = 'Search...',
+  noMatchesMessage = 'No matches',
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [dropdownLayout, setDropdownLayout] = useState(null);
   const selectRef = useRef(null);
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
   const optionsRef = useRef([]);
 
   const updateDropdownPosition = useCallback(() => {
@@ -214,6 +229,31 @@ export default function Select({
     [options, optgroups]
   );
 
+  const { filteredOptions, filteredOptgroups, filteredOptionCount } = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!searchable || !q) {
+      const count = options.length + optgroups.reduce((n, g) => n + g.options.length, 0);
+      return { filteredOptions: options, filteredOptgroups: optgroups, filteredOptionCount: count };
+    }
+
+    const matches = (opt) => String(opt.label).toLowerCase().includes(q);
+    const nextOptions = options.filter(matches);
+    const nextOptgroups = optgroups
+      .map((group) => ({
+        ...group,
+        options: group.options.filter(matches),
+      }))
+      .filter((group) => group.options.length > 0);
+    const count =
+      nextOptions.length + nextOptgroups.reduce((n, g) => n + g.options.length, 0);
+
+    return {
+      filteredOptions: nextOptions,
+      filteredOptgroups: nextOptgroups,
+      filteredOptionCount: count,
+    };
+  }, [options, optgroups, searchQuery, searchable]);
+
   useLayoutEffect(() => {
     if (!isOpen) {
       setDropdownLayout(null);
@@ -226,7 +266,15 @@ export default function Select({
       window.removeEventListener('scroll', updateDropdownPosition, true);
       window.removeEventListener('resize', updateDropdownPosition);
     };
-  }, [isOpen, updateDropdownPosition, allOptions.length]);
+  }, [isOpen, updateDropdownPosition, filteredOptionCount]);
+
+  useEffect(() => {
+    if (!isOpen || !searchable) return;
+    const t = requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(t);
+  }, [isOpen, searchable]);
 
   // Find selected option label
   const selectedLabel = useMemo(
@@ -243,6 +291,7 @@ export default function Select({
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target)
       ) {
+        setSearchQuery('');
         setIsOpen(false);
       }
     };
@@ -258,13 +307,18 @@ export default function Select({
     };
   }, [isOpen]);
 
+  const closeDropdown = useCallback(() => {
+    setSearchQuery('');
+    setIsOpen(false);
+  }, []);
+
   const handleSelect = useCallback(
     (selectedValue) => {
       onChange({ target: { value: selectedValue } });
-      setIsOpen(false);
+      closeDropdown();
       selectRef.current?.focus();
     },
-    [onChange]
+    [onChange, closeDropdown]
   );
 
   // Handle keyboard navigation
@@ -272,8 +326,12 @@ export default function Select({
     const handleKeyDown = (event) => {
       if (!isOpen || disabled) return;
 
+      if (searchable && event.target === searchInputRef.current) {
+        return;
+      }
+
       if (event.key === 'Escape') {
-        setIsOpen(false);
+        closeDropdown();
         selectRef.current?.focus();
       } else if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -300,11 +358,15 @@ export default function Select({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, disabled, handleSelect]);
+  }, [isOpen, disabled, handleSelect, searchable, closeDropdown]);
 
   const handleToggle = () => {
     if (!disabled) {
-      setIsOpen(!isOpen);
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        setIsOpen(true);
+      }
     }
   };
 
@@ -320,13 +382,13 @@ export default function Select({
       <>
         <div
           className="z-overlay-popover-backdrop fixed inset-0 bg-black/20 sm:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={closeDropdown}
           aria-hidden="true"
         />
         <div
           ref={dropdownRef}
           role="listbox"
-          className="z-overlay-popover fixed overflow-y-auto overscroll-contain rounded-md border border-border bg-surface shadow-lg dark:border-border-dark dark:bg-surface-dark"
+          className="z-overlay-popover fixed flex flex-col overflow-hidden rounded-md border border-border bg-surface shadow-lg dark:border-border-dark dark:bg-surface-dark"
           style={{
             top: dropdownLayout.top,
             left: dropdownLayout.left,
@@ -335,13 +397,46 @@ export default function Select({
             maxWidth: `calc(100vw - ${dropdownLayout.left}px - 8px)`,
           }}
         >
-          <OptionsList
-            options={options}
-            optgroups={optgroups}
-            value={value}
-            onSelect={handleSelect}
-            optionsRef={optionsRef}
-          />
+          {searchable && (
+            <div className="flex-shrink-0 border-b border-border p-2 dark:border-border-dark">
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeDropdown();
+                    selectRef.current?.focus();
+                  } else if (e.key === 'ArrowDown' && filteredOptionCount > 0) {
+                    e.preventDefault();
+                    optionsRef.current[0]?.focus();
+                  }
+                }}
+                placeholder={searchPlaceholder}
+                className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-primary-text dark:border-border-dark dark:bg-surface-dark dark:text-primary-text-dark placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-label={searchPlaceholder}
+              />
+            </div>
+          )}
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <OptionsList
+              options={filteredOptions}
+              optgroups={filteredOptgroups}
+              value={value}
+              onSelect={handleSelect}
+              optionsRef={optionsRef}
+              emptyMessage={noMatchesMessage}
+            />
+          </div>
         </div>
       </>
     ) : null;
