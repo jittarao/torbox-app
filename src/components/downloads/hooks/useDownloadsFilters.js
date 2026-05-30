@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
-import { useDownloadsFilterParams } from '@/hooks/useDownloadsFilterParams';
 import {
   EMPTY_FILTERS,
   buildTagFilter,
@@ -20,6 +19,7 @@ export function useDownloadsFilters({
   setToast,
   handleColumnChange,
   updateTagName,
+  filterParams,
 }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
 
@@ -35,7 +35,7 @@ export function useDownloadsFilters({
     sortDirection,
     setSort,
     resetFilters,
-  } = useDownloadsFilterParams();
+  } = filterParams;
 
   const [columnFilters, setColumnFilters] = useState(() =>
     JSON.parse(JSON.stringify(EMPTY_FILTERS))

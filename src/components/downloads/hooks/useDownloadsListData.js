@@ -3,7 +3,6 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
-import { useDownloadsFilterParams } from '@/hooks/useDownloadsFilterParams';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
@@ -46,7 +45,7 @@ function syncRowSignatures(viewIds, entities, targetMap) {
   }
 }
 
-export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
+export function useDownloadsListData(activeType, apiKey, isBackendAvailable, filterParams) {
   const downloadHistory = useDownloadHistoryStore((state) => state.downloadHistory);
 
   const downloadHistoryLookup = useMemo(
@@ -91,7 +90,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     appliedFilters,
     sortField,
     sortDirection,
-  } = useDownloadsFilterParams();
+  } = filterParams;
 
   const filterCriteria = useMemo(
     () => ({

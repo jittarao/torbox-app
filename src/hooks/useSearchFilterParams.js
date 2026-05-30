@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSearchStore } from '@/store/searchStore';
 
@@ -48,14 +48,20 @@ export function useSearchFilterParams() {
 
   const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
 
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
   const replaceParams = useCallback(
     (mutate) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParamsRef.current.toString());
       mutate(params);
       const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      const href = qs ? `${pathname}?${qs}` : pathname;
+      startTransition(() => {
+        router.replace(href, { scroll: false });
+      });
     },
-    [pathname, router, searchParams]
+    [pathname, router]
   );
 
   const setFilter = useCallback(
