@@ -35,9 +35,6 @@ function readStoredApiKey() {
   return '';
 }
 
-let permissionsLoadPromise = null;
-let permissionsLoadKey = null;
-
 function fanOutApiKey(apiKey, prevApiKey) {
   startTransition(() => {
     const keyChanged = prevApiKey !== apiKey;
@@ -65,6 +62,8 @@ export const useSessionStore = create((set, get) => ({
   hydrated: false,
   permissions: null,
   permissionsLoading: false,
+  _permissionsLoadPromise: null,
+  _permissionsLoadKey: null,
 
   hydrateFromStorage: () => {
     const { hydrated, apiKey: current } = get();
@@ -141,14 +140,14 @@ export const useSessionStore = create((set, get) => ({
       return null;
     }
 
-    if (permissionsLoadPromise && permissionsLoadKey === apiKey) {
-      return permissionsLoadPromise;
+    const { _permissionsLoadPromise, _permissionsLoadKey } = get();
+    if (_permissionsLoadPromise && _permissionsLoadKey === apiKey) {
+      return _permissionsLoadPromise;
     }
 
-    permissionsLoadKey = apiKey;
-    set({ permissionsLoading: true });
+    set({ _permissionsLoadKey: apiKey, permissionsLoading: true });
 
-    permissionsLoadPromise = (async () => {
+    const promise = (async () => {
       try {
         const userData = await fetchUserProfile(apiKey);
         if (get().apiKey !== apiKey) {
@@ -164,13 +163,13 @@ export const useSessionStore = create((set, get) => ({
         }
         return null;
       } finally {
-        if (permissionsLoadKey === apiKey) {
-          permissionsLoadPromise = null;
-          permissionsLoadKey = null;
+        if (get()._permissionsLoadKey === apiKey) {
+          set({ _permissionsLoadPromise: null, _permissionsLoadKey: null });
         }
       }
     })();
 
-    return permissionsLoadPromise;
+    set({ _permissionsLoadPromise: promise });
+    return promise;
   },
 }));

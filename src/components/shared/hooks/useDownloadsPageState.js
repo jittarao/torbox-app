@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useColumnManager } from './useColumnManager';
 import { useDownloads } from './useDownloads';
 import { useDownloadsHistoryMigration } from './useDownloadsHistoryMigration';
@@ -36,11 +37,16 @@ export function useDownloadsPageState(apiKey) {
   const downloadPanelT = useTranslations('DownloadPanel');
   const pollingPaused = usePollingPauseStore((state) => state.isPaused);
   const permissions = useSessionStore((state) => state.permissions);
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
-  const expandIds = useDownloadsUiStore((state) => state.expandIds);
-  const collapseAllExpanded = useDownloadsUiStore((state) => state.collapseAll);
-  const toggleExpanded = useDownloadsUiStore((state) => state.toggleExpanded);
-  const setExpanded = useDownloadsUiStore((state) => state.setExpanded);
+  const { expandedById, expandIds, collapseAllExpanded, toggleExpanded, setExpanded } =
+    useDownloadsUiStore(
+      useShallow((s) => ({
+        expandedById: s.expandedById,
+        expandIds: s.expandIds,
+        collapseAllExpanded: s.collapseAll,
+        toggleExpanded: s.toggleExpanded,
+        setExpanded: s.setExpanded,
+      }))
+    );
 
   const { activeType, setActiveType } = useStoredAssetType();
   const { viewMode, setViewMode } = useDownloadsViewMode();

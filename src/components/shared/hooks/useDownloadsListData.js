@@ -55,8 +55,9 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     }
   }, [apiKey, isBackendAvailable, downloadTagsHasLoaded, downloadTagsLoading, fetchDownloadTags]);
 
-  const entities = useTorboxDownloadsStore((state) => state.entities);
-  const order = useTorboxDownloadsStore((state) => state.order);
+  const { entities, order } = useTorboxDownloadsStore(
+    useShallow((s) => ({ entities: s.entities, order: s.order }))
+  );
 
   const filterCriteria = useDownloadsUiStore(
     useShallow((state) => ({
@@ -70,30 +71,28 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
   const stableTagMappings = useStableShallow(tagMappings);
   const stableDownloadHistory = useStableShallow(downloadHistory);
 
-  const combinedState = useMemo(() => ({ entities, order }), [entities, order]);
-
+  // Get order for active view, then enrich and build a selection-key map in one pass.
   const allRows = useMemo(() => {
-    const ids = selectViewOrderedIds(combinedState, activeType);
+    const ids = selectViewOrderedIds({ entities, order }, activeType);
     return idsToRows(ids, entities, stableTagMappings, stableDownloadHistory);
-  }, [combinedState, activeType, stableTagMappings, stableDownloadHistory]);
+  }, [entities, order, activeType, stableTagMappings, stableDownloadHistory]);
 
   const enrichedMap = useMemo(() => {
     const map = new Map();
     for (let i = 0; i < allRows.length; i++) {
-      const row = allRows[i];
-      map.set(getDownloadSelectionId(row), row);
+      map.set(getDownloadSelectionId(allRows[i]), allRows[i]);
     }
     return map;
   }, [allRows]);
 
-  const allIds = useMemo(
-    () => selectViewOrderedIds(combinedState, activeType),
-    [combinedState, activeType]
+  const viewIds = useMemo(
+    () => selectViewOrderedIds({ entities, order }, activeType),
+    [entities, order, activeType]
   );
 
   const visibleIds = useMemo(() =>
-    selectVisibleSortedFromMap(allIds, enrichedMap, filterCriteria, entities),
-    [allIds, enrichedMap, filterCriteria, entities]
+    selectVisibleSortedFromMap(viewIds, enrichedMap, filterCriteria, entities),
+    [viewIds, enrichedMap, filterCriteria, entities]
   );
 
   const sortedItems = useMemo(

@@ -21,6 +21,58 @@ function isRateLimitMessage(message) {
   return /429|too many requests/i.test(message || '');
 }
 
+function isConnectionError(error) {
+  return (
+    error.isTimeout ||
+    error.message?.includes('timeout') ||
+    error.message?.includes('Connect Timeout Error') ||
+    error.message?.includes('Request timeout') ||
+    error.message?.includes('Connection timeout') ||
+    error.message?.includes('fetch failed') ||
+    error.message?.includes('NetworkError') ||
+    error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT'
+  );
+}
+
+function computeRateLimitBackoff(consecutiveErrors, retryAfterMs = 0) {
+  return Math.max(
+    retryAfterMs,
+    Math.min(
+      RATE_LIMIT_BACKOFF_BASE_MS * Math.pow(2, consecutiveErrors - 1),
+      MAX_RATE_LIMIT_BACKOFF_MS
+    )
+  );
+}
+
+function parseNotificationResponse(response) {
+  if (!response.success) return null;
+
+  let notificationData = [];
+
+  if (response.data) {
+    if (Array.isArray(response.data)) {
+      notificationData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      notificationData = response.data.data;
+    } else if (typeof response.data === 'object') {
+      notificationData = [response.data];
+    }
+  } else if (Array.isArray(response)) {
+    notificationData = response;
+  }
+
+  // Filter cleared and apply read status
+  const clearedNotifications = getClearedNotifications();
+  const readNotifications = getReadNotifications();
+
+  return notificationData
+    .filter((n) => !clearedNotifications.includes(n.id))
+    .map((n) => ({
+      ...n,
+      read: n.read || readNotifications.includes(n.id),
+    }));
+}
+
 export const useNotificationsStore = create((set, get) => ({
   notifications: [],
   loading: false,
@@ -57,7 +109,6 @@ export const useNotificationsStore = create((set, get) => ({
       set({ error: 'API key is required', loading: false });
       return;
     }
-    // Never send invalid key to API (e.g. draft/partial input)
     if (!isValidTorboxApiKey(apiKey)) {
       set({ fetchingNotifications: false, loading: false });
       return;
@@ -73,90 +124,39 @@ export const useNotificationsStore = create((set, get) => ({
     } = get();
     const { force = false } = options;
 
-    // Update API key in store (this will reset notifications if changed)
     get().setApiKey(apiKey);
 
-    // Prevent duplicate concurrent calls: if already fetching, skip
-    if (fetchingNotifications) {
-      return;
-    }
+    if (fetchingNotifications) return;
 
     const now = Date.now();
 
     if (!force) {
-      if (rateLimitBackoffUntil && now < rateLimitBackoffUntil) {
-        return;
-      }
+      if (rateLimitBackoffUntil && now < rateLimitBackoffUntil) return;
+      if (lastFetchTime && now - lastFetchTime < MIN_NOTIFICATION_FETCH_INTERVAL_MS) return;
 
-      if (lastFetchTime && now - lastFetchTime < MIN_NOTIFICATION_FETCH_INTERVAL_MS) {
-        return;
-      }
-
-      // Back off after repeated connection errors
       const timeSinceLastError = lastErrorTime ? now - lastErrorTime : Infinity;
       const connectionBackoffTime = Math.min(30000 * Math.pow(2, consecutiveErrors), 300000);
-
-      if (consecutiveErrors >= 3 && timeSinceLastError < connectionBackoffTime) {
-        return;
-      }
+      if (consecutiveErrors >= 3 && timeSinceLastError < connectionBackoffTime) return;
     }
 
     const { notifications } = get();
-    // Don't show loading state if we already have notifications
-    if (notifications.length === 0) {
-      set({ loading: true });
-    }
+    if (notifications.length === 0) set({ loading: true });
     set({ fetchingNotifications: true, error: null, lastFetchTime: now });
 
     try {
-      if (get().currentApiKey !== apiKey) {
-        return;
-      }
+      if (get().currentApiKey !== apiKey) return;
 
       const apiClient = createApiClient(apiKey);
       const response = await apiClient.getNotifications();
 
       if (response.success) {
-        // Reset error state on successful fetch
         set({
           consecutiveErrors: 0,
           lastErrorTime: null,
           rateLimitBackoffUntil: null,
         });
 
-        // Handle different response formats from TorBox API
-        let notificationData = [];
-
-        if (response.data) {
-          if (Array.isArray(response.data)) {
-            notificationData = response.data;
-          } else if (response.data.data && Array.isArray(response.data.data)) {
-            // Nested data structure
-            notificationData = response.data.data;
-          } else if (typeof response.data === 'object') {
-            // Single notification object
-            notificationData = [response.data];
-          }
-        } else if (Array.isArray(response)) {
-          // Direct array response
-          notificationData = response;
-        }
-
-        // Filter out notifications that have been cleared locally (due to TorBox API bug)
-        const clearedNotifications = getClearedNotifications();
-
-        const filteredNotifications = notificationData.filter(
-          (notification) => !clearedNotifications.includes(notification.id)
-        );
-
-        // Get read notifications from localStorage
-        const readNotifications = getReadNotifications();
-
-        // Apply read status from localStorage
-        const notificationsWithReadStatus = filteredNotifications.map((notification) => ({
-          ...notification,
-          read: notification.read || readNotifications.includes(notification.id),
-        }));
+        const notificationsWithReadStatus = parseNotificationResponse(response) || [];
 
         set({
           notifications: notificationsWithReadStatus,
@@ -169,17 +169,10 @@ export const useNotificationsStore = create((set, get) => ({
 
         if (response.isRateLimited || isRateLimitMessage(errorMsg)) {
           const newConsecutiveErrors = consecutiveErrors + 1;
-          const backoffMs = Math.max(
-            response.retryAfterMs || 0,
-            Math.min(
-              RATE_LIMIT_BACKOFF_BASE_MS * Math.pow(2, newConsecutiveErrors - 1),
-              MAX_RATE_LIMIT_BACKOFF_MS
-            )
-          );
           set({
             consecutiveErrors: newConsecutiveErrors,
             lastErrorTime: errorTime,
-            rateLimitBackoffUntil: errorTime + backoffMs,
+            rateLimitBackoffUntil: errorTime + computeRateLimitBackoff(newConsecutiveErrors, response.retryAfterMs),
             error: null,
             loading: false,
             fetchingNotifications: false,
@@ -199,25 +192,16 @@ export const useNotificationsStore = create((set, get) => ({
       if (!error.isRateLimited && !isRateLimitMessage(error.message)) {
         console.error('Error fetching notifications:', error);
       }
-      if (get().currentApiKey !== apiKey) {
-        return;
-      }
+      if (get().currentApiKey !== apiKey) return;
+
       const errorTime = Date.now();
 
       if (error.isRateLimited || isRateLimitMessage(error.message)) {
-        const retryAfterMs = error.retryAfterMs || 0;
         const newConsecutiveErrors = consecutiveErrors + 1;
-        const backoffMs = Math.max(
-          retryAfterMs,
-          Math.min(
-            RATE_LIMIT_BACKOFF_BASE_MS * Math.pow(2, newConsecutiveErrors - 1),
-            MAX_RATE_LIMIT_BACKOFF_MS
-          )
-        );
         set({
           consecutiveErrors: newConsecutiveErrors,
           lastErrorTime: errorTime,
-          rateLimitBackoffUntil: errorTime + backoffMs,
+          rateLimitBackoffUntil: errorTime + computeRateLimitBackoff(newConsecutiveErrors, error.retryAfterMs),
           error: null,
           loading: false,
           fetchingNotifications: false,
@@ -225,18 +209,7 @@ export const useNotificationsStore = create((set, get) => ({
         return;
       }
 
-      // Check if it's a connection timeout or network error
-      const isConnectionError =
-        error.isTimeout ||
-        error.message?.includes('timeout') ||
-        error.message?.includes('Connect Timeout Error') ||
-        error.message?.includes('Request timeout') ||
-        error.message?.includes('Connection timeout') ||
-        error.message?.includes('fetch failed') ||
-        error.message?.includes('NetworkError') ||
-        error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT';
-
-      if (isConnectionError) {
+      if (isConnectionError(error)) {
         const newConsecutiveErrors = consecutiveErrors + 1;
         set({
           consecutiveErrors: newConsecutiveErrors,
@@ -245,14 +218,10 @@ export const useNotificationsStore = create((set, get) => ({
           loading: false,
           fetchingNotifications: false,
         });
-
-        // Stop polling after 3 consecutive connection errors
         if (newConsecutiveErrors >= 3) {
           set({ isPolling: false });
-          console.log('Stopping notification polling due to consecutive connection errors');
         }
       } else {
-        // Only set error for non-connection errors
         set({
           error: error.message,
           loading: false,

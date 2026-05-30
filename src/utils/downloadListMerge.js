@@ -3,22 +3,17 @@
  */
 
 const ROW_COMPARE_FIELDS = [
-  'active',
-  'download_finished',
-  'download_present',
-  'download_state',
-  'progress',
-  'download_speed',
-  'upload_speed',
-  'eta',
-  'seeds',
-  'peers',
-  'name',
-  'size',
-  'added',
-  'updated_at',
-  'expires_at',
+  'id', 'name', 'size', 'progress', 'download_speed', 'upload_speed',
+  'download_state', 'download_finished', 'download_present', 'active', 'eta',
+  'peers', 'seeds', 'ratio', 'status', 'cached', 'error', 'tracker',
+  'tracker_domain', 'tracker_icon', 'updated_at', 'expires_at', 'availability',
+  'max_download_speed',
 ];
+
+// Note: active items used to get a new reference on every poll, but now
+// downloadRowEqual compares all ROW_COMPARE_FIELDS regardless of activity.
+// This preserves structural sharing — items with no meaningful field change
+// reuse the previous entity reference.
 
 function fileListSignature(files) {
   if (!files?.length) return '';

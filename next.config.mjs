@@ -44,9 +44,6 @@ const nextConfig = {
     optimizePackageImports: ['lodash', 'date-fns', 'chart.js'],
   },
 
-  // Compress static assets (only in production)
-  compress: process.env.NODE_ENV === 'production',
-
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],
