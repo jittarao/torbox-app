@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
-import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
+import { isTorboxFetchTimeout, torboxFetch, TORBOX_TIMEOUT_ERROR } from '@/app/api/lib/torboxFetch';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -52,7 +52,7 @@ export async function GET(request) {
     console.error('Error fetching torrent download link:', error);
     if (isTorboxFetchTimeout(error)) {
       return NextResponse.json(
-        { success: false, error: 'Request timeout - API took longer than 30 seconds to respond' },
+        { success: false, error: TORBOX_TIMEOUT_ERROR },
         { status: 408 }
       );
     }

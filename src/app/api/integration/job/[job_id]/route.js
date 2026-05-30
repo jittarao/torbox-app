@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function DELETE(request, { params }) {
   const { job_id } = await params;
@@ -12,7 +13,7 @@ export async function DELETE(request, { params }) {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/integration/job/${job_id}`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/job/${job_id}`, {
       cache: 'no-store',
       method: 'DELETE',
       headers: {

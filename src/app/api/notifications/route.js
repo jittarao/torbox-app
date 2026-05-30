@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
 
 // Get user notifications
 export async function GET() {
@@ -11,20 +12,15 @@ export async function GET() {
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/notifications/mynotifications`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/notifications/mynotifications`, {
       cache: 'no-store',
       next: { revalidate: 0 },
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -40,11 +36,8 @@ export async function GET() {
     console.error('Error fetching notifications:', error);
 
     // Handle specific error types
-    if (error.name === 'AbortError') {
-      return Response.json(
-        { success: false, error: 'Request timeout - connection to TorBox API failed' },
-        { status: 408 }
-      );
+    if (isTorboxFetchTimeout(error)) {
+      return Response.json({ success: false, error: error.message }, { status: 408 });
     }
 
     if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
@@ -98,7 +91,7 @@ export async function POST(request) {
       requestOptions.body = JSON.stringify({});
     }
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}${endpoint}`, requestOptions);
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}${endpoint}`, requestOptions);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

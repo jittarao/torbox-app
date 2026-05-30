@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 
 export async function POST(request) {
@@ -10,7 +11,7 @@ export async function POST(request) {
   try {
     const { torrent_id, operation } = await request.json();
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/torrents/controltorrent`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/controltorrent`, {
       cache: 'no-store',
       method: 'POST',
       headers: {

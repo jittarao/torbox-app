@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function POST(request) {
   const headersList = await headers();
@@ -27,7 +28,7 @@ export async function POST(request) {
 
   try {
     // Match torbox.app: POST with referral query param only (no JSON body).
-    const response = await fetch(
+    const response = await torboxFetch(
       `${API_BASE}/${API_VERSION}/api/user/addreferral?referral=${encodeURIComponent(referral)}`,
       {
         cache: 'no-store',

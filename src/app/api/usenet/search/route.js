@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { API_SEARCH_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
 
 export async function GET(req) {
@@ -38,7 +39,7 @@ export async function GET(req) {
       endpoint = `${API_SEARCH_BASE}/usenet/search/${encodeURIComponent(query)}?${params}`;
     }
 
-    const res = await fetch(endpoint, {
+    const res = await torboxFetch(endpoint, {
       cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
