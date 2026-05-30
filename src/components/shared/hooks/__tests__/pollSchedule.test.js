@@ -23,10 +23,15 @@ describe('all-tab poll stagger config', () => {
     expect(totalStagger).toBeLessThan(POLLING_CONFIG.activeIntervalMs);
   });
 
-  it('engagement grace uses active interval before falling back to slow or inactive', async () => {
+  it('engagement grace uses active interval before auto-start tiers', async () => {
     const { POLLING_CONFIG } = await import('../pollingConfig');
     expect(POLLING_CONFIG.engagementGracePeriodMs).toBe(3 * 60_000);
     expect(POLLING_CONFIG.userIdleThresholdMs).toBeLessThan(POLLING_CONFIG.engagementGracePeriodMs);
-    expect(POLLING_CONFIG.inactiveIntervalMs).toBeGreaterThan(POLLING_CONFIG.activeIntervalMs);
+    expect(POLLING_CONFIG.autoStartQueuedIntervalMs).toBeGreaterThan(
+      POLLING_CONFIG.activeIntervalMs
+    );
+    expect(POLLING_CONFIG.autoStartWatchIntervalMs).toBeGreaterThan(
+      POLLING_CONFIG.autoStartQueuedIntervalMs
+    );
   });
 });
