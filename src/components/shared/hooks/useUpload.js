@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
+import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 import { useUploaderStore } from '@/store/uploaderStore';
 import {
   controlTorrent as controlTorrentAction,
   controlQueuedItem as controlQueuedItemAction,
   uploadItem as uploadItemAction,
-  getUploadApiEndpoint,
 } from '@/utils/uploadActions';
 
 // Local storage keys
@@ -80,7 +80,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
   });
 
   // Get API endpoint based on asset type
-  const getApiEndpoint = (activeType = assetType) => getUploadApiEndpoint(activeType);
+  const getApiEndpoint = (activeType = assetType) => getEndpointForAssetType(activeType);
 
   // Create base item with default status and global options
   const createBaseItem = (data, type) => ({

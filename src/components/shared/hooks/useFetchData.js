@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 import { useBackendModeStore } from '@/store/backendModeStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { hasCachedDataForView } from '@/store/torboxDownloadsSelectors';
@@ -28,7 +28,7 @@ import { useAutomationTorrentEvents } from './useAutomationTorrentEvents';
 // 4. On the All tab, fetches torrents, usenet, and webdl on each poll tick
 
 export function useFetchData(apiKey, type = 'torrents') {
-  const pollingPaused = usePollingPauseStore((state) => state.isPaused);
+  const pollingPaused = usePollingPauseStore(selectIsPaused);
   const backendMode = useBackendModeStore((state) => state.mode);
 
   const {

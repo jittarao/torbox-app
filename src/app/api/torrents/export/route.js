@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   const headersList = await headers();
-  const apiKey = headersList.get('x-api-key') || request.nextUrl.searchParams.get('api_key');
+  const apiKey = headersList.get('x-api-key');
   const torrentId = request.nextUrl.searchParams.get('torrent_id');
   const type = request.nextUrl.searchParams.get('type');
 

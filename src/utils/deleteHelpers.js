@@ -1,25 +1,15 @@
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
+import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 
 // Parallel deletes
 const CONCURRENT_DELETES = 3;
-
-const getDeleteEndpoint = (assetType = 'torrents') => {
-  switch (assetType) {
-    case 'usenet':
-      return '/api/usenet';
-    case 'webdl':
-      return '/api/webdl';
-    default:
-      return '/api/torrents';
-  }
-};
 
 export const deleteItemHelper = async (id, apiKey, assetType = 'torrents') => {
   if (!apiKey) return { success: false, error: 'No API key provided' };
 
   try {
-    const endpoint = getDeleteEndpoint(assetType);
+    const endpoint = getEndpointForAssetType(assetType);
 
     const result = await retryFetch(endpoint, {
       method: 'DELETE',
