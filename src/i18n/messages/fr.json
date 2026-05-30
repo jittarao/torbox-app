@@ -16,9 +16,13 @@
     },
     "downloadLinks": "Obtenir les liens de téléchargement",
     "downloadLinksMobile": "Obtenir les liens",
+    "bulkSeedingPartial": "Partage arrêté pour {success} torrents, {failed} échecs",
+    "bulkSeedingStopped": "Partage arrêté pour {count} torrents",
     "exporting": "Exportation...",
     "exportSelected": "Exporter sélectionné",
     "fetchingLinks": "Récupération des liens...",
+    "stopSeeding": "Arrêter le partage",
+    "stoppingSeeding": "Arrêt du partage...",
     "uploading": "Téléchargement...",
     "uploadToCloud": "Télécharger sur le Cloud"
   },
