@@ -248,6 +248,8 @@
     },
     "removeCondition": "条件を削除",
     "removeGroup": "グループを削除",
+    "searchConditionOptionsPlaceholder": "検索…",
+    "searchConditionOptionsNoMatches": "一致するオプションがありません",
     "ruleLogs": "ルールログ",
     "ruleName": "ルール名",
     "ruleNamePlaceholder": "ルール名を入力",

@@ -260,6 +260,8 @@
     },
     "removeCondition": "Remove condition",
     "removeGroup": "Remove group",
+    "searchConditionOptionsPlaceholder": "Search…",
+    "searchConditionOptionsNoMatches": "No matching options",
     "ruleLogs": "Rule Logs",
     "ruleName": "Rule Name",
     "ruleNamePlaceholder": "Enter rule name",

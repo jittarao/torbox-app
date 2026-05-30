@@ -248,6 +248,8 @@
     },
     "removeCondition": "Usuń warunek",
     "removeGroup": "Usuń grupę",
+    "searchConditionOptionsPlaceholder": "Szukaj…",
+    "searchConditionOptionsNoMatches": "Brak pasujących opcji",
     "ruleLogs": "Logi reguł",
     "ruleName": "Nazwa reguły",
     "ruleNamePlaceholder": "Wprowadź nazwę reguły",
