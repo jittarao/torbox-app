@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import {
@@ -38,15 +38,17 @@ export function useSelection(items, activeType = 'all', apiKey = '') {
     setActiveType(activeType);
   }, [activeType, setActiveType]);
 
-  // Sync during render: skip O(n) signature when merge preserved row refs (typical poll).
-  if (!itemsReconcileStructureUnchanged(prevItemsRef.current, items)) {
-    const signature = downloadListReconcileSignature(items);
-    const { listSignature, reconcileWithItems } = useDownloadsSelectionStore.getState();
-    if (signature !== listSignature) {
-      reconcileWithItems(items, signature);
+  // After render: skip O(n) signature when merge preserved row refs (typical poll).
+  useLayoutEffect(() => {
+    if (!itemsReconcileStructureUnchanged(prevItemsRef.current, items)) {
+      const signature = downloadListReconcileSignature(items);
+      const { listSignature, reconcileWithItems } = useDownloadsSelectionStore.getState();
+      if (signature !== listSignature) {
+        reconcileWithItems(items, signature);
+      }
     }
-  }
-  prevItemsRef.current = items;
+    prevItemsRef.current = items;
+  }, [items]);
 
   const hasSelectedFiles = () => {
     return Array.from(selectedItems.files.values()).some((files) => files.size > 0);
