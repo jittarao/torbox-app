@@ -7,30 +7,32 @@ import logger from './logger.js';
 class Cache {
   constructor() {
     // Cache for active rules count per user (5 seconds TTL)
+    // All caches use noUpdateTTL=true so that a .get() does not extend the TTL
+    // (avoiding memory retention when old entries are rarely re-read).
     this.activeRulesCache = new TTLCache({
-      max: 1000, // Max 1000 users
-      ttl: 5000, // 5 seconds
+      max: 1000,
+      ttl: 5000,
+      noUpdateTTL: true,
     });
 
-    // Cache for user registry info per user (10 seconds TTL)
     this.userRegistryCache = new TTLCache({
-      max: 1000, // Max 1000 users
-      ttl: 10000, // 10 seconds
+      max: 1000,
+      ttl: 10000,
+      noUpdateTTL: true,
     });
 
-    // Cache for active users list (60 seconds TTL)
     // Explicit invalidateActiveUsers() is called on every mutation, so a longer TTL is safe
-    // and avoids unnecessary DB re-queries under polling load.
     this.activeUsersCache = new TTLCache({
-      max: 2, // Two different query variations
-      ttl: 60000, // 60 seconds
+      max: 2,
+      ttl: 60000,
+      noUpdateTTL: true,
     });
 
-    // Cache for "has recent rule executions" per user (5 minutes TTL)
     // Reduces DB queries when no rules executed in current cycle (idle users).
     this.recentRuleExecutionsCache = new TTLCache({
       max: 1000,
-      ttl: 300000, // 5 minutes
+      ttl: 300000,
+      noUpdateTTL: true,
     });
   }
 

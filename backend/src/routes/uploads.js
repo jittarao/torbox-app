@@ -604,7 +604,7 @@ export function setupUploadsRoutes(app, backend) {
             SUM(CASE WHEN type = 'usenet' THEN 1 ELSE 0 END) as usenets_last_hour,
             SUM(CASE WHEN type = 'webdl' THEN 1 ELSE 0 END) as webdls_last_hour
           FROM upload_attempts
-          WHERE datetime(attempted_at) >= datetime('now', '-1 hour')
+          WHERE attempted_at >= datetime('now', '-1 hour')
         `
         )
         .get();

@@ -1069,7 +1069,7 @@ class UserDatabaseManager {
     for (const [authId, entry] of this.pool.cache) {
       if (!entry?.value?.db) continue;
       try {
-        entry.value.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+        entry.value.db.prepare('PRAGMA wal_checkpoint(PASSIVE)').run();
         count++;
       } catch (error) {
         logger.warn('WAL checkpoint failed for user', {
