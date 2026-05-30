@@ -1,4 +1,5 @@
-const TB = 1024 ** 4;
+/** Decimal TB (SI) — matches TorBox monthly transfer quotas. */
+const TB = 1000 ** 4;
 
 /** Minimum monthly floors per plan (TorBox abuse policy). Plan IDs match userProfile.getPlanName. */
 const PLAN_MONTHLY_FLOOR_BYTES = {
