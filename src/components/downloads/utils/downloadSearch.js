@@ -38,6 +38,7 @@ export function itemHasFileNameSearchMatch(item, query) {
  * - Only file names match: matching files only
  */
 export function getFilesVisibleForDownloadSearch(item, query) {
+  if (!item) return [];
   const files = item.files || [];
   const normalizedQuery = normalizeDownloadSearchQuery(query);
   if (!normalizedQuery || itemNameMatchesDownloadSearch(item, normalizedQuery)) {
