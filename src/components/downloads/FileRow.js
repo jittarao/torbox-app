@@ -59,8 +59,8 @@ function FileRow({
     file != null
       ? [file]
       : fileIndex !== null
-        ? [item.files[fileIndex]].filter(Boolean)
-        : item.files;
+        ? [item.files?.[fileIndex]].filter(Boolean)
+        : item.files || [];
 
   const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
 

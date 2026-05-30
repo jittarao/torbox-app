@@ -248,7 +248,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       return (
         acc +
         Array.from(fileIds).reduce((sum, fileId) => {
-          const file = item.files.find((f) => f.id === fileId);
+          const file = item.files?.find((f) => f.id === fileId);
           return sum + (file?.size || 0);
         }, 0)
       );

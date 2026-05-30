@@ -129,8 +129,8 @@ export default function CardList() {
         if (!entityKey) return 0;
         const { id } = parseEntityKey(entityKey);
         const filesExpanded = expandedById[id];
-        const files = entities?.[id]?.files;
-        const filesVisible = getFilesVisibleForDownloadSearch(files, fileSearch);
+        const entity = entities?.[entityKey];
+        const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
 
         let cardHeight = isMobile ? 118 : 104;
         if (filesExpanded && filesVisible) {
