@@ -12,10 +12,10 @@ import {
   useDownloadsSelectionStore,
   selectSelectedItemCount,
 } from '@/store/downloadsSelectionStore';
-import { controlTorrent } from '@/utils/uploadActions';
+import { controlQueuedItem, controlTorrent } from '@/utils/uploadActions';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
-import { isTorrentSeeding } from '../utils/statusHelpers';
+import { isTorrentQueued, isTorrentSeeding } from '../utils/statusHelpers';
 
 export default function ActionButtons({
   setSelectedItems,
@@ -42,6 +42,7 @@ export default function ActionButtons({
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
+  const [isForceStarting, setIsForceStarting] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
@@ -70,6 +71,26 @@ export default function ActionButtons({
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
 
   const showBulkStopSeeding = selectedSeedingTorrents.length > 0;
+
+  const selectedQueuedTorrents = useMemo(() => {
+    if (hasSelectedFiles || selectedItemCount === 0) return [];
+    if (activeType !== 'torrents' && activeType !== 'all') return [];
+
+    const selectionIds = Array.from(getSelectedItems().items || []);
+    const resolved = selectionIds
+      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
+      .filter(Boolean);
+
+    if (resolved.length !== selectionIds.length) return [];
+
+    const allQueuedTorrents = resolved.every(
+      (item) =>
+        resolveItemAssetType(item, activeType) === 'torrents' && isTorrentQueued(item)
+    );
+    return allQueuedTorrents ? resolved : [];
+  }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
+
+  const showBulkForceStart = selectedQueuedTorrents.length > 0;
 
   // Check for connected providers once per API key (not on every ActionBar re-render)
   useEffect(() => {
@@ -186,6 +207,53 @@ export default function ActionButtons({
       });
     } finally {
       setIsStoppingSeeding(false);
+    }
+  };
+
+  const handleBulkForceStart = async () => {
+    if (isForceStarting || !apiKey || selectedQueuedTorrents.length === 0) return;
+
+    setIsForceStarting(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      for (const item of selectedQueuedTorrents) {
+        const assetType = resolveItemAssetType(item, activeType);
+        const result = await controlQueuedItem(apiKey, item.id, 'start', assetType);
+        if (result?.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+
+      if (successCount > 0 && failCount === 0) {
+        setToast({
+          message: t('bulkForceStarted', { count: successCount }),
+          type: 'success',
+        });
+        phEvent('bulk_force_start', { count: successCount });
+      } else if (successCount > 0) {
+        setToast({
+          message: t('bulkForceStartPartial', { success: successCount, failed: failCount }),
+          type: 'warning',
+        });
+        phEvent('bulk_force_start', { count: successCount, failed: failCount });
+      } else {
+        setToast({
+          message: tItemActions('downloadFailed'),
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error in bulk force start:', error);
+      setToast({
+        message: tItemActions('downloadFailed'),
+        type: 'error',
+      });
+    } finally {
+      setIsForceStarting(false);
     }
   };
 
@@ -339,6 +407,17 @@ export default function ActionButtons({
           disabled:opacity-50 transition-colors"
         >
           {isExporting ? t('exporting') : t('exportSelected')}
+        </button>
+      )}
+
+      {showBulkForceStart && (
+        <button
+          type="button"
+          onClick={handleBulkForceStart}
+          disabled={isForceStarting}
+          className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark disabled:opacity-50 transition-colors"
+        >
+          {isForceStarting ? t('forceStarting') : t('forceStart')}
         </button>
       )}
 
