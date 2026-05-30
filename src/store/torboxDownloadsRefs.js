@@ -1,6 +1,15 @@
 import { createDownloadFetchRateLimiter } from '@/components/shared/hooks/downloadFetchRateLimit';
 
-/** Imperative refs for download sync (not Zustand state). */
+/**
+ * Imperative refs for download-sync async flow.
+ * These are intentionally module-level (not Zustand):
+ *   1. AbortControllers are DOM APIs — not serializable, can't go in Zustand.
+ *   2. Delta cursors & in-progress flags are read/written in deep async callbacks
+ *      across multiple render cycles — ref semantics (no re-render) are correct.
+ *   3. Rate limiter is a singleton utility instance, not state.
+ * Moving them to Zustand would require getState()/setState() in every async path
+ * without gaining re-render value (no component subscribes to these directly).
+ */
 export const deltaCursorRef = { current: { torrents: null, usenet: null, webdl: null } };
 export const processedQueueIdsRef = { current: new Set() };
 /** Active initial-fetch keys: `${apiKey}:${viewType}` — supports concurrent fetches per view. */

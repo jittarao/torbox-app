@@ -14,6 +14,9 @@ import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDown
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
+/** @typedef {{ entities?: Record<string, object>, order?: { torrents?: string[], usenet?: string[], webdl?: string[] } }} TorboxDownloadsState */
+/** @typedef {{ search?: string, statusFilter?: string, appliedFilters?: object, sortField?: string, sortDirection?: 'asc'|'desc' }} FilterCriteria */
+
 const isQueued = (torrent) =>
   !torrent.download_state &&
   !torrent.download_finished &&
@@ -102,6 +105,12 @@ function fileCountCompare(a, b) {
   return (a.files?.length || 0) - (b.files?.length || 0);
 }
 
+/**
+ * @param {object} a
+ * @param {object} b
+ * @param {string} sortField
+ * @returns {number}
+ */
 function compareRows(a, b, sortField) {
   const fieldType = FIELD_TYPE_MAP[sortField] || 'text';
   switch (fieldType) {
@@ -123,6 +132,7 @@ function compareRows(a, b, sortField) {
  * @param {Record<string, object>} entities
  * @param {string} sortField
  * @param {'asc'|'desc'} sortDirection
+ * @returns {string[]}
  */
 export function sortIds(ids, entities, sortField, sortDirection) {
   if (!ids?.length) return [];
@@ -166,6 +176,10 @@ function matchesStatusFilter(item, statusFilter) {
 
 /**
  * Build row shape used by filter predicates (tags + is_downloaded).
+ * @param {object|null} entity
+ * @param {Record<string, object[]>} [tagMappings]
+ * @param {object} [downloadHistoryLookup]
+ * @returns {object|null}
  */
 export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
   if (!entity) return null;
@@ -193,9 +207,10 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
 /**
  * @param {string[]} ids
  * @param {Record<string, object>} entities
- * @param {{ search?: string, statusFilter?: string, appliedFilters?: object }} criteria
- * @param {object} [tagMappings]
+ * @param {FilterCriteria} criteria
+ * @param {Record<string, object[]>} [tagMappings]
  * @param {object} [downloadHistoryLookup]
+ * @returns {string[]}
  */
 export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHistoryLookup = null) {
   if (!ids?.length) return [];
@@ -224,6 +239,10 @@ export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHis
 /**
  * Like filterIds but operates on a pre-enriched Map<selectionId, row> instead of raw entities.
  * Avoids re-enriching items that were already enriched upstream.
+ * @param {string[]} ids
+ * @param {Map<string, object>} enrichedMap
+ * @param {FilterCriteria} criteria
+ * @returns {string[]}
  */
 export function filterEnrichedIds(ids, enrichedMap, criteria) {
   if (!ids?.length) return [];
@@ -243,8 +262,12 @@ export function filterEnrichedIds(ids, enrichedMap, criteria) {
 }
 
 /**
- * @param {import('@/store/torboxDownloadsStore').TorboxDownloadsState} torboxState
+ * @param {TorboxDownloadsState} torboxState
  * @param {'torrents'|'usenet'|'webdl'|'all'} viewType
+ * @param {FilterCriteria} criteria
+ * @param {Record<string, object[]>} [tagMappings]
+ * @param {object[]|object} [downloadHistoryOrLookup]
+ * @returns {string[]}
  */
 export function selectVisibleSortedIds(
   torboxState,
@@ -266,6 +289,11 @@ export function selectVisibleSortedIds(
 
 /**
  * Like selectVisibleSortedIds but uses a pre-enriched row map to avoid re-enrichment.
+ * @param {string[]} viewIds
+ * @param {Map<string, object>} enrichedMap
+ * @param {FilterCriteria} criteria
+ * @param {Record<string, object>} entities
+ * @returns {string[]}
  */
 export function selectVisibleSortedFromMap(
   viewIds,
@@ -279,6 +307,11 @@ export function selectVisibleSortedFromMap(
 
 /**
  * Resolve visible ids to row objects (for bulk actions / legacy callers).
+ * @param {string[]} ids
+ * @param {Record<string, object>} entities
+ * @param {Record<string, object[]>} [tagMappings]
+ * @param {object[]} [downloadHistory]
+ * @returns {object[]}
  */
 export function idsToRows(ids, entities, tagMappings = {}, downloadHistory = []) {
   if (!ids?.length) return [];
