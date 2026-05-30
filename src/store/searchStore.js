@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useSessionStore } from '@/store/sessionStore';
+import { getItem, setItem, removeItem } from '@/utils/storage';
 
 export const useSearchStore = create((set, get) => ({
   query: '',
@@ -70,14 +71,14 @@ export const useSearchStore = create((set, get) => ({
     const { searchHistory } = get();
     const newHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 10);
     set({ searchHistory: newHistory });
-    localStorage.setItem('torboxSearchHistory:v1', JSON.stringify(newHistory));
+    setItem('torboxSearchHistory:v1', JSON.stringify(newHistory));
   },
 
   loadHistory: () => {
     try {
       const history =
-        localStorage.getItem('torboxSearchHistory:v1') ??
-        localStorage.getItem('torboxSearchHistory');
+        getItem('torboxSearchHistory:v1') ??
+        getItem('torboxSearchHistory');
       if (history) {
         set({ searchHistory: JSON.parse(history) });
       }
@@ -88,7 +89,7 @@ export const useSearchStore = create((set, get) => ({
 
   clearHistory: () => {
     set({ searchHistory: [] });
-    localStorage.removeItem('torboxSearchHistory:v1');
+    removeItem('torboxSearchHistory:v1');
   },
 
   resetForSession: () => {
@@ -105,9 +106,7 @@ export const useSearchStore = create((set, get) => ({
       sizeFilter: '',
       seedersFilter: '',
     });
-    if (typeof localStorage !== 'undefined') {
-      get().loadHistory();
-    }
+    get().loadHistory();
   },
 
   fetchResults: async (queryOverride, searchTypeOverride) => {
@@ -116,7 +115,7 @@ export const useSearchStore = create((set, get) => ({
     const searchType = searchTypeOverride ?? stateSearchType;
     if (!query) return;
 
-    const apiKey = useSessionStore.getState().apiKey || localStorage.getItem('torboxApiKey');
+    const apiKey = useSessionStore.getState().apiKey || getItem('torboxApiKey');
     if (!apiKey) {
       set({ error: 'API key is missing' });
       return;

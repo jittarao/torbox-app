@@ -2,27 +2,14 @@ import { create } from 'zustand';
 import { createApiClient } from '@/utils/apiClient';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { getJSON, setItem, removeItem } from '@/utils/storage';
 
 function getClearedNotifications() {
-  try {
-    return JSON.parse(
-      localStorage.getItem('clearedNotifications:v1') ??
-        (localStorage.getItem('clearedNotifications') || '[]')
-    );
-  } catch {
-    return [];
-  }
+  return getJSON('clearedNotifications:v1') ?? getJSON('clearedNotifications') ?? [];
 }
 
 function getReadNotifications() {
-  try {
-    return JSON.parse(
-      localStorage.getItem('readNotifications:v1') ??
-        (localStorage.getItem('readNotifications') || '[]')
-    );
-  } catch {
-    return [];
-  }
+  return getJSON('readNotifications:v1') ?? getJSON('readNotifications') ?? [];
 }
 
 const MIN_NOTIFICATION_FETCH_INTERVAL_MS = 60_000;
@@ -299,19 +286,16 @@ export const useNotificationsStore = create((set, get) => ({
           const updatedClearedNotifications = [
             ...new Set([...clearedNotifications, ...currentNotificationIds]),
           ];
-          localStorage.setItem(
-            'clearedNotifications:v1',
-            JSON.stringify(updatedClearedNotifications)
-          );
+          setItem('clearedNotifications:v1', JSON.stringify(updatedClearedNotifications));
         } catch (error) {
-          console.error('Error storing cleared notifications in localStorage:', error);
+          console.error('Error storing cleared notifications:', error);
         }
 
         set({ notifications: [] });
 
         // Clear read status from localStorage
         try {
-          localStorage.removeItem('readNotifications:v1');
+          removeItem('readNotifications:v1');
         } catch (error) {
           console.error('Error clearing read status from localStorage:', error);
         }
@@ -347,10 +331,10 @@ export const useNotificationsStore = create((set, get) => ({
           const clearedNotifications = getClearedNotifications();
           if (!clearedNotifications.includes(notificationId)) {
             clearedNotifications.push(notificationId);
-            localStorage.setItem('clearedNotifications:v1', JSON.stringify(clearedNotifications));
+            setItem('clearedNotifications:v1', JSON.stringify(clearedNotifications));
           }
         } catch (error) {
-          console.error('Error storing cleared notification in localStorage:', error);
+          console.error('Error storing cleared notification:', error);
         }
 
         const { notifications } = get();
@@ -364,7 +348,7 @@ export const useNotificationsStore = create((set, get) => ({
         try {
           const readNotifications = getReadNotifications();
           const updatedReadNotifications = readNotifications.filter((id) => id !== notificationId);
-          localStorage.setItem('readNotifications:v1', JSON.stringify(updatedReadNotifications));
+          setItem('readNotifications:v1', JSON.stringify(updatedReadNotifications));
         } catch (error) {
           console.error('Error updating read status in localStorage:', error);
         }
@@ -421,7 +405,7 @@ export const useNotificationsStore = create((set, get) => ({
       const readNotifications = getReadNotifications();
       if (!readNotifications.includes(notificationId)) {
         readNotifications.push(notificationId);
-        localStorage.setItem('readNotifications:v1', JSON.stringify(readNotifications));
+        setItem('readNotifications:v1', JSON.stringify(readNotifications));
       }
     } catch (error) {
       console.error('Error saving read status to localStorage:', error);
@@ -443,7 +427,7 @@ export const useNotificationsStore = create((set, get) => ({
     // Store all notification IDs as read in localStorage
     try {
       const allNotificationIds = notifications.map((n) => n.id);
-      localStorage.setItem('readNotifications:v1', JSON.stringify(allNotificationIds));
+      setItem('readNotifications:v1', JSON.stringify(allNotificationIds));
     } catch (error) {
       console.error('Error saving read status to localStorage:', error);
     }
