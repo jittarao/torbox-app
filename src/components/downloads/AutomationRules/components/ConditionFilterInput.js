@@ -256,15 +256,16 @@ export default function ConditionFilterInput({
               placeholder={t('conditions.statusPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
-          ) : condition.type === CONDITION_TYPES.TAGS &&
+          ) : condition.type === CONDITION_TYPES.TAGS ? (
             tagOperatorNeedsTagSelection(condition.operator) ? (
-            <MultiSelect
-              value={getTagsValue()}
-              onChange={(values) => handleFieldChange('value', values)}
-              options={getTagOptions()}
-              placeholder={t('conditions.tagsPlaceholder')}
-              className="w-full sm:flex-1 sm:min-w-[150px]"
-            />
+              <MultiSelect
+                value={getTagsValue()}
+                onChange={(values) => handleFieldChange('value', values)}
+                options={getTagOptions()}
+                placeholder={t('conditions.tagsPlaceholder')}
+                className="w-full sm:flex-1 sm:min-w-[150px]"
+              />
+            ) : null
           ) : isBooleanCondition(condition.type) ? (
             <Select
               value={
