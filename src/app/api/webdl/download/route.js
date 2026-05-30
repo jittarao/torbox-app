@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -36,7 +37,7 @@ export async function GET(request) {
       user_ip: userIp,
     });
     const apiUrl = `${API_BASE}/${API_VERSION}/api/webdl/requestdl?${queryParams}`;
-    const response = await fetch(apiUrl, {
+    const response = await torboxFetch(apiUrl, {
       cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -52,6 +53,12 @@ export async function GET(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching web download link:', error);
+    if (isTorboxFetchTimeout(error)) {
+      return NextResponse.json(
+        { success: false, error: 'Request timeout - API took longer than 30 seconds to respond' },
+        { status: 408 }
+      );
+    }
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

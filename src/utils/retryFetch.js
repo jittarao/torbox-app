@@ -1,6 +1,8 @@
 // Remove all TypeScript annotations and keep only the implementation
 'use client';
 
+import { FETCH_TIMEOUT_MS } from '@/components/constants';
+
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_DELAY_MS = 2000;
 const RETRYABLE_STATUSES = new Set([502, 503, 504, 429]);
@@ -52,6 +54,7 @@ export async function retryFetch(url, options = {}) {
     method = 'GET',
     headers = {},
     body,
+    timeout = FETCH_TIMEOUT_MS,
   } = options;
 
   let retries = 0;
@@ -59,10 +62,14 @@ export async function retryFetch(url, options = {}) {
   let lastStatus = null;
 
   while (retries < maxRetries) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
     try {
       const response = await fetch(url, {
         method,
         headers,
+        signal: options.signal || controller.signal,
         ...(body && {
           body:
             body instanceof FormData
@@ -72,6 +79,8 @@ export async function retryFetch(url, options = {}) {
                 : JSON.stringify(body),
         }),
       });
+
+      clearTimeout(timeoutId);
 
       lastStatus = response.status;
 
@@ -133,6 +142,17 @@ export async function retryFetch(url, options = {}) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error?.name === 'AbortError') {
+        const seconds = Math.round(timeout / 1000);
+        return {
+          success: false,
+          error: 'Request timeout',
+          userMessage: `Request timed out after ${seconds} seconds. Please try again.`,
+        };
+      }
+
       lastError = error;
       retries++;
       if (retries === maxRetries) {
