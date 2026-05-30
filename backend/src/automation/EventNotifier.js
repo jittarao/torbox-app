@@ -21,7 +21,7 @@ class EventNotifier {
     const ms = intervalMs ?? parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '25000', 10);
     this._heartbeatId = setInterval(() => {
       for (const [authId, set] of this.connections) {
-        for (const res of set) {
+        for (const res of [...set]) {
           try {
             res.write(': ping\n\n');
           } catch (err) {
@@ -30,9 +30,9 @@ class EventNotifier {
               errorMessage: err.message,
             });
             set.delete(res);
-            if (set.size === 0) this.connections.delete(authId);
           }
         }
+        if (set.size === 0) this.connections.delete(authId);
       }
     }, ms);
   }
@@ -81,7 +81,7 @@ class EventNotifier {
     const set = this.connections.get(authId);
     if (!set || set.size === 0) return;
     const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    for (const res of set) {
+    for (const res of [...set]) {
       try {
         res.write(`data: ${data}\n\n`);
       } catch (err) {

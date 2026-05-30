@@ -9,14 +9,28 @@ export class Semaphore {
     this.queue = [];
   }
 
-  async acquire() {
-    return new Promise((resolve) => {
-      if (this.running < this.maxConcurrent) {
-        this.running++;
-        resolve();
-      } else {
+  async acquire(timeoutMs = 0) {
+    if (this.running < this.maxConcurrent) {
+      this.running++;
+      return;
+    }
+
+    if (timeoutMs <= 0) {
+      return new Promise((resolve) => {
         this.queue.push(resolve);
-      }
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const idx = this.queue.indexOf(resolve);
+        if (idx >= 0) this.queue.splice(idx, 1);
+        reject(new Error('Semaphore acquisition timed out'));
+      }, timeoutMs);
+      this.queue.push(() => {
+        clearTimeout(timer);
+        resolve();
+      });
     });
   }
 

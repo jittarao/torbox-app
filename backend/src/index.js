@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -78,6 +79,25 @@ class TorBoxBackend {
       this.app.set('trust proxy', 1);
     }
 
+    // Correlation ID middleware — every request gets a unique traceable ID
+    this.app.use((req, res, next) => {
+      req.correlationId = crypto.randomUUID().slice(0, 8);
+      res.setHeader('X-Correlation-Id', req.correlationId);
+      next();
+    });
+
+    // Reject when a reverse proxy reports plaintext (x-forwarded-proto: http).
+    // Internal Docker/Compose traffic has no forwarded-proto header and is allowed.
+    if (process.env.NODE_ENV === 'production') {
+      this.app.use((req, res, next) => {
+        const forwardedProto = req.get('x-forwarded-proto');
+        if (forwardedProto === 'http') {
+          return res.status(426).json({ success: false, error: 'TLS required' });
+        }
+        next();
+      });
+    }
+
     const rateLimitWindowMs = 15 * 60 * 1000;
     const ipRateLimitMax = parseRateLimitMax(process.env.IP_RATE_LIMIT_MAX, 1000);
 
@@ -145,7 +165,7 @@ class TorBoxBackend {
       // Log response when finished
       res.on('finish', () => {
         const duration = Date.now() - startTime;
-        logger.http(req, res, duration);
+        logger.http(req, res, duration, req.correlationId);
       });
 
       next();
@@ -183,6 +203,7 @@ class TorBoxBackend {
         endpoint: req.originalUrl || req.url,
         method: req.method,
         ip: req.ip || req.connection?.remoteAddress,
+        correlationId: req.correlationId,
       };
 
       // Add authId if available
