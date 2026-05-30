@@ -248,6 +248,8 @@
     },
     "removeCondition": "Supprimer la condition",
     "removeGroup": "Supprimer le groupe",
+    "searchConditionOptionsPlaceholder": "Rechercher…",
+    "searchConditionOptionsNoMatches": "Aucune option correspondante",
     "ruleLogs": "Journaux de Règle",
     "ruleName": "Nom de la règle",
     "ruleNamePlaceholder": "Entrer le nom de la règle",

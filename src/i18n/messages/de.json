@@ -248,6 +248,8 @@
     },
     "removeCondition": "Bedingung entfernen",
     "removeGroup": "Gruppe entfernen",
+    "searchConditionOptionsPlaceholder": "Suchen…",
+    "searchConditionOptionsNoMatches": "Keine passenden Optionen",
     "ruleLogs": "Regel-Protokolle",
     "ruleName": "Regelname",
     "ruleNamePlaceholder": "Regelname eingeben",

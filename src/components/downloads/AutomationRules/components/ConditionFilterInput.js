@@ -207,6 +207,9 @@ export default function ConditionFilterInput({
           }
         }}
         className="w-full sm:min-w-[140px] sm:flex-1"
+        searchable
+        searchPlaceholder={t('searchConditionOptionsPlaceholder')}
+        noMatchesMessage={t('searchConditionOptionsNoMatches')}
       >
         {conditionTypeOptions.map((group, groupIdx) => (
           <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
