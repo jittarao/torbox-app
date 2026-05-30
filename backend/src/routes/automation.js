@@ -1,4 +1,4 @@
-import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
+import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import RuleRepository from '../automation/helpers/RuleRepository.js';
@@ -24,6 +24,10 @@ async function getEngineForRequest(backend, authId) {
 /**
  * Send 403 or 404 when getEngineForRequest returned null (user exists but key inactive, or user not found).
  */
+function invalidateSchedulerEngine(pollingScheduler, authId) {
+  pollingScheduler?.invalidateCachedEngine?.(authId);
+}
+
 function sendEngineUnavailableResponse(res, backend, authId) {
   const reason = backend.masterDatabase.getApiKeyUnavailableReason(authId);
   if (reason === 'inactive') {
@@ -51,7 +55,7 @@ export function setupAutomationRoutes(app, backend) {
 
   // GET /api/automation/events - SSE stream; notifies when this user's poll completes with changes (no rate limit for long-lived connection)
   if (eventNotifier) {
-    app.get('/api/automation/events', validateAuthIdMiddleware, (req, res) => {
+    app.get('/api/automation/events', backend.requireRegisteredUser, (req, res) => {
       const authId = req.validatedAuthId;
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
@@ -64,7 +68,7 @@ export function setupAutomationRoutes(app, backend) {
   }
 
   // GET /api/automation/rules - Get all automation rules (direct DB, no engine)
-  app.get('/api/automation/rules', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.get('/api/automation/rules', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     const authId = req.validatedAuthId;
     const userDatabaseManager = backend.userDatabaseManager;
     if (!userDatabaseManager) {
@@ -101,7 +105,7 @@ export function setupAutomationRoutes(app, backend) {
   });
 
   // POST /api/automation/rules - Save automation rules (engine on demand)
-  app.post('/api/automation/rules', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.post('/api/automation/rules', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     const authId = req.validatedAuthId;
     try {
       const engine = await getEngineForRequest(backend, authId);
@@ -111,6 +115,7 @@ export function setupAutomationRoutes(app, backend) {
       const { rules } = req.body;
       const savedRules = await engine.saveAutomationRules(rules);
       await engine.reloadRules();
+      invalidateSchedulerEngine(pollingScheduler, authId);
       if (pollingScheduler) {
         await pollingScheduler.refreshPollers();
       }
@@ -128,7 +133,7 @@ export function setupAutomationRoutes(app, backend) {
   // PUT /api/automation/rules/:id - Update rule status (engine on demand)
   app.put(
     '/api/automation/rules/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -141,6 +146,7 @@ export function setupAutomationRoutes(app, backend) {
         }
         const { enabled } = req.body;
         await engine.updateRuleStatus(ruleId, enabled);
+        invalidateSchedulerEngine(pollingScheduler, authId);
         if (pollingScheduler) {
           await pollingScheduler.refreshPollers();
         }
@@ -160,7 +166,7 @@ export function setupAutomationRoutes(app, backend) {
   // DELETE /api/automation/rules/:id - Delete rule (engine on demand)
   app.delete(
     '/api/automation/rules/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -172,6 +178,7 @@ export function setupAutomationRoutes(app, backend) {
           return sendEngineUnavailableResponse(res, backend, authId);
         }
         await engine.deleteRule(ruleId);
+        invalidateSchedulerEngine(pollingScheduler, authId);
         if (pollingScheduler) {
           await pollingScheduler.refreshPollers();
         }
@@ -191,7 +198,7 @@ export function setupAutomationRoutes(app, backend) {
   // GET /api/automation/rules/:id/logs - Get rule execution history (engine on demand)
   app.get(
     '/api/automation/rules/:id/logs',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -219,7 +226,7 @@ export function setupAutomationRoutes(app, backend) {
   // DELETE /api/automation/rules/:id/logs - Clear rule execution history (engine on demand)
   app.delete(
     '/api/automation/rules/:id/logs',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -250,7 +257,7 @@ export function setupAutomationRoutes(app, backend) {
   // POST /api/automation/rules/:id/run - Manually execute a rule (engine on demand)
   app.post(
     '/api/automation/rules/:id/run',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {

@@ -535,7 +535,7 @@ class AutomationEngine {
     let skippedCount = 0;
     let errorCount = 0;
     const pendingActions = [];
-    const evaluatedRuleIds = [];
+    const evaluatedRuleIdsNoAction = [];
 
     const ruleEvaluator = await this.getRuleEvaluator();
     const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
@@ -585,8 +585,8 @@ class AutomationEngine {
             sharedMaps,
             ruleEvaluator
           );
-          if (result.ruleId != null) {
-            evaluatedRuleIds.push(result.ruleId);
+          if (result.ruleId != null && !result.pendingAction) {
+            evaluatedRuleIdsNoAction.push(result.ruleId);
           }
           if (result.executed) {
             executedCount++;
@@ -606,8 +606,9 @@ class AutomationEngine {
     const workerCount = Math.min(concurrency, enabledRules.length);
     await Promise.all(Array.from({ length: workerCount }, worker));
 
-    if (evaluatedRuleIds.length > 0) {
-      await this.ruleRepository.batchUpdateLastEvaluatedAt(evaluatedRuleIds);
+    // Rules that queued actions update last_evaluated_at after successful TorBox execution (runActionBatch).
+    if (evaluatedRuleIdsNoAction.length > 0) {
+      await this.ruleRepository.batchUpdateLastEvaluatedAt(evaluatedRuleIdsNoAction);
     }
 
     return { executedCount, skippedCount, errorCount, pendingActions };

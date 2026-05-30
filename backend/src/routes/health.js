@@ -6,7 +6,7 @@ import { HealthCheckService } from '../services/healthCheck.js';
 export function setupHealthRoutes(app, backend) {
   const healthCheckService = new HealthCheckService(
     backend.masterDatabase,
-    backend.automationEngines,
+    null,
     backend.pollingScheduler
   );
 

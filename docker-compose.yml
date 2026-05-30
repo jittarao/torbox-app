@@ -18,6 +18,8 @@ services:
     environment:
       # Encryption key for securing sensitive data (required - set in .env file)
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - BACKEND_SERVICE_SECRET=${BACKEND_SERVICE_SECRET}
       # Frontend URL for CORS and redirects (defaults to localhost:3000)
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       # Node.js environment mode
@@ -87,6 +89,7 @@ services:
       - SEARCH_PAGE_DISABLED=${SEARCH_PAGE_DISABLED:-false}
       # Backend API URL (uses service name for internal Docker network communication)
       - BACKEND_URL=http://torbox-backend:3001
+      - BACKEND_SERVICE_SECRET=${BACKEND_SERVICE_SECRET}
       # Node.js environment mode
       - NODE_ENV=production
       # Disable Next.js telemetry data collection

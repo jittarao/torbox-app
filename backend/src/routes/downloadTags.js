@@ -1,4 +1,4 @@
-import { validateAuthIdMiddleware, validateNumericId } from '../middleware/validation.js';
+import { validateNumericId } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 
@@ -9,7 +9,7 @@ export function setupDownloadTagsRoutes(app, backend) {
   const { userRateLimiter } = backend;
 
   // GET /api/downloads/tags - Get all download-tag mappings (bulk)
-  app.get('/api/downloads/tags', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.get('/api/downloads/tags', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -69,7 +69,7 @@ export function setupDownloadTagsRoutes(app, backend) {
   });
 
   // POST /api/downloads/tags - Assign tags to downloads (bulk)
-  app.post('/api/downloads/tags', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.post('/api/downloads/tags', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 

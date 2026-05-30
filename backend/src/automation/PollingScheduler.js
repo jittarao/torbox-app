@@ -33,13 +33,23 @@ const STAGGER_PERCENTAGE = 0.3; // 30% of base interval (~9 min for 30-min windo
  * @param {string} errorMessage - Error message for timeout
  * @returns {Promise} - Promise that rejects on timeout
  */
-export async function withTimeout(promise, timeoutMs, errorMessage) {
+export async function withTimeout(promise, timeoutMs, errorMessage, options = {}) {
+  const { onTimeout } = options;
   let timeoutId;
   let timeoutOccurred = false;
 
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => {
       timeoutOccurred = true;
+      if (typeof onTimeout === 'function') {
+        try {
+          onTimeout();
+        } catch (callbackError) {
+          logger.warn('withTimeout onTimeout callback failed', {
+            errorMessage: callbackError.message,
+          });
+        }
+      }
       const timeoutError = new Error(errorMessage);
       timeoutError.name = 'TimeoutError';
       timeoutError.isTimeout = true;
@@ -757,6 +767,16 @@ class PollingScheduler {
    * @param {string} authId - User authentication ID
    * @private
    */
+  /**
+   * Drop cached poll engine so the next poll reloads rules from the user DB.
+   * Call after HTTP/admin rule mutations.
+   * @param {string} authId
+   */
+  invalidateCachedEngine(authId) {
+    if (!authId) return;
+    this._teardownEngineForAuth(authId);
+  }
+
   _teardownEngineForAuth(authId) {
     const engine = this.cachedEngines.get(authId);
     if (engine) {
@@ -879,6 +899,7 @@ class PollingScheduler {
           errorCount === 0,
           errorCount > 0 ? `${errorCount} actions failed` : null
         );
+        await engine.ruleRepository.updateLastEvaluatedAt(rule.id);
         cache.invalidateRecentRuleExecutions(authId);
       }
     } catch (error) {
@@ -954,21 +975,32 @@ class PollingScheduler {
       await pipelineMutex.acquire();
     }
 
+    let pipelinePromise = null;
     try {
       engineForPoll = await this.createEngineForPoll(auth_id, user.encrypted_key);
       poller.automationEngine = engineForPoll;
 
       const hasActiveRules = await engineForPoll.hasActiveRules();
 
+      pipelinePromise = poller.processFetchedTorrents(torrents, {
+        hasActiveRules,
+        calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
+          this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
+      });
+
       const result = await withTimeout(
-        poller.processFetchedTorrents(torrents, {
-          hasActiveRules,
-          calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
-            this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
-        }),
+        pipelinePromise,
         this.pollKickoutMs,
-        `Per-user process timeout after ${this.pollKickoutMs / 1000}s`
+        `Per-user process timeout after ${this.pollKickoutMs / 1000}s`,
+        { onTimeout: () => poller.resetPollingState() }
       );
+
+      if (result?.cancelled) {
+        throw Object.assign(new Error(result.error || 'Poll cancelled'), {
+          name: 'CancelledError',
+          isCancelled: true,
+        });
+      }
 
       const duration = (Date.now() - processStartTime) / 1000;
       await this.handleSuccessfulPoll(auth_id, poller, result, hasActiveRules, duration);
@@ -1006,6 +1038,13 @@ class PollingScheduler {
         counters.error++;
       }
     } finally {
+      if (pipelinePromise) {
+        const drainMs = Math.min(60000, this.pollKickoutMs);
+        await Promise.race([
+          pipelinePromise.catch(() => {}),
+          new Promise((resolve) => setTimeout(resolve, drainMs)),
+        ]);
+      }
       if (!callerHoldsPipelineMutex) {
         pipelineMutex.release();
         if (pipelineMutex.isEmpty()) {

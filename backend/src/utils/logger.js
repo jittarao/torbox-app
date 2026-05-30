@@ -185,9 +185,14 @@ class Logger {
    * @param {number} duration - Request duration in ms
    */
   http(req, res, duration = null, correlationId = null) {
+    const rawUrl = req.originalUrl || req.url || '';
+    const safeUrl = rawUrl.includes('authId=')
+      ? rawUrl.replace(/authId=[a-f0-9]{64}/gi, 'authId=[redacted]')
+      : rawUrl;
+
     const logData = {
       method: req.method,
-      url: req.originalUrl || req.url,
+      url: safeUrl,
       statusCode: res.statusCode,
       ip: req.ip || req.connection?.remoteAddress,
       userAgent: req.get('user-agent'),
@@ -201,8 +206,9 @@ class Logger {
       logData.duration = `${duration}ms`;
     }
 
-    if (req.query?.authId || req.headers['x-auth-id']) {
-      logData.authId = req.query?.authId || req.headers['x-auth-id'];
+    const authId = req.query?.authId || req.headers['x-auth-id'];
+    if (authId && typeof authId === 'string') {
+      logData.authIdPrefix = authId.slice(0, 8);
     }
 
     const message = `${req.method} ${req.originalUrl || req.url} ${res.statusCode}`;

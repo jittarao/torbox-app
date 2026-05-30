@@ -119,22 +119,28 @@ class DerivedFieldsEngine {
   async updateDerivedFields(changes, pollIntervalSeconds = 300) {
     const now = new Date();
 
-    // Process new torrents in parallel
-    await Promise.all(changes.new.map((torrent) => this.initializeTelemetry(torrent.id, torrent)));
-
-    // Process updated torrents in parallel
-    await Promise.all(
-      changes.updated.map(({ torrent, diff }) => this.updateTelemetry(torrent, diff, now))
-    );
-
-    // Process removed torrents
-    // Note: Shadow state is already deleted in StateDiffEngine._findRemovedTorrents(),
-    // which cascades to telemetry and speed_history via foreign key constraints (ON DELETE CASCADE)
-
-    // Process state transitions in parallel
-    await Promise.all(
-      changes.stateTransitions.map((transition) => this.handleStateTransition(transition, now))
-    );
+    // Single transaction per poll — avoids per-torrent lock churn from parallel writes
+    try {
+      const runBatch = this.db.transaction(() => {
+        for (const torrent of changes.new) {
+          this.initializeTelemetry(torrent.id, torrent);
+        }
+        for (const { torrent, diff } of changes.updated) {
+          this.updateTelemetry(torrent, diff, now);
+        }
+        for (const transition of changes.stateTransitions) {
+          this.handleStateTransition(transition, now);
+        }
+      });
+      runBatch();
+    } catch (error) {
+      logger.error('Derived fields batch update failed', error, {
+        errorMessage: error.message,
+        newCount: changes.new?.length ?? 0,
+        updatedCount: changes.updated?.length ?? 0,
+      });
+      throw error;
+    }
 
     // Backfill telemetry records that have NULL activity timestamps.
     // Only run when new torrents were added or state transitions occurred — these are the only
@@ -150,7 +156,7 @@ class DerivedFieldsEngine {
    * @param {string} torrentId - Torrent ID
    * @param {Object} torrent - Torrent object from API
    */
-  async initializeTelemetry(torrentId, torrent) {
+  initializeTelemetry(torrentId, torrent) {
     if (!torrentId) {
       logger.warn('Skipping telemetry initialization: missing torrentId');
       return;
@@ -221,14 +227,14 @@ class DerivedFieldsEngine {
    * @param {Object} diff - State diff object
    * @param {Date} now - Current timestamp
    */
-  async updateTelemetry(torrent, diff, now) {
+  updateTelemetry(torrent, diff, now) {
     const torrentId = torrent.id;
     const state = this.getTorrentState(torrent);
 
     // Get or initialize telemetry
     let telemetry = this.stmts.getTelemetry.get(torrentId);
     if (!telemetry) {
-      await this.initializeTelemetry(torrentId, torrent);
+      this.initializeTelemetry(torrentId, torrent);
       telemetry = this.stmts.getTelemetry.get(torrentId);
     }
 
@@ -594,7 +600,7 @@ class DerivedFieldsEngine {
    * @param {Object} transition - State transition object
    * @param {Date} now - Current timestamp
    */
-  async handleStateTransition(transition, now) {
+  handleStateTransition(transition, now) {
     const { torrent_id, from, to } = transition;
     const nowSQL = formatDateForSQL(now);
     const updates = {};

@@ -1,4 +1,4 @@
-import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
+import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 
@@ -37,7 +37,7 @@ export function setupCustomViewsRoutes(app, backend) {
   const { userRateLimiter } = backend;
 
   // GET /api/custom-views - List all custom views
-  app.get('/api/custom-views', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.get('/api/custom-views', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -78,7 +78,7 @@ export function setupCustomViewsRoutes(app, backend) {
   });
 
   // POST /api/custom-views - Create custom view
-  app.post('/api/custom-views', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.post('/api/custom-views', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -154,7 +154,7 @@ export function setupCustomViewsRoutes(app, backend) {
   // GET /api/custom-views/:id - Get single custom view
   app.get(
     '/api/custom-views/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -209,7 +209,7 @@ export function setupCustomViewsRoutes(app, backend) {
   // PUT /api/custom-views/:id - Update custom view
   app.put(
     '/api/custom-views/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -337,7 +337,7 @@ export function setupCustomViewsRoutes(app, backend) {
   // DELETE /api/custom-views/:id - Delete custom view
   app.delete(
     '/api/custom-views/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {

@@ -14,4 +14,13 @@ describe('PollingScheduler withTimeout', () => {
       isTimeout: true,
     });
   });
+
+  it('invokes onTimeout callback when deadline is exceeded', async () => {
+    let cancelled = false;
+    const slow = new Promise((resolve) => setTimeout(() => resolve('late'), 2000));
+    await expect(
+      withTimeout(slow, 30, 'timed out', { onTimeout: () => (cancelled = true) })
+    ).rejects.toMatchObject({ name: 'TimeoutError' });
+    expect(cancelled).toBe(true);
+  });
 });
