@@ -2,13 +2,18 @@
 
 import AppShell from '@/components/navigation/AppShell';
 import LinkHistory from '@/components/LinkHistory';
+import Spinner from '@/components/shared/Spinner';
 import { useSession } from '@/components/shared/hooks/useSession';
 
 export default function LinkHistoryPageClient() {
   const { apiKey, hydrated } = useSession();
 
   if (!hydrated) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface dark:bg-surface-dark">
+        <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
+      </div>
+    );
   }
 
   return (

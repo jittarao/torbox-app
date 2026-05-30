@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET(request, { params }) {
   const { provider } = await params;
   const { searchParams } = new URL(request.url);
@@ -30,6 +30,6 @@ export async function GET(request, { params }) {
     return NextResponse.redirect(oauthUrl);
   } catch (error) {
     console.error('Error starting OAuth flow:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

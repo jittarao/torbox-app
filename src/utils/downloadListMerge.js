@@ -21,7 +21,9 @@ function fileListSignature(files) {
 }
 
 /**
- * Active or in-progress rows always get a new reference so progress/speed update in the UI.
+ * Checks if a row is in a state where it could still change (active, downloading, etc.).
+ * No longer forces new references — structural sharing applies to all items equally.
+ * Used to avoid re-measuring rows that are known to be stable.
  */
 export function isRowLikelyChanging(row) {
   if (!row) return false;

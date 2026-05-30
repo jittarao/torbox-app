@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET(request) {
   try {
     // Route handlers are dynamic by default with Cache Components
@@ -81,7 +81,7 @@ export async function GET(request) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: sanitizeError(error),
       },
       { status: 500 }
     );

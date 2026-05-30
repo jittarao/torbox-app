@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 async function proxyRequest(request, pathSegments) {
@@ -104,7 +104,7 @@ async function proxyRequest(request, pathSegments) {
   } catch (error) {
     console.error('Error proxying admin request:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Request failed' },
+      { success: false, error: sanitizeError(error) || 'Request failed' },
       { status: 500 }
     );
   }

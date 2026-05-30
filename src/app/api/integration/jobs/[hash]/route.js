@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET(request, { params }) {
   const { hash } = await params;
   const headersList = await headers();
@@ -37,6 +37,6 @@ export async function GET(request, { params }) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching integration job:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

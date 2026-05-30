@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { API_SEARCH_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET(req) {
   if (isSearchPageDisabled()) {
     return getSearchPageDisabledResponse();
@@ -93,7 +93,7 @@ export async function GET(req) {
     return new Response(
       JSON.stringify({
         error: errorMessage,
-        originalError: error.message,
+        originalError: sanitizeError(error),
       }),
       { status: statusCode }
     );

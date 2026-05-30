@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // GET /api/uploads/[id]/download - Download original file
@@ -54,6 +54,6 @@ export async function GET(request, { params }) {
     });
   } catch (error) {
     console.error('Error downloading upload file:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

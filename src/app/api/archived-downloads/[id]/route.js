@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
 import { backendProxyHeaders } from '@/utils/backendRequest';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 /**
@@ -71,6 +71,6 @@ export async function DELETE(request, { params }) {
     }
   } catch (error) {
     console.error('Error deleting archived download from backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

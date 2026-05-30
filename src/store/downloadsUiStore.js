@@ -84,12 +84,5 @@ export function selectIsRowExpanded(itemId) {
   return (state) => Boolean(state.expandedById[itemId]);
 }
 
-export function selectFilterSortCriteria(state) {
-  return {
-    search: state.search,
-    statusFilter: state.statusFilter,
-    appliedFilters: state.appliedFilters,
-    sortField: state.sortField,
-    sortDirection: state.sortDirection,
-  };
-}
+// selectFilterSortCriteria removed — the object literal pattern is unsafe without useShallow.
+// Consumers should call useShallow((s) => ({...})) directly (see useDownloadsListData.js:62-70).

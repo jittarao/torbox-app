@@ -4,7 +4,7 @@ import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const CACHE_TYPE = 'usenet';
 
 // Get all usenet downloads
@@ -129,7 +129,7 @@ export async function GET(request) {
     return NextResponse.json(
       {
         error: errorMessage,
-        originalError: error.message,
+        originalError: sanitizeError(error),
       },
       { status: statusCode }
     );
@@ -255,7 +255,7 @@ export async function POST(request) {
       data: uploadData.data,
     });
   } catch (error) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -334,6 +334,6 @@ export async function DELETE(request) {
 
     return Response.json(data);
   } catch (error) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

@@ -3,7 +3,7 @@ import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const CACHE_TYPE = 'torrents';
 
 // Get all torrents
@@ -93,10 +93,10 @@ export async function GET(request) {
 
     // Handle timeout specifically
     if (isTorboxFetchTimeout(error)) {
-      return Response.json({ success: false, error: error.message }, { status: 408 });
+      return Response.json({ success: false, error: sanitizeError(error) }, { status: 408 });
     }
 
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -238,7 +238,7 @@ export async function POST(request) {
       data: uploadData.data,
     });
   } catch (error) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -330,7 +330,7 @@ export async function DELETE(request) {
       {
         success: false,
         error:
-          error.message ||
+          sanitizeError(error) ||
           'There was an unknown error deleting this torrent. Please try again later.',
         detail: 'DOWNLOAD_SERVER_ERROR',
       },
