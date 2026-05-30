@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatSize, SIZE_BASE_DECIMAL } from '@/components/downloads/utils/formatters';
 import Spinner from '@/components/shared/Spinner';
 import { AlertCircle, BarChart3, Check, CheckCircle, Copy, CreditCard, Download, User } from '@/components/icons';
 import BandwidthChart from '@/components/user/BandwidthChart';
@@ -10,6 +11,7 @@ import { buildTorboxSubscriptionReferralUrl } from '@/utils/referralLinks';
 
 export default function UserProfile({ apiKey, setToast }) {
   const t = useTranslations('User');
+  const locale = useLocale();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -107,17 +109,7 @@ export default function UserProfile({ apiKey, setToast }) {
     }
   };
 
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    try {
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    } catch (err) {
-      return '0 B';
-    }
-  };
+  const formatTransferBytes = (bytes) => formatSize(bytes ?? 0, locale, SIZE_BASE_DECIMAL);
 
   const getPlanName = (planId) => {
     return getPlanNameUtil(planId, t);
@@ -356,7 +348,7 @@ export default function UserProfile({ apiKey, setToast }) {
                   {t('profile.totalSize')}
                 </span>
                 <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {formatBytes(userData.total_bytes_downloaded || 0)}
+                  {formatTransferBytes(userData.total_bytes_downloaded || 0)}
                 </span>
               </div>
 
@@ -365,7 +357,7 @@ export default function UserProfile({ apiKey, setToast }) {
                   {t('profile.totalUploaded')}
                 </span>
                 <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {formatBytes(userData.total_bytes_uploaded || 0)}
+                  {formatTransferBytes(userData.total_bytes_uploaded || 0)}
                 </span>
               </div>
 

@@ -38,7 +38,17 @@ const getSpeedFormatter = (locale) => {
   return speedFormatters.get(locale);
 };
 
-export const formatSize = (bytes, locale = 'en') => {
+/** Binary (1024) — torrent file sizes. */
+export const SIZE_BASE_BINARY = 1024;
+/** Decimal SI (1000) — TorBox API bandwidth / transfer totals (TB quotas). */
+export const SIZE_BASE_DECIMAL = 1000;
+
+/**
+ * @param {number} bytes
+ * @param {string} [locale]
+ * @param {number} [base] 1000 for API transfer stats, 1024 for file sizes
+ */
+export const formatSize = (bytes, locale = 'en', base = SIZE_BASE_BINARY) => {
   if (bytes === null || bytes === undefined || isNaN(bytes) || bytes < 0) {
     return 'Unknown';
   }
@@ -47,13 +57,13 @@ export const formatSize = (bytes, locale = 'en') => {
   if (bytes === 0) return '0 B';
 
   try {
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const i = Math.floor(Math.log(bytes) / Math.log(base));
 
     if (i < 0 || i >= sizes.length) {
       return 'Unknown';
     }
 
-    const value = bytes / Math.pow(1024, i);
+    const value = bytes / Math.pow(base, i);
 
     return getSizeFormatter(locale).format(value) + ' ' + sizes[i];
   } catch (error) {
