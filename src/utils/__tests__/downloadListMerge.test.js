@@ -7,6 +7,7 @@ import {
   sortItemsNonMutating,
   downloadListIdSignature,
   downloadListReconcileSignature,
+  itemsReconcileStructureUnchanged,
   isRowLikelyChanging,
 } from '../downloadListMerge.js';
 
@@ -167,5 +168,24 @@ describe('downloadListReconcileSignature', () => {
     expect(downloadListReconcileSignature(withoutFiles)).not.toBe(
       downloadListReconcileSignature(withFiles)
     );
+  });
+});
+
+describe('itemsReconcileStructureUnchanged', () => {
+  const row = { id: 1, assetType: 'torrents' };
+
+  test('returns true for new array with same row references', () => {
+    const prev = [row];
+    expect(itemsReconcileStructureUnchanged(prev, [...prev])).toBe(true);
+  });
+
+  test('returns false when a row reference changes', () => {
+    expect(
+      itemsReconcileStructureUnchanged([row], [{ ...row, progress: 50 }])
+    ).toBe(false);
+  });
+
+  test('returns false when list length changes', () => {
+    expect(itemsReconcileStructureUnchanged([row], [row, row])).toBe(false);
   });
 });

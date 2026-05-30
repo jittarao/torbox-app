@@ -137,6 +137,20 @@ export function downloadListReconcileSignature(items) {
   return parts.join(',');
 }
 
+/**
+ * True when poll merge reused every row reference (selection reconcile signature unchanged).
+ * O(n) reference checks only — skips full signature string build on typical poll ticks.
+ */
+export function itemsReconcileStructureUnchanged(prevItems, nextItems) {
+  if (prevItems === nextItems) return true;
+  if (!prevItems || !nextItems) return false;
+  if (prevItems.length !== nextItems.length) return false;
+  for (let i = 0; i < nextItems.length; i++) {
+    if (nextItems[i] !== prevItems[i]) return false;
+  }
+  return true;
+}
+
 /** @param {'torrents' | 'usenet' | 'webdl'} assetType @param {number|string} id */
 export function entityKey(assetType, id) {
   return `${assetType}:${id}`;

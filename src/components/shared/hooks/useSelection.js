@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
-import { downloadListReconcileSignature } from '@/utils/downloadListMerge';
+import {
+  downloadListReconcileSignature,
+  itemsReconcileStructureUnchanged,
+} from '@/utils/downloadListMerge';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
 export function useSelection(items, activeType = 'all', apiKey = '') {
@@ -12,7 +15,6 @@ export function useSelection(items, activeType = 'all', apiKey = '') {
     setSelectedItems,
     setActiveType,
     setApiKeyScope,
-    reconcileWithItems,
     handleSelectAll,
     handleFileSelect,
   } = useDownloadsSelectionStore(
@@ -21,11 +23,12 @@ export function useSelection(items, activeType = 'all', apiKey = '') {
       setSelectedItems: s.setSelectedItems,
       setActiveType: s.setActiveType,
       setApiKeyScope: s.setApiKeyScope,
-      reconcileWithItems: s.reconcileWithItems,
       handleSelectAll: s.handleSelectAll,
       handleFileSelect: s.handleFileSelect,
     }))
   );
+
+  const prevItemsRef = useRef(null);
 
   useEffect(() => {
     setApiKeyScope(apiKey);
@@ -35,16 +38,15 @@ export function useSelection(items, activeType = 'all', apiKey = '') {
     setActiveType(activeType);
   }, [activeType, setActiveType]);
 
-  // Compute signature during render — the effect only fires when the
-  // actual item structure changes, not on every poll tick.
-  const reconcileSignature = useMemo(
-    () => downloadListReconcileSignature(items),
-    [items]
-  );
-
-  useEffect(() => {
-    reconcileWithItems(items);
-  }, [reconcileSignature, reconcileWithItems]);
+  // Sync during render: skip O(n) signature when merge preserved row refs (typical poll).
+  if (!itemsReconcileStructureUnchanged(prevItemsRef.current, items)) {
+    const signature = downloadListReconcileSignature(items);
+    const { listSignature, reconcileWithItems } = useDownloadsSelectionStore.getState();
+    if (signature !== listSignature) {
+      reconcileWithItems(items, signature);
+    }
+  }
+  prevItemsRef.current = items;
 
   const hasSelectedFiles = () => {
     return Array.from(selectedItems.files.values()).some((files) => files.size > 0);
