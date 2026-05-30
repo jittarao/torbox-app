@@ -87,10 +87,15 @@ export default function AutoRefreshIndicator({
     if (refreshRateLimited) return t('refreshDelayedRateLimit');
     if (mode === 'paused') return t('refreshPaused');
     if (mode === 'inactive') return t('autoRefreshInactive');
-    if (mode === 'slow' || mode === 'autoStart') {
+    if (mode === 'autoStartQueued') {
       return secondsLeft != null
         ? t('nextRefreshSlow', { seconds: secondsLeft })
         : t('autoRefreshSlowHint');
+    }
+    if (mode === 'autoStartWatch') {
+      return secondsLeft != null
+        ? t('nextRefreshWatch', { seconds: secondsLeft })
+        : t('autoRefreshWatchHint');
     }
     if (secondsLeft != null && secondsLeft > 0) {
       return t('nextRefreshIn', { seconds: secondsLeft });
@@ -98,7 +103,8 @@ export default function AutoRefreshIndicator({
     return t('refreshingSoon');
   }, [isRefreshing, refreshRateLimited, mode, secondsLeft, t]);
 
-  const showCountdown = mode === 'active' || mode === 'slow' || mode === 'autoStart';
+  const showCountdown =
+    mode === 'active' || mode === 'autoStartQueued' || mode === 'autoStartWatch';
   const ringMuted = mode === 'paused' || mode === 'inactive';
 
   return (

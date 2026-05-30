@@ -457,10 +457,12 @@
   "FetchStatus": {
     "autoRefreshInactive": "Auto-refresh resumes when you return to this tab.",
     "autoRefreshSlowHint": "Slower refresh while this tab is in the background.",
+    "autoRefreshWatchHint": "Checking for new queued torrents periodically (auto-start on).",
     "dismiss": "Dismiss",
     "lastUpdated": "Last updated {ago}.",
     "nextRefreshIn": "Next refresh in {seconds}s",
     "nextRefreshSlow": "Background refresh in {seconds}s",
+    "nextRefreshWatch": "Queue check in {seconds}s",
     "refreshDelayedRateLimit": "Refresh delayed — too many requests.",
     "refreshingSoon": "Refreshing soon…",
     "refreshNow": "Refresh now",

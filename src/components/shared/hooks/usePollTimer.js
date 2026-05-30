@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { getAutoStartOptions } from '@/utils/utility';
+import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torboxDownloadsStore';
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
+import { resolvePollInterval, shouldPollTorrentsOnly } from './pollInterval';
 
 const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 
@@ -37,9 +39,8 @@ export function usePollTimer({
     };
   }, []);
 
-  /** Keep polling in background whenever auto-start is on (do not rely on stale store queue state). */
-  const autoStartPollActive =
-    autoStartEnabled && (type === 'torrents' || type === 'all');
+  const autoStartApplies = autoStartEnabled && (type === 'torrents' || type === 'all');
+  const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
 
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);
@@ -57,7 +58,6 @@ export function usePollTimer({
     let pollTimeoutId = null;
     let graceStopTimeoutId = null;
     let cancelled = false;
-    let currentPollingInterval = POLLING_CONFIG.activeIntervalMs;
 
     const presence = () => getUserPresenceRef.current();
 
@@ -77,35 +77,35 @@ export function usePollTimer({
       return Date.now() - since < POLLING_CONFIG.engagementGracePeriodMs;
     };
 
-    const isAutoStartPollingEnabled = () => {
+    const readHasQueuedTorrents = () => {
       if (type !== 'torrents' && type !== 'all') return false;
-      return getAutoStartOptions()?.autoStart === true;
+      return selectHasQueuedTorrents(useTorboxDownloadsStore.getState());
     };
 
-    const shouldPollWhileDisengaged = () => {
-      if (pollingPaused) return false;
-      return isWithinEngagementGrace() || isAutoStartPollingEnabled();
-    };
+    const getPollState = () =>
+      resolvePollInterval({
+        pollingPaused,
+        isDisengaged: isDisengaged(),
+        isWithinEngagementGrace: isWithinEngagementGrace(),
+        autoStartEnabled: autoStartApplies && getAutoStartOptions()?.autoStart === true,
+        hasQueuedTorrents: readHasQueuedTorrents(),
+      });
 
-    const getPollIntervalMs = () => {
-      if (!isDisengaged()) return POLLING_CONFIG.activeIntervalMs;
-      if (isWithinEngagementGrace()) return POLLING_CONFIG.activeIntervalMs;
-      if (isAutoStartPollingEnabled()) return POLLING_CONFIG.autoStartPollIntervalMs;
-      return currentPollingInterval;
-    };
+    const useTorrentOnlyPoll = () =>
+      shouldPollTorrentsOnly({
+        isDisengaged: isDisengaged(),
+        isWithinEngagementGrace: isWithinEngagementGrace(),
+        autoStartEnabled: autoStartApplies && getAutoStartOptions()?.autoStart === true,
+      });
 
-    const getScheduleMode = () => {
-      if (pollingPaused) return 'paused';
-      if (!isDisengaged()) return 'active';
-      if (isWithinEngagementGrace()) return 'active';
-      if (isAutoStartPollingEnabled()) return 'autoStart';
-      return 'inactive';
-    };
-
-    const emitSchedule = (delayMs, mode = getScheduleMode()) => {
+    const emitSchedule = (delayMs, pollState = getPollState()) => {
       const nextPollAt = delayMs > 0 ? Date.now() + delayMs : null;
       onScheduleUpdateRef.current?.(
-        createPollSchedule(mode, nextPollAt, delayMs > 0 ? delayMs : currentPollingInterval)
+        createPollSchedule(
+          pollState.mode,
+          nextPollAt,
+          delayMs > 0 ? delayMs : pollState.intervalMs
+        )
       );
     };
 
@@ -152,10 +152,20 @@ export function usePollTimer({
     };
 
     const runPollTick = (bypassCache = false) => {
+      if (type === 'all' && useTorrentOnlyPoll()) {
+        if (isRateLimitedRef.current('torrents')) {
+          onPollSkippedRef.current?.();
+          return;
+        }
+        onPollRef.current('torrents', bypassCache);
+        return;
+      }
+
       if (type === 'all') {
         pollAllAssetTypes(bypassCache);
         return;
       }
+
       if (isRateLimitedRef.current(type)) {
         onPollSkippedRef.current?.();
         return;
@@ -165,18 +175,25 @@ export function usePollTimer({
 
     const scheduleNextPoll = (delayMs) => {
       if (cancelled) return;
-      emitSchedule(delayMs);
+      const pollState = getPollState();
+      if (!pollState.shouldPoll) {
+        emitSchedule(0, pollState);
+        return;
+      }
+
+      emitSchedule(delayMs, pollState);
       pollTimeoutId = setTimeout(() => {
         if (cancelled) return;
-        const disengaged = isDisengaged();
-        if (!disengaged || shouldPollWhileDisengaged()) {
+
+        const tickState = getPollState();
+        if (tickState.shouldPoll) {
           runPollTick(false);
         }
-        currentPollingInterval = getPollIntervalMs();
-        if (!disengaged || shouldPollWhileDisengaged()) {
-          scheduleNextPoll(currentPollingInterval);
+
+        if (tickState.shouldPoll) {
+          scheduleNextPoll(tickState.intervalMs);
         } else {
-          emitSchedule(0, 'inactive');
+          emitSchedule(0, tickState);
         }
       }, delayMs);
     };
@@ -187,26 +204,22 @@ export function usePollTimer({
         pollTimeoutId = null;
       }
       clearGraceStopTimeout();
-      emitSchedule(0, getScheduleMode());
+      emitSchedule(0, getPollState());
     };
 
-    const startPolling = (firstDelayMs = currentPollingInterval) => {
+    const startPolling = (firstDelayMs) => {
       stopPolling();
-      if (pollingPaused) {
-        emitSchedule(0, 'paused');
+      const pollState = getPollState();
+      if (!pollState.shouldPoll) {
+        emitSchedule(0, pollState);
         return;
       }
 
-      currentPollingInterval = getPollIntervalMs();
-      const disengaged = isDisengaged();
+      const delay = firstDelayMs ?? pollState.intervalMs;
+      scheduleNextPoll(delay);
 
-      if (!disengaged || shouldPollWhileDisengaged()) {
-        scheduleNextPoll(firstDelayMs);
-        if (disengaged) {
-          scheduleGraceStop();
-        }
-      } else {
-        emitSchedule(0, 'inactive');
+      if (isDisengaged()) {
+        scheduleGraceStop();
       }
     };
 
@@ -221,12 +234,13 @@ export function usePollTimer({
       graceStopTimeoutId = setTimeout(() => {
         graceStopTimeoutId = null;
         if (cancelled || !isDisengaged()) return;
-        if (shouldPollWhileDisengaged()) {
+        const pollState = getPollState();
+        if (pollState.shouldPoll) {
           stopPolling();
-          startPolling(getPollIntervalMs());
-          return;
+          startPolling(pollState.intervalMs);
+        } else {
+          stopPolling();
         }
-        stopPolling();
       }, remainingMs);
     };
 
@@ -244,21 +258,23 @@ export function usePollTimer({
 
     const handleDisengaged = () => {
       stopPolling();
-      if (shouldPollWhileDisengaged()) {
-        startPolling(POLLING_CONFIG.activeIntervalMs);
+      const pollState = getPollState();
+      if (pollState.shouldPoll) {
+        startPolling(pollState.intervalMs);
       } else {
-        emitSchedule(0, 'inactive');
+        emitSchedule(0, pollState);
       }
     };
 
     onReEngagedRef.current = handleReEngaged;
     onDisengagedRef.current = handleDisengaged;
 
-    const initialDelayMs =
-      isDisengaged() && shouldPollWhileDisengaged()
-        ? getPollIntervalMs()
+    const initialState = getPollState();
+    const initialDelay =
+      initialState.shouldPoll && isDisengaged() && !isWithinEngagementGrace()
+        ? initialState.intervalMs
         : POLLING_CONFIG.activeIntervalMs;
-    startPolling(initialDelayMs);
+    startPolling(initialDelay);
 
     return () => {
       cancelled = true;
@@ -268,5 +284,12 @@ export function usePollTimer({
       onDisengagedRef.current = () => {};
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
     };
-  }, [type, pollingPaused, autoStartPollActive, onReEngagedRef, onDisengagedRef]);
+  }, [
+    type,
+    pollingPaused,
+    autoStartApplies,
+    hasQueuedTorrents,
+    onReEngagedRef,
+    onDisengagedRef,
+  ]);
 }

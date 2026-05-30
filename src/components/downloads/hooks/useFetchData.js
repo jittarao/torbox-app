@@ -21,11 +21,12 @@ import {
 import { useDownloadListPolling } from '@/components/shared/hooks/useDownloadListPolling';
 import { useAutomationTorrentEvents } from '@/components/shared/hooks/useAutomationTorrentEvents';
 
-// Polling rules (intervals in pollingConfig.js):
-// 1. 15s polling when the tab is visible, the user is active, and refresh is not paused
-// 2. 15s polling for engagementGracePeriodMs after tab hide or user idle, then stop (unless rule 3)
-// 3. 15s polling while disengaged when auto-start is on (torrents or All tab)
-// 4. On the All tab, fetches torrents, usenet, and webdl on each poll tick
+// Polling rules (intervals in pollingConfig.js + pollInterval.js):
+// 1. 15s when the tab is visible/active, or during engagement grace after hide/idle
+// 2. Disengaged + auto-start + queued torrents → 30s (torrents-only fetch on All tab)
+// 3. Disengaged + auto-start + empty queue → 15min watch poll for new queue items
+// 4. Disengaged without auto-start → polling stops
+// 5. On the All tab while engaged, each tick fetches torrents, usenet, and webdl
 
 export function useFetchData(apiKey, type = 'torrents') {
   const pollingPaused = usePollingPauseStore(selectIsPaused);
