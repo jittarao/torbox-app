@@ -139,6 +139,9 @@ export async function GET(request) {
 export async function POST(request) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
+  if (!apiKey) {
+    return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
+  }
   const formData = await request.formData();
 
   const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
