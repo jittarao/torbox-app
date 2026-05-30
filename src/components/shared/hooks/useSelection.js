@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { downloadListReconcileSignature } from '@/utils/downloadListMerge';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
 export function useSelection(items, activeType = 'all', apiKey = '') {
@@ -34,9 +35,16 @@ export function useSelection(items, activeType = 'all', apiKey = '') {
     setActiveType(activeType);
   }, [activeType, setActiveType]);
 
+  // Compute signature during render — the effect only fires when the
+  // actual item structure changes, not on every poll tick.
+  const reconcileSignature = useMemo(
+    () => downloadListReconcileSignature(items),
+    [items]
+  );
+
   useEffect(() => {
     reconcileWithItems(items);
-  }, [items, reconcileWithItems]);
+  }, [reconcileSignature, reconcileWithItems]);
 
   const hasSelectedFiles = () => {
     return Array.from(selectedItems.files.values()).some((files) => files.size > 0);

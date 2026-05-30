@@ -3,6 +3,7 @@
 import { useCallback, useRef } from 'react';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { useFileInteractionStore } from '@/store/fileInteractionStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { getIdFieldForItem, resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { getFilesVisibleForDownloadSearch } from '../utils/downloadSearch';
@@ -44,8 +45,6 @@ export function useDownloadRowInteractions({
   downloadSingle,
   setToast,
   toastMessages,
-  setIsDownloading,
-  setIsCopying,
 }) {
   const lastClickedItemIndexRef = useRef(null);
   const lastClickedFileIndexRef = useRef(null);
@@ -141,10 +140,11 @@ export function useDownloadRowInteractions({
   const handleFileDownload = useCallback(
     async (itemId, file, copyLink = false) => {
       const key = assetKey(itemId, file.id);
+      const store = useFileInteractionStore.getState();
       if (copyLink) {
-        setIsCopying((prev) => ({ ...prev, [key]: true }));
+        store.setCopying(key, true);
       } else {
-        setIsDownloading((prev) => ({ ...prev, [key]: true }));
+        store.setDownloading(key, true);
       }
       const options = { fileId: file.id, filename: file.name };
 
@@ -173,10 +173,11 @@ export function useDownloadRowInteractions({
           });
         })
         .finally(() => {
+          const st = useFileInteractionStore.getState();
           if (copyLink) {
-            setIsCopying((prev) => ({ ...prev, [key]: false }));
+            st.setCopying(key, false);
           } else {
-            setIsDownloading((prev) => ({ ...prev, [key]: false }));
+            st.setDownloading(key, false);
           }
         });
     },
@@ -186,8 +187,6 @@ export function useDownloadRowInteractions({
       downloadSingle,
       setToast,
       toastMessages,
-      setIsCopying,
-      setIsDownloading,
     ]
   );
 

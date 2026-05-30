@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useState,
   useRef,
   useMemo,
   useDeferredValue,
@@ -21,6 +20,7 @@ import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
+import { useFileInteractionStore } from '@/store/fileInteractionStore';
 
 function useTableBodyState(props) {
   const {
@@ -49,9 +49,6 @@ function useTableBodyState(props) {
 
   const t = useTranslations('TableBody');
   const commonT = useTranslations('Common');
-  const [isDownloading, setIsDownloading] = useState({});
-  const [isCopying, setIsCopying] = useState({});
-  const [isStreaming, setIsStreaming] = useState({});
   const { downloadSingle } = useDownloadsActions();
   const isMobile = useIsMobile();
   const tbodyRef = useRef(null);
@@ -177,14 +174,12 @@ function useTableBodyState(props) {
     downloadSingle,
     setToast,
     toastMessages,
-    setIsDownloading,
-    setIsCopying,
   });
 
   const handleFileStream = useCallback(
     async (itemId, file) => {
       const key = interactions.assetKey(itemId, file.id);
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      useFileInteractionStore.getState().setStreaming(key, true);
       try {
         if (onFileStreamInit) {
           await onFileStreamInit(itemId, file);
@@ -196,7 +191,7 @@ function useTableBodyState(props) {
           type: 'error',
         });
       } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+        useFileInteractionStore.getState().setStreaming(key, false);
       }
     },
     [interactions.assetKey, onFileStreamInit, setToast]
@@ -205,7 +200,7 @@ function useTableBodyState(props) {
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
       const key = interactions.assetKey(itemId, file.id);
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      useFileInteractionStore.getState().setStreaming(key, true);
       try {
         if (onAudioPlay) {
           await onAudioPlay(itemId, file);
@@ -217,7 +212,7 @@ function useTableBodyState(props) {
           type: 'error',
         });
       } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+        useFileInteractionStore.getState().setStreaming(key, false);
       }
     },
     [interactions.assetKey, onAudioPlay, setToast]
@@ -233,11 +228,6 @@ function useTableBodyState(props) {
     estimateSize,
     toastMessages,
     interactions,
-    isDownloading,
-    isCopying,
-    isStreaming,
-    setIsDownloading,
-    setIsCopying,
     handleFileStream,
     handleAudioPlay,
     activeColumns,
@@ -343,9 +333,6 @@ function VirtualizedTableBodyInner({
             handleAudioPlay={state.handleAudioPlay}
             activeColumns={state.activeColumns}
             downloadHistoryLookup={state.downloadHistoryLookup}
-            isCopying={state.isCopying}
-            isDownloading={state.isDownloading}
-            isStreaming={state.isStreaming}
             isBlurred={state.isBlurred}
             tableWidth={state.tableWidth}
             file={row.file}

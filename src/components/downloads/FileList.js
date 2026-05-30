@@ -12,6 +12,12 @@ import {
   useIsFileSelected,
   useIsItemBlockingFileSelect,
 } from '@/components/shared/hooks/useSelection';
+import {
+  selectIsFileCopying,
+  selectIsFileDownloading,
+  selectIsFileStreaming,
+  useFileInteractionStore,
+} from '@/store/fileInteractionStore';
 import { tableActionsCellInner } from './utils/responsiveLayout';
 
 const FILE_ACTION_BUTTON_CLASS =
@@ -30,9 +36,6 @@ function FileListFile({
   onFileDownload,
   onFileStream,
   onAudioPlay,
-  isCopying,
-  isDownloading,
-  isStreaming,
   isMobile,
   isFileDownloaded,
   isFileLinkFailed,
@@ -40,7 +43,10 @@ function FileListFile({
   const t = useTranslations('FileActions');
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = useIsItemBlockingFileSelect(selectionId);
-  const assetKey = `${itemId}-${file.id}`;
+  const storeFileKey = `${String(itemId)}-${String(file.id)}`;
+  const isFileDownloading = useFileInteractionStore(selectIsFileDownloading(storeFileKey));
+  const isFileCopying = useFileInteractionStore(selectIsFileCopying(storeFileKey));
+  const isFileStreaming = useFileInteractionStore(selectIsFileStreaming(storeFileKey));
 
   const renderFileActions = () => {
     const showVideoPlay = isVideoFile(file) && onFileStream;
@@ -56,12 +62,12 @@ function FileListFile({
                 e.stopPropagation();
                 onFileStream(itemId, file);
               }}
-              disabled={isStreaming?.[assetKey]}
+              disabled={isFileStreaming}
               className={FILE_ACTION_BUTTON_CLASS}
               title={t('play')}
               aria-label={t('play')}
             >
-              {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Play />}
+              {isFileStreaming ? <Spinner size="sm" /> : <Play />}
             </button>
           ) : showAudioPlay ? (
             <button
@@ -70,12 +76,12 @@ function FileListFile({
                 e.stopPropagation();
                 onAudioPlay(itemId, file);
               }}
-              disabled={isStreaming?.[assetKey]}
+              disabled={isFileStreaming}
               className={FILE_ACTION_BUTTON_CLASS}
               title={t('play')}
               aria-label={t('play')}
             >
-              {isStreaming?.[assetKey] ? <Spinner size="sm" /> : <Play />}
+              {isFileStreaming ? <Spinner size="sm" /> : <Play />}
             </button>
           ) : null}
         </span>
@@ -86,12 +92,12 @@ function FileListFile({
               e.stopPropagation();
               onFileDownload(itemId, file.id, true);
             }}
-            disabled={isCopying[assetKey]}
+            disabled={isFileCopying}
             className={FILE_ACTION_BUTTON_CLASS}
             title={t('copyLink')}
             aria-label={t('copyLink')}
           >
-            {isCopying[assetKey] ? <Spinner size="sm" /> : <Copy />}
+            {isFileCopying ? <Spinner size="sm" /> : <Copy />}
           </button>
         </span>
         <span className={FILE_ACTION_SLOT_CLASS}>
@@ -101,12 +107,12 @@ function FileListFile({
               e.stopPropagation();
               onFileDownload(itemId, file.id);
             }}
-            disabled={isDownloading[assetKey]}
+            disabled={isFileDownloading}
             className={FILE_ACTION_BUTTON_CLASS}
             title={t('download')}
             aria-label={t('download')}
           >
-            {isDownloading[assetKey] ? <Spinner size="sm" /> : <Download />}
+            {isFileDownloading ? <Spinner size="sm" /> : <Download />}
           </button>
         </span>
       </div>
@@ -219,9 +225,6 @@ function FileList({
   onFileDownload,
   onFileStream,
   onAudioPlay,
-  isCopying,
-  isDownloading,
-  isStreaming,
   isMobile,
   isFileDownloaded,
   isFileLinkFailed,
@@ -241,9 +244,6 @@ function FileList({
             onFileDownload={onFileDownload}
             onFileStream={onFileStream}
             onAudioPlay={onAudioPlay}
-            isCopying={isCopying}
-            isDownloading={isDownloading}
-            isStreaming={isStreaming}
             isMobile={isMobile}
             isFileDownloaded={isFileDownloaded}
             isFileLinkFailed={isFileLinkFailed}
