@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 
 export default function AdminLoginPageClient() {
@@ -10,9 +11,13 @@ export default function AdminLoginPageClient() {
   const [error, setError] = useState(null);
   const { push } = useRouter();
   const params = useParams();
-  const authenticate = useAdminStore((s) => s.authenticate);
-  const isAuthenticated = useAdminStore((s) => s.isAuthenticated);
-  const verifyAuth = useAdminStore((s) => s.verifyAuth);
+  const { authenticate, isAuthenticated, verifyAuth } = useAdminStore(
+    useShallow((s) => ({
+      authenticate: s.authenticate,
+      isAuthenticated: s.isAuthenticated,
+      verifyAuth: s.verifyAuth,
+    }))
+  );
 
   useEffect(() => {
     // Check if already authenticated

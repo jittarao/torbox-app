@@ -150,7 +150,6 @@
       "downloadSpeedDescription": "Velocidad de descarga instantánea actual",
       "downloadStalledTime": "Tiempo de descarga bloqueado",
       "downloadStalledTimeDescription": "Tiempo desde que la actividad de descarga se detuvo (en minutos)",
-      "eta": "ETA",
       "etaDescription": "Tiempo estimado hasta la finalización de la descarga (en minutos)",
       "expiresAt": "Expira a",
       "expiresAtDescription": "Horas restantes hasta la expiración; el valor se compara en horas",
@@ -203,7 +202,6 @@
     "delete": "Eliminar",
     "details": "Detalles",
     "enabledAt": "habilitado a",
-    "error": "Error",
     "executions": "ejecuciones",
     "failed": "Falló",
     "itemsAffected": "Elementos Afectados",
@@ -337,11 +335,8 @@
     "download_progress": "Progreso",
     "download_speed": "Velocidad de descarga",
     "download_state": "Estado",
-    "eta": "ETA",
     "expires_at": "Caduca a",
     "file_count": "Recuento de archivos",
-    "hash": "Hash",
-    "id": "ID",
     "is_downloaded": "Descargado",
     "name": "Nombre",
     "original_url": "URL de origen",
@@ -365,31 +360,15 @@
       "file": "archivo",
       "File": "Archivo",
       "files": "archivos",
-      "Files": "Archivos",
-      "torrent": "torrent",
-      "Torrent": "Torrent",
-      "torrents": "torrents",
-      "Torrents": "Torrents",
-      "usenet": "usenet",
-      "Usenet": "Usenet",
-      "usenets": "usenets",
-      "Usenets": "Usenets",
-      "web": "web",
-      "Web": "Web",
-      "webdl": "webdl",
-      "Webdl": "Webdl"
+      "Files": "Archivos"
     },
     "loading": "Cargando...",
     "minutes": "minutos",
     "time": {
       "ago": " atrás",
       "complete": "Completado",
-      "d": "d",
-      "h": "h",
       "in": "en ",
-      "m": "m",
       "mo": "m",
-      "s": "s",
       "unknown": "Desconocido",
       "y": "a"
     }
@@ -563,14 +542,12 @@
     },
     "theme": {
       "toggle": "Cambiar tema"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Gestor de torrents y desfragmentación",
     "search": "Buscar",
-    "searchPlaceholder": "Buscar torrents...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Buscar torrents..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -683,7 +660,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Encuentra tu clave API en",
-      "link": "torbox.app/settings",
       "title": "Introducir clave API de TorBox"
     },
     "features": {
@@ -701,11 +677,9 @@
       }
     },
     "footer": {
-      "description": "Esta aplicación es completamente de código abierto en",
-      "github": "GitHub"
+      "description": "Esta aplicación es completamente de código abierto en"
     },
-    "subtitle": "La alternativa del usuario avanzado a la interfaz de usuario de TorBox. Creado para la velocidad y la eficiencia.",
-    "title": "TorBox Manager"
+    "subtitle": "La alternativa del usuario avanzado a la interfaz de usuario de TorBox. Creado para la velocidad y la eficiencia."
   },
   "LinkHistory": {
     "actions": {
@@ -900,11 +874,7 @@
     "never": "Nunca",
     "noFeeds": "No hay feeds RSS configurados",
     "options": {
-      "auto": "Auto",
       "dontSeed": "No Seed",
-      "seed": "Seed",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Descarga Web"
     },
     "pageDescription": "Gestionar feeds RSS y explorar elementos",
@@ -957,10 +927,8 @@
       "downloadStarted": "Descarga iniciada exitosamente",
       "noLink": "No hay enlace de descarga disponible"
     },
-    "torrent": "Torrent",
     "type": "Tipo",
     "unknown": "Desconocido",
-    "usenet": "Usenet",
     "webdl": "Descarga Web"
   },
   "SearchBar": {
@@ -969,7 +937,6 @@
     "clearSearch": "Borrar búsqueda",
     "customEngines": "Motores personalizados",
     "episode": "Episodio",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Ocultar avanzado",
     "minSeeders": "Seeders min.",
     "minSize": "Tamaño min. (GB)",
@@ -983,10 +950,8 @@
     "search": "Buscar",
     "searchExamples": "Ejemplos de búsqueda",
     "season": "Temporada",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Mostrar avanzado",
-    "year": "Año",
-    "yearPlaceholder": "2024"
+    "year": "Año"
   },
   "SearchResults": {
     "actions": {
@@ -1030,8 +995,7 @@
       "upload": "Subida"
     },
     "scale": {
-      "linear": "Lineal",
-      "logarithmic": "Log"
+      "linear": "Lineal"
     },
     "timeRanges": {
       "10m": "Último 10m",
@@ -1062,11 +1026,9 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} archivos seleccionados ({size})",
     "selectedItems": "{itemCount} {type} seleccionados ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} seleccionados ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} seleccionados ({size})"
   },
   "SystemStatus": {
-    "error": "Error",
     "fullStatusPage": "Estado completo",
     "hoursAgo": "hace {hours} horas",
     "justNow": "Ahora mismo",
@@ -1074,7 +1036,6 @@
     "minutesAgo": "hace {minutes} minutos",
     "never": "Nunca",
     "refreshStatus": "Clic para actualizar",
-    "responseTime": "{ms} ms",
     "uptime": {
       "barLabel": "Historial de {label}, {percent}% operativo",
       "collecting": "Recopilando datos…",
@@ -1091,10 +1052,18 @@
       }
     },
     "rows": {
-      "app": { "label": "Esta app" },
-      "backend": { "label": "Backend autohospedado" },
-      "connection": { "label": "Tu clave API" },
-      "platform": { "label": "Plataforma TorBox" },
+      "app": {
+        "label": "Esta app"
+      },
+      "backend": {
+        "label": "Backend autohospedado"
+      },
+      "connection": {
+        "label": "Tu clave API"
+      },
+      "platform": {
+        "label": "Plataforma TorBox"
+      },
       "status": {
         "checking": "Comprobando…",
         "invalidKey": "Clave API no válida",
@@ -1202,7 +1171,6 @@
     "plans": {
       "essential": "Esencial",
       "free": "Gratis",
-      "pro": "Pro",
       "standard": "Estándar",
       "unknown": "Desconocido"
     },
@@ -1213,7 +1181,6 @@
       "downloadBreakdown": "Desglose de Descargas",
       "email": "Correo Electrónico",
       "lastLogin": "Última Actualización",
-      "plan": "Plan",
       "planExpiry": "Vencimiento del Plan",
       "ratio": "Proporción",
       "referralCode": "Código de Referencia",

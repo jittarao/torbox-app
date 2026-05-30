@@ -8,7 +8,7 @@
  * @param {string} apiKey - User's API key
  * @returns {Promise<Object|null>} - User profile data or null on error
  */
-export async function fetchUserProfile(apiKey) {
+export async function fetchUserProfile(apiKey, options = {}) {
   if (!apiKey) {
     return null;
   }
@@ -18,6 +18,7 @@ export async function fetchUserProfile(apiKey) {
       headers: {
         'x-api-key': apiKey,
       },
+      signal: options.signal,
     });
 
     if (!response.ok) {

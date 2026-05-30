@@ -1,4 +1,4 @@
-import { REFERRAL_CODE } from '@/components/constants';
+import { REFERRAL_CODE } from '@/config/referral';
 import { isReferralAppliedForKey } from '@/utils/referralApplied';
 import {
   isReferralReminderDismissed,

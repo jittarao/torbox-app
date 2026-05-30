@@ -15,20 +15,15 @@
       "message": "Möchten Sie {count} {type} wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden. ",
       "title": "Löschen bestätigen"
     },
-    "assignTags": "Tag",
     "assignTagsTitle": "Tags den ausgewählten Downloads zuweisen",
-    "downloadLinks": "Download",
-    "downloadLinksMobile": "Download",
     "downloadLinksTitle": "Download-Links für die Auswahl abrufen",
     "bulkForceStartPartial": "{success} Torrents gestartet, {failed} fehlgeschlagen",
     "bulkForceStarted": "{count} Torrents gestartet",
     "bulkSeedingPartial": "Seeding für {success} Torrents gestoppt, {failed} fehlgeschlagen",
     "bulkSeedingStopped": "Seeding für {count} Torrents gestoppt",
-    "forceStart": "Start",
     "forceStartTitle": "Ausgewählte Torrents starten",
     "forceStarting": "Startet…",
     "exporting": "Export…",
-    "exportSelected": "Export",
     "exportSelectedTitle": "Ausgewählte Torrents exportieren",
     "fetchingLinks": "Lädt…",
     "stopSeeding": "Stop",
@@ -57,7 +52,6 @@
     "close": "Schließen",
     "deleteKey": "Schlüssel löschen",
     "keyLabel": "Schlüssel-Label",
-    "keyLabelPlaceholder": "e.g. Personal, Family",
     "keysCount": "{count, plural, =0 {Keine Schlüssel} one {# Schlüssel} other {# Schlüssel}}",
     "managerPinned": "„Offen halten“ deaktivieren zum Schließen",
     "noKeys": "Keine gespeicherten Schlüssel",
@@ -150,7 +144,6 @@
       "downloadSpeedDescription": "Aktuelle instantane Download-Geschwindigkeit",
       "downloadStalledTime": "Download-Blockiert-Zeit",
       "downloadStalledTimeDescription": "Zeit seit der Download-Aktivität gestoppt wurde (in Minuten)",
-      "eta": "ETA",
       "etaDescription": "Geschätzte Zeit bis zum Download-Abschluss (in Minuten)",
       "expiresAt": "Ablaufdatum",
       "expiresAtDescription": "Verbleibende Stunden bis zum Ablauf; der eingegebene Wert wird in Stunden verglichen",
@@ -167,10 +160,8 @@
       "lastUploadActivityDescription": "Minuten seit der letzten Upload-Aktivität; der eingegebene Wert wird in Minuten verglichen",
       "longTermSeeding": "Langfristiges Seeding",
       "longTermSeedingDescription": "Ob der Torrent länger als 24 Stunden seedet",
-      "name": "Name",
       "nameDescription": "Torrent-Name (unterstützt Textsuche)",
       "namePlaceholder": "Geben Sie Text ein, um zu suchen...",
-      "peers": "Peers",
       "peersDescription": "Anzahl der Peers, die aktuell verbunden sind",
       "private": "Privater",
       "privateDescription": "Ob der Torrent von einem privaten Tracker ist",
@@ -186,14 +177,12 @@
       "seedsDescription": "Anzahl der Seeders, die aktuell verfügbar sind",
       "stalledTime": "Blockiert-Zeit",
       "stalledTimeDescription": "Zeit seit der Download- oder Upload-Aktivität gestoppt wurde (in Minuten)",
-      "status": "Status",
       "statusDescription": "Aktueller Status des Torrents (wartend, herunterladen, seeden, etc.)",
       "statusPlaceholder": "wartend, herunterladen, seeden, etc.",
       "tags": "Schlagwörter",
       "tagsPlaceholder": "Schlagwörter auswählen...",
       "totalUploaded": "Gesamtanzahl hochgeladener Dateien",
       "totalUploadedDescription": "Gesamtgröße aller hochgeladenen Dateien (in GB)",
-      "tracker": "Tracker",
       "trackerDescription": "Tracker-URL oder Name (unterstützt Textsuche)",
       "uploadSpeed": "Upload-Geschwindigkeit",
       "uploadSpeedDescription": "Aktuelle instantane Upload-Geschwindigkeit",
@@ -201,7 +190,6 @@
       "uploadStalledTimeDescription": "Zeit seit der Upload-Aktivität gestoppt wurde (in Minuten)"
     },
     "delete": "Löschen",
-    "details": "Details",
     "enabledAt": "aktiviert am",
     "error": "Fehler",
     "executions": "Ausführungen",
@@ -337,15 +325,12 @@
     "download_progress": "Fortschritt",
     "download_speed": "Download-Geschwindigkeit",
     "download_state": "Status ",
-    "eta": "ETA",
     "expires_at": "Ablaufdatum",
     "file_count": "Dateianzahl ",
-    "hash": "Hash",
     "id": "ID ",
     "is_downloaded": "Heruntergeladen",
     "name": "Name ",
     "original_url": "Quell-URL ",
-    "peers": "Peers",
     "private": "Privater Tracker",
     "progress": "Fortschritt",
     "ratio": "Verhältnis ",
@@ -362,22 +347,14 @@
     "itemTypes": {
       "all": "alle",
       "All": "Alle",
-      "file": "file",
       "File": "File ",
-      "files": "files",
       "Files": "Files ",
-      "torrent": "torrent",
       "Torrent": "Torrent ",
-      "torrents": "torrents",
       "Torrents": "Torrents ",
       "usenet": "usenet ",
-      "Usenet": "Usenet",
       "usenets": "usenets ",
-      "Usenets": "Usenets",
       "web": "web ",
-      "Web": "Web",
-      "webdl": "webdl ",
-      "Webdl": "Webdl"
+      "webdl": "webdl "
     },
     "loading": "Lädt...",
     "minutes": "Minuten",
@@ -545,11 +522,9 @@
     "download": "Datei herunterladen"
   },
   "Header": {
-    "logo": "TorBox Manager Logo",
     "menu": {
       "archived": "Archiviert",
       "automation": "Automatisierungsregeln",
-      "downloads": "Downloads",
       "language": "Sprache",
       "linkHistory": "Link-Verlauf",
       "more": "Mehr",
@@ -569,8 +544,7 @@
   "Index": {
     "description": "Torrent und Debrid-Manager ",
     "search": "Suchen",
-    "searchPlaceholder": "Torrents suchen...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Torrents suchen..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -592,7 +566,6 @@
       "show": "Dateien anzeigen"
     },
     "start": {
-      "label": "Start",
       "title": "Start erzwingen"
     },
     "stop": {
@@ -683,7 +656,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Finden Sie Ihren API-Schlüssel unter ",
-      "link": "torbox.app/settings",
       "title": "TorBox API-Schlüssel eingeben"
     },
     "features": {
@@ -701,11 +673,9 @@
       }
     },
     "footer": {
-      "description": "Diese App ist vollständig Open Source auf",
-      "github": "GitHub"
+      "description": "Diese App ist vollständig Open Source auf"
     },
-    "subtitle": "Die Alternative zur TorBox-Benutzeroberfläche für Power-User. Auf Geschwindigkeit und Effizienz ausgelegt. ",
-    "title": "TorBox Manager"
+    "subtitle": "Die Alternative zur TorBox-Benutzeroberfläche für Power-User. Auf Geschwindigkeit und Effizienz ausgelegt. "
   },
   "LinkHistory": {
     "actions": {
@@ -900,11 +870,8 @@
     "never": "Nie",
     "noFeeds": "Keine RSS-Feeds konfiguriert",
     "options": {
-      "auto": "Auto",
       "dontSeed": "Nicht seeden",
       "seed": "Seeden",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Web-Download"
     },
     "pageDescription": "RSS-Feeds verwalten und Elemente durchsuchen",
@@ -916,7 +883,6 @@
     "save": "Speichern",
     "scanInterval": "Scan-Intervall (Minuten)",
     "scanIntervalPlaceholder": "Wie oft dieser Feed gescannt werden soll",
-    "status": "Status",
     "tabs": {
       "feeds": "Feed-Verwaltung",
       "items": "Elemente-Verwaltung"
@@ -957,10 +923,8 @@
       "downloadStarted": "Download erfolgreich gestartet",
       "noLink": "Kein Download-Link verfügbar"
     },
-    "torrent": "Torrent",
     "type": "Typ",
     "unknown": "Unbekannt",
-    "usenet": "Usenet",
     "webdl": "Web-Download"
   },
   "SearchBar": {
@@ -968,8 +932,6 @@
     "clearHistory": "Löschen",
     "clearSearch": "Suche löschen ",
     "customEngines": "Benutzerdefinierte Suchmaschinen",
-    "episode": "Episode",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Erweitert ausblenden",
     "minSeeders": "Min. Seeder",
     "minSize": "Min. Größe (GB)",
@@ -983,10 +945,8 @@
     "search": "Suchen",
     "searchExamples": "Suchbeispiele",
     "season": "Staffel",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Erweitert anzeigen",
-    "year": "Jahr",
-    "yearPlaceholder": "2024"
+    "year": "Jahr"
   },
   "SearchResults": {
     "actions": {
@@ -1025,12 +985,7 @@
       "hide": "Diagramm ausblenden",
       "show": "Diagramm anzeigen"
     },
-    "labels": {
-      "download": "Download",
-      "upload": "Upload"
-    },
     "scale": {
-      "linear": "Linear",
       "logarithmic": "Logarithmisch"
     },
     "timeRanges": {
@@ -1062,8 +1017,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} Dateien ausgewählt ({size})",
     "selectedItems": "{itemCount} {type} ausgewählt ({size}) ",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} ausgewählt ({size}) ",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} ausgewählt ({size}) "
   },
   "SystemStatus": {
     "error": "Fehler",
@@ -1074,7 +1028,6 @@
     "minutesAgo": "vor {minutes} Minuten",
     "never": "Nie",
     "refreshStatus": "Zum Aktualisieren klicken",
-    "responseTime": "{ms} ms",
     "uptime": {
       "barLabel": "{label} Verlauf, {percent}% betriebsbereit",
       "collecting": "Daten werden gesammelt…",
@@ -1091,10 +1044,18 @@
       }
     },
     "rows": {
-      "app": { "label": "Diese App" },
-      "backend": { "label": "Self-hosted Backend" },
-      "connection": { "label": "Ihr API-Schlüssel" },
-      "platform": { "label": "TorBox-Plattform" },
+      "app": {
+        "label": "Diese App"
+      },
+      "backend": {
+        "label": "Self-hosted Backend"
+      },
+      "connection": {
+        "label": "Ihr API-Schlüssel"
+      },
+      "platform": {
+        "label": "TorBox-Plattform"
+      },
       "status": {
         "checking": "Prüfe…",
         "invalidKey": "Ungültiger API-Schlüssel",
@@ -1200,10 +1161,7 @@
     },
     "noData": "Keine Daten verfügbar",
     "plans": {
-      "essential": "Essential",
       "free": "Kostenlos",
-      "pro": "Pro",
-      "standard": "Standard",
       "unknown": "Unbekannt"
     },
     "profile": {
@@ -1213,11 +1171,9 @@
       "downloadBreakdown": "Download-Aufschlüsselung",
       "email": "E-Mail",
       "lastLogin": "Letzte Aktualisierung",
-      "plan": "Plan",
       "planExpiry": "Plan-Ablauf",
       "ratio": "Verhältnis",
       "referralCode": "Empfehlungscode",
-      "status": "Status",
       "title": "Benutzerprofil",
       "torrentDownloads": "Torrent-Downloads",
       "totalDownloads": "Gesamte Downloads",

@@ -1,4 +1,4 @@
-import { NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { NON_RETRYABLE_ERRORS } from '@/config/errors';
 import { retryFetch } from '@/utils/retryFetch';
 import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 

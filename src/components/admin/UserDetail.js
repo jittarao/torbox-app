@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import adminApiClient from '@/utils/adminApiClient';
+import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 
 export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [automationInfo, setAutomationInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const updateUserStatus = useAdminStore((s) => s.updateUserStatus);
+  const { updateUserStatus } = useAdminStore(
+    useShallow((s) => ({ updateUserStatus: s.updateUserStatus }))
+  );
 
   useEffect(() => {
     const loadDetails = async () => {

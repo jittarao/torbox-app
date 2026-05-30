@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { isBackendAvailable } from '@/store/backendModeStore';
+import { isBackendAvailable } from '@/utils/backendModeCache';
 import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
 
 /**

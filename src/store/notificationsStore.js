@@ -1,7 +1,11 @@
 import { create } from 'zustand';
 import { createApiClient } from '@/utils/apiClient';
 import { fetchNotificationsRequest } from '@/store/notifications/fetchNotifications';
-import { shouldSkipNotificationFetch } from '@/store/notifications/notificationFetchUtils';
+import {
+  NOTIFICATION_POLL_INTERVAL_MS,
+  shouldSkipNotificationFetch,
+} from '@/store/notifications/notificationFetchUtils';
+import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 import {
   clearReadNotifications,
   persistAllReadNotificationIds,
@@ -216,6 +220,46 @@ export const useNotificationsStore = create((set, get) => ({
 
   setIsPolling: (isPolling) => {
     set({ isPolling });
+  },
+
+  startNotificationsPolling: (apiKey) => {
+    const { pollSubscribers, pollTimerId } = get();
+    set({ pollSubscribers: pollSubscribers + 1 });
+
+    if (apiKey) {
+      get().setApiKey(apiKey);
+      get().fetchNotifications(apiKey);
+    }
+
+    if (pollTimerId) {
+      return;
+    }
+
+    const timerId = setInterval(() => {
+      const state = get();
+      if (!state.currentApiKey) return;
+      if (selectIsPaused(usePollingPauseStore.getState())) return;
+      if (state.isPolling) {
+        state.fetchNotifications(state.currentApiKey);
+      }
+    }, NOTIFICATION_POLL_INTERVAL_MS);
+
+    set({ pollTimerId: timerId });
+  },
+
+  stopNotificationsPolling: () => {
+    const { pollSubscribers, pollTimerId } = get();
+    const next = Math.max(0, pollSubscribers - 1);
+    set({ pollSubscribers: next });
+
+    if (next > 0) {
+      return;
+    }
+
+    if (pollTimerId) {
+      clearInterval(pollTimerId);
+      set({ pollTimerId: null });
+    }
   },
 
   retryFetch: (apiKey) => {

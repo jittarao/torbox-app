@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import adminApiClient from '@/utils/adminApiClient';
 import ConfirmButton from '@/components/shared/ConfirmButton';
@@ -16,9 +17,13 @@ export default function UserList({
   onSearch,
   onUsersUpdated,
 }) {
-  const deleteUser = useAdminStore((s) => s.deleteUser);
-  const updateUserStatus = useAdminStore((s) => s.updateUserStatus);
-  const fetchUsers = useAdminStore((s) => s.fetchUsers);
+  const { deleteUser, updateUserStatus, fetchUsers } = useAdminStore(
+    useShallow((s) => ({
+      deleteUser: s.deleteUser,
+      updateUserStatus: s.updateUserStatus,
+      fetchUsers: s.fetchUsers,
+    }))
+  );
   const [deleting, setDeleting] = useState(null);
   const [reactivating, setReactivating] = useState(false);
   const [searchValue, setSearchValue] = useState(filters?.search || '');

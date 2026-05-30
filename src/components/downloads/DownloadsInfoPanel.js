@@ -1,10 +1,20 @@
 'use client';
 
-import SpeedChart from './SpeedChart';
+import dynamic from 'next/dynamic';
 import DownloadPanel from './DownloadPanel';
 import DownloadsUploaders from './DownloadsUploaders';
 import UsageCallout from './UsageCallout';
 import ReferralCallout from '@/components/referral/ReferralCallout';
+
+const SpeedChart = dynamic(() => import('./SpeedChart'), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="h-24 rounded-lg bg-surface-alt dark:bg-surface-alt-dark animate-pulse"
+      aria-hidden
+    />
+  ),
+});
 
 export default function DownloadsInfoPanel({
   apiKey,

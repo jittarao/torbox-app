@@ -350,12 +350,18 @@ function ItemRow({
     linkFailed: isLinkFailed,
   });
 
+  const filesRegionId = `files-${selectionId}`;
+
   return (
     <tr
       ref={measureRef}
       data-index={dataIndex}
+      role="row"
+      aria-selected={isSelected}
+      id={isExpanded ? filesRegionId : undefined}
       className={`${rowSurfaceClass} ${tableRowFocusClasses} ${!hasSelectedFiles && 'cursor-pointer'}`}
       style={style}
+      tabIndex={-1}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
         if (e.shiftKey) {
@@ -386,6 +392,7 @@ function ItemRow({
           type="checkbox"
           checked={isSelected}
           disabled={hasSelectedFiles}
+          aria-label={commonT('selectRow', { name: item.name || item.id })}
           onChange={(e) => handleItemSelection(selectionId, e.target.checked, rowIndex, e.shiftKey)}
           style={{ pointerEvents: 'none' }}
           className="accent-accent dark:accent-accent-dark"
