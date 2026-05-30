@@ -8,11 +8,11 @@ function getApiKeyFingerprint(apiKey) {
 }
 
 export function isReferralAppliedForKey(apiKey) {
-  if (typeof localStorage === 'undefined' || !apiKey) return false;
+  if (!apiKey) return false;
   return getItem(`${APPLIED_PREFIX}${getApiKeyFingerprint(apiKey)}`) === 'true';
 }
 
 export function markReferralAppliedForKey(apiKey) {
-  if (typeof localStorage === 'undefined' || !apiKey) return;
+  if (!apiKey) return;
   setItem(`${APPLIED_PREFIX}${getApiKeyFingerprint(apiKey)}`, 'true');
 }

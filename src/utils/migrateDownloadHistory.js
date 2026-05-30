@@ -1,3 +1,5 @@
+import { getItem, setItem, removeItem, getJSON } from '@/utils/storage';
+
 /**
  * One-time migration utility to migrate download history from localStorage to backend
  * This should be removed after all users have migrated
@@ -42,7 +44,7 @@ function transformOldEntry(oldEntry) {
  */
 function isMigrationCompleted() {
   if (typeof window === 'undefined') return true; // Server-side, skip
-  return localStorage.getItem(MIGRATION_FLAG_KEY) === 'true';
+  return getItem(MIGRATION_FLAG_KEY) === 'true';
 }
 
 /**
@@ -50,7 +52,7 @@ function isMigrationCompleted() {
  */
 function markMigrationCompleted() {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(MIGRATION_FLAG_KEY, 'true');
+  setItem(MIGRATION_FLAG_KEY, 'true');
 }
 
 /**
@@ -74,7 +76,7 @@ export async function migrateDownloadHistory(apiKey) {
     return { success: false, migrated: 0, error: 'localStorage not available' };
   }
 
-  const oldDataString = localStorage.getItem(OLD_STORAGE_KEY);
+  const oldDataString = getItem(OLD_STORAGE_KEY);
   if (!oldDataString) {
     // No old data to migrate, mark as completed
     markMigrationCompleted();
@@ -88,7 +90,7 @@ export async function migrateDownloadHistory(apiKey) {
     if (!Array.isArray(oldEntries) || oldEntries.length === 0) {
       // Empty or invalid data, mark as completed
       markMigrationCompleted();
-      localStorage.removeItem(OLD_STORAGE_KEY);
+      removeItem(OLD_STORAGE_KEY);
       return { success: true, migrated: 0, skipped: true };
     }
 
@@ -101,7 +103,7 @@ export async function migrateDownloadHistory(apiKey) {
     if (transformedEntries.length === 0) {
       // No valid entries after transformation
       markMigrationCompleted();
-      localStorage.removeItem(OLD_STORAGE_KEY);
+      removeItem(OLD_STORAGE_KEY);
       return { success: true, migrated: 0, skipped: true };
     }
 
@@ -127,7 +129,7 @@ export async function migrateDownloadHistory(apiKey) {
     }
 
     // Success! Clear old localStorage and mark as completed
-    localStorage.removeItem(OLD_STORAGE_KEY);
+    removeItem(OLD_STORAGE_KEY);
     markMigrationCompleted();
 
     console.log(

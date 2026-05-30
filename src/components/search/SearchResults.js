@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
 import { selectDisplayResults, TORBOX_NATIVE_TRACKERS } from '@/store/searchSelectors';
+import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
 import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
@@ -34,16 +35,11 @@ export default function SearchResults({ apiKey }) {
       error: s.error,
       searchType: s.searchType,
       clearResults: s.clearResults,
-      seasonFilter: s.seasonFilter,
-      episodeFilter: s.episodeFilter,
-      yearFilter: s.yearFilter,
-      qualityFilter: s.qualityFilter,
-      sizeFilter: s.sizeFilter,
-      seedersFilter: s.seedersFilter,
     }))
   );
   const { query, hasSearchCompleted, results, loading, error, searchType, clearResults } =
     searchState;
+  const { filters } = useSearchFilterParams();
   const { uploadItem } = useUpload(apiKey);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
@@ -58,9 +54,10 @@ export default function SearchResults({ apiKey }) {
     () =>
       selectDisplayResults(
         { ...searchState, results, searchType },
-        { sortKey, sortDir, showCachedOnly, hideTorBoxIndexers }
+        { sortKey, sortDir, showCachedOnly, hideTorBoxIndexers },
+        filters
       ),
-    [searchState, results, searchType, sortKey, sortDir, showCachedOnly, hideTorBoxIndexers]
+    [searchState, results, searchType, sortKey, sortDir, showCachedOnly, hideTorBoxIndexers, filters]
   );
 
   // Clear results when API key changes

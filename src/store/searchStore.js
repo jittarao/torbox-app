@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useSessionStore } from '@/store/sessionStore';
-import { getItem, setItem, removeItem } from '@/utils/storage';
+import { getItem, setItem, removeItem, getJSON } from '@/utils/storage';
 
 export const useSearchStore = create((set, get) => ({
   query: '',
@@ -13,13 +13,8 @@ export const useSearchStore = create((set, get) => ({
   includeCustomEngines: false,
   searchHistory: [],
   showAdvancedOptions: false,
-
-  seasonFilter: '',
-  episodeFilter: '',
-  yearFilter: '',
-  qualityFilter: '',
-  sizeFilter: '',
-  seedersFilter: '',
+  /** Bumped on session reset so URL filter params can be cleared. */
+  filterResetNonce: 0,
 
   setSearchType: (type) => {
     set({ searchType: type, results: [], error: null, hasSearchCompleted: false });
@@ -49,24 +44,6 @@ export const useSearchStore = create((set, get) => ({
     set({ showAdvancedOptions: show });
   },
 
-  setSeasonFilter: (season) => set({ seasonFilter: season }),
-  setEpisodeFilter: (episode) => set({ episodeFilter: episode }),
-  setYearFilter: (year) => set({ yearFilter: year }),
-  setQualityFilter: (quality) => set({ qualityFilter: quality }),
-  setSizeFilter: (size) => set({ sizeFilter: size }),
-  setSeedersFilter: (seeders) => set({ seedersFilter: seeders }),
-
-  clearFilters: () => {
-    set({
-      seasonFilter: '',
-      episodeFilter: '',
-      yearFilter: '',
-      qualityFilter: '',
-      sizeFilter: '',
-      seedersFilter: '',
-    });
-  },
-
   addToHistory: (query) => {
     const { searchHistory } = get();
     const newHistory = [query, ...searchHistory.filter((item) => item !== query)].slice(0, 10);
@@ -75,15 +52,10 @@ export const useSearchStore = create((set, get) => ({
   },
 
   loadHistory: () => {
-    try {
-      const history =
-        getItem('torboxSearchHistory:v1') ??
-        getItem('torboxSearchHistory');
-      if (history) {
-        set({ searchHistory: JSON.parse(history) });
-      }
-    } catch (error) {
-      console.error('Failed to load search history:', error);
+    const history =
+      getJSON('torboxSearchHistory:v1') ?? getJSON('torboxSearchHistory');
+    if (history && Array.isArray(history)) {
+      set({ searchHistory: history });
     }
   },
 
@@ -99,12 +71,7 @@ export const useSearchStore = create((set, get) => ({
       loading: false,
       error: null,
       hasSearchCompleted: false,
-      seasonFilter: '',
-      episodeFilter: '',
-      yearFilter: '',
-      qualityFilter: '',
-      sizeFilter: '',
-      seedersFilter: '',
+      filterResetNonce: get().filterResetNonce + 1,
     });
     get().loadHistory();
   },
