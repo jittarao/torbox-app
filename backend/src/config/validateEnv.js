@@ -2,7 +2,9 @@ import logger from '../utils/logger.js';
 
 /**
  * Fail fast on unsafe environment variables.
- * ENCRYPTION_KEY is optional (legacy default remains for existing installs) but warned when missing.
+ *
+ * Intentional: ENCRYPTION_KEY is optional (legacy default in crypto.js) so existing
+ * encrypted API keys keep working after upgrade; missing/short keys only warn at startup.
  */
 const WEAK_KEYS = [
   'dev-key-change-me',

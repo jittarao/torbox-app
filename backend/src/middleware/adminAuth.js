@@ -1,7 +1,7 @@
-import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
 import { parseRateLimitMax } from '../utils/ip.js';
+import { timingSafeCompare } from '../utils/crypto.js';
 
 // Constants
 const ADMIN_API_KEY_HEADER = 'x-admin-key';
@@ -67,18 +67,6 @@ function extractAdminKey(req) {
     return { key: req.headers[ADMIN_API_KEY_HEADER], source: 'header' };
   }
   return { key: null, source: null };
-}
-
-/**
- * Perform constant-time comparison via SHA-256 hashes (fixed length, no length leak).
- * @param {string} a - First string to compare
- * @param {string} b - Second string to compare
- * @returns {boolean} - True if strings are equal
- */
-function timingSafeCompare(a, b) {
-  const ha = crypto.createHash('sha256').update(String(a)).digest();
-  const hb = crypto.createHash('sha256').update(String(b)).digest();
-  return ha.length === hb.length && crypto.timingSafeEqual(ha, hb);
 }
 
 /**

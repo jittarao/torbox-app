@@ -23,7 +23,7 @@ class Cache {
 
     // Explicit invalidateActiveUsers() is called on every mutation, so a longer TTL is safe
     this.activeUsersCache = new TTLCache({
-      max: 2,
+      max: 1000,
       ttl: 60000,
       noUpdateTTL: true,
     });

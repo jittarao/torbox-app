@@ -18,8 +18,11 @@ let _cachedKey = null;
 
 /**
  * Get encryption key from environment, or the legacy default when unset.
- * ENCRYPTION_KEY is optional for backward compatibility with existing deployments;
- * a strong warning is logged when falling back.
+ *
+ * Intentional: ENCRYPTION_KEY stays optional so upgrades do not break installs that
+ * already encrypted API keys with the legacy default. Startup warns via validateEnv();
+ * new deployments should set ENCRYPTION_KEY (openssl rand -base64 32).
+ *
  * @returns {Buffer}
  */
 function getEncryptionKey() {
@@ -128,4 +131,17 @@ export function decrypt(encryptedText) {
 export function hashApiKey(apiKey) {
   if (!apiKey) throw new Error('API key is required');
   return crypto.createHash('sha256').update(apiKey).digest('hex');
+}
+
+/**
+ * Constant-time string comparison using SHA-256 hashes.
+ * Useful for comparing secrets without leaking length or content via timing.
+ * @param {string} a - First value
+ * @param {string} b - Second value
+ * @returns {boolean}
+ */
+export function timingSafeCompare(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest();
+  return ha.length === hb.length && crypto.timingSafeEqual(ha, hb);
 }
