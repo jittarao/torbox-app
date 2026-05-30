@@ -49,9 +49,11 @@ class WeightedFairSemaphore {
    * Acquire permits for a user. Resolves when permits are available.
    * @param {string} userId - User identifier
    * @param {number} [permits=1] - Number of permits to acquire
+   * @param {object} [options]
+   * @param {number} [options.timeoutMs] - Max ms to wait; rejects with error if exceeded
    * @returns {Promise<() => void>} - Release function
    */
-  async acquire(userId, permits = 1) {
+  async acquire(userId, permits = 1, options = {}) {
     if (!this._perUser.has(userId)) {
       this._perUser.set(userId, { active: 0, queue: [] });
     }
@@ -64,9 +66,35 @@ class WeightedFairSemaphore {
       return this._createRelease(userId, permits);
     }
 
+    const { timeoutMs } = options;
+
     // Queue the request
     return new Promise((resolve, reject) => {
-      userState.queue.push({ resolve, reject, permits });
+      const entry = { resolve, reject, permits };
+
+      if (timeoutMs && timeoutMs > 0) {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          const idx = userState.queue.indexOf(entry);
+          if (idx >= 0) {
+            userState.queue.splice(idx, 1);
+          }
+          if (userState.active === 0 && userState.queue.length === 0) {
+            this._perUser.delete(userId);
+          }
+          reject(new Error(`Semaphore acquire timed out after ${timeoutMs}ms for user ${userId}`));
+        }, timeoutMs);
+        entry._timer = timer;
+        entry._cleanup = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+        };
+      }
+
+      userState.queue.push(entry);
     });
   }
 
@@ -92,12 +120,13 @@ class WeightedFairSemaphore {
         const idx = (this._cursor + i) % entries.length;
         const [userId, state] = entries[idx];
         if (state.queue.length === 0) continue;
-        const next = state.queue[0];
-        if (this._available >= next.permits && state.active < this.maxPermitsPerUser) {
+        const entry = state.queue[0];
+        if (this._available >= entry.permits && state.active < this.maxPermitsPerUser) {
           state.queue.shift();
-          this._available -= next.permits;
-          state.active += next.permits;
-          next.resolve(this._createRelease(userId, next.permits));
+          if (entry._cleanup) entry._cleanup();
+          this._available -= entry.permits;
+          state.active += entry.permits;
+          entry.resolve(this._createRelease(userId, entry.permits));
           progressed = true;
           this._cursor = (idx + 1) % entries.length;
           break; // one grant per cycle to avoid starving other users

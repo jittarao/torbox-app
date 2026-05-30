@@ -11,6 +11,18 @@ import rateLimit from 'express-rate-limit';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
+const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
+const MAX_UPLOAD_FILE_SIZE =
+  Number.isFinite(parsedMaxUploadBytes) && parsedMaxUploadBytes > 0
+    ? parsedMaxUploadBytes
+    : DEFAULT_MAX_UPLOAD_BYTES;
+
+function estimateBase64DecodedBytes(base64) {
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.floor(base64.length * 3 / 4) - padding;
+}
+
 /**
  * Validate file extension for upload type
  * @param {string} type - Upload type (torrent, usenet, webdl)
@@ -108,8 +120,21 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
-      // Convert base64 to buffer
+      // Reject oversized payloads before decoding (base64 expands ~4/3 × binary)
+      if (estimateBase64DecodedBytes(file_data) > MAX_UPLOAD_FILE_SIZE) {
+        return res.status(400).json({
+          success: false,
+          error: `File too large. Maximum size is ${Math.round(MAX_UPLOAD_FILE_SIZE / 1024 / 1024)} MB.`,
+        });
+      }
+
       const fileBuffer = Buffer.from(file_data, 'base64');
+      if (fileBuffer.length > MAX_UPLOAD_FILE_SIZE) {
+        return res.status(400).json({
+          success: false,
+          error: `File too large. Maximum size is ${Math.round(MAX_UPLOAD_FILE_SIZE / 1024 / 1024)} MB.`,
+        });
+      }
 
       // Save file
       const filePath = await saveUploadFile(authId, fileBuffer, filename, type);

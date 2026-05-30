@@ -1128,10 +1128,9 @@ class AutomationEngine {
       }
     }
     // Error path: log only (do not update last_executed_at / execution_count)
-    await this.ruleRepository.logExecution(
+    await this.ruleRepository.recordExecution(
       rule.id,
       rule.name,
-      'execution',
       0,
       false,
       error.message
