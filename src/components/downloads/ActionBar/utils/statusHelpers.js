@@ -2,8 +2,7 @@ import { STATUS_OPTIONS } from '@/components/constants';
 import { isQueuedItem } from '@/utils/utility';
 
 export const getMatchingStatus = (item) => {
-  const isQueued = !item.download_state && !item.download_finished && !item.active;
-  if (isQueued)
+  if (isQueuedItem(item))
     return {
       label: 'Queued',
       value: {
