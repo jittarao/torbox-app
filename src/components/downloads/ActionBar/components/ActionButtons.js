@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { phEvent } from '@/utils/sa';
-import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
-import { Question } from '@/components/icons';
+import { Delete, Download, Hash, Play, Question, Stop, Times, Torrent } from '@/components/icons';
+import BulkActionButton from './BulkActionButton';
 import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
@@ -46,7 +46,6 @@ export default function ActionButtons({
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
-  const isMobile = useIsMobile();
   const apiClient = useMemo(() => createApiClient(apiKey), [apiKey]);
   const cloudUploadRef = useRef(null);
   const showCloudUploadRef = useRef(false);
@@ -145,11 +144,6 @@ export default function ActionButtons({
       setIsDownloadPanelOpen(true);
     }
     phEvent('download_items');
-  };
-
-  const getDownloadButtonText = () => {
-    if (isDownloading) return t('fetchingLinks');
-    return isMobile ? t('downloadLinksMobile') : t('downloadLinks');
   };
 
   const handleBulkExport = () => {
@@ -386,77 +380,78 @@ export default function ActionButtons({
   };
 
   return (
-    <div className="flex min-w-0 w-full flex-wrap items-center gap-2 lg:w-auto">
-      <button
-        type="button"
+    <div
+      className="flex min-w-0 w-full flex-wrap items-center gap-1.5 lg:w-auto"
+      role="toolbar"
+      aria-label={t('toolbarLabel')}
+    >
+      <BulkActionButton
+        variant="primary"
         onClick={handleDownloadClick}
         disabled={isDownloading}
-        className="bg-accent text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-accent/90 
-        disabled:opacity-50 transition-colors"
-      >
-        {getDownloadButtonText()}
-      </button>
+        loading={isDownloading}
+        icon={<Download />}
+        label={isDownloading ? t('fetchingLinks') : t('downloadLinks')}
+        title={t('downloadLinksTitle')}
+      />
 
-      {/* Bulk Export button - only for torrents */}
       {activeType === 'torrents' && selectedItemCount > 0 && onBulkExport && (
-        <button
-          type="button"
+        <BulkActionButton
+          variant="secondary"
           onClick={handleBulkExport}
           disabled={isExporting}
-          className="bg-primary hover:bg-primary-hover text-white text-xs lg:text-sm px-4 py-1.5 rounded
-          disabled:opacity-50 transition-colors"
-        >
-          {isExporting ? t('exporting') : t('exportSelected')}
-        </button>
+          loading={isExporting}
+          icon={<Torrent />}
+          label={isExporting ? t('exporting') : t('exportSelected')}
+          title={t('exportSelectedTitle')}
+        />
       )}
 
       {showBulkForceStart && (
-        <button
-          type="button"
+        <BulkActionButton
+          variant="accent"
           onClick={handleBulkForceStart}
           disabled={isForceStarting}
-          className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark disabled:opacity-50 transition-colors"
-        >
-          {isForceStarting ? t('forceStarting') : t('forceStart')}
-        </button>
+          loading={isForceStarting}
+          icon={<Play className="stroke-[2.5]" />}
+          label={isForceStarting ? t('forceStarting') : t('forceStart')}
+          title={t('forceStartTitle')}
+        />
       )}
 
       {showBulkStopSeeding && (
-        <button
-          type="button"
+        <BulkActionButton
+          variant="stop"
           onClick={handleBulkStopSeeding}
           disabled={isStoppingSeeding}
-          className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark disabled:opacity-50 transition-colors"
-        >
-          {isStoppingSeeding ? t('stoppingSeeding') : t('stopSeeding')}
-        </button>
+          loading={isStoppingSeeding}
+          icon={<Stop />}
+          label={isStoppingSeeding ? t('stoppingSeeding') : t('stopSeeding')}
+          title={t('stopSeedingTitle')}
+        />
       )}
 
-      {/* Bulk Tag Assignment button */}
       {selectedItemCount > 0 && (
-        <button
-          type="button"
+        <BulkActionButton
+          variant="secondary"
           onClick={() => setShowTagAssignment(true)}
-          className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark 
-          transition-colors"
-        >
-          Assign Tags
-        </button>
+          icon={<Hash />}
+          label={t('assignTags')}
+          title={t('assignTagsTitle')}
+        />
       )}
-
-      {/* Bulk Cloud Upload button - Temporarily hidden */}
 
       {(selectedItemCount > 0 || hasSelectedFiles) && (
         <>
-          <button
-            type="button"
+          <BulkActionButton
+            variant="danger"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={isDeleting}
-            className="bg-red-500 text-white text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-red-600 
-            disabled:opacity-50 transition-colors"
-          >
-            {isDeleting ? t('deleteConfirm.deleting') : t('deleteConfirm.confirm')}
-          </button>
+            loading={isDeleting}
+            icon={<Delete />}
+            label={isDeleting ? t('deleteConfirm.deleting') : t('deleteConfirm.confirm')}
+            title={t('deleteConfirm.title')}
+          />
 
           {showDeleteConfirm && (
             <div className="fixed inset-0 bg-neutral-950 bg-opacity-50 flex items-center justify-center z-50">
@@ -507,8 +502,7 @@ export default function ActionButtons({
                       });
                     }}
                     disabled={isDeleting}
-                    className="bg-red-500 text-sm text-white px-4 py-2 rounded hover:bg-red-600 
-                    disabled:opacity-50 transition-colors"
+                    className="bg-label-danger-text text-sm text-white px-4 py-2 rounded hover:brightness-95 disabled:opacity-50 transition-colors dark:bg-label-danger-text-dark dark:hover:brightness-110"
                   >
                     {t('delete')}
                   </button>
@@ -519,13 +513,13 @@ export default function ActionButtons({
         </>
       )}
 
-      <button
-        type="button"
+      <BulkActionButton
+        variant="ghost"
         onClick={() => setSelectedItems({ items: new Set(), files: new Map() })}
-        className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
-      >
-        {t('clear')}
-      </button>
+        icon={<Times />}
+        label={t('clear')}
+        title={t('clearTitle')}
+      />
 
       {/* Tag Assignment Modal */}
       {showTagAssignment && (
