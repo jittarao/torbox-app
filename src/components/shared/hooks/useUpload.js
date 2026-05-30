@@ -274,9 +274,13 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
         // Handle file uploads - convert to base64
         if (upload.upload_type === 'file' && item.data instanceof File) {
-          const arrayBuffer = await item.data.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          upload.file_data = buffer.toString('base64');
+          const bytes = new Uint8Array(await item.data.arrayBuffer());
+          const chunkSize = 0x8000;
+          let binary = '';
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+          }
+          upload.file_data = btoa(binary);
           upload.filename = item.data.name;
         } else if (upload.upload_type === 'magnet' || upload.upload_type === 'link') {
           upload.url = item.data;

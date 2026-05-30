@@ -17,10 +17,6 @@ const MIN_HEALTH_CHECK_GAP_MS = 60000; // 1 minute
 
 const HEALTH_TIMEOUT_MS = 10000;
 
-let healthPollTimer = null;
-let healthPollApiKey = null;
-let healthPollSubscribers = 0;
-
 const initialCheckState = () => ({
   status: 'unknown',
   message: null,
@@ -36,6 +32,9 @@ export const useHealthStore = create((set, get) => ({
   checkingHealth: false,
   historyLoaded: false,
   platformHistory: [],
+  healthPollSubscribers: 0,
+  healthPollTimerId: null,
+  healthPollApiKey: null,
 
   loadHistory: () => {
     if (get().historyLoaded) {
@@ -219,32 +218,36 @@ export const useHealthStore = create((set, get) => ({
   },
 
   startHealthPolling: (apiKey) => {
-    healthPollSubscribers += 1;
-    healthPollApiKey = apiKey;
+    const { healthPollSubscribers, healthPollTimerId } = get();
+    set({ healthPollSubscribers: healthPollSubscribers + 1, healthPollApiKey: apiKey });
 
-    if (healthPollTimer) {
+    if (healthPollTimerId) {
       return;
     }
 
     get().performHealthCheck(apiKey, { force: true });
 
-    healthPollTimer = setInterval(() => {
+    const timerId = setInterval(() => {
       if (usePollingPauseStore.getState().isPaused) {
         return;
       }
-      get().performHealthCheck(healthPollApiKey, { force: true });
+      const { healthPollApiKey: storedKey } = get();
+      get().performHealthCheck(storedKey, { force: true });
     }, HEALTH_CHECK_INTERVAL_MS);
+
+    set({ healthPollTimerId: timerId });
   },
 
   stopHealthPolling: () => {
-    healthPollSubscribers = Math.max(0, healthPollSubscribers - 1);
-    if (healthPollSubscribers > 0) {
+    const { healthPollSubscribers, healthPollTimerId } = get();
+    const next = Math.max(0, healthPollSubscribers - 1);
+    set({ healthPollSubscribers: next });
+    if (next > 0) {
       return;
     }
-    if (healthPollTimer) {
-      clearInterval(healthPollTimer);
-      healthPollTimer = null;
+    if (healthPollTimerId) {
+      clearInterval(healthPollTimerId);
+      set({ healthPollTimerId: null, healthPollApiKey: null });
     }
-    healthPollApiKey = null;
   },
 }));
