@@ -1,6 +1,8 @@
+import logger from '../utils/logger.js';
+
 /**
- * Fail fast on missing or unsafe required environment variables.
- * Call before opening databases or binding the HTTP server.
+ * Fail fast on unsafe environment variables.
+ * ENCRYPTION_KEY is optional (legacy default remains for existing installs) but warned when missing.
  */
 const WEAK_KEYS = [
   'dev-key-change-me',
@@ -17,8 +19,10 @@ export function validateEnv() {
 
   const key = process.env.ENCRYPTION_KEY;
   if (!key || typeof key !== 'string' || key.trim().length < 16) {
-    errors.push(
-      'ENCRYPTION_KEY must be set to a non-empty string of at least 16 characters (use e.g. `openssl rand -base64 32`).'
+    logger.warn(
+      '[validateEnv] ENCRYPTION_KEY is not set or is shorter than 16 characters. ' +
+        'The backend will use the legacy default key so existing encrypted API keys keep working. ' +
+        'Set ENCRYPTION_KEY (e.g. `openssl rand -base64 32`) for new deployments.'
     );
   } else if (WEAK_KEYS.some((weak) => key.trim().toLowerCase().includes(weak))) {
     errors.push(

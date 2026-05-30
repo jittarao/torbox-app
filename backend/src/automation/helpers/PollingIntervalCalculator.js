@@ -97,14 +97,12 @@ class PollingIntervalCalculator {
    * @returns {number} - Enforced minimum interval in minutes
    */
   static applyMinimumIntervalConstraint(intervalMinutes) {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const minInterval = isDevelopment
-      ? Math.max(
-          POLLING_CONFIG.minimum.development,
-          applyIntervalMultiplier(POLLING_CONFIG.minimum.production)
-        )
-      : POLLING_CONFIG.minimum.production;
-    return Math.max(minInterval, intervalMinutes);
+    if (process.env.NODE_ENV === 'development') {
+      // Dev uses DEV_INTERVAL_MULTIPLIER on base intervals; do not also enforce the
+      // scaled production floor (30min × 0.1 = 3min), which blocked sub-minute polling.
+      return Math.max(POLLING_CONFIG.minimum.development, intervalMinutes);
+    }
+    return Math.max(POLLING_CONFIG.minimum.production, intervalMinutes);
   }
 
   /**
