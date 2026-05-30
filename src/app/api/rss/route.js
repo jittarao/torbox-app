@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 // Get all RSS feeds
 export async function GET() {
   try {
@@ -50,7 +50,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: sanitizeError(error),
       },
       { status: 500 }
     );
@@ -160,7 +160,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: sanitizeError(error),
       },
       { status: 500 }
     );

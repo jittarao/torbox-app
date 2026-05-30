@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET() {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
@@ -135,7 +135,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: sanitizeError(error),
         data: {
           providers: {},
           feature_available: false,

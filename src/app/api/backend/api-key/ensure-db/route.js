@@ -4,7 +4,7 @@ import http from 'http';
 
 import { isBackendDisabled } from '@/utils/backendCheck';
 import { backendProxyHeaders } from '@/utils/backendRequest';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function POST(request) {
@@ -72,6 +72,6 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Error ensuring user database:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

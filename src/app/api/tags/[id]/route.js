@@ -4,7 +4,7 @@ import http from 'http';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { backendProxyHeaders } from '@/utils/backendRequest';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 /**
@@ -63,7 +63,7 @@ export async function GET(request, { params }) {
     }
   } catch (error) {
     console.error('Error fetching tag from backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -108,7 +108,7 @@ export async function PUT(request, { params }) {
     }
   } catch (error) {
     console.error('Error updating tag in backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -145,6 +145,6 @@ export async function DELETE(request, { params }) {
     }
   } catch (error) {
     console.error('Error deleting tag from backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function POST(request) {
   const auth = await requireTorboxApiKey();
   if (auth.response) return auth.response;
@@ -33,6 +33,6 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

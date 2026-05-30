@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { API_SEARCH_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const SEARCH_PREFIXES = ['imdb', 'tvdb', 'jikan'];
 
 export async function GET(req) {
@@ -70,7 +70,7 @@ export async function GET(req) {
     return new Response(JSON.stringify(data), { status: 200 });
   } catch (error) {
     console.error('Torrent search error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: sanitizeError(error) }), {
       status: 500,
     });
   }

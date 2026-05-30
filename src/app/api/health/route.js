@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET() {
   try {
     return NextResponse.json(
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status: 'unhealthy',
-        error: error.message,
+        error: sanitizeError(error),
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

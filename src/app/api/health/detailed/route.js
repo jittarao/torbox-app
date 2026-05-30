@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { isBackendDisabled } from '@/utils/backendCheck';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET() {
@@ -70,7 +70,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status: 'unhealthy',
-        error: error.message || 'Failed to connect to backend',
+        error: sanitizeError(error) || 'Failed to connect to backend',
         timestamp: new Date().toISOString(),
         backendUrl: BACKEND_URL,
       },

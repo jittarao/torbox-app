@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // GET /api/uploads - List uploads
@@ -56,7 +56,7 @@ export async function GET(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching uploads:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -102,6 +102,6 @@ export async function POST(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error creating upload:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

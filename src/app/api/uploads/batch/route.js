@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // POST /api/uploads/batch - Batch create uploads (efficient for large batches)
@@ -152,6 +152,6 @@ export async function POST(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error creating batch upload:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

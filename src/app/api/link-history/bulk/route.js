@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // POST /api/link-history/bulk - Bulk create link history entries (for migration)
@@ -46,7 +46,7 @@ export async function POST(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error bulk creating link history entries:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -92,6 +92,6 @@ export async function DELETE(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error bulk deleting link history entries:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

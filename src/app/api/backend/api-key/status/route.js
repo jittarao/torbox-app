@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
 import { backendProxyHeaders } from '@/utils/backendRequest';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET() {
@@ -39,6 +39,6 @@ export async function GET() {
     }
   } catch (error) {
     console.error('Error checking API key status:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

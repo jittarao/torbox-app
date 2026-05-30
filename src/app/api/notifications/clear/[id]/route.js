@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 // Clear a specific notification by ID
 export async function POST(request, { params }) {
   const headersList = await headers();
@@ -39,6 +39,6 @@ export async function POST(request, { params }) {
     return Response.json(data);
   } catch (error) {
     console.error('Error clearing notification:', error);
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

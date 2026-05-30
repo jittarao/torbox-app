@@ -30,30 +30,15 @@ class ApiClient {
     };
   }
 
-  // Generic request method with error handling and ETag support
-  async request(endpoint, options = {}) {
-    // For client-side requests, use relative URLs to go through Next.js API routes
-    const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
-
-    const headers = {
-      ...this.baseHeaders,
-      ...options.headers,
-    };
-
-    // Add ETag if we have one for this endpoint
-    const etag = this.etags.get(endpoint);
-    if (etag) {
-      headers['If-None-Match'] = etag;
-    }
-
-    // Add timeout to prevent indefinite waiting
+  /** Shared fetch core — handles timeout, response parsing, error normalization */
+  async _fetch(url, options = {}) {
     const timeout = options.timeout || FETCH_TIMEOUT_MS;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+    const { onResponse, ...fetchOptions } = options;
     const config = {
-      ...options,
-      headers,
+      ...fetchOptions,
       signal: options.signal || controller.signal,
     };
 
@@ -61,14 +46,8 @@ class ApiClient {
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
 
-      // Store ETag for future requests (LRU eviction at etagMaxSize)
-      const responseETag = response.headers.get('ETag');
-      if (responseETag) {
-        if (!this.etags.has(endpoint) && this.etags.size >= this.etagMaxSize) {
-          const oldest = this.etags.keys().next().value;
-          if (oldest !== undefined) this.etags.delete(oldest);
-        }
-        this.etags.set(endpoint, responseETag);
+      if (onResponse) {
+        onResponse(response);
       }
 
       // Handle 304 Not Modified (ETag working)
@@ -76,17 +55,14 @@ class ApiClient {
         return { success: true, data: [], cached: true };
       }
 
-      // Try to parse JSON response
       let data;
       try {
         data = await response.json();
       } catch (parseError) {
-        // If JSON parsing fails, create a basic error object
         data = { error: `HTTP ${response.status}`, detail: 'Invalid response format' };
       }
 
       if (!response.ok) {
-        // Check for specific error types
         if (
           data.error === 'AUTH_ERROR' ||
           data.error === 'NO_AUTH' ||
@@ -95,21 +71,18 @@ class ApiClient {
           throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
         }
 
-        // Handle 422 validation errors (provider not connected)
         if (response.status === 422) {
           throw new Error(
             `AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`
           );
         }
 
-        // Handle 404 errors (endpoint not found)
         if (response.status === 404) {
           throw new Error(
             `AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`
           );
         }
 
-        // Handle 408 timeout errors
         if (response.status === 408) {
           const timeoutError = new Error(
             data.detail || data.error || data.message || 'Request timeout'
@@ -118,7 +91,6 @@ class ApiClient {
           throw timeoutError;
         }
 
-        // Handle 429 rate limit errors
         if (response.status === 429) {
           const rateLimitError = new Error(
             data.detail || data.error || data.message || 'Too many requests'
@@ -128,7 +100,6 @@ class ApiClient {
           throw rateLimitError;
         }
 
-        // Handle different error formats
         const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
         throw new Error(errorMessage);
       }
@@ -137,14 +108,12 @@ class ApiClient {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      // Handle AbortError (timeout)
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         const timeoutError = new Error('Request timeout - connection to TorBox API failed');
         timeoutError.isTimeout = true;
         throw timeoutError;
       }
 
-      // Handle network errors
       if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || error.message?.includes('timeout')) {
         const timeoutError = new Error('Connection timeout - TorBox API is unreachable');
         timeoutError.isTimeout = true;
@@ -152,20 +121,50 @@ class ApiClient {
       }
 
       if (!error.isRateLimited) {
-        console.error(`API request failed for ${endpoint}:`, error);
+        console.error(`API request failed for ${url}:`, error);
       }
       throw error;
     }
   }
 
-  /**
-   * POST multipart/form-data to a Next.js API route with timeout and consistent error handling.
-   */
+  /** Generic request with JSON headers and ETag support */
+  async request(endpoint, options = {}) {
+    const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
+
+    const headers = {
+      ...this.baseHeaders,
+      ...options.headers,
+    };
+
+    const etag = this.etags.get(endpoint);
+    if (etag) {
+      headers['If-None-Match'] = etag;
+    }
+
+    let responseForEtag = null;
+    const data = await this._fetch(url, {
+      ...options,
+      headers,
+      onResponse: (res) => { responseForEtag = res; },
+    });
+
+    if (data && data.cached) return data;
+
+    const responseETag = responseForEtag?.headers?.get?.('ETag');
+    if (responseETag) {
+      if (!this.etags.has(endpoint) && this.etags.size >= this.etagMaxSize) {
+        const oldest = this.etags.keys().next().value;
+        if (oldest !== undefined) this.etags.delete(oldest);
+      }
+      this.etags.set(endpoint, responseETag);
+    }
+
+    return data;
+  }
+
+  /** POST multipart/form-data — no Content-Type (browser sets it for the boundary) */
   async requestMultipart(endpoint, formData, options = {}) {
     const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
-    const timeout = options.timeout || FETCH_TIMEOUT_MS;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     const headers = {
       'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
@@ -173,67 +172,12 @@ class ApiClient {
       ...options.headers,
     };
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData,
-        signal: options.signal || controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        data = { error: `HTTP ${response.status}`, detail: 'Invalid response format' };
-      }
-
-      if (!response.ok) {
-        if (
-          data.error === 'AUTH_ERROR' ||
-          data.error === 'NO_AUTH' ||
-          data.error?.includes('auth')
-        ) {
-          throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
-        }
-        if (response.status === 422) {
-          throw new Error(
-            `AUTH_ERROR: Provider not connected. Please connect to the cloud provider first.`
-          );
-        }
-        if (response.status === 404) {
-          throw new Error(
-            `AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`
-          );
-        }
-        if (response.status === 408) {
-          const timeoutError = new Error(
-            data.detail || data.error || data.message || 'Request timeout'
-          );
-          timeoutError.isTimeout = true;
-          throw timeoutError;
-        }
-        const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
-        throw new Error(errorMessage);
-      }
-
-      return data;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-        const timeoutError = new Error('Request timeout - connection to TorBox API failed');
-        timeoutError.isTimeout = true;
-        throw timeoutError;
-      }
-      if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || error.message?.includes('timeout')) {
-        const timeoutError = new Error('Connection timeout - TorBox API is unreachable');
-        timeoutError.isTimeout = true;
-        throw timeoutError;
-      }
-      console.error(`API multipart request failed for ${endpoint}:`, error);
-      throw error;
-    }
+    return this._fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      ...options,
+    });
   }
 
   // GET request helper

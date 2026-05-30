@@ -4,7 +4,7 @@ import http from 'http';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { backendProxyHeaders } from '@/utils/backendRequest';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 /**
@@ -62,7 +62,7 @@ export async function GET(request) {
     }
   } catch (error) {
     console.error('Error fetching tags from backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -106,6 +106,6 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Error creating tag in backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

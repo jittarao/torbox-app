@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { API_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET() {
   try {
     const startTime = Date.now();
@@ -35,7 +35,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json({
       status: 'unhealthy',
-      message: error.message,
+      message: sanitizeError(error),
       timestamp: new Date().toISOString(),
       error: error.name,
     });

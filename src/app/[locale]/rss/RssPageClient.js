@@ -98,9 +98,9 @@ export default function RssPageClient() {
   // Don't render anything until client-side hydration is complete
   if (!hydrated) {
     return (
-      <div
-        className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
-      ></div>
+      <div className="flex min-h-screen items-center justify-center bg-surface dark:bg-surface-dark font-sans">
+        <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
+      </div>
     );
   }
 
