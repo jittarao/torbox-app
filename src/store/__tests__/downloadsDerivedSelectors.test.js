@@ -63,6 +63,13 @@ describe('downloadsDerivedSelectors', () => {
     expect(row.tags).toHaveLength(1);
   });
 
+  test('enrichRowForFilter reuses entity reference when unchanged', () => {
+    const entity = entities[entityKey('torrents', 1)];
+    const lookup = { itemDownloads: new Set(), fileDownloads: new Set() };
+    const row = enrichRowForFilter(entity, {}, lookup);
+    expect(row).toBe(entity);
+  });
+
   test('selectVisibleSortedIds combines filter and sort', () => {
     const torboxState = {
       entities,

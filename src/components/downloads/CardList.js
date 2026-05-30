@@ -6,6 +6,7 @@ import {
   useCallback,
   useLayoutEffect,
 } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsFilterContext } from './DownloadsFilterContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
@@ -33,7 +34,17 @@ function parseEntityKey(entityKey) {
 }
 
 function useCardEstimateSize(deferredEntityKeys, fileSearch) {
-  const entities = useTorboxDownloadsStore((state) => state.entities);
+  const entities = useTorboxDownloadsStore(
+    useShallow((state) => {
+      const slice = {};
+      for (let i = 0; i < deferredEntityKeys.length; i++) {
+        const key = deferredEntityKeys[i];
+        const row = state.entities[key];
+        if (row) slice[key] = row;
+      }
+      return slice;
+    })
+  );
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const isMobile = useIsMobile();
   const itemGap = getCardListItemGapPx();
@@ -45,7 +56,7 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch) {
       if (!entityKey) return 0;
       const { id } = parseEntityKey(entityKey);
       const filesExpanded = expandedById[id];
-      const entity = entities?.[entityKey];
+      const entity = entities[entityKey];
       const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
 
       let cardHeight = isMobile ? 152 : 100;
@@ -245,7 +256,6 @@ export default function CardList() {
     tagMappings = {},
     activeColumns,
     downloadHistoryLookup,
-    selectedItems,
   } = useDownloadsDataContext();
   const {
     search: fileSearch = '',
@@ -404,7 +414,6 @@ export default function CardList() {
         setToast={setToast}
         onDelete={onDelete}
         downloadHistoryLookup={downloadHistoryLookup}
-        selectedItems={selectedItems}
         handleItemSelection={interactions.handleItemSelection}
         handleFileSelection={interactions.handleFileSelection}
         handleFileDownload={interactions.handleFileDownload}
@@ -424,7 +433,6 @@ export default function CardList() {
       setToast,
       onDelete,
       downloadHistoryLookup,
-      selectedItems,
       interactions,
       handleFileStream,
       handleAudioPlay,

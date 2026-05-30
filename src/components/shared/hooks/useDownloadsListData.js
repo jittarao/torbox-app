@@ -7,9 +7,16 @@ import { useDownloadsFilterParams } from '@/hooks/useDownloadsFilterParams';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
-import { selectVisibleSortedFromMap, idsToRows } from '@/store/downloadsDerivedSelectors';
+import {
+  selectVisibleSortedFromMap,
+  idsToRows,
+  enrichRowForFilter,
+} from '@/store/downloadsDerivedSelectors';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
-import { fileListSignature } from '@/utils/downloadListMerge';
+import {
+  buildRowDataSignature,
+  collectDirtyRowKeys,
+} from '@/utils/downloadListSignatures';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
@@ -21,22 +28,6 @@ function useStableShallow(value) {
   return ref.current;
 }
 
-/** Order-preserving signature of list row fields used by enrichment/filter. */
-function buildViewDataSignature(viewIds, entities) {
-  if (!viewIds?.length) return '';
-  const parts = new Array(viewIds.length);
-  for (let i = 0; i < viewIds.length; i++) {
-    const key = viewIds[i];
-    const e = entities[key];
-    if (!e) {
-      parts[i] = `${key}:missing`;
-      continue;
-    }
-    parts[i] = `${key}:${e.progress ?? 0}:${e.download_state ?? ''}:${e.active ? 1 : 0}:${e.download_finished ? 1 : 0}:${fileListSignature(e.files)}:${e.updated_at ?? ''}`;
-  }
-  return parts.join('|');
-}
-
 function buildFilterCacheKey(criteria) {
   return JSON.stringify({
     search: criteria.search,
@@ -45,6 +36,14 @@ function buildFilterCacheKey(criteria) {
     sortDirection: criteria.sortDirection,
     appliedFilters: criteria.appliedFilters,
   });
+}
+
+function syncRowSignatures(viewIds, entities, targetMap) {
+  targetMap.clear();
+  for (let i = 0; i < viewIds.length; i++) {
+    const key = viewIds[i];
+    targetMap.set(key, buildRowDataSignature(key, entities[key]));
+  }
 }
 
 export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
@@ -108,11 +107,12 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
   const stableDownloadHistory = useStableShallow(downloadHistory);
 
   const deriveCacheRef = useRef({
-    viewDataSig: '',
     filterKey: '',
     tagMappings: null,
     downloadHistory: null,
     activeType: null,
+    viewIds: [],
+    rowSigs: new Map(),
     allRows: [],
     enrichedMap: new Map(),
     visibleIds: [],
@@ -124,36 +124,59 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     [entities, order, activeType]
   );
 
-  const viewDataSig = useMemo(
-    () => buildViewDataSignature(viewIds, entities),
-    [viewIds, entities]
-  );
-
   const filterKey = useMemo(() => buildFilterCacheKey(filterCriteria), [filterCriteria]);
 
   const { allRows, enrichedMap, visibleIds, sortedItems } = useMemo(() => {
     const cache = deriveCacheRef.current;
-    const listInputsUnchanged =
-      cache.viewDataSig === viewDataSig &&
+    const metaUnchanged =
       cache.tagMappings === stableTagMappings &&
       cache.downloadHistory === stableDownloadHistory &&
       cache.activeType === activeType;
 
+    const dirtyKeys =
+      metaUnchanged && cache.enrichedMap.size > 0
+        ? collectDirtyRowKeys(viewIds, entities, cache.rowSigs, cache.viewIds)
+        : null;
+
     let rows = cache.allRows;
     let map = cache.enrichedMap;
 
-    if (!listInputsUnchanged) {
+    const needsFullListRebuild =
+      !metaUnchanged ||
+      dirtyKeys === null ||
+      dirtyKeys.length === viewIds.length;
+
+    if (needsFullListRebuild) {
       rows = idsToRows(viewIds, entities, stableTagMappings, stableDownloadHistory);
       map = new Map();
       for (let i = 0; i < rows.length; i++) {
         map.set(getDownloadSelectionId(rows[i]), rows[i]);
+      }
+      syncRowSignatures(viewIds, entities, cache.rowSigs);
+    } else if (dirtyKeys.length > 0) {
+      rows = rows.slice();
+      for (let d = 0; d < dirtyKeys.length; d++) {
+        const key = dirtyKeys[d];
+        const entity = entities[key];
+        const row = enrichRowForFilter(entity, stableTagMappings, stableDownloadHistory);
+        if (!row) continue;
+        const selectionId = getDownloadSelectionId(row);
+        map.set(selectionId, row);
+        const idx = viewIds.indexOf(key);
+        if (idx >= 0) {
+          rows[idx] = row;
+        }
+        cache.rowSigs.set(key, buildRowDataSignature(key, entity));
       }
     }
 
     let ids = cache.visibleIds;
     let items = cache.sortedItems;
 
-    if (!listInputsUnchanged || cache.filterKey !== filterKey) {
+    const filterUnchanged = cache.filterKey === filterKey;
+    const listStable = needsFullListRebuild ? false : dirtyKeys.length === 0;
+
+    if (!filterUnchanged || !listStable) {
       ids = selectVisibleSortedFromMap(viewIds, map, filterCriteria, entities);
       items = new Array(ids.length);
       let needsFallback = false;
@@ -167,11 +190,12 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     }
 
     deriveCacheRef.current = {
-      viewDataSig,
       filterKey,
       tagMappings: stableTagMappings,
       downloadHistory: stableDownloadHistory,
       activeType,
+      viewIds,
+      rowSigs: cache.rowSigs,
       allRows: rows,
       enrichedMap: map,
       visibleIds: ids,
@@ -181,7 +205,6 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     return { allRows: rows, enrichedMap: map, visibleIds: ids, sortedItems: items };
   }, [
     viewIds,
-    viewDataSig,
     entities,
     filterKey,
     filterCriteria,

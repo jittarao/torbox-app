@@ -92,6 +92,14 @@ function useTableBodyState(props) {
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const deferredExpandedById = useDeferredValue(expandedById);
 
+  const expandedItemsKey = useMemo(
+    () =>
+      Object.keys(deferredExpandedById)
+        .sort()
+        .join(','),
+    [deferredExpandedById]
+  );
+
   const expandedItemsArray = useMemo(() => {
     return Object.keys(deferredExpandedById)
       .map((id) => (Number.isNaN(Number(id)) ? id : Number(id)))
@@ -245,6 +253,7 @@ function useTableBodyState(props) {
     viewMode,
     tableWidth,
     fileSearch,
+    expandedItemsKey,
     t,
     commonT,
   };
@@ -368,10 +377,6 @@ function WindowVirtualizedBody(props) {
     useFlushSync: false,
   });
 
-  const expandedItemsKey = Object.keys(useDownloadsUiStore.getState().expandedById)
-    .sort()
-    .join(',');
-
   const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
     virtualizer: windowVirtualizer,
     viewMode: state.viewMode,
@@ -381,7 +386,7 @@ function WindowVirtualizedBody(props) {
     remeasureDeps: [
       state.resolvedColumnWidths,
       state.tableOffsetTop,
-      expandedItemsKey,
+      state.expandedItemsKey,
       state.fileSearch,
     ],
   });
@@ -415,10 +420,6 @@ function ContainerVirtualizedBody(props) {
     useFlushSync: false,
   });
 
-  const expandedItemsKey = Object.keys(useDownloadsUiStore.getState().expandedById)
-    .sort()
-    .join(',');
-
   const { virtualRows: currentVirtualRows } = useDownloadsVirtualRowSync({
     virtualizer: containerVirtualizer,
     viewMode: state.viewMode,
@@ -428,7 +429,7 @@ function ContainerVirtualizedBody(props) {
     remeasureDeps: [
       state.resolvedColumnWidths,
       state.tableOffsetTop,
-      expandedItemsKey,
+      state.expandedItemsKey,
       state.fileSearch,
     ],
   });
