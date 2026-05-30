@@ -46,9 +46,11 @@
     "show": "API-Schlüssel anzeigen"
   },
   "ApiKeyManager": {
+    "active": "Aktiv",
     "add": "Hinzufügen",
     "addKey": "Schlüssel hinzufügen",
     "addNewKey": "Neuer API-Schlüssel",
+    "addNewKeyHint": "Labels helfen, Konten auf einen Blick zu unterscheiden.",
     "apiKey": "API-Schlüssel",
     "apiKeyPlaceholder": "Geben Sie Ihren API-Schlüssel ein",
     "cancel": "Abbrechen",
@@ -56,7 +58,10 @@
     "deleteKey": "Schlüssel löschen",
     "keyLabel": "Schlüssel-Label",
     "keyLabelPlaceholder": "e.g. Personal, Family",
+    "keysCount": "{count, plural, =0 {Keine Schlüssel} one {# Schlüssel} other {# Schlüssel}}",
+    "managerPinned": "„Offen halten“ deaktivieren zum Schließen",
     "noKeys": "Keine gespeicherten Schlüssel",
+    "noKeysHint": "Profile speichern, um schnell zwischen TorBox-Konten zu wechseln.",
     "savedKeys": "Gespeicherte API-Schlüssel",
     "toggleOpen": "Offen halten"
   },
