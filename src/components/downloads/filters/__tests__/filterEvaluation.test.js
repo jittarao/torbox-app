@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { TAG_OPERATORS } from '@/components/downloads/AutomationRules/constants';
+import { tagOperatorNeedsTagSelection } from '../tagFilterHelpers';
 import { itemMatchesFilters } from '../filterEvaluation';
 
 const filtersWithTagRule = (operator, value = []) => ({
@@ -31,5 +32,12 @@ describe('itemMatchesFilters tags column', () => {
     const filters = filtersWithTagRule(TAG_OPERATORS.IS_ANY_OF, [1, 2]);
     expect(itemMatchesFilters({ tags: [{ id: 2, name: 'b' }] }, filters)).toBe(true);
     expect(itemMatchesFilters({ tags: [{ id: 9, name: 'x' }] }, filters)).toBe(false);
+  });
+});
+
+describe('tagFilterHelpers', () => {
+  test('tagOperatorNeedsTagSelection identifies tag-picking operators', () => {
+    expect(tagOperatorNeedsTagSelection(TAG_OPERATORS.IS_ANY_OF)).toBe(true);
+    expect(tagOperatorNeedsTagSelection(TAG_OPERATORS.IS_SET)).toBe(false);
   });
 });

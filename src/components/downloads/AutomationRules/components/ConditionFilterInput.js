@@ -8,6 +8,10 @@ import {
   STRING_OPERATORS,
   TAG_OPERATORS,
 } from '../constants';
+import {
+  tagOperatorNeedsTagSelection,
+  isTagPresenceOperator,
+} from '@/components/downloads/filters/tagFilterHelpers';
 import { useTags } from '@/components/shared/hooks/useTags';
 import {
   isTimeBasedCondition,
@@ -95,6 +99,11 @@ export default function ConditionFilterInput({
       onUpdate(index, 'type', value);
       onUpdate(index, 'operator', TAG_OPERATORS.IS_ANY_OF);
       onUpdate(index, 'value', []);
+    } else if (field === 'operator' && condition.type === CONDITION_TYPES.TAGS) {
+      onUpdate(index, 'operator', value);
+      if (isTagPresenceOperator(value)) {
+        onUpdate(index, 'value', []);
+      }
     } else {
       onUpdate(index, field, value);
     }
@@ -172,6 +181,8 @@ export default function ConditionFilterInput({
         [TAG_OPERATORS.IS_ANY_OF]: t('tagOperators.isAnyOf'),
         [TAG_OPERATORS.IS_ALL_OF]: t('tagOperators.isAllOf'),
         [TAG_OPERATORS.IS_NONE_OF]: t('tagOperators.isNoneOf'),
+        [TAG_OPERATORS.IS_SET]: t('tagOperators.isSet'),
+        [TAG_OPERATORS.IS_NOT_SET]: t('tagOperators.isNotSet'),
       };
       label = labels[op] || op;
     }
@@ -245,7 +256,8 @@ export default function ConditionFilterInput({
               placeholder={t('conditions.statusPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
-          ) : condition.type === CONDITION_TYPES.TAGS ? (
+          ) : condition.type === CONDITION_TYPES.TAGS &&
+            tagOperatorNeedsTagSelection(condition.operator) ? (
             <MultiSelect
               value={getTagsValue()}
               onChange={(values) => handleFieldChange('value', values)}

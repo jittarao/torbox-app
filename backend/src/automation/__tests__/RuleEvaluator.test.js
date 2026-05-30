@@ -1213,6 +1213,48 @@ describe('RuleEvaluator', () => {
         expect(result).toBe(true);
       });
 
+      it('should evaluate TAGS condition with is_set operator', () => {
+        const condition = { type: 'TAGS', operator: 'is_set', value: [] };
+        const torrent = { id: '1' };
+        const tagsByDownloadId = new Map([['1', [1]]]);
+
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
+        expect(result).toBe(true);
+      });
+
+      it('should evaluate TAGS condition with is_not_set operator', () => {
+        const condition = { type: 'TAGS', operator: 'is_not_set', value: [] };
+        const torrent = { id: '1' };
+        const tagsByDownloadId = new Map([['1', []]]);
+
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
+        expect(result).toBe(true);
+      });
+
+      it('should return false for TAGS is_set when download has no tags', () => {
+        const condition = { type: 'TAGS', operator: 'is_set', value: [] };
+        const torrent = { id: '1' };
+        const tagsByDownloadId = new Map([['1', []]]);
+
+        const result = ruleEvaluator.evaluateCondition(
+          condition,
+          torrent,
+          new Map(),
+          tagsByDownloadId
+        );
+        expect(result).toBe(false);
+      });
+
       it('should evaluate TAGS condition with has_none operator (has excluded tag)', () => {
         const condition = { type: 'TAGS', operator: 'has_none', value: [1, 2] };
         const torrent = { id: '1' };

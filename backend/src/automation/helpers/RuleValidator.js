@@ -288,6 +288,8 @@ class RuleValidator {
       'is_any_of',
       'is_all_of',
       'is_none_of',
+      'is_set',
+      'is_not_set',
       // String operators (for NAME, TRACKER)
       'contains',
       'not_contains',
