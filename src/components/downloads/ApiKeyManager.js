@@ -3,6 +3,7 @@ import { Check, Delete, Eye, EyeOff, Plus, Times } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import { ensureUserDb } from '@/utils/ensureUserDb';
 import { useModalFocusTrap } from '@/components/shared/hooks/useModalFocusTrap';
+import { getItem, setJSON } from '@/utils/storage';
 
 function getKeyInitials(label) {
   const parts = label.trim().split(/\s+/).filter(Boolean);
@@ -48,10 +49,11 @@ export default function ApiKeyManager({
   const t = useTranslations('ApiKeyManager');
   const tInput = useTranslations('ApiKeyInput');
   const [keys, setKeys] = useState(() => {
+    const storedKeys = getItem('torboxApiKeys:v1') ?? getItem('torboxApiKeys');
+    if (!storedKeys) return [];
     try {
-      const storedKeys =
-        localStorage.getItem('torboxApiKeys:v1') ?? localStorage.getItem('torboxApiKeys');
-      return storedKeys ? JSON.parse(storedKeys) : [];
+      const parsed = JSON.parse(storedKeys);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
       console.error('Error parsing API keys from localStorage:', error);
       return [];
@@ -65,7 +67,7 @@ export default function ApiKeyManager({
   useModalFocusTrap(showAddForm, addDialogRef);
 
   const saveKeys = (newKeys) => {
-    localStorage.setItem('torboxApiKeys:v1', JSON.stringify(newKeys));
+    setJSON('torboxApiKeys:v1', newKeys);
     setKeys(newKeys);
   };
 

@@ -9,6 +9,7 @@ import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import { REFERRAL_CODE } from '@/components/constants';
 import { applyReferralToAccount } from '@/utils/referralEligibility';
 import { markReferralAppliedForKey, isReferralAppliedForKey } from '@/utils/referralApplied';
+import { getItem, setItem } from '@/utils/storage';
 
 export default function ApiKeyInput({
   value,
@@ -21,7 +22,7 @@ export default function ApiKeyInput({
   const t = useTranslations('ApiKeyInput');
   const [showKey, setShowKey] = useState(false);
   const lastAutoApplyKeyRef = useRef('');
-  const cachedKeepManagerOpen = localStorage.getItem('torboxKeepManagerOpen') === 'true';
+  const cachedKeepManagerOpen = getItem('torboxKeepManagerOpen') === 'true';
   const [showManager, setShowManager] = useState(() => cachedKeepManagerOpen);
   const [keepManagerOpen, setKeepManagerOpen] = useState(() => cachedKeepManagerOpen);
   const [draft, setDraft] = useState(undefined);
@@ -53,7 +54,7 @@ export default function ApiKeyInput({
   // Save manager open state to localStorage
   const handleKeepManagerToggle = (keepOpen) => {
     setKeepManagerOpen(keepOpen);
-    localStorage.setItem('torboxKeepManagerOpen', keepOpen.toString());
+    setItem('torboxKeepManagerOpen', keepOpen.toString());
   };
 
   // Ensure user database exists when API key is set

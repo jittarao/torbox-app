@@ -10,6 +10,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 import Toast from '../shared/Toast';
+import { getItem, getJSON, setItem, setJSON } from '@/utils/storage';
 
 // Local storage keys
 const UPLOADER_EXPANDED_KEY = 'uploader-expanded';
@@ -24,31 +25,15 @@ const DEFAULT_EXPANDED_STATES = {
 };
 
 function getExpandedStates() {
-  if (typeof localStorage === 'undefined') {
-    return DEFAULT_EXPANDED_STATES;
+  const parsed = getJSON(UPLOADER_EXPANDED_KEY);
+  if (parsed) {
+    return { ...DEFAULT_EXPANDED_STATES, ...parsed };
   }
-
-  try {
-    const saved = localStorage.getItem(UPLOADER_EXPANDED_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...DEFAULT_EXPANDED_STATES, ...parsed };
-    }
-  } catch (error) {
-    console.error('Error parsing uploader expanded states:', error);
-  }
-
   return DEFAULT_EXPANDED_STATES;
 }
 
 function saveExpandedStates(states) {
-  if (typeof localStorage === 'undefined') return;
-
-  try {
-    localStorage.setItem(UPLOADER_EXPANDED_KEY, JSON.stringify(states));
-  } catch (error) {
-    console.error('Error saving uploader expanded states:', error);
-  }
+  setJSON(UPLOADER_EXPANDED_KEY, states);
 }
 
 export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
@@ -81,13 +66,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
   const isMobile = useIsMobile();
   const [toast, setToast] = useState(null);
   const [nzbTipsHidden, setNzbTipsHidden] = useState(() => {
-    if (typeof localStorage === 'undefined') return false;
-    try {
-      const saved = localStorage.getItem(NZB_TIPS_HIDDEN_KEY);
-      return saved !== null ? saved === 'true' : false;
-    } catch {
-      return false;
-    }
+    const saved = getItem(NZB_TIPS_HIDDEN_KEY);
+    return saved !== null ? saved === 'true' : false;
   });
 
   const isClient = useSyncExternalStore(
@@ -197,8 +177,8 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
               onClick={() => {
                 const next = !showOptions;
                 setShowOptions(next);
-                if (typeof window !== 'undefined' && activeType === 'torrents') {
-                  localStorage.setItem(UPLOADER_OPTIONS_KEY, next.toString());
+                if (activeType === 'torrents') {
+                  setItem(UPLOADER_OPTIONS_KEY, next.toString());
                 }
               }}
               className="flex items-center gap-1 text-xs lg:text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
@@ -414,9 +394,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                   type="button"
                   onClick={() => {
                     setNzbTipsHidden(true);
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem(NZB_TIPS_HIDDEN_KEY, 'true');
-                    }
+                    setItem(NZB_TIPS_HIDDEN_KEY, 'true');
                   }}
                   className="ml-2 p-1 text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
                   aria-label="Hide tips"
@@ -441,9 +419,7 @@ export default function ItemUploader({ apiKey, activeType = 'torrents' }) {
                 type="button"
                 onClick={() => {
                   setNzbTipsHidden(false);
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem(NZB_TIPS_HIDDEN_KEY, 'false');
-                  }
+                  setItem(NZB_TIPS_HIDDEN_KEY, 'false');
                 }}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-lg transition-all duration-200"
               >

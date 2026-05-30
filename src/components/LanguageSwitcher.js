@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import useHeaderDropdownDismiss from '@/hooks/useHeaderDropdownDismiss';
 import HeaderDropdownPanel from '@/components/shared/HeaderDropdownPanel';
 import { headerDropdownItemClass } from '@/components/shared/headerDropdownClasses';
+import { getItem, setItem } from '@/utils/storage';
 
 const languages = {
   en: { name: 'English', flag: '/images/flags/flag-en.png' },
@@ -27,7 +28,7 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('preferredLanguage');
+    const savedLanguage = getItem('preferredLanguage');
     if (savedLanguage && savedLanguage !== locale) {
       const newPath = pathname.replace(locale, savedLanguage);
       push(newPath);
@@ -39,7 +40,7 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
 
   const handleLanguageChange = (newLocale) => {
     setIsOpen(false);
-    localStorage.setItem('preferredLanguage', newLocale);
+    setItem('preferredLanguage', newLocale);
     push(pathname.replace(locale, newLocale));
   };
 

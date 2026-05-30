@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { COLUMNS } from '@/components/constants';
+import { getJSON, setJSON } from '@/utils/storage';
 
 function getDefaultColumns(activeType) {
   const defaults = {
@@ -23,11 +24,10 @@ function loadColumns(activeType) {
   if (typeof window === 'undefined') return getDefaultColumns(activeType);
 
   const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
-  const stored = localStorage.getItem(storageKey);
-  if (!stored) return getDefaultColumns(activeType);
+  const storedColumns = getJSON(storageKey);
+  if (!storedColumns) return getDefaultColumns(activeType);
 
   try {
-    const storedColumns = JSON.parse(stored);
     const validColumns = storedColumns.filter((col) => {
       const column = COLUMNS[col];
       if (activeType === 'all') {
@@ -42,7 +42,7 @@ function loadColumns(activeType) {
     });
 
     if (validColumns.length === 0) return getDefaultColumns(activeType);
-    localStorage.setItem(storageKey, JSON.stringify(validColumns));
+    setJSON(storageKey, validColumns);
     return validColumns;
   } catch (e) {
     return getDefaultColumns(activeType);
@@ -80,7 +80,7 @@ export function useColumnManager(activeType = 'torrents') {
 
     // Store in localStorage with asset type-specific key
     const storageKey = `torbox${activeType.charAt(0).toUpperCase() + activeType.slice(1)}Columns`;
-    localStorage.setItem(storageKey, JSON.stringify(validColumns));
+    setJSON(storageKey, validColumns);
   };
 
   return { activeColumns, handleColumnChange };

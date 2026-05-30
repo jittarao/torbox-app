@@ -22,6 +22,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { selectItemsForView } from '@/store/torboxDownloadsSelectors';
+import { getItem, setItem } from '@/utils/storage';
 
 // Register Chart.js components
 ChartJS.register(
@@ -87,10 +88,8 @@ export default function SpeedChart({ items: itemsProp }) {
 
   // State to track if the chart is expanded or collapsed
   const [isExpanded, setIsExpanded] = useState(() => {
-    if (typeof localStorage !== 'undefined') {
-      const savedState = localStorage.getItem(CHART_EXPANDED_KEY);
-      if (savedState !== null) return savedState === 'true';
-    }
+    const savedState = getItem(CHART_EXPANDED_KEY);
+    if (savedState !== null) return savedState === 'true';
     if (typeof window !== 'undefined') return window.innerWidth >= 1024;
     return false;
   });
@@ -102,8 +101,7 @@ export default function SpeedChart({ items: itemsProp }) {
 
   // Listen for resize when no localStorage preference exists
   useEffect(() => {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem(CHART_EXPANDED_KEY) !== null)
-      return;
+    if (getItem(CHART_EXPANDED_KEY) !== null) return;
 
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -119,8 +117,8 @@ export default function SpeedChart({ items: itemsProp }) {
 
   // Save expanded state to localStorage when it changes
   useEffect(() => {
-    if (isClient && typeof localStorage !== 'undefined') {
-      localStorage.setItem(CHART_EXPANDED_KEY, isExpanded.toString());
+    if (isClient) {
+      setItem(CHART_EXPANDED_KEY, isExpanded.toString());
     }
   }, [isExpanded, isClient]);
 

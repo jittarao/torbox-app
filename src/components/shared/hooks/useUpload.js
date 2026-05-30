@@ -11,6 +11,7 @@ import {
   controlQueuedItem as controlQueuedItemAction,
   uploadItem as uploadItemAction,
 } from '@/utils/uploadActions';
+import { getItem, getJSON, setItem, setJSON } from '@/utils/storage';
 
 // Local storage keys
 const STORAGE_KEY = 'torrent-upload-options';
@@ -57,26 +58,14 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Global upload options to apply to all uploaded assets + auto start options
   const [globalOptions, setGlobalOptions] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_OPTIONS;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_OPTIONS;
-    } catch (err) {
-      console.warn(`Failed to load upload options:`, err);
-      return DEFAULT_OPTIONS;
-    }
+    const saved = getJSON(STORAGE_KEY);
+    return saved ?? DEFAULT_OPTIONS;
   });
 
   // Show/hide options state
   const [showOptions, setShowOptions] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const showOptionsValue = localStorage.getItem(SHOW_OPTIONS_KEY);
-      return showOptionsValue !== null ? showOptionsValue === 'true' : false;
-    } catch (err) {
-      console.warn(`Failed to load options visibility:`, err);
-      return false;
-    }
+    const showOptionsValue = getItem(SHOW_OPTIONS_KEY);
+    return showOptionsValue !== null ? showOptionsValue === 'true' : false;
   });
 
   // Get API endpoint based on asset type
@@ -202,24 +191,12 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
 
   // Save global upload options to localStorage whenever they change
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(globalOptions));
-    } catch (err) {
-      console.warn(`Failed to save upload options:`, err);
-    }
+    setJSON(STORAGE_KEY, globalOptions);
   }, [globalOptions]);
 
   // Save show/hide options to localStorage whenever they change
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      localStorage.setItem(SHOW_OPTIONS_KEY, showOptions);
-    } catch (err) {
-      console.warn(`Failed to save options visibility:`, err);
-    }
+    setItem(SHOW_OPTIONS_KEY, showOptions);
   }, [showOptions]);
 
   // Validate and add files to the upload list

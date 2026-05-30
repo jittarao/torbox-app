@@ -1,32 +1,21 @@
 import { AUDIO_STORAGE_KEY, SPEED_OPTIONS } from './constants';
+import { getJSON, setJSON } from '@/utils/storage';
 
 function getFileKey(itemId, fileId) {
   return `${itemId}-${fileId}`;
 }
 
 function getStorage() {
-  if (typeof window === 'undefined') return { volume: 1, byFile: {} };
-  try {
-    const raw = localStorage.getItem(AUDIO_STORAGE_KEY);
-    if (!raw) return { volume: 1, byFile: {} };
-    const data = JSON.parse(raw);
-    return {
-      volume:
-        typeof data.volume === 'number' && data.volume >= 0 && data.volume <= 1 ? data.volume : 1,
-      byFile: data.byFile && typeof data.byFile === 'object' ? data.byFile : {},
-    };
-  } catch {
-    return { volume: 1, byFile: {} };
-  }
+  const data = getJSON(AUDIO_STORAGE_KEY);
+  if (!data) return { volume: 1, byFile: {} };
+  return {
+    volume: typeof data.volume === 'number' && data.volume >= 0 && data.volume <= 1 ? data.volume : 1,
+    byFile: data.byFile && typeof data.byFile === 'object' ? data.byFile : {},
+  };
 }
 
 function setStorage(data) {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(AUDIO_STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // ignore
-  }
+  setJSON(AUDIO_STORAGE_KEY, data);
 }
 
 export function loadPosition(itemId, fileId) {

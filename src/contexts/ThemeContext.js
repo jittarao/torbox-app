@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useSyncExternalStore, use } from 'react';
+import { setItem } from '@/utils/storage';
 
 const ThemeContext = createContext();
 
@@ -36,7 +37,7 @@ export function ThemeProvider({ children }) {
   const toggleDarkMode = useCallback(() => {
     const newValue = !document.documentElement.classList.contains('dark');
     document.documentElement.classList.toggle('dark', newValue);
-    localStorage.setItem('darkMode', String(newValue));
+    setItem('darkMode', String(newValue));
   }, []);
 
   const value = {
