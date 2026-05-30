@@ -1,4 +1,9 @@
-import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import {
+  API_BASE,
+  API_VERSION,
+  FETCH_TIMEOUT_MS,
+  TORBOX_MANAGER_VERSION,
+} from '@/components/constants';
 
 function parseRetryAfterMs(retryAfter) {
   if (!retryAfter) return null;
@@ -42,7 +47,7 @@ class ApiClient {
     }
 
     // Add timeout to prevent indefinite waiting
-    const timeout = options.timeout || 30000; // Default 30 seconds
+    const timeout = options.timeout || FETCH_TIMEOUT_MS;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -158,7 +163,7 @@ class ApiClient {
    */
   async requestMultipart(endpoint, formData, options = {}) {
     const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
-    const timeout = options.timeout || 30000;
+    const timeout = options.timeout || FETCH_TIMEOUT_MS;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
