@@ -409,6 +409,8 @@
     "saveAsNew": "Guardar como nuevo",
     "saving": "Guardando...",
     "selectPlaceholder": "Seleccionar...",
+    "searchFilterOptionsPlaceholder": "Buscar…",
+    "searchFilterOptionsNoMatches": "No hay opciones coincidentes",
     "selectTagsPlaceholder": "Seleccionar etiquetas...",
     "updateView": "Actualizar vista",
     "updating": "Actualizando...",

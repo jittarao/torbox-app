@@ -409,6 +409,8 @@
     "saveAsNew": "Enregistrer comme nouveau",
     "saving": "Enregistrement...",
     "selectPlaceholder": "Sélectionner...",
+    "searchFilterOptionsPlaceholder": "Rechercher…",
+    "searchFilterOptionsNoMatches": "Aucune option correspondante",
     "selectTagsPlaceholder": "Sélectionner des étiquettes...",
     "updateView": "Mettre à jour la vue",
     "updating": "Mise à jour...",

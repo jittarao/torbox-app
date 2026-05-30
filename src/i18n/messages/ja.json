@@ -409,6 +409,8 @@
     "saveAsNew": "新しいビューとして保存",
     "saving": "保存中...",
     "selectPlaceholder": "選択...",
+    "searchFilterOptionsPlaceholder": "検索…",
+    "searchFilterOptionsNoMatches": "一致するオプションがありません",
     "selectTagsPlaceholder": "タグを選択...",
     "updateView": "ビューを更新",
     "updating": "更新中...",

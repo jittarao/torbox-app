@@ -189,6 +189,9 @@ export default function FilterInput({
           }
         }}
         className="w-full sm:min-w-[120px] sm:flex-1"
+        searchable
+        searchPlaceholder={customViewsT('searchFilterOptionsPlaceholder')}
+        noMatchesMessage={customViewsT('searchFilterOptionsNoMatches')}
       >
         {columnGroups.map((group, groupIdx) => (
           <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
