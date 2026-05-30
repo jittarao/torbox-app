@@ -27,6 +27,178 @@ function parseEntityKey(entityKey) {
   return { assetType: entityKey.slice(0, sep), id: entityKey.slice(sep + 1) };
 }
 
+function useCardEstimateSize(deferredEntityKeys, fileSearch) {
+  const entities = useTorboxDownloadsStore((state) => state.entities);
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const isMobile = useIsMobile();
+
+  return useCallback(
+    (index) => {
+      const entityKey = deferredEntityKeys[index];
+      if (!entityKey) return 0;
+      const { id } = parseEntityKey(entityKey);
+      const filesExpanded = expandedById[id];
+      const entity = entities?.[entityKey];
+      const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
+
+      let cardHeight = isMobile ? 118 : 104;
+      if (filesExpanded && filesVisible) {
+        const fileCount = filesVisible.length;
+        cardHeight += fileCount * (isMobile ? 54 : 44);
+      }
+      cardHeight += cardListItemGap;
+      return cardHeight;
+    },
+    [deferredEntityKeys, expandedById, entities, fileSearch, isMobile]
+  );
+}
+
+function VirtualizedCardList({
+  virtualizer,
+  virtualRows,
+  scrollMargin,
+  deferredEntityKeys,
+  parentRef,
+  isFullscreen,
+  renderCard,
+}) {
+  const totalSize = virtualizer.getTotalSize();
+
+  return (
+    <div
+      ref={parentRef}
+      className={isFullscreen ? 'relative w-full' : 'relative w-full'}
+      style={{ height: `${totalSize}px` }}
+    >
+      {virtualRows.map((virtualRow) => {
+        const entityKey = deferredEntityKeys[virtualRow.index];
+        if (!entityKey) return null;
+
+        return (
+          <div
+            key={entityKey}
+            data-index={virtualRow.index}
+            ref={virtualizer.measureElement}
+            className="absolute left-0 w-full"
+            style={{
+              top: 0,
+              transform: `translateY(${virtualRow.start - scrollMargin}px)`,
+            }}
+          >
+            {renderCard(entityKey, virtualRow.index)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Window scroll (normal layout — mobile and desktop card view). */
+function CardListWindowVirtualized({
+  deferredEntityKeys,
+  entityKeys,
+  containerOffsetTop,
+  parentRef,
+  viewMode,
+  isFullscreen,
+  estimateSize,
+  renderCard,
+  emptyState,
+}) {
+  const virtualizer = useWindowVirtualizer({
+    count: deferredEntityKeys.length,
+    estimateSize,
+    overscan: 4,
+    gap: getCardListItemGapPx(),
+    scrollMargin: containerOffsetTop,
+  });
+
+  const { virtualRows } = useDownloadsVirtualRowSync({
+    virtualizer,
+    viewMode,
+    isFullscreen: false,
+    fullscreenScrollEl: null,
+    rowCount: deferredEntityKeys.length,
+    remeasureDeps: [containerOffsetTop, deferredEntityKeys],
+  });
+
+  useLayoutEffect(() => {
+    if (entityKeys.length > 0 && entityKeys !== deferredEntityKeys) {
+      virtualizer.measure();
+    }
+  }, [entityKeys, deferredEntityKeys, virtualizer]);
+
+  if (deferredEntityKeys.length === 0) {
+    return emptyState;
+  }
+
+  return (
+    <VirtualizedCardList
+      virtualizer={virtualizer}
+      virtualRows={virtualRows}
+      scrollMargin={containerOffsetTop}
+      deferredEntityKeys={deferredEntityKeys}
+      parentRef={parentRef}
+      isFullscreen={isFullscreen}
+      renderCard={renderCard}
+    />
+  );
+}
+
+/** Scroll container is the fullscreen downloads panel. */
+function CardListContainerVirtualized({
+  deferredEntityKeys,
+  entityKeys,
+  fullscreenScrollEl,
+  parentRef,
+  viewMode,
+  isFullscreen,
+  estimateSize,
+  renderCard,
+  emptyState,
+}) {
+  const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
+
+  const virtualizer = useVirtualizer({
+    count: deferredEntityKeys.length,
+    getScrollElement,
+    estimateSize,
+    overscan: 4,
+    gap: getCardListItemGapPx(),
+  });
+
+  const { virtualRows } = useDownloadsVirtualRowSync({
+    virtualizer,
+    viewMode,
+    isFullscreen: true,
+    fullscreenScrollEl,
+    rowCount: deferredEntityKeys.length,
+    remeasureDeps: [deferredEntityKeys, fullscreenScrollEl],
+  });
+
+  useLayoutEffect(() => {
+    if (entityKeys.length > 0 && entityKeys !== deferredEntityKeys) {
+      virtualizer.measure();
+    }
+  }, [entityKeys, deferredEntityKeys, virtualizer]);
+
+  if (deferredEntityKeys.length === 0) {
+    return emptyState;
+  }
+
+  return (
+    <VirtualizedCardList
+      virtualizer={virtualizer}
+      virtualRows={virtualRows}
+      scrollMargin={0}
+      deferredEntityKeys={deferredEntityKeys}
+      parentRef={parentRef}
+      isFullscreen={isFullscreen}
+      renderCard={renderCard}
+    />
+  );
+}
+
 export default function CardList() {
   const ctx = useDownloadsContext();
   const {
@@ -62,7 +234,6 @@ export default function CardList() {
   const [isStreaming, setIsStreaming] = useState({});
   const parentRef = useRef(null);
   const { downloadSingle } = useDownloadsActions();
-  const isMobile = useIsMobile();
   const containerOffsetTopRef = useRef(0);
   const [containerOffsetTop, setContainerOffsetTop] = useState(0);
   const [fullscreenScrollEl, setFullscreenScrollEl] = useState(null);
@@ -96,7 +267,6 @@ export default function CardList() {
     };
 
     updateContainerOffset();
-
     window.addEventListener('resize', updateContainerOffset);
     return () => window.removeEventListener('resize', updateContainerOffset);
   }, [isFullscreen, ctx.sortedItems]);
@@ -114,50 +284,7 @@ export default function CardList() {
   }, [fileSearch]);
 
   const deferredEntityKeys = useDeferredValue(entityKeys);
-
-  const entities = useTorboxDownloadsStore((state) => state.entities);
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
-  const { toggleExpanded } = useDownloadsUiStore.getState();
-
-  const rowVirtualizer = (() => {
-    if (deferredEntityKeys.length === 0) return null;
-
-    const common = {
-      count: deferredEntityKeys.length,
-      estimateSize: (index) => {
-        const entityKey = deferredEntityKeys[index];
-        if (!entityKey) return 0;
-        const { id } = parseEntityKey(entityKey);
-        const filesExpanded = expandedById[id];
-        const entity = entities?.[entityKey];
-        const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
-
-        let cardHeight = isMobile ? 118 : 104;
-        if (filesExpanded && filesVisible) {
-          const fileCount = filesVisible.length;
-          cardHeight += fileCount * (isMobile ? 54 : 44);
-        }
-        cardHeight += cardListItemGap;
-        return cardHeight;
-      },
-      overscan: 4,
-      gap: getCardListItemGapPx(),
-    };
-
-    if (isFullscreen && fullscreenScrollEl) {
-      return useWindowVirtualizer({
-        ...common,
-        scrollMargin: containerOffsetTop,
-      });
-    }
-
-    return useVirtualizer({
-      ...common,
-      getScrollElement: () => parentRef.current,
-    });
-  })();
-
-  useDownloadsVirtualRowSync(entityKeys, rowVirtualizer);
+  const estimateSize = useCardEstimateSize(deferredEntityKeys, fileSearch);
 
   const interactions = useDownloadRowInteractions({
     items: ctx.sortedItems,
@@ -233,90 +360,105 @@ export default function CardList() {
     [interactions]
   );
 
-  const handleCopyLink = useCallback(
-    async (link) => {
-      setIsCopying((prev) => ({ ...prev, [link]: true }));
-      try {
-        await navigator.clipboard.writeText(link);
-      } finally {
-        setTimeout(() => {
-          setIsCopying((prev) => ({ ...prev, [link]: false }));
-        }, 1000);
-      }
-    },
-    []
+  const handleCopyLink = useCallback(async (link) => {
+    setIsCopying((prev) => ({ ...prev, [link]: true }));
+    try {
+      await navigator.clipboard.writeText(link);
+    } finally {
+      setTimeout(() => {
+        setIsCopying((prev) => ({ ...prev, [link]: false }));
+      }, 1000);
+    }
+  }, []);
+
+  const renderCard = useCallback(
+    (entityKey, index) => (
+      <DownloadCardContainer
+        entityKey={entityKey}
+        index={index}
+        tagMappings={tagMappings}
+        apiKey={apiKey}
+        activeColumns={activeColumns}
+        isBlurred={isBlurred}
+        viewMode={viewMode}
+        toggleFiles={toggleFiles}
+        setToast={setToast}
+        onDelete={onDelete}
+        downloadHistoryLookup={downloadHistoryLookup}
+        selectedItems={ctx.selectedItems}
+        handleItemSelection={handleItemSelection}
+        handleFileSelection={handleFileSelection}
+        handleFileDownload={handleFileDownload}
+        handleFileStream={handleFileStream}
+        handleAudioPlay={handleAudioPlay}
+        handleCopyLink={handleCopyLink}
+        isDownloading={isDownloading}
+        isCopying={isCopying}
+        isStreaming={isStreaming}
+        activeType={activeType}
+        hasFilesWithSearch={hasFilesWithSearch}
+      />
+    ),
+    [
+      tagMappings,
+      apiKey,
+      activeColumns,
+      isBlurred,
+      viewMode,
+      toggleFiles,
+      setToast,
+      onDelete,
+      downloadHistoryLookup,
+      ctx.selectedItems,
+      handleItemSelection,
+      handleFileSelection,
+      handleFileDownload,
+      handleFileStream,
+      handleAudioPlay,
+      handleCopyLink,
+      isDownloading,
+      isCopying,
+      isStreaming,
+      activeType,
+      hasFilesWithSearch,
+    ]
   );
 
-  useLayoutEffect(() => {
-    if (rowVirtualizer && entityKeys.length > 0 && entityKeys !== deferredEntityKeys) {
-      rowVirtualizer.measure();
-    }
-  }, [entityKeys, deferredEntityKeys, rowVirtualizer]);
+  const emptyState = (
+    <div className="flex justify-center items-center py-12 text-primary-text/50 dark:text-primary-text-dark/50">
+      {t('noItems')}
+    </div>
+  );
+
+  const useContainerScroll = isFullscreen && fullscreenScrollEl;
 
   return (
     <>
-      <div
-        ref={parentRef}
-        className={isFullscreen ? '' : 'relative overflow-auto'}
-        style={
-          isFullscreen
-            ? undefined
-            : { height: `${rowVirtualizer?.getTotalSize?.() ?? 0}px` }
-        }
-      >
-        {rowVirtualizer && deferredEntityKeys.length > 0 ? (
-          <div
-            style={
-              isFullscreen
-                ? {
-                    position: 'relative',
-                    width: '100%',
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                  }
-                : undefined
-            }
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const entityKey = deferredEntityKeys[virtualRow.index];
-              if (!entityKey) return null;
-
-              return (
-                <DownloadCardContainer
-                  key={entityKey}
-                  entityKey={entityKey}
-                  tagMappings={tagMappings}
-                  apiKey={apiKey}
-                  activeColumns={activeColumns}
-                  isBlurred={isBlurred}
-                  viewMode={viewMode}
-                  toggleFiles={toggleFiles}
-                  setToast={setToast}
-                  onDelete={onDelete}
-                  downloadHistoryLookup={downloadHistoryLookup}
-                  selectedItems={ctx.selectedItems}
-                  handleItemSelection={handleItemSelection}
-                  handleFileSelection={handleFileSelection}
-                  handleFileDownload={handleFileDownload}
-                  handleFileStream={handleFileStream}
-                  handleAudioPlay={handleAudioPlay}
-                  handleCopyLink={handleCopyLink}
-                  isDownloading={isDownloading}
-                  isCopying={isCopying}
-                  isStreaming={isStreaming}
-                  activeType={activeType}
-                  rowVirtualizer={rowVirtualizer}
-                  virtualRow={virtualRow}
-                  hasFilesWithSearch={hasFilesWithSearch}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex justify-center items-center py-12 text-primary-text/50 dark:text-primary-text-dark/50">
-            {t('noItems')}
-          </div>
-        )}
-      </div>
+      {useContainerScroll ? (
+        <CardListContainerVirtualized
+          deferredEntityKeys={deferredEntityKeys}
+          entityKeys={entityKeys}
+          fullscreenScrollEl={fullscreenScrollEl}
+          parentRef={parentRef}
+          viewMode={viewMode}
+          isFullscreen={isFullscreen}
+          estimateSize={estimateSize}
+          renderCard={renderCard}
+          emptyState={emptyState}
+        />
+      ) : (
+        <CardListWindowVirtualized
+          deferredEntityKeys={deferredEntityKeys}
+          entityKeys={entityKeys}
+          containerOffsetTop={containerOffsetTop}
+          parentRef={parentRef}
+          viewMode={viewMode}
+          isFullscreen={isFullscreen}
+          estimateSize={estimateSize}
+          renderCard={renderCard}
+          emptyState={emptyState}
+        />
+      )}
       <TrackSelectionModal
         isOpen={trackSelectionModal.isOpen}
         onClose={closeTrackSelectionModal}
