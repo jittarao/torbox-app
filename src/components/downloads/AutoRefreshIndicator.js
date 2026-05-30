@@ -87,7 +87,7 @@ export default function AutoRefreshIndicator({
     if (refreshRateLimited) return t('refreshDelayedRateLimit');
     if (mode === 'paused') return t('refreshPaused');
     if (mode === 'inactive') return t('autoRefreshInactive');
-    if (mode === 'slow') {
+    if (mode === 'slow' || mode === 'autoStart') {
       return secondsLeft != null
         ? t('nextRefreshSlow', { seconds: secondsLeft })
         : t('autoRefreshSlowHint');
@@ -98,7 +98,7 @@ export default function AutoRefreshIndicator({
     return t('refreshingSoon');
   }, [isRefreshing, refreshRateLimited, mode, secondsLeft, t]);
 
-  const showCountdown = mode === 'active' || mode === 'slow';
+  const showCountdown = mode === 'active' || mode === 'slow' || mode === 'autoStart';
   const ringMuted = mode === 'paused' || mode === 'inactive';
 
   return (
