@@ -5,7 +5,7 @@ import { AlertCircle, ExclamationTriangle, ExternalLink } from '@/components/ico
 import { ABUSE_POLICY_URL } from '@/components/constants';
 import { Link } from '@/i18n/navigation';
 import { useBandwidthUsage } from '@/hooks/useBandwidthUsage';
-import { formatSize } from './utils/formatters';
+import { formatSize, SIZE_BASE_DECIMAL } from './utils/formatters';
 
 /**
  * @param {Object} props
@@ -22,8 +22,8 @@ export default function UsageCallout({ apiKey, planId }) {
   }
 
   const isDanger = level === 'danger';
-  const usedLabel = formatSize(usedBytes, locale);
-  const limitLabel = formatSize(limitBytes, locale);
+  const usedLabel = formatSize(usedBytes, locale, SIZE_BASE_DECIMAL);
+  const limitLabel = formatSize(limitBytes, locale, SIZE_BASE_DECIMAL);
   const percentLabel = Math.round(percent);
 
   const message = isDanger

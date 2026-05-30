@@ -14,7 +14,8 @@ import {
 
 const Bar = dynamic(() => import('react-chartjs-2').then((mod) => mod.Bar), { ssr: false });
 import { format, parseISO } from 'date-fns';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatSize, SIZE_BASE_DECIMAL } from '@/components/downloads/utils/formatters';
 import { AlertCircle, BarChart3 } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 
@@ -44,14 +45,6 @@ const DATE_FORMATS = {
   month: 'MMM yyyy',
 };
 
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
 function formatDateLabel(dateStr, grouping) {
   try {
     const date = parseISO(dateStr);
@@ -63,6 +56,7 @@ function formatDateLabel(dateStr, grouping) {
 
 export default function BandwidthChart({ apiKey }) {
   const t = useTranslations('User.bandwidth');
+  const locale = useLocale();
   const [grouping, setGrouping] = useState('week');
   const [bandwidthData, setBandwidthData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -201,6 +195,11 @@ export default function BandwidthChart({ apiKey }) {
     [chartLabels, chartValues, t]
   );
 
+  const formatBandwidth = useCallback(
+    (bytes) => formatSize(bytes, locale, SIZE_BASE_DECIMAL),
+    [locale]
+  );
+
   const chartOptions = useMemo(
     () => ({
       responsive: true,
@@ -213,7 +212,7 @@ export default function BandwidthChart({ apiKey }) {
           },
           ticks: {
             color: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
-            callback: (value) => formatBytes(value),
+            callback: (value) => formatBandwidth(value),
             maxTicksLimit: 6,
           },
         },
@@ -236,7 +235,7 @@ export default function BandwidthChart({ apiKey }) {
         },
         tooltip: {
           callbacks: {
-            label: (context) => formatBytes(context.parsed.y),
+            label: (context) => formatBandwidth(context.parsed.y),
           },
           titleColor: isDarkMode ? THEME_COLORS.text.dark : THEME_COLORS.text.light,
           backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
@@ -250,7 +249,7 @@ export default function BandwidthChart({ apiKey }) {
         duration: 400,
       },
     }),
-    [isDarkMode, grouping]
+    [isDarkMode, grouping, formatBandwidth]
   );
 
   if (!isClient) {
