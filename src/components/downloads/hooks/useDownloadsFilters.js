@@ -30,6 +30,7 @@ export function useDownloadsFilters({
     setStatusFilter,
     appliedFilters,
     setAppliedFilters,
+    patchFilterCriteria,
     sortField,
     sortDirection,
     setSort,
@@ -69,15 +70,20 @@ export function useDownloadsFilters({
 
   const handleApplyView = (view) => {
     applyView(view);
-    setStatusFilter('all');
 
     const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
     setColumnFilters(normalizedFilters);
-    setAppliedFilters(normalizedFilters);
 
+    const criteriaPatch = {
+      statusFilter: 'all',
+      appliedFilters: normalizedFilters,
+      search: view.search_query || '',
+    };
     if (view.sort_field) {
-      setSort(view.sort_field, view.sort_direction || 'desc');
+      criteriaPatch.sortField = view.sort_field;
+      criteriaPatch.sortDirection = view.sort_direction || 'desc';
     }
+    patchFilterCriteria(criteriaPatch);
 
     let visibleColumns = view.visible_columns;
     if (visibleColumns) {
@@ -94,7 +100,6 @@ export function useDownloadsFilters({
       }
     }
 
-    setSearch(view.search_query || '');
     setMobileFiltersOpen(false);
 
     return visibleColumns;
@@ -117,11 +122,13 @@ export function useDownloadsFilters({
     }
 
     clearView();
-    setStatusFilter('all');
-    setSearch('');
     const tagFilter = buildTagFilter(id);
     setColumnFilters(tagFilter);
-    setAppliedFilters(tagFilter);
+    patchFilterCriteria({
+      statusFilter: 'all',
+      search: '',
+      appliedFilters: tagFilter,
+    });
     setMobileFiltersOpen(false);
   };
 
@@ -185,10 +192,19 @@ export function useDownloadsFilters({
 
   const handleOpenNewFilter = () => {
     setEditingView(null);
-    setColumnFilters(normalizeFilters(appliedFilters));
+    const sourceFilters = activeView ? filtersFromView(activeView) : appliedFilters;
+    setColumnFilters(normalizeFilters(sourceFilters));
     setFilterModalMode('filter');
     setFilterModalOpen(true);
     setMobileFiltersOpen(false);
+  };
+
+  const handleEditActiveFilters = () => {
+    if (activeView) {
+      handleEditView(activeView);
+      return;
+    }
+    handleOpenNewFilter();
   };
 
   const handleOpenNewView = () => {
@@ -216,28 +232,20 @@ export function useDownloadsFilters({
         filterModalMode === 'edit' && editingView?.asset_type ? editingView.asset_type : activeType;
       const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);
       setColumnFilters(normalized);
-      setAppliedFilters(normalized);
       clearView();
 
+      const criteriaPatch = {
+        statusFilter: 'all',
+        appliedFilters: normalized,
+        search: includeSearch && search?.trim() ? search.trim() : '',
+      };
       if (includeSort && sortField) {
-        setSort(sortField, sortDirection || 'desc');
+        criteriaPatch.sortField = sortField;
+        criteriaPatch.sortDirection = sortDirection || 'desc';
       }
-
-      if (includeSearch && search?.trim()) {
-        setSearch(search.trim());
-      } else if (!includeSearch) {
-        setSearch('');
-      }
-
-      setStatusFilter('all');
+      patchFilterCriteria(criteriaPatch);
     },
-    [
-      clearView,
-      setSort,
-      setSearch,
-      setStatusFilter,
-      setAppliedFilters,
-    ]
+    [clearView, patchFilterCriteria]
   );
 
   const handleSort = useCallback(
@@ -292,6 +300,7 @@ export function useDownloadsFilters({
     handleRenameTag,
     handleTagDeleted,
     handleOpenNewFilter,
+    handleEditActiveFilters,
     handleOpenNewView,
     handleOpenTagManager,
     handleApplyFiltersFromModal,
