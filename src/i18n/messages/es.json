@@ -267,7 +267,9 @@
     "tagOperators": {
       "isAllOf": "Es todos de",
       "isAnyOf": "Es alguno de",
-      "isNoneOf": "No es ninguno de"
+      "isNoneOf": "No es ninguno de",
+      "isSet": "Está definido",
+      "isNotSet": "No está definido"
     },
     "timeOperators": {
       "eq": "es",

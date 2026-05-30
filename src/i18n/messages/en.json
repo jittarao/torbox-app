@@ -281,7 +281,9 @@
     "tagOperators": {
       "isAllOf": "Is all of",
       "isAnyOf": "Is any of",
-      "isNoneOf": "Is none of"
+      "isNoneOf": "Is none of",
+      "isSet": "Is set",
+      "isNotSet": "Is not set"
     },
     "timeOperators": {
       "eq": "is",

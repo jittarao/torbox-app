@@ -267,7 +267,9 @@
     "tagOperators": {
       "isAllOf": "すべてである",
       "isAnyOf": "いずれかである",
-      "isNoneOf": "いずれでもない"
+      "isNoneOf": "いずれでもない",
+      "isSet": "設定あり",
+      "isNotSet": "設定なし"
     },
     "timeOperators": {
       "eq": "は",
