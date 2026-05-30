@@ -249,14 +249,16 @@ export default function FilterInput({
               placeholder={customViewsT('selectPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
-          ) : filter.column === 'tags' && tagOperatorNeedsTagSelection(filter.operator) ? (
-            <MultiSelect
-              value={getTagsValue()}
-              onChange={(values) => handleFieldChange('value', values)}
-              options={getTagOptions()}
-              placeholder={customViewsT('selectTagsPlaceholder')}
-              className="w-full sm:flex-1 sm:min-w-[150px]"
-            />
+          ) : isTagsColumn(filter.column) ? (
+            tagOperatorNeedsTagSelection(filter.operator) ? (
+              <MultiSelect
+                value={getTagsValue()}
+                onChange={(values) => handleFieldChange('value', values)}
+                options={getTagOptions()}
+                placeholder={customViewsT('selectTagsPlaceholder')}
+                className="w-full sm:flex-1 sm:min-w-[150px]"
+              />
+            ) : null
           ) : isBooleanColumn(filter.column) ? (
             <Select
               value={
