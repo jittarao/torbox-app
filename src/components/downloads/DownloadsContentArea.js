@@ -1,28 +1,33 @@
 'use client';
 
-import { useDownloadsContext } from './DownloadsContext';
+import { useDownloadsFilterContext } from './DownloadsFilterContext';
+import { useDownloadsUIContext } from './DownloadsUIContext';
 import ActiveFiltersBar from './ActiveFiltersBar';
 import ActionBar from './ActionBar/index';
 import ItemsTable from './ItemsTable';
 import CardList from './CardList';
 
 export default function DownloadsContentArea() {
-  const ctx = useDownloadsContext();
+  const {
+    appliedFilters, activeView, tags,
+    handleClearFilters, handleOpenNewFilter,
+  } = useDownloadsFilterContext();
+  const { isBackendAvailable, displayViewMode } = useDownloadsUIContext();
 
   return (
     <>
-      {ctx.isBackendAvailable && (
+      {isBackendAvailable && (
         <ActiveFiltersBar
-          appliedFilters={ctx.appliedFilters}
-          activeView={ctx.activeView}
-          tags={ctx.tags}
-          onClear={ctx.handleClearFilters}
-          onEdit={ctx.handleOpenNewFilter}
+          appliedFilters={appliedFilters}
+          activeView={activeView}
+          tags={tags}
+          onClear={handleClearFilters}
+          onEdit={handleOpenNewFilter}
         />
       )}
       <ActionBar />
 
-      {ctx.displayViewMode === 'table' ? <ItemsTable /> : <CardList />}
+      {displayViewMode === 'table' ? <ItemsTable /> : <CardList />}
     </>
   );
 }
