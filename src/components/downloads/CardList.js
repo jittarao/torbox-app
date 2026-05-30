@@ -19,6 +19,7 @@ import TrackSelectionModal from './TrackSelectionModal';
 import { getCardListItemGapPx } from './utils/responsiveLayout';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
+import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 
 function parseEntityKey(entityKey) {
@@ -57,8 +58,20 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch) {
   );
 }
 
-const measureCardElement = (element) =>
-  element ? Math.ceil(element.getBoundingClientRect().height) : 0;
+function measureCardElement(element, _entry, instance) {
+  if (!element || !instance) return 0;
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    const offsetHeight = element.offsetHeight;
+    if (offsetHeight > 0) return Math.ceil(offsetHeight);
+    const index = instance.indexFromElement(element);
+    return instance.options.estimateSize(index);
+  }
+  const measured = Math.ceil(element.getBoundingClientRect().height);
+  if (measured > 0) return measured;
+  const offsetHeight = element.offsetHeight;
+  if (offsetHeight > 0) return Math.ceil(offsetHeight);
+  return instance.options.estimateSize(instance.indexFromElement(element));
+}
 
 function VirtualizedCardList({
   virtualizer,
@@ -268,6 +281,19 @@ export default function CardList() {
     }
   }, [isFullscreen, scrollContainerRef]);
 
+  const updateContainerOffset = useCallback(() => {
+    if (isFullscreen || !parentRef.current) return;
+
+    const rect = parentRef.current.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const offset = rect.top + scrollTop;
+
+    if (offset !== containerOffsetTopRef.current) {
+      containerOffsetTopRef.current = offset;
+      setContainerOffsetTop(offset);
+    }
+  }, [isFullscreen]);
+
   useLayoutEffect(() => {
     if (isFullscreen) {
       containerOffsetTopRef.current = 0;
@@ -275,23 +301,12 @@ export default function CardList() {
       return;
     }
 
-    const updateContainerOffset = () => {
-      if (!parentRef.current) return;
-
-      const rect = parentRef.current.getBoundingClientRect();
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const offset = rect.top + scrollTop;
-
-      if (offset !== containerOffsetTopRef.current) {
-        containerOffsetTopRef.current = offset;
-        setContainerOffsetTop(offset);
-      }
-    };
-
     updateContainerOffset();
     window.addEventListener('resize', updateContainerOffset);
     return () => window.removeEventListener('resize', updateContainerOffset);
-  }, [isFullscreen, ctx.sortedItems]);
+  }, [isFullscreen, ctx.sortedItems, updateContainerOffset]);
+
+  useLayoutOnTabVisible(updateContainerOffset);
 
   const hasFilesWithSearch = useMemo(() => {
     if (!fileSearch) return null;

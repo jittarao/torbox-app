@@ -18,6 +18,7 @@ import {
   selectSelectedItemCount,
   selectTotalSelectedFileCount,
 } from '@/store/downloadsSelectionStore';
+import { useLayoutOnTabVisible } from '../hooks/useLayoutOnTabVisible';
 
 export default function ActionBar({
   unfilteredItems,
@@ -66,6 +67,7 @@ export default function ActionBar({
   const [stickyBounds, setStickyBounds] = useState(null);
   const stickyRef = useRef(null);
   const isStickyRef = useRef(false);
+  const refreshStickyLayoutRef = useRef(() => {});
 
   const { statusCounts, statusOptions, isStatusSelected } = useDownloadsStatusCounts(activeType);
 
@@ -133,6 +135,13 @@ export default function ActionBar({
     );
     observer.observe(sentinel);
 
+    refreshStickyLayoutRef.current = () => {
+      measureHeight();
+      updateBounds();
+      observer.unobserve(sentinel);
+      observer.observe(sentinel);
+    };
+
     // Initial setup
     measureHeight();
     window.addEventListener('resize', handleResize);
@@ -146,12 +155,18 @@ export default function ActionBar({
 
     return () => {
       observer.disconnect();
+      refreshStickyLayoutRef.current = () => {};
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       clearTimeout(resizeTimeout);
       sentinel.remove();
     };
   }, [isFullscreen, scrollContainerRef, viewMode]);
+
+  useLayoutOnTabVisible(() => {
+    if (!stickyRef.current) return;
+    refreshStickyLayoutRef.current();
+  });
 
   const itemTypeName = getItemTypeName(activeType);
   const itemTypePlural = `${itemTypeName}s`;

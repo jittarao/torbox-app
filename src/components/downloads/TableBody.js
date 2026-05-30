@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
+import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 
 function useTableBodyState(props) {
@@ -66,18 +67,18 @@ function useTableBodyState(props) {
     }
   }, [isFullscreen, scrollContainerRef]);
 
+  const updateTableOffset = useCallback(() => {
+    if (isFullscreen || !tbodyRef.current) return;
+
+    const rect = tbodyRef.current.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const offset = rect.top + scrollTop;
+    tableOffsetTopRef.current = offset;
+    setTableOffsetTop(offset);
+  }, [isFullscreen]);
+
   useEffect(() => {
     if (isFullscreen) return;
-
-    const updateTableOffset = () => {
-      if (tbodyRef.current) {
-        const rect = tbodyRef.current.getBoundingClientRect();
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const offset = rect.top + scrollTop;
-        tableOffsetTopRef.current = offset;
-        setTableOffsetTop(offset);
-      }
-    };
 
     updateTableOffset();
     requestAnimationFrame(updateTableOffset);
@@ -85,7 +86,9 @@ function useTableBodyState(props) {
     return () => {
       window.removeEventListener('resize', updateTableOffset);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, updateTableOffset]);
+
+  useLayoutOnTabVisible(updateTableOffset);
 
   const deferredItems = useDeferredValue(items);
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
@@ -127,8 +130,19 @@ function useTableBodyState(props) {
     return rows;
   }, [deferredItems, expandedItemsArray, fileSearch]);
 
-  const measureElement = useCallback((element) => {
-    return Math.ceil(element.getBoundingClientRect().height);
+  const measureElement = useCallback((element, _entry, instance) => {
+    if (!element || !instance) return 0;
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      const offsetHeight = element.offsetHeight;
+      if (offsetHeight > 0) return Math.ceil(offsetHeight);
+      const index = instance.indexFromElement(element);
+      return instance.options.estimateSize(index);
+    }
+    const measured = Math.ceil(element.getBoundingClientRect().height);
+    if (measured > 0) return measured;
+    const offsetHeight = element.offsetHeight;
+    if (offsetHeight > 0) return Math.ceil(offsetHeight);
+    return instance.options.estimateSize(instance.indexFromElement(element));
   }, []);
 
   const estimateSize = useCallback(

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useLayoutEffect, useEffect } from 'react';
+import { useLayoutOnTabVisible } from './useLayoutOnTabVisible';
 
 /**
  * Keeps virtual row state in sync without flushSync during scroll / layout transitions.
@@ -105,6 +106,8 @@ export function useDownloadsVirtualRowSync({
     observer.observe(fullscreenScrollEl);
     return () => observer.disconnect();
   }, [isFullscreen, fullscreenScrollEl, remeasureAndSync]);
+
+  useLayoutOnTabVisible(remeasureAndSync);
 
   return { virtualRows, remeasureAndSync, syncVirtualRows };
 }
