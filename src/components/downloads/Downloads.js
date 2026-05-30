@@ -1,414 +1,71 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
-import { useColumnManager } from '../shared/hooks/useColumnManager';
-import { useDownloads } from '../shared/hooks/useDownloads';
-import { useDownloadsHistoryMigration } from '../shared/hooks/useDownloadsHistoryMigration';
-import DownloadsPlayersHost, {
-  useDownloadsPlayerActions,
-} from './DownloadsPlayersHost';
-import { useDownloadsFilters } from '../shared/hooks/useDownloadsFilters';
-import { useDownloadsListData } from '../shared/hooks/useDownloadsListData';
-import { DownloadsActionsProvider } from './DownloadsActionsContext';
-import { DownloadsProvider } from './DownloadsContext';
-import { DownloadsDataProvider } from './DownloadsDataContext';
-import { useDelete } from '../shared/hooks/useDelete';
-import { useFetchData } from '../shared/hooks/useFetchData';
-import { useSelection } from '../shared/hooks/useSelection';
-import useIsMobile from '../../hooks/useIsMobile';
-import { useDownloadsUiStore } from '@/store/downloadsUiStore';
-import { usePollingPauseStore } from '@/store/pollingPauseStore';
-import { useSessionStore } from '@/store/sessionStore';
-import { useBackendMode } from '@/hooks/useBackendMode';
-import useDownloadsViewMode from '@/hooks/useDownloadsViewMode';
-import useStoredAssetType from '@/hooks/useStoredAssetType';
-import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
-import { useBulkExport } from './hooks/useBulkExport';
-import { useDownloadsSearchExpand } from './hooks/useDownloadsSearchExpand';
-import { hasDownloadAccess } from '@/utils/userProfile';
-import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
-import { formatSize } from './utils/formatters';
 import { useTranslations } from 'next-intl';
+import {
+  useDownloadsPageState,
+  FILTERS_SIDEBAR_COLLAPSED,
+  FILTERS_SIDEBAR_EXPANDED,
+} from '../shared/hooks/useDownloadsPageState';
 
 import DownloadsHeader from './DownloadsHeader';
 import DownloadsInfoPanel from './DownloadsInfoPanel';
 import DownloadsContentArea from './DownloadsContentArea';
+import { DownloadsDataProvider } from './DownloadsDataContext';
+import { DownloadsProvider } from './DownloadsContext';
+import { DownloadsActionsProvider } from './DownloadsActionsContext';
 import DownloadsModals from './DownloadsModals';
+import DownloadsPlayersHost from './DownloadsPlayersHost';
 import FiltersSidebar from './FiltersSidebar';
-import useFiltersSidebarCollapsed from './FiltersSidebar/useFiltersSidebarCollapsed';
 import Toast from '@/components/shared/Toast';
 import Spinner from '../shared/Spinner';
 
-const FILTERS_SIDEBAR_EXPANDED = '14rem';
-const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
-
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const fetchStatusT = useTranslations('FetchStatus');
-  const pollingPaused = usePollingPauseStore((state) => state.isPaused);
-  const [toast, setToast] = useState(null);
-  const { activeType, setActiveType } = useStoredAssetType();
-  const permissions = useSessionStore((state) => state.permissions);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDownloadPanelOpen, setIsDownloadPanelOpen] = useState(false);
-  const [isBlurred, setIsBlurred] = useState(false);
-  const { viewMode, setViewMode } = useDownloadsViewMode();
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
-  const expandIds = useDownloadsUiStore((state) => state.expandIds);
-  const collapseAllExpanded = useDownloadsUiStore((state) => state.collapseAll);
-  const toggleExpanded = useDownloadsUiStore((state) => state.toggleExpanded);
-  const setExpanded = useDownloadsUiStore((state) => state.setExpanded);
-  const hasExpandedRef = useRef(false);
-  const scrollContainerRef = useRef(null);
-  const isMobile = useIsMobile();
-  const displayViewMode = isMobile ? 'card' : viewMode;
-  const { collapsed: filtersSidebarCollapsed, toggleCollapsed: toggleFiltersSidebar } =
-    useFiltersSidebarCollapsed();
-  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
-  const isBackendAvailable = backendMode === 'backend';
-
-  useEnsureUserDb(apiKey);
-
-  const canUseUsenet = hasDownloadAccess('usenet', permissions);
-  const downloadPanelT = useTranslations('DownloadPanel');
   const downloadsFiltersT = useTranslations('DownloadsFilters');
 
   const {
-    loading,
-    refreshing,
-    error: fetchError,
+    toast,
+    setToast,
+    pollingPaused,
+    permissions,
+    activeType,
+    setActiveType,
+    isFullscreen,
+    isMobile,
+    isDownloadPanelOpen,
+    setIsDownloadPanelOpen,
+    scrollContainerRef,
+    filtersSidebarCollapsed,
+    toggleFiltersSidebar,
+    isBackendAvailable,
+    canUseUsenet,
+    isRefreshing,
+    fetchError,
     fetchItems,
     dismissError,
     lastSuccessfulFetchAt,
     refreshBlockedReason,
     pollSchedule,
     canManualRefresh,
-  } = useFetchData(apiKey, activeType);
-
-  const {
     viewItems,
-    sortedItems,
-    visibleIds,
-    downloadHistory,
-    downloadHistoryLookup,
-    tags,
-    tagMappings,
-    updateTagName,
-  } = useDownloadsListData(activeType, apiKey, isBackendAvailable);
-
-  const showFullPageSpinner = loading && viewItems.length === 0;
-  const isRefreshing = refreshing || (loading && viewItems.length > 0);
-
-  const { fetchDownloadHistory } = useDownloadsHistoryMigration(
-    apiKey,
-    isBackendAvailable,
-    backendIsLoading
-  );
-
-  const {
-    selectedItems,
-    handleSelectAll,
-    handleFileSelect,
-    setSelectedItems,
-  } = useSelection(viewItems, activeType, apiKey);
-
-  useEffect(() => {
-    if (!canUseUsenet && activeType === 'usenet') {
-      setActiveType('all');
-      setSelectedItems({ items: new Set(), files: new Map() });
-    }
-  }, [canUseUsenet, activeType, setActiveType, setSelectedItems]);
-
-  const handleBulkDownloadComplete = useCallback(
-    ({ succeeded, failed, total }) => {
-      if (failed === 0) return;
-      setToast({
-        message:
-          succeeded > 0
-            ? downloadPanelT('toast.bulkPartialFailure', { failed, total })
-            : downloadPanelT('toast.bulkAllFailed', { total }),
-        type: 'error',
-      });
-    },
-    [downloadPanelT]
-  );
-
-  const {
+    showFullPageSpinner,
     downloadLinks,
     isDownloading,
     downloadProgress,
-    handleBulkDownload,
     setDownloadLinks,
     requestDownloadLink,
-    downloadSingle,
-  } = useDownloads(
-    apiKey,
-    activeType,
-    downloadHistory,
-    fetchDownloadHistory,
-    handleBulkDownloadComplete
-  );
+    sidebarProps,
+    filterData,
+    activeColumns,
+    downloadsDataContextValue,
+    downloadsContextValue,
+    downloadActions,
+    showDesktopFiltersSidebar,
+  } = useDownloadsPageState(apiKey);
 
-  const downloadActions = useMemo(
-    () => ({ downloadSingle, requestDownloadLink }),
-    [downloadSingle, requestDownloadLink]
-  );
-
-  const { isDeleting, deleteItem, deleteItems } = useDelete(
-    apiKey,
-    setSelectedItems,
-    setToast,
-    fetchItems,
-    activeType
-  );
-
-  const { activeColumns, handleColumnChange } = useColumnManager(activeType);
-
-  const filterData = useDownloadsFilters({
-    apiKey,
-    isBackendAvailable,
-    activeType,
-    setToast,
-    handleColumnChange,
-    updateTagName,
-  });
-
-  const { handleAudioPlay, openVideoPlayer } = useDownloadsPlayerActions(
-    apiKey,
-    activeType,
-    requestDownloadLink,
-    setToast
-  );
-
-  const { searchExpandedItemIdsRef, collapseAllFiles } = useDownloadsSearchExpand({
-    search: filterData.search,
-    sortedItems,
-    selectedItems,
-    expandedById,
-    setExpanded,
-    collapseAllExpanded,
-  });
-
-  const expandAllFiles = useCallback(() => {
-    searchExpandedItemIdsRef.current = new Set();
-    const itemIds = viewItems
-      .filter((item) => item.files && item.files.length > 0)
-      .map((item) => item.id);
-    expandIds(itemIds);
-  }, [viewItems, expandIds, searchExpandedItemIdsRef]);
-
-  const { isExporting, handleBulkExport } = useBulkExport(
-    apiKey,
-    activeType,
-    selectedItems,
-    viewItems,
-    setToast
-  );
-
-  const onFullscreenToggle = useCallback(() => {
-    setIsFullscreen((prev) => !prev);
-  }, []);
-
-  useLayoutEffect(() => {
-    if (isFullscreen && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
-    }
-  }, [isFullscreen]);
-
-  const toggleFiles = useCallback(
-    (itemId) => {
-      searchExpandedItemIdsRef.current.delete(itemId);
-      toggleExpanded(itemId);
-    },
-    [toggleExpanded, searchExpandedItemIdsRef]
-  );
-
-  useEffect(() => {
-    hasExpandedRef.current = false;
-  }, [activeType, apiKey]);
-
-  useEffect(() => {
-    if (!viewItems?.length || !selectedItems?.files?.size) return;
-    if (hasExpandedRef.current) return;
-
-    const itemMap = buildSelectionIdMap(viewItems);
-    selectedItems.files.forEach((_, selectionId) => {
-      const item = itemMap.get(selectionId);
-      if (item?.id != null) {
-        setExpanded(item.id, true);
-      }
-    });
-
-    hasExpandedRef.current = true;
-  }, [viewItems, selectedItems.files, setExpanded]);
-
-  const getTotalDownloadSize = useCallback(() => {
-    if (viewItems.length === 0) return formatSize(0);
-    if (selectedItems.items.size === 0 && selectedItems.files.size === 0) return formatSize(0);
-
-    const itemMap = buildSelectionIdMap(viewItems);
-
-    const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [selectionId, fileIds]) => {
-      const item = itemMap.get(selectionId);
-      if (!item) return acc;
-      const fileIdSet = new Set(fileIds);
-      const files = item.files || [];
-      for (let i = 0; i < files.length; i++) {
-        if (fileIdSet.has(files[i].id)) {
-          acc += files[i].size || 0;
-        }
-      }
-      return acc;
-    }, 0);
-
-    const itemsSize = Array.from(selectedItems.items).reduce((acc, selectionId) => {
-      const item = itemMap.get(selectionId);
-      return acc + (item?.size || 0);
-    }, 0);
-
-    return formatSize(filesSize + itemsSize);
-  }, [viewItems, selectedItems]);
-
-  const showDesktopFiltersSidebar = isBackendAvailable && !isMobile && !isFullscreen;
-  const filtersSidebarExpanded = showDesktopFiltersSidebar && !filtersSidebarCollapsed;
-
-  const downloadsDataContextValue = useMemo(
-    () => ({
-      viewItems,
-      sortedItems,
-      visibleIds,
-      activeColumns,
-      selectedItems,
-      downloadHistoryLookup,
-      tagMappings,
-    }),
-    [viewItems, sortedItems, visibleIds, activeColumns, selectedItems, downloadHistoryLookup, tagMappings]
-  );
-
-  const downloadsContextValue = useMemo(
-    () => ({
-      isBackendAvailable,
-      appliedFilters: filterData.appliedFilters,
-      activeView: filterData.activeView,
-      tags,
-      handleClearFilters: filterData.handleClearFilters,
-      handleOpenNewFilter: filterData.handleOpenNewFilter,
-      handleColumnChange,
-      search: filterData.search,
-      setSearch: filterData.setSearch,
-      statusFilter: filterData.statusFilter,
-      setStatusFilter: filterData.setStatusFilter,
-      isDownloading,
-      handleBulkDownload,
-      isDeleting,
-      deleteItems,
-      isExporting,
-      handleBulkExport,
-      activeType,
-      isBlurred,
-      setIsBlurred,
-      isFullscreen,
-      onFullscreenToggle,
-      displayViewMode,
-      setViewMode,
-      sortField: filterData.sortField,
-      sortDirection: filterData.sortDirection,
-      handleSort: filterData.handleSort,
-      getTotalDownloadSize,
-      isDownloadPanelOpen,
-      setIsDownloadPanelOpen,
-      apiKey,
-      setToast,
-      expandAllFiles,
-      collapseAllFiles,
-      scrollContainerRef,
-      filtersSidebarExpanded,
-      handleFileSelect,
-      setSelectedItems,
-      handleSelectAll,
-      deleteItem,
-      toggleFiles,
-      onOpenVideoPlayer: openVideoPlayer,
-      onAudioPlay: handleAudioPlay,
-      fileSearch: filterData.search,
-    }),
-    [
-      isBackendAvailable,
-      filterData.appliedFilters,
-      filterData.activeView,
-      tags,
-      filterData.handleClearFilters,
-      filterData.handleOpenNewFilter,
-      handleColumnChange,
-      filterData.search,
-      filterData.setSearch,
-      filterData.statusFilter,
-      filterData.setStatusFilter,
-      isDownloading,
-      handleBulkDownload,
-      isDeleting,
-      deleteItems,
-      isExporting,
-      handleBulkExport,
-      activeType,
-      isBlurred,
-      setIsBlurred,
-      isFullscreen,
-      onFullscreenToggle,
-      displayViewMode,
-      setViewMode,
-      filterData.sortField,
-      filterData.sortDirection,
-      filterData.handleSort,
-      getTotalDownloadSize,
-      isDownloadPanelOpen,
-      setIsDownloadPanelOpen,
-      apiKey,
-      setToast,
-      expandAllFiles,
-      collapseAllFiles,
-      scrollContainerRef,
-      filtersSidebarExpanded,
-      handleFileSelect,
-      setSelectedItems,
-      handleSelectAll,
-      deleteItem,
-      toggleFiles,
-      openVideoPlayer,
-      handleAudioPlay,
-    ]
-  );
   const filtersSidebarWidth = filtersSidebarCollapsed
     ? FILTERS_SIDEBAR_COLLAPSED
     : FILTERS_SIDEBAR_EXPANDED;
-
-  const sidebarProps = useMemo(
-    () => ({
-      apiKey,
-      views: filterData.views,
-      activeView: filterData.activeView,
-      tags,
-      activeAssetType: activeType,
-      activeTagIds: filterData.activeTagIds,
-      onApplyView: filterData.handleApplyView,
-      onClearView: filterData.handleClearFilters,
-      onApplyTag: filterData.handleApplyTag,
-      onEditView: filterData.handleEditView,
-      onRenameView: filterData.handleRenameView,
-      onRenameTag: filterData.handleRenameTag,
-      onDeleteTag: filterData.handleTagDeleted,
-      onNewFilter: filterData.handleOpenNewFilter,
-      onNewView: filterData.handleOpenNewView,
-      onOpenTagManager: filterData.handleOpenTagManager,
-    }),
-    [
-      apiKey, filterData.views, filterData.activeView, tags, activeType,
-      filterData.activeTagIds, filterData.handleApplyView, filterData.handleClearFilters,
-      filterData.handleApplyTag, filterData.handleEditView, filterData.handleRenameView,
-      filterData.handleRenameTag, filterData.handleTagDeleted,
-      filterData.handleOpenNewFilter, filterData.handleOpenNewView,
-      filterData.handleOpenTagManager,
-    ]
-  );
 
   return (
     <div
@@ -431,7 +88,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         setActiveType={setActiveType}
         isTypeAvailable={(type) => {
           if (type === 'all') return true;
-          if (type === 'usenet') return hasDownloadAccess('usenet', permissions);
+          if (type === 'usenet') return canUseUsenet;
           return true;
         }}
         pollSchedule={pollSchedule}
@@ -505,31 +162,31 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           </div>
 
           {isBackendAvailable && (
-              <DownloadsModals
-                isBackendAvailable={isBackendAvailable}
-                mobileFiltersOpen={filterData.mobileFiltersOpen}
-                setMobileFiltersOpen={filterData.setMobileFiltersOpen}
-                sidebarProps={sidebarProps}
-                filterModalOpen={filterData.filterModalOpen}
-                handleCloseFilterModal={filterData.handleCloseFilterModal}
-                filterModalMode={filterData.filterModalMode}
-                editingView={filterData.editingView}
-                apiKey={apiKey}
-                activeType={activeType}
-                columnFilters={filterData.columnFilters}
-                setColumnFilters={filterData.setColumnFilters}
-                handleApplyFiltersFromModal={filterData.handleApplyFiltersFromModal}
-                handlePreviewFiltersFromModal={filterData.handlePreviewFiltersFromModal}
-                viewItems={viewItems}
-                handleViewCreated={filterData.handleViewCreated}
-                handleViewUpdated={filterData.handleViewUpdated}
-                sortField={filterData.sortField}
-                sortDirection={filterData.sortDirection}
-                activeColumns={activeColumns}
-                search={filterData.search}
-                tagManagerOpen={filterData.tagManagerOpen}
-                setTagManagerOpen={filterData.setTagManagerOpen}
-              />
+            <DownloadsModals
+              isBackendAvailable={isBackendAvailable}
+              mobileFiltersOpen={filterData.mobileFiltersOpen}
+              setMobileFiltersOpen={filterData.setMobileFiltersOpen}
+              sidebarProps={sidebarProps}
+              filterModalOpen={filterData.filterModalOpen}
+              handleCloseFilterModal={filterData.handleCloseFilterModal}
+              filterModalMode={filterData.filterModalMode}
+              editingView={filterData.editingView}
+              apiKey={apiKey}
+              activeType={activeType}
+              columnFilters={filterData.columnFilters}
+              setColumnFilters={filterData.setColumnFilters}
+              handleApplyFiltersFromModal={filterData.handleApplyFiltersFromModal}
+              handlePreviewFiltersFromModal={filterData.handlePreviewFiltersFromModal}
+              viewItems={viewItems}
+              handleViewCreated={filterData.handleViewCreated}
+              handleViewUpdated={filterData.handleViewUpdated}
+              sortField={filterData.sortField}
+              sortDirection={filterData.sortDirection}
+              activeColumns={activeColumns}
+              search={filterData.search}
+              tagManagerOpen={filterData.tagManagerOpen}
+              setTagManagerOpen={filterData.setTagManagerOpen}
+            />
           )}
 
           <DownloadsPlayersHost
