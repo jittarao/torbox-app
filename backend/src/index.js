@@ -14,7 +14,7 @@ import UploadProcessor from './automation/UploadProcessor.js';
 import logger from './utils/logger.js';
 import cache from './utils/cache.js';
 import Semaphore from './utils/semaphore.js';
-import { createRequireRegisteredUser } from './middleware/userAuth.js';
+import { createRequireRegisteredUser, warnAuthMode } from './middleware/userAuth.js';
 import { initSentry, getSentry } from './utils/sentry.js';
 import { validateEncryption } from './utils/crypto.js';
 import { serverErrorPayload } from './utils/httpErrors.js';
@@ -269,6 +269,8 @@ class TorBoxBackend {
       // Catches misconfiguration (missing/invalid ENCRYPTION_KEY) early
       validateEncryption();
       logger.info('Encryption round-trip validated');
+
+      warnAuthMode();
 
       // Initialize master database
       await this.masterDatabase.initialize();

@@ -22,15 +22,21 @@ export class Semaphore {
     }
 
     return new Promise((resolve, reject) => {
+      let settled = false;
       const timer = setTimeout(() => {
-        const idx = this.queue.indexOf(resolve);
+        if (settled) return;
+        settled = true;
+        const idx = this.queue.indexOf(wrapper);
         if (idx >= 0) this.queue.splice(idx, 1);
         reject(new Error('Semaphore acquisition timed out'));
       }, timeoutMs);
-      this.queue.push(() => {
+      const wrapper = () => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
         resolve();
-      });
+      };
+      this.queue.push(wrapper);
     });
   }
 

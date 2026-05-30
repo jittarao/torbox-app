@@ -346,16 +346,22 @@ class AutomationEngine {
     cache.invalidateActiveRules(this.authId);
 
     const hasActive = await this.hasActiveRules();
+    const userInfo = this.masterDb?.getUserRegistryInfo(this.authId);
+    const masterFlag = userInfo?.has_active_rules === 1;
+    if (userInfo && masterFlag === hasActive) {
+      logger.debug('Active rules flag already matches master DB', {
+        authId: this.authId,
+        hasActiveRules: hasActive,
+      });
+      return;
+    }
+
     logger.info('Syncing active rules flag to master DB', {
       authId: this.authId,
       hasActiveRules: hasActive,
-      timestamp: new Date().toISOString(),
+      previousMasterFlag: userInfo?.has_active_rules,
     });
     await this.updateMasterDbActiveRulesFlag(hasActive);
-    logger.debug('Active rules flag synced successfully', {
-      authId: this.authId,
-      hasActiveRules: hasActive,
-    });
   }
 
   /**
@@ -408,11 +414,6 @@ class AutomationEngine {
       throw error;
     }
   }
-
-  /**
-   * Stop a rule. No-op; rules are poll-driven, not cron-scheduled.
-   */
-  stopRule(_ruleId) {}
 
   /**
    * Build torrent subset for changed-only scope (new + state transitions). Used when a rule can be evaluated on the delta.

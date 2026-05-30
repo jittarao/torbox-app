@@ -386,7 +386,9 @@ class Database {
   checkpointWal() {
     if (!this.db) return false;
     try {
-      this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+      // PASSIVE never blocks readers — it checkpoints what it can and returns immediately.
+      // TRUNCATE would require an exclusive lock and fail under concurrent reads.
+      this.db.prepare('PRAGMA wal_checkpoint(PASSIVE)').run();
       return true;
     } catch (error) {
       logger.warn('Master DB WAL checkpoint failed', { error: error.message });

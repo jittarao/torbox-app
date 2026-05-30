@@ -46,8 +46,20 @@ function isServiceSecretConfigured() {
 }
 
 function isApiKeyRequired() {
+  // Default false for backward compat with frontend proxy (h obscures the hash).
+  // Set BACKEND_REQUIRE_API_KEY=true when backend is exposed directly to the internet.
   const v = process.env.BACKEND_REQUIRE_API_KEY?.trim().toLowerCase();
   return v === 'true' || v === '1';
+}
+
+export function warnAuthMode() {
+  if (!isApiKeyRequired()) {
+    logger.warn(
+      '━━ SECURITY WARNING ━━ User routes accept authId without x-api-key (legacy mode). ' +
+      'authId is SHA-256(apiKey) — any party with the authId can access that user\'s data. ' +
+      'Set BACKEND_REQUIRE_API_KEY=true when the backend is exposed to the internet.'
+    );
+  }
 }
 
 /**

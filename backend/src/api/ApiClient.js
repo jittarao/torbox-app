@@ -43,6 +43,7 @@ class CircuitBreaker {
       });
     }
     this.failures = 0;
+    this.lastFailureAt = 0;
     this.state = 'closed';
   }
 }

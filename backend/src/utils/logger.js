@@ -135,16 +135,12 @@ class Logger {
   }
 
   /**
-   * Log an info message (only if DEBUG env variable is set)
+   * Log an info message.
+   * INFO-level messages always log (unlike DEBUG). This is the default production level.
    * @param {string} message - Info message
    * @param {Object} context - Additional context
    */
   info(message, context = {}) {
-    const isDebug = process.env.DEBUG === 'true';
-    if (!isDebug) {
-      return;
-    }
-
     // Add breadcrumb to Sentry for important info messages
     if (context.important || context.critical) {
       addBreadcrumb({
@@ -216,8 +212,8 @@ class Logger {
       this.logger.error(message, logData);
     } else if (res.statusCode >= 400) {
       this.logger.warn(message, logData);
-    } else {
-      this.info(message, logData);
+    } else if (this.isDebugEnabled()) {
+      this.logger.info(message, logData);
     }
   }
 }
