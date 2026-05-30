@@ -298,6 +298,7 @@
     "viewLogs": "ログを表示"
   },
   "CardList": {
+    "noItems": "ダウンロードがありません",
     "toast": {
       "copyLink": "リンクがクリップボードにコピーされました",
       "copyLinkFailed": "リンクのコピーに失敗しました"

@@ -26,17 +26,14 @@ import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 function ItemCard({
   item,
   index,
-  isItemDownloaded,
-  isFileDownloaded,
-  isItemLinkFailed,
-  isFileLinkFailed,
+  downloadHistoryLookup,
   isBlurred,
   activeColumns,
-  onItemSelect,
-  onFileSelect,
-  onFileDownload,
-  onFileStream,
-  onAudioPlay,
+  handleItemSelection,
+  handleFileSelection,
+  handleFileDownload,
+  handleFileStream,
+  handleAudioPlay,
   onDelete,
   toggleFiles,
   fileSearch = '',
@@ -281,12 +278,31 @@ function ItemCard({
   };
 
   const selectionId = getDownloadSelectionId(item);
+  const itemKey = `${item.assetType}:${String(item.id)}`;
+  const isDownloaded = downloadHistoryLookup?.itemDownloads?.has(itemKey) ?? false;
+  const isLinkFailed = downloadHistoryLookup?.itemLinkFailed?.has(itemKey) ?? false;
   const isSelected = useIsDownloadSelected(selectionId);
   const isItemSelectDisabled = useIsItemBlockingFileSelect(selectionId);
 
+  const isFileDownloaded = (fileSelectionId, fileId) =>
+    downloadHistoryLookup?.itemDownloads?.has(fileSelectionId) ||
+    downloadHistoryLookup?.fileDownloads?.has(`${fileSelectionId}:${String(fileId)}`);
+
+  const isFileLinkFailed = (fileSelectionId, fileId) =>
+    downloadHistoryLookup?.itemLinkFailed?.has(fileSelectionId) ||
+    downloadHistoryLookup?.fileLinkFailed?.has(`${fileSelectionId}:${String(fileId)}`);
+
+  const onFileDownload = (itemId, fileOrId, copyLink) => {
+    const file =
+      typeof fileOrId === 'object' && fileOrId !== null
+        ? fileOrId
+        : visibleFiles.find((f) => String(f.id) === String(fileOrId));
+    if (file) handleFileDownload(itemId, file, copyLink);
+  };
+
   const handleCardSelect = (shiftKey) => {
     if (isItemSelectDisabled) return;
-    onItemSelect(selectionId, !isSelected, index, shiftKey);
+    handleItemSelection(selectionId, !isSelected, index, shiftKey);
   };
 
   const renderSpeedIndicators = () =>
@@ -332,9 +348,9 @@ function ItemCard({
       className={`${
         isSelected
           ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
-          : isItemLinkFailed?.(item.id)
+          : isLinkFailed
             ? 'bg-link-failed dark:bg-link-failed-dark hover:bg-link-failed-hover dark:hover:bg-link-failed-hover-dark'
-            : isItemDownloaded(item.id)
+            : isDownloaded
               ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
               : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
       } ${cardContainerPad} ${tableRowFocusClasses} relative ${
@@ -359,7 +375,9 @@ function ItemCard({
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={(e) => onItemSelect(selectionId, e.target.checked, index)}
+              onChange={(e) =>
+                handleItemSelection(selectionId, e.target.checked, index, e.shiftKey)
+              }
               onClick={(e) => e.stopPropagation()}
               disabled={isItemSelectDisabled}
               className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
@@ -493,10 +511,10 @@ function ItemCard({
           files={visibleFiles}
           itemId={selectionId}
           isBlurred={isBlurred}
-          onFileSelect={onFileSelect}
+          onFileSelect={handleFileSelection}
           onFileDownload={onFileDownload}
-          onFileStream={onFileStream}
-          onAudioPlay={onAudioPlay}
+          onFileStream={handleFileStream}
+          onAudioPlay={handleAudioPlay}
           isCopying={isCopying}
           isDownloading={isDownloading}
           isStreaming={isStreaming}
