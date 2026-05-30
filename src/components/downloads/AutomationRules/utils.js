@@ -184,19 +184,26 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
         return `status is ${condition.value.join(', ')}`;
       }
     } else if (condition.type === CONDITION_TYPES.TAGS) {
-      // TAGS value must be an array of tag IDs
       if (!Array.isArray(condition.value)) {
         return 'tags (invalid)';
+      }
+      const labels = {
+        [TAG_OPERATORS.IS_ANY_OF]: t('tagOperators.isAnyOf'),
+        [TAG_OPERATORS.IS_ALL_OF]: t('tagOperators.isAllOf'),
+        [TAG_OPERATORS.IS_NONE_OF]: t('tagOperators.isNoneOf'),
+        [TAG_OPERATORS.IS_SET]: t('tagOperators.isSet'),
+        [TAG_OPERATORS.IS_NOT_SET]: t('tagOperators.isNotSet'),
+      };
+      const operatorText = labels[condition.operator] || condition.operator;
+      if (
+        condition.operator === TAG_OPERATORS.IS_SET ||
+        condition.operator === TAG_OPERATORS.IS_NOT_SET
+      ) {
+        return `tags ${operatorText}`;
       }
       if (condition.value.length === 0) {
         return 'tags (none selected)';
       }
-      const labels = {
-        [TAG_OPERATORS.IS_ANY_OF]: t('tagOperators.isAnyOf') + ' ',
-        [TAG_OPERATORS.IS_ALL_OF]: t('tagOperators.isAllOf') + ' ',
-        [TAG_OPERATORS.IS_NONE_OF]: t('tagOperators.isNoneOf') + ' ',
-      };
-      const operatorText = labels[condition.operator] || condition.operator;
       return `tags ${operatorText} ${condition.value.length} tag${condition.value.length !== 1 ? 's' : ''}`;
     } else if (condition.type === CONDITION_TYPES.EXPIRES_AT) {
       if (operator === 'lt' || operator === 'lte') {

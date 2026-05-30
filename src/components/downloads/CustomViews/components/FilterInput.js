@@ -20,6 +20,10 @@ import {
   getColumnUnit,
   getGroupedFilterableColumns,
 } from '../utils';
+import {
+  tagOperatorNeedsTagSelection,
+  isTagPresenceOperator,
+} from '@/components/downloads/filters/tagFilterHelpers';
 import { useTags } from '@/components/shared/hooks/useTags';
 import Select from '@/components/shared/Select';
 import MultiSelect from '@/components/shared/MultiSelect';
@@ -101,16 +105,13 @@ export default function FilterInput({
       );
     } else if (field === 'operator' && isTagsColumn(filter.column)) {
       onUpdate(index, 'operator', value);
-      if (value === TAG_OPERATORS.IS_SET || value === TAG_OPERATORS.IS_NOT_SET) {
+      if (isTagPresenceOperator(value)) {
         onUpdate(index, 'value', []);
       }
     } else {
       onUpdate(index, field, value);
     }
   };
-
-  const tagOperatorNeedsValue = (operator) =>
-    operator === TAG_OPERATORS.IS_ANY_OF || operator === TAG_OPERATORS.IS_NONE_OF;
 
   // For STATUS condition, ensure value is an array
   const getStatusValue = () => {
@@ -248,7 +249,7 @@ export default function FilterInput({
               placeholder={customViewsT('selectPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
-          ) : filter.column === 'tags' && tagOperatorNeedsValue(filter.operator) ? (
+          ) : filter.column === 'tags' && tagOperatorNeedsTagSelection(filter.operator) ? (
             <MultiSelect
               value={getTagsValue()}
               onChange={(values) => handleFieldChange('value', values)}

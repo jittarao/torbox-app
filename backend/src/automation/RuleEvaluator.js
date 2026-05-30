@@ -1080,26 +1080,42 @@ class RuleEvaluator {
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
     const downloadTagIds = tagsByDownloadId.get(downloadId) || [];
-    const conditionTagIds = condition.value.reduce((acc, v) => {
-      const id = typeof v === 'number' ? v : parseInt(v, 10);
-      if (!isNaN(id)) acc.push(id);
-      return acc;
-    }, []);
-
-    if (conditionTagIds.length === 0) {
-      return false; // No valid tag IDs — do not match any torrent
-    }
 
     switch (condition.operator) {
+      case 'is_set':
+        return downloadTagIds.length > 0;
+      case 'is_not_set':
+        return downloadTagIds.length === 0;
       case 'has_any':
       case 'is_any_of':
-        return conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
       case 'has_all':
       case 'is_all_of':
-        return conditionTagIds.every((tagId) => downloadTagIds.includes(tagId));
       case 'has_none':
-      case 'is_none_of':
-        return !conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
+      case 'is_none_of': {
+        const conditionTagIds = condition.value.reduce((acc, v) => {
+          const id = typeof v === 'number' ? v : parseInt(v, 10);
+          if (!isNaN(id)) acc.push(id);
+          return acc;
+        }, []);
+
+        if (conditionTagIds.length === 0) {
+          return false; // No valid tag IDs — do not match any torrent
+        }
+
+        switch (condition.operator) {
+          case 'has_any':
+          case 'is_any_of':
+            return conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
+          case 'has_all':
+          case 'is_all_of':
+            return conditionTagIds.every((tagId) => downloadTagIds.includes(tagId));
+          case 'has_none':
+          case 'is_none_of':
+            return !conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
+          default:
+            return false;
+        }
+      }
       default:
         logger.debug('TAGS condition has invalid operator', {
           torrentId: torrent.id,
