@@ -12,6 +12,7 @@ import {
   lastAutoStartCheckRef,
   prevApiKeyRef,
   processedQueueIdsRef,
+  abortStaleFetch,
 } from '@/store/torboxDownloadsRefs';
 
 const { autoStartCheckIntervalMs: AUTO_START_CHECK_INTERVAL } = POLLING_CONFIG;
@@ -228,8 +229,11 @@ export async function fetchDownloadType(
       return [];
     }
 
+    const signal = abortStaleFetch(activeType);
+
     perfMonitor.startTimer(`fetch-${activeType}`);
     const response = await fetch(endpoint, {
+      signal,
       headers: {
         'x-api-key': apiKey,
         ...(bypassCache && { 'bypass-cache': 'true' }),
@@ -273,7 +277,7 @@ export async function fetchDownloadType(
       );
     }
 
-    if (!isLatestFetch()) {
+    if (!isLatestFetch() || signal.aborted) {
       finishFetchFlags();
       return [];
     }
@@ -319,7 +323,7 @@ export async function fetchDownloadType(
         deltaCursorRef.current[activeType] = data.cursor;
       }
 
-      if (!isLatestFetch()) {
+      if (!isLatestFetch() || signal.aborted) {
         finishFetchFlags();
         return [];
       }
@@ -361,6 +365,10 @@ export async function fetchDownloadType(
     finishFetchFlags();
     return [];
   } catch (err) {
+    if (err?.name === 'AbortError') {
+      finishFetchFlags();
+      return [];
+    }
     return handleFetchError(err, activeType, viewType, currentFetchId, skipLoading, null, manualRefresh);
   }
 }

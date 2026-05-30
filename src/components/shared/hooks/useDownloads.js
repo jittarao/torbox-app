@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { FETCH_TIMEOUT_MS, NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
-import { findItemBySelectionId } from '@/utils/downloadSelectionId';
+import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
 
 // Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
@@ -485,10 +485,12 @@ export function useDownloads(
     setDownloadLinks([]);
     setDownloadProgress({ current: 0, total });
 
+    const itemSelectionMap = buildSelectionIdMap(items);
+
     // Create array of all download tasks
     const downloadTasks = [
       ...Array.from(selectedItems.items).flatMap((selectionId) => {
-        const item = findItemBySelectionId(items, selectionId);
+        const item = itemSelectionMap.get(selectionId);
         const itemId = item?.id ?? selectionId;
         const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
         if (item?.files?.length === 1) {
@@ -518,7 +520,7 @@ export function useDownloads(
         }
       }),
       ...Array.from(selectedItems.files.entries()).flatMap(([selectionId, fileIds]) => {
-        const item = findItemBySelectionId(items, selectionId);
+        const item = itemSelectionMap.get(selectionId);
         const itemId = item?.id ?? selectionId;
         const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
         return Array.from(fileIds).map((fileId) => ({
