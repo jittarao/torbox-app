@@ -1,17 +1,12 @@
 'use client';
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
+import { getItem, setItem } from '@/utils/storage';
 
 const STORAGE_KEY = 'torbox-sidebar-collapsed';
 
 export default function useSidebarCollapsed() {
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [collapsed, setCollapsed] = useState(() => getItem(STORAGE_KEY) === 'true');
   const hydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -21,11 +16,7 @@ export default function useSidebarCollapsed() {
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem(STORAGE_KEY, String(next));
-      } catch {
-        /* ignore */
-      }
+      setItem(STORAGE_KEY, String(next));
       return next;
     });
   }, []);

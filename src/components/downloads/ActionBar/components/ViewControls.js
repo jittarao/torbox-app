@@ -4,6 +4,7 @@ import { CollapseAll, ExpandAll, Eye, EyeOff, List, Maximize, Minimize, Table } 
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { setItem } from '@/utils/storage';
 
 const toolbarBtnBase =
   'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
@@ -60,7 +61,7 @@ export default function ViewControls({
 
   const handleViewModeChange = (mode) => {
     onViewModeChange(mode);
-    localStorage.setItem('downloads-view-mode', mode);
+    setItem('downloads-view-mode', mode);
   };
 
   const itemsWithFiles =
