@@ -1,53 +1,29 @@
 import { create } from 'zustand';
 
-/**
- * Generic polling pause store
- * Allows multiple components to pause polling for different reasons
- * Polling is paused if ANY reason is active
- */
-export const usePollingPauseStore = create((set, get) => ({
-  // Map of pause reasons: { reason: boolean }
+function computeIsPaused(pauseReasons) {
+  return Object.values(pauseReasons).some((isPaused) => isPaused === true);
+}
+
+export const usePollingPauseStore = create((set) => ({
   pauseReasons: {},
+  isPaused: false,
 
-  /**
-   * Set a pause reason (e.g., 'videoPlayer', 'modal', etc.)
-   * @param {string} reason - The reason for pausing
-   * @param {boolean} isPaused - Whether to pause or resume
-   */
   setPauseReason: (reason, isPaused) => {
-    set((state) => ({
-      pauseReasons: {
-        ...state.pauseReasons,
-        [reason]: isPaused,
-      },
-    }));
-  },
-
-  /**
-   * Check if polling should be paused (true if ANY reason is active)
-   * @returns {boolean} - True if polling should be paused
-   */
-  isPollingPaused: () => {
-    const { pauseReasons } = get();
-    return Object.values(pauseReasons).some((isPaused) => isPaused === true);
-  },
-
-  /**
-   * Clear a specific pause reason
-   * @param {string} reason - The reason to clear
-   */
-  clearPauseReason: (reason) => {
     set((state) => {
-      const newReasons = { ...state.pauseReasons };
-      delete newReasons[reason];
-      return { pauseReasons: newReasons };
+      const next = { ...state.pauseReasons, [reason]: isPaused };
+      return { pauseReasons: next, isPaused: computeIsPaused(next) };
     });
   },
 
-  /**
-   * Clear all pause reasons
-   */
+  clearPauseReason: (reason) => {
+    set((state) => {
+      const next = { ...state.pauseReasons };
+      delete next[reason];
+      return { pauseReasons: next, isPaused: computeIsPaused(next) };
+    });
+  },
+
   clearAllPauseReasons: () => {
-    set({ pauseReasons: {} });
+    set({ pauseReasons: {}, isPaused: false });
   },
 }));

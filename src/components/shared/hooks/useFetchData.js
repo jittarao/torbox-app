@@ -28,9 +28,7 @@ import { useAutomationTorrentEvents } from './useAutomationTorrentEvents';
 // 4. On the All tab, fetches torrents, usenet, and webdl on each poll tick
 
 export function useFetchData(apiKey, type = 'torrents') {
-  const pollingPaused = usePollingPauseStore((state) =>
-    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
-  );
+  const pollingPaused = usePollingPauseStore((state) => state.isPaused);
   const backendMode = useBackendModeStore((state) => state.mode);
 
   const {

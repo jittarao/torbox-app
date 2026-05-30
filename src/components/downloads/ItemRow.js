@@ -7,7 +7,6 @@ import DownloadProgressDisplay from './DownloadProgressDisplay';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
 import { Private } from '@/components/icons';
-import { useTranslations } from 'next-intl';
 import TagDisplay from './Tags/TagDisplay';
 import {
   getTableRowSurfaceClasses,
@@ -44,8 +43,8 @@ function ItemRow({
   style,
   measureRef,
   dataIndex,
+  commonT,
 }) {
-  const commonT = useTranslations('Common');
   const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
 
   const renderCell = (columnId) => {

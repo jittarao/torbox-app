@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import dynamic from 'next/dynamic';
 import { useFileHandler } from '@/hooks/useFileHandler';
+import useIsClient from '@/hooks/useIsClient';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
@@ -26,11 +27,7 @@ const LandingPage = dynamic(() => import('@/components/LandingPage'), {
 
 export default function HomePageClient() {
   const { apiKey, hydrated, setApiKey } = useSession();
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const isClient = useIsClient();
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
 
   useEffect(() => {
