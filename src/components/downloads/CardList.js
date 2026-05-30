@@ -52,7 +52,7 @@ export default function CardList() {
   const {
     trackSelectionModal,
     closeTrackSelectionModal,
-    handleFileStreamInit: handleFileStream,
+    handleFileStreamInit: onFileStreamInit,
     handleTrackSelection,
   } = useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer });
 
@@ -169,8 +169,29 @@ export default function CardList() {
     downloadHistoryLookup,
   });
 
+  const handleFileStream = useCallback(
+    async (itemId, file) => {
+      const key = interactions.assetKey(itemId, file.id);
+      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      try {
+        await onFileStreamInit(itemId, file);
+      } catch (error) {
+        console.error('Error initiating stream:', error);
+        setToast({
+          message: error.message || 'Failed to initiate stream',
+          type: 'error',
+        });
+      } finally {
+        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+      }
+    },
+    [interactions.assetKey, onFileStreamInit, setToast]
+  );
+
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
+      const key = interactions.assetKey(itemId, file.id);
+      setIsStreaming((prev) => ({ ...prev, [key]: true }));
       try {
         await onAudioPlay(itemId, file);
       } catch (error) {
@@ -179,9 +200,11 @@ export default function CardList() {
           message: t('failedToPlay'),
           type: 'error',
         });
+      } finally {
+        setIsStreaming((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [onAudioPlay, setToast, t]
+    [interactions.assetKey, onAudioPlay, setToast, t]
   );
 
   const handleItemSelection = useCallback(
