@@ -22,7 +22,7 @@ function DownloadCardContainer({
 
   if (!item) return null;
 
-  return <ItemCard item={item} {...cardProps} />;
+  return <ItemCard item={item} downloadHistoryLookup={downloadHistoryLookup} {...cardProps} />;
 }
 
 export default memo(DownloadCardContainer);
