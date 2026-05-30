@@ -34,6 +34,10 @@ export async function fetchNotificationsRequest(apiKey, state, options = {}) {
     }
 
     if (response.success) {
+      if (response.notModified) {
+        return { aborted: true };
+      }
+
       const notificationsWithReadStatus = parseNotificationResponse(response) || [];
       return {
         patch: {

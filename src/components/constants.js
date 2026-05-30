@@ -20,13 +20,13 @@ export const ABUSE_POLICY_URL =
   'https://support.torbox.app/en/articles/10336778-the-torbox-abuse-system';
 export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
 
-export const API_BASE = 'https://api.torbox.app';
-export const API_SEARCH_BASE = 'https://search-api.torbox.app';
-export const API_VERSION = 'v1';
-export const TORBOX_MANAGER_VERSION = process.env.NEXT_PUBLIC_TORBOX_MANAGER_VERSION || '0.0.0';
-
-/** Default client/server fetch timeout for TorBox API proxies and retryFetch. */
-export const FETCH_TIMEOUT_MS = 30000;
+export {
+  API_BASE,
+  API_SEARCH_BASE,
+  API_VERSION,
+  TORBOX_MANAGER_VERSION,
+  FETCH_TIMEOUT_MS,
+} from '@/config/apiConstants';
 
 // Non-retryable errors for the API
 export const NON_RETRYABLE_ERRORS = {
