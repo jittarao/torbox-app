@@ -4,39 +4,57 @@ import logger from './logger.js';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 
+const ENCRYPTION_KEY_ENV = 'ENCRYPTION_KEY';
+
+/** Legacy scrypt inputs used when ENCRYPTION_KEY is unset (existing self-hosted installs). */
+const LEGACY_DEFAULT_SECRET = 'default-dev-key-change-in-production';
+const LEGACY_DEFAULT_SALT = 'salt';
+
 /**
  * Cached derived encryption key (computed once per process).
- * Key rotation requires a process restart. Tests that set ENCRYPTION_KEY
- * after the first encrypt/decrypt call will not see the new key until the cache
- * is cleared or the process restarts.
+ * Key rotation requires a process restart.
  */
 let _cachedKey = null;
 
 /**
- * Get encryption key from environment or generate a default (for development only).
- * Result is cached to avoid repeated scrypt derivation.
+ * Get encryption key from environment, or the legacy default when unset.
+ * ENCRYPTION_KEY is optional for backward compatibility with existing deployments;
+ * a strong warning is logged when falling back.
+ * @returns {Buffer}
  */
 function getEncryptionKey() {
   if (_cachedKey) return _cachedKey;
 
-  const key = process.env.ENCRYPTION_KEY;
+  const key = process.env[ENCRYPTION_KEY_ENV];
   if (!key) {
-    // Fallback for backward compatibility when ENCRYPTION_KEY is not set
+    const message =
+      `${ENCRYPTION_KEY_ENV} is not set — using legacy default encryption key. ` +
+      'Set ENCRYPTION_KEY (e.g. openssl rand -base64 32) to protect stored API keys.';
     if (process.env.NODE_ENV === 'production') {
-      logger.warn(
-        'ENCRYPTION_KEY not set. Using default key. Set ENCRYPTION_KEY in production for stronger security.'
-      );
+      logger.warn(message);
     } else {
-      logger.warn('Using default encryption key. Set ENCRYPTION_KEY in production!');
+      logger.warn(`[dev] ${message}`);
     }
-    _cachedKey = crypto.scryptSync('default-dev-key-change-in-production', 'salt', 32);
+    _cachedKey = crypto.scryptSync(LEGACY_DEFAULT_SECRET, LEGACY_DEFAULT_SALT, 32);
     return _cachedKey;
   }
 
-  // Salt: ENCRYPTION_SALT is optional; default gives one env var (ENCRYPTION_KEY) for most installs
   const salt = process.env.ENCRYPTION_SALT || 'torbox-salt';
   _cachedKey = crypto.scryptSync(key, salt, 32);
   return _cachedKey;
+}
+
+/**
+ * Verify the encryption key is functional by encrypting and decrypting a known value.
+ * Throws if the round-trip fails (wrong key, corrupted config).
+ */
+export function validateEncryption() {
+  const testValue = '__torbox_encryption_validation__';
+  const encrypted = encrypt(testValue);
+  const decrypted = decrypt(encrypted);
+  if (decrypted !== testValue) {
+    throw new Error('Encryption round-trip validation failed: decrypted text does not match');
+  }
 }
 
 /**

@@ -14,9 +14,9 @@ import UploadProcessor from './automation/UploadProcessor.js';
 import logger from './utils/logger.js';
 import cache from './utils/cache.js';
 import Semaphore from './utils/semaphore.js';
-import { validateJsonPayloadSize } from './middleware/validation.js';
 import { createRequireRegisteredUser } from './middleware/userAuth.js';
 import { initSentry, getSentry } from './utils/sentry.js';
+import { validateEncryption } from './utils/crypto.js';
 import { serverErrorPayload } from './utils/httpErrors.js';
 import { validateEnv } from './config/validateEnv.js';
 import { getUserDbDir } from './utils/dataPaths.js';
@@ -43,16 +43,41 @@ class TorBoxBackend {
     this.eventNotifier = new EventNotifier();
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
     this.memoryLogIntervalId = null;
+    this._server = null;
+    this._inflightRequests = new Set();
     this.requireRegisteredUser = createRequireRegisteredUser(() => this.masterDatabase);
 
     this.setupMiddleware();
     this.setupRoutes();
   }
 
+  /**
+   * Request timeout in milliseconds. Applied to all routes after middleware
+   * processing. Default: 120s (must exceed TorBox API timeout of 30s + DB work).
+   */
+  static get REQUEST_TIMEOUT_MS() {
+    return parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
+  }
+
   setupMiddleware() {
     // Note: In Sentry v10, expressIntegration (added during init) automatically handles
     // request and tracing instrumentation, so no separate middleware is needed here.
     // The integration is configured in src/utils/sentry.js during Sentry.init()
+
+    // Global request timeout — prevents a slow user DB query or stuck API call
+    // from holding the event loop indefinitely.
+    this.app.use((req, res, next) => {
+      const timer = setTimeout(() => {
+        if (!res.headersSent) {
+          res.status(503).json({
+            success: false,
+            error: 'Request timed out',
+          });
+        }
+      }, TorBoxBackend.REQUEST_TIMEOUT_MS);
+      res.on('finish', () => clearTimeout(timer));
+      next();
+    });
 
     // Security middleware
     this.app.use(
@@ -85,6 +110,19 @@ class TorBoxBackend {
     this.app.use((req, res, next) => {
       req.correlationId = crypto.randomUUID().slice(0, 8);
       res.setHeader('X-Correlation-Id', req.correlationId);
+      next();
+    });
+
+    // In-flight request tracking — enables graceful shutdown to drain active requests
+    // before closing DB connections. A cleanup interval removes stuck entries.
+    this.app.use((req, res, next) => {
+      const id = req.correlationId;
+      this._inflightRequests.add(id);
+      const cleanup = () => {
+        this._inflightRequests.delete(id);
+      };
+      res.on('finish', cleanup);
+      res.on('close', cleanup);
       next();
     });
 
@@ -153,10 +191,7 @@ class TorBoxBackend {
       },
     });
 
-    // JSON payload size validation
-    this.app.use(validateJsonPayloadSize(10 * 1024 * 1024)); // 10MB
-
-    // Body parsing
+    // Body parsing (limit enforced by express.json below)
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -230,6 +265,11 @@ class TorBoxBackend {
 
   async initializeServices() {
     try {
+      // Validate encryption key before doing anything else
+      // Catches misconfiguration (missing/invalid ENCRYPTION_KEY) early
+      validateEncryption();
+      logger.info('Encryption round-trip validated');
+
       // Initialize master database
       await this.masterDatabase.initialize();
       logger.info('Master database initialized');
@@ -343,7 +383,7 @@ class TorBoxBackend {
   }
 
   start() {
-    const server = this.app.listen(this.port, '0.0.0.0', () => {
+    this._server = this.app.listen(this.port, '0.0.0.0', () => {
       logger.info('TorBox Backend server started', {
         port: this.port,
         healthCheck: `http://localhost:${this.port}/health`,
@@ -351,7 +391,7 @@ class TorBoxBackend {
       });
     });
 
-    server.on('error', (error) => {
+    this._server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
         logger.error('Failed to start server. Port is already in use.', {
           port: this.port,
@@ -480,6 +520,26 @@ class TorBoxBackend {
   async shutdown() {
     logger.info('Shutting down TorBox Backend...');
 
+    // Stop accepting new connections immediately
+    if (this._server) {
+      this._server.close();
+    }
+
+    // Drain in-flight HTTP requests with timeout
+    const inflightCount = this._inflightRequests.size;
+    if (inflightCount > 0) {
+      logger.info('Waiting for in-flight requests to complete', { count: inflightCount });
+      const drainTimeoutMs = 30000;
+      const drainStart = Date.now();
+      while (this._inflightRequests.size > 0 && Date.now() - drainStart < drainTimeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const remaining = this._inflightRequests.size;
+      if (remaining > 0) {
+        logger.warn('Proceeding with shutdown despite in-flight requests', { remaining });
+      }
+    }
+
     if (this.memoryLogIntervalId) {
       clearInterval(this.memoryLogIntervalId);
       this.memoryLogIntervalId = null;
@@ -490,7 +550,7 @@ class TorBoxBackend {
     }
 
     if (this.pollingScheduler) {
-      this.pollingScheduler.stop();
+      await this.pollingScheduler.stop();
     }
 
     if (this.eventNotifier && this.eventNotifier.stopHeartbeat) {

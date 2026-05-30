@@ -6,6 +6,7 @@ import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import cache from '../utils/cache.js';
+import Semaphore from '../utils/semaphore.js';
 
 /**
  * LRU Cache for database connections with metrics and monitoring.
@@ -133,6 +134,20 @@ class DatabasePool {
       // If still at capacity after proactive eviction, evict LRU
       if (this.cache.size >= this.maxSize) {
         this._evictLRUConnection();
+      }
+
+      // If still at capacity after all eviction attempts, log critical error
+      // The caller (UserDatabaseManager) uses a semaphore to prevent this,
+      // but we guard here as a safety net.
+      if (this.cache.size >= this.maxSize) {
+        logger.error('Database pool exhausted: all connections are active, cannot evict', {
+          poolSize: this.cache.size,
+          maxSize: this.maxSize,
+          activeOperations: Array.from(this.cache.entries()).filter(
+            ([_, e]) => e.activeOperations > 0
+          ).length,
+        });
+        throw new Error(`Database pool exhausted (${this.cache.size}/${this.maxSize})`);
       }
 
       // Add new connection with metadata
@@ -493,6 +508,11 @@ class UserDatabaseManager {
     );
     // Mutex map to prevent race conditions when creating connections for the same user
     this.connectionLocks = new Map(); // Map<authId, Promise>
+
+    // Semaphore to prevent pool exhaustion: limits concurrent connection acquisitions.
+    // Set to maxConnections - 1 to reserve one slot for the eviction mechanism.
+    const poolLimit = Math.max(1, this.pool.maxSize - 1);
+    this.connectionSemaphore = new Semaphore(poolLimit);
   }
 
   /**
@@ -545,13 +565,19 @@ class UserDatabaseManager {
       }
     }
 
+    // Acquire pool semaphore to enforce max connections.
+    // The semaphore is released in _createUserDatabaseConnection or on error.
+    await this.connectionSemaphore.acquire(30000);
+
     // Check if another operation is already creating a connection for this user
     // This prevents race conditions where multiple calls create duplicate connections
     let connectionPromise = this.connectionLocks.get(authId);
     if (connectionPromise) {
       // Wait for the existing connection creation to complete
       try {
-        return await connectionPromise;
+        const result = await connectionPromise;
+        this.connectionSemaphore.release();
+        return result;
       } catch (error) {
         // If the existing creation failed, we'll try again below
         this.connectionLocks.delete(authId);
@@ -568,6 +594,7 @@ class UserDatabaseManager {
     } finally {
       // Remove lock after connection is created (or fails)
       this.connectionLocks.delete(authId);
+      this.connectionSemaphore.release();
     }
   }
 
