@@ -35,9 +35,27 @@ export function getRateLimiter() {
   return rateLimiterRef.current;
 }
 
+/** Per-asset-type AbortControllers to cancel stale in-flight fetches. */
+export const fetchAbortControllers = { current: { torrents: null, usenet: null, webdl: null } };
+
+export function abortStaleFetch(activeType) {
+  const prev = fetchAbortControllers.current[activeType];
+  if (prev) {
+    prev.abort();
+  }
+  const controller = new AbortController();
+  fetchAbortControllers.current[activeType] = controller;
+  return controller.signal;
+}
+
 export function resetDownloadSyncRefs(apiKey) {
   prevApiKeyRef.current = apiKey;
   deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
+  for (const type of Object.keys(fetchAbortControllers.current)) {
+    const ctrl = fetchAbortControllers.current[type];
+    if (ctrl) ctrl.abort();
+    fetchAbortControllers.current[type] = null;
+  }
   getRateLimiter().reset();
   processedQueueIdsRef.current = new Set();
   fetchInProgressKeysRef.current = new Set();

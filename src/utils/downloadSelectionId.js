@@ -26,6 +26,20 @@ export function selectionIdMatchesItem(storedId, item) {
 }
 
 /**
+ * Build a Map from selectionId → item for O(1) lookups.
+ * @param {object[]} items
+ * @returns {Map<string, object>}
+ */
+export function buildSelectionIdMap(items) {
+  const map = new Map();
+  if (!items?.length) return map;
+  for (const item of items) {
+    map.set(getDownloadSelectionId(item), item);
+  }
+  return map;
+}
+
+/**
  * @param {object[]} items
  * @param {string|number} selectionId
  */

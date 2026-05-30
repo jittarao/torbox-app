@@ -94,16 +94,26 @@ export function pruneSelectionAgainstItems(selection, currentItems) {
     return selection;
   }
 
+  const itemsBySelectionId = new Map();
+  for (const item of currentItems) {
+    itemsBySelectionId.set(getDownloadSelectionId(item), item);
+  }
+
   const validItems = new Set(
-    Array.from(selection.items).filter((storedId) =>
-      currentItems.some((item) => selectionIdMatchesItem(storedId, item))
+    Array.from(selection.items).filter(
+      (storedId) =>
+        itemsBySelectionId.has(storedId) ||
+        currentItems.some((item) => selectionIdMatchesItem(storedId, item))
     )
   );
 
   const validFiles = new Map();
   for (const [itemKey, fileIds] of selection.files) {
     const mapKey = parseFileMapKey(itemKey);
-    const item = currentItems.find((i) => selectionIdMatchesItem(mapKey, i));
+    let item = itemsBySelectionId.get(mapKey) ?? itemsBySelectionId.get(String(mapKey));
+    if (!item) {
+      item = currentItems.find((i) => selectionIdMatchesItem(mapKey, i));
+    }
 
     if (item && (!item.files || !item.files.length)) {
       validFiles.set(getDownloadSelectionId(item), new Set(fileIds));
@@ -112,8 +122,9 @@ export function pruneSelectionAgainstItems(selection, currentItems) {
 
     if (!item) continue;
 
+    const fileIdSet = new Set(item.files?.map((f) => f.id) ?? []);
     const validFileIds = new Set(
-      Array.from(fileIds).filter((fileId) => item.files?.some((file) => file.id === fileId))
+      Array.from(fileIds).filter((fileId) => fileIdSet.has(fileId))
     );
 
     if (validFileIds.size > 0) {

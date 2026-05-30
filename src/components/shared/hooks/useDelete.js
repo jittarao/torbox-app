@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
@@ -10,11 +10,14 @@ export function useDelete(
   apiKey,
   setSelectedItems,
   setToast,
-  fetchItems,
+  _fetchItems,
   assetType = 'torrents'
 ) {
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
+
+  const setIsDeletingRef = useRef(setIsDeleting);
+  setIsDeletingRef.current = setIsDeleting;
 
   const applyLocalRemovals = (successfulIds, itemsForGrouping = []) => {
     const store = useTorboxDownloadsStore.getState();
@@ -43,13 +46,17 @@ export function useDelete(
     if (!apiKey) return;
 
     try {
-      setIsDeleting(true);
+      setIsDeletingRef.current(true);
       const actualAssetType = assetType === 'all' && itemAssetType ? itemAssetType : assetType;
       const result = await deleteItemHelper(id, apiKey, actualAssetType);
 
       if (result.success) {
         if (!bulk) {
-          await fetchItems(true);
+          if (assetType === 'all' && itemAssetType) {
+            useTorboxDownloadsStore.getState().removeByIds(itemAssetType, [id]);
+          } else {
+            applyLocalRemovals([id]);
+          }
         }
 
         setToast({
@@ -69,7 +76,7 @@ export function useDelete(
       });
       return { success: false, error: error.message };
     } finally {
-      setIsDeleting(false);
+      setIsDeletingRef.current(false);
     }
   };
 
@@ -140,8 +147,6 @@ export function useDelete(
         });
       }
 
-      await fetchItems(true);
-
       return successfulIds;
     } catch (error) {
       console.error('Error in batch delete:', error);
@@ -157,7 +162,7 @@ export function useDelete(
     if (!apiKey || (selectedItems.items.size === 0 && selectedItems.files.size === 0)) return;
 
     try {
-      setIsDeleting(true);
+      setIsDeletingRef.current(true);
 
       const itemsToDelete = new Set(selectedItems.items);
 
@@ -182,7 +187,7 @@ export function useDelete(
       });
       return [];
     } finally {
-      setIsDeleting(false);
+      setIsDeletingRef.current(false);
     }
   };
 
