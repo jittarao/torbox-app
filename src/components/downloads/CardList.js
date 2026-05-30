@@ -16,7 +16,7 @@ import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
-import { cardListItemGap, getCardListItemGapPx } from './utils/responsiveLayout';
+import { getCardListItemGapPx } from './utils/responsiveLayout';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
@@ -31,6 +31,8 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch) {
   const entities = useTorboxDownloadsStore((state) => state.entities);
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
   const isMobile = useIsMobile();
+  const itemGap = getCardListItemGapPx();
+  const lastIndex = deferredEntityKeys.length - 1;
 
   return useCallback(
     (index) => {
@@ -41,17 +43,22 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch) {
       const entity = entities?.[entityKey];
       const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
 
-      let cardHeight = isMobile ? 118 : 104;
+      let cardHeight = isMobile ? 152 : 100;
       if (filesExpanded && filesVisible) {
         const fileCount = filesVisible.length;
         cardHeight += fileCount * (isMobile ? 54 : 44);
       }
-      cardHeight += cardListItemGap;
+      if (index < lastIndex) {
+        cardHeight += itemGap;
+      }
       return cardHeight;
     },
-    [deferredEntityKeys, expandedById, entities, fileSearch, isMobile]
+    [deferredEntityKeys, expandedById, entities, fileSearch, isMobile, itemGap, lastIndex]
   );
 }
+
+const measureCardElement = (element) =>
+  element ? Math.ceil(element.getBoundingClientRect().height) : 0;
 
 function VirtualizedCardList({
   virtualizer,
@@ -59,17 +66,22 @@ function VirtualizedCardList({
   scrollMargin,
   deferredEntityKeys,
   parentRef,
-  isFullscreen,
   renderCard,
 }) {
   const totalSize = virtualizer.getTotalSize();
+  const itemGap = getCardListItemGapPx();
+  const lastIndex = deferredEntityKeys.length - 1;
+
+  const paddingTop =
+    virtualRows.length > 0 ? Math.max(0, virtualRows[0].start - scrollMargin) : 0;
+  const lastVirtualRow = virtualRows[virtualRows.length - 1];
+  const paddingBottom = lastVirtualRow
+    ? Math.max(0, totalSize - lastVirtualRow.end)
+    : 0;
 
   return (
-    <div
-      ref={parentRef}
-      className={isFullscreen ? 'relative w-full' : 'relative w-full'}
-      style={{ height: `${totalSize}px` }}
-    >
+    <div ref={parentRef} className="relative w-full" style={{ height: `${totalSize}px` }}>
+      {paddingTop > 0 && <div aria-hidden style={{ height: paddingTop }} />}
       {virtualRows.map((virtualRow) => {
         const entityKey = deferredEntityKeys[virtualRow.index];
         if (!entityKey) return null;
@@ -79,16 +91,16 @@ function VirtualizedCardList({
             key={entityKey}
             data-index={virtualRow.index}
             ref={virtualizer.measureElement}
-            className="absolute left-0 w-full"
-            style={{
-              top: 0,
-              transform: `translateY(${virtualRow.start - scrollMargin}px)`,
-            }}
+            className="w-full box-border"
+            style={
+              virtualRow.index < lastIndex ? { paddingBottom: itemGap } : undefined
+            }
           >
             {renderCard(entityKey, virtualRow.index)}
           </div>
         );
       })}
+      {paddingBottom > 0 && <div aria-hidden style={{ height: paddingBottom }} />}
     </div>
   );
 }
@@ -108,18 +120,20 @@ function CardListWindowVirtualized({
   const virtualizer = useWindowVirtualizer({
     count: deferredEntityKeys.length,
     estimateSize,
+    measureElement: measureCardElement,
     overscan: 4,
-    gap: getCardListItemGapPx(),
     scrollMargin: containerOffsetTop,
   });
 
-  const { virtualRows } = useDownloadsVirtualRowSync({
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+
+  const { virtualRows, remeasureAndSync } = useDownloadsVirtualRowSync({
     virtualizer,
     viewMode,
     isFullscreen: false,
     fullscreenScrollEl: null,
     rowCount: deferredEntityKeys.length,
-    remeasureDeps: [containerOffsetTop, deferredEntityKeys],
+    remeasureDeps: [containerOffsetTop, deferredEntityKeys, expandedById],
   });
 
   useLayoutEffect(() => {
@@ -127,6 +141,10 @@ function CardListWindowVirtualized({
       virtualizer.measure();
     }
   }, [entityKeys, deferredEntityKeys, virtualizer]);
+
+  useLayoutEffect(() => {
+    remeasureAndSync();
+  }, [expandedById, remeasureAndSync]);
 
   if (deferredEntityKeys.length === 0) {
     return emptyState;
@@ -139,7 +157,6 @@ function CardListWindowVirtualized({
       scrollMargin={containerOffsetTop}
       deferredEntityKeys={deferredEntityKeys}
       parentRef={parentRef}
-      isFullscreen={isFullscreen}
       renderCard={renderCard}
     />
   );
@@ -163,17 +180,19 @@ function CardListContainerVirtualized({
     count: deferredEntityKeys.length,
     getScrollElement,
     estimateSize,
+    measureElement: measureCardElement,
     overscan: 4,
-    gap: getCardListItemGapPx(),
   });
 
-  const { virtualRows } = useDownloadsVirtualRowSync({
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+
+  const { virtualRows, remeasureAndSync } = useDownloadsVirtualRowSync({
     virtualizer,
     viewMode,
     isFullscreen: true,
     fullscreenScrollEl,
     rowCount: deferredEntityKeys.length,
-    remeasureDeps: [deferredEntityKeys, fullscreenScrollEl],
+    remeasureDeps: [deferredEntityKeys, fullscreenScrollEl, expandedById],
   });
 
   useLayoutEffect(() => {
@@ -181,6 +200,10 @@ function CardListContainerVirtualized({
       virtualizer.measure();
     }
   }, [entityKeys, deferredEntityKeys, virtualizer]);
+
+  useLayoutEffect(() => {
+    remeasureAndSync();
+  }, [expandedById, remeasureAndSync]);
 
   if (deferredEntityKeys.length === 0) {
     return emptyState;
@@ -193,7 +216,6 @@ function CardListContainerVirtualized({
       scrollMargin={0}
       deferredEntityKeys={deferredEntityKeys}
       parentRef={parentRef}
-      isFullscreen={isFullscreen}
       renderCard={renderCard}
     />
   );
