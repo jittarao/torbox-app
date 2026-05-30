@@ -77,3 +77,8 @@ export const getItemTypeName = (activeType) => {
 export const getTotalSelectedFiles = (selectedItems) => {
   return Array.from(selectedItems.files.values()).reduce((total, files) => total + files.size, 0);
 };
+
+/** Torrent is finished, present on disk, and actively seeding (matches ItemActions stop-seeding affordance). */
+export function isTorrentSeeding(item) {
+  return Boolean(item?.download_finished && item?.download_present && item.active);
+}

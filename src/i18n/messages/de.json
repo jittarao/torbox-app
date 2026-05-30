@@ -16,9 +16,13 @@
     },
     "downloadLinks": "Download-Links abrufen",
     "downloadLinksMobile": "Links abrufen ",
+    "bulkSeedingPartial": "Seeding für {success} Torrents gestoppt, {failed} fehlgeschlagen",
+    "bulkSeedingStopped": "Seeding für {count} Torrents gestoppt",
     "exporting": "Exportieren...",
     "exportSelected": "Ausgewählte exportieren",
     "fetchingLinks": "Links werden abgerufen...",
+    "stopSeeding": "Seeding stoppen",
+    "stoppingSeeding": "Seeding wird gestoppt...",
     "uploading": "Uploaden...",
     "uploadToCloud": "Zum Cloud-Uploaden"
   },

@@ -12,6 +12,10 @@ import {
   useDownloadsSelectionStore,
   selectSelectedItemCount,
 } from '@/store/downloadsSelectionStore';
+import { controlTorrent } from '@/utils/uploadActions';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
+import { isTorrentSeeding } from '../utils/statusHelpers';
 
 export default function ActionButtons({
   setSelectedItems,
@@ -32,9 +36,12 @@ export default function ActionButtons({
   allItems = [],
 }) {
   const t = useTranslations('ActionButtons');
+  const tItemActions = useTranslations('ItemActions.toast');
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
   const getSelectedItems = () => useDownloadsSelectionStore.getState().selectedItems;
+  const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
@@ -43,6 +50,26 @@ export default function ActionButtons({
   const cloudUploadRef = useRef(null);
   const showCloudUploadRef = useRef(false);
   const isUploadingRef = useRef(false);
+
+  const selectedSeedingTorrents = useMemo(() => {
+    if (hasSelectedFiles || selectedItemCount === 0) return [];
+    if (activeType !== 'torrents' && activeType !== 'all') return [];
+
+    const selectionIds = Array.from(getSelectedItems().items || []);
+    const resolved = selectionIds
+      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
+      .filter(Boolean);
+
+    if (resolved.length !== selectionIds.length) return [];
+
+    const allSeedingTorrents = resolved.every(
+      (item) =>
+        resolveItemAssetType(item, activeType) === 'torrents' && isTorrentSeeding(item)
+    );
+    return allSeedingTorrents ? resolved : [];
+  }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
+
+  const showBulkStopSeeding = selectedSeedingTorrents.length > 0;
 
   // Check for connected providers once per API key (not on every ActionBar re-render)
   useEffect(() => {
@@ -109,6 +136,57 @@ export default function ActionButtons({
       onBulkExport();
     }
     phEvent('bulk_export_torrents');
+  };
+
+  const handleBulkStopSeeding = async () => {
+    if (isStoppingSeeding || !apiKey || selectedSeedingTorrents.length === 0) return;
+
+    setIsStoppingSeeding(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      for (const item of selectedSeedingTorrents) {
+        const result = await controlTorrent(apiKey, item.id, 'stop_seeding');
+        if (result?.success) {
+          successCount++;
+          patchItem(resolveItemAssetType(item, activeType), item.id, {
+            active: false,
+            download_state: 'completed',
+            download_present: true,
+          });
+        } else {
+          failCount++;
+        }
+      }
+
+      if (successCount > 0 && failCount === 0) {
+        setToast({
+          message: t('bulkSeedingStopped', { count: successCount }),
+          type: 'success',
+        });
+        phEvent('bulk_stop_seeding', { count: successCount });
+      } else if (successCount > 0) {
+        setToast({
+          message: t('bulkSeedingPartial', { success: successCount, failed: failCount }),
+          type: 'warning',
+        });
+        phEvent('bulk_stop_seeding', { count: successCount, failed: failCount });
+      } else {
+        setToast({
+          message: tItemActions('seedingStopFailed'),
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error in bulk stop seeding:', error);
+      setToast({
+        message: tItemActions('seedingStopFailed'),
+        type: 'error',
+      });
+    } finally {
+      setIsStoppingSeeding(false);
+    }
   };
 
   const handleBulkCloudUpload = async (providerId) => {
@@ -261,6 +339,17 @@ export default function ActionButtons({
           disabled:opacity-50 transition-colors"
         >
           {isExporting ? t('exporting') : t('exportSelected')}
+        </button>
+      )}
+
+      {showBulkStopSeeding && (
+        <button
+          type="button"
+          onClick={handleBulkStopSeeding}
+          disabled={isStoppingSeeding}
+          className="border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark text-xs lg:text-sm px-4 py-1.5 rounded hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark disabled:opacity-50 transition-colors"
+        >
+          {isStoppingSeeding ? t('stoppingSeeding') : t('stopSeeding')}
         </button>
       )}
 
