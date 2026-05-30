@@ -11,6 +11,7 @@ import { useDownloadsFilters } from '../shared/hooks/useDownloadsFilters';
 import { useDownloadsListData } from '../shared/hooks/useDownloadsListData';
 import { DownloadsActionsProvider } from './DownloadsActionsContext';
 import { DownloadsProvider } from './DownloadsContext';
+import { DownloadsDataProvider } from './DownloadsDataContext';
 import { useDelete } from '../shared/hooks/useDelete';
 import { useFetchData } from '../shared/hooks/useFetchData';
 import { useSelection } from '../shared/hooks/useSelection';
@@ -270,6 +271,19 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const showDesktopFiltersSidebar = isBackendAvailable && !isMobile && !isFullscreen;
   const filtersSidebarExpanded = showDesktopFiltersSidebar && !filtersSidebarCollapsed;
 
+  const downloadsDataContextValue = useMemo(
+    () => ({
+      viewItems,
+      sortedItems,
+      visibleIds,
+      activeColumns,
+      selectedItems,
+      downloadHistoryLookup,
+      tagMappings,
+    }),
+    [viewItems, sortedItems, visibleIds, activeColumns, selectedItems, downloadHistoryLookup, tagMappings]
+  );
+
   const downloadsContextValue = useMemo(
     () => ({
       isBackendAvailable,
@@ -278,10 +292,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       tags,
       handleClearFilters: filterData.handleClearFilters,
       handleOpenNewFilter: filterData.handleOpenNewFilter,
-      viewItems,
-      sortedItems,
-      visibleIds,
-      activeColumns,
       handleColumnChange,
       search: filterData.search,
       setSearch: filterData.setSearch,
@@ -289,7 +299,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       setStatusFilter: filterData.setStatusFilter,
       isDownloading,
       handleBulkDownload,
-      selectedItems,
       isDeleting,
       deleteItems,
       isExporting,
@@ -316,8 +325,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       handleFileSelect,
       setSelectedItems,
       handleSelectAll,
-      downloadHistoryLookup,
-      tagMappings,
       deleteItem,
       toggleFiles,
       onOpenVideoPlayer: openVideoPlayer,
@@ -331,10 +338,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       tags,
       filterData.handleClearFilters,
       filterData.handleOpenNewFilter,
-      viewItems,
-      sortedItems,
-      visibleIds,
-      activeColumns,
       handleColumnChange,
       filterData.search,
       filterData.setSearch,
@@ -342,7 +345,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       filterData.setStatusFilter,
       isDownloading,
       handleBulkDownload,
-      selectedItems,
       isDeleting,
       deleteItems,
       isExporting,
@@ -369,8 +371,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       handleFileSelect,
       setSelectedItems,
       handleSelectAll,
-      downloadHistoryLookup,
-      tagMappings,
       deleteItem,
       toggleFiles,
       openVideoPlayer,
@@ -496,9 +496,11 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
             }`}
           >
             <DownloadsActionsProvider value={downloadActions}>
-              <DownloadsProvider value={downloadsContextValue}>
-                <DownloadsContentArea />
-              </DownloadsProvider>
+              <DownloadsDataProvider value={downloadsDataContextValue}>
+                <DownloadsProvider value={downloadsContextValue}>
+                  <DownloadsContentArea />
+                </DownloadsProvider>
+              </DownloadsDataProvider>
             </DownloadsActionsProvider>
           </div>
 

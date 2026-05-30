@@ -222,6 +222,27 @@ export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHis
 }
 
 /**
+ * Like filterIds but operates on a pre-enriched Map<selectionId, row> instead of raw entities.
+ * Avoids re-enriching items that were already enriched upstream.
+ */
+export function filterEnrichedIds(ids, enrichedMap, criteria) {
+  if (!ids?.length) return [];
+
+  const { search = '', statusFilter = 'all', appliedFilters } = criteria;
+
+  return ids.filter((id) => {
+    const row = enrichedMap.get(id);
+    if (!row) return false;
+
+    if (!itemMatchesDownloadSearch(row, search)) return false;
+    if (!matchesStatusFilter(row, statusFilter)) return false;
+    if (!itemMatchesFilters(row, appliedFilters)) return false;
+
+    return true;
+  });
+}
+
+/**
  * @param {import('@/store/torboxDownloadsStore').TorboxDownloadsState} torboxState
  * @param {'torrents'|'usenet'|'webdl'|'all'} viewType
  */
@@ -240,6 +261,19 @@ export function selectVisibleSortedIds(
       : buildDownloadHistoryLookup(downloadHistoryOrLookup || []);
 
   const filtered = filterIds(viewIds, entities, criteria, tagMappings, lookup);
+  return sortIds(filtered, entities, criteria.sortField || 'created_at', criteria.sortDirection || 'desc');
+}
+
+/**
+ * Like selectVisibleSortedIds but uses a pre-enriched row map to avoid re-enrichment.
+ */
+export function selectVisibleSortedFromMap(
+  viewIds,
+  enrichedMap,
+  criteria,
+  entities
+) {
+  const filtered = filterEnrichedIds(viewIds, enrichedMap, criteria);
   return sortIds(filtered, entities, criteria.sortField || 'created_at', criteria.sortDirection || 'desc');
 }
 

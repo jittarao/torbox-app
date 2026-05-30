@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import useIsMobile from '@/hooks/useIsMobile';
 import { Copy, Download, Play } from '@/components/icons';
 import { formatSize } from './utils/formatters';
 import { getDisplayMimetype } from './utils/mimetypeDisplay';
@@ -43,7 +44,6 @@ function FileRow({
   isCopying,
   isDownloading,
   isStreaming,
-  isMobile = false,
   isBlurred = false,
   tableWidth,
   file = null,
@@ -85,7 +85,6 @@ function FileRow({
             isCopying={isCopying}
             isDownloading={isDownloading}
             isStreaming={isStreaming}
-            isMobile={isMobile}
             isBlurred={isBlurred}
             tableWidth={tableWidth}
             measureRef={measureRef}
@@ -116,7 +115,6 @@ function FileRowInner({
   isCopying,
   isDownloading,
   isStreaming,
-  isMobile,
   isBlurred,
   tableWidth,
   measureRef,
@@ -126,6 +124,7 @@ function FileRowInner({
   fileIndex,
   attachMeasureRef,
 }) {
+  const isMobile = useIsMobile();
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = isItemSelected;
   const itemKey = `${item.assetType}:${String(item.id)}`;

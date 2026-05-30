@@ -513,8 +513,8 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     validateAndAddFiles,
     uploadItem,
     uploadItems,
-    removeItem: useUploaderStore((state) => state.removeItem),
-    resetUploader: useUploaderStore((state) => state.resetUploader), // Currently not used
+    removeItem: (queuedId) => useUploaderStore.getState().removeItem(queuedId),
+    resetUploader: () => useUploaderStore.getState().resetUploader(),
     globalOptions,
     updateGlobalOptions,
     showOptions,
