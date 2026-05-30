@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { getAutoStartOptions } from '@/utils/utility';
-import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torboxDownloadsStore';
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
 
@@ -38,11 +37,9 @@ export function usePollTimer({
     };
   }, []);
 
-  const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
-  const needsQueuedTorrentPoll =
-    autoStartEnabled &&
-    (type === 'torrents' || type === 'all') &&
-    hasQueuedTorrents;
+  /** Keep polling in background whenever auto-start is on (do not rely on stale store queue state). */
+  const autoStartPollActive =
+    autoStartEnabled && (type === 'torrents' || type === 'all');
 
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);
@@ -80,22 +77,20 @@ export function usePollTimer({
       return Date.now() - since < POLLING_CONFIG.engagementGracePeriodMs;
     };
 
-    const shouldPollForAutoStartQueued = () => {
+    const isAutoStartPollingEnabled = () => {
       if (type !== 'torrents' && type !== 'all') return false;
-      const options = getAutoStartOptions();
-      if (!options?.autoStart) return false;
-      return selectHasQueuedTorrents(useTorboxDownloadsStore.getState());
+      return getAutoStartOptions()?.autoStart === true;
     };
 
     const shouldPollWhileDisengaged = () => {
       if (pollingPaused) return false;
-      return isWithinEngagementGrace() || shouldPollForAutoStartQueued();
+      return isWithinEngagementGrace() || isAutoStartPollingEnabled();
     };
 
     const getPollIntervalMs = () => {
       if (!isDisengaged()) return POLLING_CONFIG.activeIntervalMs;
       if (isWithinEngagementGrace()) return POLLING_CONFIG.activeIntervalMs;
-      if (shouldPollForAutoStartQueued()) return POLLING_CONFIG.inactiveIntervalMs;
+      if (isAutoStartPollingEnabled()) return POLLING_CONFIG.autoStartPollIntervalMs;
       return currentPollingInterval;
     };
 
@@ -103,7 +98,7 @@ export function usePollTimer({
       if (pollingPaused) return 'paused';
       if (!isDisengaged()) return 'active';
       if (isWithinEngagementGrace()) return 'active';
-      if (shouldPollForAutoStartQueued()) return 'slow';
+      if (isAutoStartPollingEnabled()) return 'autoStart';
       return 'inactive';
     };
 
@@ -273,5 +268,5 @@ export function usePollTimer({
       onDisengagedRef.current = () => {};
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
     };
-  }, [type, pollingPaused, needsQueuedTorrentPoll, onReEngagedRef, onDisengagedRef]);
+  }, [type, pollingPaused, autoStartPollActive, onReEngagedRef, onDisengagedRef]);
 }
