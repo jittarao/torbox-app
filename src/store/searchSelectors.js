@@ -79,19 +79,8 @@ export function applySearchFilters(results, filters) {
   return filtered;
 }
 
-export function selectSearchFilterFields(state) {
-  return {
-    seasonFilter: state.seasonFilter,
-    episodeFilter: state.episodeFilter,
-    yearFilter: state.yearFilter,
-    qualityFilter: state.qualityFilter,
-    sizeFilter: state.sizeFilter,
-    seedersFilter: state.seedersFilter,
-  };
-}
-
-export function selectFilteredResults(state) {
-  return applySearchFilters(state.results, selectSearchFilterFields(state));
+export function selectFilteredResults(state, filters) {
+  return applySearchFilters(state.results, filters);
 }
 
 function sortSearchResults(items, sortKey, sortDir, searchType) {
@@ -124,9 +113,9 @@ function sortSearchResults(items, sortKey, sortDir, searchType) {
 /**
  * Single display pipeline: store filters → sort → client UI filters.
  */
-export function selectDisplayResults(state, uiPrefs) {
+export function selectDisplayResults(state, uiPrefs, filters) {
   const { sortKey, sortDir, showCachedOnly, hideTorBoxIndexers } = uiPrefs;
-  const filtered = selectFilteredResults(state);
+  const filtered = selectFilteredResults(state, filters);
   const sorted = sortSearchResults(filtered, sortKey, sortDir, state.searchType);
 
   let display = sorted;

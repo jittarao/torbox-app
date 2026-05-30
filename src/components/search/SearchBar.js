@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
+import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
 import Dropdown from '@/components/shared/Dropdown';
 import { Cog, Filter, MagnifyingGlass, Times } from '@/components/icons';
 import { useTranslations } from 'next-intl';
@@ -30,6 +31,22 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
     setShowAdvancedOptions,
     loadHistory,
     clearHistory,
+  } = useSearchStore(
+    useShallow((s) => ({
+      setQuery: s.setQuery,
+      searchType: s.searchType,
+      setSearchType: s.setSearchType,
+      includeCustomEngines: s.includeCustomEngines,
+      setIncludeCustomEngines: s.setIncludeCustomEngines,
+      searchHistory: s.searchHistory,
+      showAdvancedOptions: s.showAdvancedOptions,
+      setShowAdvancedOptions: s.setShowAdvancedOptions,
+      loadHistory: s.loadHistory,
+      clearHistory: s.clearHistory,
+    }))
+  );
+
+  const {
     seasonFilter,
     setSeasonFilter,
     episodeFilter,
@@ -43,33 +60,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
     seedersFilter,
     setSeedersFilter,
     clearFilters,
-  } = useSearchStore(
-    useShallow((s) => ({
-      setQuery: s.setQuery,
-      searchType: s.searchType,
-      setSearchType: s.setSearchType,
-      includeCustomEngines: s.includeCustomEngines,
-      setIncludeCustomEngines: s.setIncludeCustomEngines,
-      searchHistory: s.searchHistory,
-      showAdvancedOptions: s.showAdvancedOptions,
-      setShowAdvancedOptions: s.setShowAdvancedOptions,
-      loadHistory: s.loadHistory,
-      clearHistory: s.clearHistory,
-      seasonFilter: s.seasonFilter,
-      setSeasonFilter: s.setSeasonFilter,
-      episodeFilter: s.episodeFilter,
-      setEpisodeFilter: s.setEpisodeFilter,
-      yearFilter: s.yearFilter,
-      setYearFilter: s.setYearFilter,
-      qualityFilter: s.qualityFilter,
-      setQualityFilter: s.setQualityFilter,
-      sizeFilter: s.sizeFilter,
-      setSizeFilter: s.setSizeFilter,
-      seedersFilter: s.seedersFilter,
-      setSeedersFilter: s.setSeedersFilter,
-      clearFilters: s.clearFilters,
-    }))
-  );
+  } = useSearchFilterParams();
 
   // Resolve options: use prop when provided (permission-filtered), else default with both types
   const searchTypeOptions = searchTypeOptionsProp ?? DEFAULT_SEARCH_OPTIONS;

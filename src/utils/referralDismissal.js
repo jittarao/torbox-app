@@ -3,7 +3,6 @@ import { getItem, setItem, removeItem } from '@/utils/storage';
 const STORAGE_PREFIX = 'torbox-referral-dismiss:';
 
 function getDismissUntil(key) {
-  if (typeof localStorage === 'undefined') return null;
   try {
     const raw = getItem(`${STORAGE_PREFIX}${key}`);
     if (!raw) return null;
@@ -18,7 +17,6 @@ function getDismissUntil(key) {
 }
 
 export function dismissReferralReminder(key, days = 30) {
-  if (typeof localStorage === 'undefined') return;
   const until = new Date();
   until.setDate(until.getDate() + days);
   setItem(
@@ -36,7 +34,6 @@ export function isReferralReminderDismissed(key) {
 }
 
 export function clearReferralDismissal(key) {
-  if (typeof localStorage === 'undefined') return;
   removeItem(`${STORAGE_PREFIX}${key}`);
 }
 

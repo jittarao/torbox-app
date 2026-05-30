@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import ApiKeyInput from '@/components/downloads/ApiKeyInput';
 import SearchBar from '@/components/search/SearchBar';
@@ -65,8 +65,10 @@ export default function SearchPageClient() {
     >
       <div className="max-w-7xl mx-auto p-4">
         <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />
-        <SearchBar searchTypeOptions={searchTypeOptions} />
-        <SearchResults apiKey={apiKey} />
+        <Suspense fallback={null}>
+          <SearchBar searchTypeOptions={searchTypeOptions} />
+          <SearchResults apiKey={apiKey} />
+        </Suspense>
       </div>
     </AppShell>
   );

@@ -1,5 +1,3 @@
-const STORAGE_PREFIX = 'torbox';
-
 export function getItem(key) {
   if (typeof localStorage === 'undefined') return null;
   try {
@@ -50,6 +48,4 @@ export function setJSON(key, value) {
   }
 }
 
-export function getPrefixedKey(namespace, key) {
-  return `${STORAGE_PREFIX}:${namespace}:${key}`;
-}
+
