@@ -346,30 +346,27 @@ export default function SpeedChart({ items: itemsProp }) {
   return (
     <div className="px-3 py-1.5 lg:px-3 lg:py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark">
       <div className="flex justify-between items-center gap-2">
-        <div className="flex items-center gap-4">
-          <h3 className="text-md font-medium text-primary-text dark:text-primary-text-dark">
-            {isMobile ? t('title.default') : t('title.full')}
-          </h3>
-
+        <h3 className="text-sm font-medium text-primary-text dark:text-primary-text-dark shrink-0">
+          {isMobile ? t('title.default') : t('title.full')}
+        </h3>
+        <div className="flex items-center gap-2 lg:gap-4 min-w-0">
           {/* Current speeds */}
           {hasActivity && (
-            <div className="flex items-center gap-x-4">
-              <div className="flex items-center">
-                <span className="inline-block size-2 rounded-full bg-label-success-text-dark dark:bg-label-success-text-dark mr-1"></span>
-                <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">
+            <div className="flex items-center gap-x-3 shrink-0">
+              <div className="flex items-center gap-1">
+                <span className="inline-block size-1.5 rounded-full bg-label-success-text-dark dark:bg-label-success-text-dark"></span>
+                <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark whitespace-nowrap">
                   ↓ {formatSpeed(currentDownloadSpeed)}
                 </span>
               </div>
-              <div className="flex items-center">
-                <span className="inline-block size-2 rounded-full bg-label-danger-text-dark dark:bg-label-danger-text-dark mr-1"></span>
-                <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark">
+              <div className="flex items-center gap-1">
+                <span className="inline-block size-1.5 rounded-full bg-label-danger-text-dark dark:bg-label-danger-text-dark"></span>
+                <span className="text-xs font-medium text-primary-text dark:text-primary-text-dark whitespace-nowrap">
                   ↑ {formatSpeed(currentUploadSpeed)}
                 </span>
               </div>
             </div>
           )}
-        </div>
-        <div className="flex items-center gap-2">
           {/* Scale type toggle */}
           {isExpanded && !isMobile && (
             <button
