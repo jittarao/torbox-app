@@ -15,7 +15,7 @@ const ROW_COMPARE_FIELDS = [
 // This preserves structural sharing — items with no meaningful field change
 // reuse the previous entity reference.
 
-function fileListSignature(files) {
+export function fileListSignature(files) {
   if (!files?.length) return '';
   return files.map((f) => `${f.id}:${f.size ?? 0}`).join('|');
 }

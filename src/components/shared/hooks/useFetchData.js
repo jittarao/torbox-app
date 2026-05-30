@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
-import { useBackendModeStore } from '@/store/backendModeStore';
+import { useBackendMode } from '@/hooks/useBackendMode';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { hasCachedDataForView } from '@/store/torboxDownloadsSelectors';
 import {
@@ -29,7 +29,7 @@ import { useAutomationTorrentEvents } from './useAutomationTorrentEvents';
 
 export function useFetchData(apiKey, type = 'torrents') {
   const pollingPaused = usePollingPauseStore(selectIsPaused);
-  const backendMode = useBackendModeStore((state) => state.mode);
+  const { mode: backendMode } = useBackendMode();
 
   const {
     loading,

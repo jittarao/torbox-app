@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAutomationRulesStore } from '@/store/automationRulesStore';
-import { useBackendModeStore } from '@/store/backendModeStore';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 /**
  * Hook for using automation rules with automatic loading
@@ -18,12 +18,7 @@ export function useAutomationRules(apiKey) {
     }))
   );
 
-  const { mode: backendMode, isLoading: backendIsLoading } = useBackendModeStore(
-    useShallow((s) => ({
-      mode: s.mode,
-      isLoading: s.isLoading,
-    }))
-  );
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
 
   const loadAttemptedRef = useRef(false);
   const lastApiKeyRef = useRef(null);

@@ -1,67 +1,71 @@
-import { describe, it, expect, beforeEach, jest } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import NotificationBell from '../NotificationBell';
-import { useNotifications } from '../../shared/hooks/useNotifications';
 
-// Mock the useNotifications hook
-jest.mock('../../shared/hooks/useNotifications');
+let mockNotificationsState = {
+  unreadCount: 0,
+  loading: false,
+  error: null,
+  setIsPolling: () => {},
+};
 
-// Mock next-intl
-jest.mock('next-intl', () => ({
+mock.module('../../shared/hooks/useNotifications', () => ({
+  useNotifications: () => mockNotificationsState,
+}));
+
+mock.module('next-intl', () => ({
   useTranslations: () => (key) => key,
 }));
+
+const { default: NotificationBell } = await import('../NotificationBell');
 
 describe('NotificationBell', () => {
   const mockApiKey = 'test-api-key';
 
   beforeEach(() => {
-    useNotifications.mockReturnValue({
+    mockNotificationsState = {
       unreadCount: 0,
       loading: false,
       error: null,
-      setIsPolling: jest.fn(),
-    });
+      setIsPolling: () => {},
+    };
   });
 
   it('renders notification bell with no unread notifications', () => {
     render(<NotificationBell apiKey={mockApiKey} />);
 
     const bellButton = screen.getByRole('button');
-    expect(bellButton).toBeInTheDocument();
-    expect(screen.queryByText('0')).not.toBeInTheDocument();
+    expect(bellButton).toBeTruthy();
+    expect(screen.queryByText('0')).toBeNull();
   });
 
   it('renders notification bell with unread count badge', () => {
-    useNotifications.mockReturnValue({
+    mockNotificationsState = {
+      ...mockNotificationsState,
       unreadCount: 5,
-      loading: false,
-      error: null,
-      setIsPolling: jest.fn(),
-    });
+    };
 
     render(<NotificationBell apiKey={mockApiKey} />);
 
-    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeTruthy();
   });
 
   it('shows loading spinner when loading', () => {
-    useNotifications.mockReturnValue({
-      unreadCount: 0,
+    mockNotificationsState = {
+      ...mockNotificationsState,
       loading: true,
-      error: null,
-      setIsPolling: jest.fn(),
-    });
+    };
 
     render(<NotificationBell apiKey={mockApiKey} />);
 
     const bellButton = screen.getByRole('button');
-    expect(bellButton).toBeDisabled();
+    expect(bellButton.disabled).toBe(true);
   });
 
   it('does not render when no API key is provided', () => {
     render(<NotificationBell apiKey={null} />);
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('toggles notification panel when clicked', async () => {
@@ -71,7 +75,7 @@ describe('NotificationBell', () => {
     fireEvent.click(bellButton);
 
     await waitFor(() => {
-      expect(screen.getByText('notifications')).toBeInTheDocument();
+      expect(screen.getByText('notifications')).toBeTruthy();
     });
   });
 });

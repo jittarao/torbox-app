@@ -1,31 +1,14 @@
 import { create } from 'zustand';
-import { EMPTY_FILTERS } from '@/components/downloads/filters/filterHelpers';
-
-function cloneEmptyFilters() {
-  return JSON.parse(JSON.stringify(EMPTY_FILTERS));
-}
-
-const initialSort = {
-  sortField: 'created_at',
-  sortDirection: 'desc',
-};
 
 /**
- * Downloads list UI state (filters, sort, expand).
- * Does not store filtered/sorted arrays — use downloadsDerivedSelectors.
+ * Downloads list UI state (expand/collapse only).
+ * Shareable filters live in URL via useDownloadsFilterParams.
  */
 export const useDownloadsUiStore = create((set, get) => ({
-  search: '',
-  statusFilter: 'all',
-  appliedFilters: cloneEmptyFilters(),
-  ...initialSort,
   /** @type {Record<string|number, true>} */
   expandedById: {},
-
-  setSearch: (search) => set({ search }),
-  setStatusFilter: (statusFilter) => set({ statusFilter }),
-  setAppliedFilters: (appliedFilters) => set({ appliedFilters }),
-  setSort: (sortField, sortDirection = 'asc') => set({ sortField, sortDirection }),
+  /** Bumped on session reset so URL filter params can be cleared. */
+  filterResetNonce: 0,
 
   toggleExpanded: (itemId) =>
     set((state) => {
@@ -62,20 +45,10 @@ export const useDownloadsUiStore = create((set, get) => ({
 
   collapseAll: () => set({ expandedById: {} }),
 
-  resetFilters: () =>
-    set({
-      search: '',
-      statusFilter: 'all',
-      appliedFilters: cloneEmptyFilters(),
-    }),
-
   resetUi: () =>
     set({
-      search: '',
-      statusFilter: 'all',
-      appliedFilters: cloneEmptyFilters(),
-      ...initialSort,
       expandedById: {},
+      filterResetNonce: get().filterResetNonce + 1,
     }),
 }));
 
@@ -83,6 +56,3 @@ export const useDownloadsUiStore = create((set, get) => ({
 export function selectIsRowExpanded(itemId) {
   return (state) => Boolean(state.expandedById[itemId]);
 }
-
-// selectFilterSortCriteria removed — the object literal pattern is unsafe without useShallow.
-// Consumers should call useShallow((s) => ({...})) directly (see useDownloadsListData.js:62-70).
