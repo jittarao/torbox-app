@@ -47,7 +47,6 @@ export function downloadRowEqual(prev, next) {
   if (!prev || !next) return false;
   if (prev.id !== next.id) return false;
   if (prev.assetType !== next.assetType) return false;
-  if (isRowLikelyChanging(prev) || isRowLikelyChanging(next)) return false;
 
   for (const field of ROW_COMPARE_FIELDS) {
     if (prev[field] !== next[field]) return false;
