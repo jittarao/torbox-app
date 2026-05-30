@@ -6,10 +6,11 @@ export const useTagsStore = create((set, get) => ({
   tags: [],
   loading: false,
   error: null,
-  ...createApiKeyScopedSlice(set, get, { tags: [], error: null }),
+  hasLoaded: false,
+  ...createApiKeyScopedSlice(set, get, { tags: [], error: null, hasLoaded: false }),
 
   // Load tags from API
-  loadTags: async (apiKey) => {
+  loadTags: async (apiKey, { force = false } = {}) => {
     if (!apiKey) {
       set({ error: 'API key is required', loading: false });
       return;
@@ -21,10 +22,14 @@ export const useTagsStore = create((set, get) => ({
       return;
     }
 
-    const { currentApiKey, loading } = get();
+    const { currentApiKey, loading, hasLoaded } = get();
 
     // Prevent duplicate concurrent calls: if already loading, skip
     if (loading) {
+      return;
+    }
+
+    if (!force && hasLoaded && currentApiKey === apiKey) {
       return;
     }
 
@@ -56,7 +61,7 @@ export const useTagsStore = create((set, get) => ({
       }
 
       if (data.success) {
-        set({ tags: data.tags || [], loading: false });
+        set({ tags: data.tags || [], loading: false, hasLoaded: true });
       } else {
         throw new Error(data.error || 'Failed to load tags');
       }
@@ -65,7 +70,7 @@ export const useTagsStore = create((set, get) => ({
         return;
       }
       console.error('Error loading tags:', err);
-      set({ error: err.message, loading: false });
+      set({ error: err.message, loading: false, hasLoaded: true });
     }
   },
 
@@ -101,7 +106,7 @@ export const useTagsStore = create((set, get) => ({
         // Reset loading before reloading tags
         set({ loading: false });
         // Reload tags after creation
-        await get().loadTags(apiKey);
+        await get().loadTags(apiKey, { force: true });
         return data.tag;
       } else {
         throw new Error(data.error || 'Failed to create tag');
@@ -145,7 +150,7 @@ export const useTagsStore = create((set, get) => ({
         // Reset loading before reloading tags
         set({ loading: false });
         // Reload tags after update
-        await get().loadTags(apiKey);
+        await get().loadTags(apiKey, { force: true });
         return data.tag;
       } else {
         throw new Error(data.error || 'Failed to update tag');
@@ -187,7 +192,7 @@ export const useTagsStore = create((set, get) => ({
         // Reset loading before reloading tags
         set({ loading: false });
         // Reload tags after deletion
-        await get().loadTags(apiKey);
+        await get().loadTags(apiKey, { force: true });
         return true;
       } else {
         throw new Error(data.error || 'Failed to delete tag');

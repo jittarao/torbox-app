@@ -9,12 +9,13 @@ import { useDownloadTagsStore } from '@/store/downloadTagsStore';
  * Uses Zustand store for app-level state management
  */
 export function useDownloadTags(apiKey) {
-  const { tagMappings, loading, error, fetchDownloadTags, assignTags, setApiKey } =
+  const { tagMappings, loading, error, hasLoaded, fetchDownloadTags, assignTags, setApiKey } =
     useDownloadTagsStore(
       useShallow((s) => ({
         tagMappings: s.tagMappings,
         loading: s.loading,
         error: s.error,
+        hasLoaded: s.hasLoaded,
         fetchDownloadTags: s.fetchDownloadTags,
         assignTags: s.assignTags,
         setApiKey: s.setApiKey,
@@ -27,11 +28,14 @@ export function useDownloadTags(apiKey) {
     }
   }, [apiKey, setApiKey]);
 
-  const fetchDownloadTagsWithKey = useCallback(async () => {
-    if (apiKey) {
-      await fetchDownloadTags(apiKey);
-    }
-  }, [apiKey, fetchDownloadTags]);
+  const fetchDownloadTagsWithKey = useCallback(
+    async (options) => {
+      if (apiKey) {
+        await fetchDownloadTags(apiKey, options);
+      }
+    },
+    [apiKey, fetchDownloadTags]
+  );
 
   const getDownloadTags = useCallback(
     (downloadId) => {
@@ -111,6 +115,7 @@ export function useDownloadTags(apiKey) {
     tagMappings,
     loading,
     error,
+    hasLoaded,
     fetchDownloadTags: fetchDownloadTagsWithKey,
     getDownloadTags,
     assignTags: assignTagsWithKey,
