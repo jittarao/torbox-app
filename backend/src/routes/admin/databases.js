@@ -76,7 +76,7 @@ export function setupDatabaseRoutes(router, backend) {
       const userDb = await getUserDatabaseSafe(backend, authId);
       if (userDb) {
         try {
-          userDb.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+          userDb.db.prepare('PRAGMA wal_checkpoint(PASSIVE)').run();
         } catch (checkpointError) {
           logger.warn('WAL checkpoint failed before backup', {
             authId,

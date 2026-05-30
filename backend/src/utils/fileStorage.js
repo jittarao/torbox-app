@@ -149,7 +149,9 @@ export async function deleteUploadFile(authId, filePath) {
     });
   } catch (error) {
     logger.error('Error deleting upload file', error, { authId, filePath });
-    // Don't throw - file deletion failure shouldn't break the flow
+    // Re-throw so callers know the file was not deleted and can take
+    // appropriate action (e.g. aborting the request, rolling back DB changes).
+    throw error;
   }
 }
 

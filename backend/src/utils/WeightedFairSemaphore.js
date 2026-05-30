@@ -72,15 +72,25 @@ class WeightedFairSemaphore {
 
   /**
    * Process the queue. Called after a release.
-   * Uses fair scheduling: iterates users in round-robin order, granting
-   * permits to at most one queued request per user per cycle.
+   * Uses cursor-based round-robin: walks the user map starting from
+   * the last-serviced position, granting at most one queued request per
+   * user per cycle. This prevents starvation when one user has a deep queue
+   * and another has a shallow queue.
    * @private
    */
   _processQueue() {
     let progressed = true;
     while (progressed) {
+      const entries = [...this._perUser.entries()];
+      if (entries.length === 0) return;
+
+      // Start from the last cursor position to ensure round-robin fairness
+      this._cursor = (this._cursor ?? 0) % entries.length;
+
       progressed = false;
-      for (const [userId, state] of this._perUser) {
+      for (let i = 0; i < entries.length; i++) {
+        const idx = (this._cursor + i) % entries.length;
+        const [userId, state] = entries[idx];
         if (state.queue.length === 0) continue;
         const next = state.queue[0];
         if (this._available >= next.permits && state.active < this.maxPermitsPerUser) {
@@ -89,6 +99,8 @@ class WeightedFairSemaphore {
           state.active += next.permits;
           next.resolve(this._createRelease(userId, next.permits));
           progressed = true;
+          this._cursor = (idx + 1) % entries.length;
+          break; // one grant per cycle to avoid starving other users
         }
       }
     }
