@@ -1,19 +1,8 @@
-import {
-  buildTorboxSignupReferralUrl,
-  buildTorboxSubscriptionReferralUrl,
-} from '@/utils/referralLinks';
-
-const DEFAULT_REFERRAL_CODE = '7908ea44-023c-45f5-86ce-564bc6edaf34';
-
-export const REFERRAL_CODE = (
-  process.env.NEXT_PUBLIC_TORBOX_REFERRAL_CODE || DEFAULT_REFERRAL_CODE
-).trim();
-
-/** Opens torbox.app subscription with referral (logged-in users; confirm dialog on site). */
-export const REFERRAL_LINK = buildTorboxSubscriptionReferralUrl(REFERRAL_CODE);
-
-/** Sign-up flow that preserves referral through TorBox login redirect. */
-export const REFERRAL_SIGNUP_LINK = buildTorboxSignupReferralUrl(REFERRAL_CODE);
+export {
+  REFERRAL_CODE,
+  REFERRAL_LINK,
+  REFERRAL_SIGNUP_LINK,
+} from '@/config/referral';
 export const REFERRAL_HELP_URL =
   'https://support.torbox.app/en/articles/9875657-how-does-the-torbox-referral-system-work';
 export const ABUSE_POLICY_URL =
@@ -28,29 +17,7 @@ export {
   FETCH_TIMEOUT_MS,
 } from '@/config/apiConstants';
 
-// Non-retryable errors for the API
-export const NON_RETRYABLE_ERRORS = {
-  DATABASE_ERROR: 'DATABASE_ERROR',
-  NO_AUTH: 'NO_AUTH',
-  BAD_TOKEN: 'BAD_TOKEN',
-  AUTH_ERROR: 'AUTH_ERROR',
-  INVALID_OPTION: 'INVALID_OPTION',
-  ENDPOINT_NOT_FOUND: 'ENDPOINT_NOT_FOUND',
-  ITEM_NOT_FOUND: 'ITEM_NOT_FOUND',
-  PLAN_RESTRICTED_FEATURE: 'PLAN_RESTRICTED_FEATURE',
-  DUPLICATE_ITEM: 'DUPLICATE_ITEM',
-  TOO_MUCH_DATA: 'TOO_MUCH_DATA',
-  DOWNLOAD_TOO_LARGE: 'DOWNLOAD_TOO_LARGE',
-  MISSING_REQUIRED_OPTION: 'MISSING_REQUIRED_OPTION',
-  TOO_MANY_OPTIONS: 'TOO_MANY_OPTIONS',
-  MONTHLY_LIMIT: 'MONTHLY_LIMIT',
-  COOLDOWN_LIMIT: 'COOLDOWN_LIMIT',
-  ACTIVE_LIMIT: 'ACTIVE_LIMIT',
-  DOWNLOAD_SERVER_ERROR: 'DOWNLOAD_SERVER_ERROR',
-  INVALID_DEVICE: 'INVALID_DEVICE',
-  DIFF_ISSUE: 'DIFF_ISSUE',
-  VENDOR_DISABLED: 'VENDOR_DISABLED',
-};
+export { NON_RETRYABLE_ERRORS } from '@/config/errors';
 
 // Columns for the downloads page
 export const COLUMNS = {

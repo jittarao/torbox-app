@@ -15,7 +15,6 @@
       "message": "Czy na pewno chcesz usunąć {count} {type}? Ta akcja nie może zostać cofnięta.",
       "title": "Potwierdź usunięcie"
     },
-    "assignTags": "Tag",
     "assignTagsTitle": "Przypisz tagi do zaznaczenia",
     "downloadLinks": "Pobierz",
     "downloadLinksMobile": "Pobierz",
@@ -24,14 +23,12 @@
     "bulkForceStarted": "Wymuszono start {count} torrentów",
     "bulkSeedingPartial": "Zatrzymano seedowanie {success} torrentów, {failed} nie powiodło się",
     "bulkSeedingStopped": "Zatrzymano seedowanie {count} torrentów",
-    "forceStart": "Start",
     "forceStartTitle": "Wymuś start kolejkowanych torrentów",
     "forceStarting": "Uruchamianie…",
     "exporting": "Eksport…",
     "exportSelected": "Eksport",
     "exportSelectedTitle": "Eksportuj zaznaczone torrenty",
     "fetchingLinks": "Ładowanie…",
-    "stopSeeding": "Stop seed",
     "stopSeedingTitle": "Zatrzymaj seedowanie zaznaczonych torrentów",
     "stoppingSeeding": "Zatrzymywanie…",
     "toolbarLabel": "Akcje zaznaczenia",
@@ -185,14 +182,12 @@
       "seeds": "Seedy",
       "seedsDescription": "Liczba dostępnych seedów",
       "stalledTime": "Czas bezczynności",
-      "status": "Status",
       "statusDescription": "Aktualny status torrenta (pobieranie, seedowanie, ukończone itd.)",
       "statusPlaceholder": "Wybierz statusy...",
       "tags": "Tagi",
       "tagsPlaceholder": "Wybierz tagi...",
       "totalUploaded": "Łącznie wysłano",
       "totalUploadedDescription": "Całkowita ilość wysłanych danych (w GB)",
-      "tracker": "Tracker",
       "trackerDescription": "Adres URL lub nazwa trackera (obsługuje wyszukiwanie tekstowe)",
       "trackerPlaceholder": "Wpisz adres trackera lub nazwę...",
       "uploadSpeed": "Aktualna prędkość wysyłania",
@@ -336,12 +331,8 @@
     "created_at": "Data dodania",
     "download_progress": "Postęp",
     "download_speed": "Prędkość pobierania",
-    "download_state": "Status",
-    "eta": "ETA",
     "expires_at": "Wygasa o",
     "file_count": "Liczba plików",
-    "hash": "Hash",
-    "id": "ID",
     "is_downloaded": "Pobrane",
     "name": "Nazwa",
     "original_url": "Oryginalny URL",
@@ -366,30 +357,19 @@
       "File": "Plik",
       "files": "pliki",
       "Files": "Pliki",
-      "torrent": "torrent",
-      "Torrent": "Torrent",
       "torrents": "torrenty",
       "Torrents": "Torrenty",
-      "usenet": "usenet",
-      "Usenet": "Usenet",
       "usenets": "usenety",
-      "Usenets": "Usenety",
-      "web": "web",
-      "Web": "Web",
-      "webdl": "webdl",
-      "Webdl": "Webdl"
+      "Usenets": "Usenety"
     },
     "loading": "Ładowanie...",
     "minutes": "minuty",
     "time": {
       "ago": " temu",
       "complete": "Zakończone",
-      "d": "d",
       "h": "g",
       "in": "za ",
-      "m": "m",
       "mo": "m",
-      "s": "s",
       "unknown": "Nieznane",
       "y": "l"
     }
@@ -488,7 +468,6 @@
     "editFilters": "Edytuj",
     "activeView": "Widok: {name}",
     "activeSearch": "wyszukiwanie „{query}”",
-    "activeTag": "Tag: {name}",
     "activeConditions": "{count, plural, one {# filtr} few {# filtry} many {# filtrów} other {# filtra}} aktywnych",
     "menuApply": "Zastosuj",
     "menuEdit": "Edytuj",
@@ -563,14 +542,12 @@
     },
     "theme": {
       "toggle": "Zmień motyw"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Zarządzacz torrentów i debrid",
     "search": "Szukaj",
-    "searchPlaceholder": "Szukaj torrentów...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Szukaj torrentów..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -683,7 +660,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Znajdź swój klucz API na",
-      "link": "torbox.app/settings",
       "title": "Wprowadź klucz API TorBox"
     },
     "features": {
@@ -701,11 +677,9 @@
       }
     },
     "footer": {
-      "description": "Ta aplikacja jest w pełni open source na",
-      "github": "GitHub"
+      "description": "Ta aplikacja jest w pełni open source na"
     },
-    "subtitle": "Alternatywa dla zaawansowanych użytkowników interfejsu TorBox. Zbudowana dla szybkości i wydajności.",
-    "title": "TorBox Manager"
+    "subtitle": "Alternatywa dla zaawansowanych użytkowników interfejsu TorBox. Zbudowana dla szybkości i wydajności."
   },
   "LinkHistory": {
     "actions": {
@@ -790,7 +764,6 @@
     "developerNote": "To jest kod referalny twórcy.",
     "error": "Błąd skopiowania do schowka",
     "landingDescription": "Pierwszy raz w TorBox? Użyj naszego linku przy subskrypcji i zyskaj dni bonusu przy pierwszym zakupie.",
-    "referral": "Referral",
     "referralCode": "Kod referalny",
     "referralLink": "Link referalny",
     "signUp": "Zarejestruj się w TorBox",
@@ -900,11 +873,7 @@
     "never": "Nigdy",
     "noFeeds": "Brak skonfigurowanych kanałów RSS",
     "options": {
-      "auto": "Auto",
       "dontSeed": "Nie seeduj",
-      "seed": "Seed",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Pobieranie z internetu"
     },
     "pageDescription": "Zarządzaj kanałami RSS i przeglądaj elementy",
@@ -916,7 +885,6 @@
     "save": "Zapisz",
     "scanInterval": "Interwał skanowania (minuty)",
     "scanIntervalPlaceholder": "Jak często skanować ten kanał",
-    "status": "Status",
     "tabs": {
       "feeds": "Zarządzanie kanałami",
       "items": "Zarządzanie elementami"
@@ -957,10 +925,8 @@
       "downloadStarted": "Pobieranie rozpoczęte pomyślnie",
       "noLink": "Brak dostępnego linku pobierania"
     },
-    "torrent": "Torrent",
     "type": "Typ",
     "unknown": "Nieznane",
-    "usenet": "Usenet",
     "webdl": "Pobieranie z internetu"
   },
   "SearchBar": {
@@ -969,7 +935,6 @@
     "clearSearch": "Wyczyść wyszukiwanie",
     "customEngines": "Niestandardowe silniki",
     "episode": "Odcinek",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Ukryj zaawansowane",
     "minSeeders": "Min. seedery",
     "minSize": "Min. rozmiar (GB)",
@@ -983,10 +948,8 @@
     "search": "Szukaj",
     "searchExamples": "Przykłady wyszukiwania",
     "season": "Sezon",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Pokaż zaawansowane",
-    "year": "Rok",
-    "yearPlaceholder": "2024"
+    "year": "Rok"
   },
   "SearchResults": {
     "actions": {
@@ -1052,7 +1015,6 @@
     "downloading": "Pobieranie",
     "failed": "Nie powiodło się",
     "inactive": "Nieaktywne",
-    "meta_dl": "Meta DL",
     "queued": "W kolejce",
     "seeding": "Seedowanie",
     "stalled": "Zablokowane",
@@ -1062,8 +1024,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} plików wybranych ({size})",
     "selectedItems": "{itemCount} {type} wybranych ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} wybranych ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} wybranych ({size})"
   },
   "SystemStatus": {
     "error": "Błąd",
@@ -1074,7 +1035,6 @@
     "minutesAgo": "{minutes} minut temu",
     "never": "Nigdy",
     "refreshStatus": "Kliknij, aby odświeżyć",
-    "responseTime": "{ms} ms",
     "uptime": {
       "barLabel": "Historia {label}, {percent}% dostępności",
       "collecting": "Zbieranie danych…",
@@ -1091,10 +1051,18 @@
       }
     },
     "rows": {
-      "app": { "label": "Ta aplikacja" },
-      "backend": { "label": "Backend self-hosted" },
-      "connection": { "label": "Twój klucz API" },
-      "platform": { "label": "Platforma TorBox" },
+      "app": {
+        "label": "Ta aplikacja"
+      },
+      "backend": {
+        "label": "Backend self-hosted"
+      },
+      "connection": {
+        "label": "Twój klucz API"
+      },
+      "platform": {
+        "label": "Platforma TorBox"
+      },
       "status": {
         "checking": "Sprawdzanie…",
         "invalidKey": "Nieprawidłowy klucz API",
@@ -1200,10 +1168,7 @@
     },
     "noData": "Brak danych",
     "plans": {
-      "essential": "Essential",
       "free": "Darmowy",
-      "pro": "Pro",
-      "standard": "Standard",
       "unknown": "Nieznany"
     },
     "profile": {
@@ -1211,13 +1176,10 @@
       "basicInfo": "Podstawowe informacje",
       "createdAt": "Utworzono",
       "downloadBreakdown": "Podział pobierań",
-      "email": "Email",
       "lastLogin": "Ostatnia aktualizacja",
-      "plan": "Plan",
       "planExpiry": "Wygasanie planu",
       "ratio": "Współczynnik",
       "referralCode": "Kod polecenia",
-      "status": "Status",
       "title": "Profil użytkownika",
       "torrentDownloads": "Pobierania torrentów",
       "totalDownloads": "Całkowite pobierania",

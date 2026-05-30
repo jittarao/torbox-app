@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UserDetail from '@/components/admin/UserDetail';
+import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
 
@@ -11,8 +12,12 @@ export default function UserDetailPageClient() {
   const params = useParams();
   const { push } = useRouter();
   const authId = params.authId;
-  const selectedUserData = useAdminStore((s) => s.selectedUserData);
-  const fetchUser = useAdminStore((s) => s.fetchUser);
+  const { selectedUserData, fetchUser } = useAdminStore(
+    useShallow((s) => ({
+      selectedUserData: s.selectedUserData,
+      fetchUser: s.fetchUser,
+    }))
+  );
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 

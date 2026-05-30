@@ -1,33 +1,64 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, Suspense } from 'react';
-import { usePostHog } from 'posthog-js/react';
+import { useEffect, useState, Suspense, createContext, useContext } from 'react';
+import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
 
-import posthog from 'posthog-js';
-import { PostHogProvider as PHProvider } from 'posthog-js/react';
+const PostHogClientContext = createContext(null);
 
-let posthogInitialized = false;
+function usePostHogClient() {
+  return useContext(PostHogClientContext);
+}
 
-export function PostHogProvider({ children }) {
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.__TBM_RYBBIT__) {
-      return;
-    }
-    if (process.env.NEXT_PUBLIC_POSTHOG_KEY && !posthogInitialized) {
-      posthogInitialized = true;
+let posthogInitPromise = null;
+
+function loadPostHog() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (window.__TBM_RYBBIT__) return Promise.resolve(null);
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return Promise.resolve(null);
+  if (!posthogInitPromise) {
+    posthogInitPromise = import('posthog-js').then((mod) => {
+      const posthog = mod.default || mod.posthog;
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
         person_profiles: 'identified_only',
         capture_pageview: false,
       });
-    }
+      return posthog;
+    });
+  }
+  return posthogInitPromise;
+}
+
+export function PostHogProvider({ children }) {
+  const [client, setClient] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadPostHog().then((posthog) => {
+      if (!cancelled && posthog) {
+        setClient(posthog);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  if (!client) {
+    return (
+      <PostHogClientContext.Provider value={null}>
+        {children}
+      </PostHogClientContext.Provider>
+    );
+  }
+
   return (
-    <PHProvider client={posthog}>
-      <SuspendedPostHogPageView />
-      {children}
+    <PHProvider client={client}>
+      <PostHogClientContext.Provider value={client}>
+        <SuspendedPostHogPageView />
+        {children}
+      </PostHogClientContext.Provider>
     </PHProvider>
   );
 }
@@ -35,7 +66,9 @@ export function PostHogProvider({ children }) {
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const posthog = usePostHog();
+  const posthogFromProvider = usePostHog();
+  const posthogFromContext = usePostHogClient();
+  const posthog = posthogFromProvider ?? posthogFromContext;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.__TBM_RYBBIT__) {

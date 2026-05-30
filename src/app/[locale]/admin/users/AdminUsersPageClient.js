@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
+import { useShallow } from 'zustand/react/shallow';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UserList from '@/components/admin/UserList';
 import useAdminStore from '@/store/adminStore';
@@ -9,12 +10,23 @@ import Toast from '@/components/shared/Toast';
 
 export default function AdminUsersPageClient() {
   const { push } = useRouter();
-  const users = useAdminStore((s) => s.users);
-  const usersLoading = useAdminStore((s) => s.usersLoading);
-  const usersPagination = useAdminStore((s) => s.usersPagination);
-  const userFilters = useAdminStore((s) => s.userFilters);
-  const fetchUsers = useAdminStore((s) => s.fetchUsers);
-  const setUserFilter = useAdminStore((s) => s.setUserFilter);
+  const {
+    users,
+    usersLoading,
+    usersPagination,
+    userFilters,
+    fetchUsers,
+    setUserFilter,
+  } = useAdminStore(
+    useShallow((s) => ({
+      users: s.users,
+      usersLoading: s.usersLoading,
+      usersPagination: s.usersPagination,
+      userFilters: s.userFilters,
+      fetchUsers: s.fetchUsers,
+      setUserFilter: s.setUserFilter,
+    }))
+  );
   const [toast, setToast] = useState(null);
 
   useEffect(() => {

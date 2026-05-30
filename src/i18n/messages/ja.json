@@ -52,12 +52,10 @@
     "addNewKey": "新しいAPIキーを追加",
     "addNewKeyHint": "ラベルでアカウントを一目で区別できます。",
     "apiKey": "APIキー",
-    "apiKeyPlaceholder": "Enter your API key",
     "cancel": "キャンセル",
     "close": "閉じる",
     "deleteKey": "キーを削除",
     "keyLabel": "キーラベル",
-    "keyLabelPlaceholder": "e.g. Personal, Family",
     "keysCount": "{count, plural, =0 {キーなし} other {# 件のキー}}",
     "managerPinned": "閉じるには「開いたままにする」をオフにしてください",
     "noKeys": "保存されたキーがありません",
@@ -337,11 +335,9 @@
     "download_progress": "進捗",
     "download_speed": "ダウンロード速度",
     "download_state": "状態",
-    "eta": "ETA",
     "expires_at": "有効期限",
     "file_count": "ファイル数",
     "hash": "ハッシュ",
-    "id": "ID",
     "is_downloaded": "ダウンロード済み",
     "name": "名前",
     "original_url": "ソースURL",
@@ -361,23 +357,7 @@
     "hours": "時間",
     "itemTypes": {
       "all": "すべて",
-      "All": "すべて",
-      "file": "file",
-      "File": "File",
-      "files": "files",
-      "Files": "Files",
-      "torrent": "torrent",
-      "Torrent": "Torrent",
-      "torrents": "torrents",
-      "Torrents": "Torrents",
-      "usenet": "usenet",
-      "Usenet": "Usenet",
-      "usenets": "usenets",
-      "Usenets": "Usenets",
-      "web": "web",
-      "Web": "Web",
-      "webdl": "webdl",
-      "Webdl": "Webdl"
+      "All": "すべて"
     },
     "loading": "読み込み中...",
     "minutes": "分",
@@ -545,7 +525,6 @@
     "download": "ファイルをダウンロード"
   },
   "Header": {
-    "logo": "TorBox Manager Logo",
     "menu": {
       "archived": "アーカイブ",
       "automation": "自動化ルール",
@@ -563,14 +542,11 @@
     },
     "theme": {
       "toggle": "テーマを切り替え"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
-    "description": "Torrent and Debrid Manager",
     "search": "検索",
-    "searchPlaceholder": "Torrentsを検索...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Torrentsを検索..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -683,7 +659,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "APIキーは次の場所で確認できます",
-      "link": "torbox.app/settings",
       "title": "TorBox APIキーを入力"
     },
     "features": {
@@ -701,11 +676,9 @@
       }
     },
     "footer": {
-      "description": "このアプリは完全にオープンソースで",
-      "github": "GitHub"
+      "description": "このアプリは完全にオープンソースで"
     },
-    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
-    "title": "TorBox Manager"
+    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。"
   },
   "LinkHistory": {
     "actions": {
@@ -969,7 +942,6 @@
     "clearSearch": "検索をクリア",
     "customEngines": "カスタムエンジン",
     "episode": "エピソード",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "詳細を隠す",
     "minSeeders": "最小シーダー",
     "minSize": "最小サイズ (GB)",
@@ -983,10 +955,8 @@
     "search": "検索",
     "searchExamples": "検索例",
     "season": "シーズン",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "詳細を表示",
-    "year": "年",
-    "yearPlaceholder": "2024"
+    "year": "年"
   },
   "SearchResults": {
     "actions": {
@@ -1060,10 +1030,7 @@
     "uploading": "アップロード中"
   },
   "StatusSection": {
-    "selectedFiles": "{fileCount} files selected ({size})",
-    "selectedItems": "{itemCount} {type}が選択されています ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
-    "total": "{count} {type}"
+    "selectedItems": "{itemCount} {type}が選択されています ({size})"
   },
   "SystemStatus": {
     "error": "エラー",
@@ -1074,7 +1041,6 @@
     "minutesAgo": "{minutes}分前",
     "never": "なし",
     "refreshStatus": "クリックで更新",
-    "responseTime": "{ms} ms",
     "uptime": {
       "barLabel": "{label}の履歴、稼働率{percent}%",
       "collecting": "データ収集中…",
@@ -1091,10 +1057,18 @@
       }
     },
     "rows": {
-      "app": { "label": "このアプリ" },
-      "backend": { "label": "セルフホストバックエンド" },
-      "connection": { "label": "APIキー" },
-      "platform": { "label": "TorBoxプラットフォーム" },
+      "app": {
+        "label": "このアプリ"
+      },
+      "backend": {
+        "label": "セルフホストバックエンド"
+      },
+      "connection": {
+        "label": "APIキー"
+      },
+      "platform": {
+        "label": "TorBoxプラットフォーム"
+      },
       "status": {
         "checking": "確認中…",
         "invalidKey": "無効なAPIキー",
