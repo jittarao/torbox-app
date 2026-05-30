@@ -2,6 +2,53 @@ import axios from 'axios';
 import logger from '../utils/logger.js';
 import Semaphore from '../utils/semaphore.js';
 
+/**
+ * Simple circuit breaker for upstream API calls.
+ * Opens after FAILURE_THRESHOLD consecutive failures, then allows
+ * requests through again after COOLDOWN_MS (half-open).
+ */
+class CircuitBreaker {
+  constructor(name, failureThreshold = 5, cooldownMs = 60000) {
+    this.name = name;
+    this.failureThreshold = failureThreshold;
+    this.cooldownMs = cooldownMs;
+    this.failures = 0;
+    this.lastFailureAt = 0;
+    this.state = 'closed'; // closed, open, half-open
+  }
+
+  isOpen() {
+    if (this.state === 'closed') return false;
+    if (this.state === 'open' && Date.now() - this.lastFailureAt > this.cooldownMs) {
+      this.state = 'half-open';
+      return false;
+    }
+    return true;
+  }
+
+  recordFailure() {
+    this.failures++;
+    this.lastFailureAt = Date.now();
+    if (this.failures >= this.failureThreshold) {
+      this.state = 'open';
+      logger.warn('Circuit breaker opened', { name: this.name, failures: this.failures });
+    }
+  }
+
+  recordSuccess() {
+    if (this.state === 'half-open' || this.failures > 0) {
+      logger.info('Circuit breaker closed', {
+        name: this.name,
+        previousFailures: this.failures,
+      });
+    }
+    this.failures = 0;
+    this.state = 'closed';
+  }
+}
+
+const _globalCircuitBreaker = new CircuitBreaker('torbox-api');
+
 // Constants
 const DEFAULT_TIMEOUT = 30000;
 // Fetch (getTorrents) timeout; shorter than default to leave headroom in per-user poll budget (POLL_KICKOUT_MS).
@@ -193,6 +240,19 @@ class ApiClient {
       context = {},
     } = options;
 
+    // Fast-fail if circuit breaker is open
+    if (_globalCircuitBreaker.isOpen()) {
+      const cbError = new Error(`Circuit breaker open for TorBox API (${_globalCircuitBreaker.state})`);
+      cbError.isCircuitBreakerOpen = true;
+      cbError.isConnectionError = true;
+      if (connectionErrorFallback !== null) {
+        return typeof connectionErrorFallback === 'function'
+          ? connectionErrorFallback(cbError)
+          : connectionErrorFallback;
+      }
+      throw cbError;
+    }
+
     const pool = semaphore === 'fetch' ? _fetchSemaphore : _actionSemaphore;
     const throttled = async () => {
       await pool.acquire();
@@ -204,7 +264,9 @@ class ApiClient {
     };
 
     try {
-      return await throttled();
+      const result = await throttled();
+      _globalCircuitBreaker.recordSuccess();
+      return result;
     } catch (error) {
       // Handle authentication errors
       if (this.isAuthError(error)) {
@@ -218,8 +280,9 @@ class ApiClient {
         throw authError;
       }
 
-      // Handle connection/server errors
+      // Handle connection/server errors — record failure for circuit breaker
       if (this.isConnectionError(error)) {
+        _globalCircuitBreaker.recordFailure();
         const errorDetails = this.buildErrorDetails(error, { endpoint, ...context });
         const logMessage =
           connectionErrorFallback !== null

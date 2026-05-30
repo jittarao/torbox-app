@@ -25,25 +25,34 @@ class GlobalActionQueue {
   enqueue(descriptors) {
     if (!Array.isArray(descriptors) || descriptors.length === 0) return;
     const masterDb = this.scheduler.masterDb;
-    for (const d of descriptors) {
-      if (masterDb && masterDb.insertPendingAction) {
-        try {
-          const payload = JSON.stringify({
-            authId: d.authId,
-            rule: d.rule,
-            torrentsToProcess: d.torrentsToProcess,
-          });
-          const ruleId = d.rule?.id ?? null;
-          const id = masterDb.insertPendingAction(d.authId, payload, ruleId);
-          d.pendingId = id;
-          this.pending.push(d);
-        } catch (err) {
-          logger.warn('Failed to persist pending action', {
-            authId: d.authId,
-            errorMessage: err.message,
-          });
+    if (masterDb && masterDb.batchInsertPendingActions) {
+      const batch = [];
+      for (const d of descriptors) {
+        const payload = JSON.stringify({
+          authId: d.authId,
+          rule: d.rule,
+          torrentsToProcess: d.torrentsToProcess,
+        });
+        const ruleId = d.rule?.id ?? null;
+        batch.push({ authId: d.authId, payload, ruleId });
+      }
+      try {
+        const ids = masterDb.batchInsertPendingActions(batch);
+        for (let i = 0; i < descriptors.length; i++) {
+          descriptors[i].pendingId = ids[i];
+          this.pending.push(descriptors[i]);
         }
-      } else {
+      } catch (err) {
+        logger.warn('Failed to persist pending action batch', {
+          count: descriptors.length,
+          errorMessage: err.message,
+        });
+        for (const d of descriptors) {
+          this.pending.push(d);
+        }
+      }
+    } else {
+      for (const d of descriptors) {
         this.pending.push(d);
       }
     }
@@ -185,14 +194,17 @@ class GlobalActionQueue {
             }
             continue;
           }
+
+          // At-most-once: delete DB rows before execution so a crash does not replay the action
+          for (const id of pendingIds) {
+            if (masterDb?.deletePendingAction)
+              try {
+                masterDb.deletePendingAction(id);
+              } catch (_) {}
+          }
+
           try {
             await this.scheduler.runActionBatch(merged);
-            for (const id of pendingIds) {
-              if (masterDb?.deletePendingAction)
-                try {
-                  masterDb.deletePendingAction(id);
-                } catch (_) {}
-            }
           } catch (err) {
             const retryCount = (merged.retryCount ?? 0) + 1;
             if (retryCount > MAX_ACTION_BATCH_RETRIES) {
@@ -207,12 +219,6 @@ class GlobalActionQueue {
                   retryCount,
                 }
               );
-              for (const id of pendingIds) {
-                if (masterDb?.deletePendingAction)
-                  try {
-                    masterDb.deletePendingAction(id);
-                  } catch (_) {}
-              }
             } else {
               const backoffMs = ACTION_RETRY_BACKOFF_BASE_MS * Math.pow(2, retryCount - 1);
               const deferUntil = Date.now() + backoffMs;

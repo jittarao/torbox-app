@@ -184,7 +184,7 @@ class Logger {
    * @param {Object} res - Express response object
    * @param {number} duration - Request duration in ms
    */
-  http(req, res, duration = null) {
+  http(req, res, duration = null, correlationId = null) {
     const logData = {
       method: req.method,
       url: req.originalUrl || req.url,
@@ -192,6 +192,10 @@ class Logger {
       ip: req.ip || req.connection?.remoteAddress,
       userAgent: req.get('user-agent'),
     };
+
+    if (correlationId) {
+      logData.correlationId = correlationId;
+    }
 
     if (duration !== null) {
       logData.duration = `${duration}ms`;

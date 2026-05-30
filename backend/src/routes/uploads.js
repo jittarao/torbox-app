@@ -11,7 +11,6 @@ import {
   getUploadFilePath,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
-import { hashApiKey } from '../utils/crypto.js';
 import rateLimit from 'express-rate-limit';
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -75,19 +74,17 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // POST /api/uploads/file - Upload file to storage
-  app.post('/api/uploads/file', uploadRateLimiter, async (req, res) => {
+  app.post('/api/uploads/file', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
     try {
-      // Get authId from header
-      const apiKey =
-        req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
-      if (!apiKey) {
-        return res.status(400).json({
+      const authId = req.validatedAuthId;
+
+      // Verify API key is registered and active
+      if (!backend.masterDatabase?.getApiKey(authId)) {
+        return res.status(401).json({
           success: false,
-          error: 'API key is required',
+          error: 'Invalid or inactive API key',
         });
       }
-
-      const authId = hashApiKey(apiKey);
 
       const { file_data, filename, type } = req.body; // file_data is base64 string
 
@@ -137,19 +134,17 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // DELETE /api/uploads/file - Delete file from storage by file_path
-  app.delete('/api/uploads/file', uploadRateLimiter, async (req, res) => {
+  app.delete('/api/uploads/file', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
     try {
-      // Get authId from header
-      const apiKey =
-        req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
-      if (!apiKey) {
-        return res.status(400).json({
+      const authId = req.validatedAuthId;
+
+      // Verify API key is registered and active
+      if (!backend.masterDatabase?.getApiKey(authId)) {
+        return res.status(401).json({
           success: false,
-          error: 'API key is required',
+          error: 'Invalid or inactive API key',
         });
       }
-
-      const authId = hashApiKey(apiKey);
 
       const { file_path } = req.body;
 
