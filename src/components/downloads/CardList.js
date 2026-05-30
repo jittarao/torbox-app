@@ -6,6 +6,7 @@ import {
   useCallback,
   useLayoutEffect,
 } from 'react';
+import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsContext } from './DownloadsContext';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
@@ -235,14 +236,18 @@ function CardListContainerVirtualized({
 }
 
 export default function CardList() {
-  const ctx = useDownloadsContext();
   const {
     visibleIds: entityKeys,
+    sortedItems,
     tagMappings = {},
-    apiKey,
     activeColumns,
-    handleFileSelect: onFileSelect,
     downloadHistoryLookup,
+    selectedItems,
+  } = useDownloadsDataContext();
+  const ctx = useDownloadsContext();
+  const {
+    apiKey,
+    handleFileSelect: onFileSelect,
     deleteItem: onDelete,
     toggleFiles,
     setToast,
@@ -304,7 +309,7 @@ export default function CardList() {
     updateContainerOffset();
     window.addEventListener('resize', updateContainerOffset);
     return () => window.removeEventListener('resize', updateContainerOffset);
-  }, [isFullscreen, ctx.sortedItems, updateContainerOffset]);
+  }, [isFullscreen, sortedItems, updateContainerOffset]);
 
   useLayoutOnTabVisible(updateContainerOffset);
 
@@ -332,7 +337,7 @@ export default function CardList() {
   );
 
   const interactions = useDownloadRowInteractions({
-    items: ctx.sortedItems,
+    items: sortedItems,
     entityKeys: deferredEntityKeys,
     activeType,
     fileSearch,
@@ -407,7 +412,7 @@ export default function CardList() {
         setToast={setToast}
         onDelete={onDelete}
         downloadHistoryLookup={downloadHistoryLookup}
-        selectedItems={ctx.selectedItems}
+        selectedItems={selectedItems}
         handleItemSelection={interactions.handleItemSelection}
         handleFileSelection={interactions.handleFileSelection}
         handleFileDownload={interactions.handleFileDownload}
@@ -431,7 +436,7 @@ export default function CardList() {
       setToast,
       onDelete,
       downloadHistoryLookup,
-      ctx.selectedItems,
+      selectedItems,
       interactions,
       handleFileStream,
       handleAudioPlay,

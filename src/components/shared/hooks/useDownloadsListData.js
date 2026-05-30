@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
-import { selectVisibleSortedIds, idsToRows } from '@/store/downloadsDerivedSelectors';
+import { selectVisibleSortedFromMap, idsToRows } from '@/store/downloadsDerivedSelectors';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
@@ -55,7 +55,6 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     }
   }, [apiKey, isBackendAvailable, downloadTagsHasLoaded, downloadTagsLoading, fetchDownloadTags]);
 
-  // Subscribe to individual store fields — entities reference is stable when unchanged
   const entities = useTorboxDownloadsStore((state) => state.entities);
   const order = useTorboxDownloadsStore((state) => state.order);
 
@@ -71,35 +70,30 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
   const stableTagMappings = useStableShallow(tagMappings);
   const stableDownloadHistory = useStableShallow(downloadHistory);
 
-  const combinedState = useMemo(
-    () => ({ entities, order }),
-    [entities, order]
-  );
+  const combinedState = useMemo(() => ({ entities, order }), [entities, order]);
 
-  const viewItems = useMemo(() => {
+  const allRows = useMemo(() => {
     const ids = selectViewOrderedIds(combinedState, activeType);
     return idsToRows(ids, entities, stableTagMappings, stableDownloadHistory);
   }, [combinedState, activeType, stableTagMappings, stableDownloadHistory]);
 
-  const viewItemsMap = useMemo(() => {
+  const enrichedMap = useMemo(() => {
     const map = new Map();
-    for (let i = 0; i < viewItems.length; i++) {
-      const item = viewItems[i];
-      map.set(getDownloadSelectionId(item), item);
+    for (let i = 0; i < allRows.length; i++) {
+      const row = allRows[i];
+      map.set(getDownloadSelectionId(row), row);
     }
     return map;
-  }, [viewItems]);
+  }, [allRows]);
 
-  const visibleIds = useMemo(
-    () =>
-      selectVisibleSortedIds(
-        combinedState,
-        activeType,
-        filterCriteria,
-        stableTagMappings,
-        downloadHistoryLookup
-      ),
-    [combinedState, activeType, filterCriteria, stableTagMappings, downloadHistoryLookup]
+  const allIds = useMemo(
+    () => selectViewOrderedIds(combinedState, activeType),
+    [combinedState, activeType]
+  );
+
+  const visibleIds = useMemo(() =>
+    selectVisibleSortedFromMap(allIds, enrichedMap, filterCriteria, entities),
+    [allIds, enrichedMap, filterCriteria, entities]
   );
 
   const sortedItems = useMemo(
@@ -107,7 +101,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
       const result = new Array(visibleIds.length);
       let needsFallback = false;
       for (let i = 0; i < visibleIds.length; i++) {
-        result[i] = viewItemsMap.get(visibleIds[i]);
+        result[i] = enrichedMap.get(visibleIds[i]);
         if (result[i] === undefined) needsFallback = true;
       }
       if (needsFallback) {
@@ -115,11 +109,11 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
       }
       return result;
     },
-    [visibleIds, viewItemsMap, entities, stableTagMappings, stableDownloadHistory]
+    [visibleIds, enrichedMap, entities, stableTagMappings, stableDownloadHistory]
   );
 
   return {
-    viewItems,
+    viewItems: allRows,
     sortedItems,
     visibleIds,
     downloadHistory,

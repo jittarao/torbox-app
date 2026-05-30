@@ -250,7 +250,6 @@ function useTableBodyState(props) {
     onDelete,
     setToast,
     activeType,
-    isMobile,
     isBlurred,
     viewMode,
     tableWidth,
@@ -323,7 +322,6 @@ function VirtualizedTableBodyInner({
               handleItemSelection={state.interactions.handleItemSelection}
               setToast={state.setToast}
               activeType={state.activeType}
-              isMobile={state.isMobile}
               isBlurred={state.isBlurred}
               viewMode={state.viewMode}
               tableWidth={state.tableWidth}
@@ -348,7 +346,6 @@ function VirtualizedTableBodyInner({
             isCopying={state.isCopying}
             isDownloading={state.isDownloading}
             isStreaming={state.isStreaming}
-            isMobile={state.isMobile}
             isBlurred={state.isBlurred}
             tableWidth={state.tableWidth}
             file={row.file}

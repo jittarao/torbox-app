@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import useIsClient from '@/hooks/useIsClient';
+import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsContext } from './DownloadsContext';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
@@ -14,19 +15,22 @@ import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
 
 export default function ItemsTable() {
   const {
-    apiKey,
-    activeType,
     sortedItems,
     activeColumns,
+    selectedItems,
+    downloadHistoryLookup,
+    tagMappings,
+  } = useDownloadsDataContext();
+
+  const {
+    apiKey,
+    activeType,
     sortField,
     sortDirection,
     handleSort,
-    selectedItems,
     setSelectedItems,
     handleSelectAll,
     handleFileSelect,
-    downloadHistoryLookup,
-    tagMappings,
     isBlurred,
     deleteItem,
     setToast,

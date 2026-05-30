@@ -118,10 +118,16 @@ describe('mergeDownloadList', () => {
 });
 
 describe('downloadRowEqual', () => {
-  test('returns false for active rows', () => {
+  test('returns true for active rows when compared fields are unchanged', () => {
     const row = { id: 1, assetType: 'torrents', active: true, download_finished: false };
     expect(isRowLikelyChanging(row)).toBe(true);
-    expect(downloadRowEqual(row, { ...row })).toBe(false);
+    expect(downloadRowEqual(row, { ...row })).toBe(true);
+  });
+
+  test('returns false when progress changes on an active row', () => {
+    const prev = { id: 1, assetType: 'torrents', active: true, progress: 0.5 };
+    const next = { ...prev, progress: 0.6 };
+    expect(downloadRowEqual(prev, next)).toBe(false);
   });
 });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import useIsMobile from '@/hooks/useIsMobile';
 import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';
 import DownloadProgressDisplay from './DownloadProgressDisplay';
@@ -37,7 +38,6 @@ function ItemRow({
   rowIndex,
   setToast,
   activeType = 'torrents',
-  isMobile = false,
   isBlurred = false,
   viewMode = 'table',
   style,
@@ -45,6 +45,7 @@ function ItemRow({
   dataIndex,
   commonT,
 }) {
+  const isMobile = useIsMobile();
   const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
 
   const renderCell = (columnId) => {

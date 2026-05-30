@@ -19,14 +19,18 @@ import {
   selectTotalSelectedFileCount,
 } from '@/store/downloadsSelectionStore';
 import { useLayoutOnTabVisible } from '../hooks/useLayoutOnTabVisible';
+import { useDownloadsDataContext } from '@/components/downloads/DownloadsDataContext';
 import { useDownloadsContext } from '@/components/downloads/DownloadsContext';
 
 export default function ActionBar() {
-  const ctx = useDownloadsContext();
   const {
     viewItems: unfilteredItems,
     sortedItems: filteredItems,
     activeColumns,
+    selectedItems,
+  } = useDownloadsDataContext();
+  const ctx = useDownloadsContext();
+  const {
     handleColumnChange: onColumnChange,
     search,
     setSearch,
@@ -40,7 +44,6 @@ export default function ActionBar() {
     handleBulkExport: onBulkExport,
     activeType = 'torrents',
     isBlurred = false,
-    selectedItems,
     isFullscreen = false,
     onFullscreenToggle,
     displayViewMode: viewMode = 'table',
