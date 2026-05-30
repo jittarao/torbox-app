@@ -1,8 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, startTransition } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSearchStore } from '@/store/searchStore';
+import {
+  getDownloadsFilterSearchParamsSnapshot,
+  notifyDownloadsFilterSearchParams,
+  subscribeDownloadsFilterSearchParams,
+} from '@/hooks/downloadsFilterParamsUrl';
 
 /** URL param names (short) mapped to filter field names used by searchSelectors. */
 const PARAM_TO_FIELD = {
@@ -41,24 +46,47 @@ function filtersFromSearchParams(searchParams) {
  * Search page filter state synced to URL query params (shareable links).
  */
 export function useSearchFilterParams() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const filterResetNonce = useSearchStore((s) => s.filterResetNonce);
 
+  const searchParams = useSyncExternalStore(
+    subscribeDownloadsFilterSearchParams,
+    getDownloadsFilterSearchParamsSnapshot,
+    () => new URLSearchParams()
+  );
+
   const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
 
-  const searchParamsRef = useRef(searchParams);
-  searchParamsRef.current = searchParams;
+  const pendingMutatorsRef = useRef([]);
+  const flushScheduledRef = useRef(false);
 
   const replaceParams = useCallback(
     (mutate) => {
-      const params = new URLSearchParams(searchParamsRef.current.toString());
-      mutate(params);
-      const qs = params.toString();
-      const href = qs ? `${pathname}?${qs}` : pathname;
-      startTransition(() => {
-        router.replace(href, { scroll: false });
+      pendingMutatorsRef.current.push(mutate);
+      if (flushScheduledRef.current) return;
+      flushScheduledRef.current = true;
+
+      queueMicrotask(() => {
+        flushScheduledRef.current = false;
+        const mutators = pendingMutatorsRef.current;
+        pendingMutatorsRef.current = [];
+
+        const params = new URLSearchParams(getDownloadsFilterSearchParamsSnapshot().toString());
+        for (let i = 0; i < mutators.length; i++) {
+          mutators[i](params);
+        }
+        const qs = params.toString();
+        const href = qs ? `${pathname}?${qs}` : pathname;
+
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(window.history.state, '', href);
+          notifyDownloadsFilterSearchParams();
+        }
+
+        startTransition(() => {
+          router.replace(href, { scroll: false });
+        });
       });
     },
     [pathname, router]
