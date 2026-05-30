@@ -6,6 +6,7 @@ import { encrypt, hashApiKey } from '../utils/crypto.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
+import Semaphore from '../utils/semaphore.js';
 import { getMasterDbPath, getUserDbPath } from '../utils/dataPaths.js';
 
 /**
@@ -568,6 +569,27 @@ class Database {
   }
 
   /**
+   * Batch-insert multiple pending actions in a single transaction (avoids N WAL flushes).
+   * @param {Array<{ authId: string, payload: string, ruleId: number|null }>} actions
+   * @returns {number[]} Inserted row ids
+   */
+  batchInsertPendingActions(actions) {
+    if (!actions.length) return [];
+    const ids = [];
+    const transaction = this.db.transaction(() => {
+      const stmt = this.db.prepare(
+        'INSERT INTO pending_actions (auth_id, payload, rule_id) VALUES (?, ?, ?)'
+      );
+      for (const { authId, payload, ruleId } of actions) {
+        const result = stmt.run(authId, payload, ruleId);
+        ids.push(Number(result.lastInsertRowid));
+      }
+    });
+    transaction();
+    return ids;
+  }
+
+  /**
    * Remove a pending action after it has been executed.
    * @param {number} id - Row id from pending_actions
    */
@@ -1014,17 +1036,21 @@ class Database {
 
     try {
       const activeUsers = this.getActiveUsers();
+      const maxConcurrent = Math.min(5, Math.max(1, activeUsers.length));
+      const syncSemaphore = new Semaphore(maxConcurrent);
       let synced = 0;
       let errors = 0;
 
       const results = await Promise.allSettled(
         activeUsers.map(async (user) => {
+          await syncSemaphore.acquire();
           try {
             const userDb = await userDatabaseManager.getUserDatabase(user.auth_id);
             await this.updateUploadCounters(user.auth_id, userDb);
             return { ok: true };
           } finally {
             userDatabaseManager.closeConnection(user.auth_id);
+            syncSemaphore.release();
           }
         })
       );

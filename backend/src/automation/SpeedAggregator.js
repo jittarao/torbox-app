@@ -8,7 +8,7 @@ import logger from '../utils/logger.js';
 class SpeedAggregator {
   // Constants
   static RETENTION_HOURS = 24; // Keep last 24 hours of data to support flexible hour windows
-  static PRUNE_INTERVAL = 10; // Prune every Nth sample to avoid overhead
+  static PRUNE_INTERVAL_MS = 5 * 60 * 1000; // Prune every 5 minutes regardless of sample count
   static MS_PER_HOUR = 60 * 60 * 1000;
   static MS_PER_SECOND = 1000;
   static MIN_SAMPLES_FOR_CALCULATION = 2;
@@ -31,7 +31,7 @@ class SpeedAggregator {
     }
     this.db = userDb;
     this.retentionHours = SpeedAggregator.RETENTION_HOURS;
-    this.sampleCount = 0; // Counter for pruning logic
+    this._lastPruneTime = 0; // Timestamp of last prune
 
     // Prepare and cache SQL statements for better performance
     this._prepareStatements();
@@ -85,10 +85,10 @@ class SpeedAggregator {
     try {
       this.stmtInsert.run(torrentId, timestamp.toISOString(), downloaded, uploaded);
 
-      // Prune old samples periodically (every Nth sample to avoid overhead)
-      this.sampleCount++;
-      if (this.sampleCount >= SpeedAggregator.PRUNE_INTERVAL) {
-        this.sampleCount = 0;
+      // Prune old samples on a time-based cadence (every PRUNE_INTERVAL_MS)
+      const now = Date.now();
+      if (now - this._lastPruneTime >= SpeedAggregator.PRUNE_INTERVAL_MS) {
+        this._lastPruneTime = now;
         await this.pruneOldSamples();
       }
     } catch (error) {
