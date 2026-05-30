@@ -6,6 +6,7 @@ import {
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
   TAG_OPERATORS,
+  AUTOMATION_TAG_OPERATORS,
 } from './constants';
 
 // Helper to check if a condition type is time-based (relative duration)
@@ -330,7 +331,7 @@ export const getOperatorsForConditionType = (conditionType) => {
     return Object.values(MULTI_SELECT_OPERATORS);
   }
   if (conditionType === CONDITION_TYPES.TAGS) {
-    return Object.values(TAG_OPERATORS);
+    return AUTOMATION_TAG_OPERATORS;
   }
   if (isBooleanCondition(conditionType)) {
     return Object.values(BOOLEAN_OPERATORS);

@@ -5,6 +5,7 @@ import {
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
   LOGIC_OPERATORS,
+  TAG_OPERATORS,
 } from '@/components/downloads/AutomationRules/constants';
 import {
   isNumberColumn,
@@ -27,6 +28,7 @@ function evaluateFilter(filter, item) {
     filter.column !== 'download_state' &&
     filter.column !== 'asset_type' &&
     filter.column !== 'is_downloaded' &&
+    filter.column !== 'tags' &&
     (columnValue === null || columnValue === undefined)
   ) {
     return false;
@@ -179,12 +181,18 @@ function evaluateFilter(filter, item) {
       : [];
 
     switch (operator) {
+      case TAG_OPERATORS.IS_ANY_OF:
       case MULTI_SELECT_OPERATORS.IS_ANY_OF:
         if (filterTagIds.length === 0) return true;
         return filterTagIds.some((tagId) => itemTagIds.includes(tagId));
+      case TAG_OPERATORS.IS_NONE_OF:
       case MULTI_SELECT_OPERATORS.IS_NONE_OF:
         if (filterTagIds.length === 0) return true;
         return !filterTagIds.some((tagId) => itemTagIds.includes(tagId));
+      case TAG_OPERATORS.IS_SET:
+        return itemTagIds.length > 0;
+      case TAG_OPERATORS.IS_NOT_SET:
+        return itemTagIds.length === 0;
       default:
         return true;
     }

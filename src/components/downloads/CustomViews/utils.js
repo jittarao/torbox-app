@@ -4,7 +4,16 @@ import {
   MULTI_SELECT_OPERATORS,
   BOOLEAN_OPERATORS,
   STRING_OPERATORS,
+  TAG_OPERATORS,
 } from '../AutomationRules/constants';
+
+/** Tag operators shown in custom view filters (excludes automation-only is_all_of). */
+export const VIEW_TAG_FILTER_OPERATORS = [
+  TAG_OPERATORS.IS_ANY_OF,
+  TAG_OPERATORS.IS_NONE_OF,
+  TAG_OPERATORS.IS_SET,
+  TAG_OPERATORS.IS_NOT_SET,
+];
 
 // Map column keys to filter types
 const COLUMN_FILTER_TYPES = {
@@ -100,7 +109,7 @@ export const getOperatorsForColumn = (columnKey) => {
     case 'status':
       return Object.values(MULTI_SELECT_OPERATORS);
     case 'tags':
-      return Object.values(MULTI_SELECT_OPERATORS);
+      return VIEW_TAG_FILTER_OPERATORS;
     default:
       return Object.values(COMPARISON_OPERATORS);
   }

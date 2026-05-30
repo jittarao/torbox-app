@@ -99,10 +99,18 @@ export default function FilterInput({
         'operator',
         boolValue ? BOOLEAN_OPERATORS.IS_TRUE : BOOLEAN_OPERATORS.IS_FALSE
       );
+    } else if (field === 'operator' && isTagsColumn(filter.column)) {
+      onUpdate(index, 'operator', value);
+      if (value === TAG_OPERATORS.IS_SET || value === TAG_OPERATORS.IS_NOT_SET) {
+        onUpdate(index, 'value', []);
+      }
     } else {
       onUpdate(index, field, value);
     }
   };
+
+  const tagOperatorNeedsValue = (operator) =>
+    operator === TAG_OPERATORS.IS_ANY_OF || operator === TAG_OPERATORS.IS_NONE_OF;
 
   // For STATUS condition, ensure value is an array
   const getStatusValue = () => {
@@ -163,8 +171,9 @@ export default function FilterInput({
     } else if (isTagsColumn(filter.column)) {
       const labels = {
         [TAG_OPERATORS.IS_ANY_OF]: automationRulesT('tagOperators.isAnyOf'),
-        [TAG_OPERATORS.IS_ALL_OF]: automationRulesT('tagOperators.isAllOf'),
         [TAG_OPERATORS.IS_NONE_OF]: automationRulesT('tagOperators.isNoneOf'),
+        [TAG_OPERATORS.IS_SET]: automationRulesT('tagOperators.isSet'),
+        [TAG_OPERATORS.IS_NOT_SET]: automationRulesT('tagOperators.isNotSet'),
       };
       label = labels[op] || op;
     }
@@ -239,7 +248,7 @@ export default function FilterInput({
               placeholder={customViewsT('selectPlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[150px]"
             />
-          ) : filter.column === 'tags' ? (
+          ) : filter.column === 'tags' && tagOperatorNeedsValue(filter.operator) ? (
             <MultiSelect
               value={getTagsValue()}
               onChange={(values) => handleFieldChange('value', values)}
