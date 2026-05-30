@@ -7,7 +7,7 @@ import {
   statusToSegment,
 } from '@/utils/healthHistory';
 import { useBackendModeStore } from '@/store/backendModeStore';
-import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 
 /** Interval between automatic platform / TorBox / backend status checks */
 const HEALTH_CHECK_INTERVAL_MS = 180000; // 3 minutes
@@ -228,7 +228,7 @@ export const useHealthStore = create((set, get) => ({
     get().performHealthCheck(apiKey, { force: true });
 
     const timerId = setInterval(() => {
-      if (usePollingPauseStore.getState().isPaused) {
+      if (selectIsPaused(usePollingPauseStore.getState())) {
         return;
       }
       const { healthPollApiKey: storedKey } = get();

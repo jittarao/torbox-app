@@ -12,7 +12,7 @@ import { useFetchData } from './useFetchData';
 import { useSelection } from './useSelection';
 import useIsMobile from '../../../hooks/useIsMobile';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
-import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import useDownloadsViewMode from '@/hooks/useDownloadsViewMode';
@@ -35,7 +35,7 @@ export const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
  */
 export function useDownloadsPageState(apiKey) {
   const downloadPanelT = useTranslations('DownloadPanel');
-  const pollingPaused = usePollingPauseStore((state) => state.isPaused);
+  const pollingPaused = usePollingPauseStore(selectIsPaused);
   const permissions = useSessionStore((state) => state.permissions);
   const { expandedById, expandIds, collapseAllExpanded, toggleExpanded, setExpanded } =
     useDownloadsUiStore(

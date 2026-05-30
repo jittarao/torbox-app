@@ -1,17 +1,15 @@
 import { create } from 'zustand';
 
-function computeIsPaused(pauseReasons) {
-  return Object.values(pauseReasons).some((isPaused) => isPaused === true);
-}
+export const selectIsPaused = (state) =>
+  Object.values(state.pauseReasons).some(Boolean);
 
 export const usePollingPauseStore = create((set) => ({
   pauseReasons: {},
-  isPaused: false,
 
   setPauseReason: (reason, isPaused) => {
     set((state) => {
       const next = { ...state.pauseReasons, [reason]: isPaused };
-      return { pauseReasons: next, isPaused: computeIsPaused(next) };
+      return { pauseReasons: next };
     });
   },
 
@@ -19,11 +17,11 @@ export const usePollingPauseStore = create((set) => ({
     set((state) => {
       const next = { ...state.pauseReasons };
       delete next[reason];
-      return { pauseReasons: next, isPaused: computeIsPaused(next) };
+      return { pauseReasons: next };
     });
   },
 
   clearAllPauseReasons: () => {
-    set({ pauseReasons: {}, isPaused: false });
+    set({ pauseReasons: {} });
   },
 }));

@@ -6,8 +6,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 async function proxyRequest(request, pathSegments) {
   try {
     const method = request.method;
-    const adminKey =
-      request.headers.get('x-admin-key') || new URL(request.url).searchParams.get('adminKey');
+    const adminKey = request.headers.get('x-admin-key');
 
     if (!adminKey) {
       return NextResponse.json({ success: false, error: 'Admin key required' }, { status: 401 });
@@ -25,9 +24,7 @@ async function proxyRequest(request, pathSegments) {
     // Forward query parameters
     const searchParams = new URL(request.url).searchParams;
     searchParams.forEach((value, key) => {
-      if (key !== 'adminKey') {
-        url.searchParams.append(key, value);
-      }
+      url.searchParams.append(key, value);
     });
 
     // Get request body if present

@@ -4,6 +4,8 @@
  * Next.js routes proxy to the backend server
  */
 
+import { getItem, setItem, removeItem } from '@/utils/storage';
+
 class AdminApiClient {
   constructor() {
     // Use Next.js API routes instead of direct backend calls
@@ -16,9 +18,7 @@ class AdminApiClient {
    */
   setAdminKey(key) {
     this.adminKey = key;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('adminKey', key);
-    }
+    setItem('adminKey', key);
   }
 
   /**
@@ -28,10 +28,7 @@ class AdminApiClient {
     if (this.adminKey) {
       return this.adminKey;
     }
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminKey');
-    }
-    return null;
+    return getItem('adminKey');
   }
 
   /**
@@ -39,9 +36,7 @@ class AdminApiClient {
    */
   clearAdminKey() {
     this.adminKey = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminKey');
-    }
+    removeItem('adminKey');
   }
 
   /**

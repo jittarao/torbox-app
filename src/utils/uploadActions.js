@@ -1,5 +1,6 @@
 import { NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
+import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 
 const DEFAULT_OPTIONS = {
   seed: 1,
@@ -13,20 +14,9 @@ function isPermanentError(data) {
   );
 }
 
-export function getUploadApiEndpoint(assetType = 'torrents') {
-  switch (assetType) {
-    case 'usenet':
-      return '/api/usenet';
-    case 'webdl':
-      return '/api/webdl';
-    default:
-      return '/api/torrents';
-  }
-}
-
 /** Control queued items (start, etc.) without subscribing to uploader store. */
 export async function controlQueuedItem(apiKey, queuedId, operation, assetType = 'torrents') {
-  return retryFetch(`${getUploadApiEndpoint(assetType)}/controlqueued`, {
+  return retryFetch(`${getEndpointForAssetType(assetType)}/controlqueued`, {
     maxRetries: 1,
     method: 'POST',
     headers: {
@@ -99,8 +89,8 @@ export async function uploadItem(
 
   const endpoint =
     item.type === 'magnet' || item.type === 'torrent'
-      ? getUploadApiEndpoint('torrents')
-      : getUploadApiEndpoint(assetType);
+      ? getEndpointForAssetType('torrents')
+      : getEndpointForAssetType(assetType);
 
   return retryFetch(endpoint, {
     maxRetries: 1,

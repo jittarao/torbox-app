@@ -1,3 +1,5 @@
+import { getItem, setItem } from '@/utils/storage';
+
 const HEALTH_HISTORY_LENGTH = 30;
 const STORAGE_KEY = 'torbox-health-history-v2';
 
@@ -56,16 +58,12 @@ export function calculateUptimePercent(history, currentStatus = 'unknown') {
   return (score / history.length) * 100;
 }
 
+/** @returns {Array<{s: string, at: number|null}>} */
 export function loadHealthHistory() {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
+  if (typeof window === 'undefined') return [];
+  const raw = getItem(STORAGE_KEY);
+  if (!raw) return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -74,13 +72,6 @@ export function loadHealthHistory() {
 }
 
 export function saveHealthHistory(history) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-  } catch {
-    // ignore quota / private mode
-  }
+  if (typeof window === 'undefined') return;
+  setItem(STORAGE_KEY, JSON.stringify(history));
 }
