@@ -329,6 +329,13 @@ class TorBoxBackend {
           }
         }, memoryLogIntervalMs);
       }
+
+      // WAL checkpoint every 15 minutes for all open user databases
+      const WAL_CHECKPOINT_INTERVAL_MS = 15 * 60 * 1000;
+      setInterval(() => {
+        this.userDatabaseManager?.checkpointAllDatabases();
+        this.masterDatabase?.checkpointWal();
+      }, WAL_CHECKPOINT_INTERVAL_MS);
     } catch (error) {
       logger.error('Failed to initialize services', error);
       process.exit(1);

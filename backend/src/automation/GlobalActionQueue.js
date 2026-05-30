@@ -229,11 +229,31 @@ class GlobalActionQueue {
                 retryCount,
                 nextRetryInMs: backoffMs,
               });
+
+              // Re-persist to DB so the action survives a crash between retry attempts
+              const reinsertPayload = JSON.stringify({
+                authId: merged.authId,
+                rule: merged.rule,
+                torrentsToProcess: merged.torrentsToProcess,
+              });
+              const ruleId = merged.rule?.id ?? null;
+              let newPendingIds = [];
+              if (masterDb?.insertPendingAction) {
+                try {
+                  const newId = masterDb.insertPendingAction(
+                    merged.authId,
+                    reinsertPayload,
+                    ruleId
+                  );
+                  if (newId != null && newId > 0) newPendingIds = [newId];
+                } catch (_) {}
+              }
+
               this.pending.push({
                 authId: merged.authId,
                 rule: merged.rule,
                 torrentsToProcess: merged.torrentsToProcess,
-                pendingIds,
+                pendingIds: newPendingIds,
                 retryCount,
                 _deferDrainUntil: deferUntil,
               });

@@ -95,7 +95,7 @@ export function setupUserRoutes(router, backend) {
     })
   );
 
-  // Get decrypted API key for a user
+  // Get API key info for a user (admin only — full key returned)
   router.get(
     '/users/:authId/api-key',
     asyncHandler(async (req, res) => {
@@ -103,7 +103,7 @@ export function setupUserRoutes(router, backend) {
       if (!authId) return;
 
       const row = backend.masterDatabase.getQuery(
-        'SELECT encrypted_key FROM api_keys WHERE auth_id = ?',
+        'SELECT encrypted_key, key_name FROM api_keys WHERE auth_id = ?',
         [authId]
       );
 
@@ -113,7 +113,7 @@ export function setupUserRoutes(router, backend) {
 
       try {
         const apiKey = decrypt(row.encrypted_key);
-        sendSuccess(res, { api_key: apiKey });
+        sendSuccess(res, { api_key: apiKey, key_name: row.key_name });
       } catch (error) {
         logger.error('Failed to decrypt API key', { authId, error: error.message });
         return sendError(res, 'Failed to retrieve API key', 500);

@@ -286,7 +286,7 @@ class PollingScheduler {
     let client = this.cachedApiClients.get(authId);
     if (client) return client;
     const apiKey = decrypt(encryptedKey);
-    client = new ApiClient(apiKey);
+    client = new ApiClient(apiKey, { authId });
     this.cachedApiClients.set(authId, client);
     return client;
   }
@@ -306,17 +306,41 @@ class PollingScheduler {
       return cached;
     }
 
-    const apiClient = this.getOrCreateApiClient(authId, encryptedKey);
-    const engine = new AutomationEngine(
-      authId,
-      encryptedKey,
-      this.userDatabaseManager,
-      this.masterDb,
-      apiClient
-    );
-    await engine.initialize();
-    this.cachedEngines.set(authId, engine);
-    return engine;
+    // Per-key creation lock: prevent race where two concurrent calls both pass the
+    // cached check before either sets into the map (the second one would leak).
+    if (!this._engineCreateLocks) this._engineCreateLocks = new Map();
+
+    const existingLock = this._engineCreateLocks.get(authId);
+    if (existingLock) {
+      return existingLock;
+    }
+
+    const createPromise = (async () => {
+      try {
+        const apiClient = this.getOrCreateApiClient(authId, encryptedKey);
+        const engine = new AutomationEngine(
+          authId,
+          encryptedKey,
+          this.userDatabaseManager,
+          this.masterDb,
+          apiClient
+        );
+        await engine.initialize();
+        this.cachedEngines.set(authId, engine);
+        return engine;
+      } catch (error) {
+        this.cachedEngines.delete(authId);
+        throw error;
+      }
+    })();
+
+    this._engineCreateLocks.set(authId, createPromise);
+
+    try {
+      return await createPromise;
+    } finally {
+      this._engineCreateLocks.delete(authId);
+    }
   }
 
   /**
