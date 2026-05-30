@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
@@ -71,6 +71,9 @@ export function useDownloadsFilters({
   } = useCustomViews(apiKey);
 
   const activeTagIds = getActiveTagIds(appliedFilters);
+
+  const filterDepsRef = useRef({ filterModalMode, editingView, activeType, search, sortField, sortDirection });
+  filterDepsRef.current = { filterModalMode, editingView, activeType, search, sortField, sortDirection };
 
   useEffect(() => {
     if (isBackendAvailable && apiKey && !viewsHasLoaded && !viewsLoading) {
@@ -222,6 +225,7 @@ export function useDownloadsFilters({
 
   const handlePreviewFiltersFromModal = useCallback(
     (filters, { includeSort = false, includeSearch = false } = {}) => {
+      const { filterModalMode, editingView, activeType, search, sortField, sortDirection } = filterDepsRef.current;
       const assetType =
         filterModalMode === 'edit' && editingView?.asset_type ? editingView.asset_type : activeType;
       const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);
@@ -242,14 +246,8 @@ export function useDownloadsFilters({
       setStatusFilter('all');
     },
     [
-      activeType,
       clearView,
-      editingView,
-      filterModalMode,
-      search,
       setSort,
-      sortDirection,
-      sortField,
       setSearch,
       setStatusFilter,
       setAppliedFilters,

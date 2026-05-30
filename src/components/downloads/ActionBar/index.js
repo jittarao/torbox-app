@@ -19,42 +19,48 @@ import {
   selectTotalSelectedFileCount,
 } from '@/store/downloadsSelectionStore';
 import { useLayoutOnTabVisible } from '../hooks/useLayoutOnTabVisible';
+import { useDownloadsContext } from '@/components/downloads/DownloadsContext';
 
-export default function ActionBar({
-  unfilteredItems,
-  filteredItems,
-  activeColumns,
-  onColumnChange,
-  search,
-  setSearch,
-  statusFilter,
-  onStatusChange,
-  isDownloading,
-  isDeleting,
-  isExporting,
-  onBulkDownload,
-  onBulkDelete,
-  onBulkExport,
-  activeType = 'torrents',
-  isBlurred = false,
-  onBlurToggle,
-  isFullscreen = false,
-  onFullscreenToggle,
-  viewMode = 'table',
-  onViewModeChange,
-  sortField,
-  sortDir,
-  handleSort,
-  getTotalDownloadSize,
-  isDownloadPanelOpen,
-  setIsDownloadPanelOpen,
-  apiKey,
-  setToast,
-  expandAllFiles,
-  collapseAllFiles,
-  scrollContainerRef,
-  hasFiltersSidebar = false,
-}) {
+export default function ActionBar() {
+  const ctx = useDownloadsContext();
+  const {
+    viewItems: unfilteredItems,
+    sortedItems: filteredItems,
+    activeColumns,
+    handleColumnChange: onColumnChange,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter: onStatusChange,
+    isDownloading,
+    isDeleting,
+    isExporting,
+    handleBulkDownload: onBulkDownload,
+    deleteItems: onBulkDelete,
+    handleBulkExport: onBulkExport,
+    activeType = 'torrents',
+    isBlurred = false,
+    selectedItems,
+    isFullscreen = false,
+    onFullscreenToggle,
+    displayViewMode: viewMode = 'table',
+    setViewMode: onViewModeChange,
+    sortField,
+    sortDirection: sortDir,
+    handleSort,
+    getTotalDownloadSize,
+    isDownloadPanelOpen,
+    setIsDownloadPanelOpen,
+    apiKey,
+    setToast,
+    expandAllFiles,
+    collapseAllFiles,
+    scrollContainerRef,
+    filtersSidebarExpanded: hasFiltersSidebar = false,
+  } = ctx;
+  const onBlurToggle = () => ctx.setIsBlurred(!ctx.isBlurred);
+  const onBulkDownloadWrapper = () => onBulkDownload(selectedItems, unfilteredItems);
+  const onBulkDeleteWrapper = (includeParentDownloads) => onBulkDelete(selectedItems, includeParentDownloads, unfilteredItems);
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
   const selectedFileCount = useDownloadsSelectionStore(selectTotalSelectedFileCount);
   const hasSelectedFiles = useDownloadsSelectionStore(selectHasSelectedFiles);
@@ -231,8 +237,8 @@ export default function ActionBar({
                 isDownloading={isDownloading}
                 isDeleting={isDeleting}
                 isExporting={isExporting}
-                onBulkDownload={onBulkDownload}
-                onBulkDelete={onBulkDelete}
+                onBulkDownload={onBulkDownloadWrapper}
+                onBulkDelete={onBulkDeleteWrapper}
                 onBulkExport={onBulkExport}
                 itemTypeName={itemTypeName}
                 itemTypePlural={itemTypePlural}
