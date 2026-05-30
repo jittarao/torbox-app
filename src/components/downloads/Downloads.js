@@ -11,6 +11,8 @@ import DownloadsHeader from './DownloadsHeader';
 import DownloadsInfoPanel from './DownloadsInfoPanel';
 import DownloadsContentArea from './DownloadsContentArea';
 import { DownloadsDataProvider } from './DownloadsDataContext';
+import { DownloadsFilterProvider } from './DownloadsFilterContext';
+import { DownloadsUIProvider } from './DownloadsUIContext';
 import { DownloadsProvider } from './DownloadsContext';
 import { DownloadsActionsProvider } from './DownloadsActionsContext';
 import DownloadsModals from './DownloadsModals';
@@ -58,6 +60,8 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     filterData,
     activeColumns,
     downloadsDataContextValue,
+    downloadsFilterContextValue,
+    downloadsUIContextValue,
     downloadsContextValue,
     downloadActions,
     showDesktopFiltersSidebar,
@@ -154,9 +158,13 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
           >
             <DownloadsActionsProvider value={downloadActions}>
               <DownloadsDataProvider value={downloadsDataContextValue}>
-                <DownloadsProvider value={downloadsContextValue}>
-                  <DownloadsContentArea />
-                </DownloadsProvider>
+                <DownloadsFilterProvider value={downloadsFilterContextValue}>
+                  <DownloadsUIProvider value={downloadsUIContextValue}>
+                    <DownloadsProvider value={downloadsContextValue}>
+                      <DownloadsContentArea />
+                    </DownloadsProvider>
+                  </DownloadsUIProvider>
+                </DownloadsFilterProvider>
               </DownloadsDataProvider>
             </DownloadsActionsProvider>
           </div>

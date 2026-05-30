@@ -7,6 +7,8 @@ import {
   useLayoutEffect,
 } from 'react';
 import { useDownloadsDataContext } from './DownloadsDataContext';
+import { useDownloadsFilterContext } from './DownloadsFilterContext';
+import { useDownloadsUIContext } from './DownloadsUIContext';
 import { useDownloadsContext } from './DownloadsContext';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
@@ -245,22 +247,27 @@ export default function CardList() {
     downloadHistoryLookup,
     selectedItems,
   } = useDownloadsDataContext();
-  const ctx = useDownloadsContext();
+  const {
+    search: fileSearch = '',
+  } = useDownloadsFilterContext();
+
+  const {
+    activeType,
+    isBlurred,
+    isFullscreen,
+    displayViewMode: viewMode,
+    scrollContainerRef,
+  } = useDownloadsUIContext();
+
   const {
     apiKey,
     handleFileSelect: onFileSelect,
     deleteItem: onDelete,
     toggleFiles,
     setToast,
-    activeType,
-    isBlurred,
-    isFullscreen,
-    displayViewMode: viewMode,
-    scrollContainerRef,
     onOpenVideoPlayer,
     onAudioPlay,
-    fileSearch = '',
-  } = ctx;
+  } = useDownloadsContext();
 
   const {
     trackSelectionModal,
