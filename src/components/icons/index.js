@@ -82,6 +82,8 @@ import CollapseAllIcon from './CollapseAll';
 import PrivateIcon from './Private';
 import AllIcon from './All';
 import GitHubIcon from './GitHub';
+import TagIcon from './Tag';
+import FileDownIcon from './FileDown';
 
 const Icons = {
   Link: LinkIcon,
@@ -167,6 +169,8 @@ const Icons = {
   Private: PrivateIcon,
   All: AllIcon,
   GitHub: GitHubIcon,
+  Tag: TagIcon,
+  FileDown: FileDownIcon,
 };
 
 export default Icons;
@@ -253,3 +257,5 @@ export { default as CollapseAll } from './CollapseAll';
 export { default as Private } from './Private';
 export { default as All } from './All';
 export { default as GitHub } from './GitHub';
+export { default as Tag } from './Tag';
+export { default as FileDown } from './FileDown';

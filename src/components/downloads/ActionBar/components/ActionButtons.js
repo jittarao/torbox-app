@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
-import { Delete, Download, Hash, Play, Question, Stop, Times, Torrent } from '@/components/icons';
+import { Delete, Download, FileDown, Play, Question, Stop, Tag, Times } from '@/components/icons';
 import BulkActionButton from './BulkActionButton';
 import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
@@ -401,7 +401,7 @@ export default function ActionButtons({
           onClick={handleBulkExport}
           disabled={isExporting}
           loading={isExporting}
-          icon={<Torrent />}
+          icon={<FileDown />}
           label={isExporting ? t('exporting') : t('exportSelected')}
           title={t('exportSelectedTitle')}
         />
@@ -435,7 +435,7 @@ export default function ActionButtons({
         <BulkActionButton
           variant="secondary"
           onClick={() => setShowTagAssignment(true)}
-          icon={<Hash />}
+          icon={<Tag />}
           label={t('assignTags')}
           title={t('assignTagsTitle')}
         />
