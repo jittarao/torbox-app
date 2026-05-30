@@ -10,8 +10,10 @@ export const POLLING_CONFIG = {
   minIntervalByType: { torrents: 2_000, usenet: 2_000, webdl: 2_000 },
   /** Poll interval while tab is visible and refresh is not paused */
   activeIntervalMs: 15_000,
-  /** Poll interval after engagement grace (hidden tab, idle, or auto-start queue) */
+  /** Poll interval when disengaged without auto-start (unused while auto-start keeps active interval) */
   inactiveIntervalMs: 60_000,
+  /** Poll interval while disengaged but auto-start is enabled (keeps queue filling in background) */
+  autoStartPollIntervalMs: 15_000,
   /**
    * After tab hide or user idle, keep active-interval polling for this long, then stop
    * (unless auto-start has queued torrents).
@@ -19,8 +21,10 @@ export const POLLING_CONFIG = {
   engagementGracePeriodMs: 3 * 60_000,
   /** No pointer/keyboard activity for this long while tab is visible → treat as idle */
   userIdleThresholdMs: 2 * 60_000,
-  /** Minimum time between auto-start control API calls (ms) */
-  autoStartCheckIntervalMs: 30_000,
+  /** Gap between sequential controlqueued start calls in one fill batch (ms) */
+  autoStartBetweenStartsMs: 400,
+  /** Re-attempt a queued id after this long if TorBox still reports it queued (ms) */
+  autoStartProcessedTtlMs: 90_000,
   /** Stagger delay between asset types on All-tab poll ticks (ms) */
   allTabStaggerMs: 2_000,
   /** Debounce trailing window for SSE-driven torrent refetches (ms) */

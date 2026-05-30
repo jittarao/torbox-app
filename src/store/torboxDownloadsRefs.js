@@ -11,7 +11,8 @@ import { createDownloadFetchRateLimiter } from '@/components/shared/hooks/downlo
  * without gaining re-render value (no component subscribes to these directly).
  */
 export const deltaCursorRef = { current: { torrents: null, usenet: null, webdl: null } };
-export const processedQueueIdsRef = { current: new Set() };
+/** @type {{ current: Map<string|number, number> }} queued id → last start attempt timestamp */
+export const processedQueueIdsRef = { current: new Map() };
 /** Active initial-fetch keys: `${apiKey}:${viewType}` — supports concurrent fetches per view. */
 export const fetchInProgressKeysRef = { current: new Set() };
 
@@ -32,7 +33,6 @@ export function endFetchInProgress(apiKey, viewType) {
 }
 
 export const prevApiKeyRef = { current: null };
-export const lastAutoStartCheckRef = { current: 0 };
 
 /** @type {{ current: import('@/components/shared/hooks/downloadFetchRateLimit').ReturnType<typeof createDownloadFetchRateLimiter> | null }} */
 export const rateLimiterRef = { current: null };
@@ -66,7 +66,6 @@ export function resetDownloadSyncRefs(apiKey) {
     fetchAbortControllers.current[type] = null;
   }
   getRateLimiter().reset();
-  processedQueueIdsRef.current = new Set();
+  processedQueueIdsRef.current = new Map();
   fetchInProgressKeysRef.current = new Set();
-  lastAutoStartCheckRef.current = 0;
 }

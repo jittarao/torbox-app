@@ -1,22 +1,16 @@
-import { isQueuedItem, isActiveDownload, getAutoStartOptions } from '@/utils/utility';
 import { mergeDownloadEntities } from '@/utils/downloadListMerge';
 import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
 import { perfMonitor } from '@/utils/performance';
-import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
+import { fillAutoStartSlots } from '@/utils/torrentAutoStart';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getListKeyForAssetType } from '@/store/torboxDownloadsSelectors';
 import {
   deltaCursorRef,
   getRateLimiter,
-  lastAutoStartCheckRef,
   prevApiKeyRef,
-  processedQueueIdsRef,
   abortStaleFetch,
 } from '@/store/torboxDownloadsRefs';
-
-const { autoStartCheckIntervalMs: AUTO_START_CHECK_INTERVAL } = POLLING_CONFIG;
-
 function affectsCurrentView(activeType, viewType) {
   return (
     activeType === viewType ||
@@ -50,61 +44,6 @@ function getErrorMessage(statusCode, activeType) {
     return `Unable to connect to TorBox servers. ${activeType} data may not be up to date.`;
   }
   return `Failed to fetch ${activeType} data`;
-}
-
-function pruneProcessedQueueIds(items) {
-  const queuedIds = new Set(
-    items.reduce((acc, item) => {
-      if (isQueuedItem(item)) acc.push(item.id);
-      return acc;
-    }, [])
-  );
-  for (const id of processedQueueIdsRef.current) {
-    if (!queuedIds.has(id)) {
-      processedQueueIdsRef.current.delete(id);
-    }
-  }
-}
-
-async function checkAndAutoStartTorrents(items, apiKey, viewType) {
-  if (viewType !== 'torrents' && viewType !== 'all') return;
-
-  try {
-    const options = getAutoStartOptions();
-    if (!options?.autoStart) return;
-
-    pruneProcessedQueueIds(items);
-
-    const autoStartLimit = Number(options.autoStartLimit);
-    const limit = Number.isFinite(autoStartLimit) && autoStartLimit > 0 ? autoStartLimit : 3;
-
-    const activeCount = items.filter(isActiveDownload).length;
-    const queuedItems = items.filter(isQueuedItem);
-
-    if (activeCount < limit && queuedItems.length > 0) {
-      const queuedId = queuedItems[0].id;
-      if (processedQueueIdsRef.current.has(queuedId)) return;
-
-      const result = await retryFetch('/api/torrents/controlqueued', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          queued_id: queuedId,
-          operation: 'start',
-          type: 'torrent',
-        }),
-      });
-
-      if (result?.success) {
-        processedQueueIdsRef.current.add(queuedId);
-      }
-    }
-  } catch (autoStartError) {
-    console.error('Error in auto-start check:', autoStartError);
-  }
 }
 
 function handleFetchError(
@@ -336,9 +275,10 @@ export async function fetchDownloadType(
       store.setListFromMerge(assetType, entities, orderKeys);
 
       if (listKey === 'torrents') {
-        if (now - lastAutoStartCheckRef.current >= AUTO_START_CHECK_INTERVAL) {
-          await checkAndAutoStartTorrents(sortedItems, apiKey, viewType);
-          lastAutoStartCheckRef.current = now;
+        try {
+          await fillAutoStartSlots(sortedItems, apiKey, { viewType });
+        } catch (autoStartError) {
+          console.error('Error filling auto-start slots:', autoStartError);
         }
       }
 

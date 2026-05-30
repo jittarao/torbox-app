@@ -1,4 +1,4 @@
-/** @typedef {'active' | 'slow' | 'paused' | 'inactive'} PollScheduleMode */
+/** @typedef {'active' | 'slow' | 'autoStart' | 'paused' | 'inactive'} PollScheduleMode */
 
 /**
  * @typedef {Object} PollSchedule
