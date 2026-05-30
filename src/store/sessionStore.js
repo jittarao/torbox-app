@@ -38,11 +38,13 @@ function readStoredApiKey() {
 function fanOutApiKey(apiKey, prevApiKey) {
   startTransition(() => {
     const keyChanged = prevApiKey !== apiKey;
-    if (keyChanged) {
+    if (keyChanged && prevApiKey) {
       useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
       useSearchStore.getState().resetForSession();
       useDownloadsUiStore.getState().resetUi();
       useDownloadsPlayerStore.getState().closeAll();
+    } else if (keyChanged) {
+      useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
     } else {
       useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);
     }

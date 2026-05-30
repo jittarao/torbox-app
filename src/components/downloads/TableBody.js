@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useState,
 } from 'react';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import DownloadRowContainer from './DownloadRowContainer';

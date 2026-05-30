@@ -38,37 +38,45 @@ describe('searchSelectors', () => {
     expect(filtered[0].title).toContain('1080p');
   });
 
-  test('selectFilteredResults uses store filter fields', () => {
-    const state = {
-      results: baseResults,
-      seasonFilter: '',
-      episodeFilter: '',
-      yearFilter: '2019',
-      qualityFilter: '',
-      sizeFilter: '',
-      seedersFilter: '',
-    };
-    expect(selectFilteredResults(state)).toHaveLength(1);
+  test('selectFilteredResults uses passed filter fields', () => {
+    const state = { results: baseResults };
+    expect(
+      selectFilteredResults(state, {
+        seasonFilter: '',
+        episodeFilter: '',
+        yearFilter: '2019',
+        qualityFilter: '',
+        sizeFilter: '',
+        seedersFilter: '',
+      })
+    ).toHaveLength(1);
   });
 
   test('selectDisplayResults applies cached-only and hides native indexers', () => {
     const state = {
       results: baseResults,
+      searchType: 'torrents',
+    };
+
+    const emptyFilters = {
       seasonFilter: '',
       episodeFilter: '',
       yearFilter: '',
       qualityFilter: '',
       sizeFilter: '',
       seedersFilter: '',
-      searchType: 'torrents',
     };
 
-    const display = selectDisplayResults(state, {
-      sortKey: 'size',
-      sortDir: 'desc',
-      showCachedOnly: true,
-      hideTorBoxIndexers: true,
-    });
+    const display = selectDisplayResults(
+      state,
+      {
+        sortKey: 'size',
+        sortDir: 'desc',
+        showCachedOnly: true,
+        hideTorBoxIndexers: true,
+      },
+      emptyFilters
+    );
 
     expect(display).toHaveLength(1);
     expect(display[0].cached).toBe(true);
