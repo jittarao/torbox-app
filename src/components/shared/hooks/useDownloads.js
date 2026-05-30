@@ -170,17 +170,8 @@ export function useDownloads(
     total: 0,
   });
   const focusCopyHandlerRef = useRef(null);
-  const downloadHistoryRef = useRef(downloadHistory);
-  const apiKeyRef = useRef(apiKey);
-  const assetTypeRef = useRef(assetType);
-  const fetchDownloadHistoryRef = useRef(fetchDownloadHistory);
-  const onBulkCompleteRef = useRef(onBulkComplete);
-
-  downloadHistoryRef.current = downloadHistory;
-  apiKeyRef.current = apiKey;
-  assetTypeRef.current = assetType;
-  fetchDownloadHistoryRef.current = fetchDownloadHistory;
-  onBulkCompleteRef.current = onBulkComplete;
+  const depsRef = useRef({ downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete });
+  depsRef.current = { downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete };
 
   useEffect(() => {
     return () => {
@@ -191,7 +182,7 @@ export function useDownloads(
     };
   }, []);
 
-  const getDownloadEndpoint = (type = assetTypeRef.current) => {
+  const getDownloadEndpoint = (type = depsRef.current.assetType) => {
     switch (type) {
       case 'usenet':
         return '/api/usenet/download';
@@ -205,7 +196,7 @@ export function useDownloads(
     }
   };
 
-  const getIdField = (type = assetTypeRef.current) => {
+  const getIdField = (type = depsRef.current.assetType) => {
     switch (type) {
       case 'usenet':
         return 'usenet_id';
@@ -236,10 +227,7 @@ export function useDownloads(
     metadata = {},
     skipHistorySave = false
   ) => {
-    const apiKey = apiKeyRef.current;
-    const assetType = assetTypeRef.current;
-    const downloadHistory = downloadHistoryRef.current;
-    const fetchDownloadHistory = fetchDownloadHistoryRef.current;
+    const { apiKey, assetType, downloadHistory, fetchDownloadHistory } = depsRef.current;
 
     if (!apiKey) return false;
 
@@ -395,8 +383,7 @@ export function useDownloads(
     copyLink = false,
     metadata = {}
   ) => {
-    const fetchDownloadHistory = fetchDownloadHistoryRef.current;
-    const apiKey = apiKeyRef.current;
+    const { apiKey, fetchDownloadHistory } = depsRef.current;
 
     try {
       const result = await requestDownloadLink(id, options, idField, metadata);
@@ -467,10 +454,7 @@ export function useDownloads(
   }, [requestDownloadLink]);
 
   const handleBulkDownload = useCallback(async (selectedItems, items) => {
-    const apiKey = apiKeyRef.current;
-    const assetType = assetTypeRef.current;
-    const fetchDownloadHistory = fetchDownloadHistoryRef.current;
-    const onBulkComplete = onBulkCompleteRef.current;
+    const { apiKey, assetType, fetchDownloadHistory, onBulkComplete } = depsRef.current;
 
     const totalItems = selectedItems.items.size;
     const totalFiles = Array.from(selectedItems.files.entries()).reduce(

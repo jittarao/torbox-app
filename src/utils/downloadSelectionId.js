@@ -22,6 +22,7 @@ export function selectionIdMatchesItem(storedId, item) {
     return storedId === composite;
   }
   const numeric = typeof storedId === 'number' ? storedId : parseInt(storedId, 10);
+  if (Number.isNaN(numeric)) return item.id === storedId;
   return item.id === numeric || item.id === storedId;
 }
 

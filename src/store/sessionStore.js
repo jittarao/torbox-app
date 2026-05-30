@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { startTransition } from 'react';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import { fetchUserProfile, getUserPermissions } from '@/utils/userProfile';
 import { useTagsStore } from '@/store/tagsStore';
@@ -39,23 +40,25 @@ let permissionsLoadPromise = null;
 let permissionsLoadKey = null;
 
 function fanOutApiKey(apiKey, prevApiKey) {
-  const keyChanged = prevApiKey !== apiKey;
-  if (keyChanged) {
-    useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
-    useSearchStore.getState().resetForSession();
-    useDownloadsUiStore.getState().resetUi();
-    useDownloadsPlayerStore.getState().closeAll();
-  } else {
-    useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);
-  }
+  startTransition(() => {
+    const keyChanged = prevApiKey !== apiKey;
+    if (keyChanged) {
+      useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
+      useSearchStore.getState().resetForSession();
+      useDownloadsUiStore.getState().resetUi();
+      useDownloadsPlayerStore.getState().closeAll();
+    } else {
+      useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);
+    }
 
-  useTagsStore.getState().setApiKey(apiKey);
-  useDownloadTagsStore.getState().setApiKey(apiKey);
-  useCustomViewsStore.getState().setApiKey(apiKey);
-  useAutomationRulesStore.getState().setApiKey(apiKey);
-  useNotificationsStore.getState().setApiKey(apiKey);
-  useHealthStore.getState().setApiKey(apiKey);
-  useRssStore.getState().setApiKey(apiKey);
+    useTagsStore.getState().setApiKey(apiKey);
+    useDownloadTagsStore.getState().setApiKey(apiKey);
+    useCustomViewsStore.getState().setApiKey(apiKey);
+    useAutomationRulesStore.getState().setApiKey(apiKey);
+    useNotificationsStore.getState().setApiKey(apiKey);
+    useHealthStore.getState().setApiKey(apiKey);
+    useRssStore.getState().setApiKey(apiKey);
+  });
 }
 
 export const useSessionStore = create((set, get) => ({
