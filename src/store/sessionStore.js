@@ -14,6 +14,8 @@ import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useSearchStore } from '@/store/searchStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
+import { useFileInteractionStore } from '@/store/fileInteractionStore';
+import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 
 function readStoredApiKey() {
   try {
@@ -43,6 +45,8 @@ function fanOutApiKey(apiKey, prevApiKey) {
       useSearchStore.getState().resetForSession();
       useDownloadsUiStore.getState().resetUi();
       useDownloadsPlayerStore.getState().closeAll();
+      useFileInteractionStore.getState().clearAll();
+      useDownloadHistoryStore.getState().clearDownloadHistory();
     } else if (keyChanged) {
       useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
     } else {

@@ -15,7 +15,6 @@
       "message": "Êtes-vous sûr de vouloir supprimer {count} {type} ? Cette action ne peut pas être annulée.",
       "title": "Confirmer la suppression"
     },
-    "assignTags": "Tag",
     "assignTagsTitle": "Attribuer des tags à la sélection",
     "downloadLinks": "Télécharger",
     "downloadLinksMobile": "Télécharger",
@@ -31,7 +30,6 @@
     "exportSelected": "Exporter",
     "exportSelectedTitle": "Exporter les torrents sélectionnés",
     "fetchingLinks": "Chargement…",
-    "stopSeeding": "Stop seed",
     "stopSeedingTitle": "Arrêter le partage des torrents sélectionnés",
     "stoppingSeeding": "Arrêt…",
     "toolbarLabel": "Actions sur la sélection",
@@ -46,7 +44,6 @@
     "show": "Afficher la clé API"
   },
   "ApiKeyManager": {
-    "active": "Active",
     "add": "Ajouter",
     "addKey": "Ajouter une clé",
     "addNewKey": "Ajouter une nouvelle clé API",
@@ -57,7 +54,6 @@
     "close": "Fermer",
     "deleteKey": "Supprimer la clé",
     "keyLabel": "Label de clé",
-    "keyLabelPlaceholder": "e.g. Personal, Family",
     "keysCount": "{count, plural, =0 {Aucune clé} one {# clé} other {# clés}}",
     "managerPinned": "Désactivez « Garder ouvert » pour fermer",
     "noKeys": "Aucune clé enregistrée",
@@ -72,7 +68,6 @@
       "remove": "Supprimer"
     },
     "columns": {
-      "actions": "Actions",
       "archivedAt": "Archivé le",
       "itemId": "ID de l'élément",
       "itemName": "Nom de l'élément",
@@ -92,7 +87,6 @@
     }
   },
   "AutomationRules": {
-    "action": "Action",
     "actions": {
       "addTag": "Ajouter un tag",
       "addTagDescription": "Ajouter un ou plusieurs tags au téléchargement",
@@ -124,7 +118,6 @@
     "checkEvery": "Vérifier chaque",
     "clearLogs": "Effacer les Journaux",
     "close": "Fermer",
-    "condition": "Condition",
     "conditionGroups": {
       "downloading": "Téléchargement",
       "lifecycle": "Cycle de vie",
@@ -192,7 +185,6 @@
       "tagsPlaceholder": "Sélectionner des étiquettes...",
       "totalUploaded": "Total envoyé",
       "totalUploadedDescription": "Quantité totale de données envoyées (en Go)",
-      "tracker": "Tracker",
       "trackerDescription": "URL ou nom du tracker (recherche par texte)",
       "trackerPlaceholder": "Entrez l'URL ou le nom du tracker...",
       "uploadSpeed": "Vitesse d'envoi actuelle",
@@ -330,25 +322,19 @@
     "reorderColumns": "Réorganiser les colonnes"
   },
   "Columns": {
-    "actions": "Actions",
-    "asset_type": "Type",
     "cached_at": "Date de cache",
     "created_at": "Date d'ajout",
     "download_progress": "Progression",
     "download_speed": "Vitesse de téléchargement",
     "download_state": "État",
-    "eta": "ETA",
     "expires_at": "Expire à",
     "file_count": "Nombre de fichiers",
-    "hash": "Hash",
-    "id": "ID",
     "is_downloaded": "Téléchargé",
     "name": "Nom",
     "original_url": "URL source",
     "peers": "Pairs",
     "private": "Tracker Privé",
     "progress": "Progression",
-    "ratio": "Ratio",
     "seeds": "Graines",
     "size": "Taille",
     "tags": "Étiquettes",
@@ -365,31 +351,16 @@
       "file": "fichier",
       "File": "Fichier",
       "files": "fichiers",
-      "Files": "Fichiers",
-      "torrent": "torrent",
-      "Torrent": "Torrent",
-      "torrents": "torrents",
-      "Torrents": "Torrents",
-      "usenet": "usenet",
-      "Usenet": "Usenet",
-      "usenets": "usenets",
-      "Usenets": "Usenets",
-      "web": "web",
-      "Web": "Web",
-      "webdl": "webdl",
-      "Webdl": "Webdl"
+      "Files": "Fichiers"
     },
     "loading": "Chargement...",
-    "minutes": "minutes",
     "time": {
       "ago": " il y a",
       "complete": "Terminé",
       "d": "j",
-      "h": "h",
       "in": "dans ",
       "m": "min",
       "mo": "m",
-      "s": "s",
       "unknown": "Inconnu",
       "y": "a"
     }
@@ -553,7 +524,6 @@
       "language": "Langue",
       "linkHistory": "Historique des liens",
       "more": "Plus",
-      "notifications": "Notifications",
       "referrals": "Parrainage",
       "rss": "Flux RSS",
       "search": "Rechercher",
@@ -563,14 +533,12 @@
     },
     "theme": {
       "toggle": "Changer de thème"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Gestionnaire de torrents et de débrideurs",
     "search": "Rechercher",
-    "searchPlaceholder": "Rechercher des torrents...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Rechercher des torrents..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -596,7 +564,6 @@
       "title": "Forcer le démarrage"
     },
     "stop": {
-      "label": "Stop",
       "title": "Arrêter le partage"
     }
   },
@@ -619,7 +586,6 @@
   "ItemUploader": {
     "button": {
       "torrents": "Télécharger des torrents",
-      "usenet": "Upload NZB",
       "webdl": "Ajouter des liens"
     },
     "dropzone": {
@@ -654,7 +620,6 @@
       "show": "Afficher les options"
     },
     "placeholder": {
-      "torrents": "Paste magnet links here (one per line)",
       "usenet": "Coller les liens NZB ici (un par ligne)",
       "webdl": "Coller les liens de téléchargement Web ici (un par ligne)",
       "webdlPassword": "Entrer le mot de passe (optionnel)"
@@ -683,7 +648,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Trouvez votre clé API sur",
-      "link": "torbox.app/settings",
       "title": "Entrer la clé API TorBox"
     },
     "features": {
@@ -701,11 +665,9 @@
       }
     },
     "footer": {
-      "description": "Cette application est entièrement open source sur",
-      "github": "GitHub"
+      "description": "Cette application est entièrement open source sur"
     },
-    "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité.",
-    "title": "TorBox Manager"
+    "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité."
   },
   "LinkHistory": {
     "actions": {
@@ -715,7 +677,6 @@
       "selectItem": "Sélectionner le lien"
     },
     "columns": {
-      "actions": "Actions",
       "expiresAt": "Date d'expiration",
       "fileName": "Nom du fichier",
       "itemId": "ID de l'élément",
@@ -778,7 +739,6 @@
     "markAllAsRead": "Tout marquer comme lu",
     "markAsRead": "Marquer comme lu",
     "noNotifications": "Aucune notification",
-    "notifications": "Notifications",
     "testNotification": "Notification de test"
   },
   "Referral": {
@@ -852,7 +812,6 @@
     }
   },
   "RssFeeds": {
-    "actions": "Actions",
     "active": "Actif",
     "addError": "Échec de l'ajout du flux RSS",
     "addFeed": "Ajouter un Flux RSS",
@@ -900,11 +859,7 @@
     "never": "Jamais",
     "noFeeds": "Aucun flux RSS configuré",
     "options": {
-      "auto": "Auto",
       "dontSeed": "Ne pas Seeder",
-      "seed": "Seed",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Téléchargement Web"
     },
     "pageDescription": "Gérer les flux RSS et parcourir les éléments",
@@ -933,7 +888,6 @@
   "RssItems": {
     "allTypes": "Tous les Types",
     "category": "Catégorie",
-    "date": "Date",
     "download": "Télécharger",
     "error": "Erreur lors du chargement des éléments",
     "loading": "Chargement des éléments...",
@@ -957,10 +911,7 @@
       "downloadStarted": "Téléchargement démarré avec succès",
       "noLink": "Aucun lien de téléchargement disponible"
     },
-    "torrent": "Torrent",
-    "type": "Type",
     "unknown": "Inconnu",
-    "usenet": "Usenet",
     "webdl": "Téléchargement Web"
   },
   "SearchBar": {
@@ -969,7 +920,6 @@
     "clearSearch": "Effacer la recherche",
     "customEngines": "Moteurs personnalisés",
     "episode": "Épisode",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Masquer avancé",
     "minSeeders": "Seeders min.",
     "minSize": "Taille min. (GB)",
@@ -983,10 +933,8 @@
     "search": "Rechercher",
     "searchExamples": "Exemples de recherche",
     "season": "Saison",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Afficher avancé",
-    "year": "Année",
-    "yearPlaceholder": "2024"
+    "year": "Année"
   },
   "SearchResults": {
     "actions": {
@@ -1030,8 +978,7 @@
       "upload": "Téléversement"
     },
     "scale": {
-      "linear": "Linéaire",
-      "logarithmic": "Log"
+      "linear": "Linéaire"
     },
     "timeRanges": {
       "10m": "Dernier 10m",
@@ -1062,8 +1009,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} fichiers sélectionnés ({size})",
     "selectedItems": "{itemCount} {type} sélectionnés ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} sélectionnés ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} sélectionnés ({size})"
   },
   "SystemStatus": {
     "error": "Erreur",
@@ -1074,7 +1020,6 @@
     "minutesAgo": "il y a {minutes} minutes",
     "never": "Jamais",
     "refreshStatus": "Cliquer pour actualiser",
-    "responseTime": "{ms} ms",
     "uptime": {
       "barLabel": "Historique {label}, {percent}% opérationnel",
       "collecting": "Collecte des données…",
@@ -1091,10 +1036,18 @@
       }
     },
     "rows": {
-      "app": { "label": "Cette application" },
-      "backend": { "label": "Backend auto-hébergé" },
-      "connection": { "label": "Votre clé API" },
-      "platform": { "label": "Plateforme TorBox" },
+      "app": {
+        "label": "Cette application"
+      },
+      "backend": {
+        "label": "Backend auto-hébergé"
+      },
+      "connection": {
+        "label": "Votre clé API"
+      },
+      "platform": {
+        "label": "Plateforme TorBox"
+      },
       "status": {
         "checking": "Vérification…",
         "invalidKey": "Clé API invalide",
@@ -1202,8 +1155,6 @@
     "plans": {
       "essential": "Essentiel",
       "free": "Gratuit",
-      "pro": "Pro",
-      "standard": "Standard",
       "unknown": "Inconnu"
     },
     "profile": {
@@ -1215,7 +1166,6 @@
       "lastLogin": "Dernière Mise à Jour",
       "plan": "Forfait",
       "planExpiry": "Expiration du Forfait",
-      "ratio": "Ratio",
       "referralCode": "Code de Parrainage",
       "status": "Statut",
       "title": "Profil Utilisateur",

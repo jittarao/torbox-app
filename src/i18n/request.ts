@@ -32,5 +32,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   return {
     locale,
     messages,
+    onError(error) {
+      if (process.env.NODE_ENV === 'development' && error.code === 'MISSING_MESSAGE') {
+        console.warn(`[i18n] Missing message: ${error.message}`);
+      }
+    },
   };
 });

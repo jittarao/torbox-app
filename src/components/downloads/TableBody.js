@@ -17,6 +17,8 @@ import { useDownloadsActions } from './DownloadsActionsContext';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
+import { buildFlattenedTableRows } from './utils/flattenTableRows';
+import FileOverflowRow from './FileOverflowRow';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
@@ -90,7 +92,9 @@ function useTableBodyState(props) {
 
   const deferredItems = useDeferredValue(items);
   const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const uncappedFileExpandById = useDownloadsUiStore((state) => state.uncappedFileExpandById);
   const deferredExpandedById = useDeferredValue(expandedById);
+  const deferredUncappedFileExpandById = useDeferredValue(uncappedFileExpandById);
 
   const expandedItemsKey = useMemo(
     () =>
@@ -107,34 +111,15 @@ function useTableBodyState(props) {
   }, [deferredExpandedById]);
 
   const flattenedRows = useMemo(() => {
-    const rows = [];
     const expandedSet = new Set(expandedItemsArray);
-
-    deferredItems.forEach((item, itemIndex) => {
-      rows.push({
-        type: 'item',
-        item,
-        entityKey: getDownloadSelectionId(item),
-        itemIndex,
-        virtualIndex: rows.length,
-      });
-
-      const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
-      if (expandedSet.has(item.id) && visibleFiles.length > 0) {
-        visibleFiles.forEach((file, fileIndex) => {
-          rows.push({
-            type: 'file',
-            item,
-            file,
-            itemIndex,
-            fileIndex,
-            virtualIndex: rows.length,
-          });
-        });
-      }
-    });
-    return rows;
-  }, [deferredItems, expandedItemsArray, fileSearch]);
+    return buildFlattenedTableRows(
+      deferredItems,
+      expandedSet,
+      deferredUncappedFileExpandById,
+      getFilesVisibleForDownloadSearch,
+      fileSearch
+    );
+  }, [deferredItems, expandedItemsArray, deferredUncappedFileExpandById, fileSearch]);
 
   const measureElement = useCallback((element, _entry, instance) => {
     if (!element || !instance) return 0;
@@ -154,6 +139,9 @@ function useTableBodyState(props) {
   const estimateSize = useCallback(
     (index) => {
       const row = flattenedRows[index];
+      if (row?.type === 'fileOverflow') {
+        return isMobile ? 48 : 40;
+      }
       if (isMobile) {
         return row?.type === 'item' ? 100 : 60;
       }
@@ -277,7 +265,11 @@ function VirtualizedTableBodyInner({
 
   if (state.flattenedRows.length === 0) {
     return (
-      <tbody ref={state.tbodyRef} className="bg-surface dark:bg-surface-dark">
+      <tbody
+        ref={state.tbodyRef}
+        className="bg-surface dark:bg-surface-dark"
+        aria-label={state.t('downloadsTable')}
+      >
         <tr>
           <td
             colSpan={state.activeColumns.length + 2}
@@ -291,7 +283,7 @@ function VirtualizedTableBodyInner({
   }
 
   return (
-    <tbody ref={state.tbodyRef} className="bg-surface dark:bg-surface-dark">
+    <tbody ref={state.tbodyRef} className="bg-surface dark:bg-surface-dark" aria-label={state.t('downloadsTable')}>
       {paddingTop > 0 && (
         <tr>
           <td
@@ -329,6 +321,18 @@ function VirtualizedTableBodyInner({
               dataIndex={virtualRow.index}
               commonT={state.commonT}
               style={rowStyle}
+            />
+          );
+        }
+
+        if (row.type === 'fileOverflow') {
+          return (
+            <FileOverflowRow
+              key={`overflow-${row.item.id}`}
+              item={row.item}
+              overflowCount={row.overflowCount}
+              activeColumns={state.activeColumns}
+              tableWidth={state.tableWidth}
             />
           );
         }

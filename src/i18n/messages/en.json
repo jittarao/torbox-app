@@ -372,6 +372,7 @@
     "upload_speed": "Upload Speed"
   },
   "Common": {
+    "selectRow": "Select {name}",
     "hours": "hours",
     "itemTypes": {
       "all": "all",
@@ -1155,6 +1156,8 @@
   },
   "TableBody": {
     "noDownloads": "No downloads",
+    "downloadsTable": "Downloads list",
+    "showMoreFiles": "Show {count} more files",
     "toast": {
       "copyLink": "Link copied to clipboard",
       "copyLinkFailed": "Failed to copy link"

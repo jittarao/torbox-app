@@ -4,6 +4,7 @@ import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 const mobileIconButtonClass = 'ui-header-icon-btn !h-11 !w-11 !min-w-11 shrink-0 touch-manipulation';
 
@@ -150,6 +151,7 @@ export default function ItemActionButtons({
           title={filesExpanded ? t('files.hide') : t('files.show')}
           aria-label={mobileBar ? filesLabel : undefined}
           aria-expanded={filesExpanded}
+          aria-controls={filesExpanded ? `files-${getDownloadSelectionId(item)}` : undefined}
         >
           {mobileBar ? (
             <>

@@ -86,11 +86,6 @@ export const useTorboxDownloadsStore = create((set, get) => ({
     });
   },
 
-  /** @deprecated Use applyListMerge — kept for callers that still pass arrays */
-  setTorrents: (torrents) => get().applyListMerge('torrents', torrents || []),
-  setUsenet: (usenet) => get().applyListMerge('usenet', usenet || []),
-  setWebdl: (webdl) => get().applyListMerge('webdl', webdl || []),
-
   setLoading: (loading) => set({ loading }),
   setRefreshing: (refreshing) => set({ refreshing }),
   setError: (error) => set({ error }),

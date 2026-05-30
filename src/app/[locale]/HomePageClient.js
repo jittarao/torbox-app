@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import dynamic from 'next/dynamic';
 import { useFileHandler } from '@/hooks/useFileHandler';
@@ -28,10 +28,11 @@ const LandingPage = dynamic(() => import('@/components/LandingPage'), {
 export default function HomePageClient() {
   const { apiKey, hydrated, setApiKey } = useSession();
   const isClient = useIsClient();
+  const mainRef = useRef(null);
+  const didFocusMainRef = useRef(false);
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
 
   useEffect(() => {
-    // Register protocol handler
     if (
       'registerProtocolHandler' in navigator &&
       (window.matchMedia('(display-mode: standalone)').matches ||
@@ -48,7 +49,6 @@ export default function HomePageClient() {
       }
     }
 
-    // Handle magnet links
     const urlParams = new URLSearchParams(window.location.search);
     const magnetLink = urlParams.get('magnet');
     if (magnetLink) {
@@ -58,29 +58,36 @@ export default function HomePageClient() {
 
   useEnsureUserDb(apiKey);
 
-  // Handle received files
   useFileHandler((file) => {
     if (!apiKey) {
       alert('Please enter your API key first');
       return;
     }
 
-    // Here you can handle the file based on its type
     if (file.name.endsWith('.torrent')) {
-      // Handle torrent file
       validateAndAddFiles([file]);
     } else if (file.name.endsWith('.nzb')) {
-      // Handle NZB file
       validateAndAddFiles([file]);
     }
   });
+
+  useEffect(() => {
+    if (!isClient || !hydrated || didFocusMainRef.current) return;
+    didFocusMainRef.current = true;
+    const el = mainRef.current;
+    if (el && typeof el.focus === 'function') {
+      el.focus({ preventScroll: true });
+    }
+  }, [isClient, hydrated]);
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
   };
 
   if (!isClient || !hydrated) {
-    return <div className={`min-h-screen bg-[#0a0a0b] font-sans`} aria-hidden />;
+    return (
+      <div className="min-h-screen bg-[#0a0a0b] font-sans" aria-hidden inert />
+    );
   }
 
   if (!apiKey) {
@@ -90,9 +97,13 @@ export default function HomePageClient() {
   return (
     <AppShell
       apiKey={apiKey}
-      className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
+      className="min-h-screen bg-surface dark:bg-surface-dark font-sans"
     >
-      <div className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4">
+      <div
+        ref={mainRef}
+        tabIndex={-1}
+        className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4 outline-none"
+      >
         <Suspense
           fallback={
             <div className="flex justify-center items-center p-8">

@@ -1,5 +1,19 @@
 import { describe, expect, test, beforeEach, mock } from 'bun:test';
 
+function mockStoreWithSetApiKey(realStore) {
+  const realGetState = realStore.getState.bind(realStore);
+  const wrapped = (selector) => realStore(selector);
+  wrapped.getState = () => ({
+    ...realGetState(),
+    setApiKey: mock(() => {}),
+  });
+  wrapped.setState = realStore.setState;
+  wrapped.subscribe = realStore.subscribe;
+  return wrapped;
+}
+
+const { useNotificationsStore: realNotificationsStore } = await import('../notificationsStore.js');
+
 mock.module('@/store/tagsStore', () => ({
   useTagsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
 }));
@@ -13,7 +27,7 @@ mock.module('@/store/automationRulesStore', () => ({
   useAutomationRulesStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
 }));
 mock.module('@/store/notificationsStore', () => ({
-  useNotificationsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  useNotificationsStore: mockStoreWithSetApiKey(realNotificationsStore),
 }));
 mock.module('@/store/healthStore', () => ({
   useHealthStore: { getState: () => ({ setApiKey: mock(() => {}) }) },

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true
+  },
+  "include": [
+    "src/store/**/*.ts",
+    "src/utils/downloadList*.ts",
+    "src/config/**/*.ts"
+  ]
+}

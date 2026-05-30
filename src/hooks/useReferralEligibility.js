@@ -24,7 +24,7 @@ export function useReferralEligibility(apiKey, options = {}) {
     reason: 'loading',
   });
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal) => {
     if (!apiKey || apiKey.length < 20) {
       setUserData(null);
       setSubscriptions(null);
@@ -35,11 +35,14 @@ export function useReferralEligibility(apiKey, options = {}) {
     setLoading(true);
     try {
       const [profile, subsResponse] = await Promise.all([
-        fetchUserProfile(apiKey),
+        fetchUserProfile(apiKey, { signal }),
         fetch('/api/user/subscriptions', {
           headers: { 'x-api-key': apiKey },
+          signal,
         }).then((r) => (r.ok ? r.json() : null)),
       ]);
+
+      if (signal?.aborted) return;
 
       const subs = subsResponse?.success ? subsResponse.data : null;
       setUserData(profile);
@@ -58,15 +61,20 @@ export function useReferralEligibility(apiKey, options = {}) {
       });
       setEligibility(next);
     } catch (error) {
+      if (signal?.aborted) return;
       console.error('Error loading referral eligibility:', error);
       setEligibility({ showCallout: false, canAutoApply: false, reason: 'error' });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [apiKey, promptFromQuery]);
 
   useEffect(() => {
-    refresh();
+    const abortController = new AbortController();
+    refresh(abortController.signal);
+    return () => abortController.abort();
   }, [refresh]);
 
   const coreEligibility = getReferralEligibilityCore({

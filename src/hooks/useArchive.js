@@ -8,7 +8,7 @@ export function useArchive(apiKey) {
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
 
   const fetchArchivedDownloads = useCallback(
-    async (page = 1, limit = 50) => {
+    async (page = 1, limit = 50, signal) => {
       if (!apiKey) {
         setLoading(false);
         return;
@@ -22,13 +22,18 @@ export function useArchive(apiKey) {
           headers: {
             'x-api-key': apiKey,
           },
+          signal,
         });
+
+        if (signal?.aborted) return;
 
         if (!response.ok) {
           throw new Error('Failed to fetch archived downloads');
         }
 
         const data = await response.json();
+
+        if (signal?.aborted) return;
 
         if (data.success) {
           // Transform backend data to match frontend format
@@ -47,18 +52,23 @@ export function useArchive(apiKey) {
           throw new Error(data.error || 'Failed to fetch archived downloads');
         }
       } catch (err) {
+        if (signal?.aborted) return;
         console.error('Error fetching archived downloads:', err);
         setError(err.message);
         setArchivedDownloads([]);
       } finally {
-        setLoading(false);
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
     },
     [apiKey]
   );
 
   useEffect(() => {
-    fetchArchivedDownloads();
+    const abortController = new AbortController();
+    fetchArchivedDownloads(1, 50, abortController.signal);
+    return () => abortController.abort();
   }, [fetchArchivedDownloads]);
 
   const getArchivedDownloads = () => {
