@@ -1,20 +1,31 @@
-import { useEffect } from 'react';
-import { useBackendModeStore } from '@/store/backendModeStore';
+'use client';
+
+import { useEffect, useSyncExternalStore } from 'react';
+import {
+  checkBackendAvailability,
+  getBackendModeSnapshot,
+  getServerBackendModeSnapshot,
+  subscribeBackendMode,
+} from '@/utils/backendModeCache';
 
 /**
- * Hook to detect if backend is available and determine storage mode
- * Uses Zustand store for centralized state management
- * @returns {Object} { mode: 'local' | 'backend', isLoading: boolean, error: string | null }
+ * Detects if the TorBox Manager backend is available.
+ * @returns {{ mode: 'local' | 'backend', isLoading: boolean, error: string | null }}
  */
-export const useBackendMode = () => {
-  const mode = useBackendModeStore((s) => s.mode);
-  const isLoading = useBackendModeStore((s) => s.isLoading);
-  const error = useBackendModeStore((s) => s.error);
-  const checkBackend = useBackendModeStore((s) => s.checkBackend);
+export function useBackendMode() {
+  const snapshot = useSyncExternalStore(
+    subscribeBackendMode,
+    getBackendModeSnapshot,
+    getServerBackendModeSnapshot
+  );
 
   useEffect(() => {
-    checkBackend();
-  }, [checkBackend]);
+    checkBackendAvailability();
+  }, []);
 
-  return { mode, isLoading, error };
-};
+  return {
+    mode: snapshot.mode,
+    isLoading: snapshot.isLoading,
+    error: snapshot.error,
+  };
+}

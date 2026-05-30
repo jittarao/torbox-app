@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useBackendModeStore } from '@/store/backendModeStore';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const [history, setHistory] = useState([]);
@@ -13,8 +13,7 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const skipPageChangeFetchRef = useRef(false);
 
   // Subscribe to backend mode store to react to changes
-  const backendMode = useBackendModeStore((s) => s.mode);
-  const backendIsLoading = useBackendModeStore((s) => s.isLoading);
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
 
   // Reset page to 1 when search changes (runs synchronously before fetch)
   useEffect(() => {

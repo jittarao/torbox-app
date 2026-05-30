@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import dynamic from 'next/dynamic';
 import { useFileHandler } from '@/hooks/useFileHandler';
@@ -93,7 +93,15 @@ export default function HomePageClient() {
       className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
     >
       <div className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4">
-        <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center p-8">
+              <div className="animate-spin rounded-full size-8 border-2 border-amber-500/30 border-t-amber-500" />
+            </div>
+          }
+        >
+          <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
+        </Suspense>
       </div>
     </AppShell>
   );

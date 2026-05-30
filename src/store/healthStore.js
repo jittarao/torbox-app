@@ -6,7 +6,10 @@ import {
   saveHealthHistory,
   statusToSegment,
 } from '@/utils/healthHistory';
-import { useBackendModeStore } from '@/store/backendModeStore';
+import {
+  checkBackendAvailability,
+  getBackendModeSnapshot,
+} from '@/utils/backendModeCache';
 import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 
 /** Interval between automatic platform / TorBox / backend status checks */
@@ -145,8 +148,6 @@ export const useHealthStore = create((set, get) => ({
   },
 
   checkBackendHealth: async () => {
-    const backendStore = useBackendModeStore.getState();
-
     const applyBackendMode = (mode) => {
       set({
         backendHealth: {
@@ -157,16 +158,18 @@ export const useHealthStore = create((set, get) => ({
       });
     };
 
+    const backendStore = getBackendModeSnapshot();
+
     if (backendStore.hasChecked) {
       applyBackendMode(backendStore.mode);
       return;
     }
 
     if (!backendStore.isChecking) {
-      await backendStore.checkBackend();
+      await checkBackendAvailability();
     }
 
-    const { mode, hasChecked } = useBackendModeStore.getState();
+    const { mode, hasChecked } = getBackendModeSnapshot();
     if (hasChecked) {
       applyBackendMode(mode);
       return;
