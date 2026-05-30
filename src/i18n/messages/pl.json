@@ -46,9 +46,11 @@
     "show": "Pokaż klucz API"
   },
   "ApiKeyManager": {
+    "active": "Aktywny",
     "add": "Dodaj",
     "addKey": "Dodaj klucz",
     "addNewKey": "Dodaj nowy klucz API",
+    "addNewKeyHint": "Etykiety pomagają rozróżniać konta na pierwszy rzut oka.",
     "apiKey": "Klucz API",
     "apiKeyPlaceholder": "Wprowadź swój klucz API",
     "cancel": "Anuluj",
@@ -56,9 +58,12 @@
     "deleteKey": "Usuń klucz",
     "keyLabel": "Etykieta klucza",
     "keyLabelPlaceholder": "np. Osobisty, Rodzina",
+    "keysCount": "{count, plural, =0 {Brak kluczy} one {# klucz} few {# klucze} many {# kluczy} other {# klucza}}",
+    "managerPinned": "Wyłącz „Zostaw otwarte”, aby zamknąć",
     "noKeys": "Brak zapisanych kluczy",
+    "noKeysHint": "Zapisuj profile, aby szybko przełączać konta TorBox.",
     "savedKeys": "Zapisane klucze API",
-    "toggleOpen": "Przełącz otwarte"
+    "toggleOpen": "Zostaw otwarte"
   },
   "ArchivedDownloads": {
     "actions": {

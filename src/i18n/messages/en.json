@@ -46,9 +46,11 @@
     "show": "Show API key"
   },
   "ApiKeyManager": {
+    "active": "Active",
     "add": "Add",
     "addKey": "Add Key",
     "addNewKey": "Add New API Key",
+    "addNewKeyHint": "Labels help you tell accounts apart at a glance.",
     "apiKey": "API Key",
     "apiKeyPlaceholder": "Enter your API key",
     "cancel": "Cancel",
@@ -56,9 +58,12 @@
     "deleteKey": "Delete Key",
     "keyLabel": "Key Label",
     "keyLabelPlaceholder": "e.g. Personal, Family",
+    "keysCount": "{count, plural, =0 {No keys} one {# key} other {# keys}}",
+    "managerPinned": "Turn off “Keep open” to close",
     "noKeys": "No saved keys",
+    "noKeysHint": "Store profiles for quick switching between TorBox accounts.",
     "savedKeys": "Saved API Keys",
-    "toggleOpen": "Toggle Open"
+    "toggleOpen": "Keep open"
   },
   "ArchivedDownloads": {
     "actions": {
