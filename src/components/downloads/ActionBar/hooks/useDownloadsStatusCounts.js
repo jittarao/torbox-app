@@ -7,19 +7,16 @@ import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
 /**
  * Status tab counts from the current view (unfiltered).
- * Subscribes only to entities in the active view — avoids rerenders when other tabs' rows update.
+ * Subscribes to store entities/order only — derives view ids in useMemo so getSnapshot stays stable.
  */
 export function useDownloadsStatusCounts(activeType) {
-  const viewSlice = useTorboxDownloadsStore(
-    useShallow((s) => {
-      const ids = selectViewOrderedIds(s, activeType);
-      const rows = {};
-      for (let i = 0; i < ids.length; i++) {
-        const key = ids[i];
-        rows[key] = s.entities[key];
-      }
-      return { order: s.order, ids, rows };
-    })
+  const { entities, order } = useTorboxDownloadsStore(
+    useShallow((s) => ({ entities: s.entities, order: s.order }))
+  );
+
+  const viewIds = useMemo(
+    () => selectViewOrderedIds({ entities, order }, activeType),
+    [entities, order, activeType]
   );
 
   const countsCacheRef = useRef({
@@ -30,15 +27,14 @@ export function useDownloadsStatusCounts(activeType) {
   });
 
   const { counts, total } = useMemo(() => {
-    const { ids, rows, order } = viewSlice;
     const cache = countsCacheRef.current;
 
     let refsUnchanged =
-      cache.ids.length === ids.length && cache.ids.every((id, i) => id === ids[i]);
+      cache.ids.length === viewIds.length && cache.ids.every((id, i) => id === viewIds[i]);
 
     if (refsUnchanged) {
-      for (let i = 0; i < ids.length; i++) {
-        if (cache.rowRefs[i] !== rows[ids[i]]) {
+      for (let i = 0; i < viewIds.length; i++) {
+        if (cache.rowRefs[i] !== entities[viewIds[i]]) {
           refsUnchanged = false;
           break;
         }
@@ -49,17 +45,17 @@ export function useDownloadsStatusCounts(activeType) {
       return { counts: cache.counts, total: cache.total };
     }
 
-    const result = selectStatusCountsFromIds({ entities: rows, order }, activeType);
+    const result = selectStatusCountsFromIds({ entities, order }, activeType);
 
     countsCacheRef.current = {
-      ids: ids.slice(),
-      rowRefs: ids.map((id) => rows[id]),
+      ids: viewIds.slice(),
+      rowRefs: viewIds.map((id) => entities[id]),
       counts: result.counts,
       total: result.total,
     };
 
     return result;
-  }, [viewSlice, activeType]);
+  }, [entities, order, viewIds, activeType]);
 
   const statusOptions = useMemo(() => {
     return STATUS_OPTIONS.reduce((acc, option) => {

@@ -33,6 +33,7 @@ export async function fetchUserProfile(apiKey, options = {}) {
 
     return null;
   } catch (error) {
+    if (error?.name === 'AbortError') return null;
     console.error('Error fetching user profile:', error);
     return null;
   }

@@ -61,7 +61,7 @@ export function useReferralEligibility(apiKey, options = {}) {
       });
       setEligibility(next);
     } catch (error) {
-      if (signal?.aborted) return;
+      if (signal?.aborted || error?.name === 'AbortError') return;
       console.error('Error loading referral eligibility:', error);
       setEligibility({ showCallout: false, canAutoApply: false, reason: 'error' });
     } finally {
