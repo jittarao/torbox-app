@@ -481,7 +481,7 @@ export const useNotificationsStore = create((set, get) => ({
       const tick = () => {
         const state = get();
         if (!state.currentApiKey) return;
-        if (usePollingPauseStore.getState().isPollingPaused()) return;
+        if (usePollingPauseStore.getState().isPaused) return;
         if (state.isPolling) {
           state.fetchNotifications(state.currentApiKey);
         }

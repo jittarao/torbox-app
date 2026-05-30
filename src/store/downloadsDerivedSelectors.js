@@ -10,10 +10,7 @@ import {
   hasActiveFilters,
 } from '@/components/downloads/filters/filterHelpers';
 import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
-import {
-  buildDownloadHistoryLookup,
-  enrichDownloadsWithTbm,
-} from '@/components/downloads/utils/tbmDownloadEnrichment';
+import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
@@ -161,8 +158,9 @@ function matchesStatusFilter(item, statusFilter) {
       if (label !== undefined) return label === itemStatus.label;
       return serialized === JSON.stringify(itemStatus.value);
     });
-  } catch {
-    return false;
+  } catch (e) {
+    if (e instanceof SyntaxError) return false;
+    throw e;
   }
 }
 
@@ -177,9 +175,19 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
     entity.usenet_id?.toString() ||
     entity.web_id?.toString();
   const tags = tagMappings?.[downloadId] || entity.tags || [];
-  const single = [{ ...entity, tags }];
-  const enriched = enrichDownloadsWithTbm(single, (d) => d, downloadHistoryLookup);
-  return enriched[0] || { ...entity, tags };
+  const row = { ...entity, tags };
+  const lookup =
+    downloadHistoryLookup?.itemDownloads != null
+      ? downloadHistoryLookup
+      : buildDownloadHistoryLookup(downloadHistoryLookup);
+  const assetType = entity.assetType || entity.asset_type;
+  if (lookup && assetType) {
+    const isDownloaded = lookup.itemDownloads.has(`${assetType}:${String(downloadId || entity.id)}`);
+    if (row.is_downloaded !== isDownloaded) {
+      row.is_downloaded = isDownloaded;
+    }
+  }
+  return row;
 }
 
 /**

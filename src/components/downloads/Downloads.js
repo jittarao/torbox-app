@@ -43,9 +43,7 @@ const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
 
 export default function Downloads({ apiKey, onApiKeyChange }) {
   const fetchStatusT = useTranslations('FetchStatus');
-  const pollingPaused = usePollingPauseStore((state) =>
-    Object.values(state.pauseReasons).some((isPaused) => isPaused === true)
-  );
+  const pollingPaused = usePollingPauseStore((state) => state.isPaused);
   const [toast, setToast] = useState(null);
   const { activeType, setActiveType } = useStoredAssetType();
   const permissions = useSessionStore((state) => state.permissions);
