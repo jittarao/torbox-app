@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { FETCH_TIMEOUT_MS, NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
+import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 
 // Parallel downloads
@@ -311,6 +312,7 @@ export function useDownloads(
 
     const result = await retryFetch(`${actualEndpoint}?${params}`, {
       maxRetries: 1,
+      timeout: FETCH_TIMEOUT_MS,
       headers: { 'x-api-key': apiKey },
       permanent: [
         (data) =>
@@ -548,63 +550,58 @@ export function useDownloads(
       }));
     };
 
-    // Process in chunks — continue even when individual links fail
-    for (let i = 0; i < downloadTasks.length; i += CONCURRENT_DOWNLOADS) {
-      const chunk = downloadTasks.slice(i, i + CONCURRENT_DOWNLOADS);
-      await Promise.all(
-        chunk.map(async (task) => {
-          try {
-            const result =
-              task.type === 'item'
-                ? await requestDownloadLink(task.id, {}, null, task.metadata, true)
-                : await requestDownloadLink(
-                    task.itemId,
-                    { fileId: task.fileId },
-                    null,
-                    task.metadata,
-                    true
-                  );
+    // Bounded concurrency pool — slow/timed-out tasks do not block other slots
+    await runWithConcurrency(downloadTasks, CONCURRENT_DOWNLOADS, async (task) => {
+      try {
+        const result =
+          task.type === 'item'
+            ? await requestDownloadLink(task.id, {}, null, task.metadata, true)
+            : await requestDownloadLink(
+                task.itemId,
+                { fileId: task.fileId },
+                null,
+                task.metadata,
+                true
+              );
 
-            if (result?.success) {
-              const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
-              const sanitizedFilename = sanitizeFilename(filename);
+        if (result?.success) {
+          const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
+          const sanitizedFilename = sanitizeFilename(filename);
 
-              const url = new URL(result.data.url);
-              const encodedFilename = encodeURIComponent(sanitizedFilename);
-              const separator = url.search ? '&' : '?';
-              const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
+          const url = new URL(result.data.url);
+          const encodedFilename = encodeURIComponent(sanitizedFilename);
+          const separator = url.search ? '&' : '?';
+          const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
-              setDownloadLinks((prev) => [
-                ...prev,
-                { ...result.data, url: urlWithFilename, name: task.name },
-              ]);
+          setDownloadLinks((prev) => [
+            ...prev,
+            { ...result.data, url: urlWithFilename, name: task.name },
+          ]);
 
-              if (result.linkHistory) {
-                linkHistoryEntries.push(result.linkHistory);
-              }
-              return;
-            }
-
-            if (result.linkHistory) {
-              linkHistoryEntries.push(result.linkHistory);
-            }
-
-            failures.push({
-              name: task.name,
-              error: result?.error || 'Unknown error',
-            });
-          } catch (error) {
-            console.error('Bulk download link error:', error);
-            failures.push({
-              name: task.name,
-              error: error?.message || 'Unknown error',
-            });
-          } finally {
-            bumpProgress();
+          if (result.linkHistory) {
+            linkHistoryEntries.push(result.linkHistory);
           }
-        })
-      );
-    }
+          return;
+        }
+
+        if (result.linkHistory) {
+          linkHistoryEntries.push(result.linkHistory);
+        }
+
+        failures.push({
+          name: task.name,
+          error: result?.error || 'Unknown error',
+        });
+      } catch (error) {
+        console.error('Bulk download link error:', error);
+        failures.push({
+          name: task.name,
+          error: error?.message || 'Unknown error',
+        });
+      } finally {
+        bumpProgress();
+      }
+    });
 
     setIsDownloading(false);
 
