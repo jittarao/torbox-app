@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useBackendModeStore } from '@/store/backendModeStore';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
   const [uploads, setUploads] = useState([]);
@@ -11,8 +11,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const statusCountsRequestIdRef = useRef(0);
 
   // Subscribe to backend mode store to react to changes
-  const backendMode = useBackendModeStore((s) => s.mode);
-  const backendIsLoading = useBackendModeStore((s) => s.isLoading);
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
 
   const fetchUploads = useCallback(async () => {
     if (!apiKey) return;

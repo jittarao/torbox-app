@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { useShallow } from 'zustand/react/shallow';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
-import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useDownloadsFilterParams } from '@/hooks/useDownloadsFilterParams';
 import {
   EMPTY_FILTERS,
   buildTagFilter,
@@ -35,20 +34,7 @@ export function useDownloadsFilters({
     sortDirection,
     setSort,
     resetFilters,
-  } = useDownloadsUiStore(
-    useShallow((s) => ({
-      search: s.search,
-      setSearch: s.setSearch,
-      statusFilter: s.statusFilter,
-      setStatusFilter: s.setStatusFilter,
-      appliedFilters: s.appliedFilters,
-      setAppliedFilters: s.setAppliedFilters,
-      sortField: s.sortField,
-      sortDirection: s.sortDirection,
-      setSort: s.setSort,
-      resetFilters: s.resetFilters,
-    }))
-  );
+  } = useDownloadsFilterParams();
 
   const [columnFilters, setColumnFilters] = useState(() =>
     JSON.parse(JSON.stringify(EMPTY_FILTERS))
