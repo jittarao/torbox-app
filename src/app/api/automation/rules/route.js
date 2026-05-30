@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -36,7 +37,7 @@ export async function GET(request) {
     url.searchParams.set('authId', authId);
 
     const response = await new Promise((resolve, reject) => {
-      const req = http.get(url, (res) => {
+      const req = http.get(url, { headers: backendProxyHeaders(apiKey) }, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
@@ -94,9 +95,9 @@ export async function POST(request) {
     const response = await fetch(`${BACKEND_URL}/api/automation/rules`, {
       cache: 'no-store',
       method: 'POST',
-      headers: {
+      headers: backendProxyHeaders(apiKey, {
         'Content-Type': 'application/json',
-      },
+      }),
       body: JSON.stringify(requestBody),
     });
 

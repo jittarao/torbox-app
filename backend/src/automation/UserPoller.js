@@ -655,12 +655,25 @@ class UserPoller {
     if (!Array.isArray(torrents)) {
       throw new Error('processFetchedTorrents requires an array of torrents');
     }
-    return this.runPipeline({
-      prefetchedTorrents: torrents,
-      hasActiveRules: options.hasActiveRules,
-      calculateStaggerOffset: options.calculateStaggerOffset ?? null,
-      updateMasterDb: false,
-    });
+    const cancelToken = options.cancelToken ?? this._newCancelToken();
+    try {
+      return await this.runPipeline({
+        prefetchedTorrents: torrents,
+        hasActiveRules: options.hasActiveRules,
+        calculateStaggerOffset: options.calculateStaggerOffset ?? null,
+        updateMasterDb: false,
+        checkCancelled: () => this._checkCancelled(cancelToken),
+      });
+    } catch (error) {
+      if (error.isCancelled) {
+        return {
+          success: false,
+          cancelled: true,
+          error: error.message,
+        };
+      }
+      throw error;
+    }
   }
 
   /**

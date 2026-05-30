@@ -1,4 +1,4 @@
-import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
+import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 
@@ -9,7 +9,7 @@ export function setupTagsRoutes(app, backend) {
   const { userRateLimiter } = backend;
 
   // GET /api/tags - List all tags with usage counts
-  app.get('/api/tags', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.get('/api/tags', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -55,7 +55,7 @@ export function setupTagsRoutes(app, backend) {
   });
 
   // POST /api/tags - Create tag
-  app.post('/api/tags', validateAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.post('/api/tags', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -137,7 +137,7 @@ export function setupTagsRoutes(app, backend) {
   // GET /api/tags/:id - Get single tag
   app.get(
     '/api/tags/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -198,7 +198,7 @@ export function setupTagsRoutes(app, backend) {
   // PUT /api/tags/:id - Update tag
   app.put(
     '/api/tags/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -303,7 +303,7 @@ export function setupTagsRoutes(app, backend) {
   // DELETE /api/tags/:id - Delete tag
   app.delete(
     '/api/tags/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {

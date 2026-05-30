@@ -15,6 +15,7 @@ import logger from './utils/logger.js';
 import cache from './utils/cache.js';
 import Semaphore from './utils/semaphore.js';
 import { validateJsonPayloadSize } from './middleware/validation.js';
+import { createRequireRegisteredUser } from './middleware/userAuth.js';
 import { initSentry, getSentry } from './utils/sentry.js';
 import { serverErrorPayload } from './utils/httpErrors.js';
 import { validateEnv } from './config/validateEnv.js';
@@ -42,6 +43,7 @@ class TorBoxBackend {
     this.eventNotifier = new EventNotifier();
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
     this.memoryLogIntervalId = null;
+    this.requireRegisteredUser = createRequireRegisteredUser(() => this.masterDatabase);
 
     this.setupMiddleware();
     this.setupRoutes();

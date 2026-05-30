@@ -1,5 +1,5 @@
 import express from 'express';
-import { adminAuthMiddleware } from '../middleware/adminAuth.js';
+import { adminAuthMiddleware, adminRateLimiter } from '../middleware/adminAuth.js';
 import { sendSuccess } from './admin/helpers.js';
 import { setupUserRoutes } from './admin/users.js';
 import { setupMetricsRoutes } from './admin/metrics.js';
@@ -15,7 +15,7 @@ import { setupDiagnosticsRoutes } from './admin/diagnostics.js';
 export function setupAdminRoutes(app, backend) {
   const router = express.Router();
 
-  // Apply admin auth middleware to all routes (no rate limit for admin)
+  router.use(adminRateLimiter);
   router.use(adminAuthMiddleware);
 
   // ===== Admin Authentication =====

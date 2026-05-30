@@ -162,12 +162,29 @@ export function captureException(error, context = {}) {
     if (error.syscall) errorContext.syscall = error.syscall;
     if (error.path) errorContext.path = error.path;
 
+    const redactHeaders = (headers) => {
+      if (!headers || typeof headers !== 'object') return headers;
+      const safe = { ...headers };
+      for (const key of Object.keys(safe)) {
+        const lower = key.toLowerCase();
+        if (
+          lower === 'authorization' ||
+          lower === 'x-api-key' ||
+          lower === 'x-admin-key' ||
+          lower === 'x-backend-service-secret'
+        ) {
+          safe[key] = '[redacted]';
+        }
+      }
+      return safe;
+    };
+
     // Include HTTP response data if available
     if (error.response) {
       errorContext.response = {
         status: error.response.status,
         statusText: error.response.statusText,
-        headers: error.response.headers,
+        headers: redactHeaders(error.response.headers),
         data: error.response.data,
       };
     }
@@ -177,7 +194,7 @@ export function captureException(error, context = {}) {
       errorContext.request = {
         method: error.request.method,
         url: error.request.url,
-        headers: error.request.headers,
+        headers: redactHeaders(error.request.headers),
       };
     }
 

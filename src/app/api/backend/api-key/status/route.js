@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -8,7 +9,7 @@ export async function GET() {
     const url = new URL(`${BACKEND_URL}/api/backend/api-key/status`);
 
     const response = await new Promise((resolve, reject) => {
-      const req = http.get(url, (res) => {
+      const req = http.get(url, { headers: backendProxyHeaders(null) }, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {

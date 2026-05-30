@@ -219,33 +219,37 @@ class SpeedAggregator {
 
     const now = new Date();
     let samplesRecorded = 0;
-    let errors = 0;
 
-    const results = await Promise.allSettled(
-      updatedTorrents.flatMap(({ torrent }) =>
-        torrent && torrent.id && this._isTorrentActive(torrent)
-          ? [
-              this.recordSample(
-                torrent.id,
-                torrent.total_downloaded || 0,
-                torrent.total_uploaded || 0,
-                now
-              ),
-            ]
-          : []
-      )
-    );
-
-    for (const r of results) {
-      if (r.status === 'fulfilled') samplesRecorded++;
-      else errors++;
+    try {
+      const runBatch = this.db.transaction(() => {
+        for (const { torrent } of updatedTorrents) {
+          if (!torrent?.id || !this._isTorrentActive(torrent)) continue;
+          if (!(now instanceof Date) || isNaN(now.getTime())) continue;
+          const downloaded = Number(torrent.total_downloaded) || 0;
+          const uploaded = Number(torrent.total_uploaded) || 0;
+          this.stmtInsert.run(torrent.id, now.toISOString(), downloaded, uploaded);
+          samplesRecorded++;
+        }
+      });
+      runBatch();
+    } catch (error) {
+      logger.warn('Failed to batch record speed samples', error, {
+        errorMessage: error.message,
+        torrentCount: updatedTorrents.length,
+      });
+      return;
     }
 
-    if (samplesRecorded > 0 || errors > 0) {
+    const nowMs = Date.now();
+    if (nowMs - this._lastPruneTime >= SpeedAggregator.PRUNE_INTERVAL_MS) {
+      this._lastPruneTime = nowMs;
+      await this.pruneOldSamples();
+    }
+
+    if (samplesRecorded > 0) {
       logger.debug('Processed speed updates', {
         totalTorrents: updatedTorrents.length,
         samplesRecorded,
-        errors,
       });
     }
   }

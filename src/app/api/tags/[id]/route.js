@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -35,7 +36,7 @@ export async function GET(request, { params }) {
     url.searchParams.set('authId', authId);
 
     const response = await new Promise((resolve, reject) => {
-      const req = http.get(url, (res) => {
+      const req = http.get(url, { headers: backendProxyHeaders(apiKey) }, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
@@ -92,9 +93,9 @@ export async function PUT(request, { params }) {
     const response = await fetch(`${BACKEND_URL}/api/tags/${id}`, {
       cache: 'no-store',
       method: 'PUT',
-      headers: {
+      headers: backendProxyHeaders(apiKey, {
         'Content-Type': 'application/json',
-      },
+      }),
       body: JSON.stringify(requestBody),
     });
 
@@ -132,6 +133,7 @@ export async function DELETE(request, { params }) {
     const response = await fetch(url, {
       cache: 'no-store',
       method: 'DELETE',
+      headers: backendProxyHeaders(apiKey),
     });
 
     if (response.ok) {

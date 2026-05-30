@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -14,10 +15,10 @@ export async function POST(request) {
         url,
         {
           method: 'POST',
-          headers: {
+          headers: backendProxyHeaders(null, {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(postData),
-          },
+          }),
           timeout: 10000,
         },
         (res) => {

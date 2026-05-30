@@ -1,4 +1,4 @@
-import { validateAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
+import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 
@@ -11,7 +11,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
   // GET /api/archived-downloads - List archived downloads
   app.get(
     '/api/archived-downloads',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     userRateLimiter,
     async (req, res) => {
       try {
@@ -79,7 +79,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
   // POST /api/archived-downloads - Create archived download
   app.post(
     '/api/archived-downloads',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     userRateLimiter,
     async (req, res) => {
       try {
@@ -158,7 +158,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
   // DELETE /api/archived-downloads/:id - Delete archived download
   app.delete(
     '/api/archived-downloads/:id',
-    validateAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {

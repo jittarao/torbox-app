@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -35,6 +36,7 @@ export async function DELETE(request, { params }) {
         url,
         {
           method: 'DELETE',
+          headers: backendProxyHeaders(apiKey),
           timeout: 10000,
         },
         (res) => {

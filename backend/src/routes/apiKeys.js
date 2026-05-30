@@ -2,6 +2,7 @@ import ApiClient from '../api/ApiClient.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
+import { requireInternalServiceAuth } from '../middleware/userAuth.js';
 import { access } from 'fs/promises';
 import { constants } from 'fs';
 
@@ -64,8 +65,10 @@ function apiKeyRouteError(res, error) {
  * API key management routes
  */
 export function setupApiKeyRoutes(app, backend) {
+  const internalAuth = requireInternalServiceAuth;
+
   // POST /api/backend/api-key - Register API key
-  app.post('/api/backend/api-key', async (req, res) => {
+  app.post('/api/backend/api-key', internalAuth, async (req, res) => {
     try {
       const { apiKey, keyName } = req.body;
 
@@ -101,7 +104,7 @@ export function setupApiKeyRoutes(app, backend) {
   });
 
   // GET /api/backend/api-key/status - Get API key status
-  app.get('/api/backend/api-key/status', async (req, res) => {
+  app.get('/api/backend/api-key/status', internalAuth, async (req, res) => {
     try {
       const activeUsers = backend.masterDatabase.getActiveUsers();
 
@@ -119,7 +122,7 @@ export function setupApiKeyRoutes(app, backend) {
   });
 
   // POST /api/backend/api-key/ensure-db - Ensure user database exists
-  app.post('/api/backend/api-key/ensure-db', async (req, res) => {
+  app.post('/api/backend/api-key/ensure-db', internalAuth, async (req, res) => {
     try {
       const apiKey = req.headers['x-api-key'] || req.body.apiKey;
 

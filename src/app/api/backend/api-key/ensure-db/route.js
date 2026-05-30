@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import http from 'http';
 
 import { isBackendDisabled } from '@/utils/backendCheck';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -32,11 +33,10 @@ export async function POST(request) {
         url,
         {
           method: 'POST',
-          headers: {
+          headers: backendProxyHeaders(apiKey, {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey,
             'Content-Length': Buffer.byteLength(postData),
-          },
+          }),
           timeout: 10000,
         },
         (res) => {

@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -41,6 +42,7 @@ export async function POST(request, { params }) {
         url,
         {
           method: 'POST',
+          headers: backendProxyHeaders(apiKey),
           timeout: 30000, // 30 second timeout for rule execution
         },
         (res) => {
