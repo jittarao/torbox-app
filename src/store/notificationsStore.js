@@ -3,9 +3,6 @@ import { createApiClient } from '@/utils/apiClient';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import { usePollingPauseStore } from '@/store/pollingPauseStore';
 
-let pollTimer = null;
-let pollSubscribers = 0;
-
 function getClearedNotifications() {
   try {
     return JSON.parse(
@@ -48,6 +45,8 @@ export const useNotificationsStore = create((set, get) => ({
   lastFetchTime: null,
   currentApiKey: null,
   fetchingNotifications: false,
+  pollSubscribers: 0,
+  pollTimerId: null,
 
   // Reset notifications when API key changes
   setApiKey: (apiKey) => {
@@ -475,9 +474,10 @@ export const useNotificationsStore = create((set, get) => ({
     if (!apiKey) return;
 
     get().setApiKey(apiKey);
-    pollSubscribers += 1;
+    const { pollSubscribers, pollTimerId } = get();
+    set({ pollSubscribers: pollSubscribers + 1 });
 
-    if (!pollTimer) {
+    if (!pollTimerId) {
       const tick = () => {
         const state = get();
         if (!state.currentApiKey) return;
@@ -486,19 +486,19 @@ export const useNotificationsStore = create((set, get) => ({
           state.fetchNotifications(state.currentApiKey);
         }
       };
-      pollTimer = setInterval(tick, NOTIFICATION_POLL_INTERVAL_MS);
+      set({ pollTimerId: setInterval(tick, NOTIFICATION_POLL_INTERVAL_MS) });
     }
 
     get().fetchNotifications(apiKey);
   },
 
   stopPolling: () => {
-    pollSubscribers = Math.max(0, pollSubscribers - 1);
-    if (pollSubscribers === 0) {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
+    const { pollSubscribers, pollTimerId } = get();
+    const next = Math.max(0, pollSubscribers - 1);
+    set({ pollSubscribers: next });
+    if (next === 0 && pollTimerId) {
+      clearInterval(pollTimerId);
+      set({ pollTimerId: null });
     }
   },
 

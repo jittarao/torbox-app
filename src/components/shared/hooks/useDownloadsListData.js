@@ -8,6 +8,7 @@ import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 import { selectVisibleSortedIds, idsToRows } from '@/store/downloadsDerivedSelectors';
+import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
@@ -80,6 +81,15 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     return idsToRows(ids, entities, stableTagMappings, stableDownloadHistory);
   }, [combinedState, activeType, stableTagMappings, stableDownloadHistory]);
 
+  const viewItemsMap = useMemo(() => {
+    const map = new Map();
+    for (let i = 0; i < viewItems.length; i++) {
+      const item = viewItems[i];
+      map.set(getDownloadSelectionId(item), item);
+    }
+    return map;
+  }, [viewItems]);
+
   const visibleIds = useMemo(
     () =>
       selectVisibleSortedIds(
@@ -93,8 +103,19 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
   );
 
   const sortedItems = useMemo(
-    () => idsToRows(visibleIds, entities, stableTagMappings, stableDownloadHistory),
-    [visibleIds, entities, stableTagMappings, stableDownloadHistory]
+    () => {
+      const result = new Array(visibleIds.length);
+      let needsFallback = false;
+      for (let i = 0; i < visibleIds.length; i++) {
+        result[i] = viewItemsMap.get(visibleIds[i]);
+        if (result[i] === undefined) needsFallback = true;
+      }
+      if (needsFallback) {
+        return idsToRows(visibleIds, entities, stableTagMappings, stableDownloadHistory);
+      }
+      return result;
+    },
+    [visibleIds, viewItemsMap, entities, stableTagMappings, stableDownloadHistory]
   );
 
   return {

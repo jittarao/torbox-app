@@ -33,6 +33,19 @@ const STATUS_PRIORITY_MAP = {
   Uploading: 0,
 };
 
+const DOWNLOADING_FILTER_VALUE = JSON.stringify({
+  active: true,
+  download_finished: false,
+  download_present: false,
+});
+
+const statusFilterValueToLabel = new Map();
+for (const opt of STATUS_OPTIONS) {
+  if (opt.value && typeof opt.value === 'object' && !Array.isArray(opt.value)) {
+    statusFilterValueToLabel.set(JSON.stringify(opt.value), opt.label);
+  }
+}
+
 const FIELD_TYPE_MAP = {
   id: 'numeric',
   size: 'numeric',
@@ -132,26 +145,22 @@ function matchesStatusFilter(item, statusFilter) {
   if (statusFilter === 'all') return true;
 
   try {
-    const filters = Array.isArray(statusFilter)
+    const rawFilters = Array.isArray(statusFilter)
       ? statusFilter.map((f) => (typeof f === 'string' ? JSON.parse(f) : f))
       : [typeof statusFilter === 'string' ? JSON.parse(statusFilter) : statusFilter];
 
     const itemStatus = getMatchingStatus(item);
 
     if (itemStatus.label === 'Meta_DL' || itemStatus.label === 'Checking_Resume_Data') {
-      const downloadingFilter = filters.find(
-        (f) =>
-          JSON.stringify(f) ===
-          JSON.stringify({
-            active: true,
-            download_finished: false,
-            download_present: false,
-          })
-      );
-      if (downloadingFilter) return true;
+      if (rawFilters.some((f) => JSON.stringify(f) === DOWNLOADING_FILTER_VALUE)) return true;
     }
 
-    return filters.some((filter) => JSON.stringify(filter) === JSON.stringify(itemStatus.value));
+    return rawFilters.some((filter) => {
+      const serialized = JSON.stringify(filter);
+      const label = statusFilterValueToLabel.get(serialized);
+      if (label !== undefined) return label === itemStatus.label;
+      return serialized === JSON.stringify(itemStatus.value);
+    });
   } catch {
     return false;
   }

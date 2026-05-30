@@ -2,29 +2,21 @@
 
 import { useState, useLayoutEffect } from 'react';
 
+const QUERY = '(max-width: 767px)';
+
 export default function useIsMobile() {
-  // Initialize with a check if window is available (handles SSR)
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth < 768;
+      return window.matchMedia(QUERY).matches;
     }
     return false;
   });
 
   useLayoutEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    // Check immediately on mount
-    checkIfMobile();
-
-    // Listen for resize events
-    window.addEventListener('resize', checkIfMobile);
-
-    return () => {
-      window.removeEventListener('resize', checkIfMobile);
-    };
+    const mql = window.matchMedia(QUERY);
+    const onChange = (e) => setIsMobile(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
   }, []);
 
   return isMobile;

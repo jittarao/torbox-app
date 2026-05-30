@@ -335,13 +335,23 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     const pendingItems = items.filter((item) => item.status === 'queued');
     setProgress({ current: 0, total: pendingItems.length });
 
+    // Build item → index lookup once (avoids O(n²) findIndex in loops)
+    const itemIndexMap = new Map(items.map((item, i) => [item, i]));
+    const getItemIndex = (item) => {
+      let idx = itemIndexMap.get(item);
+      if (idx === undefined) {
+        idx = items.findIndex((x) => x === item);
+      }
+      return idx;
+    };
+
     const BATCH_THRESHOLD = 10; // Use batch API for 10+ items
 
     // Use batch upload for large batches
     if (pendingItems.length >= BATCH_THRESHOLD) {
       // Mark all as processing
       pendingItems.forEach((item) => {
-        const idx = items.findIndex((x) => x === item);
+        const idx = getItemIndex(item);
         updateItemStatus(idx, 'processing');
       });
 
@@ -358,7 +368,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         // Map results back to items by matching index (most reliable)
         // The backend returns uploads in the same order as sent
         pendingItems.forEach((item, index) => {
-          const idx = items.findIndex((x) => x === item);
+          const idx = getItemIndex(item);
           if (uploads[index]) {
             // Successfully uploaded
             updateItemStatus(idx, 'success');
@@ -397,7 +407,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
         });
 
         pendingItems.forEach((item) => {
-          const idx = items.findIndex((x) => x === item);
+          const idx = getItemIndex(item);
           if (uploadMap.has(item)) {
             updateItemStatus(idx, 'success');
           } else {
@@ -427,7 +437,7 @@ export const useUpload = (apiKey, assetType = 'torrents') => {
     } else {
       const itemEntries = pendingItems.map((item) => ({
         item,
-        idx: items.findIndex((x) => x === item),
+        idx: getItemIndex(item),
       }));
 
       itemEntries.forEach(({ idx }) => updateItemStatus(idx, 'processing'));

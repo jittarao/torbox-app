@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   DEFAULT_COLUMN_WIDTHS,
   getColumnMinWidth,
 } from '@/components/downloads/utils/tableColumnLayout';
+
+const SAVE_DEBOUNCE_MS = 500;
 
 function loadColumnWidths(storageKey) {
   if (typeof window === 'undefined') return { ...DEFAULT_COLUMN_WIDTHS };
@@ -28,6 +30,24 @@ function loadColumnWidths(storageKey) {
 export function useColumnWidths(activeType) {
   const storageKey = `${activeType}-column-widths`;
   const [columnWidths, setColumnWidths] = useState(() => loadColumnWidths(storageKey));
+  const saveTimerRef = useRef(null);
+  const pendingWidthsRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (pendingWidthsRef.current) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(pendingWidthsRef.current));
+        } catch (error) {
+          console.error('Error saving column widths:', error);
+        }
+      }
+    };
+  }, [storageKey]);
 
   const updateColumnWidth = (columnId, width) => {
     if (typeof window === 'undefined') return;
@@ -35,11 +55,16 @@ export function useColumnWidths(activeType) {
     const newWidth = Math.max(width, getColumnMinWidth(columnId));
     setColumnWidths((prev) => {
       const updated = { ...prev, [columnId]: newWidth };
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-      } catch (error) {
-        console.error('Error saving column widths:', error);
-      }
+      pendingWidthsRef.current = updated;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(updated));
+        } catch (error) {
+          console.error('Error saving column widths:', error);
+        }
+      }, SAVE_DEBOUNCE_MS);
       return updated;
     });
   };

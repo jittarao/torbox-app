@@ -25,7 +25,7 @@ import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { useBulkExport } from './hooks/useBulkExport';
 import { useDownloadsSearchExpand } from './hooks/useDownloadsSearchExpand';
 import { hasDownloadAccess } from '@/utils/userProfile';
-import { findItemBySelectionId } from '@/utils/downloadSelectionId';
+import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
 import { formatSize } from './utils/formatters';
 import { useTranslations } from 'next-intl';
 
@@ -231,8 +231,9 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     if (!viewItems?.length || !selectedItems?.files?.size) return;
     if (hasExpandedRef.current) return;
 
+    const itemMap = buildSelectionIdMap(viewItems);
     selectedItems.files.forEach((_, selectionId) => {
-      const item = findItemBySelectionId(viewItems, selectionId);
+      const item = itemMap.get(selectionId);
       if (item?.id != null) {
         setExpanded(item.id, true);
       }
@@ -242,20 +243,26 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   }, [viewItems, selectedItems.files, setExpanded]);
 
   const getTotalDownloadSize = useCallback(() => {
+    if (viewItems.length === 0) return formatSize(0);
+    if (selectedItems.items.size === 0 && selectedItems.files.size === 0) return formatSize(0);
+
+    const itemMap = buildSelectionIdMap(viewItems);
+
     const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [selectionId, fileIds]) => {
-      const item = findItemBySelectionId(viewItems, selectionId);
+      const item = itemMap.get(selectionId);
       if (!item) return acc;
-      return (
-        acc +
-        Array.from(fileIds).reduce((sum, fileId) => {
-          const file = item.files?.find((f) => f.id === fileId);
-          return sum + (file?.size || 0);
-        }, 0)
-      );
+      const fileIdSet = new Set(fileIds);
+      const files = item.files || [];
+      for (let i = 0; i < files.length; i++) {
+        if (fileIdSet.has(files[i].id)) {
+          acc += files[i].size || 0;
+        }
+      }
+      return acc;
     }, 0);
 
     const itemsSize = Array.from(selectedItems.items).reduce((acc, selectionId) => {
-      const item = findItemBySelectionId(viewItems, selectionId);
+      const item = itemMap.get(selectionId);
       return acc + (item?.size || 0);
     }, 0);
 
