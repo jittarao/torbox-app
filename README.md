@@ -82,6 +82,16 @@ The self-hosted backend uses a **multi-user architecture**:
 - **Connection Pooling**: LRU cache for efficient database connection management
 - **Automatic Provisioning**: User databases are created on-demand when API keys are entered
 
+### Self-hosted security (typical setup)
+
+For production, expose **only the Next.js app** (port 3000) via your reverse proxy (e.g. Caddy → `localhost:3000`). Keep the backend on `127.0.0.1:3001` or Docker-internal networking so it is not reachable from the internet.
+
+- Users authenticate to **Next.js** with their TorBox API key (`x-api-key`).
+- Next.js proxies to the backend with the API key (and often `authId` on the server side).
+- **`BACKEND_REQUIRE_API_KEY`** and **`BACKEND_SERVICE_SECRET`** are **optional** for this layout; defaults preserve backward compatibility. Enable them only for defense in depth (e.g. backend port published publicly or untrusted containers on the same Docker network).
+
+See [DEPLOYMENT.md — Backend authentication & network layout](DEPLOYMENT.md#backend-authentication--network-layout) for details.
+
 ### API Key Setup
 
 1. Get your API key from [torbox.app/settings](https://torbox.app/settings)

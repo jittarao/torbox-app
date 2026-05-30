@@ -70,6 +70,7 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 | `SEARCH_PAGE_DISABLED` | Hide the search page and top-nav link (`true`/`1`/`yes`)                                       | `false`                 | No       |
 | `FFPROBE_PATH`         | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
 | `FFPROBE_AUTO_DIR`     | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set). | `<project>/.ffprobe`    | No       |
+| `BACKEND_SERVICE_SECRET` | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout)) | unset | No       |
 
 ### Backend
 
@@ -134,6 +135,86 @@ bun run dev
 | `IP_RATE_LIMIT_MAX`    | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`                   | No       |
 | `USER_RATE_LIMIT_MAX`  | Max API requests per authenticated user per 15 minutes                           | `500`                    | No       |
 | `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
+| `BACKEND_REQUIRE_API_KEY` | Require `x-api-key` on all user routes (disables legacy `authId`-only access) | unset (`false`)          | No       |
+| `BACKEND_SERVICE_SECRET` | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE) | unset                    | No       |
+| `ADMIN_API_KEY`        | Protects `/api/admin/*` (503 if unset)                                           | unset                    | No       |
+
+Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
+
+## Backend authentication & network layout
+
+This section describes the **recommended self-hosted topology** and when optional hardening env vars matter.
+
+### Recommended production topology
+
+```
+Internet
+   │
+   ▼
+Caddy (443) ──reverse_proxy──► 127.0.0.1:3000  (torbox-app / Next.js)
+                                   │
+                                   │  Docker network: http://torbox-backend:3001
+                                   ▼
+                              127.0.0.1:3001  (torbox-backend — not in Caddy)
+```
+
+Example Caddyfile (only the frontend is public):
+
+```
+yourdomain.com {
+    reverse_proxy localhost:3000
+}
+```
+
+Docker port bindings should keep the backend off the public interface:
+
+```yaml
+ports:
+  - "127.0.0.1:3000:3000"   # frontend
+  - "127.0.0.1:3001:3001"   # backend — localhost on host only
+```
+
+The frontend container uses `BACKEND_URL=http://torbox-backend:3001` (service name on the Docker network), not `localhost:3001`.
+
+### What each credential is for
+
+| Credential | Role |
+| ---------- | ---- |
+| **TorBox API key** | Real secret; required by Next.js API routes for users. |
+| **`authId`** | `SHA-256(apiKey)` — user id for backend SQLite; added by many Next.js proxies server-side. Not a substitute for the API key when the backend is locked down. |
+| **`BACKEND_SERVICE_SECRET`** | Optional; proves the caller is *your* Next.js app on internal routes (API key registration), not end users. |
+| **`ADMIN_API_KEY`** | Optional; admin UI/API on the backend. |
+| **`ENCRYPTION_KEY`** | Required; encrypts stored TorBox API keys in the master DB. |
+
+### Do you need `BACKEND_REQUIRE_API_KEY` or `BACKEND_SERVICE_SECRET`?
+
+| Your setup | `BACKEND_REQUIRE_API_KEY` | `BACKEND_SERVICE_SECRET` |
+| -------- | ------------------------- | ------------------------ |
+| Caddy → `:3000` only, backend `127.0.0.1:3001` or Docker-internal | **Not required** (default) | **Not required** (default) |
+| Backend published as `0.0.0.0:3001` or reachable from the internet | **Recommended** (`true`) | Consider setting |
+| Untrusted containers on the same Docker network as `torbox-backend` | Consider `true` | **Recommended** |
+
+With the recommended layout, internet users never talk to port `3001`. They use Next.js, which **requires `x-api-key`** on user-facing `/api/*` routes and forwards it to the backend. Legacy `authId`-only mode on the backend only matters if something can call the backend **directly** without the TorBox API key (host access, mis-published port, compromised container on `torbox-network`). The `authId` query param on some server-side proxies is extra metadata, not a substitute for the key.
+
+The backend may log a startup warning about legacy auth; that is **informational** for this layout, not a requirement to change config.
+
+### Generating `BACKEND_SERVICE_SECRET` (optional)
+
+```bash
+openssl rand -base64 32
+```
+
+Set the **same** value on both services, e.g. in compose:
+
+```yaml
+# torbox-app
+environment:
+  BACKEND_SERVICE_SECRET: your_secret_here
+
+# torbox-backend
+environment:
+  BACKEND_SERVICE_SECRET: your_secret_here
+```
 
 ## Full Stack Deployment (Frontend + Backend)
 
@@ -238,7 +319,7 @@ The `docker-compose.yml` configuration provides:
 
 - **Automatic Restarts**: Both services are configured with `restart: unless-stopped`
 
-- **Security**: Containers run with `no-new-privileges` security option
+- **Security**: Containers run with `no-new-privileges` security option. For production on a VPS, bind ports to `127.0.0.1` and put Caddy in front of port `3000` only — see [Backend authentication & network layout](#backend-authentication--network-layout).
 
 #### Managing the Deployment
 
@@ -505,6 +586,8 @@ yourdomain.com {
 }
 ```
 
+Do **not** add a `reverse_proxy` for port `3001` — the backend should stay on localhost/Docker-internal only. See [Backend authentication & network layout](#backend-authentication--network-layout).
+
 **Note**: Caddy will automatically obtain and renew SSL certificates via Let's Encrypt.
 
 Reload Caddy:
@@ -568,7 +651,11 @@ ports:
 
 3. Keep `BACKEND_URL=http://torbox-backend:3001` for the frontend service—the frontend runs inside a container and must reach the backend via the Docker service name, not localhost.
 
-4. Follow steps 4-7 from the [Full Stack Deployment](#full-stack-deployment-frontend--backend) section to start and verify services.
+4. Point Caddy (or your reverse proxy) at **only** `localhost:3000` — do not proxy port `3001`. See [Backend authentication & network layout](#backend-authentication--network-layout).
+
+5. `BACKEND_REQUIRE_API_KEY` and `BACKEND_SERVICE_SECRET` are optional for this layout; see the table in that section.
+
+6. Follow steps 4-7 from the [Full Stack Deployment](#full-stack-deployment-frontend--backend) section to start and verify services.
 
 ### Managing the Production Deployment
 
@@ -625,11 +712,12 @@ docker run --rm \
 
 ### Security Notes
 
-- The backend is only accessible from localhost (127.0.0.1) - it should never be exposed directly to the internet
-- The frontend is also bound to localhost and accessed through Caddy
-- Keep your encryption key secure and backed up - losing it means losing access to encrypted API keys
-- Regularly update your containers and system packages
-- Monitor logs for any suspicious activity
+- **Public surface** — Only the reverse proxy (e.g. Caddy on 443) should reach the app; proxy to `localhost:3000` only. Do not expose `:3001` in Caddy or bind the backend to `0.0.0.0` on the host unless you also set `BACKEND_REQUIRE_API_KEY=true`.
+- **Docker** — Use `127.0.0.1:3000:3000` and `127.0.0.1:3001:3001` so neither service is reachable from the host's public IP on those ports.
+- **Optional env vars** — `BACKEND_REQUIRE_API_KEY` and `BACKEND_SERVICE_SECRET` are not required for the usual Caddy + localhost Docker setup; see [Backend authentication & network layout](#backend-authentication--network-layout).
+- **`authId` in logs** — Avoid logging full backend URLs with `?authId=` query strings on shared log aggregators.
+- **`ENCRYPTION_KEY`** — Keep secure and backed up; losing it means losing access to encrypted API keys stored in the master database.
+- **Updates** — Regularly update containers and system packages; monitor logs for suspicious activity.
 
 ## Requirements
 
