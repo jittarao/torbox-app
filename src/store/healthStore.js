@@ -229,7 +229,7 @@ export const useHealthStore = create((set, get) => ({
     get().performHealthCheck(apiKey, { force: true });
 
     healthPollTimer = setInterval(() => {
-      if (usePollingPauseStore.getState().isPollingPaused()) {
+      if (usePollingPauseStore.getState().isPaused) {
         return;
       }
       get().performHealthCheck(healthPollApiKey, { force: true });

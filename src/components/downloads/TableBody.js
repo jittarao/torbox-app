@@ -12,7 +12,6 @@ import {
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import DownloadRowContainer from './DownloadRowContainer';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
-import { entityKey as toEntityKey } from '@/utils/downloadListMerge';
 import FileRow from './FileRow';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -49,6 +48,7 @@ function useTableBodyState(props) {
   } = props;
 
   const t = useTranslations('TableBody');
+  const commonT = useTranslations('Common');
   const [isDownloading, setIsDownloading] = useState({});
   const [isCopying, setIsCopying] = useState({});
   const [isStreaming, setIsStreaming] = useState({});
@@ -256,6 +256,7 @@ function useTableBodyState(props) {
     tableWidth,
     fileSearch,
     t,
+    commonT,
   };
 }
 
@@ -306,9 +307,7 @@ function VirtualizedTableBodyInner({
         const row = state.flattenedRows[virtualRow.index];
 
         if (row.type === 'item') {
-          const rowEntityKey =
-            row.entityKey ||
-            toEntityKey(row.item.assetType || state.activeType, row.item.id);
+          const rowEntityKey = row.entityKey;
           return (
             <DownloadRowContainer
               key={`item-${rowEntityKey}`}
@@ -330,6 +329,7 @@ function VirtualizedTableBodyInner({
               tableWidth={state.tableWidth}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
+              commonT={state.commonT}
               style={rowStyle}
             />
           );

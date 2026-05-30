@@ -13,6 +13,8 @@ export const EMPTY_FILTERS = {
   ],
 };
 
+const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
+
 /**
  * Normalize raw filters (string JSON, flat array, or group structure) to standard group format.
  */
@@ -23,12 +25,12 @@ export function normalizeFilters(raw) {
     try {
       filters = JSON.parse(filters);
     } catch {
-      return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+      return JSON.parse(EMPTY_FILTERS_JSON);
     }
   }
 
   if (!filters) {
-    return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    return JSON.parse(EMPTY_FILTERS_JSON);
   }
 
   if (filters.groups && Array.isArray(filters.groups)) {

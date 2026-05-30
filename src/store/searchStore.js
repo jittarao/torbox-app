@@ -23,7 +23,7 @@ export const useSearchStore = create((set, get) => ({
   setSearchType: (type) => {
     set({ searchType: type, results: [], error: null, hasSearchCompleted: false });
     const { query } = get();
-    if (query) get().fetchResults();
+    if (query) get().fetchResults(query, type);
   },
 
   clearResults: () => {
@@ -34,14 +34,14 @@ export const useSearchStore = create((set, get) => ({
     set({ query, results: [], error: null, hasSearchCompleted: false });
     if (query) {
       get().addToHistory(query);
-      get().fetchResults();
+      get().fetchResults(query);
     }
   },
 
   setIncludeCustomEngines: (value) => {
     set({ includeCustomEngines: value });
-    const { query } = get();
-    if (query) get().fetchResults();
+    const { query, searchType } = get();
+    if (query) get().fetchResults(query, searchType);
   },
 
   setShowAdvancedOptions: (show) => {
@@ -110,8 +110,10 @@ export const useSearchStore = create((set, get) => ({
     }
   },
 
-  fetchResults: async () => {
-    const { query, searchType, includeCustomEngines } = get();
+  fetchResults: async (queryOverride, searchTypeOverride) => {
+    const { query: stateQuery, searchType: stateSearchType, includeCustomEngines } = get();
+    const query = queryOverride ?? stateQuery;
+    const searchType = searchTypeOverride ?? stateSearchType;
     if (!query) return;
 
     const apiKey = useSessionStore.getState().apiKey || localStorage.getItem('torboxApiKey');

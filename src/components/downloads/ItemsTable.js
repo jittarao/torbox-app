@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import useIsClient from '@/hooks/useIsClient';
 import { useDownloadsContext } from './DownloadsContext';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
@@ -46,11 +47,7 @@ export default function ItemsTable() {
   } = useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer });
 
   const [tableWidth, setTableWidth] = useState(0);
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const isClient = useIsClient();
   const tableContainerRef = useRef(null);
 
   useEffect(() => {

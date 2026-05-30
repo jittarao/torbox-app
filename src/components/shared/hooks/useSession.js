@@ -22,12 +22,6 @@ export function useSession() {
     hydrateFromStorage();
   }, [hydrateFromStorage]);
 
-  useEffect(() => {
-    if (apiKey) {
-      loadPermissions(apiKey);
-    }
-  }, [apiKey, loadPermissions]);
-
   return {
     apiKey,
     hydrated,
