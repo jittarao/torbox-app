@@ -210,14 +210,15 @@ export const useDownloadsSelectionStore = create((set, get) => ({
     set({ selectedItems: empty });
   },
 
-  reconcileWithItems: (items) => {
-    const signature = downloadListReconcileSignature(items);
+  reconcileWithItems: (items, signature) => {
+    const nextSignature =
+      signature !== undefined ? signature : downloadListReconcileSignature(items);
     const { listSignature, selectedItems, activeType, apiKeyScope } = get();
-    if (listSignature === signature) return;
+    if (listSignature === nextSignature) return;
 
     const pruned = pruneSelectionAgainstItems(selectedItems, items || []);
     persistSelection(activeType, pruned, apiKeyScope);
-    set({ listSignature: signature, selectedItems: pruned });
+    set({ listSignature: nextSignature, selectedItems: pruned });
   },
 
   handleSelectAll: (items, checked) => {
