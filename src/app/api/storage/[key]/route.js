@@ -1,66 +1,19 @@
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
-
-export async function GET(request, { params }) {
-  try {
-    const { key } = await params;
-
-    // Validate key to prevent path traversal
-    if (!key || key.includes('..') || key.includes('/') || key.includes('\\')) {
-      return NextResponse.json({ success: false, error: 'Invalid key format' }, { status: 400 });
-    }
-
-    const response = await fetch(`${BACKEND_URL}/api/storage/${key}`, {
-      method: 'GET',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data);
-    } else {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-  } catch (error) {
-    const { key: errorKey } = await params;
-    console.error(`Error fetching storage value for key ${errorKey}:`, error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+/**
+ * Legacy route — backend has no /api/storage handler.
+ * Client-side audio prefs use localStorage (see AudioPlayer/storage.js).
+ */
+export async function GET() {
+  return NextResponse.json(
+    { success: false, error: 'This endpoint is deprecated and not available.' },
+    { status: 410 }
+  );
 }
 
-export async function POST(request, { params }) {
-  try {
-    const { key } = await params;
-
-    // Validate key to prevent path traversal
-    if (!key || key.includes('..') || key.includes('/') || key.includes('\\')) {
-      return NextResponse.json({ success: false, error: 'Invalid key format' }, { status: 400 });
-    }
-
-    const body = await request.json();
-
-    const response = await fetch(`${BACKEND_URL}/api/storage/${key}`, {
-      cache: 'no-store',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data);
-    } else {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-  } catch (error) {
-    const { key: errorKey } = await params;
-    console.error(`Error saving storage value for key ${errorKey}:`, error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+export async function POST() {
+  return NextResponse.json(
+    { success: false, error: 'This endpoint is deprecated and not available.' },
+    { status: 410 }
+  );
 }

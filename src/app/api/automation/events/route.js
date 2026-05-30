@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
-
-function hashApiKey(apiKey) {
-  if (!apiKey) throw new Error('API key is required');
-  return crypto.createHash('sha256').update(apiKey).digest('hex');
-}
 
 /**
  * GET /api/automation/events
@@ -28,7 +22,6 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: 'API key is required' }, { status: 401 });
   }
 
-  const authId = hashApiKey(apiKey);
   const url = `${BACKEND_URL}/api/automation/events`;
   try {
     const res = await fetch(url, {

@@ -1,14 +1,15 @@
-import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
+import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 
 const CACHE_TYPE = 'torrents';
 
 // Get all torrents
 export async function GET(request) {
-  const headersList = await headers();
-  const apiKey = headersList.get('x-api-key');
+  const auth = await requireTorboxApiKey();
+  if (auth.response) return auth.response;
+  const apiKey = auth.apiKey;
   const { searchParams } = new URL(request.url);
   const delta = searchParams.get('delta') === '1';
   const cursor = searchParams.get('cursor');
@@ -112,8 +113,9 @@ export async function GET(request) {
 
 // Create a new torrent (queued upload)
 export async function POST(request) {
-  const headersList = await headers();
-  const apiKey = headersList.get('x-api-key');
+  const auth = await requireTorboxApiKey();
+  if (auth.response) return auth.response;
+  const apiKey = auth.apiKey;
   const formData = await request.formData();
 
   const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';

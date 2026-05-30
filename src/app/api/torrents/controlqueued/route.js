@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 
 export async function POST(request) {
+  const auth = await requireTorboxApiKey();
+  if (auth.response) return auth.response;
+  const apiKey = auth.apiKey;
+
   try {
-    const apiKey = request.headers.get('x-api-key');
     const { queued_id, operation, type } = await request.json();
 
     const response = await fetch(`${API_BASE}/${API_VERSION}/api/queued/controlqueued`, {

@@ -10,7 +10,7 @@ A lightweight, multi-user backend for TorBox Manager that provides 24/7 automati
 - **State Diffing**: Efficient change detection for torrent state updates
 - **Speed Aggregation**: Hourly speed averages for condition evaluation
 - **Connection Pooling**: LRU cache for efficient database connection management (200+ users)
-- **Persistent Storage**: SQLite databases for user data, PostgreSQL for master registry
+- **Persistent Storage**: SQLite for master registry and per-user databases
 - **REST API**: Simple API for frontend integration
 - **Health Monitoring**: Built-in health checks and logging
 - **Encrypted API Keys**: Secure storage of user API keys
@@ -19,12 +19,12 @@ A lightweight, multi-user backend for TorBox Manager that provides 24/7 automati
 
 ### Database Structure
 
-- **Master Database** (PostgreSQL):
+- **Master Database** (SQLite, `data/master.db`):
   - `user_registry`: User accounts and metadata
   - `api_keys`: Encrypted API key storage
   - Tracks user status, polling schedules, and active rules
 
-- **User Databases** (SQLite, one per user):
+- **User Databases** (SQLite, one per user in `data/users/`):
   - `automation_rules`: User's automation rules
   - `rule_execution_log`: Rule execution history
   - `torrent_shadow`: Last seen torrent state
@@ -80,7 +80,7 @@ For deployment instructions, see [DEPLOYMENT.md](../DEPLOYMENT.md).
 The backend uses a dual-migration system:
 
 - **Master Migrations**: Located in `src/database/migrations/master/`
-  - Applied to the master database (PostgreSQL)
+  - Applied to the master SQLite database
   - Manages user registry and API key storage
 
 - **User Migrations**: Located in `src/database/migrations/user/`
@@ -119,6 +119,36 @@ Rules are evaluated on each polling cycle:
 5. Evaluate all enabled rules against torrent data
 6. Execute actions for matching torrents
 7. Log execution results
+
+## Authentication & network security
+
+### How users are identified
+
+| Concept | Meaning |
+| -------- | -------- |
+| **TorBox API key** | Secret credential from [torbox.app/settings](https://torbox.app/settings). Proves the caller owns the account. |
+| **`authId`** | `SHA-256(apiKey)` — stable 64-char hex id used for DB filenames and queries. Identifies the user; **not** equivalent to proving possession of the API key. |
+
+### Request paths (Express `requireRegisteredUser`)
+
+All user data routes (`/api/automation/*`, `/api/uploads/*`, `/api/tags/*`, `/api/custom-views/*`, `/api/archived-downloads/*`, `/api/link-history/*`, `/api/downloads/tags`, etc.) use the same middleware:
+
+1. **If `x-api-key` is present** — Backend hashes it, optionally matches `authId`, verifies registry. This is what **every Next.js proxy uses** (`backendProxyHeaders` or explicit `'x-api-key'` header). No app route sends `authId` to the backend without also sending `x-api-key`.
+2. **Legacy (default, direct backend only)** — If there is **no** `x-api-key` but a valid `authId` query/body/header, the backend still accepts the request. This path exists for backward compatibility when something calls port `3001` directly (custom scripts, old integrations). It is **not** used by the stock TorBox Manager UI.
+
+Some Next.js handlers also add `?authId=` on the backend URL for convenience; that is redundant when `x-api-key` is already set. Browsers only call `https://your-domain/api/...` (Next.js), not `:3001`.
+
+### Optional environment variables
+
+| Variable | Default | Purpose |
+| -------- | ------- | ------- |
+| `BACKEND_REQUIRE_API_KEY` | unset (`false`) | When `true`, user routes reject `authId`-only requests. Use when port `3001` is exposed on the public internet. |
+| `BACKEND_SERVICE_SECRET` | unset | Same value on frontend and backend; Next.js sends `x-backend-service-secret` on internal routes (`/api/backend/api-key*`). Optional hardening when something besides Next.js can reach the backend. |
+| `ADMIN_API_KEY` | unset | Protects `/api/admin/*`; if unset, admin API returns 503. |
+
+**Typical self-hosted production** (Caddy → `localhost:3000`, Docker `127.0.0.1:3001:3001`, frontend `BACKEND_URL=http://torbox-backend:3001`): you do **not** need to set `BACKEND_REQUIRE_API_KEY` or `BACKEND_SERVICE_SECRET`. Startup log warnings about legacy auth are informational.
+
+See [DEPLOYMENT.md](../DEPLOYMENT.md#backend-authentication--network-layout) for the recommended network diagram.
 
 ## Configuration
 

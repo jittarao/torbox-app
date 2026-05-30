@@ -1,50 +1,25 @@
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
-
+/**
+ * Legacy route — backend has no /api/downloads/history handler.
+ * Download history uses /api/link-history via downloadHistoryStore.
+ */
 export async function GET() {
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/downloads/history`, {
-      method: 'GET',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data);
-    } else {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Error fetching download history from backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'This endpoint is deprecated. Use /api/link-history instead.',
+    },
+    { status: 410 }
+  );
 }
 
-export async function POST(request) {
-  try {
-    const body = await request.json();
-
-    const response = await fetch(`${BACKEND_URL}/api/downloads/history`, {
-      cache: 'no-store',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data);
-    } else {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Error saving download history to backend:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'This endpoint is deprecated. Use /api/link-history instead.',
+    },
+    { status: 410 }
+  );
 }
