@@ -1,8 +1,7 @@
 /**
  * User authentication: require TorBox API key proof and active registry membership.
  */
-import crypto from 'crypto';
-import { hashApiKey } from '../utils/crypto.js';
+import { hashApiKey, timingSafeCompare } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 
 const SERVICE_SECRET_HEADER = 'x-backend-service-secret';
@@ -32,12 +31,6 @@ function extractApiKey(req) {
 
 function extractDeclaredAuthId(req) {
   return req.query.authId || req.body?.authId || req.headers['x-auth-id'] || null;
-}
-
-function timingSafeCompare(a, b) {
-  const ha = crypto.createHash('sha256').update(String(a)).digest();
-  const hb = crypto.createHash('sha256').update(String(b)).digest();
-  return crypto.timingSafeEqual(ha, hb);
 }
 
 function isServiceSecretConfigured() {
