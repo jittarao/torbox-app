@@ -10,6 +10,7 @@ import {
   getUserUploadFiles,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
+import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -310,7 +311,7 @@ class UploadProcessor {
     }
 
     const apiKey = decrypt(apiKeyData.encrypted_key);
-    const apiClient = new ApiClient(apiKey);
+    const apiClient = new ApiClient(apiKey, { authId });
     this.apiClients.set(authId, apiClient);
 
     return apiClient;
@@ -969,10 +970,7 @@ class UploadProcessor {
       } catch (dbError) {
         // Database error after successful API call - retry the database update
         // but do NOT re-queue the upload since it already succeeded on TorBox
-        const isClosedDbError =
-          dbError.message?.includes('closed database') ||
-          dbError.message?.includes('Cannot use a closed database') ||
-          dbError.name === 'RangeError';
+        const isClosedDbError = isClosedDatabaseError(dbError);
 
         logger.error('Database error after successful API call, retrying database update', {
           uploadId: id,
@@ -997,11 +995,7 @@ class UploadProcessor {
                 currentUserDb.db.prepare('SELECT 1').get();
               } catch (checkError) {
                 // Connection is closed, re-fetch it
-                if (
-                  checkError.message?.includes('closed database') ||
-                  checkError.message?.includes('Cannot use a closed database') ||
-                  checkError.name === 'RangeError'
-                ) {
+                if (isClosedDatabaseError(checkError)) {
                   logger.warn('Database connection closed during retry, re-fetching connection', {
                     uploadId: id,
                     attempt: attempt + 1,
@@ -1020,10 +1014,7 @@ class UploadProcessor {
             return true;
           } catch (retryError) {
             lastDbError = retryError;
-            const isRetryClosedDbError =
-              retryError.message?.includes('closed database') ||
-              retryError.message?.includes('Cannot use a closed database') ||
-              retryError.name === 'RangeError';
+            const isRetryClosedDbError = isClosedDatabaseError(retryError);
 
             if (attempt < maxDbRetries - 1) {
               const delayMs = 100 * Math.pow(2, attempt); // 100ms, 200ms, 400ms
@@ -1072,10 +1063,7 @@ class UploadProcessor {
                 finalUserDb.db.prepare('SELECT 1').get();
               } catch (checkError) {
                 // Connection is closed or invalid, re-fetch it
-                const isClosedError =
-                  checkError.message?.includes('closed database') ||
-                  checkError.message?.includes('Cannot use a closed database') ||
-                  checkError.name === 'RangeError';
+                const isClosedError = isClosedDatabaseError(checkError);
 
                 if (isClosedError) {
                   logger.warn(
@@ -1136,10 +1124,7 @@ class UploadProcessor {
               break;
             }
           } catch (finalError) {
-            const isFinalClosedError =
-              finalError.message?.includes('closed database') ||
-              finalError.message?.includes('Cannot use a closed database') ||
-              finalError.name === 'RangeError';
+            const isFinalClosedError = isClosedDatabaseError(finalError);
 
             if (finalAttempt < finalMaxRetries - 1) {
               const delayMs = 200 * Math.pow(2, finalAttempt); // 200ms, 400ms, 800ms
@@ -1327,11 +1312,7 @@ class UploadProcessor {
       return userDb.db.prepare(query).all(...params);
     } catch (error) {
       // Handle closed database error - connection may have been evicted from pool
-      if (
-        error.message?.includes('closed database') ||
-        error.message?.includes('Cannot use a closed database') ||
-        error.name === 'RangeError'
-      ) {
+      if (isClosedDatabaseError(error)) {
         logger.warn('Database connection closed, will retry with fresh connection', {
           authId,
           error: error.message,
@@ -1458,11 +1439,7 @@ class UploadProcessor {
                   .get(upload.id);
               } catch (error) {
                 // If database was closed, re-fetch the connection and retry
-                if (
-                  error.message?.includes('closed database') ||
-                  error.message?.includes('Cannot use a closed database') ||
-                  error.name === 'RangeError'
-                ) {
+                if (isClosedDatabaseError(error)) {
                   try {
                     currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
                     currentStatus = currentUserDb.db
@@ -1500,11 +1477,7 @@ class UploadProcessor {
                     .run(upload.id);
                 } catch (error) {
                   // If database was closed, re-fetch the connection and retry
-                  if (
-                    error.message?.includes('closed database') ||
-                    error.message?.includes('Cannot use a closed database') ||
-                    error.name === 'RangeError'
-                  ) {
+                  if (isClosedDatabaseError(error)) {
                     try {
                       currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
                       result = currentUserDb.db

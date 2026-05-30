@@ -10,6 +10,44 @@ import Semaphore from '../utils/semaphore.js';
 import { getMasterDbPath, getUserDbPath } from '../utils/dataPaths.js';
 
 /**
+ * Simple LRU cache with max size. Evicts least-recently-used entry on set() when full.
+ */
+class LRUMap {
+  constructor(maxSize = 500) {
+    this.maxSize = maxSize;
+    this._map = new Map();
+  }
+  get(key) {
+    if (!this._map.has(key)) return undefined;
+    const value = this._map.get(key);
+    // Delete and re-insert to bump to end (most recent)
+    this._map.delete(key);
+    this._map.set(key, value);
+    return value;
+  }
+  set(key, value) {
+    if (this._map.has(key)) {
+      this._map.delete(key);
+    } else if (this._map.size >= this.maxSize) {
+      // Delete oldest entry (first key in iteration order)
+      const oldest = this._map.keys().next().value;
+      if (oldest) {
+        try { this._map.get(oldest)?.finalize?.(); } catch (_) {}
+        this._map.delete(oldest);
+      }
+    }
+    this._map.set(key, value);
+  }
+  clear() {
+    for (const stmt of this._map.values()) {
+      try { stmt.finalize?.(); } catch (_) {}
+    }
+    this._map.clear();
+  }
+  get size() { return this._map.size; }
+}
+
+/**
  * Master Database
  * Manages the master database for user registry and API key storage
  */
@@ -19,7 +57,7 @@ class Database {
     this.migrationRunner = null;
     this.initialized = false;
     /** @type {Map<string, import('bun:sqlite').Statement>} */
-    this._statementCache = new Map();
+    this._statementCache = new LRUMap(500);
     this.dbPath = getMasterDbPath();
 
     logger.info('Master database path', { dbPath: this.dbPath });
@@ -93,6 +131,55 @@ class Database {
    */
   isClosedDatabaseError(error) {
     return isClosedDatabaseError(error);
+  }
+
+  /**
+   * Check if an error is a SQLITE_BUSY or SQLITE_LOCKED error.
+   * These can occur under concurrent write contention and benefit from retry.
+   * @param {Error} error - Error to check
+   * @returns {boolean} - True if error indicates busy/locked database
+   */
+  isBusyLockedError(error) {
+    if (!error) return false;
+    const code = error.code || (error.message && this._extractSqliteCode(error.message));
+    return code === 'SQLITE_BUSY' || code === 'SQLITE_LOCKED' || code === 5 || code === 6;
+  }
+
+  /**
+   * Extract SQLite error code from error message string (bun:sqlite may not set error.code).
+   * @private
+   */
+  _extractSqliteCode(message) {
+    const m = String(message);
+    if (m.includes('SQLITE_BUSY') || m.includes('database is locked')) return 'SQLITE_BUSY';
+    if (m.includes('SQLITE_LOCKED')) return 'SQLITE_LOCKED';
+    return null;
+  }
+
+  /**
+   * Execute a function with retry on SQLITE_BUSY/SQLITE_LOCKED.
+   * Uses exponential backoff: 50ms, 100ms, 200ms. Max 3 retries.
+   * @param {Function} fn - Function to execute
+   * @param {string} label - Label for logging
+   * @returns {*} Result of fn
+   * @private
+   */
+  _executeWithBusyRetry(fn, label) {
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return fn();
+      } catch (error) {
+        if (this.isBusyLockedError(error) && attempt < MAX_RETRIES) {
+          const delayMs = 50 * Math.pow(2, attempt);
+          // Spin-wait: bun:sqlite doesn't support async during prepare/run
+          const deadline = Date.now() + delayMs;
+          while (Date.now() < deadline) { /* spin */ }
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   /**
@@ -203,7 +290,7 @@ class Database {
       this._statementCache.set(sql, stmt);
     }
     try {
-      const result = stmt.run(params);
+      const result = this._executeWithBusyRetry(() => stmt.run(params), 'runQuery');
       return { id: result.lastInsertRowid, changes: result.changes };
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
@@ -215,7 +302,7 @@ class Database {
           this._reopenConnection();
           stmt = this.db.prepare(sql);
           this._statementCache.set(sql, stmt);
-          const result = stmt.run(params);
+          const result = this._executeWithBusyRetry(() => stmt.run(params), 'runQuery');
           return { id: result.lastInsertRowid, changes: result.changes };
         } catch (retryError) {
           logger.error('Database query execution failed after retry', retryError, {
@@ -243,7 +330,7 @@ class Database {
       this._statementCache.set(sql, stmt);
     }
     try {
-      return stmt.get(params);
+      return this._executeWithBusyRetry(() => stmt.get(params), 'getQuery');
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
         logger.warn('Database connection closed during getQuery, refreshing and retrying', {
@@ -253,7 +340,7 @@ class Database {
         this._reopenConnection();
         stmt = this.db.prepare(sql);
         this._statementCache.set(sql, stmt);
-        return stmt.get(params);
+        return this._executeWithBusyRetry(() => stmt.get(params), 'getQuery');
       }
       throw error;
     }
@@ -269,7 +356,7 @@ class Database {
       this._statementCache.set(sql, stmt);
     }
     try {
-      return stmt.all(params);
+      return this._executeWithBusyRetry(() => stmt.all(params), 'allQuery');
     } catch (error) {
       if (this.isClosedDatabaseError(error)) {
         logger.warn('Database connection closed during allQuery, refreshing and retrying', {
@@ -279,7 +366,7 @@ class Database {
         this._reopenConnection();
         stmt = this.db.prepare(sql);
         this._statementCache.set(sql, stmt);
-        return stmt.all(params);
+        return this._executeWithBusyRetry(() => stmt.all(params), 'allQuery');
       }
       throw error;
     }
@@ -289,6 +376,21 @@ class Database {
   close() {
     if (this.db) {
       this.db.close();
+    }
+  }
+
+  /**
+   * Run WAL checkpoint on the master database.
+   * @returns {boolean} True if checkpoint was successful
+   */
+  checkpointWal() {
+    if (!this.db) return false;
+    try {
+      this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+      return true;
+    } catch (error) {
+      logger.warn('Master DB WAL checkpoint failed', { error: error.message });
+      return false;
     }
   }
 
@@ -745,7 +847,7 @@ class Database {
 
   /**
    * Batch-update next_poll_at for multiple users (e.g. reserve before Stage 1).
-   * Sets non_terminal_torrent_count to 0. Invalidates cache for each authId.
+   * Invalidates cache for each authId.
    * @param {string[]} authIds - User auth IDs
    * @param {Date} nextPollAt - Reserve until this time
    */
@@ -756,7 +858,7 @@ class Database {
     this.runQuery(
       `
       UPDATE user_registry 
-      SET next_poll_at = ?, non_terminal_torrent_count = 0, updated_at = CURRENT_TIMESTAMP
+      SET next_poll_at = ?, updated_at = CURRENT_TIMESTAMP
       WHERE auth_id IN (${placeholders})
     `,
       [formatted, ...authIds]

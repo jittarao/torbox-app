@@ -45,7 +45,7 @@ class UserPoller {
     } else {
       try {
         this.apiKey = decrypt(encryptedApiKey);
-        this.apiClient = new ApiClient(this.apiKey);
+        this.apiClient = new ApiClient(this.apiKey, { authId });
       } catch (error) {
         logger.error('Failed to decrypt API key or create API client', error, {
           authId,

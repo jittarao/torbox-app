@@ -4,6 +4,7 @@ import { mkdir, unlink } from 'fs/promises';
 import MigrationRunner from './MigrationRunner.js';
 import { hashApiKey } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import cache from '../utils/cache.js';
 
 /**
@@ -528,13 +529,19 @@ class UserDatabaseManager {
         // Connection is valid - refCount was incremented by get()
         return cached;
       } catch (error) {
-        // Connection is dead, remove from pool
-        logger.warn('Cached database connection is stale, removing from pool', {
-          authId,
-          error: error.message,
-        });
-        this.pool.delete(authId);
-        // Continue to create a new connection below (will use lock)
+        if (isClosedDatabaseError(error)) {
+          logger.warn('Cached database connection is stale, removing from pool', {
+            authId,
+            error: error.message,
+          });
+          this.pool.delete(authId);
+        } else {
+          logger.warn('Cached database connection validation failed (non-closed error)', {
+            authId,
+            error: error.message,
+          });
+          return cached;
+        }
       }
     }
 
@@ -1023,6 +1030,31 @@ class UserDatabaseManager {
    */
   getPoolStats() {
     return this.pool.getStats();
+  }
+
+  /**
+   * Run WAL checkpoint on all open user databases.
+   * Best-effort: logs errors but does not throw.
+   * @returns {number} Number of databases checkpointed
+   */
+  checkpointAllDatabases() {
+    let count = 0;
+    for (const [authId, entry] of this.pool.cache) {
+      if (!entry?.value?.db) continue;
+      try {
+        entry.value.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+        count++;
+      } catch (error) {
+        logger.warn('WAL checkpoint failed for user', {
+          authId,
+          error: error.message,
+        });
+      }
+    }
+    if (count > 0) {
+      logger.debug('WAL checkpoint completed for open databases', { count });
+    }
+    return count;
   }
 }
 
