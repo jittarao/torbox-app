@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET() {
   try {
     // Route handlers are dynamic by default with Cache Components
@@ -43,7 +43,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: sanitizeError(error),
         ip: 'unknown',
       },
       { status: 500 }

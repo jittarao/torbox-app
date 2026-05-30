@@ -4,7 +4,7 @@ import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { headers } from 'next/headers';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const CACHE_TYPE = 'webdl';
 
 // Get all web downloads
@@ -94,7 +94,7 @@ export async function GET(request) {
     return NextResponse.json({ ...mergedData, cursor: newCursor }, { headers: cacheHeaders });
   } catch (error) {
     console.error('Error fetching web download data:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -159,7 +159,7 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Error creating web download:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -238,6 +238,6 @@ export async function DELETE(request) {
 
     return Response.json(data);
   } catch (error) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

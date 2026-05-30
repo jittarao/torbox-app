@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function POST(request) {
   try {
     const { domain, region, serverName } = await request.json();
@@ -64,11 +64,11 @@ export async function POST(request) {
         success: false,
         error: errorMessage,
         domain: domain,
-        details: error.message,
+        details: sanitizeError(error),
         serverType: serverName,
       });
     }
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

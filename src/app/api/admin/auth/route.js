@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function POST(request) {
@@ -65,7 +65,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error in admin auth:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Authentication failed' },
+      { success: false, error: sanitizeError(error) || 'Authentication failed' },
       { status: 500 }
     );
   }

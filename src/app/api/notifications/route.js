@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 // Get user notifications
 export async function GET() {
   const headersList = await headers();
@@ -37,7 +37,7 @@ export async function GET() {
 
     // Handle specific error types
     if (isTorboxFetchTimeout(error)) {
-      return Response.json({ success: false, error: error.message }, { status: 408 });
+      return Response.json({ success: false, error: sanitizeError(error) }, { status: 408 });
     }
 
     if (error.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
@@ -47,7 +47,7 @@ export async function GET() {
       );
     }
 
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
 
@@ -105,6 +105,6 @@ export async function POST(request) {
     return Response.json(data);
   } catch (error) {
     console.error('Error with notification action:', error);
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 
+import { sanitizeError } from '@/utils/sanitizeError';
 import {
   API_BASE,
   API_VERSION,
@@ -73,7 +74,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json({
       status: 'unhealthy',
-      message: error.message,
+      message: sanitizeError(error),
       timestamp: new Date().toISOString(),
       error: error.name,
     });

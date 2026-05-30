@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import http from 'http';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET(request) {
@@ -60,7 +60,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Error in admin verify:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Verification failed' },
+      { success: false, error: sanitizeError(error) || 'Verification failed' },
       { status: 500 }
     );
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
-
+import { sanitizeError } from '@/utils/sanitizeError';
 export async function POST(request) {
   try {
     const { apiKey, action, id } = await request.json();
@@ -43,6 +43,6 @@ export async function POST(request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error controlling web download:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
   }
 }
