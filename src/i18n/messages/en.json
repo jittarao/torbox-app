@@ -423,6 +423,8 @@
     "saveAsNew": "Save as new",
     "saving": "Saving...",
     "selectPlaceholder": "Select...",
+    "searchFilterOptionsPlaceholder": "Search…",
+    "searchFilterOptionsNoMatches": "No matching options",
     "selectTagsPlaceholder": "Select tags...",
     "updateView": "Update view",
     "updating": "Updating...",
