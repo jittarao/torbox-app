@@ -15,7 +15,6 @@ import {
   isStatusColumn,
   isTagsColumn,
 } from '@/components/downloads/CustomViews/utils';
-
 /** Evaluate a single filter condition against an item. */
 function evaluateFilter(filter, item) {
   if (!filter.column || filter.operator === undefined) return true;
@@ -189,6 +188,9 @@ function evaluateFilter(filter, item) {
       case MULTI_SELECT_OPERATORS.IS_NONE_OF:
         if (filterTagIds.length === 0) return true;
         return !filterTagIds.some((tagId) => itemTagIds.includes(tagId));
+      case TAG_OPERATORS.IS_ALL_OF:
+        if (filterTagIds.length === 0) return true;
+        return filterTagIds.every((tagId) => itemTagIds.includes(tagId));
       case TAG_OPERATORS.IS_SET:
         return itemTagIds.length > 0;
       case TAG_OPERATORS.IS_NOT_SET:
