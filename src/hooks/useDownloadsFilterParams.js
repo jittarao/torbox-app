@@ -48,6 +48,51 @@ function filtersFromSearchParams(searchParams) {
   };
 }
 
+/** @param {URLSearchParams} params */
+function writeAppliedFiltersToParams(params, filters) {
+  const normalized = normalizeFilters(filters);
+  const encoded = encodeURIComponent(JSON.stringify(normalized));
+  if (encoded.length > MAX_FILTERS_PARAM_LENGTH) {
+    console.warn('Downloads filters too large for URL; using session overflow storage');
+    setJSON(FILTERS_OVERFLOW_KEY, normalized);
+    params.delete('filters');
+    return false;
+  }
+  removeItem(FILTERS_OVERFLOW_KEY);
+  const isEmpty = JSON.stringify(normalized) === JSON.stringify(EMPTY_FILTERS);
+  if (isEmpty) params.delete('filters');
+  else params.set('filters', encoded);
+  return true;
+}
+
+/** @param {URLSearchParams} params */
+function writeSearchToParams(params, value) {
+  const trimmed = String(value ?? '').trim();
+  if (trimmed) params.set('q', trimmed);
+  else params.delete('q');
+}
+
+/** @param {URLSearchParams} params */
+function writeStatusFilterToParams(params, value) {
+  const v = value || 'all';
+  if (v && v !== 'all') params.set('status', v);
+  else params.delete('status');
+}
+
+/** @param {URLSearchParams} params */
+function writeSortToParams(params, sortField, sortDirection = 'asc') {
+  if (sortField && sortField !== DEFAULT_SORT.sortField) {
+    params.set('sort', sortField);
+  } else {
+    params.delete('sort');
+  }
+  if (sortDirection && sortDirection !== DEFAULT_SORT.sortDirection) {
+    params.set('dir', sortDirection);
+  } else {
+    params.delete('dir');
+  }
+}
+
 /**
  * Downloads page filter state synced to URL (shareable links).
  * expandedById remains in downloadsUiStore only.
@@ -73,9 +118,7 @@ export function useDownloadsFilterParams() {
   const setSearch = useCallback(
     (value) => {
       replaceParams((params) => {
-        const trimmed = String(value ?? '').trim();
-        if (trimmed) params.set('q', trimmed);
-        else params.delete('q');
+        writeSearchToParams(params, value);
       });
     },
     [replaceParams]
@@ -84,9 +127,7 @@ export function useDownloadsFilterParams() {
   const setStatusFilter = useCallback(
     (value) => {
       replaceParams((params) => {
-        const v = value || 'all';
-        if (v && v !== 'all') params.set('status', v);
-        else params.delete('status');
+        writeStatusFilterToParams(params, value);
       });
     },
     [replaceParams]
@@ -95,16 +136,7 @@ export function useDownloadsFilterParams() {
   const setSort = useCallback(
     (sortField, sortDirection = 'asc') => {
       replaceParams((params) => {
-        if (sortField && sortField !== DEFAULT_SORT.sortField) {
-          params.set('sort', sortField);
-        } else {
-          params.delete('sort');
-        }
-        if (sortDirection && sortDirection !== DEFAULT_SORT.sortDirection) {
-          params.set('dir', sortDirection);
-        } else {
-          params.delete('dir');
-        }
+        writeSortToParams(params, sortField, sortDirection);
       });
     },
     [replaceParams]
@@ -112,24 +144,41 @@ export function useDownloadsFilterParams() {
 
   const setAppliedFilters = useCallback(
     (filters) => {
-      const normalized = normalizeFilters(filters);
-      const encoded = encodeURIComponent(JSON.stringify(normalized));
-      if (encoded.length > MAX_FILTERS_PARAM_LENGTH) {
-        console.warn('Downloads filters too large for URL; using session overflow storage');
-        setJSON(FILTERS_OVERFLOW_KEY, normalized);
-        replaceParams((params) => {
-          params.delete('filters');
-        });
-        return false;
-      }
-      removeItem(FILTERS_OVERFLOW_KEY);
+      let ok = true;
       replaceParams((params) => {
-        const isEmpty =
-          JSON.stringify(normalized) === JSON.stringify(EMPTY_FILTERS);
-        if (isEmpty) params.delete('filters');
-        else params.set('filters', encoded);
+        ok = writeAppliedFiltersToParams(params, filters);
       });
-      return true;
+      return ok;
+    },
+    [replaceParams]
+  );
+
+  /**
+   * Apply several filter URL fields in one navigation (avoids stale searchParams races).
+   * @param {{ search?: string, statusFilter?: string, sortField?: string, sortDirection?: string, appliedFilters?: object }} patch
+   */
+  const patchFilterCriteria = useCallback(
+    (patch) => {
+      let filtersWritten = true;
+      replaceParams((params) => {
+        if (patch.search !== undefined) {
+          writeSearchToParams(params, patch.search);
+        }
+        if (patch.statusFilter !== undefined) {
+          writeStatusFilterToParams(params, patch.statusFilter);
+        }
+        if (patch.sortField !== undefined) {
+          writeSortToParams(
+            params,
+            patch.sortField,
+            patch.sortDirection ?? DEFAULT_SORT.sortDirection
+          );
+        }
+        if (patch.appliedFilters !== undefined) {
+          filtersWritten = writeAppliedFiltersToParams(params, patch.appliedFilters);
+        }
+      });
+      return filtersWritten;
     },
     [replaceParams]
   );
@@ -154,6 +203,7 @@ export function useDownloadsFilterParams() {
     setStatusFilter,
     setSort,
     setAppliedFilters,
+    patchFilterCriteria,
     resetFilters,
   };
 }

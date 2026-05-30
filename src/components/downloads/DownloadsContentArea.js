@@ -10,7 +10,7 @@ import CardList from './CardList';
 export default function DownloadsContentArea() {
   const {
     appliedFilters, activeView, tags,
-    handleClearFilters, handleOpenNewFilter,
+    handleClearFilters, handleEditActiveFilters,
   } = useDownloadsFilterContext();
   const { isBackendAvailable, displayViewMode } = useDownloadsUIContext();
 
@@ -22,7 +22,7 @@ export default function DownloadsContentArea() {
           activeView={activeView}
           tags={tags}
           onClear={handleClearFilters}
-          onEdit={handleOpenNewFilter}
+          onEdit={handleEditActiveFilters}
         />
       )}
       <ActionBar />
