@@ -159,6 +159,9 @@ export function useUploadQueue(assetType = 'torrents') {
 
   useEffect(() => {
     setJSON(STORAGE_KEY, globalOptions);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('torrent-upload-options'));
+    }
   }, [globalOptions]);
 
   useEffect(() => {

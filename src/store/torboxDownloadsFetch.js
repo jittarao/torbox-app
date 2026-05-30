@@ -1,4 +1,4 @@
-import { isQueuedItem, getAutoStartOptions } from '@/utils/utility';
+import { isQueuedItem, isActiveDownload, getAutoStartOptions } from '@/utils/utility';
 import { mergeDownloadEntities } from '@/utils/downloadListMerge';
 import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
@@ -75,16 +75,17 @@ async function checkAndAutoStartTorrents(items, apiKey, viewType) {
 
     pruneProcessedQueueIds(items);
 
-    const activeCount = items.filter((item) => item.active).length;
+    const autoStartLimit = Number(options.autoStartLimit);
+    const limit = Number.isFinite(autoStartLimit) && autoStartLimit > 0 ? autoStartLimit : 3;
+
+    const activeCount = items.filter(isActiveDownload).length;
     const queuedItems = items.filter(isQueuedItem);
 
-    if (activeCount < options.autoStartLimit && queuedItems.length > 0) {
+    if (activeCount < limit && queuedItems.length > 0) {
       const queuedId = queuedItems[0].id;
       if (processedQueueIdsRef.current.has(queuedId)) return;
 
-      processedQueueIdsRef.current.add(queuedId);
-
-      await retryFetch('/api/torrents/controlqueued', {
+      const result = await retryFetch('/api/torrents/controlqueued', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,6 +97,10 @@ async function checkAndAutoStartTorrents(items, apiKey, viewType) {
           type: 'torrent',
         }),
       });
+
+      if (result?.success) {
+        processedQueueIdsRef.current.add(queuedId);
+      }
     }
   } catch (autoStartError) {
     console.error('Error in auto-start check:', autoStartError);

@@ -31,7 +31,11 @@ export function usePollTimer({
     const syncAutoStart = () => setAutoStartEnabled(getAutoStartOptions()?.autoStart ?? false);
     syncAutoStart();
     window.addEventListener('storage', syncAutoStart);
-    return () => window.removeEventListener('storage', syncAutoStart);
+    window.addEventListener('torrent-upload-options', syncAutoStart);
+    return () => {
+      window.removeEventListener('storage', syncAutoStart);
+      window.removeEventListener('torrent-upload-options', syncAutoStart);
+    };
   }, []);
 
   const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
