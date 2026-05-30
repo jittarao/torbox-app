@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useIsClient from '@/hooks/useIsClient';
+import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsFilterContext } from './DownloadsFilterContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
@@ -19,10 +21,11 @@ export default function ItemsTable() {
   const {
     sortedItems,
     activeColumns,
-    selectedItems,
     downloadHistoryLookup,
     tagMappings,
   } = useDownloadsDataContext();
+
+  const selectedItems = useDownloadsSelectionStore(useShallow((s) => s.selectedItems));
 
   const {
     sortField,

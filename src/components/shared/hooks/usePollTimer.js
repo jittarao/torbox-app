@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getAutoStartOptions } from '@/utils/utility';
 import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torboxDownloadsStore';
 import { POLLING_CONFIG } from './pollingConfig';
@@ -23,12 +23,22 @@ export function usePollTimer({
   onReEngagedRef,
   onDisengagedRef,
 }) {
-  const needsQueuedTorrentPoll = useTorboxDownloadsStore((s) => {
-    if (type !== 'torrents' && type !== 'all') return false;
-    const options = getAutoStartOptions();
-    if (!options?.autoStart) return false;
-    return selectHasQueuedTorrents(s);
-  });
+  const [autoStartEnabled, setAutoStartEnabled] = useState(
+    () => getAutoStartOptions()?.autoStart ?? false
+  );
+
+  useEffect(() => {
+    const syncAutoStart = () => setAutoStartEnabled(getAutoStartOptions()?.autoStart ?? false);
+    syncAutoStart();
+    window.addEventListener('storage', syncAutoStart);
+    return () => window.removeEventListener('storage', syncAutoStart);
+  }, []);
+
+  const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
+  const needsQueuedTorrentPoll =
+    autoStartEnabled &&
+    (type === 'torrents' || type === 'all') &&
+    hasQueuedTorrents;
 
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);

@@ -301,11 +301,10 @@ export function useDownloadsPageState(apiKey) {
       sortedItems,
       visibleIds,
       activeColumns,
-      selectedItems,
       downloadHistoryLookup,
       tagMappings,
     }),
-    [viewItems, sortedItems, visibleIds, activeColumns, selectedItems, downloadHistoryLookup, tagMappings]
+    [viewItems, sortedItems, visibleIds, activeColumns, downloadHistoryLookup, tagMappings]
   );
 
   const downloadsFilterContextValue = useMemo(

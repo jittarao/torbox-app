@@ -1,7 +1,7 @@
 // Remove all TypeScript annotations and keep only the implementation
 'use client';
 
-import { FETCH_TIMEOUT_MS } from '@/components/constants';
+import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
 
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_DELAY_MS = 2000;

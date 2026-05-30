@@ -3,7 +3,7 @@ import {
   API_VERSION,
   FETCH_TIMEOUT_MS,
   TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+} from '@/config/apiConstants';
 
 function parseRetryAfterMs(retryAfter) {
   if (!retryAfter) return null;
@@ -50,9 +50,8 @@ class ApiClient {
         onResponse(response);
       }
 
-      // Handle 304 Not Modified (ETag working)
       if (response.status === 304) {
-        return { success: true, data: [], cached: true };
+        return { success: true, notModified: true };
       }
 
       let data;
@@ -78,38 +77,38 @@ class ApiClient {
         }
 
         if (response.status === 404) {
-          throw new Error(
-            `AUTH_ERROR: Cloud integration not available. Please check if the feature is enabled.`
-          );
-        }
-
-        if (response.status === 408) {
-          const timeoutError = new Error(
-            data.detail || data.error || data.message || 'Request timeout'
-          );
-          timeoutError.isTimeout = true;
-          throw timeoutError;
+          throw new Error(`NOT_FOUND: ${data.detail || 'Resource not found'}`);
         }
 
         if (response.status === 429) {
+          const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
           const rateLimitError = new Error(
-            data.detail || data.error || data.message || 'Too many requests'
+            retryAfterMs
+              ? `Rate limited. Retry after ${Math.ceil(retryAfterMs / 1000)}s`
+              : 'Too many requests'
           );
           rateLimitError.isRateLimited = true;
-          rateLimitError.retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
+          rateLimitError.retryAfterMs = retryAfterMs;
           throw rateLimitError;
         }
 
-        const errorMessage = data.detail || data.error || data.message || `HTTP ${response.status}`;
-        throw new Error(errorMessage);
+        if (response.status === 502 || response.status === 503) {
+          const serviceError = new Error(
+            data.detail || `TorBox API unavailable (HTTP ${response.status})`
+          );
+          serviceError.isServiceUnavailable = true;
+          throw serviceError;
+        }
+
+        throw new Error(data.detail || data.error || `HTTP ${response.status}`);
       }
 
       return data;
     } catch (error) {
       clearTimeout(timeoutId);
 
-      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-        const timeoutError = new Error('Request timeout - connection to TorBox API failed');
+      if (error.name === 'AbortError') {
+        const timeoutError = new Error('Request timeout');
         timeoutError.isTimeout = true;
         throw timeoutError;
       }
@@ -145,10 +144,14 @@ class ApiClient {
     const data = await this._fetch(url, {
       ...options,
       headers,
-      onResponse: (res) => { responseForEtag = res; },
+      onResponse: (res) => {
+        responseForEtag = res;
+      },
     });
 
-    if (data && data.cached) return data;
+    if (data?.notModified) {
+      return data;
+    }
 
     const responseETag = responseForEtag?.headers?.get?.('ETag');
     if (responseETag) {
@@ -162,25 +165,6 @@ class ApiClient {
     return data;
   }
 
-  /** POST multipart/form-data — no Content-Type (browser sets it for the boundary) */
-  async requestMultipart(endpoint, formData, options = {}) {
-    const url = endpoint.startsWith('/api/') ? endpoint : `${API_BASE}/${API_VERSION}${endpoint}`;
-
-    const headers = {
-      'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-      ...(this.apiKey && { 'x-api-key': this.apiKey }),
-      ...options.headers,
-    };
-
-    return this._fetch(url, {
-      method: 'POST',
-      headers,
-      body: formData,
-      ...options,
-    });
-  }
-
-  // GET request helper
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
@@ -188,7 +172,6 @@ class ApiClient {
     return this.request(url, { method: 'GET' });
   }
 
-  // POST request helper
   async post(endpoint, body = {}) {
     return this.request(endpoint, {
       method: 'POST',
@@ -196,7 +179,6 @@ class ApiClient {
     });
   }
 
-  // DELETE request helper
   async delete(endpoint, body = {}) {
     return this.request(endpoint, {
       method: 'DELETE',
@@ -204,120 +186,9 @@ class ApiClient {
     });
   }
 
-  // PUT request helper
-  async put(endpoint, body = {}) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    });
-  }
-
-  // Torrents API methods
-  async getTorrents(bypassCache = false) {
-    return this.get('/api/torrents/mylist', { bypass_cache: bypassCache });
-  }
-
-  async getQueuedTorrents(bypassCache = false) {
-    return this.get('/api/queued/getqueued', {
-      type: 'torrent',
-      bypass_cache: bypassCache,
-    });
-  }
-
-  async createTorrent(formData) {
-    return this.requestMultipart('/api/torrents', formData);
-  }
-
-  async controlTorrent(torrentId, operation) {
-    return this.post('/api/torrents/controltorrent', {
-      torrent_id: torrentId,
-      operation,
-    });
-  }
-
-  async controlQueuedTorrent(queuedId, operation) {
-    return this.post('/api/queued/controlqueued', {
-      queued_id: queuedId,
-      operation,
-      type: 'torrent',
-    });
-  }
-
-  async exportTorrentData(torrentId, type) {
-    return this.get('/api/torrents/exportdata', {
-      torrent_id: torrentId,
-      type,
-    });
-  }
-
-  async checkCachedTorrents(hashes, format = 'object', listFiles = false) {
-    const hashParam = Array.isArray(hashes) ? hashes.join(',') : hashes;
-    return this.get('/api/torrents/checkcached', {
-      hash: hashParam,
-      format,
-      list_files: listFiles,
-    });
-  }
-
-  async getTorrentInfo(hash, timeout = 10) {
-    return this.get('/api/torrents/torrentinfo', {
-      hash,
-      timeout,
-    });
-  }
-
-  // Usenet API methods
-  async getUsenetDownloads(bypassCache = false) {
-    return this.get('/api/usenet/mylist', { bypass_cache: bypassCache });
-  }
-
-  async getQueuedUsenet(bypassCache = false) {
-    return this.get('/api/queued/getqueued', {
-      type: 'usenet',
-      bypass_cache: bypassCache,
-    });
-  }
-
-  async createUsenetDownload(formData) {
-    return this.requestMultipart('/api/usenet', formData);
-  }
-
-  async controlUsenetDownload(usenetId, operation) {
-    return this.post('/api/usenet/controlusenetdownload', {
-      usenet_id: usenetId,
-      operation,
-    });
-  }
-
-  // Web Downloads API methods
-  async getWebDownloads(bypassCache = false) {
-    return this.get('/api/webdl/mylist', { bypass_cache: bypassCache });
-  }
-
-  async getQueuedWebDownloads(bypassCache = false) {
-    return this.get('/api/queued/getqueued', {
-      type: 'webdl',
-      bypass_cache: bypassCache,
-    });
-  }
-
-  async createWebDownload(formData) {
-    return this.requestMultipart('/api/webdl', formData);
-  }
-
-  async controlWebDownload(webdlId, operation) {
-    return this.post('/api/webdl/controlwebdownload', {
-      webdl_id: webdlId,
-      operation,
-    });
-  }
-
-  // Notifications API methods
   async getNotifications() {
     try {
-      const response = await this.get('/api/notifications');
-      // Return the response directly without wrapping it in a data property
-      return response;
+      return await this.get('/api/notifications');
     } catch (error) {
       return {
         success: false,
@@ -330,8 +201,7 @@ class ApiClient {
 
   async clearAllNotifications() {
     try {
-      const response = await this.post('/api/notifications', { action: 'clear_all' });
-      return response;
+      return await this.post('/api/notifications', { action: 'clear_all' });
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -339,8 +209,7 @@ class ApiClient {
 
   async clearNotification(notificationId) {
     try {
-      const response = await this.post(`/api/notifications/clear/${notificationId}`);
-      return response;
+      return await this.post(`/api/notifications/clear/${notificationId}`);
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -348,111 +217,14 @@ class ApiClient {
 
   async testNotification() {
     try {
-      const response = await this.post('/api/notifications', { action: 'test' });
-      return response;
+      return await this.post('/api/notifications', { action: 'test' });
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // RSS API methods
-  async getRssFeeds() {
-    return this.get('/api/rss/getfeeds');
-  }
-
-  async addRssFeed(feedData) {
-    return this.post('/api/rss/addrss', feedData);
-  }
-
-  async modifyRssFeed(feedData) {
-    return this.post('/api/rss/modifyrss', feedData);
-  }
-
-  async controlRssFeed(feedId, operation) {
-    return this.post('/api/rss/controlrss', {
-      rss_feed_id: feedId,
-      operation,
-    });
-  }
-
-  async getRssFeedItems(feedId, offset = 0, limit = 100) {
-    return this.get('/api/rss/getfeeditems', {
-      rss_feed_id: feedId,
-      offset,
-      limit,
-    });
-  }
-
-  // User API methods
-  async getUserProfile() {
-    return this.get('/api/user/me');
-  }
-
-  async getSubscriptions() {
-    return this.get('/api/user/subscriptions');
-  }
-
-  async getTransactions() {
-    return this.get('/api/user/transactions');
-  }
-
-  async getReferralData() {
-    return this.get('/api/user/referraldata');
-  }
-
-  async addReferral(referralCode) {
-    return this.post('/api/user/addreferral', { referral: referralCode });
-  }
-
-  // Search Engine API methods
-  async getSearchEngines() {
-    return this.get('/api/user/settings/searchengines');
-  }
-
-  async addSearchEngine(engineData) {
-    return this.put('/api/user/settings/addsearchengines', engineData);
-  }
-
-  async modifySearchEngine(engineData) {
-    return this.post('/api/user/settings/modifysearchengines', engineData);
-  }
-
-  async controlSearchEngine(engineId, operation) {
-    return this.post('/api/user/settings/controlsearchengines', {
-      engine_id: engineId,
-      operation,
-    });
-  }
-
-  // Statistics API methods
-  async getStats() {
-    return this.get('/api/stats');
-  }
-
-  async getStats30Days() {
-    return this.get('/api/stats/30days');
-  }
-
-  // Health check
-  async getHealth() {
-    return this.get('/');
-  }
-
-  // Integration API methods
   async getIntegrationJobs() {
     return this.get('/api/integration/jobs');
-  }
-
-  async getIntegrationJobByHash(hash) {
-    return this.get(`/api/integration/jobs/${hash}`);
-  }
-
-  async cancelIntegrationJob(jobId) {
-    return this.delete(`/api/integration/job/${jobId}`);
-  }
-
-  async getCloudProviderStatus() {
-    return this.get('/api/integration/status');
   }
 
   async addToGoogleDrive(data) {
@@ -480,9 +252,4 @@ class ApiClient {
   }
 }
 
-// Factory function to create API client
-export const createApiClient = (apiKey) => {
-  return new ApiClient(apiKey);
-};
-
-// Default export for backward compatibility
+export const createApiClient = (apiKey) => new ApiClient(apiKey);

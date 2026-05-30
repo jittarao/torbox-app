@@ -26,6 +26,10 @@ export function useColumnWidths(activeType) {
   const pendingWidthsRef = useRef(null);
 
   useEffect(() => {
+    setColumnWidths(loadColumnWidths(storageKey));
+  }, [storageKey]);
+
+  useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);

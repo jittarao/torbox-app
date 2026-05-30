@@ -189,17 +189,31 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
     entity.usenet_id?.toString() ||
     entity.web_id?.toString();
   const tags = tagMappings?.[downloadId] || entity.tags || [];
-  const row = { ...entity, tags };
   const lookup =
     downloadHistoryLookup?.itemDownloads != null
       ? downloadHistoryLookup
       : buildDownloadHistoryLookup(downloadHistoryLookup);
   const assetType = entity.assetType || entity.asset_type;
+  let isDownloaded;
   if (lookup && assetType) {
-    const isDownloaded = lookup.itemDownloads.has(`${assetType}:${String(downloadId || entity.id)}`);
-    if (row.is_downloaded !== isDownloaded) {
-      row.is_downloaded = isDownloaded;
-    }
+    isDownloaded = lookup.itemDownloads.has(`${assetType}:${String(downloadId || entity.id)}`);
+  }
+
+  const entityTags = entity.tags || [];
+  const tagsUnchanged =
+    tags.length === entityTags.length && tags.every((t, i) => t === entityTags[i]);
+  const downloadedUnchanged =
+    isDownloaded === undefined ||
+    entity.is_downloaded === isDownloaded ||
+    (entity.is_downloaded === undefined && !isDownloaded);
+
+  if (tagsUnchanged && downloadedUnchanged) {
+    return entity;
+  }
+
+  const row = { ...entity, tags };
+  if (isDownloaded !== undefined) {
+    row.is_downloaded = isDownloaded;
   }
   return row;
 }

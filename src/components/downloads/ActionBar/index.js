@@ -29,7 +29,6 @@ export default function ActionBar() {
     viewItems: unfilteredItems,
     sortedItems: filteredItems,
     activeColumns,
-    selectedItems,
   } = useDownloadsDataContext();
   const {
     handleColumnChange: onColumnChange,
@@ -68,8 +67,14 @@ export default function ActionBar() {
     setToast,
   } = useDownloadsContext();
   const onBlurToggle = () => setIsBlurred(!isBlurred);
-  const onBulkDownloadWrapper = () => onBulkDownload(selectedItems, unfilteredItems);
-  const onBulkDeleteWrapper = (includeParentDownloads) => onBulkDelete(selectedItems, includeParentDownloads, unfilteredItems);
+  const onBulkDownloadWrapper = () =>
+    onBulkDownload(useDownloadsSelectionStore.getState().selectedItems, unfilteredItems);
+  const onBulkDeleteWrapper = (includeParentDownloads) =>
+    onBulkDelete(
+      useDownloadsSelectionStore.getState().selectedItems,
+      includeParentDownloads,
+      unfilteredItems
+    );
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
   const selectedFileCount = useDownloadsSelectionStore(selectTotalSelectedFileCount);
   const hasSelectedFiles = useDownloadsSelectionStore(selectHasSelectedFiles);
