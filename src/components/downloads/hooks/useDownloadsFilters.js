@@ -31,10 +31,10 @@ export function useDownloadsFilters({
     appliedFilters,
     setAppliedFilters,
     patchFilterCriteria,
+    clearAllFilterCriteria,
     sortField,
     sortDirection,
     setSort,
-    resetFilters,
   } = filterParams;
 
   const [columnFilters, setColumnFilters] = useState(() =>
@@ -105,12 +105,12 @@ export function useDownloadsFilters({
     return visibleColumns;
   };
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     clearView();
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
     setColumnFilters(empty);
-    resetFilters();
-  };
+    clearAllFilterCriteria();
+  }, [clearView, clearAllFilterCriteria]);
 
   const handleApplyTag = (tagId) => {
     const id = Number(tagId);
@@ -222,7 +222,9 @@ export function useDownloadsFilters({
   };
 
   const handleApplyFiltersFromModal = (filters) => {
-    setAppliedFilters(normalizeFilters(filters));
+    const normalized = normalizeFilters(filters);
+    setColumnFilters(normalized);
+    setAppliedFilters(normalized);
   };
 
   const handlePreviewFiltersFromModal = useCallback(

@@ -1,13 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, startTransition } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { getJSON, setJSON, removeItem } from '@/utils/storage';
 import {
   EMPTY_FILTERS,
   normalizeFilters,
 } from '@/components/downloads/filters/filterHelpers';
+import {
+  getDownloadsFilterSearchParamsSnapshot,
+  notifyDownloadsFilterSearchParams,
+  subscribeDownloadsFilterSearchParams,
+} from '@/hooks/downloadsFilterParamsUrl';
 
 const MAX_FILTERS_PARAM_LENGTH = 1800;
 const FILTERS_OVERFLOW_KEY = 'torbox-downloads-filters-overflow';
@@ -128,24 +133,48 @@ function writeSortToParams(params, sortField, sortDirection = 'asc') {
  * expandedById remains in downloadsUiStore only.
  */
 export function useDownloadsFilterParams() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const filterResetNonce = useDownloadsUiStore((s) => s.filterResetNonce);
 
+  const searchParams = useSyncExternalStore(
+    subscribeDownloadsFilterSearchParams,
+    getDownloadsFilterSearchParamsSnapshot,
+    () => new URLSearchParams()
+  );
+
   const criteria = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
 
-  const searchParamsRef = useRef(searchParams);
-  searchParamsRef.current = searchParams;
+  /** @type {import('react').MutableRefObject<Array<(params: URLSearchParams) => void>>} */
+  const pendingMutatorsRef = useRef([]);
+  const flushScheduledRef = useRef(false);
 
   const replaceParams = useCallback(
     (mutate) => {
-      const params = new URLSearchParams(searchParamsRef.current.toString());
-      mutate(params);
-      const qs = params.toString();
-      const href = qs ? `${pathname}?${qs}` : pathname;
-      startTransition(() => {
-        router.replace(href, { scroll: false });
+      pendingMutatorsRef.current.push(mutate);
+      if (flushScheduledRef.current) return;
+      flushScheduledRef.current = true;
+
+      queueMicrotask(() => {
+        flushScheduledRef.current = false;
+        const mutators = pendingMutatorsRef.current;
+        pendingMutatorsRef.current = [];
+
+        const params = new URLSearchParams(getDownloadsFilterSearchParamsSnapshot().toString());
+        for (let i = 0; i < mutators.length; i++) {
+          mutators[i](params);
+        }
+        const qs = params.toString();
+        const href = qs ? `${pathname}?${qs}` : pathname;
+
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(window.history.state, '', href);
+          notifyDownloadsFilterSearchParams();
+        }
+
+        startTransition(() => {
+          router.replace(href, { scroll: false });
+        });
       });
     },
     [pathname, router]
@@ -180,9 +209,10 @@ export function useDownloadsFilterParams() {
 
   const setAppliedFilters = useCallback(
     (filters) => {
-      let ok = true;
+      const preview = new URLSearchParams(getDownloadsFilterSearchParamsSnapshot().toString());
+      const ok = writeAppliedFiltersToParams(preview, filters);
       replaceParams((params) => {
-        ok = writeAppliedFiltersToParams(params, filters);
+        writeAppliedFiltersToParams(params, filters);
       });
       return ok;
     },
@@ -219,7 +249,7 @@ export function useDownloadsFilterParams() {
     [replaceParams]
   );
 
-  const resetFilters = useCallback(() => {
+  const clearAllFilterCriteria = useCallback(() => {
     removeItem(FILTERS_OVERFLOW_KEY);
     replaceParams((params) => {
       for (const key of DOWNLOADS_FILTER_PARAM_KEYS) {
@@ -227,6 +257,8 @@ export function useDownloadsFilterParams() {
       }
     });
   }, [replaceParams]);
+
+  const resetFilters = clearAllFilterCriteria;
 
   useEffect(() => {
     if (filterResetNonce === 0) return;
@@ -240,6 +272,7 @@ export function useDownloadsFilterParams() {
     setSort,
     setAppliedFilters,
     patchFilterCriteria,
+    clearAllFilterCriteria,
     resetFilters,
   };
 }
