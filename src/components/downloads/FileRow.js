@@ -15,6 +15,12 @@ import {
   useIsItemBlockingFileSelect,
 } from '@/components/shared/hooks/useSelection';
 import {
+  selectIsFileDownloading,
+  selectIsFileCopying,
+  selectIsFileStreaming,
+} from '@/store/fileInteractionStore';
+import { useFileInteractionStore } from '@/store/fileInteractionStore';
+import {
   getActionsColumnWidthPx,
   getCheckboxColumnWidthPx,
   getTableRowSurfaceClasses,
@@ -41,9 +47,6 @@ function FileRow({
   handleAudioPlay,
   activeColumns,
   downloadHistoryLookup,
-  isCopying,
-  isDownloading,
-  isStreaming,
   isBlurred = false,
   tableWidth,
   file = null,
@@ -61,8 +64,6 @@ function FileRow({
       : fileIndex !== null
         ? [item.files?.[fileIndex]].filter(Boolean)
         : item.files || [];
-
-  const assetKey = (itemId, fileId) => (fileId ? `${itemId}-${fileId}` : itemId);
 
   return (
     <>
@@ -82,16 +83,12 @@ function FileRow({
             handleAudioPlay={handleAudioPlay}
             activeColumns={activeColumns}
             downloadHistoryLookup={downloadHistoryLookup}
-            isCopying={isCopying}
-            isDownloading={isDownloading}
-            isStreaming={isStreaming}
             isBlurred={isBlurred}
             tableWidth={tableWidth}
             measureRef={measureRef}
             dataIndex={dataIndex}
             fileIndex={fileIndex}
             attachMeasureRef={fileIndex !== null}
-            assetKey={assetKey}
             t={t}
           />
         );
@@ -112,14 +109,10 @@ function FileRowInner({
   handleAudioPlay,
   activeColumns,
   downloadHistoryLookup,
-  isCopying,
-  isDownloading,
-  isStreaming,
   isBlurred,
   tableWidth,
   measureRef,
   dataIndex,
-  assetKey,
   t,
   fileIndex,
   attachMeasureRef,
@@ -128,13 +121,17 @@ function FileRowInner({
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = isItemSelected;
   const itemKey = `${item.assetType}:${String(item.id)}`;
-  const fileKey = `${itemKey}:${String(file.id)}`;
+  const historyFileKey = `${itemKey}:${String(file.id)}`;
+  const storeFileKey = `${String(item.id)}-${String(file.id)}`;
+  const isFileDownloading = useFileInteractionStore(selectIsFileDownloading(storeFileKey));
+  const isFileCopying = useFileInteractionStore(selectIsFileCopying(storeFileKey));
+  const isFileStreaming = useFileInteractionStore(selectIsFileStreaming(storeFileKey));
   const isDownloaded =
     downloadHistoryLookup.itemDownloads.has(itemKey) ||
-    downloadHistoryLookup.fileDownloads.has(fileKey);
+    downloadHistoryLookup.fileDownloads.has(historyFileKey);
   const isLinkFailed =
     downloadHistoryLookup.itemLinkFailed?.has(itemKey) ||
-    downloadHistoryLookup.fileLinkFailed?.has(fileKey);
+    downloadHistoryLookup.fileLinkFailed?.has(historyFileKey);
 
   const { row: rowSurfaceClass, stickyCell: actionsSurfaceClass } = getTableRowSurfaceClasses({
     selected: isChecked,
@@ -230,11 +227,11 @@ function FileRowInner({
                         e.stopPropagation();
                         handleFileStream(item.id, file);
                       }}
-                      disabled={isStreaming?.[assetKey(item.id, file.id)]}
+                      disabled={isFileStreaming}
                       className={FILE_ACTION_BUTTON_CLASS}
                       title={t('play')}
                     >
-                      {isStreaming?.[assetKey(item.id, file.id)] ? (
+                      {isFileStreaming ? (
                         <Spinner size="sm" />
                       ) : (
                         <Play />
@@ -247,11 +244,11 @@ function FileRowInner({
                         e.stopPropagation();
                         handleAudioPlay(item.id, file);
                       }}
-                      disabled={isStreaming?.[assetKey(item.id, file.id)]}
+                      disabled={isFileStreaming}
                       className={FILE_ACTION_BUTTON_CLASS}
                       title={t('play')}
                     >
-                      {isStreaming?.[assetKey(item.id, file.id)] ? (
+                      {isFileStreaming ? (
                         <Spinner size="sm" />
                       ) : (
                         <Play />
@@ -266,11 +263,11 @@ function FileRowInner({
                       e.stopPropagation();
                       handleFileDownload(item.id, file, true);
                     }}
-                    disabled={isCopying[assetKey(item.id, file.id)]}
+                    disabled={isFileCopying}
                     className={FILE_ACTION_BUTTON_CLASS}
                     title={t('copyLink')}
                   >
-                    {isCopying[assetKey(item.id, file.id)] ? <Spinner size="sm" /> : <Copy />}
+                    {isFileCopying ? <Spinner size="sm" /> : <Copy />}
                   </button>
                 </span>
                 <span className={FILE_ACTION_SLOT_CLASS}>
@@ -280,11 +277,11 @@ function FileRowInner({
                       e.stopPropagation();
                       handleFileDownload(item.id, file);
                     }}
-                    disabled={isDownloading[assetKey(item.id, file.id)]}
+                    disabled={isFileDownloading}
                     className={FILE_ACTION_BUTTON_CLASS}
                     title={t('download')}
                   >
-                    {isDownloading[assetKey(item.id, file.id)] ? (
+                    {isFileDownloading ? (
                       <Spinner size="sm" />
                     ) : (
                       <Download />

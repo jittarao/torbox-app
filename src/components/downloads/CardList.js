@@ -22,6 +22,7 @@ import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
+import { useFileInteractionStore } from '@/store/fileInteractionStore';
 
 function parseEntityKey(entityKey) {
   const sep = entityKey.indexOf(':');
@@ -269,9 +270,6 @@ export default function CardList() {
   } = useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer });
 
   const t = useTranslations('CardList');
-  const [isDownloading, setIsDownloading] = useState({});
-  const [isCopying, setIsCopying] = useState({});
-  const [isStreaming, setIsStreaming] = useState({});
   const parentRef = useRef(null);
   const { downloadSingle } = useDownloadsActions();
   const containerOffsetTopRef = useRef(0);
@@ -345,14 +343,12 @@ export default function CardList() {
     downloadSingle,
     setToast,
     toastMessages,
-    setIsDownloading,
-    setIsCopying,
   });
 
   const handleFileStream = useCallback(
     async (itemId, file) => {
       const key = interactions.assetKey(itemId, file.id);
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      useFileInteractionStore.getState().setStreaming(key, true);
       try {
         await onFileStreamInit(itemId, file);
       } catch (error) {
@@ -362,7 +358,7 @@ export default function CardList() {
           type: 'error',
         });
       } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+        useFileInteractionStore.getState().setStreaming(key, false);
       }
     },
     [interactions.assetKey, onFileStreamInit, setToast]
@@ -371,7 +367,7 @@ export default function CardList() {
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
       const key = interactions.assetKey(itemId, file.id);
-      setIsStreaming((prev) => ({ ...prev, [key]: true }));
+      useFileInteractionStore.getState().setStreaming(key, true);
       try {
         await onAudioPlay(itemId, file);
       } catch (error) {
@@ -381,22 +377,11 @@ export default function CardList() {
           type: 'error',
         });
       } finally {
-        setIsStreaming((prev) => ({ ...prev, [key]: false }));
+        useFileInteractionStore.getState().setStreaming(key, false);
       }
     },
     [interactions.assetKey, onAudioPlay, setToast, t]
   );
-
-  const handleCopyLink = useCallback(async (link) => {
-    setIsCopying((prev) => ({ ...prev, [link]: true }));
-    try {
-      await navigator.clipboard.writeText(link);
-    } finally {
-      setTimeout(() => {
-        setIsCopying((prev) => ({ ...prev, [link]: false }));
-      }, 1000);
-    }
-  }, []);
 
   const renderCard = useCallback(
     (entityKey, index) => (
@@ -418,10 +403,6 @@ export default function CardList() {
         handleFileDownload={interactions.handleFileDownload}
         handleFileStream={handleFileStream}
         handleAudioPlay={handleAudioPlay}
-        handleCopyLink={handleCopyLink}
-        isDownloading={isDownloading}
-        isCopying={isCopying}
-        isStreaming={isStreaming}
         activeType={activeType}
         hasFilesWithSearch={hasFilesWithSearch}
       />
@@ -440,10 +421,6 @@ export default function CardList() {
       interactions,
       handleFileStream,
       handleAudioPlay,
-      handleCopyLink,
-      isDownloading,
-      isCopying,
-      isStreaming,
       activeType,
       hasFilesWithSearch,
     ]

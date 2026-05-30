@@ -40,9 +40,6 @@ function ItemCard({
   setToast,
   activeType,
   viewMode,
-  isCopying,
-  isDownloading,
-  isStreaming,
   apiKey,
 }) {
   const columnT = useTranslations('Columns');
@@ -515,9 +512,6 @@ function ItemCard({
           onFileDownload={onFileDownload}
           onFileStream={handleFileStream}
           onAudioPlay={handleAudioPlay}
-          isCopying={isCopying}
-          isDownloading={isDownloading}
-          isStreaming={isStreaming}
           isMobile={isMobile}
           isFileDownloaded={isFileDownloaded}
           isFileLinkFailed={isFileLinkFailed}
