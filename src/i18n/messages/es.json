@@ -46,9 +46,11 @@
     "show": "Mostrar clave API"
   },
   "ApiKeyManager": {
+    "active": "Activa",
     "add": "Añadir",
     "addKey": "Añadir clave",
     "addNewKey": "Añadir nueva clave API",
+    "addNewKeyHint": "Las etiquetas ayudan a distinguir cuentas de un vistazo.",
     "apiKey": "Clave API",
     "apiKeyPlaceholder": "Introducir tu clave API",
     "cancel": "Cancelar",
@@ -56,7 +58,10 @@
     "deleteKey": "Eliminar clave",
     "keyLabel": "Etiqueta de clave",
     "keyLabelPlaceholder": "e.g. Personal, Familia",
+    "keysCount": "{count, plural, =0 {Sin claves} one {# clave} other {# claves}}",
+    "managerPinned": "Desactiva «Mantener abierto» para cerrar",
     "noKeys": "No hay claves guardadas",
+    "noKeysHint": "Guarda perfiles para cambiar rápido entre cuentas de TorBox.",
     "savedKeys": "Claves API guardadas",
     "toggleOpen": "Mantener abierto"
   },

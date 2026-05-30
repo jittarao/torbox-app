@@ -46,9 +46,11 @@
     "show": "APIキーを表示"
   },
   "ApiKeyManager": {
+    "active": "使用中",
     "add": "追加",
     "addKey": "キーを追加",
     "addNewKey": "新しいAPIキーを追加",
+    "addNewKeyHint": "ラベルでアカウントを一目で区別できます。",
     "apiKey": "APIキー",
     "apiKeyPlaceholder": "Enter your API key",
     "cancel": "キャンセル",
@@ -56,7 +58,10 @@
     "deleteKey": "キーを削除",
     "keyLabel": "キーラベル",
     "keyLabelPlaceholder": "e.g. Personal, Family",
+    "keysCount": "{count, plural, =0 {キーなし} other {# 件のキー}}",
+    "managerPinned": "閉じるには「開いたままにする」をオフにしてください",
     "noKeys": "保存されたキーがありません",
+    "noKeysHint": "プロファイルを保存して、TorBoxアカウントを素早く切り替えられます。",
     "savedKeys": "保存されたAPIキー",
     "toggleOpen": "開いたままにする"
   },
