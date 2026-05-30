@@ -67,15 +67,16 @@ export function useDownloadsFilters({
     loadViews,
     updateView,
     loading: viewsLoading,
+    hasLoaded: viewsHasLoaded,
   } = useCustomViews(apiKey);
 
   const activeTagIds = getActiveTagIds(appliedFilters);
 
   useEffect(() => {
-    if (isBackendAvailable && apiKey && views.length === 0 && !viewsLoading) {
+    if (isBackendAvailable && apiKey && !viewsHasLoaded && !viewsLoading) {
       loadViews();
     }
-  }, [apiKey, isBackendAvailable, views.length, viewsLoading, loadViews]);
+  }, [apiKey, isBackendAvailable, viewsHasLoaded, viewsLoading, loadViews]);
 
   const handleApplyView = (view) => {
     applyView(view);

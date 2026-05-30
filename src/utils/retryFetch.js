@@ -8,11 +8,11 @@ const RETRYABLE_STATUSES = new Set([502, 503, 504, 429]);
 // Helper function to get user-friendly error messages
 const getErrorMessage = (error, status, url) => {
   // Network errors
-  if (error.message === 'NetworkError when attempting to fetch resource.') {
+  if (error?.message === 'NetworkError when attempting to fetch resource.') {
     return 'Network connection failed. Please check your internet connection and try again.';
   }
 
-  if (error.message.includes('Failed to fetch')) {
+  if (error?.message?.includes('Failed to fetch')) {
     return 'Unable to connect to TorBox servers. Please check your internet connection and try again.';
   }
 
@@ -41,7 +41,7 @@ const getErrorMessage = (error, status, url) => {
   }
 
   // Generic error fallback
-  return error.message || 'An unexpected error occurred. Please try again.';
+  return error?.message || 'An unexpected error occurred. Please try again.';
 };
 
 export async function retryFetch(url, options = {}) {

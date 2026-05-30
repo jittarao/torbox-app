@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
+import { isBackendDisabled } from '@/utils/backendCheck';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -16,6 +17,10 @@ function hashApiKey(apiKey) {
 }
 
 export async function GET(request) {
+  if (isBackendDisabled()) {
+    return NextResponse.json({ success: true, mappings: {} });
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');
@@ -62,6 +67,13 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (isBackendDisabled()) {
+    return NextResponse.json(
+      { success: false, error: 'Download tags feature is disabled when backend is disabled' },
+      { status: 503 }
+    );
+  }
+
   try {
     const headersList = await headers();
     const apiKey = headersList.get('x-api-key');

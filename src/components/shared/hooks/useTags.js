@@ -5,12 +5,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { useTagsStore } from '@/store/tagsStore';
 
 export function useTags(apiKey) {
-  const { tags, loading, error, loadTags, createTag, updateTag, deleteTag, setApiKey } =
+  const { tags, loading, error, hasLoaded, loadTags, createTag, updateTag, deleteTag, setApiKey } =
     useTagsStore(
       useShallow((s) => ({
         tags: s.tags,
         loading: s.loading,
         error: s.error,
+        hasLoaded: s.hasLoaded,
         loadTags: s.loadTags,
         createTag: s.createTag,
         updateTag: s.updateTag,
@@ -25,11 +26,14 @@ export function useTags(apiKey) {
     }
   }, [apiKey, setApiKey]);
 
-  const loadTagsWithKey = useCallback(async () => {
-    if (apiKey) {
-      await loadTags(apiKey);
-    }
-  }, [apiKey, loadTags]);
+  const loadTagsWithKey = useCallback(
+    async (options) => {
+      if (apiKey) {
+        await loadTags(apiKey, options);
+      }
+    },
+    [apiKey, loadTags]
+  );
 
   const createTagWithKey = useCallback(
     async (name) => {
@@ -65,6 +69,7 @@ export function useTags(apiKey) {
     tags,
     loading,
     error,
+    hasLoaded,
     loadTags: loadTagsWithKey,
     createTag: createTagWithKey,
     updateTag: updateTagWithKey,

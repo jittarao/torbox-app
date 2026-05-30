@@ -56,26 +56,33 @@ export default function ItemActions({
   // Forces a torrent or a webdl/usenet item to start downloading
   const handleForceStart = async () => {
     const result = await controlQueuedItem(apiKey, item.id, 'start');
+    if (!result) {
+      setToast({ message: t('toast.downloadFailed'), type: 'error' });
+      return;
+    }
     setToast({
-      message: result.success ? t('toast.downloadStarted') : t('toast.downloadFailed'),
+      message: result.success
+        ? t('toast.downloadStarted')
+        : result.userMessage || result.error || t('toast.downloadFailed'),
       type: result.success ? 'success' : 'error',
     });
-    if (!result.success) {
-      throw new Error(result.error);
-    }
   };
 
   // Stops seeding a torrent
   const handleStopSeeding = async () => {
     if (activeType !== 'torrents') return;
     const result = await controlTorrent(apiKey, item.id, 'stop_seeding');
+    if (!result) {
+      setToast({ message: t('toast.seedingStopFailed'), type: 'error' });
+      return;
+    }
     setToast({
-      message: result.success ? t('toast.seedingStopped') : t('toast.seedingStopFailed'),
+      message: result.success
+        ? t('toast.seedingStopped')
+        : result.userMessage || result.error || t('toast.seedingStopFailed'),
       type: result.success ? 'success' : 'error',
     });
-    if (!result.success) {
-      throw new Error(result.error);
-    } else {
+    if (result.success) {
       patchItem(resolveItemAssetType(item, activeType), item.id, {
         active: false,
         download_state: 'completed',
