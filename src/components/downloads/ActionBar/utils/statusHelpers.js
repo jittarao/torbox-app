@@ -1,4 +1,5 @@
 import { STATUS_OPTIONS } from '@/components/constants';
+import { isQueuedItem } from '@/utils/utility';
 
 export const getMatchingStatus = (item) => {
   const isQueued = !item.download_state && !item.download_finished && !item.active;
@@ -81,4 +82,9 @@ export const getTotalSelectedFiles = (selectedItems) => {
 /** Torrent is finished, present on disk, and actively seeding (matches ItemActions stop-seeding affordance). */
 export function isTorrentSeeding(item) {
   return Boolean(item?.download_finished && item?.download_present && item.active);
+}
+
+/** Torrent is queued (matches status filter / ItemActions force-start affordance on torrents tab). */
+export function isTorrentQueued(item) {
+  return isQueuedItem(item);
 }
