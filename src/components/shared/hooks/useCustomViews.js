@@ -10,6 +10,7 @@ export function useCustomViews(apiKey) {
     activeView,
     loading,
     error,
+    hasLoaded,
     loadViews,
     saveView: saveViewStore,
     updateView: updateViewStore,
@@ -23,6 +24,7 @@ export function useCustomViews(apiKey) {
       activeView: s.activeView,
       loading: s.loading,
       error: s.error,
+      hasLoaded: s.hasLoaded,
       loadViews: s.loadViews,
       saveView: s.saveView,
       updateView: s.updateView,
@@ -39,11 +41,14 @@ export function useCustomViews(apiKey) {
     }
   }, [apiKey, setApiKey]);
 
-  const loadViewsWithKey = useCallback(async () => {
-    if (apiKey) {
-      await loadViews(apiKey);
-    }
-  }, [apiKey, loadViews]);
+  const loadViewsWithKey = useCallback(
+    async (options) => {
+      if (apiKey) {
+        await loadViews(apiKey, options);
+      }
+    },
+    [apiKey, loadViews]
+  );
 
   const saveView = useCallback(
     async (name, filters, sort, columns, assetType = null, searchQuery = null) => {
@@ -80,6 +85,7 @@ export function useCustomViews(apiKey) {
     activeView,
     loading,
     error,
+    hasLoaded,
     loadViews: loadViewsWithKey,
     saveView,
     updateView,

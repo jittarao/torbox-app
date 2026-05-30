@@ -1,23 +1,43 @@
 import { create } from 'zustand';
+import { isBackendAvailable } from '@/store/backendModeStore';
 import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
+
+async function readApiError(response, fallback) {
+  try {
+    const data = await response.json();
+    return data.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export const useDownloadTagsStore = create((set, get) => ({
   tagMappings: {},
   loading: false,
   error: null,
-  ...createApiKeyScopedSlice(set, get, { tagMappings: {}, error: null }),
+  hasLoaded: false,
+  ...createApiKeyScopedSlice(set, get, { tagMappings: {}, error: null, hasLoaded: false }),
 
   // Fetch all download-tag mappings from /api/downloads/tags
-  fetchDownloadTags: async (apiKey) => {
+  fetchDownloadTags: async (apiKey, { force = false } = {}) => {
     if (!apiKey) {
       set({ error: 'API key is required', loading: false });
       return;
     }
 
-    const { currentApiKey, loading } = get();
+    if (!isBackendAvailable()) {
+      set({ tagMappings: {}, loading: false, error: null });
+      return;
+    }
+
+    const { currentApiKey, loading, hasLoaded } = get();
 
     // Prevent duplicate concurrent calls: if already loading, skip
     if (loading) {
+      return;
+    }
+
+    if (!force && hasLoaded && currentApiKey === apiKey) {
       return;
     }
 
@@ -42,7 +62,13 @@ export const useDownloadTagsStore = create((set, get) => ({
       }
 
       if (!response.ok) {
-        throw new Error('Failed to load download tags');
+        if (response.status === 503) {
+          set({ tagMappings: {}, loading: false, error: null, hasLoaded: true });
+          return {};
+        }
+        const message = await readApiError(response, 'Failed to load download tags');
+        set({ error: message, loading: false, hasLoaded: true });
+        return;
       }
 
       const data = await response.json();
@@ -51,18 +77,25 @@ export const useDownloadTagsStore = create((set, get) => ({
       }
 
       if (data.success) {
-        set({ tagMappings: data.mappings || {}, loading: false });
+        set({ tagMappings: data.mappings || {}, loading: false, hasLoaded: true });
         return data.mappings || {};
-      } else {
-        throw new Error(data.error || 'Failed to load download tags');
       }
+
+      set({
+        error: data.error || 'Failed to load download tags',
+        loading: false,
+        hasLoaded: true,
+      });
     } catch (err) {
       if (!get().isRequestCurrent(apiKey, requestId)) {
         return;
       }
       console.error('Error loading download tags:', err);
-      set({ error: err.message, loading: false });
-      throw err;
+      set({
+        error: err?.message || 'Failed to load download tags',
+        loading: false,
+        hasLoaded: true,
+      });
     }
   },
 
@@ -70,6 +103,10 @@ export const useDownloadTagsStore = create((set, get) => ({
   assignTags: async (apiKey, downloadIds, tagIds, operation = 'add') => {
     if (!apiKey) {
       throw new Error('API key is required');
+    }
+
+    if (!isBackendAvailable()) {
+      throw new Error('Download tags feature is disabled when backend is disabled');
     }
 
     set({ loading: true, error: null });
@@ -97,7 +134,7 @@ export const useDownloadTagsStore = create((set, get) => ({
         // Reset loading before fetching download tags
         set({ loading: false });
         // Fetch latest download-tags list from /api/downloads/tags after assignment
-        await get().fetchDownloadTags(apiKey);
+        await get().fetchDownloadTags(apiKey, { force: true });
         return true;
       } else {
         throw new Error(data.error || 'Failed to assign tags');

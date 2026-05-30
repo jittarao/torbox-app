@@ -27,30 +27,32 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable) {
     [downloadHistory]
   );
 
-  const { loadTags, tags, loading: tagsLoading, updateTag: updateTagName } = useTags(apiKey);
+  const {
+    loadTags,
+    tags,
+    loading: tagsLoading,
+    hasLoaded: tagsHasLoaded,
+    updateTag: updateTagName,
+  } = useTags(apiKey);
 
   const {
     fetchDownloadTags,
     tagMappings,
     loading: downloadTagsLoading,
+    hasLoaded: downloadTagsHasLoaded,
   } = useDownloadTags(apiKey);
 
   useEffect(() => {
-    if (isBackendAvailable && apiKey && tags.length === 0 && !tagsLoading) {
+    if (isBackendAvailable && apiKey && !tagsHasLoaded && !tagsLoading) {
       loadTags();
     }
-  }, [apiKey, isBackendAvailable, tags.length, tagsLoading, loadTags]);
+  }, [apiKey, isBackendAvailable, tagsHasLoaded, tagsLoading, loadTags]);
 
   useEffect(() => {
-    if (
-      isBackendAvailable &&
-      apiKey &&
-      Object.keys(tagMappings).length === 0 &&
-      !downloadTagsLoading
-    ) {
+    if (isBackendAvailable && apiKey && !downloadTagsHasLoaded && !downloadTagsLoading) {
       fetchDownloadTags();
     }
-  }, [apiKey, isBackendAvailable, tagMappings, downloadTagsLoading, fetchDownloadTags]);
+  }, [apiKey, isBackendAvailable, downloadTagsHasLoaded, downloadTagsLoading, fetchDownloadTags]);
 
   // Subscribe to individual store fields — entities reference is stable when unchanged
   const entities = useTorboxDownloadsStore((state) => state.entities);

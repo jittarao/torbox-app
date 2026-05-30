@@ -45,7 +45,7 @@ export default function TagAssignmentModal({
       setSelectedTagIds([]);
       setMode('add');
       // Fetch latest tags when modal opens
-      fetchDownloadTags();
+      fetchDownloadTags({ force: true });
     } else {
       setSelectedTagIds([]);
       setMode('add');
