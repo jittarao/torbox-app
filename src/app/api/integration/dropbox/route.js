@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function POST(request) {
   const headersList = await headers();
@@ -13,7 +14,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/integration/dropbox`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/dropbox`, {
       cache: 'no-store',
       method: 'POST',
       headers: {

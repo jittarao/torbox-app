@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function GET() {
   const headersList = await headers();
@@ -12,7 +13,7 @@ export async function GET() {
 
   try {
     // Try to get integration jobs to check if the feature is available
-    const jobsResponse = await fetch(`${API_BASE}/${API_VERSION}/api/integration/jobs`, {
+    const jobsResponse = await torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/jobs`, {
       cache: 'no-store',
       headers: {
         'x-api-key': apiKey,
@@ -47,7 +48,7 @@ export async function GET() {
     // This is a workaround since TorBox might not have a direct endpoint for this
     const providerChecks = await Promise.allSettled([
       // Try to get Google Drive status
-      fetch(`${API_BASE}/${API_VERSION}/api/integration/googledrive`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/googledrive`, {
         cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
@@ -56,7 +57,7 @@ export async function GET() {
       }).then((res) => res.ok),
 
       // Try to get Dropbox status
-      fetch(`${API_BASE}/${API_VERSION}/api/integration/dropbox`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/dropbox`, {
         cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
@@ -65,7 +66,7 @@ export async function GET() {
       }).then((res) => res.ok),
 
       // Try to get OneDrive status
-      fetch(`${API_BASE}/${API_VERSION}/api/integration/onedrive`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/onedrive`, {
         cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
@@ -74,7 +75,7 @@ export async function GET() {
       }).then((res) => res.ok),
 
       // Try to get GoFile status
-      fetch(`${API_BASE}/${API_VERSION}/api/integration/gofile`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/gofile`, {
         cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
@@ -83,7 +84,7 @@ export async function GET() {
       }).then((res) => res.ok),
 
       // Try to get 1Fichier status
-      fetch(`${API_BASE}/${API_VERSION}/api/integration/1fichier`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/1fichier`, {
         cache: 'no-store',
         headers: {
           'x-api-key': apiKey,
@@ -92,7 +93,7 @@ export async function GET() {
       }).then((res) => res.ok),
 
       // Try to get Pixeldrain status
-      fetch(`${API_BASE}/${API_VERSION}/api/integration/pixeldrain`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/integration/pixeldrain`, {
         cache: 'no-store',
         headers: {
           'x-api-key': apiKey,

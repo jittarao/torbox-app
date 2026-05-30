@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
@@ -24,7 +25,7 @@ export async function GET(request) {
 
     // Fetch both regular and queued usenet downloads in parallel
     const [downloadsResponse, queuedResponse] = await Promise.all([
-      fetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?bypass_cache=true&_t=${timestamp}`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?bypass_cache=true&_t=${timestamp}`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -34,7 +35,7 @@ export async function GET(request) {
           Expires: '0',
         },
       }),
-      fetch(
+      torboxFetch(
         `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet&bypass_cache=true&_t=${timestamp}`,
         {
           cache: 'no-store',
@@ -267,14 +268,14 @@ export async function DELETE(request) {
   try {
     // First, fetch the usenet data to determine if it's queued
     const [downloadsResponse, queuedResponse] = await Promise.all([
-      fetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?id=${id}`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?id=${id}`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       }),
-      fetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -307,7 +308,7 @@ export async function DELETE(request) {
           operation: 'delete',
         });
 
-    const response = await fetch(endpoint, {
+    const response = await torboxFetch(endpoint, {
       cache: 'no-store',
       method: 'POST',
       headers: {

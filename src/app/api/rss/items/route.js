@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -46,7 +47,7 @@ export async function GET(request) {
       );
     }
 
-    const response = await fetch(
+    const response = await torboxFetch(
       `${API_BASE}/${API_VERSION}/api/rss/getfeeditems?rss_feed_id=${feedId}&offset=${offset}&limit=${limit}`,
       {
         cache: 'no-store',

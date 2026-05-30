@@ -1,4 +1,5 @@
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
@@ -19,11 +20,9 @@ export async function GET(request) {
     const timestamp = Date.now();
 
     // Fetch both regular and queued torrents in parallel with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     const [torrentsResponse, queuedResponse] = await Promise.all([
-      fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?bypass_cache=true&_t=${timestamp}`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?bypass_cache=true&_t=${timestamp}`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -32,9 +31,8 @@ export async function GET(request) {
           Pragma: 'no-cache',
           Expires: '0',
         },
-        signal: controller.signal,
       }),
-      fetch(
+      torboxFetch(
         `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent&bypass_cache=true&_t=${timestamp}`,
         {
           cache: 'no-store',
@@ -45,12 +43,9 @@ export async function GET(request) {
             Pragma: 'no-cache',
             Expires: '0',
           },
-          signal: controller.signal,
         }
       ),
     ]);
-
-    clearTimeout(timeoutId);
 
     const [torrentsData, queuedData] = await Promise.all([
       torrentsResponse.json(),
@@ -97,14 +92,8 @@ export async function GET(request) {
     console.error('Error fetching torrents:', error);
 
     // Handle timeout specifically
-    if (error.name === 'AbortError') {
-      return Response.json(
-        {
-          success: false,
-          error: 'Request timeout - API took longer than 30 seconds to respond',
-        },
-        { status: 408 }
-      );
+    if (isTorboxFetchTimeout(error)) {
+      return Response.json({ success: false, error: error.message }, { status: 408 });
     }
 
     return Response.json({ success: false, error: error.message }, { status: 500 });
@@ -262,14 +251,14 @@ export async function DELETE(request) {
   try {
     // First, fetch the torrent data to determine if it's queued
     const [torrentsResponse, queuedResponse] = await Promise.all([
-      fetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?id=${id}`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?id=${id}`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
         },
       }),
-      fetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent`, {
+      torboxFetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -302,7 +291,7 @@ export async function DELETE(request) {
           operation: 'delete',
         });
 
-    const response = await fetch(endpoint, {
+    const response = await torboxFetch(endpoint, {
       cache: 'no-store',
       method: 'POST',
       headers: {

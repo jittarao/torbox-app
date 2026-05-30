@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 // Clear a specific notification by ID
 export async function POST(request, { params }) {
@@ -16,7 +17,7 @@ export async function POST(request, { params }) {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/notifications/clear/${id}`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/notifications/clear/${id}`, {
       cache: 'no-store',
       method: 'POST',
       headers: {

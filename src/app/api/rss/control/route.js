@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function POST(request) {
   try {
@@ -39,7 +40,7 @@ export async function POST(request) {
       );
     }
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/rss/controlrss`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/rss/controlrss`, {
       cache: 'no-store',
       method: 'POST',
       headers: {

@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -35,7 +36,7 @@ export async function GET(request) {
     });
 
     const apiUrl = `${API_BASE}/${API_VERSION}/api/stream/createstream?${queryParams}`;
-    const response = await fetch(apiUrl, {
+    const response = await torboxFetch(apiUrl, {
       cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,

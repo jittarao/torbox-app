@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 
 import {
@@ -25,14 +26,13 @@ export async function GET() {
 
   try {
     const startTime = Date.now();
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/user/me`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/user/me`, {
       method: 'GET',
       cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-      signal: AbortSignal.timeout(10000),
     });
 
     const responseTime = Date.now() - startTime;
