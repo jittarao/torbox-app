@@ -5,17 +5,13 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function GET(request) {
   try {
-    const adminKey =
-      request.headers.get('x-admin-key') || new URL(request.url).searchParams.get('adminKey');
+    const adminKey = request.headers.get('x-admin-key');
 
     if (!adminKey) {
       return NextResponse.json({ success: false, error: 'Admin key required' }, { status: 401 });
     }
 
     const url = new URL(`${BACKEND_URL}/api/admin/verify`);
-    if (adminKey && !request.headers.get('x-admin-key')) {
-      url.searchParams.append('adminKey', adminKey);
-    }
 
     const response = await new Promise((resolve, reject) => {
       const req = http.request(

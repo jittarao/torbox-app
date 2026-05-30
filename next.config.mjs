@@ -93,8 +93,8 @@ const nextConfig = {
           common: {
             name: 'common',
             minChunks: 2,
+            minSize: 30000,
             chunks: 'all',
-            enforce: true,
           },
         },
       };

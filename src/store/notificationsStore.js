@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createApiClient } from '@/utils/apiClient';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
-import { usePollingPauseStore } from '@/store/pollingPauseStore';
+import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 import { getJSON, setItem, removeItem } from '@/utils/storage';
 
 function getClearedNotifications() {
@@ -434,7 +434,7 @@ export const useNotificationsStore = create((set, get) => ({
       const tick = () => {
         const state = get();
         if (!state.currentApiKey) return;
-        if (usePollingPauseStore.getState().isPaused) return;
+        if (selectIsPaused(usePollingPauseStore.getState())) return;
         if (state.isPolling) {
           state.fetchNotifications(state.currentApiKey);
         }

@@ -1,4 +1,4 @@
-import { isDbEnsured, setEnsuringDb, markDbEnsured } from '@/store/appStore';
+import { useAppStore } from '@/store/appStore';
 
 /** In-flight ensure-db requests per API key (concurrent callers share one promise). */
 const ensureDbPromises = new Map();
@@ -14,7 +14,7 @@ export async function ensureUserDb(apiKey) {
     return { success: false, error: 'Invalid API key' };
   }
 
-  if (isDbEnsured(apiKey)) {
+  if (useAppStore.getState().isDbEnsured(apiKey)) {
     return { success: true, wasCreated: false, dbExists: true };
   }
 
@@ -36,11 +36,12 @@ export async function ensureUserDb(apiKey) {
 }
 
 async function runEnsureUserDb(apiKey) {
-  if (isDbEnsured(apiKey)) {
+  const app = useAppStore.getState();
+  if (app.isDbEnsured(apiKey)) {
     return { success: true, wasCreated: false, dbExists: true };
   }
 
-  setEnsuringDb(apiKey, true);
+  app.setEnsuringDb(apiKey, true);
 
   try {
     const response = await fetch('/api/backend/api-key/ensure-db', {
@@ -53,7 +54,7 @@ async function runEnsureUserDb(apiKey) {
 
     if (response.ok) {
       const data = await response.json();
-      markDbEnsured(apiKey);
+      useAppStore.getState().markDbEnsured(apiKey);
       return {
         success: true,
         wasCreated: data.wasCreated || false,
@@ -73,6 +74,6 @@ async function runEnsureUserDb(apiKey) {
       error: error.message || 'Failed to ensure user database',
     };
   } finally {
-    setEnsuringDb(apiKey, false);
+    useAppStore.getState().setEnsuringDb(apiKey, false);
   }
 }

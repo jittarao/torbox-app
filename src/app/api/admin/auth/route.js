@@ -5,18 +5,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 export async function POST(request) {
   try {
-    // Get admin key from header first, then try body if header is not present
-    let adminKey = request.headers.get('x-admin-key');
-
-    // Only try to parse body if we don't have the key from header
-    if (!adminKey) {
-      try {
-        const body = await request.json().catch(() => ({}));
-        adminKey = body.adminKey;
-      } catch (e) {
-        // Body parsing failed or no body, continue without it
-      }
-    }
+    const adminKey = request.headers.get('x-admin-key');
 
     if (!adminKey) {
       return NextResponse.json({ success: false, error: 'Admin key required' }, { status: 401 });
