@@ -298,6 +298,7 @@
     "viewLogs": "Pokaż logi"
   },
   "CardList": {
+    "noItems": "Brak pobrań",
     "toast": {
       "copyLink": "Link skopiowany do schowka",
       "copyLinkFailed": "Nie udało się skopiować linku"

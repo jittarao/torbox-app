@@ -298,6 +298,7 @@
     "viewLogs": "Protokolle anzeigen"
   },
   "CardList": {
+    "noItems": "Keine Downloads",
     "toast": {
       "copyLink": "Link in Zwischenablage kopiert",
       "copyLinkFailed": "Kopieren des Links fehlgeschlagen"

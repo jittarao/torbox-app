@@ -312,6 +312,7 @@
     "viewLogs": "View Logs"
   },
   "CardList": {
+    "noItems": "No downloads",
     "toast": {
       "copyLink": "Link copied to clipboard",
       "copyLinkFailed": "Failed to copy link"

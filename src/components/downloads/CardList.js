@@ -286,14 +286,25 @@ export default function CardList() {
   const deferredEntityKeys = useDeferredValue(entityKeys);
   const estimateSize = useCardEstimateSize(deferredEntityKeys, fileSearch);
 
+  const toastMessages = useMemo(
+    () => ({
+      copyLinkSuccess: t('toast.copyLink'),
+      copyLinkFailed: t('toast.copyLinkFailed'),
+    }),
+    [t]
+  );
+
   const interactions = useDownloadRowInteractions({
     items: ctx.sortedItems,
+    entityKeys: deferredEntityKeys,
     activeType,
     fileSearch,
     onFileSelect,
-    setToast,
     downloadSingle,
-    downloadHistoryLookup,
+    setToast,
+    toastMessages,
+    setIsDownloading,
+    setIsCopying,
   });
 
   const handleFileStream = useCallback(
@@ -334,32 +345,6 @@ export default function CardList() {
     [interactions.assetKey, onAudioPlay, setToast, t]
   );
 
-  const handleItemSelection = useCallback(
-    (itemId, assetType) => {
-      interactions.handleItemSelection(itemId, assetType);
-    },
-    [interactions]
-  );
-
-  const handleFileSelection = useCallback(
-    (itemId, fileId) => {
-      interactions.handleFileSelection(itemId, fileId);
-    },
-    [interactions]
-  );
-
-  const handleFileDownload = useCallback(
-    async (itemId, fileId) => {
-      setIsDownloading((prev) => ({ ...prev, [`${itemId}:${fileId}`]: true }));
-      try {
-        await interactions.handleFileDownload(itemId, fileId);
-      } finally {
-        setIsDownloading((prev) => ({ ...prev, [`${itemId}:${fileId}`]: false }));
-      }
-    },
-    [interactions]
-  );
-
   const handleCopyLink = useCallback(async (link) => {
     setIsCopying((prev) => ({ ...prev, [link]: true }));
     try {
@@ -386,9 +371,9 @@ export default function CardList() {
         onDelete={onDelete}
         downloadHistoryLookup={downloadHistoryLookup}
         selectedItems={ctx.selectedItems}
-        handleItemSelection={handleItemSelection}
-        handleFileSelection={handleFileSelection}
-        handleFileDownload={handleFileDownload}
+        handleItemSelection={interactions.handleItemSelection}
+        handleFileSelection={interactions.handleFileSelection}
+        handleFileDownload={interactions.handleFileDownload}
         handleFileStream={handleFileStream}
         handleAudioPlay={handleAudioPlay}
         handleCopyLink={handleCopyLink}
@@ -410,9 +395,7 @@ export default function CardList() {
       onDelete,
       downloadHistoryLookup,
       ctx.selectedItems,
-      handleItemSelection,
-      handleFileSelection,
-      handleFileDownload,
+      interactions,
       handleFileStream,
       handleAudioPlay,
       handleCopyLink,

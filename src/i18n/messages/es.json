@@ -298,6 +298,7 @@
     "viewLogs": "Ver Registros"
   },
   "CardList": {
+    "noItems": "No hay descargas",
     "toast": {
       "copyLink": "Enlace copiado al portapapeles",
       "copyLinkFailed": "Error al copiar el enlace"
