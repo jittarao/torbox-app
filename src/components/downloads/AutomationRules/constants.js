@@ -63,7 +63,16 @@ export const TAG_OPERATORS = {
   IS_ANY_OF: 'is_any_of',
   IS_ALL_OF: 'is_all_of',
   IS_NONE_OF: 'is_none_of',
+  IS_SET: 'is_set',
+  IS_NOT_SET: 'is_not_set',
 };
+
+/** Tag operators for automation rules (backend RuleEvaluator). */
+export const AUTOMATION_TAG_OPERATORS = [
+  TAG_OPERATORS.IS_ANY_OF,
+  TAG_OPERATORS.IS_ALL_OF,
+  TAG_OPERATORS.IS_NONE_OF,
+];
 
 export const BOOLEAN_OPERATORS = {
   IS_TRUE: 'is_true',
