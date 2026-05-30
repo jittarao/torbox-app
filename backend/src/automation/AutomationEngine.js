@@ -44,7 +44,7 @@ class AutomationEngine {
       this.apiKey = null; // not needed when using shared client
     } else {
       this.apiKey = decrypt(encryptedApiKey);
-      this.apiClient = new ApiClient(this.apiKey);
+      this.apiClient = new ApiClient(this.apiKey, { authId: this.authId });
     }
     this._ruleEvaluatorCache = null; // Cached RuleEvaluator instance
     this._ruleEvaluatorDbConnection = null; // Track the DB connection used by cached evaluator

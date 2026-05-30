@@ -69,18 +69,14 @@ class RuleEvaluator {
    */
   _queryInBatches(ids, sqlTemplate, extraParams = [], idColumn = 'torrent_id') {
     if (ids.length === 0) return [];
-    const placeholders = Array(IN_CLAUSE_BATCH_SIZE).fill('?').join(',');
-    const sql = sqlTemplate.replace('IN_CLAUSE', placeholders);
-    const stmt = this.db.prepare(sql);
     const rows = [];
     for (let i = 0; i < ids.length; i += IN_CLAUSE_BATCH_SIZE) {
       const chunk = ids.slice(i, i + IN_CLAUSE_BATCH_SIZE);
-      const padded =
-        chunk.length < IN_CLAUSE_BATCH_SIZE
-          ? [...chunk, ...Array(IN_CLAUSE_BATCH_SIZE - chunk.length).fill(null)]
-          : chunk;
-      const batchRows = stmt.all(...padded, ...extraParams);
-      rows.push(...batchRows.filter((r) => r[idColumn] != null));
+      const placeholders = chunk.map(() => '?').join(',');
+      const sql = sqlTemplate.replace('IN_CLAUSE', placeholders);
+      const stmt = this.db.prepare(sql);
+      const batchRows = stmt.all(...chunk, ...extraParams);
+      rows.push(...batchRows);
     }
     return rows;
   }

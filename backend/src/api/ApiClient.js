@@ -1,6 +1,6 @@
 import axios from 'axios';
 import logger from '../utils/logger.js';
-import Semaphore from '../utils/semaphore.js';
+import WeightedFairSemaphore from '../utils/WeightedFairSemaphore.js';
 
 /**
  * Simple circuit breaker for upstream API calls.
@@ -72,11 +72,12 @@ function normalizeActive(value) {
 const _fetchConcurrency = Math.max(1, parseInt(process.env.TORBOX_FETCH_CONCURRENCY || '20', 10));
 const _actionConcurrency = Math.max(1, parseInt(process.env.TORBOX_ACTION_CONCURRENCY || '12', 10));
 
-const _fetchSemaphore = new Semaphore(_fetchConcurrency);
-const _actionSemaphore = new Semaphore(_actionConcurrency);
+const _fetchSemaphore = new WeightedFairSemaphore(_fetchConcurrency);
+const _actionSemaphore = new WeightedFairSemaphore(_actionConcurrency);
 
 class ApiClient {
-  constructor(apiKey) {
+  constructor(apiKey, options = {}) {
+    this.authId = options.authId || 'anonymous';
     this.apiKey = apiKey;
     this.baseURL = process.env.TORBOX_API_BASE || DEFAULT_BASE_URL;
     this.apiVersion = process.env.TORBOX_API_VERSION || DEFAULT_API_VERSION;
@@ -255,11 +256,11 @@ class ApiClient {
 
     const pool = semaphore === 'fetch' ? _fetchSemaphore : _actionSemaphore;
     const throttled = async () => {
-      await pool.acquire();
+      const release = await pool.acquire(this.authId);
       try {
         return await apiCall();
       } finally {
-        pool.release();
+        release();
       }
     };
 

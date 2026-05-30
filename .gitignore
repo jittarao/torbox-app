@@ -141,7 +141,9 @@ docker/
 *~
 .cursorignore
 .cursor/
+.claude/
 .agents/
+.opencode/
 AGENTS.md
 /prompts
 /docs/superpowers/
