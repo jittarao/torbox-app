@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { Copy, Delete, Download, Refresh, VerticalEllipsis } from '@/components/icons';
+import { Copy, Delete, Download, FileDown, Refresh, VerticalEllipsis } from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
@@ -179,7 +179,7 @@ function MenuItems({
         menuVariant={menuVariant}
         onClick={onExportTorrent}
         disabled={isExporting}
-        icon={isExporting ? <Spinner size="xs" /> : <Download />}
+        icon={isExporting ? <Spinner size="xs" /> : <FileDown />}
       >
         {t('exportTorrent')}
       </MenuItemButton>
