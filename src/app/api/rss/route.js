@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 
 // Get all RSS feeds
@@ -18,7 +19,7 @@ export async function GET() {
       );
     }
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/rss/getfeeds`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/rss/getfeeds`, {
       cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -111,7 +112,7 @@ export async function POST(request) {
       }
     }
 
-    const response = await fetch(endpoint, {
+    const response = await torboxFetch(endpoint, {
       cache: 'no-store',
       method: 'POST',
       headers: {

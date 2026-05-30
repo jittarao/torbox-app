@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 
 import { API_BASE, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function GET() {
   try {
     const startTime = Date.now();
-    const response = await fetch(API_BASE, {
+    const response = await torboxFetch(API_BASE, {
       method: 'GET',
       cache: 'no-store',
       headers: {
         'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
       },
-      signal: AbortSignal.timeout(10000),
     });
 
     const responseTime = Date.now() - startTime;

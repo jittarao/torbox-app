@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 
 export async function POST(request) {
@@ -10,7 +11,7 @@ export async function POST(request) {
   try {
     const { queued_id, operation, type } = await request.json();
 
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/queued/controlqueued`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/queued/controlqueued`, {
       cache: 'no-store',
       method: 'POST',
       headers: {

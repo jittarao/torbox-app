@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { torboxFetch } from '@/app/api/lib/torboxFetch';
 
 export async function GET() {
   const headersList = await headers();
@@ -11,7 +12,7 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/${API_VERSION}/api/stats`, {
+    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/stats`, {
       cache: 'no-store',
       headers: {
         Authorization: `Bearer ${apiKey}`,
