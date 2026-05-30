@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -32,7 +33,7 @@ export async function GET(request) {
   try {
     const res = await fetch(url, {
       method: 'GET',
-      headers: { 'x-auth-id': authId },
+      headers: backendProxyHeaders(apiKey),
       cache: 'no-store',
       signal: request.signal,
     });

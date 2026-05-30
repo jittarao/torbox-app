@@ -1,10 +1,29 @@
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
+import { parseRateLimitMax } from '../utils/ip.js';
 
 // Constants
 const ADMIN_API_KEY_HEADER = 'x-admin-key';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const DEFAULT_RATE_LIMIT_MAX = 100;
+
+/**
+ * Rate limit admin routes (brute-force protection on x-admin-key).
+ */
+export const adminRateLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: parseRateLimitMax(process.env.ADMIN_RATE_LIMIT_MAX, DEFAULT_RATE_LIMIT_MAX),
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      error: 'Too many admin requests',
+      detail: 'Admin rate limit exceeded. Please wait before retrying.',
+    });
+  },
+});
 
 /**
  * Extract client IP address from request

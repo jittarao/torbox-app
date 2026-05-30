@@ -1086,12 +1086,7 @@ class Database {
       `
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
-      INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id
-        AND ak.is_active = 1
-        AND ak.rowid = (
-          SELECT MAX(ak2.rowid) FROM api_keys ak2
-          WHERE ak2.auth_id = ur.auth_id AND ak2.is_active = 1
-        )
+      INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id AND ak.is_active = 1
       WHERE ur.status = 'active'
         AND ur.has_active_rules = 1
         AND (ur.next_poll_at IS NULL OR ur.next_poll_at = '' OR ur.next_poll_at <= datetime('now'))

@@ -1,8 +1,4 @@
-import {
-  extractAuthIdMiddleware,
-  validateNumericIdMiddleware,
-  validateNumericId,
-} from '../middleware/validation.js';
+import { validateNumericIdMiddleware, validateNumericId } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import {
@@ -74,7 +70,7 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // POST /api/uploads/file - Upload file to storage
-  app.post('/api/uploads/file', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
+  app.post('/api/uploads/file', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -134,7 +130,7 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // DELETE /api/uploads/file - Delete file from storage by file_path
-  app.delete('/api/uploads/file', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
+  app.delete('/api/uploads/file', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -172,7 +168,7 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // POST /api/uploads/batch - Create multiple upload entries efficiently
-  app.post('/api/uploads/batch', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
+  app.post('/api/uploads/batch', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -370,7 +366,7 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // POST /api/uploads - Create upload entry
-  app.post('/api/uploads', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
+  app.post('/api/uploads', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -527,7 +523,7 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // GET /api/uploads - List uploads for user
-  app.get('/api/uploads', extractAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.get('/api/uploads', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -678,7 +674,7 @@ export function setupUploadsRoutes(app, backend) {
   // GET /api/uploads/:id - Get single upload details
   app.get(
     '/api/uploads/:id',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -733,7 +729,7 @@ export function setupUploadsRoutes(app, backend) {
   // GET /api/uploads/:id/download - Download original file
   app.get(
     '/api/uploads/:id/download',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -821,7 +817,7 @@ export function setupUploadsRoutes(app, backend) {
   // NOTE: This must be defined BEFORE /api/uploads/:id/retry to avoid route conflict
   app.post(
     '/api/uploads/bulk/retry',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     uploadRateLimiter,
     async (req, res) => {
       try {
@@ -952,7 +948,7 @@ export function setupUploadsRoutes(app, backend) {
   // POST /api/uploads/:id/retry - Retry failed upload
   app.post(
     '/api/uploads/:id/retry',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {
@@ -1055,7 +1051,7 @@ export function setupUploadsRoutes(app, backend) {
   );
 
   // PATCH /api/uploads/reorder - Update queue order for a single item
-  app.patch('/api/uploads/reorder', extractAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.patch('/api/uploads/reorder', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -1202,7 +1198,7 @@ export function setupUploadsRoutes(app, backend) {
 
   // DELETE /api/uploads/bulk - Bulk delete uploads
   // NOTE: This must be defined BEFORE /api/uploads/:id to avoid route conflict
-  app.delete('/api/uploads/bulk', extractAuthIdMiddleware, uploadRateLimiter, async (req, res) => {
+  app.delete('/api/uploads/bulk', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
       const { ids } = req.body; // Array of upload IDs
@@ -1325,7 +1321,7 @@ export function setupUploadsRoutes(app, backend) {
   // DELETE /api/uploads/:id - Delete upload
   app.delete(
     '/api/uploads/:id',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {

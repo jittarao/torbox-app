@@ -35,7 +35,7 @@ export async function GET(request) {
     url.searchParams.set('authId', authId);
 
     const response = await new Promise((resolve, reject) => {
-      const req = http.get(url, (res) => {
+      const req = http.get(url, { headers: backendProxyHeaders(apiKey) }, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
@@ -94,9 +94,9 @@ export async function POST(request) {
     const response = await fetch(`${BACKEND_URL}/api/downloads/tags`, {
       cache: 'no-store',
       method: 'POST',
-      headers: {
+      headers: backendProxyHeaders(apiKey, {
         'Content-Type': 'application/json',
-      },
+      }),
       body: JSON.stringify(requestBody),
     });
 

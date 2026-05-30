@@ -1,4 +1,4 @@
-import { extractAuthIdMiddleware, validateNumericIdMiddleware } from '../middleware/validation.js';
+import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 
@@ -28,7 +28,7 @@ export function setupLinkHistoryRoutes(app, backend) {
   const { userRateLimiter } = backend;
 
   // GET /api/link-history - List link history with pagination
-  app.get('/api/link-history', extractAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.get('/api/link-history', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -140,7 +140,7 @@ export function setupLinkHistoryRoutes(app, backend) {
   });
 
   // POST /api/link-history - Create new link history entry
-  app.post('/api/link-history', extractAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.post('/api/link-history', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
 
@@ -234,7 +234,7 @@ export function setupLinkHistoryRoutes(app, backend) {
   });
 
   // POST /api/link-history/bulk - Bulk create link history entries (for migration)
-  app.post('/api/link-history/bulk', extractAuthIdMiddleware, userRateLimiter, async (req, res) => {
+  app.post('/api/link-history/bulk', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
     try {
       const authId = req.validatedAuthId;
       const { entries } = req.body; // Array of link history entries
@@ -396,7 +396,7 @@ export function setupLinkHistoryRoutes(app, backend) {
   // NOTE: This must be registered BEFORE /api/link-history/:id to prevent "bulk" from matching the :id parameter
   app.delete(
     '/api/link-history/bulk',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     userRateLimiter,
     async (req, res) => {
       try {
@@ -474,7 +474,7 @@ export function setupLinkHistoryRoutes(app, backend) {
   // NOTE: This must be registered AFTER /api/link-history/bulk to allow the bulk route to match first
   app.delete(
     '/api/link-history/:id',
-    extractAuthIdMiddleware,
+    backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
     userRateLimiter,
     async (req, res) => {

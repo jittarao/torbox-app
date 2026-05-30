@@ -1,4 +1,6 @@
 import fs from 'fs';
+import ApiClient from '../api/ApiClient.js';
+import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -68,41 +70,47 @@ export class HealthCheckService {
         };
       }
 
-      // Try to test API connection using an automation engine if available
-      // This is the safest way since automation engines already have working API clients
-      if (this.automationEngines && this.automationEngines.size > 0) {
-        try {
-          // Get the first automation engine
-          const firstAuthId = Array.from(this.automationEngines.keys())[0];
-          const engine = this.automationEngines.get(firstAuthId);
+      let apiClient = null;
+      if (this.pollingScheduler?.cachedApiClients?.size > 0) {
+        apiClient = this.pollingScheduler.cachedApiClients.values().next().value;
+      }
 
-          // Try to access the apiClient through the engine
-          // Note: This assumes apiClient is accessible, which it should be based on the code structure
-          if (engine && engine.apiClient) {
-            const startTime = Date.now();
-            const testResult = await engine.apiClient.testConnection();
-            const responseTime = Date.now() - startTime;
-
-            if (testResult.success) {
-              return {
-                status: 'healthy',
-                message: `API connection successful (tested with ${activeUsers.length} active user(s))`,
-                activeUsers: activeUsers.length,
-                responseTime: `${responseTime}ms`,
-                tested: true,
-              };
-            } else {
-              return {
-                status: 'unhealthy',
-                message: `API connection test failed: ${testResult.error || 'Unknown error'}`,
-                activeUsers: activeUsers.length,
-                tested: true,
-                error: testResult.error,
-              };
-            }
+      if (!apiClient) {
+        const probeUser = activeUsers.find((u) => u.encrypted_key);
+        if (probeUser?.encrypted_key) {
+          try {
+            apiClient = new ApiClient(decrypt(probeUser.encrypted_key));
+          } catch (decryptError) {
+            logger.warn('Health check: could not decrypt probe API key', {
+              errorMessage: decryptError.message,
+            });
           }
+        }
+      }
+
+      if (apiClient) {
+        try {
+          const startTime = Date.now();
+          const testResult = await apiClient.testConnection();
+          const responseTime = Date.now() - startTime;
+
+          if (testResult.success) {
+            return {
+              status: 'healthy',
+              message: `API connection successful (${activeUsers.length} active user(s))`,
+              activeUsers: activeUsers.length,
+              responseTime: `${responseTime}ms`,
+              tested: true,
+            };
+          }
+          return {
+            status: 'unhealthy',
+            message: `API connection test failed: ${testResult.error || 'Unknown error'}`,
+            activeUsers: activeUsers.length,
+            tested: true,
+            error: testResult.error,
+          };
         } catch (testError) {
-          // If test fails, still report configured status
           logger.warn('Failed to test API connection during health check', testError);
           return {
             status: 'configured',
