@@ -279,9 +279,6 @@ export default function CardList() {
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const entityKey = deferredEntityKeys[virtualRow.index];
               if (!entityKey) return null;
-              const { assetType, id } = parseEntityKey(entityKey);
-              const item = entities?.[id];
-              if (!item) return null;
 
               return (
                 <DownloadCardContainer
