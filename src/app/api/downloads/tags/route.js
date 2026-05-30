@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import http from 'http';
 import crypto from 'crypto';
 import { isBackendDisabled } from '@/utils/backendCheck';
+import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
