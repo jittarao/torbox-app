@@ -77,16 +77,20 @@ export default async function LocaleLayout({ children, params }) {
       <FeatureFlagsProvider searchPageDisabled={searchPageDisabled}>
         <Suspense
           fallback={
-            <div className="flex justify-center items-center min-h-screen">
-              <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
-            </div>
+            <div className="animate-spin rounded-full size-8 border-b-2 border-accent mx-auto mt-16" />
           }
         >
           <MessagesLoader locale={locale}>
             <PostHogProvider>
               <ErrorHandlerInitializer />
               <FileHandler />
-              {children}
+              <Suspense
+                fallback={
+                  <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
+                }
+              >
+                {children}
+              </Suspense>
             </PostHogProvider>
           </MessagesLoader>
         </Suspense>

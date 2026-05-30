@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { startTransition } from 'react';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
 import { fetchUserProfile, getUserPermissions } from '@/utils/userProfile';
+import { getItem, setItem } from '@/utils/storage';
 import { useTagsStore } from '@/store/tagsStore';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
 import { useCustomViewsStore } from '@/store/customViewsStore';
@@ -15,17 +16,15 @@ import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
 
 function readStoredApiKey() {
-  if (typeof localStorage === 'undefined') return '';
-
   try {
-    const storedKey = localStorage.getItem('torboxApiKey');
+    const storedKey = getItem('torboxApiKey');
     if (storedKey) return storedKey;
 
-    const storedKeys = localStorage.getItem('torboxApiKeys');
+    const storedKeys = getItem('torboxApiKeys');
     if (storedKeys) {
       const keys = JSON.parse(storedKeys);
       if (keys.length > 0) {
-        localStorage.setItem('torboxApiKey', keys[0].key);
+        setItem('torboxApiKey', keys[0].key);
         return keys[0].key;
       }
     }
@@ -125,9 +124,7 @@ export const useSessionStore = create((set, get) => ({
       permissionsLoading: Boolean(trimmed),
     });
 
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('torboxApiKey', trimmed);
-    }
+    setItem('torboxApiKey', trimmed);
 
     fanOutApiKey(trimmed, current);
 

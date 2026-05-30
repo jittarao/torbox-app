@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import { downloadListReconcileSignature } from '@/utils/downloadListMerge';
-import {
-  getDownloadSelectionId,
-  selectionIdMatchesItem,
-} from '@/utils/downloadSelectionId';
+import { getDownloadSelectionId, selectionIdMatchesItem } from '@/utils/downloadSelectionId';
+import { getItem, setItem } from '@/utils/storage';
 
 const LEGACY_STORAGE_KEY = 'torboxSelectedItems';
 
@@ -65,25 +63,22 @@ function deserializeSelection(raw) {
 }
 
 function persistSelection(activeType, selection, apiKeyScope = '') {
-  if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(storageKeyForType(activeType, apiKeyScope), serializeSelection(selection));
+    setItem(storageKeyForType(activeType, apiKeyScope), serializeSelection(selection));
   } catch (error) {
     console.error('Error saving selections to localStorage:', error);
   }
 }
 
 function readRawSelection(activeType, apiKeyScope = '') {
-  if (typeof localStorage === 'undefined') return null;
-
-  const scoped = localStorage.getItem(storageKeyForType(activeType, apiKeyScope));
+  const scoped = getItem(storageKeyForType(activeType, apiKeyScope));
   if (scoped) return scoped;
 
-  const unscoped = localStorage.getItem(storageKeyForType(activeType, ''));
+  const unscoped = getItem(storageKeyForType(activeType, ''));
   if (unscoped) return unscoped;
 
   if (activeType === 'all') {
-    return localStorage.getItem(LEGACY_STORAGE_KEY);
+    return getItem(LEGACY_STORAGE_KEY);
   }
 
   return null;
