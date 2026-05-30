@@ -3,28 +3,20 @@ import {
   DEFAULT_COLUMN_WIDTHS,
   getColumnMinWidth,
 } from '@/components/downloads/utils/tableColumnLayout';
+import { getJSON, setJSON } from '@/utils/storage';
 
 const SAVE_DEBOUNCE_MS = 500;
 
 function loadColumnWidths(storageKey) {
-  if (typeof window === 'undefined') return { ...DEFAULT_COLUMN_WIDTHS };
-  try {
-    const savedWidths = localStorage.getItem(storageKey);
-    if (savedWidths) {
-      const parsed = JSON.parse(savedWidths);
-      if (parsed.name === 240) {
-        delete parsed.name;
-      }
-      if (parsed.id != null && parsed.id < 72) {
-        parsed.id = 88;
-      }
-      return { ...DEFAULT_COLUMN_WIDTHS, ...parsed };
-    }
-    return { ...DEFAULT_COLUMN_WIDTHS };
-  } catch (error) {
-    console.error('Error loading column widths:', error);
-    return { ...DEFAULT_COLUMN_WIDTHS };
+  const parsed = getJSON(storageKey);
+  if (!parsed) return { ...DEFAULT_COLUMN_WIDTHS };
+  if (parsed.name === 240) {
+    delete parsed.name;
   }
+  if (parsed.id != null && parsed.id < 72) {
+    parsed.id = 88;
+  }
+  return { ...DEFAULT_COLUMN_WIDTHS, ...parsed };
 }
 
 export function useColumnWidths(activeType) {
@@ -40,11 +32,7 @@ export function useColumnWidths(activeType) {
         saveTimerRef.current = null;
       }
       if (pendingWidthsRef.current) {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(pendingWidthsRef.current));
-        } catch (error) {
-          console.error('Error saving column widths:', error);
-        }
+        setJSON(storageKey, pendingWidthsRef.current);
       }
     };
   }, [storageKey]);
@@ -59,11 +47,7 @@ export function useColumnWidths(activeType) {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         saveTimerRef.current = null;
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(updated));
-        } catch (error) {
-          console.error('Error saving column widths:', error);
-        }
+        setJSON(storageKey, updated);
       }, SAVE_DEBOUNCE_MS);
       return updated;
     });

@@ -2,13 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 import { All, Torrent, Usenet, Webdl } from '@/components/icons';
+import { getItem } from '@/utils/storage';
 
 export const ASSET_TYPE_STORAGE_KEY = 'downloads-asset-type';
 export const ASSET_TYPE_IDS = ['all', 'torrents', 'usenet', 'webdl'];
 
 function getStoredAssetType() {
   if (typeof window === 'undefined') return 'all';
-  const stored = localStorage.getItem(ASSET_TYPE_STORAGE_KEY);
+  const stored = getItem(ASSET_TYPE_STORAGE_KEY);
   return stored && ASSET_TYPE_IDS.includes(stored) ? stored : 'all';
 }
 

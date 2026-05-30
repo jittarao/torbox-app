@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useAutomationRules } from '@/components/shared/hooks/useAutomationRules';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import Spinner from '@/components/shared/Spinner';
+import { getItem } from '@/utils/storage';
 import {
   TRIGGER_TYPES,
   CONDITION_TYPES,
@@ -177,8 +178,7 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
   const [ruleLogs, setRuleLogs] = useState({});
   const [runningRuleId, setRunningRuleId] = useState(null);
   const [executionResult, setExecutionResult] = useState(null);
-  const apiKey =
-    apiKeyProp || (typeof window !== 'undefined' ? localStorage.getItem('torboxApiKey') : null);
+  const apiKey = apiKeyProp || getItem('torboxApiKey');
   const [newRule, setNewRule] = useState(() => getDefaultNewRule());
   const { rules, saveRules, loading } = useAutomationRules(apiKey);
 
