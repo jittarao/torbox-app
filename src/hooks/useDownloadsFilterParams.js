@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { getJSON, setJSON, removeItem } from '@/utils/storage';
@@ -41,11 +41,41 @@ function filtersFromSearchParams(searchParams) {
   }
   return {
     search: searchParams.get('q') ?? '',
-    statusFilter: searchParams.get('status') || 'all',
+    statusFilter: parseStatusFilterParam(searchParams.get('status')),
     sortField,
     sortDirection,
     appliedFilters,
   };
+}
+
+/**
+ * @param {string|null} raw
+ * @returns {'all'|string|string[]}
+ */
+export function parseStatusFilterParam(raw) {
+  if (!raw) return 'all';
+  try {
+    const parsed = JSON.parse(decodeURIComponent(raw));
+    if (parsed === 'all') return 'all';
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => (typeof item === 'string' ? item : JSON.stringify(item)));
+    }
+  } catch {
+    // Legacy: single stringified filter object in the URL (not JSON-array wrapped).
+  }
+  return raw;
+}
+
+/**
+ * @param {'all'|string|string[]|null|undefined} value
+ * @returns {string|null} URL param value, or null to clear
+ */
+export function serializeStatusFilterParam(value) {
+  if (value == null || value === 'all') return null;
+  if (Array.isArray(value)) {
+    return encodeURIComponent(JSON.stringify(value));
+  }
+  return typeof value === 'string' ? value : encodeURIComponent(JSON.stringify(value));
 }
 
 /** @param {URLSearchParams} params */
@@ -74,8 +104,8 @@ function writeSearchToParams(params, value) {
 
 /** @param {URLSearchParams} params */
 function writeStatusFilterToParams(params, value) {
-  const v = value || 'all';
-  if (v && v !== 'all') params.set('status', v);
+  const encoded = serializeStatusFilterParam(value);
+  if (encoded) params.set('status', encoded);
   else params.delete('status');
 }
 
@@ -105,14 +135,20 @@ export function useDownloadsFilterParams() {
 
   const criteria = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
 
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
   const replaceParams = useCallback(
     (mutate) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParamsRef.current.toString());
       mutate(params);
       const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      const href = qs ? `${pathname}?${qs}` : pathname;
+      startTransition(() => {
+        router.replace(href, { scroll: false });
+      });
     },
-    [pathname, router, searchParams]
+    [pathname, router]
   );
 
   const setSearch = useCallback(
