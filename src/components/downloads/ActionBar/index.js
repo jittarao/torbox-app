@@ -20,6 +20,8 @@ import {
 } from '@/store/downloadsSelectionStore';
 import { useLayoutOnTabVisible } from '../hooks/useLayoutOnTabVisible';
 import { useDownloadsDataContext } from '@/components/downloads/DownloadsDataContext';
+import { useDownloadsFilterContext } from '@/components/downloads/DownloadsFilterContext';
+import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
 import { useDownloadsContext } from '@/components/downloads/DownloadsContext';
 
 export default function ActionBar() {
@@ -29,39 +31,43 @@ export default function ActionBar() {
     activeColumns,
     selectedItems,
   } = useDownloadsDataContext();
-  const ctx = useDownloadsContext();
   const {
     handleColumnChange: onColumnChange,
     search,
     setSearch,
     statusFilter,
     setStatusFilter: onStatusChange,
+    sortField,
+    sortDirection: sortDir,
+    handleSort,
+  } = useDownloadsFilterContext();
+  const {
+    activeType = 'torrents',
+    isBlurred = false,
+    setIsBlurred,
+    isFullscreen = false,
+    onFullscreenToggle,
+    displayViewMode: viewMode = 'table',
+    setViewMode: onViewModeChange,
+    isDownloadPanelOpen,
+    setIsDownloadPanelOpen,
+    scrollContainerRef,
+    expandAllFiles,
+    collapseAllFiles,
+    filtersSidebarExpanded: hasFiltersSidebar = false,
+  } = useDownloadsUIContext();
+  const {
     isDownloading,
     isDeleting,
     isExporting,
     handleBulkDownload: onBulkDownload,
     deleteItems: onBulkDelete,
     handleBulkExport: onBulkExport,
-    activeType = 'torrents',
-    isBlurred = false,
-    isFullscreen = false,
-    onFullscreenToggle,
-    displayViewMode: viewMode = 'table',
-    setViewMode: onViewModeChange,
-    sortField,
-    sortDirection: sortDir,
-    handleSort,
     getTotalDownloadSize,
-    isDownloadPanelOpen,
-    setIsDownloadPanelOpen,
     apiKey,
     setToast,
-    expandAllFiles,
-    collapseAllFiles,
-    scrollContainerRef,
-    filtersSidebarExpanded: hasFiltersSidebar = false,
-  } = ctx;
-  const onBlurToggle = () => ctx.setIsBlurred(!ctx.isBlurred);
+  } = useDownloadsContext();
+  const onBlurToggle = () => setIsBlurred(!isBlurred);
   const onBulkDownloadWrapper = () => onBulkDownload(selectedItems, unfilteredItems);
   const onBulkDeleteWrapper = (includeParentDownloads) => onBulkDelete(selectedItems, includeParentDownloads, unfilteredItems);
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);

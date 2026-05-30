@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import useIsClient from '@/hooks/useIsClient';
 import { useDownloadsDataContext } from './DownloadsDataContext';
+import { useDownloadsFilterContext } from './DownloadsFilterContext';
+import { useDownloadsUIContext } from './DownloadsUIContext';
 import { useDownloadsContext } from './DownloadsContext';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
@@ -23,24 +25,30 @@ export default function ItemsTable() {
   } = useDownloadsDataContext();
 
   const {
-    apiKey,
-    activeType,
     sortField,
     sortDirection,
     handleSort,
+    search: fileSearch,
+  } = useDownloadsFilterContext();
+
+  const {
+    activeType,
+    isBlurred,
+    isFullscreen,
+    displayViewMode,
+    scrollContainerRef,
+  } = useDownloadsUIContext();
+
+  const {
+    apiKey,
     setSelectedItems,
     handleSelectAll,
     handleFileSelect,
-    isBlurred,
     deleteItem,
     setToast,
     toggleFiles,
-    displayViewMode,
-    isFullscreen,
-    scrollContainerRef,
     onOpenVideoPlayer,
     onAudioPlay,
-    fileSearch,
   } = useDownloadsContext();
 
   const {
