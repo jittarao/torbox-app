@@ -7,6 +7,7 @@ import { useDownloads } from './useDownloads';
 import { useDownloadsHistoryMigration } from './useDownloadsHistoryMigration';
 import { useDownloadsFilters } from './useDownloadsFilters';
 import { useDownloadsListData } from './useDownloadsListData';
+import { useDownloadsFilterParams } from '@/hooks/useDownloadsFilterParams';
 import { useDelete } from './useDelete';
 import { useFetchData } from './useFetchData';
 import { useSelection } from './useSelection';
@@ -80,6 +81,8 @@ export function useDownloadsPageState(apiKey) {
     canManualRefresh,
   } = useFetchData(apiKey, activeType);
 
+  const filterParams = useDownloadsFilterParams();
+
   const {
     viewItems,
     sortedItems,
@@ -89,7 +92,7 @@ export function useDownloadsPageState(apiKey) {
     tags,
     tagMappings,
     updateTagName,
-  } = useDownloadsListData(activeType, apiKey, isBackendAvailable);
+  } = useDownloadsListData(activeType, apiKey, isBackendAvailable, filterParams);
 
   const showFullPageSpinner = loading && viewItems.length === 0;
   const isRefreshing = refreshing || (loading && viewItems.length > 0);
@@ -166,6 +169,7 @@ export function useDownloadsPageState(apiKey) {
     setToast,
     handleColumnChange,
     updateTagName,
+    filterParams,
   });
 
   const { handleAudioPlay, openVideoPlayer } = useDownloadsPlayerActions(
