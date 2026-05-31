@@ -381,7 +381,7 @@ export default function ActionButtons({
 
   return (
     <div
-      className="flex min-w-0 w-full flex-wrap items-center gap-1.5 lg:w-auto"
+      className="flex min-w-0 w-full flex-wrap items-center gap-1.5 xl:w-auto"
       role="toolbar"
       aria-label={t('toolbarLabel')}
     >
