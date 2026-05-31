@@ -420,6 +420,7 @@ export default function CardList() {
         handleFileStream={handleFileStream}
         handleAudioPlay={handleAudioPlay}
         activeType={activeType}
+        fileSearch={fileSearch}
         hasFilesWithSearch={hasFilesWithSearch}
       />
     ),
@@ -437,6 +438,7 @@ export default function CardList() {
       handleFileStream,
       handleAudioPlay,
       activeType,
+      fileSearch,
       hasFilesWithSearch,
     ]
   );

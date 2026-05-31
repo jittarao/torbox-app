@@ -18,13 +18,15 @@ import {
   selectIsFileStreaming,
   useFileInteractionStore,
 } from '@/store/fileInteractionStore';
-import { tableActionsCellInner } from './utils/responsiveLayout';
-
 const FILE_ACTION_BUTTON_CLASS =
   'p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors touch-manipulation';
 
 const FILE_ACTION_SLOT_CLASS =
   'inline-flex size-9 sm:size-7 shrink-0 items-center justify-center';
+
+/** Card file rows — no w-full (tableActionsCellInner steals flex space and hides filenames). */
+const FILE_LIST_ACTIONS_CLASS =
+  'flex shrink-0 flex-nowrap items-center justify-end gap-1.5 md:gap-1';
 
 function FileListFile({
   file,
@@ -53,7 +55,7 @@ function FileListFile({
     const showAudioPlay = isAudioFile(file) && onAudioPlay;
 
     return (
-      <div className={tableActionsCellInner}>
+      <div className={FILE_LIST_ACTIONS_CLASS}>
         <span className={FILE_ACTION_SLOT_CLASS}>
           {showVideoPlay ? (
             <button
@@ -177,21 +179,23 @@ function FileListFile({
           />
 
           <div
-            className={`min-w-0 flex-1 ${
+            className={
               isMobile
-                ? 'grid grid-cols-1 gap-1'
-                : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3'
-            }`}
+                ? 'grid min-w-0 flex-1 grid-cols-1 gap-1'
+                : 'flex min-w-0 flex-1 items-center gap-3 overflow-hidden'
+            }
           >
-            <span
+            <div
               className={`text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 ${
-                isMobile ? 'break-words' : 'truncate'
+                isMobile ? 'min-w-0 break-words' : 'min-w-0 w-0 flex-1 truncate'
               } ${isBlurred ? 'blur-[6px] select-none' : ''}`}
-              title={isBlurred ? '' : file.name}
+              title={isBlurred ? '' : file.short_name || file.name}
             >
               {file.short_name || file.name}
-            </span>
-            <div className={`flex items-center gap-2 ${isMobile ? 'flex-wrap' : ''}`}>
+            </div>
+            <div
+              className={`flex shrink-0 items-center gap-2 ${isMobile ? 'flex-wrap' : ''}`}
+            >
               <span className="text-xs px-2 py-0.5 rounded-full bg-surface-alt dark:bg-surface-alt-dark text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap w-fit">
                 {formatSize(file.size || 0)}
               </span>
