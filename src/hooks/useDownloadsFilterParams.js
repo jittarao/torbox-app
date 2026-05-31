@@ -140,7 +140,7 @@ export function useDownloadsFilterParams() {
   const searchParams = useSyncExternalStore(
     subscribeDownloadsFilterSearchParams,
     getDownloadsFilterSearchParamsSnapshot,
-    () => new URLSearchParams()
+    getDownloadsFilterSearchParamsSnapshot
   );
 
   const criteria = useMemo(() => filtersFromSearchParams(searchParams), [searchParams]);
