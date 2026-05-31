@@ -51,8 +51,9 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
         <input
           ref={inputRef}
           id={inputId}
-          type="search"
+          type="text"
           enterKeyHint="search"
+          role="searchbox"
           autoComplete="off"
           spellCheck={false}
           placeholder={placeholder}
