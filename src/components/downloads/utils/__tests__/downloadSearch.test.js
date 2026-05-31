@@ -13,14 +13,35 @@ describe('parseDownloadSearchQuery', () => {
 
   test('single unquoted word', () => {
     expect(parseDownloadSearchQuery('foo')).toEqual({
-      include: [{ type: 'or', words: ['foo'] }],
+      include: [{ type: 'or', alternatives: [['foo']] }],
       exclude: [],
     });
   });
 
   test('unquoted words form OR group', () => {
     expect(parseDownloadSearchQuery('foo bar')).toEqual({
-      include: [{ type: 'or', words: ['foo', 'bar'] }],
+      include: [{ type: 'or', alternatives: [['foo'], ['bar']] }],
+      exclude: [],
+    });
+  });
+
+  test('plus joins words into AND alternative', () => {
+    expect(parseDownloadSearchQuery('foo+bar')).toEqual({
+      include: [{ type: 'or', alternatives: [['foo', 'bar']] }],
+      exclude: [],
+    });
+  });
+
+  test('plus and space combine AND and OR', () => {
+    expect(parseDownloadSearchQuery('foo+bar baz')).toEqual({
+      include: [{ type: 'or', alternatives: [['foo', 'bar'], ['baz']] }],
+      exclude: [],
+    });
+  });
+
+  test('plus inside a token without a pair is literal', () => {
+    expect(parseDownloadSearchQuery('c++')).toEqual({
+      include: [{ type: 'or', alternatives: [['c++']] }],
       exclude: [],
     });
   });
@@ -36,7 +57,7 @@ describe('parseDownloadSearchQuery', () => {
     expect(parseDownloadSearchQuery('"season 1" 1080p bluray')).toEqual({
       include: [
         { type: 'phrase', value: 'season 1' },
-        { type: 'or', words: ['1080p', 'bluray'] },
+        { type: 'or', alternatives: [['1080p'], ['bluray']] },
       ],
       exclude: [],
     });
@@ -44,8 +65,8 @@ describe('parseDownloadSearchQuery', () => {
 
   test('exclude term', () => {
     expect(parseDownloadSearchQuery('movie -sample')).toEqual({
-      include: [{ type: 'or', words: ['movie'] }],
-      exclude: [{ type: 'or', words: ['sample'] }],
+      include: [{ type: 'or', alternatives: [['movie']] }],
+      exclude: [{ type: 'or', alternatives: [['sample']] }],
     });
   });
 
@@ -66,6 +87,12 @@ describe('itemMatchesDownloadSearch', () => {
   test('OR matches any word in title', () => {
     expect(itemMatchesDownloadSearch(item, 'bluray 720p')).toBe(false);
     expect(itemMatchesDownloadSearch(item, '1080p 720p')).toBe(true);
+  });
+
+  test('plus requires all joined words', () => {
+    expect(itemMatchesDownloadSearch(item, 'matrix+1999')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'matrix+720p')).toBe(false);
+    expect(itemMatchesDownloadSearch(item, 'matrix+1999 720p')).toBe(true);
   });
 
   test('quoted phrase requires exact substring', () => {

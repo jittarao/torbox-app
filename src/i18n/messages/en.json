@@ -1007,6 +1007,7 @@
     "searchDownloadsHelpAria": "How search works",
     "searchDownloadsHelpIntro": "Matches download titles and file names.",
     "searchDownloadsHelpOr": "Several words — matches if any word appears (e.g. 1080p bluray)",
+    "searchDownloadsHelpAnd": "Plus — matches only when every word appears (e.g. matrix+1999)",
     "searchDownloadsHelpPhrase": "Quotes — matches the exact phrase (e.g. \"season 1\")",
     "searchDownloadsHelpExclude": "Minus — hides matches containing that text (e.g. -sample)",
     "searchDownloadsHelpCombine": "Combine terms — all parts must match (e.g. \"The Matrix\" 1080p -sample)",

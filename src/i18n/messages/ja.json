@@ -951,6 +951,7 @@
     "searchDownloadsHelpAria": "検索の使い方",
     "searchDownloadsHelpIntro": "ダウンロードのタイトルとファイル名を検索します。",
     "searchDownloadsHelpOr": "複数の単語 — いずれかの単語が含まれていれば一致（例: 1080p bluray）",
+    "searchDownloadsHelpAnd": "プラス — すべての単語が含まれる場合のみ一致（例: matrix+1999）",
     "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
     "searchDownloadsHelpExclude": "マイナス — そのテキストを含む結果を除外（例: -sample）",
     "searchDownloadsHelpCombine": "組み合わせ — すべての条件に一致（例: \"The Matrix\" 1080p -sample）",

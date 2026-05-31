@@ -22,6 +22,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
         <p>{t('searchDownloadsHelpIntro')}</p>
         <ul className="list-disc space-y-1.5 pl-4">
           <li>{t('searchDownloadsHelpOr')}</li>
+          <li>{t('searchDownloadsHelpAnd')}</li>
           <li>{t('searchDownloadsHelpPhrase')}</li>
           <li>{t('searchDownloadsHelpExclude')}</li>
         </ul>
