@@ -5,6 +5,7 @@ import { retryFetch } from '@/utils/retryFetch';
 import {
   controlTorrent as controlTorrentAction,
   controlQueuedItem as controlQueuedItemAction,
+  resolveAssetTypeForItem,
   uploadItem as uploadItemAction,
 } from '@/utils/uploadActions';
 
@@ -29,8 +30,9 @@ export function useUploadActions(apiKey, queue) {
 
     const uploads = await Promise.all(
       itemsToUpload.map(async (item) => {
+        const itemAssetType = resolveAssetTypeForItem(item, assetType);
         const upload = {
-          type: assetType === 'torrents' ? 'torrent' : assetType,
+          type: itemAssetType === 'torrents' ? 'torrent' : itemAssetType,
           upload_type:
             item.type === 'magnet' ? 'magnet' : typeof item.data === 'string' ? 'link' : 'file',
           name: item.name || 'Unknown',
@@ -52,7 +54,7 @@ export function useUploadActions(apiKey, queue) {
         if (
           item.type === 'torrent' ||
           item.type === 'magnet' ||
-          assetType === 'torrents' ||
+          itemAssetType === 'torrents' ||
           upload.type === 'torrent'
         ) {
           upload.seed = item.seed ?? globalOptions.seed ?? 1;

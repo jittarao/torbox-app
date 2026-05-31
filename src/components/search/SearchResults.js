@@ -40,7 +40,8 @@ export default function SearchResults({ apiKey }) {
   const { query, hasSearchCompleted, results, loading, error, searchType, clearResults } =
     searchState;
   const { filters } = useSearchFilterParams();
-  const { uploadItem } = useUpload(apiKey);
+  const uploadAssetType = searchType === 'usenet' ? 'usenet' : 'torrents';
+  const { uploadItem } = useUpload(apiKey, uploadAssetType);
   const [sortKey, setSortKey] = useState('seeders');
   const [sortDir, setSortDir] = useState('desc');
   const [toast, setToast] = useState(null);
@@ -87,18 +88,12 @@ export default function SearchResults({ apiKey }) {
     try {
       let result;
       if (searchType === 'usenet') {
-        const uploadData = {
+        result = await uploadItem({
           type: 'usenet',
           data: item.nzb,
+          name: item.raw_title || item.title,
           asQueued: false,
-        };
-
-        // Only add name for TorBox API search results - removed a ! before item.nzb
-        if (item.nzb.includes('api')) {
-          uploadData.name = item.raw_title;
-        }
-
-        result = await uploadItem(uploadData);
+        });
       } else {
         result = await uploadItem({
           type: 'magnet',

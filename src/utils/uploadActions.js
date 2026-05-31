@@ -8,6 +8,14 @@ const DEFAULT_OPTIONS = {
   asQueued: false,
 };
 
+/** Map upload item type to API asset type (torrents/usenet/webdl). */
+export function resolveAssetTypeForItem(item, fallbackAssetType = 'torrents') {
+  if (item?.type === 'magnet' || item?.type === 'torrent') return 'torrents';
+  if (item?.type === 'usenet') return 'usenet';
+  if (item?.type === 'webdl') return 'webdl';
+  return fallbackAssetType;
+}
+
 function isPermanentError(data) {
   return Object.values(NON_RETRYABLE_ERRORS).some(
     (err) => data.error?.includes(err) || data.detail?.includes(err)
@@ -87,10 +95,8 @@ export async function uploadItem(
     formData.append('as_queued', 'true');
   }
 
-  const endpoint =
-    item.type === 'magnet' || item.type === 'torrent'
-      ? getEndpointForAssetType('torrents')
-      : getEndpointForAssetType(assetType);
+  const resolvedAssetType = resolveAssetTypeForItem(item, assetType);
+  const endpoint = getEndpointForAssetType(resolvedAssetType);
 
   return retryFetch(endpoint, {
     maxRetries: 1,
