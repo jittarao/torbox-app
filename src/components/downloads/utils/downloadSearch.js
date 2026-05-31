@@ -1,13 +1,27 @@
 /**
- * @typedef {{ type: 'phrase', value: string } | { type: 'or', words: string[] }} DownloadSearchTerm
+ * @typedef {{ type: 'phrase', value: string } | { type: 'or', alternatives: string[][] }} DownloadSearchTerm
  * @typedef {{ include: DownloadSearchTerm[], exclude: DownloadSearchTerm[] }} ParsedDownloadSearch
  */
+
+/**
+ * @param {string} segment
+ * @returns {string[]}
+ */
+function wordsFromSegment(segment) {
+  const word = segment.trim().toLowerCase();
+  if (!word) return [];
+  if (!word.includes('+')) return [word];
+
+  const parts = word.split('+').map((part) => part.trim()).filter(Boolean);
+  return parts.length > 1 ? parts : [word];
+}
 
 /**
  * Parse downloads search syntax:
  * - `"exact phrase"` — must contain the phrase (case-insensitive)
  * - `word1 word2` — either word matches (OR)
- * - `-term` or `-"phrase"` — exclude (OR within unquoted groups)
+ * - `word1+word2` — both words must match (AND)
+ * - `-term` or `-"phrase"` — exclude
  * - Multiple terms are combined with AND
  *
  * @param {string} query
@@ -34,20 +48,21 @@ export function parseDownloadSearchQuery(query) {
   };
 
   const readOrGroup = () => {
-    /** @type {string[]} */
-    const words = [];
+    /** @type {string[][]} */
+    const alternatives = [];
     while (i < len) {
       while (i < len && /\s/.test(trimmed[i])) i += 1;
       if (i >= len) break;
       if (trimmed[i] === '"') break;
-      if (trimmed[i] === '-' && words.length > 0) break;
+      if (trimmed[i] === '-' && alternatives.length > 0) break;
 
       const start = i;
       while (i < len && !/\s/.test(trimmed[i]) && trimmed[i] !== '"') i += 1;
-      const word = trimmed.slice(start, i).toLowerCase();
-      if (word) words.push(word);
+      const segment = trimmed.slice(start, i);
+      const words = wordsFromSegment(segment);
+      if (words.length) alternatives.push(words);
     }
-    return words.length ? /** @type {DownloadSearchTerm} */ ({ type: 'or', words }) : null;
+    return alternatives.length ? /** @type {DownloadSearchTerm} */ ({ type: 'or', alternatives }) : null;
   };
 
   while (i < len) {
@@ -68,6 +83,22 @@ export function parseDownloadSearchQuery(query) {
   return { include, exclude };
 }
 
+/** @param {string} text @param {string[]} words */
+function alternativeMatches(text, words) {
+  for (let w = 0; w < words.length; w++) {
+    if (!text.includes(words[w])) return false;
+  }
+  return true;
+}
+
+/** @param {string} text @param {Extract<DownloadSearchTerm, { type: 'or' }>} term */
+function orTermMatches(text, term) {
+  for (let a = 0; a < term.alternatives.length; a++) {
+    if (alternativeMatches(text, term.alternatives[a])) return true;
+  }
+  return false;
+}
+
 /** @param {string} query */
 function getParsedDownloadSearch(query) {
   const normalized = (query || '').trim().toLowerCase();
@@ -85,7 +116,7 @@ function haystackMatchesInclude(haystack, parsed) {
     const term = parsed.include[t];
     if (term.type === 'phrase') {
       if (!text.includes(term.value)) return false;
-    } else if (!term.words.some((word) => text.includes(word))) {
+    } else if (!orTermMatches(text, term)) {
       return false;
     }
   }
@@ -103,7 +134,7 @@ function haystackMatchesExclude(haystack, parsed) {
     const term = parsed.exclude[t];
     if (term.type === 'phrase') {
       if (text.includes(term.value)) return true;
-    } else if (term.words.some((word) => text.includes(word))) {
+    } else if (orTermMatches(text, term)) {
       return true;
     }
   }
