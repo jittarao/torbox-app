@@ -333,6 +333,10 @@ function ItemCard({
         e.currentTarget.blur();
       }}
       onKeyDown={(e) => {
+        if (e.key === 'Shift') {
+          e.currentTarget.blur();
+          return;
+        }
         if (
           (e.key === 'Enter' || e.key === ' ') &&
           !e.target.closest('button, input, a, select, textarea') &&
@@ -378,7 +382,7 @@ function ItemCard({
               }
               onClick={(e) => e.stopPropagation()}
               disabled={hasSelectedFiles}
-              className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
+              className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
             />
             <h3
               className={`text-sm md:text-base lg:text-[18px] font-medium text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${

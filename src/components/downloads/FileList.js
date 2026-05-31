@@ -18,6 +18,7 @@ import {
   selectIsFileStreaming,
   useFileInteractionStore,
 } from '@/store/fileInteractionStore';
+import { tableRowFocusClasses } from './utils/responsiveLayout';
 const FILE_ACTION_BUTTON_CLASS =
   'p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors touch-manipulation';
 
@@ -135,7 +136,7 @@ function FileListFile({
               : isFileDownloaded(itemId, file.id)
                 ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
                 : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
-      } rounded-md p-2 md:p-1.5 lg:p-2 ${!isDisabled && 'cursor-pointer'} w-full text-left`}
+      } rounded-md p-2 md:p-1.5 lg:p-2 ${tableRowFocusClasses} ${!isDisabled && 'cursor-pointer'} w-full text-left`}
       onMouseDown={(e) => {
         if (e.shiftKey) e.preventDefault();
       }}
@@ -143,8 +144,13 @@ function FileListFile({
         e.stopPropagation();
         if (e.target.closest('button, input, a, select, textarea') || isDisabled) return;
         onFileSelect(itemId, fileIndex, file, !isChecked, e.shiftKey);
+        e.currentTarget.blur();
       }}
       onKeyDown={(e) => {
+        if (e.key === 'Shift') {
+          e.currentTarget.blur();
+          return;
+        }
         if (
           (e.key === 'Enter' || e.key === ' ') &&
           !isDisabled &&
@@ -175,7 +181,7 @@ function FileListFile({
               onFileSelect(itemId, fileIndex, file, e.target.checked, e.shiftKey);
             }}
             onClick={(e) => e.stopPropagation()}
-            className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0"
+            className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
           />
 
           <div
