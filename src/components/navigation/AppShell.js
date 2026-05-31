@@ -17,6 +17,7 @@ import { SidebarContext, useSidebar } from './SidebarContext';
 import useSidebarCollapsed from './useSidebarCollapsed';
 import { useNotificationsPolling } from '@/components/shared/hooks/useNotificationsPolling';
 import { useSessionHydrate } from '@/components/shared/hooks/useSessionHydrate';
+import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 
 const SIDEBAR_EXPANDED = '16rem';
 const SIDEBAR_COLLAPSED = '4.5rem';
@@ -137,7 +138,9 @@ export default function AppShell({ apiKey, children, className = '' }) {
 
         <div className="flex min-h-screen min-w-0 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:pl-[var(--sidebar-width)]">
           <ReferralHeaderBanner apiKey={apiKey} />
-          <main className="min-w-0 flex-1 pb-mobile-nav md:pb-0">{children}</main>
+          <main className="min-w-0 flex-1 pb-mobile-nav md:pb-0">
+            <SectionErrorBoundary>{children}</SectionErrorBoundary>
+          </main>
         </div>
       </div>
     </SidebarContext.Provider>

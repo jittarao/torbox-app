@@ -1,5 +1,6 @@
 import { FileHandler } from '@/components/shared/FileHandler';
 import { ErrorHandlerInitializer } from '@/components/shared/ErrorHandlerInitializer';
+import { LocaleContentBoundary } from '@/components/shared/LocaleContentBoundary';
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
@@ -82,15 +83,17 @@ export default async function LocaleLayout({ children, params }) {
         >
           <MessagesLoader locale={locale}>
             <PostHogProvider>
-              <ErrorHandlerInitializer />
-              <FileHandler />
-              <Suspense
-                fallback={
-                  <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
-                }
-              >
-                {children}
-              </Suspense>
+              <LocaleContentBoundary>
+                <ErrorHandlerInitializer />
+                <FileHandler />
+                <Suspense
+                  fallback={
+                    <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
+                  }
+                >
+                  {children}
+                </Suspense>
+              </LocaleContentBoundary>
             </PostHogProvider>
           </MessagesLoader>
         </Suspense>
