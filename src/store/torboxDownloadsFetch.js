@@ -5,6 +5,8 @@ import { perfMonitor } from '@/utils/performance';
 import { fillAutoStartSlots } from '@/utils/torrentAutoStart';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getListKeyForAssetType } from '@/store/torboxDownloadsSelectors';
+import { resetPollTimer } from '@/store/pollTimerReset';
+import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
 import {
   deltaCursorRef,
   getRateLimiter,
@@ -100,13 +102,20 @@ function handleFetchError(
  * @param {string} apiKey
  * @param {'torrents' | 'usenet' | 'webdl'} activeType
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType — active UI tab (poll scope + errors)
- * @param {{ bypassCache?: boolean, retryCount?: number, skipLoading?: boolean, manualRefresh?: boolean }} [options]
+ * @param {{ bypassCache?: boolean, retryCount?: number, skipLoading?: boolean, manualRefresh?: boolean, forMutation?: boolean, mutationRetried?: boolean }} [options]
  */
 export async function fetchDownloadType(
   apiKey,
   activeType,
   viewType,
-  { bypassCache = false, retryCount = 0, skipLoading = false, manualRefresh = false } = {}
+  {
+    bypassCache = false,
+    retryCount = 0,
+    skipLoading = false,
+    manualRefresh = false,
+    forMutation = false,
+    mutationRetried = false,
+  } = {}
 ) {
   const store = useTorboxDownloadsStore.getState();
 
@@ -130,8 +139,22 @@ export async function fetchDownloadType(
   }
 
   const rateLimiter = getRateLimiter();
-  const currentFetchId = rateLimiter.acquire(activeType);
+  const currentFetchId = rateLimiter.acquire(activeType, { forMutation });
   if (currentFetchId == null) {
+    if (forMutation && !mutationRetried) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, POLLING_CONFIG.minIntervalBetweenCallsMs)
+      );
+      return fetchDownloadType(apiKey, activeType, viewType, {
+        bypassCache,
+        retryCount,
+        skipLoading,
+        manualRefresh,
+        forMutation,
+        mutationRetried: true,
+      });
+    }
+
     console.warn(`Rate limit reached for ${activeType}, skipping fetch`);
     if (affectsCurrentView(activeType, viewType)) {
       store.markRateLimited();
@@ -286,6 +309,7 @@ export async function fetchDownloadType(
         store.setError(null);
         store.markFetchSuccess();
         syncCanManualRefresh(viewType);
+        resetPollTimer();
       }
 
       finishFetchFlags();
@@ -296,6 +320,7 @@ export async function fetchDownloadType(
     if (data.success && data.data && Array.isArray(data.data) && data.data.length === 0) {
       if (affectsCurrentView(activeType, viewType)) {
         store.markFetchSuccess();
+        resetPollTimer();
       }
       finishFetchFlags();
       return [];

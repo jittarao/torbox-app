@@ -1,6 +1,7 @@
 import { controlQueuedItem } from '@/utils/uploadActions';
 import { getAutoStartOptions, isActiveDownload, isQueuedItem } from '@/utils/utility';
 import { processedQueueIdsRef } from '@/store/torboxDownloadsRefs';
+import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
 
 const {
@@ -84,6 +85,7 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
 
   const toStart = candidates.slice(0, slotsAvailable);
   let started = 0;
+  const startedIds = [];
 
   for (let i = 0; i < toStart.length; i += 1) {
     const { id } = toStart[i];
@@ -93,6 +95,7 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
 
     if (result?.success) {
       started += 1;
+      startedIds.push(id);
     } else {
       processedQueueIdsRef.current.delete(id);
     }
@@ -100,6 +103,10 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
     if (i < toStart.length - 1) {
       await sleep(BETWEEN_STARTS_MS);
     }
+  }
+
+  if (started > 0) {
+    removeQueuedAfterForceStart('torrents', startedIds);
   }
 
   return { started, slotsAvailable };
