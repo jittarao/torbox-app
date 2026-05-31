@@ -20,6 +20,11 @@ import {
 } from '@/store/torboxDownloadsRefs';
 import { useDownloadListPolling } from '@/components/shared/hooks/useDownloadListPolling';
 import { useAutomationTorrentEvents } from '@/components/shared/hooks/useAutomationTorrentEvents';
+import {
+  registerDownloadsSyncContext,
+  unregisterDownloadsSyncContext,
+} from '@/store/downloadListReconcile';
+import { resetPollTimer } from '@/store/pollTimerReset';
 
 // Polling rules (intervals in pollingConfig.js + pollInterval.js):
 // 1. 15s when the tab is visible/active, or during engagement grace after hide/idle
@@ -95,6 +100,11 @@ export function useFetchData(apiKey, type = 'torrents') {
   }, [apiKey]);
 
   useEffect(() => {
+    registerDownloadsSyncContext({ apiKey, viewType: type });
+    return () => unregisterDownloadsSyncContext();
+  }, [apiKey, type]);
+
+  useEffect(() => {
     let cancelled = false;
 
     if (!apiKey) {
@@ -139,6 +149,8 @@ export function useFetchData(apiKey, type = 'torrents') {
         markRateLimited();
         return Promise.resolve([]);
       }
+
+      resetPollTimer();
 
       return fetchDownloadsForView(apiKey, type, {
         bypassCache,

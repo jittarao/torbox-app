@@ -9,6 +9,7 @@ import MoreOptionsDropdown from './MoreOptionsDropdown';
 import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloadsSelectors';
+import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 
 export default function ItemActions({
   item,
@@ -55,7 +56,8 @@ export default function ItemActions({
 
   // Forces a torrent or a webdl/usenet item to start downloading
   const handleForceStart = async () => {
-    const result = await controlQueuedItem(apiKey, item.id, 'start');
+    const assetType = resolveItemAssetType(item, activeType);
+    const result = await controlQueuedItem(apiKey, item.id, 'start', assetType);
     if (!result) {
       setToast({ message: t('toast.downloadFailed'), type: 'error' });
       return;
@@ -66,6 +68,9 @@ export default function ItemActions({
         : result.userMessage || result.error || t('toast.downloadFailed'),
       type: result.success ? 'success' : 'error',
     });
+    if (result.success) {
+      removeQueuedAfterForceStart(assetType, [item.id]);
+    }
   };
 
   // Stops seeding a torrent
