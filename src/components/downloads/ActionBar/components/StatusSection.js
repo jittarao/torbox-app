@@ -101,7 +101,7 @@ export default function StatusSection({
       <button
         type="button"
         disabled={statusFilter === 'all'}
-        className={`min-w-0 font-semibold lg:shrink-0 lg:whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
+        className={`min-w-0 font-semibold xl:shrink-0 xl:whitespace-nowrap ${statusFilter === 'all' ? 'cursor-default' : 'cursor-pointer hover:text-accent dark:hover:text-accent-dark'} transition-colors`}
         onClick={() => handleStatusClick('all')}
         onKeyDown={(e) => {
           if (statusFilter !== 'all' && (e.key === 'Enter' || e.key === ' ')) {
