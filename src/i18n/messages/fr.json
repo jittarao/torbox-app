@@ -929,6 +929,7 @@
     "searchDownloadsHelpAria": "Comment fonctionne la recherche",
     "searchDownloadsHelpIntro": "Recherche dans les titres de téléchargement et les noms de fichiers.",
     "searchDownloadsHelpOr": "Plusieurs mots — correspond si l'un des mots apparaît (ex. 1080p bluray)",
+    "searchDownloadsHelpAnd": "Signe plus — tous les mots doivent apparaître (ex. matrix+1999)",
     "searchDownloadsHelpPhrase": "Guillemets — correspond à la phrase exacte (ex. \"season 1\")",
     "searchDownloadsHelpExclude": "Moins — masque les résultats contenant ce texte (ex. -sample)",
     "searchDownloadsHelpCombine": "Combiner les termes — toutes les parties doivent correspondre (ex. \"The Matrix\" 1080p -sample)",
