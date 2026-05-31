@@ -262,10 +262,11 @@ export default function FiltersSidebar({
         >
           {views.map((view) => {
             const menuKey = `view-${view.id}`;
+            const viewIsActive = activeView?.id === view.id;
             const viewMenuItems = [
               {
                 id: 'apply',
-                label: t('menuApply'),
+                label: viewIsActive ? t('menuClear') : t('menuApply'),
                 onClick: () => onApplyView(view),
               },
               {
@@ -291,7 +292,8 @@ export default function FiltersSidebar({
                 key={view.id}
                 label={view.name}
                 count={viewCounts[view.id]}
-                isActive={activeView?.id === view.id}
+                isActive={viewIsActive}
+                title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
                 onClick={() => onApplyView(view)}
                 isMenuOpen={overflowMenu?.key === menuKey}
                 onMenuToggle={(open, anchorRef) => {
@@ -316,10 +318,11 @@ export default function FiltersSidebar({
         >
           {tags.map((tag) => {
             const menuKey = `tag-${tag.id}`;
+            const tagIsActive = activeTagSet.has(Number(tag.id)) && !activeView;
             const tagMenuItems = [
               {
                 id: 'apply',
-                label: t('menuApply'),
+                label: tagIsActive ? t('menuClear') : t('menuApply'),
                 onClick: () => onApplyTag(tag.id),
               },
               {
@@ -340,7 +343,8 @@ export default function FiltersSidebar({
                 key={tag.id}
                 label={tag.name}
                 count={tagCounts[tag.id]}
-                isActive={activeTagSet.has(Number(tag.id)) && !activeView}
+                isActive={tagIsActive}
+                title={tagIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
                 onClick={() => onApplyTag(tag.id)}
                 isMenuOpen={overflowMenu?.key === menuKey}
                 onMenuToggle={(open, anchorRef) => {

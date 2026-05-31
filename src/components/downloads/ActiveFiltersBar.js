@@ -42,22 +42,24 @@ export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onC
       <span className="flex-1 min-w-0 truncate text-primary-text dark:text-primary-text-dark">
         {summary}
       </span>
-      {showEdit && (
+      <div className="flex shrink-0 items-center gap-4">
+        {showEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="text-accent dark:text-accent-dark hover:underline"
+          >
+            {t('editFilters')}
+          </button>
+        )}
         <button
           type="button"
-          onClick={onEdit}
-          className="shrink-0 text-accent dark:text-accent-dark hover:underline"
+          onClick={onClear}
+          className="text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
         >
-          {t('editFilters')}
+          {t('clearAll')}
         </button>
-      )}
-      <button
-        type="button"
-        onClick={onClear}
-        className="shrink-0 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark"
-      >
-        {t('clearAll')}
-      </button>
+      </div>
     </div>
   );
 }

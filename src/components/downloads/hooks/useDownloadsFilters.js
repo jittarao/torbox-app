@@ -68,43 +68,6 @@ export function useDownloadsFilters({
     }
   }, [apiKey, isBackendAvailable, viewsHasLoaded, viewsLoading, loadViews]);
 
-  const handleApplyView = (view) => {
-    applyView(view);
-
-    const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
-    setColumnFilters(normalizedFilters);
-
-    const criteriaPatch = {
-      statusFilter: 'all',
-      appliedFilters: normalizedFilters,
-      search: view.search_query || '',
-    };
-    if (view.sort_field) {
-      criteriaPatch.sortField = view.sort_field;
-      criteriaPatch.sortDirection = view.sort_direction || 'desc';
-    }
-    patchFilterCriteria(criteriaPatch);
-
-    let visibleColumns = view.visible_columns;
-    if (visibleColumns) {
-      if (typeof visibleColumns === 'string') {
-        try {
-          visibleColumns = JSON.parse(visibleColumns);
-        } catch (e) {
-          console.error('Error parsing visible columns:', e);
-          visibleColumns = null;
-        }
-      }
-      if (Array.isArray(visibleColumns) && visibleColumns.length > 0) {
-        handleColumnChange?.(visibleColumns);
-      }
-    }
-
-    setMobileFiltersOpen(false);
-
-    return visibleColumns;
-  };
-
   const handleClearFilters = useCallback(() => {
     clearView();
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
@@ -112,25 +75,81 @@ export function useDownloadsFilters({
     clearAllFilterCriteria();
   }, [clearView, clearAllFilterCriteria]);
 
-  const handleApplyTag = (tagId) => {
-    const id = Number(tagId);
-    const isActive = activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
+  const applyViewFilters = useCallback(
+    (view) => {
+      applyView(view);
 
-    if (isActive) {
-      handleClearFilters();
-      return;
-    }
+      const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
+      setColumnFilters(normalizedFilters);
 
-    clearView();
-    const tagFilter = buildTagFilter(id);
-    setColumnFilters(tagFilter);
-    patchFilterCriteria({
-      statusFilter: 'all',
-      search: '',
-      appliedFilters: tagFilter,
-    });
-    setMobileFiltersOpen(false);
-  };
+      const criteriaPatch = {
+        statusFilter: 'all',
+        appliedFilters: normalizedFilters,
+        search: view.search_query || '',
+      };
+      if (view.sort_field) {
+        criteriaPatch.sortField = view.sort_field;
+        criteriaPatch.sortDirection = view.sort_direction || 'desc';
+      }
+      patchFilterCriteria(criteriaPatch);
+
+      let visibleColumns = view.visible_columns;
+      if (visibleColumns) {
+        if (typeof visibleColumns === 'string') {
+          try {
+            visibleColumns = JSON.parse(visibleColumns);
+          } catch (e) {
+            console.error('Error parsing visible columns:', e);
+            visibleColumns = null;
+          }
+        }
+        if (Array.isArray(visibleColumns) && visibleColumns.length > 0) {
+          handleColumnChange?.(visibleColumns);
+        }
+      }
+
+      setMobileFiltersOpen(false);
+
+      return visibleColumns;
+    },
+    [applyView, patchFilterCriteria, handleColumnChange]
+  );
+
+  const handleApplyView = useCallback(
+    (view) => {
+      if (activeView?.id === view.id) {
+        handleClearFilters();
+        setMobileFiltersOpen(false);
+        return;
+      }
+      return applyViewFilters(view);
+    },
+    [activeView, handleClearFilters, applyViewFilters]
+  );
+
+  const handleApplyTag = useCallback(
+    (tagId) => {
+      const id = Number(tagId);
+      const isActive = activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
+
+      if (isActive) {
+        handleClearFilters();
+        setMobileFiltersOpen(false);
+        return;
+      }
+
+      clearView();
+      const tagFilter = buildTagFilter(id);
+      setColumnFilters(tagFilter);
+      patchFilterCriteria({
+        statusFilter: 'all',
+        search: '',
+        appliedFilters: tagFilter,
+      });
+      setMobileFiltersOpen(false);
+    },
+    [activeTagIds, activeView, handleClearFilters, clearView, patchFilterCriteria]
+  );
 
   const handleCloseFilterModal = useCallback(() => {
     setFilterModalOpen(false);
@@ -147,7 +166,7 @@ export function useDownloadsFilters({
   };
 
   const handleViewCreated = (view) => {
-    handleApplyView(view);
+    applyViewFilters(view);
     setToast({
       message: downloadsFiltersT('viewCreated', { name: view.name }),
       type: 'success',
@@ -156,7 +175,7 @@ export function useDownloadsFilters({
 
   const handleViewUpdated = (view) => {
     if (activeView?.id === view.id) {
-      handleApplyView(view);
+      applyViewFilters(view);
     }
     setToast({
       message: downloadsFiltersT('viewUpdated', { name: view.name }),
