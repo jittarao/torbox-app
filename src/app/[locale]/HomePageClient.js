@@ -8,6 +8,7 @@ import useIsClient from '@/hooks/useIsClient';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
+import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 
 const landingShell = <div className="min-h-screen bg-[#0a0a0b]" aria-hidden />;
 
@@ -91,7 +92,11 @@ export default function HomePageClient() {
   }
 
   if (!apiKey) {
-    return <LandingPage onKeyChange={handleKeyChange} />;
+    return (
+      <SectionErrorBoundary>
+        <LandingPage onKeyChange={handleKeyChange} />
+      </SectionErrorBoundary>
+    );
   }
 
   return (
