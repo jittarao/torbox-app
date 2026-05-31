@@ -31,6 +31,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
     top: 0,
     left: 0,
     arrowLeft: 0,
+    placement: 'top',
   });
   const triggerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -62,41 +63,64 @@ export default function Tooltip({ children, content, position = 'top' }) {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const edgePadding = 16;
+    const gap = 4;
 
     let anchorX;
-    let anchorY;
+    let placement = position === 'bottom' ? 'bottom' : 'top';
 
-    switch (position) {
+    if (position === 'left' || position === 'right') {
+      placement = position;
+    } else if (placement === 'top') {
+      const spaceAbove = triggerRect.top - edgePadding;
+      if (spaceAbove < tooltipHeight + gap) {
+        placement = 'bottom';
+      }
+    } else {
+      const spaceBelow = viewportHeight - triggerRect.bottom - edgePadding;
+      if (spaceBelow < tooltipHeight + gap) {
+        placement = 'top';
+      }
+    }
+
+    let tooltipTop;
+    switch (placement) {
       case 'bottom':
-        anchorY = triggerRect.top + triggerRect.height + 4;
         anchorX = triggerRect.left + triggerRect.width / 2;
+        tooltipTop = triggerRect.bottom + gap;
         break;
       case 'left':
-        anchorY = triggerRect.top + triggerRect.height / 2;
-        anchorX = triggerRect.left - 4;
+        anchorX = triggerRect.left - gap;
+        tooltipTop = triggerRect.top + triggerRect.height / 2;
         break;
       case 'right':
-        anchorY = triggerRect.top + triggerRect.height / 2;
-        anchorX = triggerRect.left + triggerRect.width + 4;
+        anchorX = triggerRect.left + triggerRect.width + gap;
+        tooltipTop = triggerRect.top + triggerRect.height / 2;
         break;
       case 'top':
       default:
-        anchorY = triggerRect.top - 4;
         anchorX = triggerRect.left + triggerRect.width / 2;
+        tooltipTop = triggerRect.top - gap;
     }
 
     let tooltipLeft = anchorX - tooltipWidth / 2;
+
     if (tooltipLeft < edgePadding) {
       tooltipLeft = edgePadding;
     } else if (tooltipLeft + tooltipWidth > viewportWidth - edgePadding) {
       tooltipLeft = viewportWidth - edgePadding - tooltipWidth;
     }
 
-    let tooltipTop = anchorY;
-    if (anchorY - tooltipHeight < 0) {
-      tooltipTop = triggerRect.bottom + 4;
-    } else if (anchorY + tooltipHeight > viewportHeight) {
-      tooltipTop = triggerRect.top - tooltipHeight - 4;
+    if (placement === 'top' || placement === 'bottom') {
+      if (placement === 'top' && tooltipTop - tooltipHeight < edgePadding) {
+        placement = 'bottom';
+        tooltipTop = triggerRect.bottom + gap;
+      } else if (
+        placement === 'bottom' &&
+        tooltipTop + tooltipHeight > viewportHeight - edgePadding
+      ) {
+        placement = 'top';
+        tooltipTop = triggerRect.top - gap;
+      }
     }
 
     const arrowMargin = 12;
@@ -109,6 +133,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
       top: tooltipTop,
       left: tooltipLeft,
       arrowLeft,
+      placement,
     });
   }, [isVisible, position]);
 
@@ -180,13 +205,15 @@ export default function Tooltip({ children, content, position = 'top' }) {
     return () => clearTimeout(timer);
   }, [isVisible, canHover, hide]);
 
+  const isBelow = tooltipPosition.placement === 'bottom';
+
   const tooltipStyles = {
     position: 'fixed',
     top: tooltipPosition.top,
     left: tooltipPosition.left,
-    transform: 'translateY(-100%)',
+    transform: isBelow ? undefined : 'translateY(-100%)',
     zIndex: 9999,
-    marginTop: -8,
+    marginTop: isBelow ? 8 : -8,
     width: 'fit-content',
     maxWidth: 'min(500px, calc(100vw - 32px))',
     wordWrap: 'break-word',
@@ -197,6 +224,9 @@ export default function Tooltip({ children, content, position = 'top' }) {
   const arrowPosition = {
     left: tooltipPosition.arrowLeft,
     transform: 'translateX(-50%)',
+    ...(isBelow
+      ? { top: 'auto', bottom: '100%', marginTop: 0, marginBottom: -2 }
+      : {}),
   };
 
   if (!content) return children;
@@ -225,6 +255,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
                 viewBox="0 0 12 7"
                 width="12"
                 height="7"
+                style={isBelow ? { transform: 'rotate(180deg)' } : undefined}
               >
                 <path className="ui-tooltip-arrow-fill" d="M1 1 L11 1 L6 6.5 Z" />
                 <path className="ui-tooltip-arrow-stroke" d="M1 1 L6 6.5 L11 1" />
