@@ -1,20 +1,33 @@
 'use client';
 
+import { useEffect } from 'react';
+import SectionErrorFallbackView from '@/components/shared/SectionErrorFallbackView';
+import { reportClientError } from '@/components/shared/clientErrorDisplay';
+
+const LABELS = {
+  title: 'Something went wrong',
+  messageFallback:
+    'The app hit an unexpected error. Try again or reload the page. Navigation may be unavailable on this screen.',
+  tryAgainLabel: 'Try again',
+  reloadLabel: 'Reload page',
+};
+
 export default function RootError({ error, reset }) {
+  useEffect(() => {
+    reportClientError(error);
+  }, [error]);
+
   return (
-    <html>
-      <body className="bg-background dark:bg-background-dark text-primary-text dark:text-primary-text-dark">
-        <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8">
-          <h2 className="text-xl font-semibold">Something went wrong</h2>
-          <p className="text-sm text-primary-text/60 dark:text-primary-text-dark/60 max-w-md text-center">
-            {error?.message || 'An unexpected error occurred'}
-          </p>
-          <button
-            onClick={() => reset()}
-            className="px-4 py-2 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Try again
-          </button>
+    <html lang="en">
+      <body className="bg-surface text-primary-text dark:bg-surface-dark dark:text-primary-text-dark antialiased">
+        <div className="flex min-h-screen items-center justify-center p-8">
+          <SectionErrorFallbackView
+            error={error}
+            onRetry={reset}
+            showReload
+            className="w-full max-w-lg border-0 bg-transparent"
+            {...LABELS}
+          />
         </div>
       </body>
     </html>

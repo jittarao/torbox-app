@@ -1334,5 +1334,11 @@
       "loading": "Loading configuration...",
       "note": "Configuration updates require environment variable changes and server restart."
     }
+  },
+  "ErrorBoundary": {
+    "title": "Something went wrong",
+    "sectionMessage": "This section ran into a problem. Try again, or use the menu to open another page.",
+    "tryAgain": "Try again",
+    "reloadPage": "Reload page"
   }
 }
