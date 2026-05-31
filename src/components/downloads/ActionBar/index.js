@@ -222,12 +222,12 @@ export default function ActionBar() {
         }
       >
         <div
-          className={`flex flex-col gap-y-2 transition-all duration-200 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3 lg:gap-y-2
+          className={`flex flex-col gap-y-2 transition-all duration-200 xl:flex-row xl:flex-wrap xl:items-center xl:gap-x-3 xl:gap-y-2
             ${isFullscreen ? 'px-2 sm:px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container-downloads mx-auto px-2 sm:px-4') : ''}
             ${isSticky ? 'py-2' : 'pb-4'}`}
         >
-          {/* Status + bulk actions — full-width rows below lg */}
-          <div className="flex min-w-0 w-full flex-col gap-2 sm:gap-2 lg:w-auto lg:flex-1 lg:flex-row lg:flex-wrap lg:items-center lg:gap-3">
+          {/* Status + bulk actions — stacked below xl (incl. iPad landscape) */}
+          <div className="flex min-w-0 w-full flex-col gap-2 sm:gap-2 xl:w-auto xl:flex-1 xl:flex-row xl:flex-wrap xl:items-center xl:gap-3">
             <StatusSection
               statusCounts={statusCounts}
               statusOptions={statusOptions}
@@ -266,8 +266,8 @@ export default function ActionBar() {
             )}
           </div>
 
-          {/* Search, sort, view controls — own row below lg */}
-          <div className="flex min-w-0 w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto lg:shrink-0 lg:justify-end">
+          {/* Search, sort, view controls — own row below xl */}
+          <div className="flex min-w-0 w-full flex-wrap items-center gap-2 xl:ml-auto xl:w-auto xl:shrink-0 xl:justify-end">
             <SearchBar
               search={search}
               onSearchChange={setSearch}
