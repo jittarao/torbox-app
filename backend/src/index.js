@@ -98,8 +98,19 @@ class TorBoxBackend {
       })
     );
 
-    // Compression
-    this.app.use(compression());
+    // Compression — never compress SSE (buffers small heartbeat writes → proxy 524 timeouts)
+    const defaultCompressFilter = compression.filter;
+    this.app.use(
+      compression({
+        filter: (req, res) => {
+          const path = (req.originalUrl || req.path || '').split('?')[0];
+          if (path === '/api/automation/events') return false;
+          const type = res.getHeader('Content-Type');
+          if (type && String(type).includes('text/event-stream')) return false;
+          return defaultCompressFilter(req, res);
+        },
+      })
+    );
 
     // Trust X-Forwarded-For when behind a reverse proxy (set TRUST_PROXY=true in production)
     if (process.env.TRUST_PROXY === 'true') {

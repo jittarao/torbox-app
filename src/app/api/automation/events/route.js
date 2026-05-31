@@ -5,6 +5,9 @@ import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * GET /api/automation/events
  * Proxies SSE stream from backend so frontend can use same-origin fetch with x-api-key.
@@ -39,16 +42,55 @@ export async function GET(request) {
       );
     }
 
-    return new Response(res.body, {
+    const reader = res.body?.getReader();
+    if (!reader) {
+      return NextResponse.json(
+        { success: false, error: 'Backend events stream unavailable' },
+        { status: 502 }
+      );
+    }
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(': proxy-ready\n\n'));
+
+        const pump = () => {
+          reader
+            .read()
+            .then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+              if (value) controller.enqueue(value);
+              pump();
+            })
+            .catch((err) => {
+              if (err?.name !== 'AbortError') controller.error(err);
+              else controller.close();
+            });
+        };
+        pump();
+      },
+      cancel() {
+        reader.cancel().catch(() => {});
+      },
+    });
+
+    return new Response(stream, {
       status: 200,
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
         Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
     });
   } catch (err) {
+    if (err?.name === 'AbortError') {
+      return new Response(null, { status: 499 });
+    }
     return NextResponse.json(
       { success: false, error: err?.message || 'Failed to connect to backend events' },
       { status: 502 }
