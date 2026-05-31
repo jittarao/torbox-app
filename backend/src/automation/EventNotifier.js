@@ -14,11 +14,11 @@ class EventNotifier {
 
   /**
    * Start optional SSE heartbeat to keep connections alive behind proxies/load balancers.
-   * @param {number} [intervalMs] - Interval in ms (default 25000). Env: SSE_HEARTBEAT_INTERVAL_MS
+   * @param {number} [intervalMs] - Interval in ms (default 15000). Env: SSE_HEARTBEAT_INTERVAL_MS
    */
   startHeartbeat(intervalMs) {
     if (this._heartbeatId) return;
-    const ms = intervalMs ?? parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '25000', 10);
+    const ms = intervalMs ?? parseInt(process.env.SSE_HEARTBEAT_INTERVAL_MS || '15000', 10);
     this._heartbeatId = setInterval(() => {
       for (const [authId, set] of this.connections) {
         for (const res of [...set]) {
@@ -57,6 +57,16 @@ class EventNotifier {
       this.connections.set(authId, new Set());
     }
     this.connections.get(authId).add(res);
+    try {
+      res.write(': connected\n\n');
+    } catch (err) {
+      logger.debug('SSE initial write failed, removing connection', {
+        authId,
+        errorMessage: err.message,
+      });
+      this.unsubscribe(authId, res);
+      return;
+    }
     res.on('close', () => this.unsubscribe(authId, res));
   }
 
