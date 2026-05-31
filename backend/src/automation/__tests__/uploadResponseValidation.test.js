@@ -1,0 +1,131 @@
+import { describe, expect, test } from 'bun:test';
+import {
+  getUploadResourceId,
+  hasUploadResourcePayload,
+  isTorboxUploadApiFailure,
+  isTorboxUploadApiSuccess,
+} from '../uploadResponseValidation.js';
+
+/** Documented createtorrent success (prompts/torbox-api.md) */
+const CREATE_TORRENT_SUCCESS = {
+  success: true,
+  error: null,
+  detail: 'Torrent Added Successfully',
+  data: {
+    hash: 'abc123',
+    torrent_id: 42,
+    auth_id: 'user-auth',
+  },
+};
+
+/** Documented asynccreatetorrent success — not used by UploadProcessor; must not count as upload created */
+const ASYNC_CREATE_TORRENT_SUCCESS = {
+  success: true,
+  error: null,
+  detail:
+    'Torrent creation request has been queued. You will receive a notification when it is processed.',
+  data: null,
+};
+
+describe('uploadResponseValidation', () => {
+  describe('getUploadResourceId / hasUploadResourcePayload', () => {
+    test('torrent: uses torrent_id from API docs', () => {
+      expect(getUploadResourceId(CREATE_TORRENT_SUCCESS.data, 'torrent')).toBe(42);
+      expect(hasUploadResourcePayload(CREATE_TORRENT_SUCCESS.data, 'torrent')).toBe(true);
+    });
+
+    test('torrent: accepts torrent_id 0 (documented placeholder)', () => {
+      expect(getUploadResourceId({ torrent_id: 0, hash: 'x' }, 'torrent')).toBe(0);
+    });
+
+    test('torrent: hash-only object is not enough without torrent_id', () => {
+      expect(hasUploadResourcePayload({ hash: 'only-hash', auth_id: 'a' }, 'torrent')).toBe(false);
+    });
+
+    test('usenet: prefers usenet_id then id', () => {
+      expect(getUploadResourceId({ usenet_id: 9 }, 'usenet')).toBe(9);
+      expect(hasUploadResourcePayload({ id: 5 }, 'usenet')).toBe(true);
+    });
+
+    test('webdl: prefers webdl_id then web_id then id', () => {
+      expect(getUploadResourceId({ webdl_id: 3 }, 'webdl')).toBe(3);
+      expect(getUploadResourceId({ web_id: 8 }, 'webdl')).toBe(8);
+      expect(hasUploadResourcePayload({ id: 2 }, 'webdl')).toBe(true);
+    });
+
+    test('rejects empty or missing payload', () => {
+      expect(hasUploadResourcePayload(null, 'torrent')).toBe(false);
+      expect(hasUploadResourcePayload({}, 'torrent')).toBe(false);
+      expect(hasUploadResourcePayload([], 'torrent')).toBe(false);
+    });
+  });
+
+  describe('isTorboxUploadApiSuccess', () => {
+    test('accepts documented createtorrent envelope', () => {
+      expect(
+        isTorboxUploadApiSuccess({ data: CREATE_TORRENT_SUCCESS }, 'torrent')
+      ).toBe(true);
+    });
+
+    test('rejects asynccreatetorrent-style success with data null', () => {
+      expect(
+        isTorboxUploadApiSuccess({ data: ASYNC_CREATE_TORRENT_SUCCESS }, 'torrent')
+      ).toBe(false);
+    });
+
+    test('rejects explicit API failure envelope', () => {
+      expect(
+        isTorboxUploadApiSuccess(
+          {
+            data: {
+              success: false,
+              error: 'ACTIVE_LIMIT',
+              detail: 'Active download limit reached',
+              data: null,
+            },
+          },
+          'torrent'
+        )
+      ).toBe(false);
+    });
+
+    test('rejects success:true without resource id (false positive case)', () => {
+      expect(
+        isTorboxUploadApiSuccess(
+          {
+            data: { success: true, error: null, detail: 'ok', data: null },
+          },
+          'torrent'
+        )
+      ).toBe(false);
+    });
+
+    test('rejects empty object, string, and missing body (old bug)', () => {
+      expect(isTorboxUploadApiSuccess({ data: {} }, 'torrent')).toBe(false);
+      expect(isTorboxUploadApiSuccess({ data: '' }, 'torrent')).toBe(false);
+      expect(isTorboxUploadApiSuccess({ data: '<html>error</html>' }, 'torrent')).toBe(false);
+      expect(isTorboxUploadApiSuccess({}, 'torrent')).toBe(false);
+      expect(isTorboxUploadApiSuccess({ data: null }, 'torrent')).toBe(false);
+    });
+
+    test('rejects success omitted with error string field only', () => {
+      expect(
+        isTorboxUploadApiSuccess(
+          {
+            data: { error: 'AUTH_ERROR', detail: 'There was an error verifying your API key.' },
+          },
+          'torrent'
+        )
+      ).toBe(false);
+    });
+  });
+
+  describe('isTorboxUploadApiFailure', () => {
+    test('is negation of success check', () => {
+      const ok = { data: CREATE_TORRENT_SUCCESS };
+      const bad = { data: { success: false, error: 'AUTH_ERROR', data: null } };
+      expect(isTorboxUploadApiFailure(ok, 'torrent')).toBe(false);
+      expect(isTorboxUploadApiFailure(bad, 'torrent')).toBe(true);
+    });
+  });
+});

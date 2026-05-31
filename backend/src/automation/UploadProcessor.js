@@ -11,6 +11,7 @@ import {
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
+import { isTorboxUploadApiFailure } from './uploadResponseValidation.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -531,21 +532,6 @@ class UploadProcessor {
   }
 
   /**
-   * Check if TorBox API response body indicates failure.
-   * TorBox can return HTTP 200 with { success: false, error, detail } for business logic failures.
-   * We must not mark uploads as completed when the torrent was not actually created.
-   * @param {Object} response - Axios response (response.data, response.status)
-   * @returns {boolean} True if response indicates API-side failure
-   */
-  isApiResponseFailure(response) {
-    const data = response?.data;
-    if (!data || typeof data !== 'object') return false;
-    if (data.success === false) return true;
-    if (data.error != null && data.error !== '') return true;
-    return false;
-  }
-
-  /**
    * Make API request to TorBox
    * @param {ApiClient} apiClient - API client instance
    * @param {string} endpoint - API endpoint URL
@@ -946,10 +932,14 @@ class UploadProcessor {
 
       // TorBox can return HTTP 200 with { success: false, error, detail } when the torrent was not created.
       // Treat that as failure so we do not mark the upload as completed.
-      if (this.isApiResponseFailure(response)) {
-        const data = response.data || {};
+      if (isTorboxUploadApiFailure(response, type)) {
+        const data = response?.data && typeof response.data === 'object' ? response.data : {};
         const syntheticError = Object.assign(
-          new Error(data.detail || data.error || 'TorBox API returned failure'),
+          new Error(
+            data.detail ||
+              data.error ||
+              'TorBox API did not confirm the upload was created (missing success or resource id)'
+          ),
           {
             response: {
               status: response.status ?? 200,
@@ -1504,12 +1494,38 @@ class UploadProcessor {
 
                 // Only process if the UPDATE succeeded (another thread didn't claim it first)
                 if (result.changes > 0) {
-                  // Process upload (pass original status to ensure counter updates work correctly)
-                  await this.processUpload(
-                    { ...upload, authId: auth_id },
-                    currentUserDb,
-                    originalStatus
-                  );
+                  try {
+                    // Process upload (pass original status to ensure counter updates work correctly)
+                    await this.processUpload(
+                      { ...upload, authId: auth_id },
+                      currentUserDb,
+                      originalStatus
+                    );
+                  } finally {
+                    // If processUpload exited without updating status, avoid leaving rows stuck in processing
+                    const after = currentUserDb.db
+                      .prepare('SELECT status FROM uploads WHERE id = ?')
+                      .get(upload.id);
+                    if (after?.status === 'processing') {
+                      logger.warn('Upload still processing after processUpload; resetting to queued', {
+                        uploadId: upload.id,
+                        authId: auth_id,
+                      });
+                      currentUserDb.db
+                        .prepare(
+                          `
+                          UPDATE uploads
+                          SET status = 'queued',
+                              error_message = NULL,
+                              last_processed_at = CURRENT_TIMESTAMP,
+                              updated_at = CURRENT_TIMESTAMP
+                          WHERE id = ? AND status = 'processing'
+                        `
+                        )
+                        .run(upload.id);
+                      await this.masterDatabase.updateUploadCounters(auth_id, currentUserDb);
+                    }
+                  }
                 }
               }
             }
