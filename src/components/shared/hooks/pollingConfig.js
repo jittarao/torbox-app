@@ -31,4 +31,8 @@ export const POLLING_CONFIG = {
   allTabStaggerMs: 2_000,
   /** Debounce trailing window for SSE-driven torrent refetches (ms) */
   sseDebounceMs: 2_000,
+  /** Wait for TorBox queue→list move before refetching after force start (ms) */
+  forceStartReconcileDelayMs: 4_000,
+  /** Coalesce rapid manual/bulk force starts into one refetch (ms) */
+  forceStartReconcileDebounceMs: 2_000,
 };

@@ -23,8 +23,16 @@ mock.module('@/utils/utility', () => ({
   },
 }));
 
+const removeByIdsMock = mock(() => {});
+
 mock.module('@/utils/uploadActions', () => ({
   controlQueuedItem: (...args) => controlQueuedItemMock(...args),
+}));
+
+mock.module('@/store/torboxDownloadsStore', () => ({
+  useTorboxDownloadsStore: {
+    getState: () => ({ removeByIds: removeByIdsMock }),
+  },
 }));
 
 import {
@@ -50,6 +58,7 @@ describe('fillAutoStartSlots', () => {
   beforeEach(() => {
     processedQueueIdsRef.current = new Map();
     controlQueuedItemMock.mockClear();
+    removeByIdsMock.mockClear();
     uploadOptions.autoStart = true;
     uploadOptions.autoStartLimit = 10;
   });
@@ -69,6 +78,8 @@ describe('fillAutoStartSlots', () => {
     expect(result.started).toBe(4);
     expect(result.slotsAvailable).toBe(8);
     expect(controlQueuedItemMock).toHaveBeenCalledTimes(4);
+    expect(removeByIdsMock).toHaveBeenCalledTimes(1);
+    expect(removeByIdsMock).toHaveBeenCalledWith('torrents', [10, 11, 12, 13]);
   });
 
   test('skips recently processed ids and tries the next queued item', async () => {
@@ -107,6 +118,7 @@ describe('fillAutoStartSlots', () => {
     await fillAutoStartSlots(items, 'fail', { viewType: 'torrents' });
 
     expect(processedQueueIdsRef.current.has(99)).toBe(false);
+    expect(removeByIdsMock).not.toHaveBeenCalled();
   });
 });
 

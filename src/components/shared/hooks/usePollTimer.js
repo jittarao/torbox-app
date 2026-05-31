@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getAutoStartOptions } from '@/utils/utility';
 import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torboxDownloadsStore';
+import { registerPollTimerReset, unregisterPollTimerReset } from '@/store/pollTimerReset';
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
 import { resolvePollInterval, shouldPollTorrentsOnly } from './pollInterval';
@@ -276,8 +277,14 @@ export function usePollTimer({
         : POLLING_CONFIG.activeIntervalMs;
     startPolling(initialDelay);
 
+    registerPollTimerReset(() => {
+      if (cancelled) return;
+      startPolling(POLLING_CONFIG.activeIntervalMs);
+    });
+
     return () => {
       cancelled = true;
+      unregisterPollTimerReset();
       stopPolling();
       clearGraceStopTimeout();
       onReEngagedRef.current = () => {};

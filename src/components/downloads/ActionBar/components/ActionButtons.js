@@ -16,6 +16,7 @@ import { controlQueuedItem, controlTorrent } from '@/utils/uploadActions';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { isTorrentQueued, isTorrentSeeding } from '../utils/statusHelpers';
+import { removeQueuedAfterForceStartBulk } from '@/store/downloadListReconcile';
 
 export default function ActionButtons({
   setSelectedItems,
@@ -211,12 +212,15 @@ export default function ActionButtons({
     let successCount = 0;
     let failCount = 0;
 
+    const removedByType = { torrents: [], usenet: [], webdl: [] };
+
     try {
       for (const item of selectedQueuedTorrents) {
         const assetType = resolveItemAssetType(item, activeType);
         const result = await controlQueuedItem(apiKey, item.id, 'start', assetType);
         if (result?.success) {
           successCount++;
+          removedByType[assetType].push(item.id);
         } else {
           failCount++;
         }
@@ -239,6 +243,10 @@ export default function ActionButtons({
           message: tItemActions('downloadFailed'),
           type: 'error',
         });
+      }
+
+      if (successCount > 0) {
+        removeQueuedAfterForceStartBulk(removedByType);
       }
     } catch (error) {
       console.error('Error in bulk force start:', error);

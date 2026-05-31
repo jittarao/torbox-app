@@ -1,6 +1,45 @@
 import { create } from 'zustand';
 import { isBackendAvailable } from '@/utils/backendModeCache';
 import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
+import { useTagsStore } from '@/store/tagsStore';
+
+/**
+ * @param {Record<string, { id: number, name: string }[]>} tagMappings
+ * @param {(string|number)[]} downloadIds
+ * @param {number[]} tagIds
+ * @param {'add' | 'remove'} operation
+ * @param {{ id: number, name: string }[]} allTags
+ */
+export function applyOptimisticTagMappings(tagMappings, downloadIds, tagIds, operation, allTags) {
+  const tagsById = new Map(allTags.map((tag) => [tag.id, tag]));
+  const next = { ...tagMappings };
+
+  for (const rawDownloadId of downloadIds) {
+    const downloadId = String(rawDownloadId);
+    const current = [...(next[downloadId] || [])];
+
+    if (operation === 'remove') {
+      const removeSet = new Set(tagIds);
+      const filtered = current.filter((tag) => !removeSet.has(tag.id));
+      if (filtered.length > 0) {
+        next[downloadId] = filtered;
+      } else {
+        delete next[downloadId];
+      }
+      continue;
+    }
+
+    for (const tagId of tagIds) {
+      const tag = tagsById.get(tagId);
+      if (tag && !current.some((t) => t.id === tagId)) {
+        current.push({ id: tag.id, name: tag.name });
+      }
+    }
+    next[downloadId] = current;
+  }
+
+  return next;
+}
 
 async function readApiError(response, fallback) {
   try {
@@ -109,7 +148,18 @@ export const useDownloadTagsStore = create((set, get) => ({
       throw new Error('Download tags feature is disabled when backend is disabled');
     }
 
-    set({ loading: true, error: null });
+    const previousMappings = get().tagMappings;
+    const allTags = useTagsStore.getState().tags;
+    const optimistic = applyOptimisticTagMappings(
+      previousMappings,
+      downloadIds,
+      tagIds,
+      operation,
+      allTags
+    );
+
+    set({ tagMappings: optimistic, error: null });
+
     try {
       const response = await fetch('/api/downloads/tags', {
         method: 'POST',
@@ -131,17 +181,15 @@ export const useDownloadTagsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        // Reset loading before fetching download tags
-        set({ loading: false });
-        // Fetch latest download-tags list from /api/downloads/tags after assignment
         await get().fetchDownloadTags(apiKey, { force: true });
         return true;
-      } else {
-        throw new Error(data.error || 'Failed to assign tags');
       }
+
+      set({ tagMappings: previousMappings });
+      throw new Error(data.error || 'Failed to assign tags');
     } catch (err) {
       console.error('Error assigning tags:', err);
-      set({ error: err.message, loading: false });
+      set({ tagMappings: previousMappings, error: err.message });
       throw err;
     }
   },

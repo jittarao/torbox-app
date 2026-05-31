@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { resetPollTimer } from '@/store/pollTimerReset';
 import { POLLING_CONFIG } from './pollingConfig';
 
 /**
@@ -26,6 +27,7 @@ export function useAutomationTorrentEvents({ enabled, apiKey, onTorrentsChanged 
     let retryCount = 0;
 
     const scheduleTorrentRefetch = () => {
+      resetPollTimer();
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
         debounceTimerRef.current = null;
