@@ -2,6 +2,21 @@
 
 import { useRef } from 'react';
 
+function ActiveCheckIcon({ className = 'size-3.5' }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
 export default function SidebarListItem({
   label,
   count,
@@ -10,6 +25,7 @@ export default function SidebarListItem({
   isMenuOpen = false,
   onMenuToggle,
   ariaLabel,
+  title,
 }) {
   const menuButtonRef = useRef(null);
 
@@ -17,7 +33,7 @@ export default function SidebarListItem({
     <div
       className={`group relative flex items-center gap-1 rounded-md transition-colors ${
         isActive
-          ? 'bg-accent/10 dark:bg-accent-dark/10 border border-accent/40 dark:border-accent-dark/40'
+          ? 'bg-accent/12 dark:bg-accent-dark/12 border border-accent/50 dark:border-accent-dark/50 shadow-[inset_0_0_0_1px_rgba(217,119,6,0.06)]'
           : 'border border-transparent hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
       }`}
     >
@@ -26,11 +42,32 @@ export default function SidebarListItem({
         onClick={onClick}
         aria-label={ariaLabel || label}
         aria-pressed={isActive}
-        className="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 text-left text-xs text-primary-text dark:text-primary-text-dark"
+        title={title}
+        className={`flex-1 min-w-0 flex items-center gap-2 py-1.5 pl-2 pr-1 text-left text-xs transition-colors ${
+          isActive
+            ? 'text-accent dark:text-accent-dark'
+            : 'text-primary-text dark:text-primary-text-dark'
+        }`}
       >
+        <span
+          className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
+            isActive
+              ? 'border-accent bg-accent text-white dark:border-accent-dark dark:bg-accent-dark'
+              : 'border-border/80 bg-transparent dark:border-border-dark/80'
+          }`}
+          aria-hidden
+        >
+          {isActive && <ActiveCheckIcon className="size-2.5" />}
+        </span>
         <span className="truncate font-medium">{label}</span>
         {count != null && count > 0 && (
-          <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-surface-alt dark:bg-surface-alt-dark text-primary-text/60 dark:text-primary-text-dark/60">
+          <span
+            className={`shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full ${
+              isActive
+                ? 'bg-accent/15 text-accent dark:bg-accent-dark/20 dark:text-accent-dark'
+                : 'bg-surface-alt dark:bg-surface-alt-dark text-primary-text/60 dark:text-primary-text-dark/60'
+            }`}
+          >
             {count}
           </span>
         )}
