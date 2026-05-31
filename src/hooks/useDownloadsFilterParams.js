@@ -100,10 +100,19 @@ function writeAppliedFiltersToParams(params, filters) {
   return true;
 }
 
+/**
+ * @param {string|null|undefined} value
+ * @returns {string|null} URL `q` value, or null to omit the param
+ */
+export function downloadsSearchParamFromValue(value) {
+  const str = String(value ?? '');
+  return str.length > 0 ? str : null;
+}
+
 /** @param {URLSearchParams} params */
 function writeSearchToParams(params, value) {
-  const trimmed = String(value ?? '').trim();
-  if (trimmed) params.set('q', trimmed);
+  const encoded = downloadsSearchParamFromValue(value);
+  if (encoded) params.set('q', encoded);
   else params.delete('q');
 }
 
