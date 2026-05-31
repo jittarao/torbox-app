@@ -13,7 +13,7 @@ import TagDisplay from './Tags/TagDisplay';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import {
   useIsDownloadSelected,
-  useIsItemBlockingFileSelect,
+  useItemHasSelectedFiles,
 } from '@/components/shared/hooks/useSelection';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import {
@@ -279,7 +279,7 @@ function ItemCard({
   const isDownloaded = downloadHistoryLookup?.itemDownloads?.has(itemKey) ?? false;
   const isLinkFailed = downloadHistoryLookup?.itemLinkFailed?.has(itemKey) ?? false;
   const isSelected = useIsDownloadSelected(selectionId);
-  const isItemSelectDisabled = useIsItemBlockingFileSelect(selectionId);
+  const hasSelectedFiles = useItemHasSelectedFiles(selectionId);
 
   const isFileDownloaded = (fileSelectionId, fileId) =>
     downloadHistoryLookup?.itemDownloads?.has(fileSelectionId) ||
@@ -298,7 +298,7 @@ function ItemCard({
   };
 
   const handleCardSelect = (shiftKey) => {
-    if (isItemSelectDisabled) return;
+    if (hasSelectedFiles) return;
     handleItemSelection(selectionId, !isSelected, index, shiftKey);
   };
 
@@ -328,14 +328,15 @@ function ItemCard({
         }
       }}
       onClick={(e) => {
-        if (e.target.closest('button, input, a, select, textarea')) return;
+        if (e.target.closest('button, input, a, select, textarea') || hasSelectedFiles) return;
         handleCardSelect(e.shiftKey);
         e.currentTarget.blur();
       }}
       onKeyDown={(e) => {
         if (
           (e.key === 'Enter' || e.key === ' ') &&
-          !e.target.closest('button, input, a, select, textarea')
+          !e.target.closest('button, input, a, select, textarea') &&
+          !hasSelectedFiles
         ) {
           e.preventDefault();
           handleCardSelect(e.shiftKey);
@@ -376,7 +377,7 @@ function ItemCard({
                 handleItemSelection(selectionId, e.target.checked, index, e.shiftKey)
               }
               onClick={(e) => e.stopPropagation()}
-              disabled={isItemSelectDisabled}
+              disabled={hasSelectedFiles}
               className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5"
             />
             <h3
