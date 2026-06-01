@@ -5,6 +5,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
 import SystemHealth from '@/components/admin/SystemHealth';
 import PerformanceMetrics from '@/components/admin/PerformanceMetrics';
+import { AdminEmpty, AdminLoading, AdminPageHeader } from '@/components/admin/AdminUi';
 
 export default function AdminSystemPageClient() {
   const [metrics, setMetrics] = useState(null);
@@ -49,33 +50,31 @@ export default function AdminSystemPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">System Health</h2>
-          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            Auto-refresh (30s)
-          </label>
-        </div>
+        <AdminPageHeader
+          title="System health"
+          description="Database pool, polling scheduler, and runtime performance."
+          actions={
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/60 bg-white px-3 py-2 text-sm text-muted dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-muted-dark">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="size-4 rounded border-border text-accent focus:ring-accent/30 dark:border-border-dark"
+              />
+              Auto-refresh (30s)
+            </label>
+          }
+        />
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading system metrics…</p>
-          </div>
+          <AdminLoading label="Loading system metrics…" />
         ) : metrics ? (
           <>
             <SystemHealth metrics={metrics} onRefresh={loadMetrics} />
             <PerformanceMetrics metrics={metrics.performance} />
           </>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">Failed to load metrics</p>
-          </div>
+          <AdminEmpty message="Failed to load system metrics." />
         )}
       </div>
     </AdminLayout>

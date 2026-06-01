@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
 import AutomationOverview from '@/components/admin/AutomationOverview';
+import { AdminPageHeader, AdminLoading } from '@/components/admin/AdminUi';
 
 export default function AdminAutomationPageClient() {
   const [stats, setStats] = useState(null);
@@ -32,13 +33,13 @@ export default function AdminAutomationPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Automation Monitoring</h2>
+        <AdminPageHeader
+          title="Automation"
+          description="Rule counts, recent executions, and errors across all users."
+        />
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading automation data…</p>
-          </div>
+          <AdminLoading label="Loading automation data…" />
         ) : (
           <AutomationOverview stats={stats} rules={rules} executions={executions} errors={errors} />
         )}

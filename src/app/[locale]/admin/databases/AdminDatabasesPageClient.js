@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
 import DatabaseList from '@/components/admin/DatabaseList';
+import {
+  AdminBadge,
+  AdminCard,
+  AdminEmpty,
+  AdminLoading,
+  AdminPageHeader,
+  AdminStatRow,
+} from '@/components/admin/AdminUi';
 
 export default function AdminDatabasesPageClient() {
   const [databases, setDatabases] = useState([]);
@@ -31,61 +39,33 @@ export default function AdminDatabasesPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Database Management</h2>
+        <AdminPageHeader
+          title="Databases"
+          description="Per-user SQLite databases, backups, and connection pool utilization."
+        />
 
-        {poolStats && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Connection Pool
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Current Size
-                </span>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
-                  {poolStats.size ?? poolStats.currentSize} / {poolStats.maxSize}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
-                <p
-                  className={`mt-1 text-sm font-medium ${
-                    poolStats.status === 'healthy'
-                      ? 'text-green-600 dark:text-green-400'
-                      : poolStats.status === 'warning'
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : poolStats.status === 'critical'
-                          ? 'text-orange-600 dark:text-orange-400'
-                          : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {poolStats.status}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Hits</span>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
-                  {poolStats.hits || 0}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Misses</span>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
-                  {poolStats.misses || 0}
-                </p>
-              </div>
+        {poolStats ? (
+          <AdminCard
+            title="Connection pool"
+            action={<AdminBadge status={poolStats.status}>{poolStats.status}</AdminBadge>}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <AdminStatRow
+                label="Current size"
+                value={`${poolStats.size ?? poolStats.currentSize} / ${poolStats.maxSize}`}
+              />
+              <AdminStatRow label="Hits" value={poolStats.hits || 0} />
+              <AdminStatRow label="Misses" value={poolStats.misses || 0} />
             </div>
-          </div>
-        )}
+          </AdminCard>
+        ) : null}
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading databases…</p>
-          </div>
-        ) : (
+          <AdminLoading label="Loading databases…" />
+        ) : databases.length > 0 ? (
           <DatabaseList databases={databases} />
+        ) : (
+          <AdminEmpty message="No user databases found." />
         )}
       </div>
     </AdminLayout>

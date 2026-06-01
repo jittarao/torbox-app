@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import adminApiClient from '@/utils/adminApiClient';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
+import { AdminBadge, AdminCard, AdminLoading, AdminStatRow } from './AdminUi';
 
 export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
@@ -46,156 +47,92 @@ export default function UserDetail({ user }) {
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
-      {/* User Info Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">User Information</h3>
+    <div className="space-y-4">
+      <AdminCard
+        title="User information"
+        action={
           <button
             type="button"
             onClick={handleStatusChange}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              user.status === 'active'
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
+            className={
+              user.status === 'active' ? 'ui-btn-ghost text-label-danger-text' : 'ui-btn-accent'
+            }
           >
             {user.status === 'active' ? 'Deactivate' : 'Activate'}
           </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Auth ID</span>
-            <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">
+            <span className="text-sm text-muted dark:text-muted-dark">Auth ID</span>
+            <p className="mt-1 break-all font-mono text-sm text-text dark:text-text-dark">
               {user.auth_id}
             </p>
           </div>
-          <div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Key Name</span>
-            <p className="mt-1 text-sm text-gray-900 dark:text-white">{user.key_name || 'N/A'}</p>
+          <AdminStatRow label="Key name" value={user.key_name || 'N/A'} />
+          <div className="flex items-center justify-between gap-4 text-sm md:col-span-2">
+            <span className="text-muted dark:text-muted-dark">Status</span>
+            <AdminBadge status={user.status === 'active' ? 'active' : 'inactive'}>
+              {user.status}
+            </AdminBadge>
           </div>
-          <div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
-            <p className="mt-1">
-              <span
-                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  user.status === 'active'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {user.status}
-              </span>
-            </p>
-          </div>
-          <div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Has Active Rules
-            </span>
-            <p className="mt-1 text-sm text-gray-900 dark:text-white">
-              {user.has_active_rules ? 'Yes' : 'No'}
-            </p>
-          </div>
-          <div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</span>
-            <p className="mt-1 text-sm text-gray-900 dark:text-white">
-              {new Date(user.created_at).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Updated At</span>
-            <p className="mt-1 text-sm text-gray-900 dark:text-white">
-              {new Date(user.updated_at).toLocaleString()}
-            </p>
-          </div>
+          <AdminStatRow label="Active rules" value={user.has_active_rules ? 'Yes' : 'No'} />
+          <AdminStatRow label="Created" value={new Date(user.created_at).toLocaleString()} />
+          <AdminStatRow label="Updated" value={new Date(user.updated_at).toLocaleString()} />
         </div>
-      </div>
+      </AdminCard>
 
-      {/* Database Info */}
       {loading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <p className="text-gray-600 dark:text-gray-400">Loading database information…</p>
-        </div>
+        <AdminLoading label="Loading database information…" />
       ) : databaseInfo ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Database Information
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Database Path
-              </span>
-              <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">
+        <AdminCard title="Database">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <span className="text-sm text-muted dark:text-muted-dark">Path</span>
+              <p className="mt-1 break-all font-mono text-xs text-text dark:text-text-dark">
                 {databaseInfo.path}
               </p>
             </div>
-            <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Exists</span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {databaseInfo.exists ? 'Yes' : 'No'}
-              </p>
-            </div>
-            {databaseInfo.exists && (
+            <AdminStatRow label="Exists" value={databaseInfo.exists ? 'Yes' : 'No'} />
+            {databaseInfo.exists ? (
               <>
-                <div>
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Size</span>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {databaseInfo.size_formatted}
-                  </p>
-                </div>
-                {databaseInfo.table_counts && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Tables
-                    </span>
-                    <div className="mt-1 space-y-1">
+                <AdminStatRow label="Size" value={databaseInfo.size_formatted} />
+                {databaseInfo.table_counts ? (
+                  <div className="md:col-span-2">
+                    <span className="text-sm text-muted dark:text-muted-dark">Tables</span>
+                    <ul className="mt-2 space-y-1">
                       {Object.entries(databaseInfo.table_counts).map(([table, count]) => (
-                        <p key={table} className="text-sm text-gray-900 dark:text-white">
+                        <li key={table} className="text-sm text-text dark:text-text-dark">
                           {table}: {count !== null ? count : 'N/A'}
-                        </p>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
-                )}
+                ) : null}
               </>
-            )}
+            ) : null}
           </div>
-        </div>
+        </AdminCard>
       ) : null}
 
-      {/* Automation Info */}
-      {automationInfo && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Automation</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Total Rules
-              </span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {automationInfo.statistics?.total_rules || 0}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Enabled Rules
-              </span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {automationInfo.statistics?.enabled_rules || 0}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Executions (7 days)
-              </span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {automationInfo.statistics?.total_executions || 0}
-              </p>
-            </div>
+      {automationInfo ? (
+        <AdminCard title="Automation">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <AdminStatRow
+              label="Total rules"
+              value={automationInfo.statistics?.total_rules || 0}
+            />
+            <AdminStatRow
+              label="Enabled rules"
+              value={automationInfo.statistics?.enabled_rules || 0}
+            />
+            <AdminStatRow
+              label="Executions (7d)"
+              value={automationInfo.statistics?.total_executions || 0}
+            />
           </div>
-        </div>
-      )}
+        </AdminCard>
+      ) : null}
     </div>
   );
 }

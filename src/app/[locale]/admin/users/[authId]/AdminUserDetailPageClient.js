@@ -7,11 +7,13 @@ import UserDetail from '@/components/admin/UserDetail';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
+import { AdminEmpty, AdminLoading, AdminPageHeader } from '@/components/admin/AdminUi';
 
 export default function UserDetailPageClient() {
   const params = useParams();
   const { push } = useRouter();
   const authId = params.authId;
+  const locale = params?.locale || 'en';
   const { selectedUserData, fetchUser } = useAdminStore(
     useShallow((s) => ({
       selectedUserData: s.selectedUserData,
@@ -35,10 +37,7 @@ export default function UserDetailPageClient() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Loading user details…</p>
-        </div>
+        <AdminLoading label="Loading user details…" />
       </AdminLayout>
     );
   }
@@ -46,17 +45,10 @@ export default function UserDetailPageClient() {
   if (!selectedUserData) {
     return (
       <AdminLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">User not found</p>
-          <button
-            type="button"
-            onClick={() => {
-              const locale = useParams()?.locale || 'en';
-              push(`/${locale}/admin/users`);
-            }}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Back to Users
+        <AdminEmpty message="User not found." />
+        <div className="mt-4 text-center">
+          <button type="button" onClick={() => push(`/${locale}/admin/users`)} className="ui-btn-accent">
+            Back to users
           </button>
         </div>
       </AdminLayout>
@@ -66,19 +58,15 @@ export default function UserDetailPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => {
-              const locale = useParams()?.locale || 'en';
-              push(`/${locale}/admin/users`);
-            }}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-          >
-            ← Back
-          </button>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">User Details</h2>
-        </div>
+        <AdminPageHeader
+          title="User details"
+          description={selectedUserData.key_name || selectedUserData.auth_id}
+          actions={
+            <button type="button" onClick={() => push(`/${locale}/admin/users`)} className="ui-btn-ghost">
+              ← Users
+            </button>
+          }
+        />
 
         <UserDetail user={selectedUserData} />
       </div>
