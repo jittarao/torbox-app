@@ -15,16 +15,11 @@ export default function AdminAutomationPageClient() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [statsResult, rulesResult, executionsResult, errorsResult] = await Promise.all([
-          adminApiClient.getAutomationStats(),
-          adminApiClient.getAutomationRules(),
-          adminApiClient.getAutomationExecutions({ limit: 50 }),
-          adminApiClient.getAutomationErrors({ limit: 50 }),
-        ]);
-        setStats(statsResult.stats);
-        setRules(rulesResult.rules || []);
-        setExecutions(executionsResult.executions || []);
-        setErrors(errorsResult.errors || []);
+        const overview = await adminApiClient.getAutomationOverview({ limit: 50 });
+        setStats(overview.stats);
+        setRules(overview.rules || []);
+        setExecutions(overview.executions || []);
+        setErrors(overview.errors || []);
       } catch (error) {
         console.error('Error loading automation data:', error);
       } finally {

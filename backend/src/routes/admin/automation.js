@@ -2,10 +2,200 @@ import { parsePagination, sendSuccess, asyncHandler } from './helpers.js';
 import { mapUserDatabaseWork } from './concurrency.js';
 import logger from '../../utils/logger.js';
 
+function aggregateAutomationStats(partials) {
+  let totalRules = 0;
+  let enabledRules = 0;
+  let totalExecutions = 0;
+  let successfulExecutions = 0;
+  let failedExecutions = 0;
+  let totalItemsProcessed = 0;
+
+  for (const p of partials) {
+    if (!p) continue;
+    totalRules += p.totalRules;
+    enabledRules += p.enabledRules;
+    totalExecutions += p.totalExecutions;
+    successfulExecutions += p.successfulExecutions;
+    failedExecutions += p.failedExecutions;
+    totalItemsProcessed += p.totalItemsProcessed;
+  }
+
+  return {
+    rules: {
+      total: totalRules,
+      enabled: enabledRules,
+      disabled: totalRules - enabledRules,
+    },
+    executions_last_7_days: {
+      total: totalExecutions,
+      successful: successfulExecutions,
+      failed: failedExecutions,
+      success_rate:
+        totalExecutions > 0
+          ? ((successfulExecutions / totalExecutions) * 100).toFixed(2) + '%'
+          : '0%',
+      total_items_processed: totalItemsProcessed,
+    },
+  };
+}
+
+function readUserAutomationStats(userDb) {
+  const ruleStats = userDb.db
+    .prepare(
+      `
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) as enabled
+          FROM automation_rules
+        `
+    )
+    .get();
+
+  const execStats = userDb.db
+    .prepare(
+      `
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
+            SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed,
+            SUM(items_processed) as items
+          FROM rule_execution_log
+          WHERE executed_at >= datetime('now', '-7 days')
+        `
+    )
+    .get();
+
+  return {
+    totalRules: ruleStats?.total || 0,
+    enabledRules: ruleStats?.enabled || 0,
+    totalExecutions: execStats?.total || 0,
+    successfulExecutions: execStats?.successful || 0,
+    failedExecutions: execStats?.failed || 0,
+    totalItemsProcessed: execStats?.items || 0,
+  };
+}
+
+function readUserAutomationSnapshot(userDb, user, limit) {
+  const rules = userDb.db
+    .prepare(
+      `
+          SELECT id, name, enabled, execution_count, last_executed_at, created_at
+          FROM automation_rules
+          ORDER BY created_at DESC
+        `
+    )
+    .all()
+    .map((rule) => ({
+      ...rule,
+      auth_id: user.auth_id,
+      key_name: user.key_name,
+    }));
+
+  const executions = userDb.db
+    .prepare(
+      `
+          SELECT id, rule_id, rule_name, execution_type, items_processed, 
+                 success, error_message, executed_at
+          FROM rule_execution_log
+          ORDER BY executed_at DESC
+          LIMIT ?
+        `
+    )
+    .all(limit)
+    .map((exec) => ({
+      ...exec,
+      auth_id: user.auth_id,
+      key_name: user.key_name,
+    }));
+
+  const errors = userDb.db
+    .prepare(
+      `
+          SELECT id, rule_id, rule_name, execution_type, items_processed, 
+                 error_message, executed_at
+          FROM rule_execution_log
+          WHERE success = 0
+          ORDER BY executed_at DESC
+          LIMIT ?
+        `
+    )
+    .all(limit)
+    .map((error) => ({
+      ...error,
+      auth_id: user.auth_id,
+      key_name: user.key_name,
+    }));
+
+  return {
+    rules,
+    stats: readUserAutomationStats(userDb),
+    executions,
+    errors,
+  };
+}
+
+const emptyUserStats = {
+  totalRules: 0,
+  enabledRules: 0,
+  totalExecutions: 0,
+  successfulExecutions: 0,
+  failedExecutions: 0,
+  totalItemsProcessed: 0,
+};
+
 /**
  * Automation Monitoring Routes
  */
 export function setupAutomationRoutes(router, backend) {
+  // Single pass over user DBs for the admin automation page (avoids 4× parallel pool pressure)
+  router.get(
+    '/automation/overview',
+    asyncHandler(async (req, res) => {
+      const { limit } = parsePagination(req);
+      const activeUsers = backend.masterDatabase.getActiveUsers();
+
+      const snapshots = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
+        try {
+          return readUserAutomationSnapshot(userDb, user, limit);
+        } catch (error) {
+          logger.warn('Error getting automation overview for user', {
+            authId: user.auth_id,
+            error: error.message,
+          });
+          return {
+            rules: [],
+            stats: emptyUserStats,
+            executions: [],
+            errors: [],
+          };
+        }
+      });
+
+      const rules = [];
+      const executions = [];
+      const errors = [];
+      const statPartials = [];
+
+      for (const snap of snapshots) {
+        if (!snap) continue;
+        rules.push(...snap.rules);
+        executions.push(...snap.executions);
+        errors.push(...snap.errors);
+        statPartials.push(snap.stats);
+      }
+
+      executions.sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
+      errors.sort((a, b) => new Date(b.executed_at) - new Date(a.executed_at));
+
+      sendSuccess(res, {
+        stats: aggregateAutomationStats(statPartials),
+        rules,
+        executions: executions.slice(0, limit),
+        errors: errors.slice(0, limit),
+      });
+    })
+  );
+
   // Get all automation rules
   router.get(
     '/automation/rules',
@@ -161,90 +351,18 @@ export function setupAutomationRoutes(router, backend) {
 
       const partials = await mapUserDatabaseWork(backend, activeUsers, async (userDb, user) => {
         try {
-          const ruleStats = userDb.db
-            .prepare(
-              `
-          SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) as enabled
-          FROM automation_rules
-        `
-            )
-            .get();
-
-          const execStats = userDb.db
-            .prepare(
-              `
-          SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
-            SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed,
-            SUM(items_processed) as items
-          FROM rule_execution_log
-          WHERE executed_at >= datetime('now', '-7 days')
-        `
-            )
-            .get();
-
-          return {
-            totalRules: ruleStats?.total || 0,
-            enabledRules: ruleStats?.enabled || 0,
-            totalExecutions: execStats?.total || 0,
-            successfulExecutions: execStats?.successful || 0,
-            failedExecutions: execStats?.failed || 0,
-            totalItemsProcessed: execStats?.items || 0,
-          };
+          return readUserAutomationStats(userDb);
         } catch (error) {
           logger.warn('Error getting automation stats for user', {
             authId: user.auth_id,
             error: error.message,
           });
-          return {
-            totalRules: 0,
-            enabledRules: 0,
-            totalExecutions: 0,
-            successfulExecutions: 0,
-            failedExecutions: 0,
-            totalItemsProcessed: 0,
-          };
+          return emptyUserStats;
         }
       });
 
-      let totalRules = 0;
-      let enabledRules = 0;
-      let totalExecutions = 0;
-      let successfulExecutions = 0;
-      let failedExecutions = 0;
-      let totalItemsProcessed = 0;
-
-      for (const p of partials) {
-        if (!p) continue;
-        totalRules += p.totalRules;
-        enabledRules += p.enabledRules;
-        totalExecutions += p.totalExecutions;
-        successfulExecutions += p.successfulExecutions;
-        failedExecutions += p.failedExecutions;
-        totalItemsProcessed += p.totalItemsProcessed;
-      }
-
       sendSuccess(res, {
-        stats: {
-          rules: {
-            total: totalRules,
-            enabled: enabledRules,
-            disabled: totalRules - enabledRules,
-          },
-          executions_last_7_days: {
-            total: totalExecutions,
-            successful: successfulExecutions,
-            failed: failedExecutions,
-            success_rate:
-              totalExecutions > 0
-                ? ((successfulExecutions / totalExecutions) * 100).toFixed(2) + '%'
-                : '0%',
-            total_items_processed: totalItemsProcessed,
-          },
-        },
+        stats: aggregateAutomationStats(partials),
       });
     })
   );

@@ -210,6 +210,14 @@ class AdminApiClient {
 
   // ===== Automation Monitoring =====
 
+  /** Single request for admin automation page (one user-DB scan). */
+  async getAutomationOverview(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.limit) queryParams.append('limit', params.limit);
+    const query = queryParams.toString();
+    return this.request(`/automation/overview${query ? `?${query}` : ''}`);
+  }
+
   async getAutomationRules() {
     return this.request('/automation/rules');
   }
