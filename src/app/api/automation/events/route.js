@@ -5,9 +5,6 @@ import { backendProxyHeaders } from '@/utils/backendRequest';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 /**
  * GET /api/automation/events
  * Proxies SSE stream from backend so frontend can use same-origin fetch with x-api-key.
