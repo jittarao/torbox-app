@@ -4,9 +4,10 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
-import AdminHeader from './AdminHeader';
+import AdminMobileNav from './AdminMobileNav';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
+import { ADMIN_SIDEBAR_WIDTH } from './adminNavConfig';
 
 export default function AdminLayout({ children }) {
   const { push } = useRouter();
@@ -21,7 +22,6 @@ export default function AdminLayout({ children }) {
   );
 
   useEffect(() => {
-    // Verify authentication on mount and route changes
     const checkAuth = async () => {
       const isLoginPage = pathname === `/${locale}/admin` || pathname === '/admin';
       if (!isLoginPage) {
@@ -34,18 +34,22 @@ export default function AdminLayout({ children }) {
     checkAuth();
   }, [pathname, push, verifyAuth, locale]);
 
-  // Don't render layout on login page
   const isLoginPage = pathname === `/${locale}/admin` || pathname === '/admin';
   if (isLoginPage || !isAuthenticated) {
     return <>{children}</>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AdminHeader />
-      <div className="flex">
-        <AdminSidebar locale={locale} />
-        <main className="flex-1 p-6">{children}</main>
+    <div
+      className="min-h-screen bg-surface text-text dark:bg-surface-dark dark:text-text-dark"
+      style={{ '--admin-sidebar-width': ADMIN_SIDEBAR_WIDTH }}
+    >
+      <AdminSidebar locale={locale} />
+      <div className="flex min-h-screen min-w-0 flex-col pl-0 transition-[padding-left] duration-300 md:pl-[var(--admin-sidebar-width)]">
+        <AdminMobileNav locale={locale} />
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+        </main>
       </div>
     </div>
   );
