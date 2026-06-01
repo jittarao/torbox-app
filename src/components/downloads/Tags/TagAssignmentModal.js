@@ -1,19 +1,17 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
+import { Hash, Plus, Times, X } from '@/components/icons';
 import TagSelector from './TagSelector';
+import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
 const EMPTY_ARRAY = [];
 
 /**
- * TagAssignmentModal - Modal for assigning or removing tags from downloads
- * @param {Object} props
- * @param {boolean} props.isOpen - Whether modal is open
- * @param {Function} props.onClose - Callback to close modal
- * @param {Array} props.downloadIds - Array of download IDs to assign tags to
- * @param {string} props.apiKey - API key for authentication
- * @param {Function} props.onSuccess - Callback when tags are assigned successfully
+ * TagAssignmentModal — assign or remove tags on one or more downloads.
  */
 export default function TagAssignmentModal({
   isOpen,
@@ -22,29 +20,38 @@ export default function TagAssignmentModal({
   apiKey,
   onSuccess,
 }) {
-  const { assignTags, getDownloadTags, fetchDownloadTags } = useDownloadTags(apiKey);
+  const t = useTranslations('DownloadsFilters');
+  const tActions = useTranslations('CustomViews');
+  const { assignTags, getDownloadTags, fetchDownloadTags, tagMappings } = useDownloadTags(apiKey);
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [isAssigning, setIsAssigning] = useState(false);
-  const [mode, setMode] = useState('add'); // 'add' or 'remove'
+  const [mode, setMode] = useState('add');
+  const dialogRef = useRef(null);
 
-  // Get existing tags for all downloads
-  const existingTagIds = useMemo(() => {
-    if (!isOpen || downloadIds.length === 0) return new Set();
+  const downloadCount = downloadIds.length;
 
-    const allTagIds = new Set();
-    downloadIds.forEach((downloadId) => {
-      const tags = getDownloadTags(downloadId);
-      tags.forEach((tag) => allTagIds.add(tag.id));
-    });
-    return allTagIds;
-  }, [isOpen, downloadIds, getDownloadTags]);
+  /** Union of tags on any selected download (for remove mode). */
+  const assignedTagsUnion = useMemo(() => {
+    if (!isOpen || downloadCount === 0) return [];
 
-  // Reset selection and mode when modal opens/closes
+    const byId = new Map();
+    for (const downloadId of downloadIds) {
+      for (const tag of getDownloadTags(downloadId)) {
+        const key = Number(tag.id);
+        if (!byId.has(key)) {
+          byId.set(key, { id: tag.id, name: tag.name });
+        }
+      }
+    }
+    return [...byId.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    );
+  }, [isOpen, downloadIds, downloadCount, getDownloadTags, tagMappings]);
+
   useEffect(() => {
     if (isOpen) {
       setSelectedTagIds([]);
       setMode('add');
-      // Fetch latest tags when modal opens
       fetchDownloadTags({ force: true });
     } else {
       setSelectedTagIds([]);
@@ -52,169 +59,220 @@ export default function TagAssignmentModal({
     }
   }, [isOpen, fetchDownloadTags]);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   const handleSubmit = async () => {
-    if (!downloadIds.length || !selectedTagIds.length) return;
+    if (!downloadCount || !selectedTagIds.length) return;
 
     setIsAssigning(true);
     try {
       await assignTags(downloadIds, selectedTagIds, mode);
-      if (onSuccess) {
-        onSuccess();
-      }
+      onSuccess?.();
       onClose();
     } catch (error) {
       console.error(`Error ${mode === 'add' ? 'assigning' : 'removing'} tags:`, error);
-      // Error is handled by useDownloadTags hook
     } finally {
       setIsAssigning(false);
     }
   };
 
+  const description =
+    mode === 'add'
+      ? downloadCount === 1
+        ? t('tagAssignmentDescriptionAddSingle')
+        : t('tagAssignmentDescriptionAddMulti', { count: downloadCount })
+      : downloadCount === 1
+        ? t('tagAssignmentDescriptionRemoveSingle')
+        : t('tagAssignmentDescriptionRemoveMulti', { count: downloadCount });
+
+  const canSubmit =
+    selectedTagIds.length > 0 && !(mode === 'remove' && assignedTagsUnion.length === 0);
+
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <>
-      {/* Backdrop */}
       <button
         type="button"
-        className="fixed inset-0 bg-black/50 z-40 cursor-default"
+        className="z-overlay-backdrop fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t('close')}
       />
 
-      {/* Modal */}
-      <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50
-          bg-surface dark:bg-surface-dark
-          border border-border dark:border-border-dark
-          rounded-lg shadow-xl
-          w-[calc(100vw-2rem)] sm:w-full max-w-md max-h-[90dvh]
-          overflow-hidden flex flex-col min-h-0"
-        onClick={(e) => e.stopPropagation()}
+      <dialog
+        ref={dialogRef}
+        className="ui-modal-sheet"
+        aria-labelledby="tag-assignment-title"
+        aria-describedby="tag-assignment-description"
+        aria-modal="true"
+        open
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border dark:border-border-dark">
-          <h2 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
-            Manage Tags
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded hover:bg-surface-alt dark:hover:bg-surface-alt-dark
-              text-primary-text dark:text-primary-text-dark
-              transition-colors"
-          >
-            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+        <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
+          <ModalSheetHandle />
 
-        {/* Mode Toggle */}
-        <div className="p-4 border-b border-border dark:border-border-dark">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('add');
-                setSelectedTagIds([]);
-              }}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === 'add'
-                  ? 'bg-accent dark:bg-accent-dark text-white'
-                  : 'bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark hover:bg-surface-alt/80 dark:hover:bg-surface-alt-dark/80'
-              }`}
+          {/* Header */}
+          <div className="relative shrink-0 border-b border-border/50 px-4 pb-3 sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
+            <div
+              className="pointer-events-none absolute inset-0 hidden bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
+              aria-hidden
+            />
+            <div className="relative flex items-start gap-3">
+              <div
+                className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20 dark:bg-accent-dark/15 dark:text-accent-dark dark:ring-accent-dark/25 sm:flex"
+                aria-hidden
+              >
+                <Hash className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-2">
+                  <h2
+                    id="tag-assignment-title"
+                    className="truncate text-base font-semibold tracking-tight text-primary-text dark:text-primary-text-dark sm:text-lg"
+                  >
+                    {t('tagAssignmentTitle')}
+                  </h2>
+                  {downloadCount > 0 && (
+                    <span className="shrink-0 rounded-full bg-surface-alt px-2 py-0.5 text-[11px] font-medium tabular-nums text-primary-text/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/60">
+                      {t('tagAssignmentDownloadCount', { count: downloadCount })}
+                    </span>
+                  )}
+                </div>
+                <p
+                  id="tag-assignment-description"
+                  className="mt-1 text-sm leading-relaxed text-primary-text/60 dark:text-primary-text-dark/60"
+                >
+                  {description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark sm:size-9 sm:rounded-xl"
+                aria-label={t('close')}
+              >
+                <X className="size-5" aria-hidden />
+              </button>
+            </div>
+
+            {/* Mode toggle */}
+            <div
+              className="relative mt-3 flex rounded-xl border border-border/60 bg-surface-alt/40 p-1 dark:border-border-dark/60 dark:bg-surface-alt-dark/30"
+              role="tablist"
+              aria-label={t('tagAssignmentModeLabel')}
             >
-              Add Tags
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('remove');
-                setSelectedTagIds([]);
-              }}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === 'remove'
-                  ? 'bg-accent dark:bg-accent-dark text-white'
-                  : 'bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark hover:bg-surface-alt/80 dark:hover:bg-surface-alt-dark/80'
-              }`}
-            >
-              Remove Tags
-            </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === 'add'}
+                onClick={() => {
+                  setMode('add');
+                  setSelectedTagIds([]);
+                }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  mode === 'add'
+                    ? 'bg-surface text-primary-text shadow-sm dark:bg-surface-dark dark:text-primary-text-dark'
+                    : 'text-primary-text/65 hover:text-primary-text dark:text-primary-text-dark/65 dark:hover:text-primary-text-dark'
+                }`}
+              >
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t('tagAssignmentModeAdd')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === 'remove'}
+                onClick={() => {
+                  setMode('remove');
+                  setSelectedTagIds([]);
+                }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  mode === 'remove'
+                    ? 'bg-surface text-primary-text shadow-sm dark:bg-surface-dark dark:text-primary-text-dark'
+                    : 'text-primary-text/65 hover:text-primary-text dark:text-primary-text-dark/65 dark:hover:text-primary-text-dark'
+                }`}
+              >
+                <Times className="size-4 shrink-0" aria-hidden />
+                {t('tagAssignmentModeRemove')}
+              </button>
+            </div>
+          </div>
+
+          {/* Tag picker */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
+            {mode === 'remove' && assignedTagsUnion.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
+                  {t('tagAssignmentNoAssignedTags')}
+                </p>
+                <p className="mt-1 max-w-xs text-sm text-primary-text/55 dark:text-primary-text-dark/55">
+                  {t('tagAssignmentNoAssignedTagsHint')}
+                </p>
+              </div>
+            ) : (
+              <>
+                {selectedTagIds.length > 0 && (
+                  <p className="mb-2 text-xs font-medium text-primary-text/55 dark:text-primary-text-dark/55">
+                    {t('tagAssignmentSelectedCount', { count: selectedTagIds.length })}
+                  </p>
+                )}
+                <TagSelector
+                  value={selectedTagIds}
+                  onChange={setSelectedTagIds}
+                  apiKey={apiKey}
+                  allowCreate={mode === 'add'}
+                  tagOptions={mode === 'remove' ? assignedTagsUnion : null}
+                  variant={mode}
+                />
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="shrink-0 border-t border-border/50 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/50">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={onClose} className="ui-btn-ghost w-full justify-center sm:w-auto">
+                {tActions('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isAssigning || !canSubmit}
+                className={
+                  mode === 'remove'
+                    ? `inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+                        text-white bg-red-600 hover:bg-red-500
+                        transition-colors active:scale-[0.98]
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40
+                        disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto`
+                    : 'ui-btn-accent w-full justify-center sm:w-auto'
+                }
+              >
+                {isAssigning ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    {mode === 'add' ? t('tagAssignmentSubmittingAdd') : t('tagAssignmentSubmittingRemove')}
+                  </span>
+                ) : mode === 'add' ? (
+                  t('tagAssignmentSubmitAdd')
+                ) : (
+                  t('tagAssignmentSubmitRemove')
+                )}
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Content */}
-        <div className="p-4 min-h-0 overflow-y-auto overscroll-contain flex-1">
-          <p className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mb-4">
-            {mode === 'add'
-              ? downloadIds.length === 1
-                ? 'Select tags to add to this download (existing tags will be kept):'
-                : `Select tags to add to ${downloadIds.length} downloads (existing tags will be kept):`
-              : downloadIds.length === 1
-                ? 'Select tags to remove from this download:'
-                : `Select tags to remove from ${downloadIds.length} downloads:`}
-          </p>
-
-          {mode === 'remove' && existingTagIds.size === 0 && (
-            <p className="text-sm text-warning dark:text-warning-dark mb-4">
-              No tags are currently assigned to the selected{' '}
-              {downloadIds.length === 1 ? 'download' : 'downloads'}.
-            </p>
-          )}
-
-          <TagSelector
-            value={selectedTagIds}
-            onChange={setSelectedTagIds}
-            apiKey={apiKey}
-            allowCreate={mode === 'add'}
-          />
-
-          {mode === 'remove' && existingTagIds.size > 0 && (
-            <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 mt-2">
-              Note: Only tags that are assigned to all selected downloads can be removed.
-            </p>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-border dark:border-border-dark flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm font-medium rounded-md
-              border border-border dark:border-border-dark
-              text-primary-text dark:text-primary-text-dark
-              hover:bg-surface-alt dark:hover:bg-surface-alt-dark
-              transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isAssigning || selectedTagIds.length === 0}
-            className="flex-1 px-4 py-2 text-sm font-medium rounded-md
-              bg-accent dark:bg-accent-dark
-              text-white hover:bg-accent/90 dark:hover:bg-accent-dark/90
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors"
-          >
-            {isAssigning
-              ? mode === 'add'
-                ? 'Adding...'
-                : 'Removing...'
-              : mode === 'add'
-                ? 'Add Tags'
-                : 'Remove Tags'}
-          </button>
-        </div>
-      </div>
+      </dialog>
     </>
   );
+
+  return <OverlayPortal open={isOpen}>{modalContent}</OverlayPortal>;
 }

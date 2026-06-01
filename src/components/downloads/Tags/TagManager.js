@@ -6,6 +6,7 @@ import { Check, Edit, Hash, MagnifyingGlass, Plus, Trash, X } from '@/components
 import { useTags } from '@/components/shared/hooks/useTags';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
+import { TAG_SEARCH_MIN_COUNT } from './constants';
 
 function TagRowSkeleton() {
   return (
@@ -250,7 +251,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
     return sortedTags.filter((tag) => tag.name.toLowerCase().includes(q));
   }, [sortedTags, searchQuery]);
 
-  const showSearch = sortedTags.length > 4;
+  const showSearch = sortedTags.length > TAG_SEARCH_MIN_COUNT;
 
   const handleStartEdit = (tag) => {
     setPendingDelete(null);
