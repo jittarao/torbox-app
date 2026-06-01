@@ -1,11 +1,18 @@
 import { NON_RETRYABLE_ERRORS } from '@/config/errors';
+import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
 import { retryFetch } from '@/utils/retryFetch';
+import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 
-// Parallel deletes
 const CONCURRENT_DELETES = 3;
 
-export const deleteItemHelper = async (id, apiKey, assetType = 'torrents') => {
+/** Bulk deletes: one attempt per item so a slow slot frees after at most FETCH_TIMEOUT_MS. */
+const BULK_DELETE_FETCH_OPTIONS = {
+  maxRetries: 1,
+  timeout: FETCH_TIMEOUT_MS,
+};
+
+export const deleteItemHelper = async (id, apiKey, assetType = 'torrents', fetchOptions = {}) => {
   if (!apiKey) return { success: false, error: 'No API key provided' };
 
   try {
@@ -18,12 +25,14 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents') => {
         'Content-Type': 'application/json',
       },
       body: { id },
+      timeout: FETCH_TIMEOUT_MS,
       permanent: [
         (data) =>
           Object.values(NON_RETRYABLE_ERRORS).some(
             (err) => data.error?.includes(err) || data.detail?.includes(err)
           ) && data.error !== 'DATABASE_ERROR', // Allow retries for DATABASE_ERROR
       ],
+      ...fetchOptions,
     });
 
     if (result.success) {
@@ -40,19 +49,12 @@ export const batchDeleteHelper = async (ids, apiKey, assetType = 'torrents') => 
   const successfulIds = [];
 
   try {
-    // Process in chunks
-    for (let i = 0; i < ids.length; i += CONCURRENT_DELETES) {
-      const chunk = ids.slice(i, i + CONCURRENT_DELETES);
-      const results = await Promise.all(
-        chunk.map(async (id) => {
-          const result = await deleteItemHelper(id, apiKey, assetType);
-          if (result.success) {
-            successfulIds.push(id);
-          }
-          return { id, ...result };
-        })
-      );
-    }
+    await runWithConcurrency(ids, CONCURRENT_DELETES, async (id) => {
+      const result = await deleteItemHelper(id, apiKey, assetType, BULK_DELETE_FETCH_OPTIONS);
+      if (result.success) {
+        successfulIds.push(id);
+      }
+    });
 
     return successfulIds;
   } catch (error) {

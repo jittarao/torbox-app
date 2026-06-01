@@ -72,10 +72,6 @@ The retry loop must run sequentially — each retry depends on the prior outcome
 
 - `src/utils/retryFetch.js:63:24` — exponential-backoff retry loop
 
-The chunked batch-delete loop intentionally processes in groups of 3 (`CONCURRENT_DELETES`) for rate limiting — each chunk must complete before the next starts.
-
-- `src/utils/deleteHelpers.js:56:23` — rate-limited chunked deletion
-
 The keyset-paginated download history fetch must iterate sequentially because each page's cursor depends on the previous response.
 
 - `src/store/downloadHistoryStore.js:67:28` — keyset pagination with cursor dependency
