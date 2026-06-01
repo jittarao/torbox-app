@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { RefreshCw, Trash2 } from 'lucide-react';
+import { Refresh, Trash } from '@/components/icons';
 import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactSearchInputClass, compactToolbarClass } from '@/components/shared/compactToolbar';
 
@@ -19,7 +19,7 @@ const SearchBar = memo(
             variant="danger"
             onClick={onBulkDelete}
             loading={bulkDeleting}
-            icon={<Trash2 />}
+            icon={<Trash />}
             label={bulkDeleting ? 'Deleting' : `Delete (${selectedCount})`}
             title="Delete selected links"
           />
@@ -27,7 +27,7 @@ const SearchBar = memo(
         <BulkActionButton
           variant="primary"
           onClick={onRefresh}
-          icon={<RefreshCw />}
+          icon={<Refresh />}
           label="Refresh"
           title="Refresh link history"
         />

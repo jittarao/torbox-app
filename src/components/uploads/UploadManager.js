@@ -21,7 +21,7 @@ import UploadTable from './UploadTable';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactToolbarClass } from '@/components/shared/compactToolbar';
-import { RefreshCw, RotateCw, Trash2, XCircle } from 'lucide-react';
+import { Refresh, RotateCcw, Trash, XCircle } from '@/components/icons';
 import { normalizeUploadId } from './utils';
 
 export default function UploadManager({ apiKey }) {
@@ -155,7 +155,7 @@ export default function UploadManager({ apiKey }) {
                   onClick={() => handleBulkRetry(selectedUploads, uploads)}
                   disabled={selectedCount === 0}
                   loading={bulkRetrying}
-                  icon={<RotateCw />}
+                  icon={<RotateCcw />}
                   label={bulkRetrying ? 'Retrying' : `Retry (${selectedCount})`}
                   title="Retry selected uploads"
                 />
@@ -165,7 +165,7 @@ export default function UploadManager({ apiKey }) {
                 onClick={() => handleBulkDelete(selectedUploads)}
                 disabled={selectedCount === 0}
                 loading={bulkDeleting}
-                icon={<Trash2 />}
+                icon={<Trash />}
                 label={bulkDeleting ? 'Deleting' : `Delete (${selectedCount})`}
                 title="Delete selected uploads"
               />
@@ -187,7 +187,7 @@ export default function UploadManager({ apiKey }) {
               fetchUploads();
               fetchStatusCounts();
             }}
-            icon={<RefreshCw />}
+            icon={<Refresh />}
             label="Refresh"
             title="Refresh upload list"
           />
