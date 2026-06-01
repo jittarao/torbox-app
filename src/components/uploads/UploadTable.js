@@ -1,5 +1,6 @@
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import UploadRow from './UploadRow';
+import { normalizeUploadId } from './utils';
 
 export default function UploadTable({
   uploads,
@@ -17,8 +18,14 @@ export default function UploadTable({
   onSelectAll,
   copySuccess,
 }) {
-  const allSelected = uploads.length > 0 && selectedUploads.size === uploads.length;
-  const someSelected = selectedUploads.size > 0 && selectedUploads.size < uploads.length;
+  const isUploadSelected = (upload) => {
+    const id = normalizeUploadId(upload.id);
+    return id != null && selectedUploads.has(id);
+  };
+
+  const selectedOnPage = uploads.filter(isUploadSelected).length;
+  const allSelected = uploads.length > 0 && selectedOnPage === uploads.length;
+  const someSelected = selectedOnPage > 0 && selectedOnPage < uploads.length;
 
   const tableContent = (
     <div className="overflow-x-auto">
@@ -77,7 +84,7 @@ export default function UploadTable({
                   deleting={deleting}
                   downloading={downloading}
                   copying={copying}
-                  selected={selectedUploads.has(upload.id)}
+                  selected={isUploadSelected(upload)}
                   onSelect={onSelect}
                   copySuccess={copySuccess}
                   isSortable={true}
@@ -97,7 +104,7 @@ export default function UploadTable({
                 deleting={deleting}
                 downloading={downloading}
                 copying={copying}
-                selected={selectedUploads.has(upload.id)}
+                selected={isUploadSelected(upload)}
                 onSelect={onSelect}
                 copySuccess={copySuccess}
                 isSortable={false}

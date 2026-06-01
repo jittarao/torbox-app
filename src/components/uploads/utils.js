@@ -1,3 +1,11 @@
+/** Stable numeric id for Set lookups and API payloads (SQLite/json may use number or string). */
+export function normalizeUploadId(id) {
+  if (id == null || id === '') return null;
+  const numId = typeof id === 'string' ? parseInt(id, 10) : Number(id);
+  if (!Number.isFinite(numId) || numId <= 0) return null;
+  return numId;
+}
+
 // Format error messages for better user experience
 export const formatErrorMessage = (errorMessage) => {
   if (!errorMessage) return null;
