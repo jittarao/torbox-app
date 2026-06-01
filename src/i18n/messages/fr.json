@@ -1002,16 +1002,16 @@
   },
   "Statuses": {
     "checking_resume_data": "Vérification",
-    "en attente": "En attente",
-    "en téléchargement": "En téléchargement",
-    "inactif": "Inactif",
-    "meta_dl": "Descargando metadatos",
-    "seeding": "Sembrando",
-    "stalled": "En pausa",
-    "terminé": "Terminé",
+    "completed": "Terminé",
+    "downloading": "En téléchargement",
+    "failed": "Échoué",
+    "inactive": "Inactif",
+    "meta_dl": "Téléchargement des métadonnées",
+    "queued": "En attente",
+    "seeding": "Partage",
+    "stalled": "En pause",
     "unknown": "Inconnu",
-    "uploading": "Téléverser",
-    "échoué": "Échoué"
+    "uploading": "Téléversement"
   },
   "StatusSection": {
     "selectedFiles": "{fileCount} fichiers sélectionnés ({size})",
@@ -1077,8 +1077,6 @@
       "noApiKeyDescription": "Connectez-vous avec votre clé API TorBox",
       "platformUnhealthy": "Problème plateforme TorBox",
       "platformUnhealthyDescription": "Les services TorBox sont peut-être indisponibles",
-      "unhealthy": "Problème application",
-      "unhealthyDescription": "Cette application ne répond pas correctement",
       "unknown": "État inconnu",
       "unknownDescription": "Impossible de déterminer l'état du système"
     }

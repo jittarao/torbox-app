@@ -34,7 +34,6 @@ function pruneDelta(base, locale) {
   const out = {};
   for (const key of Object.keys(locale)) {
     if (!(key in base)) {
-      out[key] = locale[key];
       continue;
     }
     const child = pruneDelta(base[key], locale[key]);

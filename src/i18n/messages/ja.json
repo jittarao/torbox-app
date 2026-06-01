@@ -1098,8 +1098,6 @@
       "noApiKeyDescription": "TorBox APIキーでサインインしてください",
       "platformUnhealthy": "TorBoxプラットフォームの問題",
       "platformUnhealthyDescription": "TorBoxサービスが停止している可能性があります",
-      "unhealthy": "アプリの問題",
-      "unhealthyDescription": "このアプリが正しく応答していません",
       "unknown": "ステータス不明",
       "unknownDescription": "システムステータスを確認できません"
     }

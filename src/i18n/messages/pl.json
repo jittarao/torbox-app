@@ -1092,8 +1092,6 @@
       "noApiKeyDescription": "Zaloguj się kluczem API TorBox",
       "platformUnhealthy": "Problem platformy TorBox",
       "platformUnhealthyDescription": "Usługi TorBox mogą być niedostępne",
-      "unhealthy": "Problem aplikacji",
-      "unhealthyDescription": "Ta aplikacja nie odpowiada prawidłowo",
       "unknown": "Status nieznany",
       "unknownDescription": "Nie można określić statusu systemu"
     }
