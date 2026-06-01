@@ -777,7 +777,7 @@ export default function MoreOptionsDropdown({
       <TagAssignmentModal
         isOpen={showTagAssignment}
         onClose={() => setShowTagAssignment(false)}
-        downloadIds={[item.id]}
+        downloadIds={[String(item.id)]}
         apiKey={apiKey}
         onSuccess={() => {
           // Tags will be refreshed automatically via useDownloadTags hook

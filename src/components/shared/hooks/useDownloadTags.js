@@ -39,7 +39,9 @@ export function useDownloadTags(apiKey) {
 
   const getDownloadTags = useCallback(
     (downloadId) => {
-      return tagMappings[downloadId] || [];
+      if (downloadId == null || downloadId === '') return [];
+      const key = String(downloadId);
+      return tagMappings[key] ?? tagMappings[downloadId] ?? [];
     },
     [tagMappings]
   );
