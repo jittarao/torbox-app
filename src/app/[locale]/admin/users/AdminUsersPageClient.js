@@ -7,6 +7,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import UserList from '@/components/admin/UserList';
 import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
+import { AdminPageHeader } from '@/components/admin/AdminUi';
 
 export default function AdminUsersPageClient() {
   const { push } = useRouter();
@@ -56,9 +57,15 @@ export default function AdminUsersPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">User Management</h2>
-        </div>
+        <AdminPageHeader
+          title="Users"
+          description="Search, filter, and manage registered API keys and per-user databases."
+          meta={
+            usersPagination?.total != null
+              ? `${usersPagination.total} registered user${usersPagination.total === 1 ? '' : 's'}`
+              : undefined
+          }
+        />
 
         <UserList
           users={users}

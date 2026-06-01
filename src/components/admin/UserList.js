@@ -5,6 +5,20 @@ import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import adminApiClient from '@/utils/adminApiClient';
 import ConfirmButton from '@/components/shared/ConfirmButton';
+import {
+  AdminBadge,
+  AdminCard,
+  AdminEmpty,
+  AdminFilterChip,
+  AdminLoading,
+  adminCardClass,
+  adminInputClass,
+  adminRowHoverClass,
+  adminTableClass,
+  adminTdClass,
+  adminThClass,
+  adminTheadClass,
+} from './AdminUi';
 
 export default function UserList({
   users,
@@ -93,167 +107,106 @@ export default function UserList({
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row gap-4">
-          <form onSubmit={handleSearchSubmit} className="flex-1">
+      <AdminCard bodyClassName="!py-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <form onSubmit={handleSearchSubmit} className="min-w-0 flex-1">
             <input
-              type="text"
-              placeholder="Search by auth ID or key name..."
+              type="search"
+              placeholder="Search by auth ID or key name…"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={adminInputClass}
             />
           </form>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => onStatusFilter('all')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                !filters?.status
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-            >
+          <div className="flex flex-wrap items-center gap-2">
+            <AdminFilterChip active={!filters?.status} onClick={() => onStatusFilter('all')}>
               All
-            </button>
-            <button
-              type="button"
+            </AdminFilterChip>
+            <AdminFilterChip
+              active={filters?.status === 'active'}
               onClick={() => onStatusFilter('active')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                filters?.status === 'active'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
             >
               Active
-            </button>
-            <button
-              type="button"
+            </AdminFilterChip>
+            <AdminFilterChip
+              active={filters?.status === 'inactive'}
               onClick={() => onStatusFilter('inactive')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                filters?.status === 'inactive'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
             >
               Inactive
-            </button>
+            </AdminFilterChip>
             <button
               type="button"
               onClick={handleReactivateAllInactive}
               disabled={reactivating}
-              className="px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-              title="Set all inactive API keys to active (user_registry.status and api_keys.is_active)"
+              className="ui-btn-accent shrink-0 disabled:opacity-50"
+              title="Set all inactive API keys to active"
             >
-              {reactivating ? 'Reactivating…' : 'Reactivate all inactive keys'}
+              {reactivating ? 'Reactivating…' : 'Reactivate inactive'}
             </button>
           </div>
         </div>
-      </div>
+      </AdminCard>
 
-      {/* Users Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className={`${adminCardClass} overflow-hidden`}>
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading users…</p>
-          </div>
+          <AdminLoading label="Loading users…" />
         ) : users.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">No users found</p>
-          </div>
+          <AdminEmpty message="No users match your filters." />
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
+              <table className={adminTableClass}>
+                <thead className={adminTheadClass}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Auth ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Key Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Active Rules
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      DB Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className={adminThClass}>Auth ID</th>
+                    <th className={adminThClass}>Key name</th>
+                    <th className={adminThClass}>Status</th>
+                    <th className={adminThClass}>Rules</th>
+                    <th className={adminThClass}>DB size</th>
+                    <th className={adminThClass}>Created</th>
+                    <th className={`${adminThClass} text-right`}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-border/60 dark:divide-border-dark/60">
                   {users.map((user) => (
                     <tr
                       key={user.auth_id}
                       onClick={() => onUserClick(user.auth_id)}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                      className={`cursor-pointer bg-white dark:bg-surface-alt-dark ${adminRowHoverClass}`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-mono text-gray-900 dark:text-white">
-                          {user.auth_id}
-                        </div>
+                      <td className={`${adminTdClass} font-mono text-xs sm:text-sm`}>
+                        {user.auth_id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {user.key_name || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            user.status === 'active'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          }`}
-                        >
+                      <td className={adminTdClass}>{user.key_name || 'N/A'}</td>
+                      <td className={adminTdClass}>
+                        <AdminBadge status={user.status === 'active' ? 'active' : 'inactive'}>
                           {user.status}
-                        </span>
+                        </AdminBadge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {user.has_active_rules ? 'Yes' : 'No'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {user.db_size_formatted || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </div>
+                      <td className={adminTdClass}>{user.has_active_rules ? 'Yes' : 'No'}</td>
+                      <td className={adminTdClass}>{user.db_size_formatted || 'N/A'}</td>
+                      <td className={`${adminTdClass} text-muted dark:text-muted-dark`}>
+                        {new Date(user.created_at).toLocaleDateString()}
                       </td>
                       <td
-                        className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                        className={`${adminTdClass} text-right`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={(e) => handleStatusChange(user.auth_id, user.status, e)}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            className="text-sm font-medium text-accent hover:underline dark:text-accent-dark"
                           >
                             {user.status === 'active' ? 'Deactivate' : 'Activate'}
                           </button>
                           <ConfirmButton
                             onConfirm={(e) => handleDelete(user.auth_id, e)}
                             confirmText="Delete"
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            className="text-sm font-medium text-label-danger-text hover:underline dark:text-label-danger-text-dark"
                             disabled={deleting === user.auth_id}
                           >
-                            {deleting === user.auth_id ? 'Deleting...' : 'Delete'}
+                            {deleting === user.auth_id ? 'Deleting…' : 'Delete'}
                           </ConfirmButton>
                         </div>
                       </td>
@@ -263,20 +216,19 @@ export default function UserList({
               </table>
             </div>
 
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-                <div className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+            {pagination && pagination.totalPages > 1 ? (
+              <div className="flex flex-col gap-3 border-t border-border/60 bg-surface-alt px-4 py-3 dark:border-border-dark/60 dark:bg-surface-dark sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted dark:text-muted-dark">
+                  Showing {(pagination.page - 1) * pagination.limit + 1}–
                   {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                  {pagination.total} users
-                </div>
+                  {pagination.total}
+                </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => onPageChange(pagination.page - 1)}
                     disabled={pagination.page === 1}
-                    className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                    className="ui-btn-ghost disabled:opacity-50"
                   >
                     Previous
                   </button>
@@ -284,13 +236,13 @@ export default function UserList({
                     type="button"
                     onClick={() => onPageChange(pagination.page + 1)}
                     disabled={pagination.page >= pagination.totalPages}
-                    className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                    className="ui-btn-ghost disabled:opacity-50"
                   >
                     Next
                   </button>
                 </div>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>

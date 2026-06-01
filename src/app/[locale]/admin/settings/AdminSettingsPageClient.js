@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
+import { AdminAlert, AdminCard, AdminEmpty, AdminLoading, AdminPageHeader, AdminStatRow } from '@/components/admin/AdminUi';
 
 export default function AdminSettingsPageClient() {
   const [config, setConfig] = useState(null);
@@ -25,108 +26,64 @@ export default function AdminSettingsPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">System Configuration</h2>
+        <AdminPageHeader
+          title="Settings"
+          description="Read-only view of backend configuration. Changes require environment updates and a restart."
+        />
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading configuration…</p>
-          </div>
+          <AdminLoading label="Loading configuration…" />
         ) : config ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Polling Configuration
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Max Concurrent Polls
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {config.polling?.max_concurrent_polls}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Poll Timeout (ms)
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {config.polling?.poll_timeout_ms}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Cleanup Interval (hours)
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {config.polling?.poller_cleanup_interval_hours}
-                    </p>
-                  </div>
+          <div className="space-y-4">
+            <AdminCard title="Polling">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <AdminStatRow
+                  label="Max concurrent polls"
+                  value={config.polling?.max_concurrent_polls}
+                />
+                <AdminStatRow label="Poll timeout (ms)" value={config.polling?.poll_timeout_ms} />
+                <AdminStatRow
+                  label="Cleanup interval (hours)"
+                  value={config.polling?.poller_cleanup_interval_hours}
+                />
+              </div>
+            </AdminCard>
+
+            <AdminCard title="Rate limiting">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <AdminStatRow
+                  label="User rate limit"
+                  value={config.rate_limiting?.user_rate_limit_max}
+                />
+                <AdminStatRow
+                  label="Admin rate limit"
+                  value={config.rate_limiting?.admin_rate_limit_max}
+                />
+              </div>
+            </AdminCard>
+
+            <AdminCard title="Database">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <AdminStatRow
+                  label="Max connections"
+                  value={config.database?.max_db_connections}
+                />
+                <div className="text-sm">
+                  <span className="text-muted dark:text-muted-dark">Master DB path</span>
+                  <p className="mt-1 break-all font-mono text-xs text-text dark:text-text-dark">
+                    {config.database?.master_db_path}
+                  </p>
                 </div>
               </div>
+            </AdminCard>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Rate Limiting
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      User Rate Limit
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {config.rate_limiting?.user_rate_limit_max}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Admin Rate Limit
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {config.rate_limiting?.admin_rate_limit_max}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Database Configuration
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Max Connections
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {config.database?.max_db_connections}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Master DB Path
-                    </span>
-                    <p className="mt-1 text-sm font-mono text-gray-900 dark:text-white break-all">
-                      {config.database?.master_db_path}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  <strong>Note:</strong> Configuration updates require environment variable changes
-                  and server restart.
-                </p>
-              </div>
-            </div>
+            <AdminAlert variant="warning">
+              <strong>Note:</strong> Configuration updates require environment variable changes and
+              a server restart.
+            </AdminAlert>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">Failed to load configuration</p>
-          </div>
+          <AdminEmpty message="Failed to load configuration." />
         )}
       </div>
     </AdminLayout>

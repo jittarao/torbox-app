@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
+import { Key } from '@/components/icons';
+import { AdminAlert, adminInputClass } from '@/components/admin/AdminUi';
 
 export default function AdminLoginPageClient() {
   const [adminKey, setAdminKey] = useState('');
@@ -20,7 +23,6 @@ export default function AdminLoginPageClient() {
   );
 
   useEffect(() => {
-    // Check if already authenticated
     const checkAuth = async () => {
       const authenticated = await verifyAuth();
       if (authenticated) {
@@ -29,7 +31,7 @@ export default function AdminLoginPageClient() {
       }
     };
     checkAuth();
-  }, [push, verifyAuth]);
+  }, [push, verifyAuth, params?.locale]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,54 +54,76 @@ export default function AdminLoginPageClient() {
   };
 
   if (isAuthenticated) {
-    return null; // Will redirect
+    return null;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Admin Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Enter your admin API key to access the admin panel
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="admin-key" className="sr-only">
-              Admin API Key
-            </label>
-            <input
-              id="admin-key"
-              name="adminKey"
-              type="password"
-              required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Admin API Key"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              disabled={loading}
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4 dark:bg-surface-dark">
+      <div className="w-full max-w-md">
+        <div className="rounded-2xl border border-border/60 bg-white p-8 shadow-lg dark:border-border-dark/60 dark:bg-surface-alt-dark sm:p-10">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <Image
+              src="/images/TBM-logo.png"
+              alt="TorBox Manager"
+              width={48}
+              height={48}
+              className="mb-4"
             />
+            <h1 className="text-2xl font-semibold tracking-tight text-primary-text dark:text-primary-text-dark">
+              Admin sign in
+            </h1>
+            <p className="mt-2 text-sm text-muted dark:text-muted-dark">
+              Enter your admin API key to manage users, automation, and system health.
+            </p>
           </div>
 
-          {error && (
-            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
-              <div className="text-sm text-red-800 dark:text-red-200">{error}</div>
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label
+                htmlFor="admin-key"
+                className="mb-1.5 block text-sm font-medium text-text dark:text-text-dark"
+              >
+                Admin API key
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted dark:text-muted-dark">
+                  <Key className="size-4" aria-hidden />
+                </span>
+                <input
+                  id="admin-key"
+                  name="adminKey"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  className={`${adminInputClass} pl-9`}
+                  placeholder="••••••••••••••••"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
             </div>
-          )}
 
-          <div>
+            {error ? <AdminAlert variant="danger">{error}</AdminAlert> : null}
+
             <button
               type="submit"
               disabled={loading || !adminKey}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="ui-btn-accent w-full py-2.5"
             >
-              {loading ? 'Authenticating...' : 'Sign in'}
+              {loading ? 'Authenticating…' : 'Sign in'}
             </button>
-          </div>
-        </form>
+          </form>
+
+          <p className="mt-6 text-center text-xs text-muted dark:text-muted-dark">
+            <a
+              href={`/${params?.locale || 'en'}/`}
+              className="font-medium text-accent hover:underline dark:text-accent-dark"
+            >
+              ← Back to TorBox Manager
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

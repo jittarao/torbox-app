@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
+import {
+  AdminAlert,
+  AdminBadge,
+  AdminLoading,
+  AdminPageHeader,
+} from '@/components/admin/AdminUi';
 
 export default function AdminDiagnosticsPageClient() {
   const [diagnostics, setDiagnostics] = useState(null);
@@ -51,34 +57,14 @@ export default function AdminDiagnosticsPageClient() {
       case 'critical':
         return 'text-red-600 dark:text-red-400';
       default:
-        return 'text-gray-600 dark:text-gray-400';
+        return 'text-muted dark:text-muted-dark';
     }
-  };
-
-  const getStatusBadge = (status) => {
-    const colors = {
-      healthy: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    };
-    return (
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          colors[status] || colors.warning
-        }`}
-      >
-        {status.toUpperCase()}
-      </span>
-    );
   };
 
   if (loading) {
     return (
       <AdminLayout>
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full size-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Running diagnostics…</p>
-        </div>
+        <AdminLoading label="Running diagnostics…" />
       </AdminLayout>
     );
   }
@@ -86,9 +72,7 @@ export default function AdminDiagnosticsPageClient() {
   if (error) {
     return (
       <AdminLayout>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">Error: {error}</p>
-        </div>
+        <AdminAlert variant="danger">Error: {error}</AdminAlert>
       </AdminLayout>
     );
   }
@@ -102,26 +86,26 @@ export default function AdminDiagnosticsPageClient() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Database Diagnostics</h2>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Refresh
-          </button>
-        </div>
+        <AdminPageHeader
+          title="Diagnostics"
+          description="Database integrity checks, registry mismatches, and repair actions."
+          meta={timestamp ? `Last run: ${new Date(timestamp).toLocaleString()}` : undefined}
+          actions={
+            <button type="button" onClick={loadDiagnostics} className="ui-btn-accent">
+              Refresh
+            </button>
+          }
+        />
 
         {/* Summary Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Summary</h3>
-            {getStatusBadge(summary.status)}
+            <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">Summary</h3>
+            <AdminBadge status={summary.status}>{summary.status}</AdminBadge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              <span className="text-sm font-medium text-muted dark:text-muted-dark">
                 Total Issues
               </span>
               <p
@@ -135,16 +119,16 @@ export default function AdminDiagnosticsPageClient() {
               </p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
+              <span className="text-sm font-medium text-muted dark:text-muted-dark">Status</span>
               <p className={`mt-1 text-lg font-medium ${getStatusColor(summary.status)}`}>
                 {summary.status}
               </p>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              <span className="text-sm font-medium text-muted dark:text-muted-dark">
                 Last Checked
               </span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              <p className="mt-1 text-sm text-primary-text dark:text-primary-text-dark">
                 {new Date(timestamp).toLocaleString()}
               </p>
             </div>
@@ -152,22 +136,22 @@ export default function AdminDiagnosticsPageClient() {
         </div>
 
         {/* Statistics */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Statistics</h3>
+        <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
+          <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark mb-4">Statistics</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <h4 className="text-sm font-medium text-muted dark:text-muted-dark mb-2">
                 API Keys
               </h4>
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Total:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
+                  <span className="text-muted dark:text-muted-dark">Total:</span>
+                  <span className="font-medium text-primary-text dark:text-primary-text-dark">
                     {statistics.apiKeys.total}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Active:</span>
+                  <span className="text-muted dark:text-muted-dark">Active:</span>
                   <span className="font-medium text-green-600 dark:text-green-400">
                     {statistics.apiKeys.active}
                   </span>
@@ -175,18 +159,18 @@ export default function AdminDiagnosticsPageClient() {
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <h4 className="text-sm font-medium text-muted dark:text-muted-dark mb-2">
                 User Registry
               </h4>
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Total:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
+                  <span className="text-muted dark:text-muted-dark">Total:</span>
+                  <span className="font-medium text-primary-text dark:text-primary-text-dark">
                     {statistics.userRegistry.total}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Active:</span>
+                  <span className="text-muted dark:text-muted-dark">Active:</span>
                   <span className="font-medium text-green-600 dark:text-green-400">
                     {statistics.userRegistry.active}
                   </span>
@@ -195,24 +179,24 @@ export default function AdminDiagnosticsPageClient() {
             </div>
             {statistics.databaseFiles && (
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                <h4 className="text-sm font-medium text-muted dark:text-muted-dark mb-2">
                   Database Files
                 </h4>
                 <div className="space-y-1">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Total:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="text-muted dark:text-muted-dark">Total:</span>
+                    <span className="font-medium text-primary-text dark:text-primary-text-dark">
                       {statistics.databaseFiles.total}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Existing:</span>
+                    <span className="text-muted dark:text-muted-dark">Existing:</span>
                     <span className="font-medium text-green-600 dark:text-green-400">
                       {statistics.databaseFiles.existing}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Missing:</span>
+                    <span className="text-muted dark:text-muted-dark">Missing:</span>
                     <span
                       className={`font-medium ${
                         statistics.databaseFiles.missing === 0
@@ -228,18 +212,18 @@ export default function AdminDiagnosticsPageClient() {
             )}
             {statistics.integrityChecks && (
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                <h4 className="text-sm font-medium text-muted dark:text-muted-dark mb-2">
                   Integrity Checks
                 </h4>
                 <div className="space-y-1">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Checked:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="text-muted dark:text-muted-dark">Checked:</span>
+                    <span className="font-medium text-primary-text dark:text-primary-text-dark">
                       {statistics.integrityChecks.checked} / {statistics.integrityChecks.total}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Failed:</span>
+                    <span className="text-muted dark:text-muted-dark">Failed:</span>
                     <span
                       className={`font-medium ${
                         statistics.integrityChecks.failed === 0
@@ -257,31 +241,31 @@ export default function AdminDiagnosticsPageClient() {
         </div>
 
         {/* Active Users Breakdown */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
+          <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark mb-4">
             Active Users Breakdown
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Total Users:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+              <span className="text-muted dark:text-muted-dark">Total Users:</span>
+              <span className="font-medium text-primary-text dark:text-primary-text-dark">
                 {activeUsersBreakdown.total}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Both Active:</span>
+              <span className="text-muted dark:text-muted-dark">Both Active:</span>
               <span className="font-medium text-green-600 dark:text-green-400">
                 {activeUsersBreakdown.both_active}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Registry Active Only:</span>
+              <span className="text-muted dark:text-muted-dark">Registry Active Only:</span>
               <span className="font-medium text-yellow-600 dark:text-yellow-400">
                 {activeUsersBreakdown.registry_active_only}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">API Key Active Only:</span>
+              <span className="text-muted dark:text-muted-dark">API Key Active Only:</span>
               <span className="font-medium text-yellow-600 dark:text-yellow-400">
                 {activeUsersBreakdown.api_key_active_only}
               </span>
@@ -308,10 +292,10 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <div className="font-mono text-xs text-muted dark:text-muted-dark">
                           {key.auth_id}
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Name: {key.key_name} | Created:{' '}
                           {new Date(key.created_at).toLocaleString()}
                           {key.is_active ? (
@@ -319,7 +303,7 @@ export default function AdminDiagnosticsPageClient() {
                               (Active)
                             </span>
                           ) : (
-                            <span className="ml-2 text-gray-500 dark:text-gray-400">
+                            <span className="ml-2 text-muted dark:text-muted-dark">
                               (Inactive)
                             </span>
                           )}
@@ -347,13 +331,13 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <div className="font-mono text-xs text-muted dark:text-muted-dark">
                           {user.auth_id}
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Path: {user.db_path}
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Status: {user.status} | Created:{' '}
                           {new Date(user.created_at).toLocaleString()}
                         </div>
@@ -379,7 +363,7 @@ export default function AdminDiagnosticsPageClient() {
                       key={dup.auth_id}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
                     >
-                      <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                      <div className="font-mono text-xs text-muted dark:text-muted-dark">
                         {dup.auth_id}
                       </div>
                       <div className="mt-1 text-red-700 dark:text-red-300">
@@ -406,7 +390,7 @@ export default function AdminDiagnosticsPageClient() {
                       key={dup.db_path}
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
                     >
-                      <div className="text-sm text-gray-700 dark:text-gray-300">{dup.db_path}</div>
+                      <div className="text-sm text-muted dark:text-muted-dark">{dup.db_path}</div>
                       <div className="mt-1 text-red-700 dark:text-red-300">
                         Appears {dup.count} times
                       </div>
@@ -432,10 +416,10 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <div className="font-mono text-xs text-muted dark:text-muted-dark">
                           {file.auth_id}
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">{file.db_path}</div>
+                        <div className="mt-1 text-muted dark:text-muted-dark">{file.db_path}</div>
                       </div>
                     </div>
                   ))}
@@ -476,17 +460,17 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <div className="font-mono text-xs text-muted dark:text-muted-dark">
                           {mismatch.auth_id}
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Registry: <span className="font-medium">{mismatch.registry_status}</span>{' '}
                           | API Key:{' '}
                           <span className="font-medium">
                             {mismatch.api_key_active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Key: {mismatch.key_name} | Created:{' '}
                           {new Date(mismatch.created_at).toLocaleString()}
                         </div>
@@ -520,10 +504,10 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-red-200 dark:border-red-700"
                     >
                       <div className="text-sm">
-                        <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <div className="font-mono text-xs text-muted dark:text-muted-dark">
                           {failure.auth_id}
                         </div>
-                        <div className="mt-1 text-gray-700 dark:text-gray-300">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           {failure.db_path}
                         </div>
                         <div className="mt-1 text-red-700 dark:text-red-300 font-medium">
@@ -552,13 +536,13 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                        <div className="font-medium text-muted dark:text-muted-dark">
                           {file.filename}
                         </div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="mt-1 text-xs text-muted dark:text-muted-dark">
                           {file.path}
                         </div>
-                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
                           {new Date(file.modified).toLocaleString()}
                         </div>
@@ -591,13 +575,13 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                        <div className="font-medium text-muted dark:text-muted-dark">
                           {file.filename}
                         </div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="mt-1 text-xs text-muted dark:text-muted-dark">
                           {file.path}
                         </div>
-                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
                           {new Date(file.modified).toLocaleString()}
                         </div>
@@ -630,13 +614,13 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                        <div className="font-medium text-muted dark:text-muted-dark">
                           {file.filename}
                         </div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="mt-1 text-xs text-muted dark:text-muted-dark">
                           {file.path}
                         </div>
-                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
                           {new Date(file.modified).toLocaleString()}
                         </div>
@@ -668,13 +652,13 @@ export default function AdminDiagnosticsPageClient() {
                       className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-200 dark:border-yellow-700"
                     >
                       <div className="text-sm">
-                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                        <div className="font-medium text-muted dark:text-muted-dark">
                           {file.filename}
                         </div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="mt-1 text-xs text-muted dark:text-muted-dark">
                           {file.path}
                         </div>
-                        <div className="mt-1 text-gray-600 dark:text-gray-400">
+                        <div className="mt-1 text-muted dark:text-muted-dark">
                           Size: {(file.size / 1024 / 1024).toFixed(2)} MB | Modified:{' '}
                           {new Date(file.modified).toLocaleString()}
                         </div>
