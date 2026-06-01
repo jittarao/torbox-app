@@ -176,7 +176,6 @@
       "seeds": "Seeders",
       "seedsDescription": "Anzahl der Seeders, die aktuell verfügbar sind",
       "stalledTime": "Blockiert-Zeit",
-      "stalledTimeDescription": "Zeit seit der Download- oder Upload-Aktivität gestoppt wurde (in Minuten)",
       "statusDescription": "Aktueller Status des Torrents (wartend, herunterladen, seeden, etc.)",
       "statusPlaceholder": "wartend, herunterladen, seeden, etc.",
       "tags": "Schlagwörter",
@@ -973,7 +972,7 @@
     "results": "{count} Ergebnisse",
     "sort": {
       "age": "Neueste",
-      "Seeders": "Die meisten Seeders ",
+      "seeders": "Die meisten Seeders ",
       "size": "Größte Größe"
     },
     "toast": {
@@ -1016,7 +1015,7 @@
     "inactive": "Inaktiv",
     "meta_dl": "Meta-DL",
     "queued": "In Warteschlange ",
-    "Seeding": "Seeding ",
+    "seeding": "Seeding ",
     "stalled": "Blockiert",
     "unknown": "Unbekannt",
     "uploading": "Hochladen "
@@ -1085,8 +1084,6 @@
       "noApiKeyDescription": "Mit TorBox-API-Schlüssel anmelden, um die Verbindung zu prüfen",
       "platformUnhealthy": "TorBox-Plattformproblem",
       "platformUnhealthyDescription": "TorBox-Dienste sind möglicherweise ausgefallen",
-      "unhealthy": "App-Problem",
-      "unhealthyDescription": "Diese App antwortet nicht korrekt",
       "unknown": "Status unbekannt",
       "unknownDescription": "Systemstatus kann nicht bestimmt werden"
     }
