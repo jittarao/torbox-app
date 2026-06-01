@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
 import { Check, Delete, Edit, ExclamationTriangle, Plus, Refresh, Rss } from '@/components/icons';
+import BulkActionButton from '@/components/shared/BulkActionButton';
+import { compactToolbarClass } from '@/components/shared/compactToolbar';
 import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import Toast from '@/components/shared/Toast';
@@ -272,32 +274,26 @@ export default function RssFeedManager({ apiKey, setToast }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark">
           {t('title')}
         </h2>
-        <div className="flex gap-2">
-          <button
-            type="button"
+        <div className={compactToolbarClass} role="toolbar" aria-label={t('title')}>
+          <BulkActionButton
+            variant="secondary"
             onClick={handleRefresh}
-            disabled={refreshing}
-            className="px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {refreshing ? (
-              <Spinner size="sm" />
-            ) : (
-              <Refresh className="size-4" />
-            )}
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
-          <button
-            type="button"
+            loading={refreshing}
+            icon={<Refresh />}
+            label={refreshing ? t('refreshing') : t('refresh')}
+            title={t('refresh')}
+          />
+          <BulkActionButton
+            variant="primary"
             onClick={() => setShowAddForm(true)}
-            className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2"
-          >
-            <Plus className="size-4" />
-            {t('addFeed')}
-          </button>
+            icon={<Plus />}
+            label={t('addFeed')}
+            title={t('addFeed')}
+          />
         </div>
       </div>
 

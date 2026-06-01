@@ -941,6 +941,8 @@
     "passCheckDescription": "Skip cache checking for this feed",
     "proSubscriptionRequired": "Pro Subscription Required",
     "proUserRequired": "You need to be a Pro user to use RSS Feeds.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
     "save": "Save",
     "scanInterval": "Scan Interval (minutes)",
     "scanIntervalPlaceholder": "How often to scan this feed",
