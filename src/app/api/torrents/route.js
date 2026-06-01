@@ -244,8 +244,9 @@ export async function POST(request) {
 
 // Delete a torrent
 export async function DELETE(request) {
-  const headersList = await headers();
-  const apiKey = headersList.get('x-api-key');
+  const auth = await requireTorboxApiKey();
+  if (auth.response) return auth.response;
+  const apiKey = auth.apiKey;
   const { id } = await request.json();
 
   try {
