@@ -4,7 +4,9 @@ import { useBackendMode } from '@/hooks/useBackendMode';
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
   const [uploads, setUploads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const uploadsLengthRef = useRef(0);
   const [statusCounts, setStatusCounts] = useState({});
   const [uploadStatistics, setUploadStatistics] = useState(null);
   const uploadsRequestIdRef = useRef(0);
@@ -35,8 +37,13 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     }
 
     const requestId = ++uploadsRequestIdRef.current;
+    const showFullPageLoader = uploadsLengthRef.current === 0;
     try {
-      setLoading(true);
+      if (showFullPageLoader) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       setError(null);
 
       const params = new URLSearchParams({
@@ -89,6 +96,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     } finally {
       if (requestId === uploadsRequestIdRef.current) {
         setLoading(false);
+        setRefreshing(false);
       }
     }
   }, [
@@ -151,6 +159,10 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   }, [apiKey, filters.type, backendMode, backendIsLoading]);
 
   useEffect(() => {
+    uploadsLengthRef.current = uploads.length;
+  }, [uploads]);
+
+  useEffect(() => {
     fetchUploads();
     // Auto-refresh every 1 minute
     const interval = setInterval(() => {
@@ -163,6 +175,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
     uploads,
     setUploads,
     loading,
+    refreshing,
     error,
     statusCounts,
     uploadStatistics,
