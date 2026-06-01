@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { Download, ExclamationTriangle, ExternalLink, Refresh, Rss } from '@/components/icons';
+import BulkActionButton from '@/components/shared/BulkActionButton';
+import { compactToolbarClass } from '@/components/shared/compactToolbar';
 import Spinner from '@/components/shared/Spinner';
 import Toast from '@/components/shared/Toast';
 import { formatSize } from '@/components/downloads/utils/formatters';
@@ -222,19 +224,21 @@ export default function RssItemsManager({ apiKey, setToast }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark">
           {t('title')}
         </h2>
-        <button
-          type="button"
-          onClick={() => fetchItems(selectedFeed)}
-          disabled={!selectedFeed || loading}
-          className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-        >
-          <Refresh className={`size-4 ${loading ? 'animate-spin' : ''}`} />
-          {t('refresh')}
-        </button>
+        <div className={compactToolbarClass} role="toolbar" aria-label={t('title')}>
+          <BulkActionButton
+            variant="primary"
+            onClick={() => fetchItems(selectedFeed)}
+            disabled={!selectedFeed}
+            loading={loading}
+            icon={<Refresh />}
+            label={t('refresh')}
+            title={t('refresh')}
+          />
+        </div>
       </div>
 
       {/* Feed Selection */}

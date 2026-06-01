@@ -1,33 +1,36 @@
 import { memo } from 'react';
+import { RefreshCw, Trash2 } from 'lucide-react';
+import BulkActionButton from '@/components/shared/BulkActionButton';
+import { compactSearchInputClass, compactToolbarClass } from '@/components/shared/compactToolbar';
 
 const SearchBar = memo(
   ({ search, onSearchChange, selectedCount, onBulkDelete, bulkDeleting, onRefresh }) => {
     return (
-      <div className="flex gap-2 items-center">
+      <div className={compactToolbarClass} role="toolbar" aria-label="Link history actions">
         <input
           type="text"
-          placeholder="Search link history..."
+          placeholder="Search..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg text-primary-text dark:text-primary-text-dark placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50 min-w-[200px]"
+          className={compactSearchInputClass}
         />
         {selectedCount > 0 && (
-          <button
-            type="button"
+          <BulkActionButton
+            variant="danger"
             onClick={onBulkDelete}
-            disabled={bulkDeleting}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-opacity"
-          >
-            {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedCount})`}
-          </button>
+            loading={bulkDeleting}
+            icon={<Trash2 />}
+            label={bulkDeleting ? 'Deleting' : `Delete (${selectedCount})`}
+            title="Delete selected links"
+          />
         )}
-        <button
-          type="button"
+        <BulkActionButton
+          variant="primary"
           onClick={onRefresh}
-          className="px-4 py-2 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity"
-        >
-          Refresh
-        </button>
+          icon={<RefreshCw />}
+          label="Refresh"
+          title="Refresh link history"
+        />
       </div>
     );
   }

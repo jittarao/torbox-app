@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
 import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
 import Dropdown from '@/components/shared/Dropdown';
+import BulkActionButton from '@/components/shared/BulkActionButton';
 import { Cog, Filter, MagnifyingGlass, Times } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
@@ -159,11 +160,11 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
   return (
     <div className="flex flex-col gap-4 mt-4" ref={searchRef}>
       {/* Main Search Bar */}
-      <div className="relative flex gap-2">
-        <div className="w-32">
+      <div className="relative flex flex-wrap items-center gap-1.5">
+        <div className="w-28 shrink-0 sm:w-32">
           <Dropdown options={SEARCH_OPTIONS} value={searchType} onChange={setSearchType} />
         </div>
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <input
             type="text"
             value={localQuery}
@@ -174,11 +175,9 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
               setShowSuggestions(true);
             }}
             placeholder={t('placeholderSearch')}
-            className="w-full px-4 py-2 pl-10 pr-10 rounded-lg border border-border dark:border-border-dark
-              bg-transparent text-sm text-primary-text dark:text-primary-text-dark 
+            className="w-full rounded-md border border-border bg-transparent py-1.5 pl-9 pr-10 text-sm text-primary-text dark:border-border-dark dark:text-primary-text-dark
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
-              focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
-              focus:border-accent dark:focus:border-accent-dark
+              focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:border-accent-dark dark:focus:ring-accent-dark/20
               transition-colors"
           />
           {localQuery && (
@@ -201,15 +200,12 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
             <MagnifyingGlass />
           </div>
         </div>
-        <button
-          type="button"
+        <BulkActionButton
+          variant="primary"
           onClick={handleSearch}
-          className="px-4 py-2 bg-accent dark:bg-accent-dark text-white rounded-lg
-            hover:bg-accent/90 dark:hover:bg-accent-dark/90 transition-colors
-            focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20"
-        >
-          {t('search') || 'Search'}
-        </button>
+          label={t('search') || 'Search'}
+          title={t('search') || 'Search'}
+        />
       </div>
 
       {searchType === 'torrents' && (

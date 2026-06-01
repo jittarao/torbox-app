@@ -19,6 +19,9 @@ import UploadStatistics from './UploadStatistics';
 import UploadFilters from './UploadFilters';
 import UploadTable from './UploadTable';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import BulkActionButton from '@/components/shared/BulkActionButton';
+import { compactToolbarClass } from '@/components/shared/compactToolbar';
+import { RefreshCw, RotateCw, Trash2, XCircle } from 'lucide-react';
 import { normalizeUploadId } from './utils';
 
 export default function UploadManager({ apiKey }) {
@@ -131,11 +134,11 @@ export default function UploadManager({ apiKey }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold text-primary-text dark:text-primary-text-dark">
           Uploads
         </h1>
-        <div className="flex gap-2 items-center">
+        <div className={compactToolbarClass} role="toolbar" aria-label="Upload actions">
           <UploadFilters
             filters={filters}
             setFilters={setFilters}
@@ -147,45 +150,47 @@ export default function UploadManager({ apiKey }) {
           {showBulkActions && (
             <>
               {activeTab === 'failed' && (
-                <button
-                  type="button"
+                <BulkActionButton
+                  variant="accent"
                   onClick={() => handleBulkRetry(selectedUploads, uploads)}
-                  disabled={bulkRetrying || selectedCount === 0}
-                  className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                >
-                  {bulkRetrying ? 'Retrying...' : `Retry Selected (${selectedCount})`}
-                </button>
+                  disabled={selectedCount === 0}
+                  loading={bulkRetrying}
+                  icon={<RotateCw />}
+                  label={bulkRetrying ? 'Retrying' : `Retry (${selectedCount})`}
+                  title="Retry selected uploads"
+                />
               )}
-              <button
-                type="button"
+              <BulkActionButton
+                variant="danger"
                 onClick={() => handleBulkDelete(selectedUploads)}
-                disabled={bulkDeleting || selectedCount === 0}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-              >
-                {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedCount})`}
-              </button>
+                disabled={selectedCount === 0}
+                loading={bulkDeleting}
+                icon={<Trash2 />}
+                label={bulkDeleting ? 'Deleting' : `Delete (${selectedCount})`}
+                title="Delete selected uploads"
+              />
               {activeTab === 'failed' && (statusCounts.failed || 0) > 0 && (
-                <button
-                  type="button"
+                <BulkActionButton
+                  variant="secondary"
                   onClick={() => handleClearAllFailed(filters)}
-                  disabled={bulkDeleting}
-                  className="px-4 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark text-primary-text dark:text-primary-text-dark rounded-lg hover:bg-surface dark:hover:bg-surface-dark disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                >
-                  {bulkDeleting ? 'Deleting...' : 'Clear All Failed'}
-                </button>
+                  loading={bulkDeleting}
+                  icon={<XCircle />}
+                  label={bulkDeleting ? 'Clearing' : 'Clear failed'}
+                  title="Clear all failed uploads"
+                />
               )}
             </>
           )}
-          <button
-            type="button"
+          <BulkActionButton
+            variant="primary"
             onClick={() => {
               fetchUploads();
               fetchStatusCounts();
             }}
-            className="px-4 py-2 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Refresh
-          </button>
+            icon={<RefreshCw />}
+            label="Refresh"
+            title="Refresh upload list"
+          />
         </div>
       </div>
 

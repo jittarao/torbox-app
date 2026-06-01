@@ -1,3 +1,5 @@
+import { compactControlClass, compactSearchInputClass } from '@/components/shared/compactToolbar';
+
 export default function UploadFilters({
   filters,
   setFilters,
@@ -16,12 +18,11 @@ export default function UploadFilters({
     });
 
   if (compact) {
-    // Compact version for header toolbar
     return (
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-1.5 items-center">
         <input
           type="text"
-          placeholder="Search uploads..."
+          placeholder="Search..."
           value={searchValue}
           onChange={(e) => {
             if (onSearchChange) {
@@ -30,7 +31,7 @@ export default function UploadFilters({
               handleSearchChange(e);
             }
           }}
-          className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg text-primary-text dark:text-primary-text-dark placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50 min-w-[200px]"
+          className={compactSearchInputClass}
         />
         <select
           value={filters.type}
@@ -38,7 +39,7 @@ export default function UploadFilters({
             setFilters((prev) => ({ ...prev, type: e.target.value }));
             setPagination((prev) => ({ ...prev, page: 1 }));
           }}
-          className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg text-primary-text dark:text-primary-text-dark"
+          className={compactControlClass}
         >
           <option value="">All Types</option>
           <option value="torrent">Torrent</option>
