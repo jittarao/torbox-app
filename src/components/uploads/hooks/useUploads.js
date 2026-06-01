@@ -54,7 +54,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       if (filters.type) params.append('type', filters.type);
       if (filters.search) params.append('search', filters.search);
 
-      const fetchPromise = fetch(`/api/uploads?${params.toString()}`, {
+      const response = await fetch(`/api/uploads?${params.toString()}`, {
         headers: {
           'x-api-key': apiKey,
         },
@@ -64,9 +64,11 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         return;
       }
 
-      const response = await fetchPromise;
-
       const data = await response.json();
+
+      if (requestId !== uploadsRequestIdRef.current) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch uploads');
@@ -132,7 +134,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       const params = new URLSearchParams();
       if (filters.type) params.append('type', filters.type);
 
-      const fetchPromise = fetch(`/api/uploads?${params.toString()}`, {
+      const response = await fetch(`/api/uploads?${params.toString()}`, {
         headers: {
           'x-api-key': apiKey,
         },
@@ -142,9 +144,11 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         return;
       }
 
-      const response = await fetchPromise;
-
       const data = await response.json();
+
+      if (requestId !== statusCountsRequestIdRef.current) {
+        return;
+      }
 
       if (data.statusCounts) {
         setStatusCounts(data.statusCounts);
@@ -161,6 +165,12 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   useEffect(() => {
     uploadsLengthRef.current = uploads.length;
   }, [uploads]);
+
+  // Avoid showing the previous tab's rows while a new tab/filter fetch is in flight
+  useEffect(() => {
+    setUploads([]);
+    setError(null);
+  }, [activeTab, filters.type, filters.search]);
 
   useEffect(() => {
     fetchUploads();
