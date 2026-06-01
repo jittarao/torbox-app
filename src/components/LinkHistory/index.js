@@ -102,8 +102,8 @@ const LinkHistory = ({ apiKey }) => {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-md lg:text-xl font-medium text-primary-text dark:text-primary-text-dark">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-md font-medium text-primary-text dark:text-primary-text-dark lg:text-xl">
           {linkHistoryT('title')}
         </h1>
         <SearchBar
