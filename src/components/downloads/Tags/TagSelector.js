@@ -1,20 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import MultiSelect from '@/components/shared/MultiSelect';
+import { useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { Plus } from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
+import InlineTagMultiSelect from './InlineTagMultiSelect';
+import { TAG_SEARCH_MIN_COUNT } from './constants';
 
 const EMPTY_ARRAY = [];
 
 /**
- * TagSelector component - multi-select dropdown for assigning tags
+ * TagSelector — inline multi-select for assigning tags (no dropdown).
  * @param {Object} props
- * @param {Array} props.value - Array of selected tag IDs
- * @param {Function} props.onChange - Callback when selection changes (receives array of tag IDs)
- * @param {string} props.apiKey - API key for authentication
- * @param {string} props.className - Additional CSS classes
- * @param {boolean} props.disabled - Whether select is disabled
- * @param {boolean} props.allowCreate - Whether to allow creating new tags inline
+ * @param {Array} props.value - Selected tag IDs
+ * @param {Function} props.onChange - (tagIds: number[]) => void
+ * @param {string} props.apiKey
+ * @param {string} props.className
+ * @param {boolean} props.disabled
+ * @param {boolean} props.allowCreate
+ * @param {Array<{id: number, name: string}>|null} props.tagOptions - When set, use this list instead of all tags
+ * @param {'add'|'remove'} props.variant - Visual style for selected chips
  */
 export default function TagSelector({
   value = EMPTY_ARRAY,
@@ -23,103 +28,107 @@ export default function TagSelector({
   className = '',
   disabled = false,
   allowCreate = false,
+  tagOptions = null,
+  variant = 'add',
 }) {
+  const t = useTranslations('DownloadsFilters');
   const { tags, loading, createTag } = useTags(apiKey);
-  const [isCreating, setIsCreating] = useState(false);
   const [newTagName, setNewTagName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const createInputRef = useRef(null);
 
-  const tagOptions = tags.map((tag) => ({
-    label: tag.name,
-    value: tag.id,
-  }));
+  const sortedTags = useMemo(
+    () => [...tags].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    [tags]
+  );
+
+  const displayTags = useMemo(() => {
+    const source = tagOptions ?? sortedTags;
+    return [...source].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    );
+  }, [tagOptions, sortedTags]);
+
+  const showSearch = displayTags.length > TAG_SEARCH_MIN_COUNT;
 
   const handleCreateTag = async () => {
-    if (!newTagName.trim()) return;
+    const name = newTagName.trim();
+    if (!name || isCreating) return;
 
+    setIsCreating(true);
     try {
-      const newTag = await createTag(newTagName.trim());
+      const newTag = await createTag(name);
       setNewTagName('');
-      setIsCreating(false);
-      // Add the new tag to selection
       onChange([...value, newTag.id]);
+      createInputRef.current?.focus();
     } catch (error) {
       console.error('Failed to create tag:', error);
-      // Error is handled by useTags hook
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleCreateTag();
-    } else if (e.key === 'Escape') {
+    } finally {
       setIsCreating(false);
-      setNewTagName('');
     }
   };
 
   return (
     <div className={className}>
-      <MultiSelect
+      {allowCreate && !disabled && (
+        <form
+          className="mb-3 flex flex-col gap-2 sm:flex-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleCreateTag();
+          }}
+        >
+          <div className="relative min-w-0 flex-1">
+            <Plus
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary-text/35 dark:text-primary-text-dark/35"
+              aria-hidden
+            />
+            <input
+              ref={createInputRef}
+              type="text"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              placeholder={t('newTagPrompt')}
+              disabled={disabled || loading || isCreating}
+              className="w-full rounded-xl border border-border/80 bg-surface-alt/50 py-2.5 pl-9 pr-3 text-sm
+                text-primary-text placeholder:text-primary-text/40
+                focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15
+                disabled:opacity-60
+                dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark
+                dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
+              aria-label={t('newTag')}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!newTagName.trim() || disabled || loading || isCreating}
+            className="ui-btn-accent w-full shrink-0 justify-center !rounded-xl !px-4 sm:w-auto"
+          >
+            {isCreating ? (
+              <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              t('newTag')
+            )}
+          </button>
+        </form>
+      )}
+
+      <InlineTagMultiSelect
+        tags={displayTags}
         value={value}
         onChange={onChange}
-        options={tagOptions}
-        placeholder="Select tags..."
-        searchable
-        searchPlaceholder="Search tags..."
-        disabled={disabled || loading}
-        className="w-full"
+        disabled={disabled}
+        loading={tagOptions ? false : loading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        showSearch={showSearch}
+        searchPlaceholder={t('tagManagerSearchPlaceholder')}
+        emptyMessage={tagOptions ? t('tagAssignmentNoAssignedTags') : t('noTags')}
+        noResultsMessage={t('tagManagerNoResults', { query: searchQuery.trim() })}
+        variant={variant}
+        aria-label={t('tagAssignmentSelectLabel')}
       />
-
-      {allowCreate && !disabled && (
-        <div className="mt-2">
-          {!isCreating ? (
-            <button
-              type="button"
-              onClick={() => setIsCreating(true)}
-              className="text-xs text-accent dark:text-accent-dark hover:underline"
-            >
-              + Create new tag
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Tag name..."
-                className="flex-1 px-2 py-1 text-xs rounded border border-border dark:border-border-dark
-                  bg-surface dark:bg-surface-dark
-                  text-primary-text dark:text-primary-text-dark
-                  focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
-              />
-              <button
-                type="button"
-                onClick={handleCreateTag}
-                disabled={!newTagName.trim() || isCreating}
-                className="px-2 py-1 text-xs font-medium rounded bg-accent dark:bg-accent-dark
-                  text-white hover:bg-accent/90 dark:hover:bg-accent-dark/90
-                  disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCreating(false);
-                  setNewTagName('');
-                }}
-                className="px-2 py-1 text-xs rounded border border-border dark:border-border-dark
-                  text-primary-text dark:text-primary-text-dark
-                  hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
