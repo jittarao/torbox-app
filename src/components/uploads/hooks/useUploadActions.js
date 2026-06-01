@@ -1,5 +1,12 @@
 import { useState, useCallback } from 'react';
 import { arrayMove } from '@dnd-kit/sortable';
+import { normalizeUploadId } from '../utils';
+
+function idsFromSelection(selectedUploads) {
+  return Array.from(selectedUploads)
+    .map((id) => normalizeUploadId(id))
+    .filter((id) => id !== null);
+}
 
 export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads) {
   const [retrying, setRetrying] = useState(new Set());
@@ -13,12 +20,13 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
 
   const handleRetry = useCallback(
     async (id) => {
-      if (retrying.has(id)) return;
+      const uploadId = normalizeUploadId(id);
+      if (uploadId == null || retrying.has(uploadId)) return;
 
       try {
-        setRetrying((prev) => new Set(prev).add(id));
+        setRetrying((prev) => new Set(prev).add(uploadId));
 
-        const response = await fetch(`/api/uploads/${id}/retry`, {
+        const response = await fetch(`/api/uploads/${uploadId}/retry`, {
           method: 'POST',
           headers: {
             'x-api-key': apiKey,
@@ -39,7 +47,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
       } finally {
         setRetrying((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(uploadId);
           return next;
         });
       }
@@ -49,12 +57,15 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
 
   const handleDelete = useCallback(
     async (id) => {
-      if (deleting.has(id) || !confirm('Are you sure you want to delete this upload?')) return;
+      const uploadId = normalizeUploadId(id);
+      if (uploadId == null || deleting.has(uploadId) || !confirm('Are you sure you want to delete this upload?')) {
+        return;
+      }
 
       try {
-        setDeleting((prev) => new Set(prev).add(id));
+        setDeleting((prev) => new Set(prev).add(uploadId));
 
-        const response = await fetch(`/api/uploads/${id}`, {
+        const response = await fetch(`/api/uploads/${uploadId}`, {
           method: 'DELETE',
           headers: {
             'x-api-key': apiKey,
@@ -69,7 +80,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
 
         setSelectedUploads((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(uploadId);
           return next;
         });
 
@@ -81,7 +92,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
       } finally {
         setDeleting((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(uploadId);
           return next;
         });
       }
@@ -91,12 +102,13 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
 
   const handleDownload = useCallback(
     async (id) => {
-      if (downloading.has(id)) return;
+      const uploadId = normalizeUploadId(id);
+      if (uploadId == null || downloading.has(uploadId)) return;
 
       try {
-        setDownloading((prev) => new Set(prev).add(id));
+        setDownloading((prev) => new Set(prev).add(uploadId));
 
-        const response = await fetch(`/api/uploads/${id}/download`, {
+        const response = await fetch(`/api/uploads/${uploadId}/download`, {
           headers: {
             'x-api-key': apiKey,
           },
@@ -132,7 +144,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
       } finally {
         setDownloading((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(uploadId);
           return next;
         });
       }
@@ -142,13 +154,14 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
 
   const handleCopy = useCallback(
     async (url, id) => {
-      if (copying.has(id)) return;
+      const uploadId = normalizeUploadId(id);
+      if (uploadId == null || copying.has(uploadId)) return;
 
       try {
-        setCopying((prev) => new Set(prev).add(id));
+        setCopying((prev) => new Set(prev).add(uploadId));
 
         await navigator.clipboard.writeText(url);
-        setCopySuccess(id);
+        setCopySuccess(uploadId);
         setTimeout(() => setCopySuccess(null), 2000);
       } catch (err) {
         console.error('Error copying to clipboard:', err);
@@ -156,7 +169,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
       } finally {
         setCopying((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(uploadId);
           return next;
         });
       }
@@ -164,33 +177,19 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
     [copying]
   );
 
-  const handleBulkDelete = useCallback(
-    async (selectedUploads) => {
-      if (selectedUploads.size === 0) return;
+  const bulkDeleteIds = useCallback(
+    async (ids, confirmMessage) => {
+      if (ids.length === 0) {
+        alert('No valid upload IDs to delete');
+        return;
+      }
 
-      const count = selectedUploads.size;
-      if (
-        !confirm(
-          `Are you sure you want to delete ${count} upload${count > 1 ? 's' : ''}? This action cannot be undone.`
-        )
-      ) {
+      if (!confirm(confirmMessage)) {
         return;
       }
 
       try {
         setBulkDeleting(true);
-
-        const ids = Array.from(selectedUploads)
-          .map((id) => {
-            const numId = typeof id === 'string' ? parseInt(id, 10) : Number(id);
-            return isNaN(numId) || numId <= 0 ? null : numId;
-          })
-          .filter((id) => id !== null);
-
-        if (ids.length === 0) {
-          alert('No valid upload IDs selected');
-          return;
-        }
 
         const response = await fetch('/api/uploads/bulk', {
           method: 'DELETE',
@@ -220,13 +219,79 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
     [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads]
   );
 
+  const handleBulkDelete = useCallback(
+    async (selectedUploads) => {
+      if (selectedUploads.size === 0) return;
+
+      const ids = idsFromSelection(selectedUploads);
+      const count = ids.length;
+      if (count === 0) {
+        alert('No valid upload IDs selected');
+        return;
+      }
+
+      await bulkDeleteIds(
+        ids,
+        `Are you sure you want to delete ${count} upload${count > 1 ? 's' : ''}? This action cannot be undone.`
+      );
+    },
+    [bulkDeleteIds]
+  );
+
+  const handleClearAllFailed = useCallback(
+    async (filters) => {
+      try {
+        const params = new URLSearchParams({
+          status: 'failed',
+          page: '1',
+          limit: '1000',
+        });
+        if (filters?.type) params.append('type', filters.type);
+
+        const response = await fetch(`/api/uploads?${params.toString()}`, {
+          headers: {
+            'x-api-key': apiKey,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch failed uploads');
+        }
+
+        const ids = (data.data || [])
+          .map((upload) => normalizeUploadId(upload.id))
+          .filter((id) => id !== null);
+
+        if (ids.length === 0) {
+          alert('No failed uploads to delete');
+          return;
+        }
+
+        const total = data.pagination?.total ?? ids.length;
+        let message = `Delete all ${ids.length} failed upload${ids.length > 1 ? 's' : ''}? This cannot be undone.`;
+        if (total > ids.length) {
+          message = `Delete ${ids.length} of ${total} failed uploads (maximum 1000 per action)? This cannot be undone.`;
+        }
+
+        await bulkDeleteIds(ids, message);
+      } catch (err) {
+        console.error('Error clearing failed uploads:', err);
+        alert(err.message);
+      }
+    },
+    [apiKey, bulkDeleteIds]
+  );
+
   const handleBulkRetry = useCallback(
     async (selectedUploads, uploads) => {
       if (selectedUploads.size === 0) return;
 
-      const failedUploads = uploads.filter(
-        (u) => selectedUploads.has(u.id) && u.status === 'failed'
-      );
+      const failedUploads = uploads.filter((u) => {
+        const uploadId = normalizeUploadId(u.id);
+        return uploadId != null && selectedUploads.has(uploadId) && u.status === 'failed';
+      });
 
       if (failedUploads.length === 0) {
         alert('No failed uploads selected. Only failed uploads can be retried.');
@@ -246,10 +311,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
         setBulkRetrying(true);
 
         const ids = failedUploads
-          .map((u) => {
-            const numId = typeof u.id === 'string' ? parseInt(u.id, 10) : Number(u.id);
-            return isNaN(numId) || numId <= 0 ? null : numId;
-          })
+          .map((u) => normalizeUploadId(u.id))
           .filter((id) => id !== null);
 
         if (ids.length === 0) {
@@ -363,6 +425,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
     handleCopy,
     handleBulkDelete,
     handleBulkRetry,
+    handleClearAllFailed,
     handleDragEnd,
   };
 }

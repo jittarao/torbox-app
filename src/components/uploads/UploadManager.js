@@ -19,6 +19,7 @@ import UploadStatistics from './UploadStatistics';
 import UploadFilters from './UploadFilters';
 import UploadTable from './UploadTable';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { normalizeUploadId } from './utils';
 
 export default function UploadManager({ apiKey }) {
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
@@ -43,6 +44,7 @@ export default function UploadManager({ apiKey }) {
     uploads,
     setUploads,
     loading,
+    refreshing,
     error,
     statusCounts,
     uploadStatistics,
@@ -64,6 +66,7 @@ export default function UploadManager({ apiKey }) {
     handleCopy,
     handleBulkDelete,
     handleBulkRetry,
+    handleClearAllFailed,
     handleDragEnd,
   } = useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads);
 
@@ -88,25 +91,39 @@ export default function UploadManager({ apiKey }) {
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [activeTab, filters.search]);
 
+  // Drop selection from other tabs/pages so bulk actions match visible checkboxes
+  useEffect(() => {
+    setSelectedUploads(new Set());
+  }, [activeTab, filters.type, filters.search, pagination.page]);
+
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedUploads(new Set(uploads.map((u) => u.id)));
+      const ids = uploads
+        .map((u) => normalizeUploadId(u.id))
+        .filter((id) => id !== null);
+      setSelectedUploads(new Set(ids));
     } else {
       setSelectedUploads(new Set());
     }
   };
 
   const handleSelectUpload = (id, checked) => {
+    const uploadId = normalizeUploadId(id);
+    if (uploadId == null) return;
+
     setSelectedUploads((prev) => {
       const next = new Set(prev);
       if (checked) {
-        next.add(id);
+        next.add(uploadId);
       } else {
-        next.delete(id);
+        next.delete(uploadId);
       }
       return next;
     });
   };
+
+  const showBulkActions = activeTab === 'failed' || activeTab === 'completed';
+  const selectedCount = selectedUploads.size;
 
   const onDragEnd = (event) => {
     handleDragEnd(event, uploads, setUploads);
@@ -127,26 +144,36 @@ export default function UploadManager({ apiKey }) {
             onSearchChange={setSearchInput}
             compact={true}
           />
-          {selectedUploads.size > 0 && (
+          {showBulkActions && (
             <>
               {activeTab === 'failed' && (
                 <button
                   type="button"
                   onClick={() => handleBulkRetry(selectedUploads, uploads)}
-                  disabled={bulkRetrying}
-                  className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50 transition-opacity"
+                  disabled={bulkRetrying || selectedCount === 0}
+                  className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                 >
-                  {bulkRetrying ? 'Retrying...' : `Retry Selected (${selectedUploads.size})`}
+                  {bulkRetrying ? 'Retrying...' : `Retry Selected (${selectedCount})`}
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => handleBulkDelete(selectedUploads)}
-                disabled={bulkDeleting}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-opacity"
+                disabled={bulkDeleting || selectedCount === 0}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
-                {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedUploads.size})`}
+                {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedCount})`}
               </button>
+              {activeTab === 'failed' && (statusCounts.failed || 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleClearAllFailed(filters)}
+                  disabled={bulkDeleting}
+                  className="px-4 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark text-primary-text dark:text-primary-text-dark rounded-lg hover:bg-surface dark:hover:bg-surface-dark disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                >
+                  {bulkDeleting ? 'Deleting...' : 'Clear All Failed'}
+                </button>
+              )}
             </>
           )}
           <button
@@ -184,13 +211,13 @@ export default function UploadManager({ apiKey }) {
         </div>
       )}
 
-      {loading && (
+      {loading && uploads.length === 0 && (
         <div className="flex justify-center py-8">
           <Spinner />
         </div>
       )}
 
-      {!loading && (
+      {(!loading || uploads.length > 0) && (
         <>
           {!backendIsLoading && !isBackendAvailable ? (
             <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
@@ -203,7 +230,15 @@ export default function UploadManager({ apiKey }) {
                 : `No ${activeTab} uploads found`}
             </div>
           ) : (
-            <>
+            <div
+              className={`relative ${refreshing ? 'opacity-60 pointer-events-none' : ''}`}
+              aria-busy={refreshing}
+            >
+              {refreshing && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center">
+                  <Spinner />
+                </div>
+              )}
               {activeTab === 'queued' ? (
                 <DndContext
                   sensors={sensors}
@@ -245,7 +280,7 @@ export default function UploadManager({ apiKey }) {
                   copySuccess={copySuccess}
                 />
               )}
-            </>
+            </div>
           )}
 
           <UploadPagination pagination={pagination} setPagination={setPagination} />

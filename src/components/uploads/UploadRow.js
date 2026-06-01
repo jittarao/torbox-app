@@ -1,5 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
-import { formatErrorMessage, formatDate } from './utils';
+import { formatErrorMessage, formatDate, normalizeUploadId } from './utils';
 import { STATUS_COLORS, TYPE_LABELS } from './constants';
 
 export default function UploadRow({
@@ -32,6 +32,7 @@ export default function UploadRow({
       }
     : {};
 
+  const uploadId = normalizeUploadId(upload.id);
   const canDownload = upload.upload_type === 'file' && upload.file_path;
   const canCopy = (upload.upload_type === 'magnet' || upload.upload_type === 'link') && upload.url;
 
@@ -121,7 +122,7 @@ export default function UploadRow({
             <button
               type="button"
               onClick={() => onDownload(upload.id)}
-              disabled={downloading.has(upload.id)}
+              disabled={uploadId != null && downloading.has(uploadId)}
               className="p-1.5 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
               title="Download original file"
               aria-label="Download original file"
@@ -146,14 +147,14 @@ export default function UploadRow({
             <button
               type="button"
               onClick={() => onCopy(upload.url, upload.id)}
-              disabled={copying.has(upload.id)}
+              disabled={uploadId != null && copying.has(uploadId)}
               className={`p-1.5 rounded transition-colors ${
-                copySuccess === upload.id
+                copySuccess === uploadId
                   ? 'text-green-500 dark:text-green-400 bg-green-500/20 dark:bg-green-400/20'
                   : 'text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
               }`}
-              title={copySuccess === upload.id ? 'Copied!' : 'Copy link'}
-              aria-label={copySuccess === upload.id ? 'Copied!' : 'Copy link'}
+              title={copySuccess === uploadId ? 'Copied!' : 'Copy link'}
+              aria-label={copySuccess === uploadId ? 'Copied!' : 'Copy link'}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -174,19 +175,19 @@ export default function UploadRow({
             <button
               type="button"
               onClick={() => onRetry(upload.id)}
-              disabled={retrying.has(upload.id)}
+              disabled={uploadId != null && retrying.has(uploadId)}
               className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50"
             >
-              {retrying.has(upload.id) ? 'Retrying...' : 'Retry'}
+              {uploadId != null && retrying.has(uploadId) ? 'Retrying...' : 'Retry'}
             </button>
           )}
           <button
             type="button"
             onClick={() => onDelete(upload.id)}
-            disabled={deleting.has(upload.id)}
-            className="px-3 py-1 text-xs bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded hover:opacity-90 disabled:opacity-50"
+            disabled={uploadId == null || deleting.has(uploadId)}
+            className="px-3 py-1 text-xs bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {deleting.has(upload.id) ? 'Deleting...' : 'Delete'}
+            {uploadId != null && deleting.has(uploadId) ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </td>
