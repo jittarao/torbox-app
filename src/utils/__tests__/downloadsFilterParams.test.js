@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { STATUS_OPTIONS } from '@/components/constants';
 import {
   downloadsSearchParamFromValue,
   parseStatusFilterParam,
@@ -24,22 +25,28 @@ describe('downloadsFilterParams status URL encoding', () => {
     expect(parseStatusFilterParam('')).toBe('all');
   });
 
-  test('round-trips a single status filter array', () => {
-    const filter = JSON.stringify({ active: true, download_finished: false });
+  test('round-trips a single status filter via slug', () => {
+    const stalled = STATUS_OPTIONS.find((o) => o.label === 'Stalled');
+    const filter = JSON.stringify(stalled.value);
     const encoded = serializeStatusFilterParam([filter]);
+    expect(encoded).toBe('stalled');
     expect(parseStatusFilterParam(encoded)).toEqual([filter]);
   });
 
-  test('round-trips multiple status filters', () => {
-    const a = JSON.stringify({ active: true });
-    const b = JSON.stringify({ download_finished: true, active: false });
+  test('round-trips multiple status filters via slugs', () => {
+    const stalled = STATUS_OPTIONS.find((o) => o.label === 'Stalled');
+    const completed = STATUS_OPTIONS.find((o) => o.label === 'Completed');
+    const a = JSON.stringify(stalled.value);
+    const b = JSON.stringify(completed.value);
     const encoded = serializeStatusFilterParam([a, b]);
+    expect(encoded).toBe('stalled,completed');
     expect(parseStatusFilterParam(encoded)).toEqual([a, b]);
   });
 
-  test('parseStatusFilterParam supports legacy single-object string', () => {
-    const legacy = JSON.stringify({ active: true, download_finished: false });
-    expect(parseStatusFilterParam(legacy)).toBe(legacy);
+  test('legacy double-encoded status parses without throwing', () => {
+    const stalled = STATUS_OPTIONS.find((o) => o.label === 'Stalled');
+    const legacy = encodeURIComponent(JSON.stringify([JSON.stringify(stalled.value)]));
+    expect(() => parseStatusFilterParam(legacy)).not.toThrow();
   });
 
   test('serializeStatusFilterParam clears for all', () => {
