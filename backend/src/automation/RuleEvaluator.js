@@ -105,7 +105,7 @@ class RuleEvaluator {
    */
   loadTagsData(torrents, options = {}) {
     const { rule } = options;
-    if (rule != null && !this.hasTagsCondition(rule)) {
+    if (rule != null && !this.ruleNeedsTagData(rule)) {
       return new Map();
     }
     if (torrents.length === 0) {
@@ -229,7 +229,7 @@ class RuleEvaluator {
     } else {
       const analysis = this.analyzeRule(rule);
       telemetryMap = analysis.needsTelemetry ? this.loadTelemetryData(torrentIds) : new Map();
-      tagsByDownloadId = analysis.needsTags ? this.loadTagsData(torrents, { rule }) : new Map();
+      tagsByDownloadId = analysis.needsTags ? this.loadTagsDataForTorrents(torrents) : new Map();
       speedHistoryMap = analysis.needsSpeed
         ? this.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
         : new Map();
@@ -451,6 +451,19 @@ class RuleEvaluator {
   }
 
   /**
+   * Whether tag data must be loaded for this rule (TAGS conditions or tag actions).
+   * @param {Object} rule - Rule configuration
+   * @returns {boolean}
+   */
+  ruleNeedsTagData(rule) {
+    if (this.hasTagsCondition(rule)) {
+      return true;
+    }
+    const actionType = rule?.action?.type;
+    return actionType === 'add_tag' || actionType === 'remove_tag';
+  }
+
+  /**
    * Check if rule has any AVG_SPEED conditions (to determine if we need to pre-load speed history)
    * @param {Object} rule - Rule configuration
    * @returns {boolean} - True if rule has at least one AVG_DOWNLOAD_SPEED or AVG_UPLOAD_SPEED condition
@@ -564,7 +577,7 @@ class RuleEvaluator {
 
     return {
       needsTelemetry,
-      needsTags,
+      needsTags: needsTags || this.ruleNeedsTagData(rule),
       needsSpeed,
       maxSpeedHours: Math.ceil(maxSpeedHours * SPEED_HISTORY_BUFFER_MULTIPLIER),
     };
@@ -1372,6 +1385,7 @@ class RuleEvaluator {
       const inserted = result.changes > 0;
       return {
         success: true,
+        applied: inserted,
         message: inserted ? 'Download archived successfully' : 'Already archived',
       };
     } catch (error) {
@@ -1482,7 +1496,7 @@ class RuleEvaluator {
       this.validateTagIds(action.tagIds);
     }
 
-    // Add tags using transaction
+    let rowsInserted = 0;
     const transaction = this.db.transaction(() => {
       const insertStmt = this.db.prepare(`
         INSERT OR IGNORE INTO download_tags (tag_id, download_id)
@@ -1490,21 +1504,29 @@ class RuleEvaluator {
       `);
 
       for (const tagId of action.tagIds) {
-        insertStmt.run(tagId, downloadId);
+        const result = insertStmt.run(tagId, downloadId);
+        rowsInserted += result.changes ?? 0;
       }
     });
 
     transaction();
 
+    const applied = rowsInserted > 0;
+
     logger.debug('Tags added to download', {
       downloadId,
       tagIds: action.tagIds,
       tagCount: action.tagIds.length,
+      rowsInserted,
+      applied,
     });
 
     return {
       success: true,
-      message: `Added ${action.tagIds.length} tag(s) to download`,
+      applied,
+      message: applied
+        ? `Added ${rowsInserted} tag(s) to download`
+        : 'Download already has all specified tag(s)',
     };
   }
 
@@ -1528,10 +1550,10 @@ class RuleEvaluator {
       this.validateTagIds(action.tagIds);
     }
 
-    // Remove tags using transaction
+    let rowsRemoved = 0;
     const transaction = this.db.transaction(() => {
       const tagPlaceholders = action.tagIds.map(() => '?').join(',');
-      this.db
+      const result = this.db
         .prepare(
           `
         DELETE FROM download_tags 
@@ -1540,19 +1562,27 @@ class RuleEvaluator {
       `
         )
         .run(downloadId, ...action.tagIds);
+      rowsRemoved = result.changes ?? 0;
     });
 
     transaction();
+
+    const applied = rowsRemoved > 0;
 
     logger.debug('Tags removed from download', {
       downloadId,
       tagIds: action.tagIds,
       tagCount: action.tagIds.length,
+      rowsRemoved,
+      applied,
     });
 
     return {
       success: true,
-      message: `Removed ${action.tagIds.length} tag(s) from download`,
+      applied,
+      message: applied
+        ? `Removed ${rowsRemoved} tag(s) from download`
+        : 'Download did not have any of the specified tag(s)',
     };
   }
 }

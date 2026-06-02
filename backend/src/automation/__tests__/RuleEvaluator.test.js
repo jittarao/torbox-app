@@ -1673,7 +1673,11 @@ describe('RuleEvaluator', () => {
 
       const result = await ruleEvaluator.executeAction(action, torrent);
 
-      expect(result).toEqual({ success: true, message: 'Already archived' });
+      expect(result).toEqual({
+        success: true,
+        applied: false,
+        message: 'Already archived',
+      });
       expect(mockApiClient.deleteTorrent).not.toHaveBeenCalled();
       expect(mockUserDb.prepare).toHaveBeenCalledWith(
         expect.stringContaining('INSERT OR IGNORE INTO archived_downloads')
@@ -1743,11 +1747,31 @@ describe('RuleEvaluator', () => {
 
       const result = await ruleEvaluator.executeAction(action, torrent);
 
-      expect(result).toEqual({ success: true, message: 'Added 2 tag(s) to download' });
+      expect(result).toEqual({
+        success: true,
+        applied: true,
+        message: 'Added 2 tag(s) to download',
+      });
       expect(mockUserDb.prepare).toHaveBeenCalledWith(
         expect.stringContaining('SELECT id FROM tags WHERE id IN')
       );
       expect(mockUserDb._mockTransaction).toHaveBeenCalled();
+    });
+
+    it('should report applied false when add_tag inserts no rows', async () => {
+      const action = { type: 'add_tag', tagIds: [1] };
+      const torrent = { id: 'torrent-1' };
+
+      mockUserDb._mockAll.mockReturnValueOnce([{ id: 1 }]);
+      mockUserDb._mockRun.mockImplementation(() => ({ changes: 0 }));
+
+      const result = await ruleEvaluator.executeAction(action, torrent);
+
+      expect(result).toEqual({
+        success: true,
+        applied: false,
+        message: 'Download already has all specified tag(s)',
+      });
     });
 
     it('should throw error for add_tag with invalid tagIds', async () => {
@@ -1780,7 +1804,11 @@ describe('RuleEvaluator', () => {
 
       const result = await ruleEvaluator.executeAction(action, torrent);
 
-      expect(result).toEqual({ success: true, message: 'Removed 2 tag(s) from download' });
+      expect(result).toEqual({
+        success: true,
+        applied: true,
+        message: 'Removed 1 tag(s) from download',
+      });
       expect(mockUserDb.prepare).toHaveBeenCalledWith(
         expect.stringContaining('SELECT id FROM tags WHERE id IN')
       );
@@ -1794,6 +1822,36 @@ describe('RuleEvaluator', () => {
       await expect(ruleEvaluator.executeAction(action, torrent)).rejects.toThrow(
         'tagIds must be a non-empty array'
       );
+    });
+  });
+
+  describe('analyzeRule', () => {
+    it('should set needsTags for add_tag action without TAGS conditions', () => {
+      const rule = {
+        conditions: [{ type: 'STATUS', operator: 'eq', value: 'completed' }],
+        action: { type: 'add_tag', tagIds: [1] },
+      };
+
+      const analysis = ruleEvaluator.analyzeRule(rule);
+      expect(analysis.needsTags).toBe(true);
+    });
+  });
+
+  describe('ruleNeedsTagData', () => {
+    it('should return true for add_tag action', () => {
+      const rule = {
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
+        action: { type: 'add_tag', tagIds: [1] },
+      };
+      expect(ruleEvaluator.ruleNeedsTagData(rule)).toBe(true);
+    });
+
+    it('should return false when no TAGS condition and non-tag action', () => {
+      const rule = {
+        conditions: [{ type: 'PROGRESS', operator: 'gte', value: 50 }],
+        action: { type: 'delete' },
+      };
+      expect(ruleEvaluator.ruleNeedsTagData(rule)).toBe(false);
     });
   });
 

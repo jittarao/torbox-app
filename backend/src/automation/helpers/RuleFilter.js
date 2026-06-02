@@ -64,10 +64,9 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    let tagsByDownloadId = options.tagsByDownloadId;
-    if (!tagsByDownloadId || !(tagsByDownloadId instanceof Map)) {
-      tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
-    }
+    // Always load from DB for add_tag filtering — preloaded maps may be empty when the rule
+    // has no TAGS condition (only an add_tag action).
+    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
     const targetTagIds = new Set(action.tagIds);
@@ -125,10 +124,7 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    let tagsByDownloadId = options.tagsByDownloadId;
-    if (!tagsByDownloadId || !(tagsByDownloadId instanceof Map)) {
-      tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
-    }
+    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
     const targetTagIds = new Set(action.tagIds);
