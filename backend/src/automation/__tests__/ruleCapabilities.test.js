@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'bun:test';
 import {
   buildCacheKey,
@@ -8,7 +11,17 @@ import {
   normalizeAssetTypes,
 } from '../helpers/ruleCapabilities.js';
 
+const backendRoot = join(dirname(fileURLToPath(import.meta.url)), '../../../');
+const repoRoot = join(backendRoot, '..');
+
 describe('ruleCapabilities', () => {
+  test('backend/config registry JSON matches repo-root config/', () => {
+    const file = 'automation-rule-capabilities.json';
+    expect(readFileSync(join(backendRoot, 'config', file), 'utf8')).toBe(
+      readFileSync(join(repoRoot, 'config', file), 'utf8'),
+    );
+  });
+
   test('buildCacheKey sorts asset types', () => {
     expect(buildCacheKey(['usenet', 'torrent'])).toBe('torrent|usenet');
   });

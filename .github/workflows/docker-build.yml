@@ -172,7 +172,7 @@ jobs:
         uses: docker/build-push-action@v6
         continue-on-error: false
         with:
-          context: . # Repo root (backend + shared config/)
+          context: ./backend # backend/config/ is bundled in the image
           file: ./backend/Dockerfile # Backend Dockerfile location
           platforms: ${{ matrix.platform }} # Target platform (amd64 or arm64)
           push: true # Always push backend images (only runs for non-PRs)
