@@ -12,7 +12,7 @@ let cachedSearchString = null;
 /** @type {URLSearchParams} */
 let cachedSearchParams = EMPTY_SEARCH_PARAMS;
 
-/** Subscribe to client URL search changes (history.replaceState, popstate, router.replace). */
+/** Subscribe to client URL search changes (history.replaceState, popstate). */
 export function subscribeDownloadsFilterSearchParams(listener) {
   listeners.add(listener);
   if (typeof window === 'undefined') {
