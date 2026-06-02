@@ -64,9 +64,22 @@ class RuleExecutor {
             torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
           });
 
-          await ruleEvaluator.executeAction(action, torrent, {
+          const result = await ruleEvaluator.executeAction(action, torrent, {
             skipValidation: tagActionValidated,
           });
+
+          if (result?.applied === false) {
+            logger.debug('Action skipped — no change (already applied)', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              torrentId: torrent.id,
+              torrentName: torrent.name,
+              action: actionType,
+            });
+            continue;
+          }
+
           successCount++;
 
           logger.debug('Action successfully executed', {
