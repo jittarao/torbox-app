@@ -1,9 +1,6 @@
 # Multi-stage Dockerfile for TBM backend API service
 # Uses Docker BuildKit syntax for advanced features
 # syntax=docker/dockerfile:1.4
-#
-# Build context must be the repository root (not backend/) so shared
-# config/ is copied into the image at /app/config.
 
 # Stage 1: Dependencies - Install production dependencies only
 # This stage is optimized for layer caching and smaller final image
@@ -17,7 +14,7 @@ RUN apk add --no-cache libc6-compat python3 make g++
 
 # Copy package files first for better Docker layer caching
 # This allows dependency installation to be cached if package.json hasn't changed
-COPY backend/package.json backend/bun.lock ./
+COPY package.json bun.lock ./
 
 # Install only production dependencies to reduce image size
 # --frozen-lockfile: Use exact versions from lockfile (ensures reproducible builds)
@@ -34,15 +31,14 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat python3 make g++
 
 # Copy package files first for better Docker layer caching
-COPY backend/package.json backend/bun.lock ./
+COPY package.json bun.lock ./
 
 # Install all dependencies including dev dependencies
 # Dev dependencies may be needed for type checking, linting, or other build tools
 RUN bun install --frozen-lockfile --no-cache
 
-# Copy backend source and shared automation rule capabilities config
-COPY backend/ .
-COPY config/ ./config/
+# Copy entire source code into builder stage
+COPY . .
 
 # Stage 3: Runner - Production runtime image
 # Minimal image containing only what's needed to run the backend service
@@ -66,9 +62,13 @@ RUN chown -R torbox:nodejs /app
 # Copy production dependencies from deps stage
 # --chown: Set ownership to non-root user for security
 COPY --from=deps --chown=torbox:nodejs /app/node_modules ./node_modules
-# Copy application source code and shared config
-COPY --chown=torbox:nodejs backend/ .
-COPY --chown=torbox:nodejs config/ ./config/
+# Copy application source code
+COPY --chown=torbox:nodejs . .
+
+# Fail the image build if automation rule capabilities are missing or broken
+RUN test -f config/ruleCapabilities.mjs && \
+    test -f config/automation-rule-capabilities.json && \
+    bun -e "import './src/automation/helpers/ruleCapabilities.js'"
 
 # Create necessary runtime directories with proper permissions
 # data: Backend data directory (databases, user files, etc.)
