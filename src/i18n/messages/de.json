@@ -15,6 +15,14 @@
       "message": "Möchten Sie {count} {type} wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden. ",
       "title": "Löschen bestätigen"
     },
+    "archive": "Archivieren",
+    "archiveTitle": "Ausgewählte Torrents in TBM archivieren und von TorBox entfernen",
+    "archiveConfirm": {
+      "archiving": "Archiviert…",
+      "confirm": "Archivieren",
+      "message": "{count} Torrent(s) archivieren? Sie erscheinen unter Archivierte Downloads und werden aus der aktiven Liste entfernt.",
+      "title": "Archivierung bestätigen"
+    },
     "assignTagsTitle": "Tags den ausgewählten Downloads zuweisen",
     "downloadLinksTitle": "Download-Links für die Auswahl abrufen",
     "bulkForceStartPartial": "{success} Torrents gestartet, {failed} fehlgeschlagen",
@@ -596,6 +604,12 @@
       "deleteError": "Fehler beim Löschen: {error}",
       "deletePartialSuccess": "{count} von {total} Elementen gelöscht ",
       "deleteSuccess": "Erfolgreich gelöscht ",
+      "archiveAllFailed": "Elemente konnten nicht archiviert werden",
+      "archiveAllSuccess": "Alle Elemente erfolgreich archiviert",
+      "archiveError": "Fehler beim Archivieren: {error}",
+      "archiveNoHash": "Archivierung nicht möglich: Torrent-Hash nicht verfügbar",
+      "archivePartialSuccess": "{count} von {total} Elementen archiviert",
+      "archiveSuccess": "Erfolgreich archiviert",
       "downloadFailed": "Download-Start fehlgeschlagen ",
       "downloadStarted": "Download erfolgreich gestartet ",
       "exportTorrentFailed": "Fehler beim Exportieren der Torrent-Datei",
@@ -722,6 +736,7 @@
     "title": "Link-Verlauf"
   },
   "MoreOptionsDropdown": {
+    "archive": "Archivieren",
     "copyFullMagnet": "Full Magnet kopieren ",
     "copyHash": "Hash kopieren ",
     "copyId": "ID kopieren",

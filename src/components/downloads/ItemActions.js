@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useDownloadsActions } from './DownloadsActionsContext';
+import { useDownloadsContext } from './DownloadsContext';
+import { useDownloadsUIContext } from './DownloadsUIContext';
 import { controlTorrent, controlQueuedItem } from '@/utils/uploadActions';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
@@ -25,7 +27,15 @@ export default function ItemActions({
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [isDeleting, setIsDeleting] = useState(false);
   const { downloadSingle } = useDownloadsActions();
+  const { archiveItem, isArchiving } = useDownloadsContext();
+  const { isBackendAvailable } = useDownloadsUIContext();
   const t = useTranslations('ItemActions');
+
+  const itemAssetType = resolveItemAssetType(item, activeType);
+  const showArchive =
+    isBackendAvailable &&
+    item.hash &&
+    (activeType === 'torrents' || itemAssetType === 'torrents');
 
   // Downloads a torrent or a webdl/usenet item
   const handleDownload = async () => {
@@ -117,6 +127,12 @@ export default function ItemActions({
     }
   };
 
+  const handleArchive = async () => {
+    if (isArchiving) return;
+    await archiveItem(item);
+    phEvent('archive_item');
+  };
+
   const showStopSeeding =
     activeType === 'torrents' &&
     item.download_finished &&
@@ -154,6 +170,9 @@ export default function ItemActions({
       showDelete={compact || mobileBar}
       onDelete={handleDelete}
       isDeleting={isDeleting}
+      showArchive={showArchive}
+      onArchive={handleArchive}
+      isArchiving={isArchiving}
     />
   );
 

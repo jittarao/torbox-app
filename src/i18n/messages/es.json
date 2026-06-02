@@ -15,6 +15,14 @@
       "message": "¿Está seguro de que desea eliminar {count} {type}? Esta acción no se puede deshacer.",
       "title": "Confirmar eliminación"
     },
+    "archive": "Archivar",
+    "archiveTitle": "Archivar torrents seleccionados en TBM y eliminarlos de TorBox",
+    "archiveConfirm": {
+      "archiving": "Archivando…",
+      "confirm": "Archivar",
+      "message": "¿Archivar {count} torrent(s)? Aparecerán en Descargas archivadas y se eliminarán de la lista activa.",
+      "title": "Confirmar archivado"
+    },
     "assignTags": "Etiqueta",
     "assignTagsTitle": "Asignar etiquetas a la selección",
     "downloadLinks": "Descargar",
@@ -601,6 +609,12 @@
       "deleteError": "Error al eliminar: {error}",
       "deletePartialSuccess": "Se han eliminado {count} de {total} elementos",
       "deleteSuccess": "Eliminado correctamente",
+      "archiveAllFailed": "No se pudieron archivar los elementos",
+      "archiveAllSuccess": "Todos los elementos archivados correctamente",
+      "archiveError": "Error al archivar: {error}",
+      "archiveNoHash": "No se puede archivar: el hash del torrent no está disponible",
+      "archivePartialSuccess": "Archivados {count} de {total} elementos",
+      "archiveSuccess": "Archivado correctamente",
       "downloadFailed": "Error al iniciar la descarga",
       "downloadStarted": "Descarga iniciada correctamente",
       "exportTorrentFailed": "Error al exportar el torrent",
@@ -727,6 +741,7 @@
     "title": "Historial de enlaces"
   },
   "MoreOptionsDropdown": {
+    "archive": "Archivar",
     "copyFullMagnet": "Copiar imán completo",
     "copyHash": "Copiar hash",
     "copyId": "Copiar ID",
