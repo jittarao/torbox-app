@@ -2,6 +2,45 @@ import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 
+export const BULK_ARCHIVE_MAX = 500;
+
+/**
+ * Insert archive metadata for many torrents in one transaction.
+ * @param {import('bun:sqlite').Database} db
+ * @param {Array<{ torrent_id: string, hash: string, tracker?: string, name?: string }>} downloads
+ * @returns {string[]} torrent_ids eligible for TorBox removal (valid + present in archive table after upsert)
+ */
+export function bulkArchiveDownloadsInDb(db, downloads) {
+  const insertStmt = db.prepare(`
+    INSERT OR IGNORE INTO archived_downloads (torrent_id, hash, tracker, name, archived_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `);
+
+  const existsStmt = db.prepare(`
+    SELECT torrent_id FROM archived_downloads WHERE torrent_id = ?
+  `);
+
+  const torrentIds = [];
+
+  const archiveMany = db.transaction((entries) => {
+    for (const entry of entries) {
+      insertStmt.run(
+        entry.torrent_id,
+        entry.hash,
+        entry.tracker ?? null,
+        entry.name ?? null
+      );
+      const row = existsStmt.get(entry.torrent_id);
+      if (row) {
+        torrentIds.push(String(entry.torrent_id));
+      }
+    }
+  });
+
+  archiveMany(downloads);
+  return torrentIds;
+}
+
 /**
  * Archived downloads routes
  */
@@ -143,6 +182,92 @@ export function setupArchivedDownloadsRoutes(app, backend) {
       } catch (error) {
         logger.error('Error creating archived download', error, {
           endpoint: '/api/archived-downloads',
+          method: 'POST',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
+      }
+    }
+  );
+
+  // POST /api/archived-downloads/bulk - Bulk archive torrent metadata
+  app.post(
+    '/api/archived-downloads/bulk',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const { downloads } = req.body;
+
+        if (!Array.isArray(downloads) || downloads.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'downloads array is required and must not be empty',
+          });
+        }
+
+        if (downloads.length > BULK_ARCHIVE_MAX) {
+          return res.status(400).json({
+            success: false,
+            error: `downloads array must not exceed ${BULK_ARCHIVE_MAX} items`,
+          });
+        }
+
+        const validated = [];
+        const seenIds = new Set();
+
+        for (const entry of downloads) {
+          const torrent_id =
+            entry?.torrent_id != null ? String(entry.torrent_id) : '';
+          const hash = entry?.hash != null ? String(entry.hash) : '';
+
+          if (!torrent_id || !hash) {
+            continue;
+          }
+
+          if (seenIds.has(torrent_id)) {
+            continue;
+          }
+          seenIds.add(torrent_id);
+
+          validated.push({
+            torrent_id,
+            hash,
+            tracker: entry.tracker ?? null,
+            name: entry.name ?? null,
+          });
+        }
+
+        if (validated.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'No valid downloads to archive (torrent_id and hash required)',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        const torrentIds = bulkArchiveDownloadsInDb(userDb.db, validated);
+
+        res.json({
+          success: true,
+          data: { torrentIds },
+        });
+      } catch (error) {
+        logger.error('Error bulk archiving downloads', error, {
+          endpoint: '/api/archived-downloads/bulk',
           method: 'POST',
           authId: req.validatedAuthId,
         });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
-import { Delete, Download, FileDown, Play, Question, Stop, Tag, Times } from '@/components/icons';
+import { Archive, Delete, Download, FileDown, Play, Question, Stop, Tag, Times } from '@/components/icons';
 import BulkActionButton from './BulkActionButton';
 import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
@@ -17,6 +17,7 @@ import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { isTorrentQueued, isTorrentSeeding } from '../utils/statusHelpers';
 import { removeQueuedAfterForceStartBulk } from '@/store/downloadListReconcile';
+import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
 
 export default function ActionButtons({
   setSelectedItems,
@@ -26,7 +27,9 @@ export default function ActionButtons({
   isExporting,
   onBulkDownload,
   onBulkDelete,
+  onBulkArchive,
   onBulkExport,
+  isArchiving = false,
   itemTypeName,
   itemTypePlural,
   isDownloadPanelOpen,
@@ -38,10 +41,12 @@ export default function ActionButtons({
 }) {
   const t = useTranslations('ActionButtons');
   const tItemActions = useTranslations('ItemActions.toast');
+  const { isBackendAvailable } = useDownloadsUIContext();
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
   const getSelectedItems = () => useDownloadsSelectionStore.getState().selectedItems;
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
   const [isForceStarting, setIsForceStarting] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
@@ -91,6 +96,26 @@ export default function ActionButtons({
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
 
   const showBulkForceStart = selectedQueuedTorrents.length > 0;
+
+  const selectedArchivableTorrents = useMemo(() => {
+    if (hasSelectedFiles || selectedItemCount === 0) return [];
+    if (activeType !== 'torrents' && activeType !== 'all') return [];
+
+    const selectionIds = Array.from(getSelectedItems().items || []);
+    const resolved = selectionIds
+      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
+      .filter(Boolean);
+
+    if (resolved.length !== selectionIds.length) return [];
+
+    const allArchivable = resolved.every(
+      (item) =>
+        resolveItemAssetType(item, activeType) === 'torrents' && Boolean(item.hash)
+    );
+    return allArchivable ? resolved : [];
+  }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
+
+  const showBulkArchive = isBackendAvailable && selectedArchivableTorrents.length > 0;
 
   // Check for connected providers once per API key (not on every ActionBar re-render)
   useEffect(() => {
@@ -447,6 +472,58 @@ export default function ActionButtons({
           label={t('assignTags')}
           title={t('assignTagsTitle')}
         />
+      )}
+
+      {showBulkArchive && onBulkArchive && (
+        <>
+          <BulkActionButton
+            variant="secondary"
+            onClick={() => setShowArchiveConfirm(true)}
+            disabled={isArchiving}
+            loading={isArchiving}
+            icon={<Archive />}
+            label={isArchiving ? t('archiveConfirm.archiving') : t('archive')}
+            title={t('archiveTitle')}
+          />
+
+          {showArchiveConfirm && (
+            <div className="fixed inset-0 bg-neutral-950 bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-surface dark:bg-surface-dark p-6 rounded-lg shadow-lg max-w-md">
+                <h3 className="text-lg font-semibold mb-4 text-primary-text dark:text-primary-text-dark">
+                  {t('archiveConfirm.title')}
+                </h3>
+                <p className="text-primary-text/70 dark:text-primary-text-dark/70 mb-6">
+                  {t('archiveConfirm.message', {
+                    count: selectedArchivableTorrents.length,
+                  })}
+                </p>
+
+                <div className="flex justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowArchiveConfirm(false)}
+                    className="px-4 py-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70 
+                    hover:text-primary-text dark:hover:text-primary-text-dark"
+                  >
+                    {t('archiveConfirm.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowArchiveConfirm(false);
+                      onBulkArchive();
+                      phEvent('bulk_archive', { count: selectedArchivableTorrents.length });
+                    }}
+                    disabled={isArchiving}
+                    className="bg-accent text-sm text-white px-4 py-2 rounded hover:brightness-95 disabled:opacity-50 transition-colors dark:bg-accent-dark dark:hover:brightness-110"
+                  >
+                    {t('archiveConfirm.confirm')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {(selectedItemCount > 0 || hasSelectedFiles) && (

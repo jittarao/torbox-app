@@ -9,6 +9,7 @@ import { useDownloadsFilters } from './useDownloadsFilters';
 import { useDownloadsListData } from './useDownloadsListData';
 import { useDownloadsFilterParams } from '@/hooks/useDownloadsFilterParams';
 import { useDelete } from './useDelete';
+import { useArchiveDownloads } from './useArchiveDownloads';
 import { useFetchData } from './useFetchData';
 import { useSelection } from './useSelection';
 import useIsMobile from '../../../hooks/useIsMobile';
@@ -160,6 +161,13 @@ export function useDownloadsPageState(apiKey) {
     activeType
   );
 
+  const { isArchiving, archiveItem, archiveItems } = useArchiveDownloads(
+    apiKey,
+    setSelectedItems,
+    setToast,
+    activeType
+  );
+
   const { activeColumns, handleColumnChange } = useColumnManager(activeType);
 
   const filterData = useDownloadsFilters({
@@ -306,6 +314,8 @@ export function useDownloadsPageState(apiKey) {
     handleBulkDownload,
     isDeleting,
     deleteItems,
+    isArchiving,
+    archiveItems,
     isExporting,
     handleBulkExport,
     getTotalDownloadSize,
@@ -314,6 +324,7 @@ export function useDownloadsPageState(apiKey) {
     setSelectedItems,
     handleSelectAll,
     deleteItem,
+    archiveItem,
     toggleFiles,
     openVideoPlayer,
     handleAudioPlay,

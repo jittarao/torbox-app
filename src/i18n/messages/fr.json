@@ -15,6 +15,14 @@
       "message": "Êtes-vous sûr de vouloir supprimer {count} {type} ? Cette action ne peut pas être annulée.",
       "title": "Confirmer la suppression"
     },
+    "archive": "Archiver",
+    "archiveTitle": "Archiver les torrents sélectionnés dans TBM et les retirer de TorBox",
+    "archiveConfirm": {
+      "archiving": "Archivage…",
+      "confirm": "Archiver",
+      "message": "Archiver {count} torrent(s) ? Ils apparaîtront dans Téléchargements archivés et seront retirés de votre liste active.",
+      "title": "Confirmer l'archivage"
+    },
     "assignTagsTitle": "Attribuer des tags à la sélection",
     "downloadLinks": "Télécharger",
     "downloadLinksMobile": "Télécharger",
@@ -591,6 +599,12 @@
       "deleteError": "Erreur de suppression : {erreur}",
       "deletePartialSuccess": "{count} éléments sur {total} ont été supprimés",
       "deleteSuccess": "Suppression réussie",
+      "archiveAllFailed": "Échec de l'archivage des éléments",
+      "archiveAllSuccess": "Tous les éléments archivés avec succès",
+      "archiveError": "Erreur lors de l'archivage : {error}",
+      "archiveNoHash": "Archivage impossible : hash du torrent indisponible",
+      "archivePartialSuccess": "{count} sur {total} éléments archivés",
+      "archiveSuccess": "Archivage réussi",
       "downloadFailed": "Échec du téléchargement",
       "downloadStarted": "Téléchargement démarré avec succès",
       "exportTorrentFailed": "Échec de l'exportation du torrent",
@@ -714,6 +728,7 @@
     "title": "Historique des liens"
   },
   "MoreOptionsDropdown": {
+    "archive": "Archiver",
     "copyFullMagnet": "Copier l'aimant complet",
     "copyHash": "Copier le hash",
     "copyId": "Copier l'ID",

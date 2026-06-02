@@ -7,7 +7,7 @@ import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 const CONCURRENT_DELETES = 3;
 
 /** Bulk deletes: one attempt per item so a slow slot frees after at most FETCH_TIMEOUT_MS. */
-const BULK_DELETE_FETCH_OPTIONS = {
+export const BULK_DELETE_FETCH_OPTIONS = {
   maxRetries: 1,
   timeout: FETCH_TIMEOUT_MS,
 };

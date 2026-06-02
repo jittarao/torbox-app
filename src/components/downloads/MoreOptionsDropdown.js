@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { Copy, Delete, Download, FileDown, Refresh, VerticalEllipsis } from '@/components/icons';
+import { Archive, Copy, Delete, Download, FileDown, Refresh, VerticalEllipsis } from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
@@ -68,8 +68,11 @@ function MenuItems({
   isDeleting,
   showDownload,
   showDelete,
+  showArchive,
   onDownload,
   onDelete,
+  onArchive,
+  isArchiving,
   onCopyId,
   onCopyHash,
   onCopyShortMagnet,
@@ -105,6 +108,20 @@ function MenuItems({
         icon={isDeleting ? <Spinner size="xs" /> : <Delete />}
       >
         {actionT('delete.label')}
+      </MenuItemButton>
+    );
+  }
+
+  if (showArchive && onArchive) {
+    items.push(
+      <MenuItemButton
+        key="archive"
+        menuVariant={menuVariant}
+        onClick={onArchive}
+        disabled={isArchiving}
+        icon={isArchiving ? <Spinner size="xs" /> : <Archive />}
+      >
+        {t('archive')}
       </MenuItemButton>
     );
   }
@@ -224,6 +241,9 @@ export default function MoreOptionsDropdown({
   showDelete = false,
   onDelete,
   isDeleting = false,
+  showArchive = false,
+  onArchive,
+  isArchiving = false,
   compact = false,
   mobileBar = false,
 }) {
@@ -643,6 +663,17 @@ export default function MoreOptionsDropdown({
       isDeleting={isDeleting}
       showDownload={showDownload}
       showDelete={showDelete}
+      showArchive={showArchive}
+      onArchive={
+        onArchive
+          ? (e) => {
+              e.stopPropagation();
+              onArchive();
+              setIsMenuOpen(false);
+            }
+          : undefined
+      }
+      isArchiving={isArchiving}
       onDownload={
         onDownload
           ? (e) => {

@@ -14,6 +14,15 @@
       "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
       "title": "Confirm Delete"
     },
+    "archive": "Archive",
+    "archiveTitle": "Archive selected torrents to TBM and remove from TorBox",
+    "archiveConfirm": {
+      "archiving": "Archiving…",
+      "cancel": "Cancel",
+      "confirm": "Archive",
+      "message": "Archive {count} torrent(s)? They will appear in Archived Downloads and be removed from your active list.",
+      "title": "Confirm Archive"
+    },
     "assignTags": "Tag",
     "assignTagsTitle": "Assign tags to selected downloads",
     "downloadLinks": "Download",
@@ -658,6 +667,12 @@
       "deleteError": "Error deleting: {error}",
       "deletePartialSuccess": "Deleted {count} of {total} items",
       "deleteSuccess": "Successfully deleted",
+      "archiveAllFailed": "Failed to archive items",
+      "archiveAllSuccess": "All items archived successfully",
+      "archiveError": "Error archiving: {error}",
+      "archiveNoHash": "Cannot archive: torrent hash is not available",
+      "archivePartialSuccess": "Archived {count} of {total} items",
+      "archiveSuccess": "Successfully archived",
       "downloadFailed": "Download start failed",
       "downloadStarted": "Download started successfully",
       "exportTorrentFailed": "Failed to export torrent file",
@@ -787,6 +802,7 @@
     "title": "Link History"
   },
   "MoreOptionsDropdown": {
+    "archive": "Archive",
     "copyFullMagnet": "Copy Full Magnet",
     "copyHash": "Copy Hash",
     "copyId": "Copy ID",
