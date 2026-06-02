@@ -62,14 +62,14 @@ export default function RuleLogsModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 max-w-2xl w-full max-h-[70vh] overflow-hidden flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-neutral-950/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-6 max-w-2xl w-full max-h-[70vh] overflow-hidden flex flex-col shadow-2xl">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
               {t('ruleLogs')} - {ruleName}
             </h3>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mt-1">
               <strong>{t('lastRanAt') || 'Last ran at'}:</strong> {formatLastEvaluatedAt()}
             </div>
           </div>
@@ -77,14 +77,14 @@ export default function RuleLogsModal({
             <button
               type="button"
               onClick={() => onClearLogs(ruleId)}
-              className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              className="px-3 py-1 text-sm bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded-md hover:opacity-90 transition-colors"
             >
               {t('clearLogs')}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+              className="px-3 py-1 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors"
             >
               {t('close')}
             </button>
@@ -93,16 +93,16 @@ export default function RuleLogsModal({
 
         <div className="flex-1 overflow-y-auto">
           {logs?.length === 0 ? (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-8">{t('noLogs')}</div>
+            <div className="text-center text-muted dark:text-muted-dark py-8">{t('noLogs')}</div>
           ) : (
             <div className="space-y-3">
               {logs?.map((log) => (
                 <div
                   key={log.id}
-                  className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700"
+                  className="p-3 border border-border dark:border-border-dark rounded-lg bg-surface-alt dark:bg-surface-alt-dark"
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
                       {(() => {
                         try {
                           // Handle SQLite datetime format: "YYYY-MM-DD HH:MM:SS"
@@ -119,14 +119,14 @@ export default function RuleLogsModal({
                     <span
                       className={`text-xs px-2 py-1 rounded ${
                         log.success
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          ? 'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark'
+                          : 'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark'
                       }`}
                     >
                       {log.success ? t('success') : t('failed')}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                  <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
                     {log.action && (
                       <div>
                         <strong>{t('action')}:</strong>{' '}
@@ -144,7 +144,7 @@ export default function RuleLogsModal({
                       </div>
                     )}
                     {log.error && (
-                      <div className="text-red-500 dark:text-red-400">
+                      <div className="text-label-danger-text dark:text-label-danger-text-dark">
                         <strong>{t('error')}:</strong> {log.error}
                       </div>
                     )}
