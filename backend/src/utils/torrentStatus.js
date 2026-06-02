@@ -31,18 +31,14 @@ export function getTorrentStatus(torrent) {
       return 'queued';
     }
 
-    // Failed: active must be false
+    // Failed: download_state contains "failed" and not active (matches UI STATUS_OPTIONS)
     if (state.includes('failed') && !torrent.active) {
-      if (!torrent.download_finished && !torrent.download_present) {
-        return 'failed';
-      }
+      return 'failed';
     }
 
-    // Stalled: active must be true
+    // Stalled: download_state contains "stalled" and active (matches UI STATUS_OPTIONS)
     if (state.includes('stalled') && torrent.active) {
-      if (!torrent.download_finished && !torrent.download_present) {
-        return 'stalled';
-      }
+      return 'stalled';
     }
 
     // MetaDL

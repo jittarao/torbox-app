@@ -24,6 +24,11 @@ const SKIPPED_POLL_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours when user has no
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
 const PENDING_ACTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — delete pending_actions older than this
 const PENDING_ACTIONS_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Run pending_actions TTL cleanup hourly
+/** Max torrents per action sub-batch so each chunk can finish within ACTION_BATCH_TIMEOUT_MS */
+const ACTION_BATCH_CHUNK_SIZE = Math.max(
+  1,
+  parseInt(process.env.ACTION_BATCH_CHUNK_SIZE || '50', 10)
+);
 const STAGGER_PERCENTAGE = 0.3; // 30% of base interval (~9 min for 30-min window)
 
 /**
@@ -910,11 +915,18 @@ class PollingScheduler {
         1000,
         parseInt(process.env.ACTION_BATCH_TIMEOUT_MS || String(this.pollKickoutMs), 10)
       );
-      const { successCount, errorCount } = await withTimeout(
-        engine.ruleExecutor.executeActions(rule, torrentsToProcess),
-        actionBatchTimeoutMs,
-        `Action batch timed out after ${actionBatchTimeoutMs / 1000}s`
-      );
+      let successCount = 0;
+      let errorCount = 0;
+      for (let i = 0; i < torrentsToProcess.length; i += ACTION_BATCH_CHUNK_SIZE) {
+        const chunk = torrentsToProcess.slice(i, i + ACTION_BATCH_CHUNK_SIZE);
+        const chunkResult = await withTimeout(
+          engine.ruleExecutor.executeActions(rule, chunk),
+          actionBatchTimeoutMs,
+          `Action batch timed out after ${actionBatchTimeoutMs / 1000}s (chunk ${Math.floor(i / ACTION_BATCH_CHUNK_SIZE) + 1})`
+        );
+        successCount += chunkResult.successCount;
+        errorCount += chunkResult.errorCount;
+      }
       if (successCount > 0) {
         await engine.ruleRepository.recordExecution(
           rule.id,

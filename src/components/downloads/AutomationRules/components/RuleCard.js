@@ -1,8 +1,7 @@
 'use client';
 
 import { Clock, Delete, Edit, Play } from '@/components/icons';
-import { getConditionText } from '../utils';
-import { LOGIC_OPERATORS } from '../constants';
+import { getRuleConditionText } from '../utils';
 
 export default function RuleCard({
   rule,
@@ -97,12 +96,7 @@ export default function RuleCard({
       </div>
       <div className="mt-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
         Every {rule.trigger?.value ?? 30} {commonT('minutes')}, if{' '}
-        {(() => {
-          // Rules always have groups structure (migrated in backend)
-          const conditions = (rule.groups || []).flatMap((group) => group.conditions || []);
-          const logicOperator = rule.logicOperator || LOGIC_OPERATORS.AND;
-          return getConditionText(conditions, logicOperator, t, commonT);
-        })()}
+        {getRuleConditionText(rule, t, commonT)}
         , then {rule.action?.type?.replace('_', ' ') || 'unknown'}
       </div>
       {rule.last_evaluated_at && (

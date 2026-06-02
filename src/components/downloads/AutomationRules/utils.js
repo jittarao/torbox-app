@@ -224,6 +224,29 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
   return conditionTexts.join(logicText);
 };
 
+/** Human-readable condition summary for a rule with group AND/OR structure */
+export const getRuleConditionText = (rule, t, commonT) => {
+  const groups = rule?.groups || [];
+  if (groups.length === 0) return '';
+
+  const groupTexts = groups
+    .map((group) => {
+      const conditions = group.conditions || [];
+      if (conditions.length === 0) return '';
+      const groupLogic = group.logicOperator || LOGIC_OPERATORS.AND;
+      const inner = getConditionText(conditions, groupLogic, t, commonT);
+      return conditions.length > 1 ? `(${inner})` : inner;
+    })
+    .filter(Boolean);
+
+  if (groupTexts.length === 0) return '';
+  if (groupTexts.length === 1) return groupTexts[0];
+
+  const ruleLogic = rule.logicOperator || LOGIC_OPERATORS.AND;
+  const logicText = ruleLogic === LOGIC_OPERATORS.AND ? ' AND ' : ' OR ';
+  return groupTexts.join(logicText);
+};
+
 export const getConditionUnit = (conditionType) => {
   if (conditionType === CONDITION_TYPES.SEEDING_TIME || conditionType === CONDITION_TYPES.AGE) {
     return 'hours';
