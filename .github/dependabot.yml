@@ -1,7 +1,7 @@
 version: 2
 updates:
-  # NPM dependencies
-  - package-ecosystem: 'npm'
+  # Frontend (Bun)
+  - package-ecosystem: 'bun'
     directory: '/'
     schedule:
       interval: 'weekly'
@@ -20,7 +20,7 @@ updates:
     labels:
       - 'dependencies'
       - 'automated'
-      - 'npm'
+      - 'bun'
     ignore:
       # Ignore major version updates for critical packages
       - dependency-name: 'next'
@@ -30,6 +30,35 @@ updates:
       - dependency-name: 'react-dom'
         update-types: ['version-update:semver-major']
     # Group minor and patch updates together
+    groups:
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  # Backend (Bun)
+  - package-ecosystem: 'bun'
+    directory: '/backend'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 5
+    reviewers:
+      - 'jittarao'
+    assignees:
+      - 'jittarao'
+    commit-message:
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: 'scope'
+    labels:
+      - 'dependencies'
+      - 'automated'
+      - 'bun'
     groups:
       minor-and-patch:
         patterns:
