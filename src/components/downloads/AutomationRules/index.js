@@ -110,8 +110,7 @@ function ExecutionResult({ executionResult, t, onClose }) {
                   .
                 </p>
                 <p>
-                  <strong>0</strong> {t('actionsPerformed') || 'actions performed'} (
-                  {t('actionAlreadyApplied') || 'action already applied or not applicable'}).
+                  <strong>0</strong> {t('actionsPerformed') || 'actions performed'}.
                 </p>
               </>
             ) : executionResult.executed ? (
@@ -774,6 +773,7 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
         onClearLogs={clearRuleLogs}
         lastEvaluatedAt={viewingRule?.last_evaluated_at}
         t={t}
+        commonT={commonT}
       />
     </div>
   );
