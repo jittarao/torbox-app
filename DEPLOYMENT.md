@@ -1,6 +1,8 @@
 # Deployment Guide
 
-This guide covers deployment instructions for both the frontend and backend components of TorBox Manager.
+This guide covers deployment for the TorBox Manager frontend and backend.
+
+**Quick links:** [Docker Compose](#docker-compose-recommended) · [Portainer](#portainer) · [Production + Caddy](#production-deployment-self-hosting-with-docker--caddy) · [Troubleshooting](#troubleshooting)
 
 ## Local Development
 
@@ -137,7 +139,6 @@ bun run dev
 | `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
 | `BACKEND_REQUIRE_API_KEY` | Require `x-api-key` on all user routes (disables legacy `authId`-only access) | unset (`false`)          | No       |
 | `BACKEND_SERVICE_SECRET` | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE) | unset                    | No       |
-| `ADMIN_API_KEY`        | Protects `/api/admin/*` (503 if unset)                                           | unset                    | No       |
 
 Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
 
@@ -183,7 +184,6 @@ The frontend container uses `BACKEND_URL=http://torbox-backend:3001` (service na
 | **TorBox API key** | Real secret; required by Next.js API routes for users. |
 | **`authId`** | `SHA-256(apiKey)` — user id for backend SQLite; added by many Next.js proxies server-side. Not a substitute for the API key when the backend is locked down. |
 | **`BACKEND_SERVICE_SECRET`** | Optional; proves the caller is *your* Next.js app on internal routes (API key registration), not end users. |
-| **`ADMIN_API_KEY`** | Optional; admin UI/API on the backend. |
 | **`ENCRYPTION_KEY`** | Required; encrypts stored TorBox API keys in the master DB. |
 
 ### Do you need `BACKEND_REQUIRE_API_KEY` or `BACKEND_SERVICE_SECRET`?
@@ -252,9 +252,15 @@ openssl rand -base64 32
 3. Create a `.env` file in the root directory with the following variables:
 
 ```bash
-# Backend environment variables (used by the torbox-backend service)
+# Backend (torbox-backend) — read by docker-compose.yml
 FRONTEND_URL=http://localhost:3000
 ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
+
+# Optional: same value on frontend + backend (see Backend authentication section)
+# BACKEND_SERVICE_SECRET=your_secure_service_secret_here_minimum_16_characters
+
+# Optional: error reporting (set SENTRY_ENABLED=false to disable)
+# SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
 
 # Optional: ffprobe for audiobook chapter extraction (frontend container)
 # FFPROBE_AUTO_DIR=/tmp/.ffprobe
@@ -265,9 +271,10 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 
 - Replace `your_secure_encryption_key_here_minimum_32_characters` with the key generated in step 2
 - The encryption key must be at least 32 characters long and should be base64-encoded
-- These environment variables are for the backend service (`torbox-backend`) - the `docker-compose.yml` file reads these from the root `.env` file
-- The frontend environment variables (`BACKEND_URL` and `BACKEND_DISABLED`) are hardcoded in `docker-compose.yml` and use the Docker service name (`http://torbox-backend:3001`) for internal communication
-- For audiobook chapter extraction, you can add `FFPROBE_AUTO_DIR` or `FFPROBE_PATH` to the frontend service in `docker-compose.yml` (see [ffprobe in Docker](#ffprobe-in-docker))
+- **`FRONTEND_URL` is required for production** — set it to the public origin users use in the browser (scheme + host, no trailing slash), e.g. `https://yourdomain.com`. For local Compose testing, `http://localhost:3000` is fine. Wrong values cause CORS errors.
+- `docker-compose.yml` reads backend variables from the root `.env` file. Frontend vars (`BACKEND_URL`, `BACKEND_DISABLED`) are set in the compose file (`http://torbox-backend:3001` on the Docker network).
+- Never commit `.env` to git
+- For audiobook chapter extraction, add `FFPROBE_AUTO_DIR` or `FFPROBE_PATH` to the frontend service in `docker-compose.yml` (see [ffprobe in Docker](#ffprobe-in-docker))
 
 4. Start both services (Docker will automatically pull the pre-built images):
 
@@ -400,6 +407,48 @@ volumes:
 ```
 
 Replace `/path/to/backend/data` with your desired directory path.
+
+### Portainer
+
+Use the repo’s [`portainer.yml`](portainer.yml) as a stack template. It is **safe to commit** — secrets are set only in Portainer (Stack → Environment variables), not in the YAML.
+
+#### Prerequisites
+
+- Docker and Portainer installed
+- External volume and network (once per host):
+
+```bash
+docker volume create torbox-backend-data
+docker network create torbox-network
+```
+
+#### Required stack environment variables
+
+| Variable | Description |
+| -------- | ----------- |
+| `ENCRYPTION_KEY` | `openssl rand -base64 32` — do not change after data exists |
+| `FRONTEND_URL` | Public browser origin for CORS, e.g. `https://yourdomain.com` (no trailing slash) |
+
+#### Optional stack environment variables
+
+| Variable | Description |
+| -------- | ----------- |
+| `SENTRY_DSN` | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set) |
+| `BACKEND_SERVICE_SECRET` | Same value on both services; optional hardening |
+| `SEARCH_PAGE_DISABLED` | `true` to hide the search page |
+
+#### Deploy
+
+1. In Portainer: **Stacks** → **Add stack** (or edit existing).
+2. Paste `portainer.yml` or point the stack at this repository file.
+3. Set the required env vars above.
+4. Deploy / **Update the stack** — `pull_policy: always` pulls fresh images from GHCR on each update.
+
+#### Portainer notes
+
+- Ports bind to **`127.0.0.1`** only — put Caddy/nginx/Traefik on the host in front of `:3000`; do not expose `:3001` publicly.
+- Mount **only** `/app/data` for persistence — never mount over `/app/src` or `/app/config`.
+- Frontend health uses **Node** + `/api/health` (see [Troubleshooting](#troubleshooting)).
 
 ## Production Deployment (Self-Hosting with Docker + Caddy)
 
@@ -634,7 +683,7 @@ This will check for updates every hour and automatically pull and restart contai
 
 If you prefer using Docker Compose for production instead of individual `docker run` commands, follow the [Full Stack Deployment](#full-stack-deployment-frontend--backend) section above, but make these production-specific modifications:
 
-1. In your `.env` file, use your production domain:
+1. In your `.env` file, use your production domain and secrets:
 
 ```bash
 FRONTEND_URL=https://yourdomain.com
