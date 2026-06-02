@@ -15,6 +15,14 @@
       "message": "Czy na pewno chcesz usunąć {count} {type}? Ta akcja nie może zostać cofnięta.",
       "title": "Potwierdź usunięcie"
     },
+    "archive": "Archiwizuj",
+    "archiveTitle": "Zarchiwizuj wybrane torrenty w TBM i usuń z TorBox",
+    "archiveConfirm": {
+      "archiving": "Archiwizowanie…",
+      "confirm": "Archiwizuj",
+      "message": "Zarchiwizować {count} torrent(ów)? Pojawią się w Zarchiwizowanych pobraniach i zostaną usunięte z aktywnej listy.",
+      "title": "Potwierdź archiwizację"
+    },
     "assignTagsTitle": "Przypisz tagi do zaznaczenia",
     "downloadLinks": "Pobierz",
     "downloadLinksMobile": "Pobierz",
@@ -601,6 +609,12 @@
       "deleteError": "Błąd usuwania: {error}",
       "deletePartialSuccess": "Usunięto {count} z {total} elementów",
       "deleteSuccess": "Pomyślnie usunięto",
+      "archiveAllFailed": "Nie udało się zarchiwizować elementów",
+      "archiveAllSuccess": "Wszystkie elementy zarchiwizowane pomyślnie",
+      "archiveError": "Błąd archiwizacji: {error}",
+      "archiveNoHash": "Nie można zarchiwizować: brak hasha torrenta",
+      "archivePartialSuccess": "Zarchiwizowano {count} z {total} elementów",
+      "archiveSuccess": "Zarchiwizowano pomyślnie",
       "downloadFailed": "Rozpoczęcie pobierania nie powiodło się",
       "downloadStarted": "Pobieranie rozpoczęte pomyślnie",
       "exportTorrentFailed": "Nie udało się wyeksportować pliku torrent",
@@ -727,6 +741,7 @@
     "title": "Historia linków"
   },
   "MoreOptionsDropdown": {
+    "archive": "Archiwizuj",
     "copyFullMagnet": "Skopiuj pełny magnet",
     "copyHash": "Skopiuj hash",
     "copyId": "Skopiuj ID",

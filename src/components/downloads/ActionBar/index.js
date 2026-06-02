@@ -61,6 +61,8 @@ export default function ActionBar() {
     isExporting,
     handleBulkDownload: onBulkDownload,
     deleteItems: onBulkDelete,
+    archiveItems: onBulkArchive,
+    isArchiving,
     handleBulkExport: onBulkExport,
     getTotalDownloadSize,
     apiKey,
@@ -75,6 +77,8 @@ export default function ActionBar() {
       includeParentDownloads,
       unfilteredItems
     );
+  const onBulkArchiveWrapper = () =>
+    onBulkArchive(useDownloadsSelectionStore.getState().selectedItems, unfilteredItems);
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
   const selectedFileCount = useDownloadsSelectionStore(selectTotalSelectedFileCount);
   const hasSelectedFiles = useDownloadsSelectionStore(selectHasSelectedFiles);
@@ -250,9 +254,11 @@ export default function ActionBar() {
                 hasSelectedFiles={hasSelectedFiles}
                 isDownloading={isDownloading}
                 isDeleting={isDeleting}
+                isArchiving={isArchiving}
                 isExporting={isExporting}
                 onBulkDownload={onBulkDownloadWrapper}
                 onBulkDelete={onBulkDeleteWrapper}
+                onBulkArchive={onBulkArchiveWrapper}
                 onBulkExport={onBulkExport}
                 itemTypeName={itemTypeName}
                 itemTypePlural={itemTypePlural}
