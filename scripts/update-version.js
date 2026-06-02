@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Bump or set the app version across package.json and lockfiles.
+ * Bump or set the app version across package.json files.
  *
  * Usage:
  *   bun scripts/update-version.js              # print current version
@@ -10,18 +10,16 @@
  *   bun scripts/update-version.js 0.1.9        # set exact version
  *   bun scripts/update-version.js set 0.1.9    # set exact version
  *
- * Updates: package.json, backend/package.json, and both package-lock.json files.
+ * Updates: package.json and backend/package.json (Bun lockfiles do not store app version).
  * NEXT_PUBLIC_TORBOX_MANAGER_VERSION is injected from root package.json at build time.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 const ROOT = join(import.meta.dir, '..');
 
 const PACKAGE_FILES = [join(ROOT, 'package.json'), join(ROOT, 'backend', 'package.json')];
-
-const LOCK_FILES = [join(ROOT, 'package-lock.json'), join(ROOT, 'backend', 'package-lock.json')];
 
 const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 
@@ -68,18 +66,6 @@ function updatePackageVersion(filePath, version) {
   writeJson(filePath, pkg);
 }
 
-function updateLockfileVersion(filePath, version) {
-  if (!existsSync(filePath)) {
-    return;
-  }
-  const lock = readJson(filePath);
-  lock.version = version;
-  if (lock.packages?.['']) {
-    lock.packages[''].version = version;
-  }
-  writeJson(filePath, lock);
-}
-
 function resolveTargetVersion(args) {
   const [first, second] = args;
 
@@ -103,9 +89,6 @@ function resolveTargetVersion(args) {
 function applyVersion(version) {
   for (const file of PACKAGE_FILES) {
     updatePackageVersion(file, version);
-  }
-  for (const file of LOCK_FILES) {
-    updateLockfileVersion(file, version);
   }
 }
 
