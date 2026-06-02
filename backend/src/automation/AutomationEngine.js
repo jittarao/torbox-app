@@ -890,7 +890,7 @@ class AutomationEngine {
           ? ruleEvaluator.loadTelemetryData(torrentIds)
           : new Map(),
         tagsByDownloadId: analysis.needsTags
-          ? ruleEvaluator.loadTagsData(torrents, { rule })
+          ? ruleEvaluator.loadTagsDataForTorrents(torrents)
           : new Map(),
         speedHistoryMap:
           analysis.needsSpeed && torrentIds.length > 0
