@@ -1,0 +1,121 @@
+# Portainer stack template for TorBox Manager (TBM)
+#
+# Do not include secrets in this file. Set secrets in Portainer → Stacks →
+# your stack → Environment variables (or an .env file referenced by the stack).
+#
+# Required Portainer env vars:
+#   ENCRYPTION_KEY   — openssl rand -base64 32  (do not rotate after data exists)
+#   ADMIN_API_KEY    — long random string (admin API/UI only)
+#   FRONTEND_URL     — public origin users use in the browser (CORS); e.g. https://tbm.example.com
+#
+# Optional Portainer env vars:
+#   SENTRY_DSN                — omit or leave empty to disable error reporting
+#   BACKEND_SERVICE_SECRET    — same value on both services; optional hardening
+#   SEARCH_PAGE_DISABLED      — "true" to hide search page
+#
+# Before first deploy:
+#   1. Create external volume:  docker volume create torbox-backend-data
+#   2. Create external network: docker network create torbox-network
+#   3. Set env vars in Portainer, then deploy / update stack (pull_policy: always fetches new images)
+#
+# Ports bind to 127.0.0.1 only — put Caddy/nginx/Traefik on the host in front of :3000.
+
+services:
+  torbox-backend:
+    image: ghcr.io/jittarao/torbox-app:backend-latest
+    pull_policy: always
+    restart: always
+
+    ports:
+      - '127.0.0.1:3001:3001'
+
+    environment:
+      # Public origin of the web UI (scheme + host, no trailing slash).
+      # Must match what users type in the browser or CORS will block API calls.
+      FRONTEND_URL: ${FRONTEND_URL}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      BACKEND_SERVICE_SECRET: ${BACKEND_SERVICE_SECRET:-}
+      NODE_ENV: production
+      PORT: '3001'
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-true}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.2}
+
+    volumes:
+      # Persist SQLite DBs and uploads only — never mount over /app/src or /app/config
+      - torbox-backend-data:/app/data
+
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - torbox-network
+
+  torbox-app:
+    image: ghcr.io/jittarao/torbox-app:latest
+    pull_policy: always
+    restart: always
+
+    ports:
+      - '127.0.0.1:3000:3000'
+
+    environment:
+      # Internal Docker DNS name — leave as-is unless you rename the backend service
+      BACKEND_URL: http://torbox-backend:3001
+      BACKEND_DISABLED: 'false'
+      BACKEND_SERVICE_SECRET: ${BACKEND_SERVICE_SECRET:-}
+      SEARCH_PAGE_DISABLED: ${SEARCH_PAGE_DISABLED:-false}
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-true}
+      NEXT_PUBLIC_SENTRY_ENABLED: ${SENTRY_ENABLED:-true}
+      NEXT_PUBLIC_SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+
+    depends_on:
+      torbox-backend:
+        condition: service_healthy
+
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - torbox-network
+
+volumes:
+  # Rename if needed; must exist before deploy: docker volume create torbox-backend-data
+  torbox-backend-data:
+    external: true
+
+networks:
+  # Rename if needed; must exist before deploy: docker network create torbox-network
+  torbox-network:
+    external: true
