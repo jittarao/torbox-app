@@ -7,4 +7,4 @@ export {
   isActionSupported,
   getRuleCompatibilityIssue,
   AUTOMATION_RULE_CAPABILITIES_REGISTRY,
-} from '../../../../config/ruleCapabilities.mjs';
+} from '../../../config/ruleCapabilities.mjs';
