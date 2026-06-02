@@ -1380,13 +1380,24 @@ describe('RuleEvaluator', () => {
       expect(status).toBe('failed');
     });
 
-    it('should return stalled status', () => {
-      // Stalled requires active=true, not finished, no download present (per torrentStatus.js)
+    it('should return failed status even when download is present', () => {
+      const torrent = {
+        download_state: 'failed - connection error',
+        active: false,
+        download_finished: true,
+        download_present: true,
+      };
+
+      const status = ruleEvaluator.getTorrentStatus(torrent);
+      expect(status).toBe('failed');
+    });
+
+    it('should return stalled status even when download is present', () => {
       const torrent = {
         download_state: 'stalled - no peers available',
         active: true,
-        download_finished: false,
-        download_present: false,
+        download_finished: true,
+        download_present: true,
       };
 
       const status = ruleEvaluator.getTorrentStatus(torrent);
