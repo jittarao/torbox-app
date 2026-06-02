@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, startTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { usePathname } from 'next/navigation';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { getJSON, setJSON, removeItem } from '@/utils/storage';
 import {
@@ -142,7 +142,6 @@ function writeSortToParams(params, sortField, sortDirection = 'asc') {
  * expandedById remains in downloadsUiStore only.
  */
 export function useDownloadsFilterParams() {
-  const router = useRouter();
   const pathname = usePathname();
   const filterResetNonce = useDownloadsUiStore((s) => s.filterResetNonce);
 
@@ -180,13 +179,9 @@ export function useDownloadsFilterParams() {
           window.history.replaceState(window.history.state, '', href);
           notifyDownloadsFilterSearchParams();
         }
-
-        startTransition(() => {
-          router.replace(href, { scroll: false });
-        });
       });
     },
-    [pathname, router]
+    [pathname]
   );
 
   const setSearch = useCallback(

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, startTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { usePathname } from 'next/navigation';
 import { useSearchStore } from '@/store/searchStore';
 import {
   getDownloadsFilterSearchParamsSnapshot,
@@ -46,7 +46,6 @@ function filtersFromSearchParams(searchParams) {
  * Search page filter state synced to URL query params (shareable links).
  */
 export function useSearchFilterParams() {
-  const router = useRouter();
   const pathname = usePathname();
   const filterResetNonce = useSearchStore((s) => s.filterResetNonce);
 
@@ -83,13 +82,9 @@ export function useSearchFilterParams() {
           window.history.replaceState(window.history.state, '', href);
           notifyDownloadsFilterSearchParams();
         }
-
-        startTransition(() => {
-          router.replace(href, { scroll: false });
-        });
       });
     },
-    [pathname, router]
+    [pathname]
   );
 
   const setFilter = useCallback(

@@ -18,6 +18,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   const isVisibleRef = useRef(typeof document !== 'undefined' && document.visibilityState === 'visible');
   const userIdleRef = useRef(false);
   const wasDisengagedRef = useRef(false);
+  const lastImmediateRefreshAtRef = useRef(0);
   const idleTimeoutIdRef = useRef(null);
   const onReEngagedRef = useRef(onReEngaged);
   const onDisengagedRef = useRef(onDisengaged);
@@ -35,6 +36,9 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   const notifyReEngaged = useCallback((immediateRefresh) => {
     awaySinceRef.current = null;
     wasDisengagedRef.current = false;
+    if (immediateRefresh) {
+      lastImmediateRefreshAtRef.current = Date.now();
+    }
     onReEngagedRef.current?.(immediateRefresh);
   }, []);
 
@@ -65,8 +69,20 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       userIdleRef.current = false;
       resetIdleTimer();
       if (wasIdle) {
-        notifyReEngaged(true);
+        const refreshedRecently =
+          Date.now() - lastImmediateRefreshAtRef.current < 2_000;
+        notifyReEngaged(!refreshedRecently);
       }
+    };
+
+    const handlePageShow = (event) => {
+      if (!event.persisted) return;
+      isVisibleRef.current = document.visibilityState === 'visible';
+      if (!isVisibleRef.current) return;
+      userIdleRef.current = false;
+      const immediateRefresh = wasDisengagedRef.current;
+      notifyReEngaged(immediateRefresh);
+      resetIdleTimer();
     };
 
     const handleVisibilityChange = () => {
@@ -104,6 +120,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
     window.addEventListener('focus', handleWindowFocus);
     USER_ACTIVITY_EVENTS.forEach((name) =>
       document.addEventListener(name, onUserActivity, { passive: true })
@@ -112,6 +129,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     return () => {
       clearIdleTimeout();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('focus', handleWindowFocus);
       USER_ACTIVITY_EVENTS.forEach((name) =>
         document.removeEventListener(name, onUserActivity)
