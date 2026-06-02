@@ -29,6 +29,14 @@ export default function RuleCard({
           <span className="text-primary-text dark:text-primary-text-dark font-medium">
             {rule.name}
           </span>
+          {(rule.assetTypes || ['torrent']).map((type) => (
+            <span
+              key={type}
+              className="text-xs px-1.5 py-0.5 rounded bg-surface-alt dark:bg-surface-alt-dark text-primary-text/70 dark:text-primary-text-dark/70 border border-border dark:border-border-dark"
+            >
+              {t(`assetTypes.${type}`)}
+            </span>
+          ))}
         </div>
         <div className="flex items-center gap-2">
           {onRun && (

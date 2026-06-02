@@ -65,6 +65,7 @@ export default function ConditionFilterInput({
   onRemove,
   t,
   apiKey,
+  assetTypes,
 }) {
   const { tags } = useTags(apiKey);
 
@@ -129,7 +130,7 @@ export default function ConditionFilterInput({
     }));
   };
 
-  const conditionTypeOptions = getConditionTypeOptions(t);
+  const conditionTypeOptions = getConditionTypeOptions(t, assetTypes);
 
   const operators = condition.type ? getOperatorsForConditionType(condition.type) : [];
   const operatorOptions = operators.map((op) => {

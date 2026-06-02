@@ -17,6 +17,7 @@ export default function ConditionFilterGroup({
   onRemoveCondition,
   t,
   apiKey,
+  assetTypes,
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const automationRulesT = useTranslations('AutomationRules');
@@ -124,6 +125,7 @@ export default function ConditionFilterGroup({
                     onRemove={(idx) => onRemoveCondition(groupIndex, idx)}
                     t={t}
                     apiKey={apiKey}
+                    assetTypes={assetTypes}
                   />
                 </div>
               ))}

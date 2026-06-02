@@ -979,7 +979,7 @@ class PollingScheduler {
 
       const fetchTimeoutMs = Math.min(this.pollKickoutMs, 90000);
       const torrents = await withTimeout(
-        poller.fetchTorrents(),
+        poller.fetchDownloadsForActiveRules(),
         fetchTimeoutMs,
         `Fetch timeout after ${fetchTimeoutMs / 1000}s`
       );

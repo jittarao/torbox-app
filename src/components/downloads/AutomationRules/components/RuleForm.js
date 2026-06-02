@@ -2,7 +2,9 @@
 
 import { LOGIC_OPERATORS, ACTION_TYPES } from '../constants';
 import ConditionFilterGroup from './ConditionFilterGroup';
+import AssetTypesSelector from './AssetTypesSelector';
 import Select from '@/components/shared/Select';
+import { getSupportedActionOptions } from '../utils';
 import TagSelector from '@/components/downloads/Tags/TagSelector';
 import { useTranslations } from 'next-intl';
 
@@ -25,6 +27,8 @@ export default function RuleForm({
   // Rules always have groups structure (migrated in backend)
   const ruleGroups = rule.groups || [];
   const groupLogicOperator = rule.logicOperator || LOGIC_OPERATORS.AND;
+  const ruleAssetTypes = rule.assetTypes?.length ? rule.assetTypes : ['torrent'];
+  const actionOptions = getSupportedActionOptions(t, ruleAssetTypes);
   const automationRulesT = useTranslations('AutomationRules');
   return (
     <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg">
@@ -42,6 +46,12 @@ export default function RuleForm({
             placeholder={t('ruleNamePlaceholder')}
           />
         </div>
+
+        <AssetTypesSelector
+          value={ruleAssetTypes}
+          onChange={(assetTypes) => onRuleChange({ ...rule, assetTypes })}
+          t={t}
+        />
 
         {/* Trigger */}
         <div>
@@ -136,6 +146,7 @@ export default function RuleForm({
                     onRemoveCondition={onRemoveCondition}
                     t={t}
                     apiKey={apiKey}
+                    assetTypes={ruleAssetTypes}
                   />
                 </div>
               ))}
@@ -181,24 +192,11 @@ export default function RuleForm({
                 });
               }}
             >
-              <option value={ACTION_TYPES.STOP_SEEDING} title={t('actions.stopSeedingDescription')}>
-                {t('actions.stopSeeding')}
-              </option>
-              <option value={ACTION_TYPES.ARCHIVE} title={t('actions.archiveDescription')}>
-                {t('actions.archive')}
-              </option>
-              <option value={ACTION_TYPES.DELETE} title={t('actions.deleteDescription')}>
-                {t('actions.delete')}
-              </option>
-              <option value={ACTION_TYPES.FORCE_START} title={t('actions.forceStartDescription')}>
-                {t('actions.forceStart')}
-              </option>
-              <option value={ACTION_TYPES.ADD_TAG} title={t('actions.addTagDescription')}>
-                {t('actions.addTag')}
-              </option>
-              <option value={ACTION_TYPES.REMOVE_TAG} title={t('actions.removeTagDescription')}>
-                {t('actions.removeTag')}
-              </option>
+              {actionOptions.map((opt) => (
+                <option key={opt.value} value={opt.value} title={opt.desc}>
+                  {opt.label}
+                </option>
+              ))}
             </Select>
           </div>
           {/* Tag Selector for add_tag and remove_tag actions */}

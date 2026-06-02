@@ -1,6 +1,15 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
 import logger from '../utils/logger.js';
 
+function resolveDownloadAssetType(download) {
+  return download?.assetType || 'torrent';
+}
+
+function isQueuedDownload(download) {
+  if (download?._isQueuedItem === true) return true;
+  return getTorrentStatusUtil(download) === 'queued';
+}
+
 // Constants
 const MIN_INTERVAL_MINUTES = 30;
 const MS_PER_MINUTE = 60 * 1000;
@@ -1414,37 +1423,36 @@ class RuleEvaluator {
       );
     }
 
+    const assetType = resolveDownloadAssetType(torrent);
+    const queued = isQueuedDownload(torrent);
+
     switch (action.type) {
-      // TorBox API Actions
       case 'stop_seeding':
+        if (assetType !== 'torrent') {
+          throw new Error(`stop_seeding is not supported for asset type ${assetType}`);
+        }
         return await this.apiClient.controlTorrent(torrent.id, 'stop_seeding');
 
       case 'force_start':
-        // RuleFilter already restricts to queued torrents; queued items use controlqueued with operation 'start'
-        return await this.apiClient.controlQueuedTorrent(torrent.id, 'start');
+        return await this.apiClient.controlQueuedDownload(
+          torrent.id,
+          'start',
+          assetType === 'torrent' ? 'torrent' : assetType
+        );
 
       case 'delete':
-        return await this.apiClient.deleteTorrent(torrent.id, {
-          isQueued: this.getTorrentStatus(torrent) === 'queued',
-        });
+        return await this.apiClient.deleteDownload(torrent);
 
-      // Pause and Resume actions have been deprecated in TorBox API
-      // case 'pause':
-      //   return await this.apiClient.controlTorrent(torrent.id, 'pause');
-
-      // case 'resume':
-      //   return await this.apiClient.controlTorrent(torrent.id, 'resume');
-
-      // TBM Actions
-      case 'archive':
+      case 'archive': {
+        if (assetType !== 'torrent') {
+          throw new Error(`archive is not supported for asset type ${assetType}`);
+        }
         const archiveResult = await this.archiveDownload(torrent);
-        // If already archived, don't delete the torrent
         if (archiveResult.message === 'Already archived') {
           return archiveResult;
         }
-        return await this.apiClient.deleteTorrent(torrent.id, {
-          isQueued: this.getTorrentStatus(torrent) === 'queued',
-        });
+        return await this.apiClient.deleteTorrent(torrent.id, { isQueued: queued });
+      }
 
       case 'add_tag':
         return await this.addTagsToDownload(action, torrent, options);
