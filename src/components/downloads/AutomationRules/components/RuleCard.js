@@ -2,6 +2,7 @@
 
 import { Clock, Delete, Edit, Play } from '@/components/icons';
 import { getRuleConditionText } from '../utils';
+import LastEvaluatedAtValue from './LastEvaluatedAtValue';
 
 export default function RuleCard({
   rule,
@@ -102,16 +103,11 @@ export default function RuleCard({
       {rule.last_evaluated_at && (
         <div className="mt-1 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
           {t('lastRanAt') || 'Last ran at'}:{' '}
-          {(() => {
-            try {
-              const dateStr = rule.last_evaluated_at;
-              if (!dateStr) return t('neverExecuted') || 'Never executed';
-              const date = new Date(dateStr.replace(' ', 'T'));
-              return isNaN(date.getTime()) ? dateStr : date.toLocaleString();
-            } catch (e) {
-              return rule.last_evaluated_at || t('neverExecuted') || 'Never executed';
-            }
-          })()}
+          <LastEvaluatedAtValue
+            at={rule.last_evaluated_at}
+            commonT={commonT}
+            fallback={t('neverExecuted') || 'Never executed'}
+          />
         </div>
       )}
     </div>

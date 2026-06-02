@@ -1,6 +1,7 @@
 'use client';
 
 import { ACTION_TYPES } from '../constants';
+import LastEvaluatedAtValue from './LastEvaluatedAtValue';
 
 /**
  * Get display name for action type
@@ -45,21 +46,9 @@ export default function RuleLogsModal({
   onClearLogs,
   lastEvaluatedAt,
   t,
+  commonT,
 }) {
   if (!ruleId) return null;
-
-  // Format last evaluated at timestamp
-  const formatLastEvaluatedAt = () => {
-    if (!lastEvaluatedAt) return t('neverExecuted') || 'Never executed';
-    try {
-      const dateStr = lastEvaluatedAt;
-      if (!dateStr) return t('neverExecuted') || 'Never executed';
-      const date = new Date(dateStr.replace(' ', 'T'));
-      return isNaN(date.getTime()) ? dateStr : date.toLocaleString();
-    } catch (e) {
-      return lastEvaluatedAt || t('neverExecuted') || 'Never executed';
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-neutral-950/50 flex items-center justify-center z-50 p-4">
@@ -70,7 +59,16 @@ export default function RuleLogsModal({
               {t('ruleLogs')} - {ruleName}
             </h3>
             <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70 mt-1">
-              <strong>{t('lastRanAt') || 'Last ran at'}:</strong> {formatLastEvaluatedAt()}
+              <strong>{t('lastRanAt') || 'Last ran at'}:</strong>{' '}
+              {lastEvaluatedAt ? (
+                <LastEvaluatedAtValue
+                  at={lastEvaluatedAt}
+                  commonT={commonT}
+                  fallback={t('neverExecuted') || 'Never executed'}
+                />
+              ) : (
+                t('neverExecuted') || 'Never executed'
+              )}
             </div>
           </div>
           <div className="flex gap-2">

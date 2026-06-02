@@ -9,6 +9,24 @@ import {
   AUTOMATION_TAG_OPERATORS,
 } from './constants';
 
+/** Parse SQLite / ISO timestamps from automation rule fields */
+export function parseAutomationTimestamp(dateStr) {
+  if (dateStr == null || dateStr === '') return null;
+  try {
+    if (typeof dateStr === 'number') {
+      const date = new Date(dateStr);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    const normalized = String(dateStr).includes('T')
+      ? String(dateStr)
+      : String(dateStr).replace(' ', 'T');
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+}
+
 // Helper to check if a condition type is time-based (relative duration)
 export const isTimeBasedCondition = (conditionType) => {
   return [

@@ -232,7 +232,6 @@
     "actionsPerformed": "actions performed",
     "actionFailed": "action failed",
     "actionsFailed": "actions failed",
-    "actionAlreadyApplied": "action already applied or not applicable",
     "ruleEvaluatedNoActions": "Rule was evaluated but no actions were performed.",
     "noLogs": "No logs available",
     "noRules": "No automation rules",
