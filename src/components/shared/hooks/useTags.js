@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTagsStore } from '@/store/tagsStore';
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 export function useTags(apiKey) {
   const { tags, loading, error, hasLoaded, loadTags, createTag, updateTag, deleteTag, setApiKey } =
@@ -20,11 +21,20 @@ export function useTags(apiKey) {
       }))
     );
 
+  const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
+
   useEffect(() => {
     if (apiKey) {
       setApiKey(apiKey);
     }
   }, [apiKey, setApiKey]);
+
+  useEffect(() => {
+    if (backendIsLoading) return;
+    if (apiKey && backendMode === 'backend' && !hasLoaded && !loading) {
+      loadTags(apiKey);
+    }
+  }, [apiKey, backendMode, backendIsLoading, hasLoaded, loading, loadTags]);
 
   const loadTagsWithKey = useCallback(
     async (options) => {
