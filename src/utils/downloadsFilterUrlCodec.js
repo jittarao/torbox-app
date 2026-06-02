@@ -1,0 +1,357 @@
+/**
+ * Downloads page URL filter codec.
+ *
+ * Params: status (slugs), tag, tags, view, filters (compact JSON), q, sort, dir.
+ * Never pre-encode with encodeURIComponent before URLSearchParams.set().
+ */
+
+import { STATUS_OPTIONS } from '@/components/constants';
+import { LOGIC_OPERATORS } from '@/components/downloads/AutomationRules/constants';
+import {
+  EMPTY_FILTERS,
+  normalizeFilters,
+  hasActiveFilters,
+  getActiveTagIds,
+  buildTagFilter,
+} from '@/components/downloads/filters/filterHelpers';
+
+const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
+
+/** @type {Map<string, string>} slug -> JSON.stringify(STATUS_OPTIONS.value) */
+const slugToStatusJson = new Map();
+
+/** @type {Map<string, string>} JSON.stringify(value) -> slug */
+const statusJsonToSlug = new Map();
+
+for (const opt of STATUS_OPTIONS) {
+  if (!opt.value || opt.value === 'all' || typeof opt.value !== 'object') continue;
+  const slug = opt.label.toLowerCase();
+  const json = JSON.stringify(opt.value);
+  slugToStatusJson.set(slug, json);
+  statusJsonToSlug.set(json, slug);
+}
+
+export const STATUS_FILTER_SLUGS = [...slugToStatusJson.keys()];
+
+export const FILTER_SHORTCUT_PARAM_KEYS = ['tag', 'tags', 'view', 'filters'];
+
+/**
+ * @param {string|null|undefined} raw
+ * @returns {'all'|string[]}
+ */
+export function parseStatusFilterParam(raw) {
+  if (!raw || raw === 'all') return 'all';
+
+  if (!raw.includes('{') && !raw.includes('[') && !raw.includes('%')) {
+    const slugs = raw
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const mapped = slugs.map((slug) => slugToStatusJson.get(slug)).filter(Boolean);
+    if (mapped.length > 0) return mapped;
+  }
+
+  const legacy = tryParseLegacyStatus(raw);
+  if (legacy !== 'all') return legacy;
+
+  return 'all';
+}
+
+/**
+ * @param {'all'|string|string[]|null|undefined} value
+ * @returns {string|null}
+ */
+export function serializeStatusFilterParam(value) {
+  if (value == null || value === 'all') return null;
+
+  const items = Array.isArray(value) ? value : [value];
+  const slugs = [];
+
+  for (const item of items) {
+    const json = typeof item === 'string' ? item : JSON.stringify(item);
+    const slug = statusJsonToSlug.get(json);
+    if (slug) slugs.push(slug);
+  }
+
+  if (slugs.length > 0) return slugs.join(',');
+  return null;
+}
+
+/**
+ * @param {string|null|undefined} raw
+ * @returns {number[]|null}
+ */
+export function parseTagIdsFromParams(searchParams) {
+  const single = searchParams.get('tag');
+  if (single != null && single !== '') {
+    const id = Number(single);
+    return Number.isFinite(id) ? [id] : null;
+  }
+  const multi = searchParams.get('tags');
+  if (!multi) return null;
+  const ids = multi
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n));
+  return ids.length > 0 ? ids : null;
+}
+
+/**
+ * @param {URLSearchParams} params
+ * @param {number[]} tagIds
+ */
+export function writeTagIdsToParams(params, tagIds) {
+  params.delete('tag');
+  params.delete('tags');
+  params.delete('view');
+  params.delete('filters');
+
+  const ids = (tagIds || []).filter((id) => Number.isFinite(id));
+  if (ids.length === 0) return;
+  if (ids.length === 1) params.set('tag', String(ids[0]));
+  else params.set('tags', ids.join(','));
+}
+
+/**
+ * @param {string|null|undefined} raw
+ * @returns {number|string|null}
+ */
+export function parseViewIdParam(raw) {
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : raw;
+}
+
+/**
+ * @param {URLSearchParams} params
+ * @param {number|string|null|undefined} viewId
+ */
+export function writeViewIdToParams(params, viewId) {
+  params.delete('tag');
+  params.delete('tags');
+  params.delete('filters');
+  if (viewId == null || viewId === '') params.delete('view');
+  else params.set('view', String(viewId));
+}
+
+/** Clear tag/view/filters shortcut params. */
+export function clearFilterShortcutParams(params) {
+  for (const key of FILTER_SHORTCUT_PARAM_KEYS) {
+    params.delete(key);
+  }
+}
+
+/**
+ * @param {object} filters
+ * @returns {string}
+ */
+export function compactFiltersToUrl(filters) {
+  const normalized = normalizeFilters(filters);
+  if (!hasActiveFilters(normalized)) return '';
+
+  /** @param {object} row */
+  const compactRow = (row) => {
+    const out = { c: row.column, o: row.operator };
+    if (row.value !== undefined && row.value !== null) out.v = row.value;
+    return out;
+  };
+
+  const groups = (normalized.groups || [])
+    .map((group) => {
+      const rows = (group.filters || []).filter((f) => f.column).map(compactRow);
+      if (rows.length === 0) return null;
+      const cg = { f: rows };
+      if (group.logicOperator && group.logicOperator !== LOGIC_OPERATORS.AND) {
+        cg.lo = group.logicOperator;
+      }
+      return cg;
+    })
+    .filter(Boolean);
+
+  const compact = { g: groups };
+  if (normalized.logicOperator && normalized.logicOperator !== LOGIC_OPERATORS.AND) {
+    compact.lo = normalized.logicOperator;
+  }
+
+  return JSON.stringify(compact);
+}
+
+/**
+ * @param {object} compact
+ * @returns {object}
+ */
+function expandCompactFilters(compact) {
+  const logicOperator = compact.lo || LOGIC_OPERATORS.AND;
+  const groups = (compact.g || []).map((group) => ({
+    logicOperator: group.lo || LOGIC_OPERATORS.AND,
+    filters: (group.f || []).map((row) => ({
+      column: row.c,
+      operator: row.o,
+      value: row.v !== undefined ? row.v : null,
+    })),
+  }));
+
+  return normalizeFilters({ logicOperator, groups });
+}
+
+/**
+ * @param {string|null|undefined} raw
+ * @returns {object}
+ */
+export function compactFiltersFromUrl(raw) {
+  if (!raw) return JSON.parse(EMPTY_FILTERS_JSON);
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.g)) {
+      return expandCompactFilters(parsed);
+    }
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.groups)) {
+      return normalizeFilters(parsed);
+    }
+  } catch {
+    // fall through to legacy attempt
+  }
+
+  return tryParseLegacyFilters(raw);
+}
+
+/**
+ * @param {string} raw
+ * @returns {object}
+ */
+export function tryParseLegacyFilters(raw) {
+  try {
+    let value = raw;
+    for (let i = 0; i < 2; i++) {
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed === 'string') {
+          value = parsed;
+          continue;
+        }
+        return normalizeFilters(parsed);
+      } catch {
+        if (value.includes('%')) {
+          value = decodeURIComponent(value);
+          continue;
+        }
+        break;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return JSON.parse(EMPTY_FILTERS_JSON);
+}
+
+/**
+ * @param {string} raw
+ * @returns {'all'|string[]}
+ */
+export function tryParseLegacyStatus(raw) {
+  try {
+    let value = raw;
+    for (let i = 0; i < 2; i++) {
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed === 'all') return 'all';
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => (typeof item === 'string' ? item : JSON.stringify(item)));
+        }
+        if (typeof parsed === 'object' && parsed !== null) {
+          return [JSON.stringify(parsed)];
+        }
+      } catch {
+        if (value.includes('%')) {
+          value = decodeURIComponent(value);
+          continue;
+        }
+        break;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  if (raw.includes('{') && statusJsonToSlug.has(raw)) {
+    return [raw];
+  }
+
+  return 'all';
+}
+
+/**
+ * @param {URLSearchParams} searchParams
+ * @param {{ getJSON?: (key: string) => unknown, removeItem?: (key: string) => void, overflowKey?: string }} [storage]
+ * @returns {object}
+ */
+export function parseAppliedFiltersFromParams(searchParams, storage = {}) {
+  const { getJSON, removeItem, overflowKey } = storage;
+
+  const viewId = parseViewIdParam(searchParams.get('view'));
+  if (viewId != null) {
+    if (removeItem && overflowKey) removeItem(overflowKey);
+    return JSON.parse(EMPTY_FILTERS_JSON);
+  }
+
+  const tagIds = parseTagIdsFromParams(searchParams);
+  if (tagIds) {
+    if (removeItem && overflowKey) removeItem(overflowKey);
+    return buildTagFilter(tagIds.length === 1 ? tagIds[0] : tagIds);
+  }
+
+  const filtersParam = searchParams.get('filters');
+  if (filtersParam) {
+    if (removeItem && overflowKey) removeItem(overflowKey);
+    return compactFiltersFromUrl(filtersParam);
+  }
+
+  if (getJSON && overflowKey) {
+    const overflow = getJSON(overflowKey);
+    if (overflow) return normalizeFilters(overflow);
+  }
+
+  return JSON.parse(EMPTY_FILTERS_JSON);
+}
+
+/**
+ * @param {URLSearchParams} params
+ * @param {object} filters
+ * @param {{ maxLength: number, overflowKey: string, setJSON: (key: string, value: unknown) => void, removeItem: (key: string) => void }} storage
+ * @returns {boolean}
+ */
+export function writeAppliedFiltersToParams(params, filters, storage) {
+  const { maxLength, overflowKey, setJSON, removeItem } = storage;
+  const normalized = normalizeFilters(filters);
+
+  params.delete('view');
+
+  if (!hasActiveFilters(normalized)) {
+    clearFilterShortcutParams(params);
+    removeItem(overflowKey);
+    return true;
+  }
+
+  const tagIds = getActiveTagIds(normalized);
+  if (tagIds) {
+    writeTagIdsToParams(params, tagIds);
+    removeItem(overflowKey);
+    return true;
+  }
+
+  params.delete('tag');
+  params.delete('tags');
+
+  const compact = compactFiltersToUrl(normalized);
+  if (compact.length > maxLength) {
+    console.warn('Downloads filters too large for URL; using session overflow storage');
+    setJSON(overflowKey, normalized);
+    params.delete('filters');
+    return false;
+  }
+
+  removeItem(overflowKey);
+  params.set('filters', compact);
+  return true;
+}

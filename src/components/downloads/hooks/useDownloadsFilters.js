@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
@@ -28,13 +28,14 @@ export function useDownloadsFilters({
     setSearch,
     statusFilter,
     setStatusFilter,
-    appliedFilters,
+    appliedFilters: urlAppliedFilters,
     setAppliedFilters,
     patchFilterCriteria,
     clearAllFilterCriteria,
     sortField,
     sortDirection,
     setSort,
+    viewId: urlViewId,
   } = filterParams;
 
   const [columnFilters, setColumnFilters] = useState(() =>
@@ -56,6 +57,13 @@ export function useDownloadsFilters({
     loading: viewsLoading,
     hasLoaded: viewsHasLoaded,
   } = useCustomViews(apiKey);
+
+  const appliedFilters = useMemo(() => {
+    if (activeView) {
+      return mergeViewAssetTypeFilter(activeView.filters, activeView.asset_type);
+    }
+    return urlAppliedFilters;
+  }, [activeView, urlAppliedFilters]);
 
   const activeTagIds = getActiveTagIds(appliedFilters);
 
@@ -84,7 +92,7 @@ export function useDownloadsFilters({
 
       const criteriaPatch = {
         statusFilter: 'all',
-        appliedFilters: normalizedFilters,
+        viewId: view.id,
         search: view.search_query || '',
       };
       if (view.sort_field) {
@@ -115,6 +123,13 @@ export function useDownloadsFilters({
     [applyView, patchFilterCriteria, handleColumnChange]
   );
 
+  useEffect(() => {
+    if (urlViewId == null || !viewsHasLoaded || !views?.length) return;
+    const view = views.find((v) => v.id === urlViewId || v.id === Number(urlViewId));
+    if (!view || activeView?.id === view.id) return;
+    applyViewFilters(view);
+  }, [urlViewId, viewsHasLoaded, views, activeView?.id, applyViewFilters]);
+
   const handleApplyView = useCallback(
     (view) => {
       if (activeView?.id === view.id) {
@@ -144,7 +159,8 @@ export function useDownloadsFilters({
       patchFilterCriteria({
         statusFilter: 'all',
         search: '',
-        appliedFilters: tagFilter,
+        viewId: null,
+        tagIds: [id],
       });
       setMobileFiltersOpen(false);
     },
@@ -257,6 +273,8 @@ export function useDownloadsFilters({
 
       const criteriaPatch = {
         statusFilter: 'all',
+        viewId: null,
+        tagIds: null,
         appliedFilters: normalized,
         search: includeSearch && search?.trim() ? search.trim() : '',
       };
