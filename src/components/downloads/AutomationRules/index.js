@@ -13,6 +13,12 @@ import {
   LOGIC_OPERATORS,
   ACTION_TYPES,
 } from './constants';
+import { getSupportedConditions } from './capabilities';
+import {
+  getDefaultOperatorForConditionType,
+  getDefaultValueForConditionType,
+} from './utils';
+import { pruneRuleForAssetTypes } from './pruneRule';
 import RuleCard from './components/RuleCard';
 import RuleForm from './components/RuleForm';
 import PresetRulesSection from './components/PresetRulesSection';
@@ -23,6 +29,7 @@ import RuleLogsModal from './components/RuleLogsModal';
 const getDefaultNewRule = () => ({
   name: '',
   enabled: true,
+  assetTypes: ['torrent'],
   trigger: {
     type: TRIGGER_TYPES.INTERVAL,
     value: 30,
@@ -245,9 +252,23 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
     setNewRule(getDefaultNewRule());
   };
 
+  const handleRuleChange = (nextRule) => {
+    setNewRule((prev) => {
+      const prevTypes = JSON.stringify(prev.assetTypes || ['torrent']);
+      const nextTypes = JSON.stringify(nextRule.assetTypes || ['torrent']);
+      if (prevTypes !== nextTypes) {
+        return pruneRuleForAssetTypes(nextRule, nextRule.assetTypes || ['torrent']);
+      }
+      return nextRule;
+    });
+  };
+
   const handleEditRule = async (rule) => {
     // Rules from backend are always in group structure
-    setNewRule(rule);
+    setNewRule({
+      ...rule,
+      assetTypes: rule.assetTypes?.length ? rule.assetTypes : ['torrent'],
+    });
     setEditingRuleId(rule.id);
     setIsAddingRule(true);
   };
@@ -619,6 +640,9 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
 
   const handleAddCondition = (groupIndex) => {
     setNewRule((prevRule) => {
+      const assetTypes = prevRule.assetTypes?.length ? prevRule.assetTypes : ['torrent'];
+      const defaultType =
+        getSupportedConditions(assetTypes)[0] || CONDITION_TYPES.STATUS;
       const newGroups = [...(prevRule.groups || [])];
       newGroups[groupIndex] = {
         ...newGroups[groupIndex],
@@ -626,9 +650,9 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
           ...(newGroups[groupIndex].conditions || []),
           {
             _key: Math.random().toString(36).substring(2, 15),
-            type: CONDITION_TYPES.RATIO,
-            operator: COMPARISON_OPERATORS.GT,
-            value: 1,
+            type: defaultType,
+            operator: getDefaultOperatorForConditionType(defaultType),
+            value: getDefaultValueForConditionType(defaultType),
           },
         ],
       };
@@ -724,7 +748,7 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
       ) : isAddingRule ? (
         <RuleForm
           rule={newRule}
-          onRuleChange={setNewRule}
+          onRuleChange={handleRuleChange}
           onSubmit={handleAddRule}
           onCancel={handleCancelForm}
           onAddGroup={handleAddGroup}

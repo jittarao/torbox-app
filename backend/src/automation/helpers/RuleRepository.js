@@ -1,5 +1,6 @@
 import logger from '../../utils/logger.js';
 import RuleMigrationHelper from './RuleMigrationHelper.js';
+import { normalizeAssetTypes } from './ruleCapabilities.js';
 
 /**
  * Repository for automation rule database operations
@@ -92,10 +93,23 @@ class RuleRepository {
       Array.isArray(parsedConditions.groups) &&
       parsedConditions.groups.length > 0;
 
+    let assetTypes = ['torrent'];
+    if (rule.asset_types != null && rule.asset_types !== '') {
+      try {
+        const parsed = JSON.parse(rule.asset_types);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          assetTypes = parsed;
+        }
+      } catch {
+        assetTypes = ['torrent'];
+      }
+    }
+
     const ruleObj = {
       id: rule.id,
       name: rule.name,
       enabled: rule.enabled === 1,
+      assetTypes,
       trigger: JSON.parse(rule.trigger_config),
       action: rule.action_config ? JSON.parse(rule.action_config) : null,
       metadata: rule.metadata ? JSON.parse(rule.metadata) : null,
@@ -344,6 +358,14 @@ class RuleRepository {
         const conditions = JSON.stringify(conditionsToStore);
         const actionConfig = JSON.stringify(migratedRule.action || migratedRule.action_config);
         const metadata = JSON.stringify(migratedRule.metadata || {});
+        let assetTypesJson;
+        try {
+          assetTypesJson = JSON.stringify(
+            normalizeAssetTypes(migratedRule.assetTypes || ['torrent'])
+          );
+        } catch {
+          assetTypesJson = JSON.stringify(['torrent']);
+        }
 
         let savedId;
         const existingId = migratedRule.id;
@@ -360,20 +382,38 @@ class RuleRepository {
               .prepare(
                 `UPDATE automation_rules
                  SET name = ?, enabled = ?, trigger_config = ?, conditions = ?,
-                     action_config = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP
+                     action_config = ?, metadata = ?, asset_types = ?,
+                     updated_at = CURRENT_TIMESTAMP
                  WHERE id = ?`
               )
-              .run(name, enabled, triggerConfig, conditions, actionConfig, metadata, existingId);
+              .run(
+                name,
+                enabled,
+                triggerConfig,
+                conditions,
+                actionConfig,
+                metadata,
+                assetTypesJson,
+                existingId
+              );
             savedId = existingId;
           } else {
             // ID provided but row was removed; insert as new
             const result = userDb
               .prepare(
                 `INSERT INTO automation_rules
-                   (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
-                 VALUES (?, ?, ?, ?, ?, ?, 0)`
+                   (name, enabled, trigger_config, conditions, action_config, metadata, asset_types, cooldown_minutes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
               )
-              .run(name, enabled, triggerConfig, conditions, actionConfig, metadata);
+              .run(
+                name,
+                enabled,
+                triggerConfig,
+                conditions,
+                actionConfig,
+                metadata,
+                assetTypesJson
+              );
             savedId = result.lastInsertRowid;
           }
         } else {
@@ -381,10 +421,18 @@ class RuleRepository {
           const result = userDb
             .prepare(
               `INSERT INTO automation_rules
-                 (name, enabled, trigger_config, conditions, action_config, metadata, cooldown_minutes)
-               VALUES (?, ?, ?, ?, ?, ?, 0)`
+                 (name, enabled, trigger_config, conditions, action_config, metadata, asset_types, cooldown_minutes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
             )
-            .run(name, enabled, triggerConfig, conditions, actionConfig, metadata);
+            .run(
+              name,
+              enabled,
+              triggerConfig,
+              conditions,
+              actionConfig,
+              metadata,
+              assetTypesJson
+            );
           savedId = result.lastInsertRowid;
         }
 

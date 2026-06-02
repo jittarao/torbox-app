@@ -1,5 +1,10 @@
 import logger from '../../utils/logger.js';
 import { MIN_INTERVAL_MINUTES } from './constants.js';
+import {
+  isActionSupported,
+  isConditionSupported,
+  normalizeAssetTypes,
+} from './ruleCapabilities.js';
 
 /**
  * Validator for automation rule configurations
@@ -17,6 +22,7 @@ class RuleValidator {
    */
   validate(rule) {
     const errors = [];
+    this._ruleAssetTypes = null;
 
     // Validate rule name
     if (!rule.name || typeof rule.name !== 'string' || rule.name.trim().length === 0) {
@@ -28,6 +34,8 @@ class RuleValidator {
       errors.push('Rule enabled flag must be a boolean');
     }
 
+    this.validateAssetTypes(rule, errors);
+
     // Validate trigger configuration
     this.validateTrigger(rule, errors);
 
@@ -37,10 +45,37 @@ class RuleValidator {
     // Validate conditions/groups structure
     this.validateConditions(rule, errors);
 
+    this._ruleAssetTypes = null;
+
     return {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * @param {Object} rule
+   * @param {Array} errors
+   * @returns {string[]|null}
+   */
+  validateAssetTypes(rule, errors) {
+    const raw = rule.assetTypes;
+    if (raw === undefined || raw === null) {
+      errors.push('Rule must have assetTypes (non-empty array)');
+      return null;
+    }
+    if (!Array.isArray(raw) || raw.length === 0) {
+      errors.push('assetTypes must be a non-empty array');
+      return null;
+    }
+    try {
+      const normalized = normalizeAssetTypes(raw);
+      this._ruleAssetTypes = normalized;
+      return normalized;
+    } catch (err) {
+      errors.push(err.message || 'Invalid assetTypes');
+      return null;
+    }
   }
 
   /**
@@ -96,6 +131,13 @@ class RuleValidator {
         if (!validActionTypes.includes(action.type)) {
           errors.push(
             `Invalid action type: ${action.type}. Valid types: ${validActionTypes.join(', ')}`
+          );
+        } else if (
+          this._ruleAssetTypes &&
+          !isActionSupported(action.type, this._ruleAssetTypes)
+        ) {
+          errors.push(
+            `Action ${action.type} is not supported for asset types [${this._ruleAssetTypes.join(', ')}]`
           );
         }
 
@@ -247,6 +289,13 @@ class RuleValidator {
       if (!validConditionTypes.includes(condition.type)) {
         errors.push(
           `Group ${groupIndex}, condition ${condIndex} has invalid type: ${condition.type}`
+        );
+      } else if (
+        this._ruleAssetTypes &&
+        !isConditionSupported(condition.type, this._ruleAssetTypes)
+      ) {
+        errors.push(
+          `Condition ${condition.type} is not supported for asset types [${this._ruleAssetTypes.join(', ')}]`
         );
       }
     }

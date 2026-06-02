@@ -112,6 +112,13 @@
     "addCondition": "Add condition",
     "addConditionToGroup": "Add condition to group",
     "addRule": "Add Rule",
+    "assetTypes": {
+      "hint": "Conditions and actions are limited to what every selected type supports.",
+      "label": "Type",
+      "torrent": "Torrents",
+      "usenet": "Usenet",
+      "webdl": "Web downloads"
+    },
     "booleanOperators": {
       "isFalse": "Is false",
       "isTrue": "Is true"

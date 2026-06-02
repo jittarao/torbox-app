@@ -22,6 +22,8 @@ import {
   DEFAULT_RETRY_INITIAL_DELAY_MS,
   MANUAL_EXECUTION_RATE_LIMIT_MS,
 } from './helpers/constants.js';
+import { getRuleCompatibilityIssue } from './helpers/ruleCapabilities.js';
+import { fetchDownloadsForAssetTypes } from './helpers/downloadFetch.js';
 
 /**
  * Per-user Automation Engine
@@ -539,7 +541,10 @@ class AutomationEngine {
     const evaluatedRuleIdsNoAction = [];
 
     const ruleEvaluator = await this.getRuleEvaluator();
-    const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
+    const torrentIds = torrents
+      .filter((t) => (t.assetType || 'torrent') === 'torrent')
+      .map((t) => t.id)
+      .filter((id) => id != null);
 
     // Union analyze all rules: load each dataset once per cycle instead of per rule
     let needsTelemetry = false;
@@ -547,12 +552,15 @@ class AutomationEngine {
     let needsSpeed = false;
     let maxSpeedHours = 0;
     for (const rule of enabledRules) {
+      const ruleTypes = rule.assetTypes || ['torrent'];
       const analysis = ruleEvaluator.analyzeRule(rule);
-      if (analysis.needsTelemetry) needsTelemetry = true;
       if (analysis.needsTags) needsTags = true;
-      if (analysis.needsSpeed) {
-        needsSpeed = true;
-        maxSpeedHours = Math.max(maxSpeedHours, analysis.maxSpeedHours);
+      if (ruleTypes.includes('torrent')) {
+        if (analysis.needsTelemetry) needsTelemetry = true;
+        if (analysis.needsSpeed) {
+          needsSpeed = true;
+          maxSpeedHours = Math.max(maxSpeedHours, analysis.maxSpeedHours);
+        }
       }
     }
 
@@ -574,10 +582,18 @@ class AutomationEngine {
         const rule = queue.shift();
         if (!rule) continue;
 
-        const torrentList =
-          changes && ruleEvaluator.ruleCanUseChangedOnlyScope(rule)
-            ? this._buildChangedOnlySubset(torrents, changes)
-            : torrents;
+        const ruleTypes = rule.assetTypes || ['torrent'];
+        // Shadow diff is torrent-only; narrowed scope must not hide usenet/webdl for multi-asset rules.
+        const isTorrentOnlyRule =
+          ruleTypes.length === 1 && ruleTypes[0] === 'torrent';
+        const usesTorrentDiff =
+          isTorrentOnlyRule &&
+          changes &&
+          ruleEvaluator.ruleCanUseChangedOnlyScope(rule);
+        const torrentOnly = torrents.filter((t) => (t.assetType || 'torrent') === 'torrent');
+        const torrentList = usesTorrentDiff
+          ? this._buildChangedOnlySubset(torrentOnly, changes)
+          : torrents;
 
         try {
           const result = await this.evaluateSingleRule(
@@ -659,12 +675,30 @@ class AutomationEngine {
       return { executed: false, skipped: true, ruleId: null };
     }
 
+    const compatibilityIssue = getRuleCompatibilityIssue(rule);
+    if (compatibilityIssue) {
+      const label = compatibilityIssue.kind === 'action' ? 'Action' : 'Condition';
+      logger.info(`Skipping automation rule ${rule.id}`, {
+        authId: this.authId,
+        ruleId: rule.id,
+        ruleName: rule.name,
+        assetTypes: rule.assetTypes,
+        reason: `${label} ${compatibilityIssue.name} not supported for asset types [${compatibilityIssue.assetTypes.join(', ')}]`,
+      });
+      return { executed: false, skipped: true, ruleId: rule.id };
+    }
+
+    const ruleAssetTypes = rule.assetTypes || ['torrent'];
+    const scopedDownloads = torrents.filter((d) =>
+      ruleAssetTypes.includes(d.assetType || 'torrent')
+    );
+
     const ruleEvaluator = ruleEvaluatorInstance ?? (await this.getRuleEvaluator());
 
     // Evaluate rule (last_evaluated_at is batch-updated at end of evaluateRulesBatch)
     const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
       rule,
-      torrents,
+      scopedDownloads,
       sharedMaps
     );
 
@@ -817,21 +851,29 @@ class AutomationEngine {
       // We update it before expensive operations so subsequent requests are rate limited
       await this.ruleRepository.updateLastEvaluatedAt(rule.id);
 
-      // Fetch current torrents (only if rate limit check passed)
-      const torrents = await this.apiClient.getTorrents(true);
-      logger.debug('Torrents fetched for manual execution', {
+      const ruleAssetTypes = rule.assetTypes || ['torrent'];
+      const downloads = await fetchDownloadsForAssetTypes(
+        this.apiClient,
+        ruleAssetTypes,
+        true
+      );
+      logger.debug('Downloads fetched for manual execution', {
         authId: this.authId,
         ruleId,
-        torrentCount: torrents.length,
+        downloadCount: downloads.length,
+        assetTypes: ruleAssetTypes,
       });
 
-      // Process state changes and update shadow/telemetry before evaluating rule (with retry for transient SQLite errors)
+      const torrents = downloads;
+
+      // Shadow/telemetry diff only applies to torrent items
+      const torrentOnlyForDiff = downloads.filter((d) => (d.assetType || 'torrent') === 'torrent');
       const changes = await DatabaseRetryHelper.retryWithBackoff(
         async () => {
           const userDb = await this.getUserDb();
           const stateDiffEngine = new StateDiffEngine(userDb);
           const derivedFieldsEngine = new DerivedFieldsEngine(userDb);
-          const snapshotChanges = await stateDiffEngine.processSnapshot(torrents);
+          const snapshotChanges = await stateDiffEngine.processSnapshot(torrentOnlyForDiff);
           await derivedFieldsEngine.updateDerivedFields(snapshotChanges);
           return snapshotChanges;
         },
@@ -882,18 +924,45 @@ class AutomationEngine {
         return result;
       }
 
+      const compatibilityIssue = getRuleCompatibilityIssue(rule);
+      if (compatibilityIssue) {
+        const label = compatibilityIssue.kind === 'action' ? 'Action' : 'Condition';
+        return {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          totalTorrents: torrents.length,
+          matchedTorrents: 0,
+          processedTorrents: 0,
+          successCount: 0,
+          errorCount: 0,
+          executed: false,
+          skipped: true,
+          reason: `${label} ${compatibilityIssue.name} not supported for asset types [${compatibilityIssue.assetTypes.join(', ')}]`,
+          executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
+        };
+      }
+
+      const scopedDownloads = torrents.filter((d) =>
+        ruleAssetTypes.includes(d.assetType || 'torrent')
+      );
+
       const ruleEvaluator = await this.getRuleEvaluator();
-      const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
+      const torrentIds = scopedDownloads
+        .filter((t) => (t.assetType || 'torrent') === 'torrent')
+        .map((t) => t.id)
+        .filter((id) => id != null);
       const analysis = ruleEvaluator.analyzeRule(rule);
+      const needsTorrentData = ruleAssetTypes.includes('torrent');
       const sharedMaps = {
-        telemetryMap: analysis.needsTelemetry
-          ? ruleEvaluator.loadTelemetryData(torrentIds)
-          : new Map(),
+        telemetryMap:
+          needsTorrentData && analysis.needsTelemetry
+            ? ruleEvaluator.loadTelemetryData(torrentIds)
+            : new Map(),
         tagsByDownloadId: analysis.needsTags
-          ? ruleEvaluator.loadTagsDataForTorrents(torrents)
+          ? ruleEvaluator.loadTagsDataForTorrents(scopedDownloads)
           : new Map(),
         speedHistoryMap:
-          analysis.needsSpeed && torrentIds.length > 0
+          needsTorrentData && analysis.needsSpeed && torrentIds.length > 0
             ? ruleEvaluator.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
             : new Map(),
       };
@@ -901,7 +970,7 @@ class AutomationEngine {
       // Evaluate rule (bypass interval check for manual execution)
       const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
         rule,
-        torrents,
+        scopedDownloads,
         sharedMaps
       );
 
