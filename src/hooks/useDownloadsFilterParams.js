@@ -5,99 +5,61 @@ import { usePathname } from 'next/navigation';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { getJSON, setJSON, removeItem } from '@/utils/storage';
 import {
-  EMPTY_FILTERS,
-  normalizeFilters,
-} from '@/components/downloads/filters/filterHelpers';
+  parseStatusFilterParam,
+  serializeStatusFilterParam,
+  parseViewIdParam,
+  writeViewIdToParams,
+  writeTagIdsToParams,
+  parseAppliedFiltersFromParams,
+  writeAppliedFiltersToParams,
+} from '@/utils/downloadsFilterUrlCodec';
 import {
   getDownloadsFilterSearchParamsSnapshot,
   notifyDownloadsFilterSearchParams,
   subscribeDownloadsFilterSearchParams,
 } from '@/hooks/downloadsFilterParamsUrl';
 
+export {
+  parseStatusFilterParam,
+  serializeStatusFilterParam,
+} from '@/utils/downloadsFilterUrlCodec';
+
 const MAX_FILTERS_PARAM_LENGTH = 1800;
 const FILTERS_OVERFLOW_KEY = 'torbox-downloads-filters-overflow';
 
-export const DOWNLOADS_FILTER_PARAM_KEYS = ['q', 'status', 'sort', 'dir', 'filters'];
+export const DOWNLOADS_FILTER_PARAM_KEYS = [
+  'q',
+  'status',
+  'sort',
+  'dir',
+  'filters',
+  'tag',
+  'tags',
+  'view',
+];
 
 const DEFAULT_SORT = { sortField: 'created_at', sortDirection: 'desc' };
 
-function parseAppliedFilters(raw) {
-  if (!raw) return JSON.parse(JSON.stringify(EMPTY_FILTERS));
-  try {
-    return normalizeFilters(decodeURIComponent(raw));
-  } catch {
-    return JSON.parse(JSON.stringify(EMPTY_FILTERS));
-  }
-}
+const filterStorage = {
+  maxLength: MAX_FILTERS_PARAM_LENGTH,
+  overflowKey: FILTERS_OVERFLOW_KEY,
+  setJSON,
+  removeItem,
+  getJSON,
+};
 
 function filtersFromSearchParams(searchParams) {
   const sortField = searchParams.get('sort') || DEFAULT_SORT.sortField;
   const sortDirection = searchParams.get('dir') || DEFAULT_SORT.sortDirection;
-  const filtersParam = searchParams.get('filters');
-  let appliedFilters;
-  if (filtersParam) {
-    removeItem(FILTERS_OVERFLOW_KEY);
-    appliedFilters = parseAppliedFilters(filtersParam);
-  } else {
-    const overflow = getJSON(FILTERS_OVERFLOW_KEY);
-    appliedFilters = overflow
-      ? normalizeFilters(overflow)
-      : JSON.parse(JSON.stringify(EMPTY_FILTERS));
-  }
+
   return {
     search: searchParams.get('q') ?? '',
     statusFilter: parseStatusFilterParam(searchParams.get('status')),
     sortField,
     sortDirection,
-    appliedFilters,
+    viewId: parseViewIdParam(searchParams.get('view')),
+    appliedFilters: parseAppliedFiltersFromParams(searchParams, filterStorage),
   };
-}
-
-/**
- * @param {string|null} raw
- * @returns {'all'|string|string[]}
- */
-export function parseStatusFilterParam(raw) {
-  if (!raw) return 'all';
-  try {
-    const parsed = JSON.parse(decodeURIComponent(raw));
-    if (parsed === 'all') return 'all';
-    if (Array.isArray(parsed)) {
-      return parsed.map((item) => (typeof item === 'string' ? item : JSON.stringify(item)));
-    }
-  } catch {
-    // Legacy: single stringified filter object in the URL (not JSON-array wrapped).
-  }
-  return raw;
-}
-
-/**
- * @param {'all'|string|string[]|null|undefined} value
- * @returns {string|null} URL param value, or null to clear
- */
-export function serializeStatusFilterParam(value) {
-  if (value == null || value === 'all') return null;
-  if (Array.isArray(value)) {
-    return encodeURIComponent(JSON.stringify(value));
-  }
-  return typeof value === 'string' ? value : encodeURIComponent(JSON.stringify(value));
-}
-
-/** @param {URLSearchParams} params */
-function writeAppliedFiltersToParams(params, filters) {
-  const normalized = normalizeFilters(filters);
-  const encoded = encodeURIComponent(JSON.stringify(normalized));
-  if (encoded.length > MAX_FILTERS_PARAM_LENGTH) {
-    console.warn('Downloads filters too large for URL; using session overflow storage');
-    setJSON(FILTERS_OVERFLOW_KEY, normalized);
-    params.delete('filters');
-    return false;
-  }
-  removeItem(FILTERS_OVERFLOW_KEY);
-  const isEmpty = JSON.stringify(normalized) === JSON.stringify(EMPTY_FILTERS);
-  if (isEmpty) params.delete('filters');
-  else params.set('filters', encoded);
-  return true;
 }
 
 /**
@@ -118,8 +80,8 @@ function writeSearchToParams(params, value) {
 
 /** @param {URLSearchParams} params */
 function writeStatusFilterToParams(params, value) {
-  const encoded = serializeStatusFilterParam(value);
-  if (encoded) params.set('status', encoded);
+  const serialized = serializeStatusFilterParam(value);
+  if (serialized) params.set('status', serialized);
   else params.delete('status');
 }
 
@@ -214,9 +176,9 @@ export function useDownloadsFilterParams() {
   const setAppliedFilters = useCallback(
     (filters) => {
       const preview = new URLSearchParams(getDownloadsFilterSearchParamsSnapshot().toString());
-      const ok = writeAppliedFiltersToParams(preview, filters);
+      const ok = writeAppliedFiltersToParams(preview, filters, filterStorage);
       replaceParams((params) => {
-        writeAppliedFiltersToParams(params, filters);
+        writeAppliedFiltersToParams(params, filters, filterStorage);
       });
       return ok;
     },
@@ -225,7 +187,15 @@ export function useDownloadsFilterParams() {
 
   /**
    * Apply several filter URL fields in one navigation (avoids stale searchParams races).
-   * @param {{ search?: string, statusFilter?: string, sortField?: string, sortDirection?: string, appliedFilters?: object }} patch
+   * @param {{
+   *   search?: string,
+   *   statusFilter?: string,
+   *   sortField?: string,
+   *   sortDirection?: string,
+   *   appliedFilters?: object,
+   *   viewId?: number|string|null,
+   *   tagIds?: number[]|null,
+   * }} patch
    */
   const patchFilterCriteria = useCallback(
     (patch) => {
@@ -244,8 +214,25 @@ export function useDownloadsFilterParams() {
             patch.sortDirection ?? DEFAULT_SORT.sortDirection
           );
         }
+        if (patch.viewId !== undefined) {
+          if (patch.viewId != null) {
+            writeViewIdToParams(params, patch.viewId);
+          } else {
+            params.delete('view');
+          }
+        }
+        if (patch.tagIds !== undefined) {
+          if (patch.tagIds != null && patch.tagIds.length > 0) {
+            writeTagIdsToParams(params, patch.tagIds);
+          } else {
+            params.delete('tag');
+            params.delete('tags');
+          }
+        }
         if (patch.appliedFilters !== undefined) {
-          filtersWritten = writeAppliedFiltersToParams(params, patch.appliedFilters);
+          if (patch.viewId === undefined && patch.tagIds === undefined) {
+            filtersWritten = writeAppliedFiltersToParams(params, patch.appliedFilters, filterStorage);
+          }
         }
       });
       return filtersWritten;
