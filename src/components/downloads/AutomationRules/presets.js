@@ -3,6 +3,7 @@ import { CONDITION_TYPES, MULTI_SELECT_OPERATORS, LOGIC_OPERATORS } from './cons
 export const createPresetRules = (t) => [
   {
     name: t('presets.deleteInactive'),
+    assetTypes: ['torrent'],
     trigger: { type: 'interval', value: 30 },
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
@@ -21,6 +22,7 @@ export const createPresetRules = (t) => [
   },
   {
     name: t('presets.deleteStalled'),
+    assetTypes: ['torrent'],
     trigger: { type: 'interval', value: 30 },
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
@@ -33,6 +35,7 @@ export const createPresetRules = (t) => [
   },
   {
     name: t('presets.deleteQueued'),
+    assetTypes: ['torrent'],
     trigger: { type: 'interval', value: 30 },
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
@@ -52,6 +55,7 @@ export const createPresetRules = (t) => [
   },
   {
     name: t('presets.stopSeedingLowRatio'),
+    assetTypes: ['torrent'],
     trigger: { type: 'interval', value: 30 },
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
@@ -67,6 +71,7 @@ export const createPresetRules = (t) => [
   },
   {
     name: t('presets.deleteIncomplete'),
+    assetTypes: ['torrent'],
     trigger: { type: 'interval', value: 60 },
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [

@@ -41,7 +41,11 @@ describe('RuleEvaluator', () => {
     mockApiClient = {
       controlTorrent: mock(() => Promise.resolve({ success: true })),
       controlQueuedTorrent: mock(() => Promise.resolve({ success: true })),
+      controlQueuedDownload: mock(() => Promise.resolve({ success: true })),
       deleteTorrent: mock(() => Promise.resolve({ success: true })),
+      deleteDownload: mock((item) =>
+        mockApiClient.deleteTorrent(item.id, { isQueued: item._isQueuedItem === true })
+      ),
     };
 
     ruleEvaluator = new RuleEvaluator(mockUserDb, mockApiClient);
@@ -1609,28 +1613,22 @@ describe('RuleEvaluator', () => {
       expect(mockApiClient.controlTorrent).toHaveBeenCalledWith('torrent-1', 'stop_seeding');
     });
 
-    it('should execute force_start action when torrent is queued', async () => {
+    it('should execute force_start for queued torrent via controlQueuedDownload', async () => {
       const action = { type: 'force_start' };
-      const torrent = { id: 'torrent-1' }; // no active/download_state → queued
+      const torrent = { id: 'torrent-1', assetType: 'torrent', _isQueuedItem: true };
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.controlQueuedTorrent).toHaveBeenCalledWith('torrent-1', 'start');
+      expect(mockApiClient.controlQueuedDownload).toHaveBeenCalledWith('torrent-1', 'start', 'torrent');
     });
 
-    it('calls controlQueuedTorrent for force_start (RuleFilter restricts to queued; no skip in executor)', async () => {
+    it('should execute force_start for queued usenet via controlQueuedDownload', async () => {
       const action = { type: 'force_start' };
-      const torrent = {
-        id: 'torrent-1',
-        name: 'test',
-        active: false,
-        download_present: false,
-        download_finished: true,
-      };
+      const torrent = { id: 'usenet-1', assetType: 'usenet', _isQueuedItem: true };
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.controlQueuedTorrent).toHaveBeenCalledWith('torrent-1', 'start');
+      expect(mockApiClient.controlQueuedDownload).toHaveBeenCalledWith('usenet-1', 'start', 'usenet');
     });
 
     it('should execute archive action', async () => {
@@ -1700,9 +1698,7 @@ describe('RuleEvaluator', () => {
       await ruleEvaluator.executeAction(action, torrent);
 
       // No download_state => queued
-      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1', {
-        isQueued: true,
-      });
+      expect(mockApiClient.deleteDownload).toHaveBeenCalledWith(torrent);
     });
 
     it('should execute delete action with active torrent (isQueued: false)', async () => {
@@ -1711,9 +1707,7 @@ describe('RuleEvaluator', () => {
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1', {
-        isQueued: false,
-      });
+      expect(mockApiClient.deleteDownload).toHaveBeenCalledWith(torrent);
     });
 
     it('should throw error when action is missing', async () => {

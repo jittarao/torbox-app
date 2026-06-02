@@ -1,5 +1,6 @@
 import {
   CONDITION_TYPES,
+  ACTION_TYPES,
   LOGIC_OPERATORS,
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
@@ -8,6 +9,7 @@ import {
   TAG_OPERATORS,
   AUTOMATION_TAG_OPERATORS,
 } from './constants';
+import { getSupportedActions, getSupportedConditions } from './capabilities';
 
 /** Parse SQLite / ISO timestamps from automation rule fields */
 export function parseAutomationTimestamp(dateStr) {
@@ -428,9 +430,17 @@ export const getDefaultValueForConditionType = (conditionType) => {
 };
 
 // Get condition type options for dropdown (similar to getFilterableColumns)
-// Accepts translation function `t` as parameter
-export const getConditionTypeOptions = (t) => {
-  return [
+// Accepts translation function `t` and optional assetTypes for capability filtering
+export const getConditionTypeOptions = (t, assetTypes = null) => {
+  const allowedSet =
+    assetTypes != null ? new Set(getSupportedConditions(assetTypes)) : null;
+
+  const filterOptions = (options) => {
+    if (!allowedSet) return options;
+    return options.filter((opt) => allowedSet.has(opt.value));
+  };
+
+  const groups = [
     {
       label: t('conditionGroups.lifecycle'),
       options: [
@@ -607,10 +617,32 @@ export const getConditionTypeOptions = (t) => {
       ],
     },
   ];
+
+  return groups
+    .map((group) => ({
+      ...group,
+      options: filterOptions(group.options),
+    }))
+    .filter((group) => group.options.length > 0);
 };
 
 // Flatten condition type options for simple dropdown
-const getFlatConditionTypeOptions = (t) => {
-  const grouped = getConditionTypeOptions(t);
+const getFlatConditionTypeOptions = (t, assetTypes = null) => {
+  const grouped = getConditionTypeOptions(t, assetTypes);
   return grouped.flatMap((group) => group.options);
 };
+
+export { getFlatConditionTypeOptions };
+
+export function getSupportedActionOptions(t, assetTypes) {
+  const supported = new Set(getSupportedActions(assetTypes || ['torrent']));
+  const all = [
+    { value: ACTION_TYPES.STOP_SEEDING, label: t('actions.stopSeeding'), desc: t('actions.stopSeedingDescription') },
+    { value: ACTION_TYPES.ARCHIVE, label: t('actions.archive'), desc: t('actions.archiveDescription') },
+    { value: ACTION_TYPES.DELETE, label: t('actions.delete'), desc: t('actions.deleteDescription') },
+    { value: ACTION_TYPES.FORCE_START, label: t('actions.forceStart'), desc: t('actions.forceStartDescription') },
+    { value: ACTION_TYPES.ADD_TAG, label: t('actions.addTag'), desc: t('actions.addTagDescription') },
+    { value: ACTION_TYPES.REMOVE_TAG, label: t('actions.removeTag'), desc: t('actions.removeTagDescription') },
+  ];
+  return all.filter((opt) => supported.has(opt.value));
+}

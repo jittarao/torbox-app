@@ -2,6 +2,9 @@ export const TRIGGER_TYPES = {
   INTERVAL: 'interval',
 };
 
+/** Asset types automation rules can target (singular torrent per API). */
+export const RULE_ASSET_TYPES = ['torrent', 'usenet', 'webdl'];
+
 export const CONDITION_TYPES = {
   // Lifecycle
   STATUS: 'STATUS',

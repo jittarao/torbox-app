@@ -361,10 +361,13 @@ class ApiClient {
         const torrents = (torrentsResponse.data.data || []).map((t) => ({
           ...t,
           active: normalizeActive(t.active),
+          assetType: 'torrent',
         }));
         const queued = (queuedResponse.data.data || []).map((t) => ({
           ...t,
           active: normalizeActive(t.active),
+          assetType: 'torrent',
+          _isQueuedItem: true,
         }));
         return [...torrents, ...queued];
       },
@@ -472,37 +475,159 @@ class ApiClient {
   // ============================================================================
 
   async getUsenetDownloads(bypassCache = false) {
+    const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
     return this.handleApiCall(
       async () => {
-        const response = await this.client.get('/api/usenet/mylist', {
-          params: { bypass_cache: bypassCache },
-        });
-        return response.data.data || [];
+        const [listResponse, queuedResponse] = await Promise.all([
+          this.client.get('/api/usenet/mylist', {
+            params: { bypass_cache: bypassCache },
+            timeout: fetchTimeout,
+          }),
+          this.client.get('/api/queued/getqueued', {
+            params: { type: 'usenet', bypass_cache: bypassCache },
+            timeout: fetchTimeout,
+          }),
+        ]);
+        const active = (listResponse.data.data || []).map((t) => ({
+          ...t,
+          active: normalizeActive(t.active),
+        }));
+        const queued = (queuedResponse.data.data || []).map((t) => ({
+          ...t,
+          active: normalizeActive(t.active),
+          _isQueuedItem: true,
+        }));
+        return [...active, ...queued];
       },
       {
         endpoint: '/api/usenet/mylist',
         operation: 'fetching usenet downloads',
-        connectionErrorFallback: [],
+        semaphore: 'fetch',
         context: { bypassCache },
       }
     );
   }
 
   async getWebDownloads(bypassCache = false) {
+    const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
     return this.handleApiCall(
       async () => {
-        const response = await this.client.get('/api/webdl/mylist', {
-          params: { bypass_cache: bypassCache },
-        });
-        return response.data.data || [];
+        const [listResponse, queuedResponse] = await Promise.all([
+          this.client.get('/api/webdl/mylist', {
+            params: { bypass_cache: bypassCache },
+            timeout: fetchTimeout,
+          }),
+          this.client.get('/api/queued/getqueued', {
+            params: { type: 'webdl', bypass_cache: bypassCache },
+            timeout: fetchTimeout,
+          }),
+        ]);
+        const active = (listResponse.data.data || []).map((t) => ({
+          ...t,
+          active: normalizeActive(t.active),
+        }));
+        const queued = (queuedResponse.data.data || []).map((t) => ({
+          ...t,
+          active: normalizeActive(t.active),
+          _isQueuedItem: true,
+        }));
+        return [...active, ...queued];
       },
       {
         endpoint: '/api/webdl/mylist',
         operation: 'fetching web downloads',
-        connectionErrorFallback: [],
+        semaphore: 'fetch',
         context: { bypassCache },
       }
     );
+  }
+
+  async controlQueuedDownload(queuedId, operation, type = 'torrent') {
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.post(
+          '/api/queued/controlqueued',
+          {
+            queued_id: queuedId,
+            operation,
+            type,
+          },
+          { timeout: DEFAULT_ACTION_TIMEOUT }
+        );
+        return response.data;
+      },
+      {
+        endpoint: '/api/queued/controlqueued',
+        operation: 'controlling queued download',
+        connectionErrorFallback: (error) =>
+          this.buildConnectionErrorResponse(error, { queuedId, operation, type }),
+        context: { queuedId, operation, type },
+      }
+    );
+  }
+
+  async controlUsenetDownload(usenetId, operation) {
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.post(
+          '/api/usenet/controlusenetdownload',
+          { usenet_id: usenetId, operation },
+          { timeout: DEFAULT_ACTION_TIMEOUT }
+        );
+        return response.data;
+      },
+      {
+        endpoint: '/api/usenet/controlusenetdownload',
+        operation: 'controlling usenet download',
+        connectionErrorFallback: (error) =>
+          this.buildConnectionErrorResponse(error, { usenetId, operation }),
+        context: { usenetId, operation },
+      }
+    );
+  }
+
+  async controlWebDownload(webdlId, operation) {
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.post(
+          '/api/webdl/controlwebdownload',
+          { webdl_id: webdlId, operation },
+          { timeout: DEFAULT_ACTION_TIMEOUT }
+        );
+        return response.data;
+      },
+      {
+        endpoint: '/api/webdl/controlwebdownload',
+        operation: 'controlling web download',
+        connectionErrorFallback: (error) =>
+          this.buildConnectionErrorResponse(error, { webdlId, operation }),
+        context: { webdlId, operation },
+      }
+    );
+  }
+
+  /**
+   * @param {Object} download - Item with id, assetType, optional _isQueuedItem
+   * @returns {Promise<*>}
+   */
+  async deleteDownload(download) {
+    const assetType = download.assetType || 'torrent';
+    const id = download.id;
+    const isQueued = download._isQueuedItem === true;
+
+    if (assetType === 'usenet') {
+      if (isQueued) {
+        return this.controlQueuedDownload(id, 'delete', 'usenet');
+      }
+      return this.controlUsenetDownload(id, 'delete');
+    }
+    if (assetType === 'webdl') {
+      if (isQueued) {
+        return this.controlQueuedDownload(id, 'delete', 'webdl');
+      }
+      return this.controlWebDownload(id, 'delete');
+    }
+    return this.deleteTorrent(id, { isQueued });
   }
 
   // ============================================================================

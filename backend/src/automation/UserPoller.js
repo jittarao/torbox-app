@@ -1,6 +1,10 @@
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
+import {
+  fetchDownloadsForAssetTypes,
+  getUnionAssetTypesFromRules,
+} from './helpers/downloadFetch.js';
 import cache from '../utils/cache.js';
 import PollingIntervalCalculator from './helpers/PollingIntervalCalculator.js';
 import DatabaseConnectionManager from './helpers/DatabaseConnectionManager.js';
@@ -322,12 +326,32 @@ class UserPoller {
    * Fetch torrents from the API
    * @returns {Promise<Array>} - Array of torrent objects
    */
+  /**
+   * Fetch downloads for all asset types required by enabled rules.
+   * @returns {Promise<Array>}
+   */
+  async fetchDownloadsForActiveRules() {
+    let assetTypes = ['torrent'];
+    if (this.automationEngine) {
+      try {
+        const rules = await this.automationEngine.getAutomationRules({ enabled: true });
+        assetTypes = getUnionAssetTypesFromRules(rules);
+      } catch (error) {
+        logger.warn('Failed to load rules for asset type union; defaulting to torrent', {
+          authId: this.authId,
+          errorMessage: error.message,
+        });
+      }
+    }
+    return fetchDownloadsForAssetTypes(this.apiClient, assetTypes, true);
+  }
+
   async fetchTorrents() {
     const apiFetchStart = Date.now();
     logger.debug('Fetching torrents from API', { authId: this.authId });
 
     try {
-      const torrents = await this.apiClient.getTorrents(true); // bypass cache
+      const torrents = await this.fetchDownloadsForActiveRules();
       const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
       logger.debug('Torrents fetched from API', {
         authId: this.authId,
@@ -605,7 +629,8 @@ class UserPoller {
     }
 
     if (checkCancelled) checkCancelled();
-    const changes = await this.processStateChanges(torrents);
+    const torrentOnlyForDiff = torrents.filter((t) => (t.assetType || 'torrent') === 'torrent');
+    const changes = await this.processStateChanges(torrentOnlyForDiff);
     if (!changes || typeof changes !== 'object') {
       throw new Error('processStateChanges returned invalid changes object');
     }
