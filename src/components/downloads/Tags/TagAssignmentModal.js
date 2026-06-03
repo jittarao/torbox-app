@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Hash, Plus, Times, X } from '@/components/icons';
 import TagSelector from './TagSelector';
-import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
@@ -26,7 +26,6 @@ export default function TagAssignmentModal({
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [mode, setMode] = useState('add');
-  const dialogRef = useRef(null);
 
   const downloadCount = downloadIds.length;
 
@@ -59,17 +58,6 @@ export default function TagAssignmentModal({
     }
   }, [isOpen, fetchDownloadTags]);
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, onClose]);
-
   const handleSubmit = async () => {
     if (!downloadCount || !selectedTagIds.length) return;
 
@@ -97,26 +85,15 @@ export default function TagAssignmentModal({
   const canSubmit =
     selectedTagIds.length > 0 && !(mode === 'remove' && assignedTagsUnion.length === 0);
 
-  if (!isOpen) return null;
-
-  const modalContent = (
-    <>
-      <button
-        type="button"
-        className="z-overlay-backdrop fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label={t('close')}
-      />
-
-      <dialog
-        ref={dialogRef}
-        className="ui-modal-sheet"
-        aria-labelledby="tag-assignment-title"
-        aria-describedby="tag-assignment-description"
-        aria-modal="true"
-        open
-      >
-        <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
+  return (
+    <ModalSheet
+      open={isOpen}
+      onClose={onClose}
+      closeLabel={t('close')}
+      aria-labelledby="tag-assignment-title"
+      aria-describedby="tag-assignment-description"
+    >
+      <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
           <ModalSheetHandle />
 
           {/* Header */}
@@ -270,9 +247,6 @@ export default function TagAssignmentModal({
             </div>
           </div>
         </div>
-      </dialog>
-    </>
+    </ModalSheet>
   );
-
-  return <OverlayPortal open={isOpen}>{modalContent}</OverlayPortal>;
 }

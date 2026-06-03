@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import HeaderOverlayPortal from '@/components/shared/HeaderOverlayPortal';
+import ModalOverlay from '@/components/shared/ModalOverlay';
 import { USER_NAV_ITEM } from './navConfig';
 import SidebarUtilitiesFooter from './SidebarUtilitiesFooter';
 import { SidebarContext } from './SidebarContext';
@@ -40,48 +40,20 @@ export default function MobileMoreSheet({
   const userActive = isActive(USER_NAV_ITEM.href);
   const UserIcon = USER_NAV_ITEM.Icon;
 
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = prev;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
-
   return (
-    <HeaderOverlayPortal open={open}>
+    <ModalOverlay
+      open={open}
+      onClose={onClose}
+      closeLabel={tFilters('close')}
+      className="md:hidden"
+    >
       <div
-        className={`z-overlay-backdrop fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 md:hidden ${
-          open ? 'opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-        role="presentation"
-        onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClose();
-          }
-        }}
-        aria-hidden={!open}
-      />
-      <dialog
         ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
         aria-label={t('menu.more')}
-        className={`z-overlay-panel fixed inset-x-0 bottom-0 flex max-h-[min(85dvh,32rem)] flex-col rounded-t-2xl border border-border/60 bg-surface shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:border-border-dark/60 dark:bg-surface-dark md:hidden ${
-          open ? 'translate-y-0' : 'pointer-events-none translate-y-full'
-        }`}
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex' }}
-        open={open}
+        className="ui-bottom-sheet fixed inset-x-0 bottom-0 z-[1] flex max-h-[min(85dvh,32rem)] flex-col rounded-t-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark md:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="flex shrink-0 justify-center pt-2.5 pb-1">
           <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />
@@ -147,7 +119,7 @@ export default function MobileMoreSheet({
             />
           </SidebarContext.Provider>
         </div>
-      </dialog>
-    </HeaderOverlayPortal>
+      </div>
+    </ModalOverlay>
   );
 }
