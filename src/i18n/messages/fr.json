@@ -362,6 +362,10 @@
       "Files": "Fichiers"
     },
     "loading": "Chargement...",
+    "next": "Suivant",
+    "of": "sur",
+    "previous": "Précédent",
+    "showing": "Affichage",
     "time": {
       "ago": " il y a",
       "complete": "Terminé",
