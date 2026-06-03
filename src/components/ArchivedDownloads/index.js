@@ -7,6 +7,7 @@ import { useArchive } from '@/hooks/useArchive';
 import { timeAgo } from '@/components/downloads/utils/formatters';
 import useIsMobile from '@/hooks/useIsMobile';
 import Toast from '@/components/shared/Toast';
+import Spinner from '@/components/shared/Spinner';
 import SearchBar from '@/components/LinkHistory/components/SearchBar';
 import { useArchivedDownloadsActions } from './hooks/useArchivedDownloadsActions';
 import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
@@ -46,6 +47,7 @@ export default function ArchivedDownloads({ apiKey }) {
   );
 
   const archivedItems = getArchivedDownloads();
+  const showInitialLoading = loading && archivedItems.length === 0;
 
   const getArchiveRowId = useCallback((item) => item.archiveId, []);
   const { buildSelectionUpdater } = useShiftRangeRowSelection(archivedItems, getArchiveRowId);
@@ -164,17 +166,13 @@ export default function ArchivedDownloads({ apiKey }) {
         </div>
       )}
 
-      {loading && (
-        <div className="rounded-lg border border-border bg-surface p-8 dark:border-border-dark dark:bg-surface-dark md:p-12">
-          <div className="text-center">
-            <p className="text-md text-primary-text/70 dark:text-primary-text-dark/70">
-              {t('loading') || 'Loading...'}
-            </p>
-          </div>
+      {showInitialLoading ? (
+        <div className="flex justify-center py-8">
+          <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
         </div>
-      )}
+      ) : null}
 
-      {!loading && archivedItems.length === 0 ? (
+      {!showInitialLoading && archivedItems.length === 0 ? (
         <div className="rounded-lg border border-border bg-surface p-8 dark:border-border-dark dark:bg-surface-dark md:p-12">
           <div className="text-center">
             <Archive className="mx-auto mb-4 size-16 text-primary-text/40 dark:text-primary-text-dark/40" />
@@ -202,7 +200,7 @@ export default function ArchivedDownloads({ apiKey }) {
         </div>
       ) : null}
 
-      {!loading && archivedItems.length > 0 && (
+      {!showInitialLoading && archivedItems.length > 0 && (
         <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
           <table className="relative min-w-full table-fixed divide-y divide-border dark:divide-border-dark">
             <thead className="bg-surface-alt dark:bg-surface-alt-dark">
@@ -320,7 +318,7 @@ export default function ArchivedDownloads({ apiKey }) {
         </div>
       )}
 
-      {!loading && resolvedPagination.totalPages > 1 && (
+      {!showInitialLoading && resolvedPagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             {t('showing') || 'Showing'}{' '}

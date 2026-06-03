@@ -13,116 +13,140 @@ function transformArchivedItem(item) {
   };
 }
 
+function mergePaginationTotals(prev, next) {
+  if (prev.total === next.total && prev.totalPages === next.totalPages) {
+    return prev;
+  }
+  return {
+    ...prev,
+    total: next.total,
+    totalPages: next.totalPages,
+  };
+}
+
 export function useArchive(apiKey, pagination, setPagination, search = '') {
   const [archivedDownloads, setArchivedDownloads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const prevSearchRef = useRef(search);
+
   const abortControllerRef = useRef(null);
   const effectivePageRef = useRef(pagination?.page ?? 1);
   const skipPageChangeFetchRef = useRef(false);
-
+  const prevSearchRef = useRef(search);
   const internalPaginationRef = useRef(null);
+  const requestGenerationRef = useRef(0);
+
+  const apiKeyRef = useRef(apiKey);
+  const searchRef = useRef(search);
+  const setPaginationRef = useRef(setPagination);
+  apiKeyRef.current = apiKey;
+  searchRef.current = search;
+  setPaginationRef.current = setPagination;
+
   const usesExternalPagination = Boolean(pagination && setPagination);
+  const page = pagination?.page ?? 1;
+  const limit = pagination?.limit ?? 50;
+
+  const loadArchivedDownloads = useCallback(async (pageOverride, limitOverride, signal) => {
+    const currentApiKey = apiKeyRef.current;
+    if (!currentApiKey) {
+      setLoading(false);
+      return;
+    }
+
+    const resolvedPage =
+      pageOverride ?? (usesExternalPagination ? effectivePageRef.current : 1);
+    const resolvedLimit =
+      limitOverride ??
+      (usesExternalPagination ? limit : internalPaginationRef.current?.limit ?? 50);
+    const currentSearch = searchRef.current;
+    const generation = ++requestGenerationRef.current;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams({
+        page: String(resolvedPage),
+        limit: String(resolvedLimit),
+      });
+      if (currentSearch) {
+        params.append('search', currentSearch);
+      }
+
+      const response = await fetch(`/api/archived-downloads?${params.toString()}`, {
+        headers: {
+          'x-api-key': currentApiKey,
+        },
+        signal,
+      });
+
+      if (signal?.aborted || generation !== requestGenerationRef.current) return;
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch archived downloads');
+      }
+
+      const data = await response.json();
+
+      if (signal?.aborted || generation !== requestGenerationRef.current) return;
+
+      if (data.success) {
+        const transformed = data.data.map(transformArchivedItem);
+        setArchivedDownloads(transformed);
+        const nextPagination = data.pagination || {
+          page: resolvedPage,
+          limit: resolvedLimit,
+          total: 0,
+          totalPages: 0,
+        };
+        if (usesExternalPagination) {
+          setPaginationRef.current((prev) =>
+            mergePaginationTotals(prev, {
+              total: nextPagination.total,
+              totalPages: nextPagination.totalPages,
+            })
+          );
+        } else {
+          internalPaginationRef.current = nextPagination;
+        }
+      } else {
+        throw new Error(data.error || 'Failed to fetch archived downloads');
+      }
+    } catch (err) {
+      if (signal?.aborted || generation !== requestGenerationRef.current) return;
+      if (err?.name === 'AbortError') return;
+      console.error('Error fetching archived downloads:', err);
+      setError(err.message);
+      setArchivedDownloads((prev) => (prev.length === 0 ? prev : []));
+    } finally {
+      if (!signal?.aborted && generation === requestGenerationRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [limit, usesExternalPagination]);
+
+  const loadArchivedRef = useRef(loadArchivedDownloads);
+  loadArchivedRef.current = loadArchivedDownloads;
+
+  const prevPageRef = useRef(page);
+  const prevSearchForEffectRef = useRef(search);
 
   useEffect(() => {
     if (!usesExternalPagination) return;
 
     if (prevSearchRef.current !== search) {
       prevSearchRef.current = search;
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      abortControllerRef.current?.abort();
       effectivePageRef.current = 1;
       skipPageChangeFetchRef.current = true;
-      if (pagination.page !== 1) {
-        setPagination((prev) => ({ ...prev, page: 1 }));
+      if (page !== 1) {
+        setPaginationRef.current((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
       }
     } else {
-      effectivePageRef.current = pagination.page;
-      skipPageChangeFetchRef.current = false;
+      effectivePageRef.current = page;
     }
-  }, [search, pagination, setPagination, usesExternalPagination]);
-
-  const fetchArchivedDownloads = useCallback(
-    async (page, limit, signal) => {
-      if (!apiKey) {
-        setLoading(false);
-        return;
-      }
-
-      const resolvedPage = page ?? (usesExternalPagination ? effectivePageRef.current : 1);
-      const resolvedLimit =
-        limit ?? (usesExternalPagination ? pagination.limit : internalPaginationRef.current?.limit ?? 50);
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        const params = new URLSearchParams({
-          page: String(resolvedPage),
-          limit: String(resolvedLimit),
-        });
-        if (search) {
-          params.append('search', search);
-        }
-
-        const response = await fetch(`/api/archived-downloads?${params.toString()}`, {
-          headers: {
-            'x-api-key': apiKey,
-          },
-          signal,
-        });
-
-        if (signal?.aborted) return;
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch archived downloads');
-        }
-
-        const data = await response.json();
-
-        if (signal?.aborted) return;
-
-        if (data.success) {
-          const transformed = data.data.map(transformArchivedItem);
-          setArchivedDownloads(transformed);
-          const nextPagination = data.pagination || {
-            page: resolvedPage,
-            limit: resolvedLimit,
-            total: 0,
-            totalPages: 0,
-          };
-          if (usesExternalPagination) {
-            setPagination((prev) => ({
-              ...prev,
-              page: nextPagination.page,
-              limit: nextPagination.limit,
-              total: nextPagination.total,
-              totalPages: nextPagination.totalPages,
-            }));
-          } else {
-            internalPaginationRef.current = nextPagination;
-          }
-        } else {
-          throw new Error(data.error || 'Failed to fetch archived downloads');
-        }
-      } catch (err) {
-        if (signal?.aborted) return;
-        console.error('Error fetching archived downloads:', err);
-        setError(err.message);
-        setArchivedDownloads([]);
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-        }
-      }
-    },
-    [apiKey, pagination, search, setPagination, usesExternalPagination]
-  );
-
-  const prevPageRef = useRef(pagination?.page ?? 1);
-  const prevSearchForEffectRef = useRef(search);
+  }, [search, page, usesExternalPagination]);
 
   useEffect(() => {
     if (!apiKey) {
@@ -131,9 +155,9 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     }
 
     if (usesExternalPagination) {
-      const pageChanged = prevPageRef.current !== pagination.page;
+      const pageChanged = prevPageRef.current !== page;
       const searchChanged = prevSearchForEffectRef.current !== search;
-      prevPageRef.current = pagination.page;
+      prevPageRef.current = page;
       prevSearchForEffectRef.current = search;
 
       if (pageChanged && !searchChanged && skipPageChangeFetchRef.current) {
@@ -142,27 +166,18 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
       }
     }
 
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    abortControllerRef.current?.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    fetchArchivedDownloads(
+    loadArchivedRef.current(
       usesExternalPagination ? effectivePageRef.current : 1,
-      usesExternalPagination ? pagination.limit : 50,
+      usesExternalPagination ? limit : 50,
       abortController.signal
     );
 
     return () => abortController.abort();
-  }, [
-    apiKey,
-    fetchArchivedDownloads,
-    usesExternalPagination,
-    pagination?.page,
-    pagination?.limit,
-    search,
-  ]);
+  }, [apiKey, page, limit, search, usesExternalPagination]);
 
   const getArchivedDownloads = () => archivedDownloads;
 
@@ -194,9 +209,9 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
       const data = await response.json();
 
       if (data.success) {
-        await fetchArchivedDownloads(
+        await loadArchivedRef.current(
           usesExternalPagination ? effectivePageRef.current : 1,
-          usesExternalPagination ? pagination.limit : 50
+          usesExternalPagination ? limit : 50
         );
         return data.data;
       }
@@ -233,9 +248,9 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
       const data = await response.json();
 
       if (data.success) {
-        await fetchArchivedDownloads(
+        await loadArchivedRef.current(
           usesExternalPagination ? effectivePageRef.current : 1,
-          usesExternalPagination ? pagination.limit : 50
+          usesExternalPagination ? limit : 50
         );
         return archivedDownloads.filter((item) => item.id !== downloadId);
       }
@@ -264,9 +279,9 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
       throw new Error(data.error || 'Failed to clear archive');
     }
 
-    await fetchArchivedDownloads(
+    await loadArchivedRef.current(
       usesExternalPagination ? effectivePageRef.current : 1,
-      usesExternalPagination ? pagination.limit : 50
+      usesExternalPagination ? limit : 50
     );
     return [];
   };
@@ -295,21 +310,23 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   };
 
   const refresh = useCallback(() => {
-    return fetchArchivedDownloads(
+    return loadArchivedRef.current(
       usesExternalPagination ? effectivePageRef.current : 1,
-      usesExternalPagination ? pagination.limit : 50
+      usesExternalPagination ? limit : 50
     );
-  }, [fetchArchivedDownloads, usesExternalPagination, pagination?.limit]);
+  }, [limit, usesExternalPagination]);
 
   const fetchPage = useCallback(
-    (page) => {
+    (nextPage) => {
       if (usesExternalPagination) {
-        setPagination((prev) => ({ ...prev, page }));
+        setPaginationRef.current((prev) =>
+          prev.page === nextPage ? prev : { ...prev, page: nextPage }
+        );
       } else {
-        fetchArchivedDownloads(page, internalPaginationRef.current?.limit ?? 50);
+        loadArchivedRef.current(nextPage, internalPaginationRef.current?.limit ?? 50);
       }
     },
-    [fetchArchivedDownloads, setPagination, usesExternalPagination]
+    [usesExternalPagination]
   );
 
   const resolvedPagination = usesExternalPagination
