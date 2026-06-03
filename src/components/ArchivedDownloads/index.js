@@ -9,6 +9,7 @@ import useIsMobile from '@/hooks/useIsMobile';
 import Toast from '@/components/shared/Toast';
 import SearchBar from '@/components/LinkHistory/components/SearchBar';
 import { useArchivedDownloadsActions } from './hooks/useArchivedDownloadsActions';
+import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
 
 export default function ArchivedDownloads({ apiKey }) {
   const t = useTranslations('Common');
@@ -46,6 +47,9 @@ export default function ArchivedDownloads({ apiKey }) {
 
   const archivedItems = getArchivedDownloads();
 
+  const getArchiveRowId = useCallback((item) => item.archiveId, []);
+  const { buildSelectionUpdater } = useShiftRangeRowSelection(archivedItems, getArchiveRowId);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput);
@@ -64,17 +68,12 @@ export default function ArchivedDownloads({ apiKey }) {
     [archivedItems]
   );
 
-  const handleSelectItem = useCallback((archiveId, checked) => {
-    setSelectedItems((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        next.add(archiveId);
-      } else {
-        next.delete(archiveId);
-      }
-      return next;
-    });
-  }, []);
+  const handleSelectItem = useCallback(
+    (archiveId, checked, rowIndex, isShiftKey = false) => {
+      setSelectedItems(buildSelectionUpdater(archiveId, checked, rowIndex, isShiftKey));
+    },
+    [buildSelectionUpdater]
+  );
 
   const handleSearchChange = useCallback((value) => {
     setSearchInput(value);
@@ -233,7 +232,7 @@ export default function ArchivedDownloads({ apiKey }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-surface dark:divide-border-dark dark:bg-surface-dark">
-              {archivedItems.map((item) => (
+              {archivedItems.map((item, rowIndex) => (
                 <tr
                   key={item.archiveId}
                   className="bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark"
@@ -242,7 +241,17 @@ export default function ArchivedDownloads({ apiKey }) {
                     <input
                       type="checkbox"
                       checked={selectedItems.has(item.archiveId)}
-                      onChange={(e) => handleSelectItem(item.archiveId, e.target.checked)}
+                      onMouseDown={(e) => {
+                        if (e.shiftKey) e.preventDefault();
+                      }}
+                      onChange={(e) =>
+                        handleSelectItem(
+                          item.archiveId,
+                          e.target.checked,
+                          rowIndex,
+                          e.shiftKey
+                        )
+                      }
                       className="size-4 cursor-pointer accent-accent dark:accent-accent-dark"
                       aria-label={archivedT('actions.selectItem')}
                     />

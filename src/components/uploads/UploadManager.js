@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -23,6 +23,7 @@ import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactToolbarClass } from '@/components/shared/compactToolbar';
 import { Refresh, RotateCcw, Trash, XCircle } from '@/components/icons';
 import { normalizeUploadId } from './utils';
+import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
 
 export default function UploadManager({ apiKey }) {
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
@@ -94,10 +95,17 @@ export default function UploadManager({ apiKey }) {
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [activeTab, filters.search]);
 
+  const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
+  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(
+    uploads,
+    getUploadRowId
+  );
+
   // Drop selection from other tabs/pages so bulk actions match visible checkboxes
   useEffect(() => {
     setSelectedUploads(new Set());
-  }, [activeTab, filters.type, filters.search, pagination.page]);
+    resetAnchor();
+  }, [activeTab, filters.type, filters.search, pagination.page, resetAnchor]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -110,19 +118,11 @@ export default function UploadManager({ apiKey }) {
     }
   };
 
-  const handleSelectUpload = (id, checked) => {
+  const handleSelectUpload = (id, checked, rowIndex, isShiftKey = false) => {
     const uploadId = normalizeUploadId(id);
     if (uploadId == null) return;
 
-    setSelectedUploads((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        next.add(uploadId);
-      } else {
-        next.delete(uploadId);
-      }
-      return next;
-    });
+    setSelectedUploads(buildSelectionUpdater(uploadId, checked, rowIndex, isShiftKey));
   };
 
   const showBulkActions = activeTab === 'failed' || activeTab === 'completed';

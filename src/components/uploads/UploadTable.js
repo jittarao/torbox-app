@@ -72,9 +72,10 @@ export default function UploadTable({
               items={uploads.map((u) => u.id)}
               strategy={verticalListSortingStrategy}
             >
-              {uploads.map((upload) => (
+              {uploads.map((upload, rowIndex) => (
                 <UploadRow
                   key={upload.id}
+                  rowIndex={rowIndex}
                   upload={upload}
                   onRetry={onRetry}
                   onDelete={onDelete}
@@ -92,9 +93,10 @@ export default function UploadTable({
               ))}
             </SortableContext>
           ) : (
-            uploads.map((upload) => (
+            uploads.map((upload, rowIndex) => (
               <UploadRow
                 key={upload.id}
+                rowIndex={rowIndex}
                 upload={upload}
                 onRetry={onRetry}
                 onDelete={onDelete}
