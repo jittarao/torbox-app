@@ -73,7 +73,8 @@
     "actions": {
       "addToTorBox": "Ajouter à TorBox",
       "copyMagnet": "Copier l'aimant",
-      "remove": "Supprimer"
+      "remove": "Supprimer",
+      "selectItem": "Sélectionner le téléchargement archivé"
     },
     "columns": {
       "archivedAt": "Archivé le",
@@ -84,6 +85,7 @@
     "emptyState": {
       "description": "Configurez une règle d'automatisation pour archiver les téléchargements automatiquement. Lorsqu'un téléchargement est archivé, vous le trouverez ici pour le restaurer, le copier ou le supprimer.",
       "howItWorks": "Comment ça fonctionne :",
+      "noSearchResults": "Aucun téléchargement archivé ne correspond à votre recherche.",
       "step1": "Ajoutez une règle avec l'action \"Archiver le téléchargement\"",
       "step2": "Lorsque la règle est déclenchée, les téléchargements correspondants sont archivés",
       "step3": "Ils apparaissent ici pour que vous puissiez les restaurer, les copier ou les supprimer",
@@ -91,7 +93,11 @@
     },
     "title": "Téléchargements archivés",
     "toast": {
-      "magnetCopied": "Lien magnétique copié dans le presse-papiers"
+      "magnetCopied": "Lien magnétique copié dans le presse-papiers",
+      "removeError": "Échec de la suppression de l'archive",
+      "removed": "Supprimé de l'archive",
+      "restoreError": "Échec de l'ajout à TorBox",
+      "restored": "Ajouté à TorBox"
     }
   },
   "AutomationRules": {

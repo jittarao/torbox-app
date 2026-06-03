@@ -29,11 +29,15 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '50';
+    const search = searchParams.get('search');
 
     const url = new URL(`${BACKEND_URL}/api/archived-downloads`);
     url.searchParams.set('authId', authId);
     url.searchParams.set('page', page);
     url.searchParams.set('limit', limit);
+    if (search) {
+      url.searchParams.set('search', search);
+    }
 
     const response = await new Promise((resolve, reject) => {
       const req = http.get(url, { headers: backendProxyHeaders(apiKey) }, (res) => {

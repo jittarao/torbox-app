@@ -4,9 +4,17 @@ import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactSearchInputClass, compactToolbarClass } from '@/components/shared/compactToolbar';
 
 const SearchBar = memo(
-  ({ search, onSearchChange, selectedCount, onBulkDelete, bulkDeleting, onRefresh }) => {
+  ({
+    search,
+    onSearchChange,
+    selectedCount,
+    onBulkDelete,
+    bulkDeleting,
+    onRefresh,
+    ariaLabel = 'Link history actions',
+  }) => {
     return (
-      <div className={compactToolbarClass} role="toolbar" aria-label="Link history actions">
+      <div className={compactToolbarClass} role="toolbar" aria-label={ariaLabel}>
         <input
           type="text"
           placeholder="Search..."

@@ -74,7 +74,8 @@
     "actions": {
       "addToTorBox": "Dodaj do TorBox",
       "copyMagnet": "Skopiuj magnet",
-      "remove": "Usuń"
+      "remove": "Usuń",
+      "selectItem": "Wybierz zarchiwizowane pobieranie"
     },
     "columns": {
       "actions": "Akcje",
@@ -86,6 +87,7 @@
     "emptyState": {
       "description": "Skonfiguruj regułę automatyzacji, aby archiwizować pobierania automatycznie. Gdy pobieranie jest archiwizowane, znajdziesz je tutaj, aby przywrócić, skopiować lub usunąć.",
       "howItWorks": "Jak to działa:",
+      "noSearchResults": "Brak zarchiwizowanych pobierań pasujących do wyszukiwania.",
       "step1": "Dodaj regułę z akcją \"Zarchiwizuj pobieranie\"",
       "step2": "Gdy reguła jest uruchomiona, pasujące pobierania są archiwizowane",
       "step3": "Pojawiają się tutaj, aby przywrócić, skopiować lub usunąć",
@@ -93,7 +95,11 @@
     },
     "title": "Zarchiwizowane pobierania",
     "toast": {
-      "magnetCopied": "Link magnet skopiowany do schowka"
+      "magnetCopied": "Link magnet skopiowany do schowka",
+      "removeError": "Nie udało się usunąć z archiwum",
+      "removed": "Usunięto z archiwum",
+      "restoreError": "Nie udało się dodać do TorBox",
+      "restored": "Dodano do TorBox"
     }
   },
   "AutomationRules": {

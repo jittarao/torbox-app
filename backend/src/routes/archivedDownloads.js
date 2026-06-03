@@ -68,27 +68,35 @@ export function setupArchivedDownloadsRoutes(app, backend) {
         const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 50, 1000)); // Max 1000, min 1
         const page = Math.max(1, parseInt(req.query.page, 10) || 1); // Min 1
         const offset = (page - 1) * limit;
+        const search = req.query.search?.trim() || null;
 
-        // Get total count
-        const totalCount = userDb.db
-          .prepare(
-            `
-          SELECT COUNT(*) as count FROM archived_downloads
-        `
-          )
-          .get();
-
-        // Get paginated results
-        const archived = userDb.db
-          .prepare(
-            `
+        let countQuery = 'SELECT COUNT(*) as count FROM archived_downloads';
+        let dataQuery = `
           SELECT id, torrent_id, hash, tracker, name, archived_at, created_at
           FROM archived_downloads
-          ORDER BY archived_at DESC
-          LIMIT ? OFFSET ?
-        `
-          )
-          .all(limit, offset);
+        `;
+        const queryParams = [];
+
+        if (search) {
+          const searchParam = `%${search}%`;
+          const whereClause =
+            ' WHERE torrent_id LIKE ? OR name LIKE ? OR hash LIKE ? OR tracker LIKE ?';
+          countQuery += whereClause;
+          dataQuery += whereClause;
+          queryParams.push(searchParam, searchParam, searchParam, searchParam);
+        }
+
+        dataQuery += ' ORDER BY archived_at DESC LIMIT ? OFFSET ?';
+
+        const totalCount = search
+          ? userDb.db
+              .prepare(countQuery)
+              .get(queryParams[0], queryParams[1], queryParams[2], queryParams[3])
+          : userDb.db.prepare(countQuery).get();
+
+        const archived = userDb.db
+          .prepare(dataQuery)
+          .all(...queryParams, limit, offset);
 
         res.json({
           success: true,
@@ -269,6 +277,87 @@ export function setupArchivedDownloadsRoutes(app, backend) {
         logger.error('Error bulk archiving downloads', error, {
           endpoint: '/api/archived-downloads/bulk',
           method: 'POST',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
+      }
+    }
+  );
+
+  // DELETE /api/archived-downloads/bulk - Bulk delete archived downloads
+  // NOTE: Register before /api/archived-downloads/:id so "bulk" is not captured as :id
+  app.delete(
+    '/api/archived-downloads/bulk',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+        const { ids } = req.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids array is required and must not be empty',
+          });
+        }
+
+        if (ids.length > BULK_ARCHIVE_MAX) {
+          return res.status(400).json({
+            success: false,
+            error: `ids array must not exceed ${BULK_ARCHIVE_MAX} items`,
+          });
+        }
+
+        const invalidIds = ids.filter((id) => {
+          const numId = parseInt(id, 10);
+          return isNaN(numId) || numId <= 0;
+        });
+        if (invalidIds.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid ids. All IDs must be positive integers.',
+          });
+        }
+
+        const numericIds = ids.map((id) => parseInt(id, 10));
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        const placeholders = numericIds.map(() => '?').join(',');
+        const deleteStmt = userDb.db.prepare(
+          `DELETE FROM archived_downloads WHERE id IN (${placeholders})`
+        );
+        const result = deleteStmt.run(...numericIds);
+
+        logger.info('Bulk archived downloads delete', {
+          authId,
+          requested: numericIds.length,
+          deleted: result.changes,
+        });
+
+        res.json({
+          success: true,
+          message: `Deleted ${result.changes} archived download${result.changes === 1 ? '' : 's'}`,
+          data: {
+            deleted: result.changes,
+            requested: numericIds.length,
+          },
+        });
+      } catch (error) {
+        logger.error('Error bulk deleting archived downloads', error, {
+          endpoint: '/api/archived-downloads/bulk',
+          method: 'DELETE',
           authId: req.validatedAuthId,
         });
         res.status(500).json(serverErrorPayload(error));
