@@ -262,7 +262,8 @@ export default function FiltersSidebar({
         >
           {views.map((view) => {
             const menuKey = `view-${view.id}`;
-            const viewIsActive = activeView?.id === view.id;
+            const viewIsActive =
+              activeView?.id != null && String(activeView.id) === String(view.id);
             const viewMenuItems = [
               {
                 id: 'apply',
