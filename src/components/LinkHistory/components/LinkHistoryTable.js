@@ -30,7 +30,7 @@ const LinkHistoryTable = memo(
         <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative">
           <thead className="bg-surface-alt dark:bg-surface-alt-dark">
             <tr className="table-rowbg-surface-alt dark:bg-surface-alt-dark">
-              <th className="text-left px-3 md:px-4 py-3 text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-12">
+              <th className="text-left px-2.5 md:px-3 py-2 text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-12">
                 <input
                   ref={checkboxRef}
                   type="checkbox"
@@ -39,19 +39,19 @@ const LinkHistoryTable = memo(
                   className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
                 />
               </th>
-              <th className="relative group select-none px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[120px] min-w-[120px] max-w-[150px]">
+              <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[120px] min-w-[120px] max-w-[150px]">
                 {linkHistoryT('columns.itemId')}
               </th>
-              <th className="relative group select-none px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors">
+              <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors">
                 {linkHistoryT('columns.itemName')}
               </th>
-              <th className="relative group select-none px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors">
+              <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors">
                 {linkHistoryT('columns.fileName')}
               </th>
-              <th className="relative group select-none px-3 md:px-4 py-3 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[200px] min-w-[200px] max-w-[200px]">
+              <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[200px] min-w-[200px] max-w-[200px]">
                 {linkHistoryT('columns.expiresAt')}
               </th>
-              <th className="px-3 md:px-4 py-3 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[150px]">
+              <th className="px-2.5 md:px-3 py-2 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[150px]">
                 {linkHistoryT('columns.actions')}
               </th>
             </tr>

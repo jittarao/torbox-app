@@ -29,7 +29,7 @@ const LinkHistoryRow = memo(
             : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
         }
       >
-        <td className="px-3 md:px-4 py-4 whitespace-nowrap">
+        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap">
           <input
             type="checkbox"
             checked={isSelected}
@@ -43,26 +43,26 @@ const LinkHistoryRow = memo(
             aria-label={linkHistoryT('actions.selectItem')}
           />
         </td>
-        <td className="px-3 md:px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
           {item.item_id}
         </td>
-        <td className="px-3 md:px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
+        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
           {item.item_name || '-'}
         </td>
-        <td className="px-3 md:px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
+        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
           {item.file_name || '-'}
         </td>
-        <td className="px-3 md:px-4 py-4 whitespace-nowrap text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
           {expirationDate}
         </td>
         <td
-          className={`px-3 md:px-4 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-2`}
+          className={`px-2.5 md:px-3 py-1.5 whitespace-nowrap text-right text-xs font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-1.5`}
         >
           <button
             type="button"
             onClick={() => onCopy(item.url)}
             disabled={isFailed}
-            className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
+            className={`p-1 rounded-full text-accent dark:text-accent-dark 
               hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
               disabled:opacity-40 disabled:pointer-events-none
               ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
@@ -81,7 +81,7 @@ const LinkHistoryRow = memo(
             type="button"
             onClick={() => onOpen(item.url)}
             disabled={isFailed}
-            className={`p-1.5 rounded-full text-accent dark:text-accent-dark 
+            className={`p-1 rounded-full text-accent dark:text-accent-dark 
               hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors
               disabled:opacity-40 disabled:pointer-events-none
               ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
@@ -100,7 +100,7 @@ const LinkHistoryRow = memo(
             type="button"
             onClick={() => onDelete(item.id)}
             disabled={deleting}
-            className={`p-1.5 rounded-full text-red-500 dark:text-red-400 
+            className={`p-1 rounded-full text-red-500 dark:text-red-400 
               hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
               disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
             title={linkHistoryT('actions.remove')}
