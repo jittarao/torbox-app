@@ -647,14 +647,15 @@ export function setupUploadsRoutes(app, backend) {
         },
       };
 
-      // Build ORDER BY - queued items by queue_order, others by created_at DESC
-      // When no status filter, show queued first (by queue_order), then others (by created_at DESC)
+      // Build ORDER BY - queued items by queue_order, others by last activity
+      // last_processed_at reflects when an item was last attempted; fall back to created_at if never processed
+      const recentFirst = 'COALESCE(last_processed_at, created_at) DESC';
       const orderBy =
         status === 'queued'
           ? 'ORDER BY queue_order ASC'
           : status
-            ? 'ORDER BY created_at DESC'
-            : 'ORDER BY CASE WHEN status = "queued" THEN 0 ELSE 1 END, queue_order ASC, created_at DESC';
+            ? `ORDER BY ${recentFirst}`
+            : `ORDER BY CASE WHEN status = "queued" THEN 0 ELSE 1 END, queue_order ASC, ${recentFirst}`;
 
       // Get paginated results
       const query = `
