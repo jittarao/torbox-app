@@ -84,6 +84,37 @@ export function useDownloadsPageState(apiKey) {
 
   const filterParams = useDownloadsFilterParams();
 
+  const { activeColumns, handleColumnChange } = useColumnManager(activeType);
+
+  const filterData = useDownloadsFilters({
+    apiKey,
+    isBackendAvailable,
+    activeType,
+    setToast,
+    handleColumnChange,
+    updateTagName,
+    filterParams,
+  });
+
+  const listFilterParams = useMemo(
+    () => ({
+      ...filterParams,
+      search: filterData.search,
+      statusFilter: filterData.statusFilter,
+      appliedFilters: filterData.appliedFilters,
+      sortField: filterData.sortField,
+      sortDirection: filterData.sortDirection,
+    }),
+    [
+      filterParams,
+      filterData.search,
+      filterData.statusFilter,
+      filterData.appliedFilters,
+      filterData.sortField,
+      filterData.sortDirection,
+    ]
+  );
+
   const {
     viewItems,
     sortedItems,
@@ -93,7 +124,7 @@ export function useDownloadsPageState(apiKey) {
     tags,
     tagMappings,
     updateTagName,
-  } = useDownloadsListData(activeType, apiKey, isBackendAvailable, filterParams);
+  } = useDownloadsListData(activeType, apiKey, isBackendAvailable, listFilterParams);
 
   const showFullPageSpinner = loading && viewItems.length === 0;
   const isRefreshing = refreshing || (loading && viewItems.length > 0);
@@ -167,18 +198,6 @@ export function useDownloadsPageState(apiKey) {
     setToast,
     activeType
   );
-
-  const { activeColumns, handleColumnChange } = useColumnManager(activeType);
-
-  const filterData = useDownloadsFilters({
-    apiKey,
-    isBackendAvailable,
-    activeType,
-    setToast,
-    handleColumnChange,
-    updateTagName,
-    filterParams,
-  });
 
   const { handleAudioPlay, openVideoPlayer } = useDownloadsPlayerActions(
     apiKey,
