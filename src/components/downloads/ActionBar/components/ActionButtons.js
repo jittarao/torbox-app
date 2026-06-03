@@ -7,6 +7,7 @@ import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from '../../Tags/TagAssignmentModal';
+import ModalSheet from '@/components/shared/ModalSheet';
 import { findItemBySelectionId } from '@/utils/downloadSelectionId';
 import {
   useDownloadsSelectionStore,
@@ -487,23 +488,29 @@ export default function ActionButtons({
           />
 
           {showArchiveConfirm && (
-            <div className="fixed inset-0 bg-neutral-950 bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-surface dark:bg-surface-dark p-6 rounded-lg shadow-lg max-w-md">
-                <h3 className="text-lg font-semibold mb-4 text-primary-text dark:text-primary-text-dark">
+            <ModalSheet
+              open={showArchiveConfirm}
+              onClose={() => setShowArchiveConfirm(false)}
+              aria-labelledby="archive-confirm-title"
+            >
+              <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6">
+                <h3
+                  id="archive-confirm-title"
+                  className="text-lg font-semibold text-primary-text dark:text-primary-text-dark"
+                >
                   {t('archiveConfirm.title')}
                 </h3>
-                <p className="text-primary-text/70 dark:text-primary-text-dark/70 mb-6">
+                <p className="mt-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
                   {t('archiveConfirm.message', {
                     count: selectedArchivableTorrents.length,
                   })}
                 </p>
 
-                <div className="flex justify-end gap-4">
+                <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setShowArchiveConfirm(false)}
-                    className="px-4 py-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70 
-                    hover:text-primary-text dark:hover:text-primary-text-dark"
+                    className="ui-btn-ghost w-full justify-center sm:w-auto"
                   >
                     {t('archiveConfirm.cancel')}
                   </button>
@@ -515,13 +522,13 @@ export default function ActionButtons({
                       phEvent('bulk_archive', { count: selectedArchivableTorrents.length });
                     }}
                     disabled={isArchiving}
-                    className="bg-accent text-sm text-white px-4 py-2 rounded hover:brightness-95 disabled:opacity-50 transition-colors dark:bg-accent-dark dark:hover:brightness-110"
+                    className="ui-btn-accent w-full justify-center sm:w-auto disabled:opacity-50"
                   >
                     {t('archiveConfirm.confirm')}
                   </button>
                 </div>
               </div>
-            </div>
+            </ModalSheet>
           )}
         </>
       )}
@@ -539,12 +546,19 @@ export default function ActionButtons({
           />
 
           {showDeleteConfirm && (
-            <div className="fixed inset-0 bg-neutral-950 bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-surface dark:bg-surface-dark p-6 rounded-lg shadow-lg max-w-md">
-                <h3 className="text-lg font-semibold mb-4 text-primary-text dark:text-primary-text-dark">
+            <ModalSheet
+              open={showDeleteConfirm}
+              onClose={() => setShowDeleteConfirm(false)}
+              aria-labelledby="delete-confirm-title"
+            >
+              <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6">
+                <h3
+                  id="delete-confirm-title"
+                  className="text-lg font-semibold text-primary-text dark:text-primary-text-dark"
+                >
                   {t('deleteConfirm.title')}
                 </h3>
-                <p className="text-primary-text/70 dark:text-primary-text-dark/70 mb-6">
+                <p className="mt-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
                   {t('deleteConfirm.message', {
                     count:
                       selectedItemCount +
@@ -554,7 +568,7 @@ export default function ActionButtons({
                 </p>
 
                 {hasSelectedFiles && (
-                  <label className="flex gap-3 mb-6 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+                  <label className="mt-4 flex gap-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
                     <input
                       type="checkbox"
                       checked={deleteParentDownloads}
@@ -568,12 +582,11 @@ export default function ActionButtons({
                   </label>
                 )}
 
-                <div className="flex justify-end gap-4">
+                <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70 
-                    hover:text-primary-text dark:hover:text-primary-text-dark"
+                    className="ui-btn-ghost w-full justify-center sm:w-auto"
                   >
                     {t('deleteConfirm.cancel')}
                   </button>
@@ -587,13 +600,13 @@ export default function ActionButtons({
                       });
                     }}
                     disabled={isDeleting}
-                    className="bg-label-danger-text text-sm text-white px-4 py-2 rounded hover:brightness-95 disabled:opacity-50 transition-colors dark:bg-label-danger-text-dark dark:hover:brightness-110"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-label-danger-text px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-95 disabled:opacity-50 sm:w-auto dark:bg-label-danger-text-dark dark:hover:brightness-110"
                   >
                     {t('delete')}
                   </button>
                 </div>
               </div>
-            </div>
+            </ModalSheet>
           )}
         </>
       )}

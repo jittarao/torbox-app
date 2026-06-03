@@ -8,7 +8,7 @@ import { getFilterableColumns } from './CustomViews/utils';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
 import Select from '@/components/shared/Select';
-import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import { Filter, Plus, X } from '@/components/icons';
 import { useTranslations } from 'next-intl';
@@ -159,16 +159,6 @@ export default function FilterEditorModal({
       isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false
     );
   }
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen || !columnFilters?.groups) return;
@@ -414,24 +404,17 @@ export default function FilterEditorModal({
     onClose();
   };
 
-  const modalContent = (
-    <>
-      <button
-        type="button"
-        className="z-overlay-backdrop fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label={downloadsFiltersT('close')}
-      />
-
-      <dialog
-        ref={dialogRef}
-        className="ui-modal-sheet ui-modal-sheet--wide"
-        aria-labelledby="filter-editor-title"
-        aria-describedby="filter-editor-description"
-        aria-modal="true"
-        open
-      >
-        <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
+  return (
+    <ModalSheet
+      ref={dialogRef}
+      open={isOpen}
+      onClose={onClose}
+      closeLabel={downloadsFiltersT('close')}
+      wide
+      aria-labelledby="filter-editor-title"
+      aria-describedby="filter-editor-description"
+    >
+      <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
           <ModalSheetHandle />
           {/* Header */}
           <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 sm:overflow-hidden sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
@@ -729,9 +712,6 @@ export default function FilterEditorModal({
             </div>
           </div>
         </div>
-      </dialog>
-    </>
+    </ModalSheet>
   );
-
-  return <OverlayPortal open={isOpen}>{modalContent}</OverlayPortal>;
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Edit, Hash, MagnifyingGlass, Plus, Trash, X } from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
-import OverlayPortal from '@/components/shared/OverlayPortal';
+import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import { TAG_SEARCH_MIN_COUNT } from './constants';
 
@@ -201,7 +201,6 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const createInputRef = useRef(null);
-  const dialogRef = useRef(null);
 
   const resetState = useCallback(() => {
     setEditingId(null);
@@ -296,26 +295,16 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
     }
   };
 
-  if (!isOpen) return null;
-
-  const modalContent = (
-    <>
-      <button
-        type="button"
-        className="z-overlay-backdrop fixed inset-0 cursor-default bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label={t('close')}
-      />
-
-      <dialog
-        ref={dialogRef}
-        className="ui-modal-sheet"
-        aria-labelledby="tag-manager-title"
-        aria-describedby="tag-manager-description"
-        aria-modal="true"
-        open
-      >
-        <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
+  return (
+    <ModalSheet
+      open={isOpen}
+      onClose={onClose}
+      closeLabel={t('close')}
+      closeOnEscape={false}
+      aria-labelledby="tag-manager-title"
+      aria-describedby="tag-manager-description"
+    >
+      <div onClick={(e) => e.stopPropagation()} className="flex min-h-0 flex-1 flex-col">
           <ModalSheetHandle />
           {/* Header */}
           <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 sm:overflow-hidden sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
@@ -483,9 +472,6 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
             )}
           </div>
         </div>
-      </dialog>
-    </>
+    </ModalSheet>
   );
-
-  return <OverlayPortal open={isOpen}>{modalContent}</OverlayPortal>;
 }
