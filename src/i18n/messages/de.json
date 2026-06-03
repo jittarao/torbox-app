@@ -365,6 +365,10 @@
     },
     "loading": "Lädt...",
     "minutes": "Minuten",
+    "next": "Weiter",
+    "of": "von",
+    "previous": "Zurück",
+    "showing": "Anzeige",
     "time": {
       "ago": " her",
       "complete": "Abgeschlossen",

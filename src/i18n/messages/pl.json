@@ -372,6 +372,10 @@
     },
     "loading": "Ładowanie...",
     "minutes": "minuty",
+    "next": "Następna",
+    "of": "z",
+    "previous": "Poprzednia",
+    "showing": "Wyświetlanie",
     "time": {
       "ago": " temu",
       "complete": "Zakończone",

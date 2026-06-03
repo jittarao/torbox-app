@@ -411,6 +411,10 @@
     },
     "loading": "Loading...",
     "minutes": "minutes",
+    "next": "Next",
+    "of": "of",
+    "previous": "Previous",
+    "showing": "Showing",
     "time": {
       "ago": " ago",
       "complete": "Complete",
