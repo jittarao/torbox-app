@@ -32,7 +32,7 @@ export default function UploadTable({
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-border dark:border-border-dark">
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70 w-12">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 w-12">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -46,22 +46,22 @@ export default function UploadTable({
                 aria-label="Select all uploads"
               />
             </th>
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70">
               Name
             </th>
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70">
               Type
             </th>
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70">
               Status
             </th>
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70">
               Created
             </th>
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70">
               Last Processed
             </th>
-            <th className="text-left p-3 text-sm font-medium text-primary-text/70 dark:text-primary-text-dark/70">
+            <th className="text-left px-2.5 py-2 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70">
               Actions
             </th>
           </tr>
