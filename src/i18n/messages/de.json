@@ -71,7 +71,8 @@
     "actions": {
       "addToTorBox": "Zu TorBox hinzufügen",
       "copyMagnet": "Magnet kopieren",
-      "remove": "Entfernen"
+      "remove": "Entfernen",
+      "selectItem": "Archivierten Download auswählen"
     },
     "columns": {
       "actions": "Aktionen",
@@ -83,6 +84,7 @@
     "emptyState": {
       "description": "Stellen Sie eine Automatisierungsregel ein, um Downloads automatisch zu archivieren. Wenn ein Download archiviert wird, finden Sie ihn hier, um ihn wiederherzustellen, zu kopieren oder zu löschen.",
       "howItWorks": "Wie es funktioniert:",
+      "noSearchResults": "Keine archivierten Downloads entsprechen Ihrer Suche.",
       "step1": "Eine Regel mit \"Download archivieren\" Aktion hinzufügen",
       "step2": "Wenn die Regel ausgelöst wird, werden passende Downloads archiviert",
       "step3": "Sie erscheinen hier, so dass Sie wiederherstellen, kopieren oder löschen können",
@@ -90,7 +92,11 @@
     },
     "title": "Archivierte Downloads",
     "toast": {
-      "magnetCopied": "Magnet-Link in die Zwischenablage kopiert"
+      "magnetCopied": "Magnet-Link in die Zwischenablage kopiert",
+      "removeError": "Entfernen aus Archiv fehlgeschlagen",
+      "removed": "Aus Archiv entfernt",
+      "restoreError": "Hinzufügen zu TorBox fehlgeschlagen",
+      "restored": "Zu TorBox hinzugefügt"
     }
   },
   "AutomationRules": {

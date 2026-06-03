@@ -1,25 +1,73 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { uploadItem } from '@/utils/uploadActions';
 
-export function useArchive(apiKey) {
+function transformArchivedItem(item) {
+  return {
+    id: item.torrent_id,
+    hash: item.hash,
+    tracker: item.tracker,
+    name: item.name,
+    archivedAt: parseUtcDate(item.archived_at).getTime(),
+    archiveId: item.id,
+  };
+}
+
+export function useArchive(apiKey, pagination, setPagination, search = '') {
   const [archivedDownloads, setArchivedDownloads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
+  const prevSearchRef = useRef(search);
+  const abortControllerRef = useRef(null);
+  const effectivePageRef = useRef(pagination?.page ?? 1);
+  const skipPageChangeFetchRef = useRef(false);
+
+  const internalPaginationRef = useRef(null);
+  const usesExternalPagination = Boolean(pagination && setPagination);
+
+  useEffect(() => {
+    if (!usesExternalPagination) return;
+
+    if (prevSearchRef.current !== search) {
+      prevSearchRef.current = search;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      effectivePageRef.current = 1;
+      skipPageChangeFetchRef.current = true;
+      if (pagination.page !== 1) {
+        setPagination((prev) => ({ ...prev, page: 1 }));
+      }
+    } else {
+      effectivePageRef.current = pagination.page;
+      skipPageChangeFetchRef.current = false;
+    }
+  }, [search, pagination, setPagination, usesExternalPagination]);
 
   const fetchArchivedDownloads = useCallback(
-    async (page = 1, limit = 50, signal) => {
+    async (page, limit, signal) => {
       if (!apiKey) {
         setLoading(false);
         return;
       }
 
+      const resolvedPage = page ?? (usesExternalPagination ? effectivePageRef.current : 1);
+      const resolvedLimit =
+        limit ?? (usesExternalPagination ? pagination.limit : internalPaginationRef.current?.limit ?? 50);
+
       try {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/archived-downloads?page=${page}&limit=${limit}`, {
+        const params = new URLSearchParams({
+          page: String(resolvedPage),
+          limit: String(resolvedLimit),
+        });
+        if (search) {
+          params.append('search', search);
+        }
+
+        const response = await fetch(`/api/archived-downloads?${params.toString()}`, {
           headers: {
             'x-api-key': apiKey,
           },
@@ -37,18 +85,25 @@ export function useArchive(apiKey) {
         if (signal?.aborted) return;
 
         if (data.success) {
-          // Transform backend data to match frontend format
-          const transformed = data.data.map((item) => ({
-            id: item.torrent_id,
-            hash: item.hash,
-            tracker: item.tracker,
-            name: item.name,
-            archivedAt: parseUtcDate(item.archived_at).getTime(),
-            archiveId: item.id, // Store the archive database ID for deletion
-          }));
-
+          const transformed = data.data.map(transformArchivedItem);
           setArchivedDownloads(transformed);
-          setPagination(data.pagination || { page, limit, total: 0, totalPages: 0 });
+          const nextPagination = data.pagination || {
+            page: resolvedPage,
+            limit: resolvedLimit,
+            total: 0,
+            totalPages: 0,
+          };
+          if (usesExternalPagination) {
+            setPagination((prev) => ({
+              ...prev,
+              page: nextPagination.page,
+              limit: nextPagination.limit,
+              total: nextPagination.total,
+              totalPages: nextPagination.totalPages,
+            }));
+          } else {
+            internalPaginationRef.current = nextPagination;
+          }
         } else {
           throw new Error(data.error || 'Failed to fetch archived downloads');
         }
@@ -63,18 +118,53 @@ export function useArchive(apiKey) {
         }
       }
     },
-    [apiKey]
+    [apiKey, pagination, search, setPagination, usesExternalPagination]
   );
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    fetchArchivedDownloads(1, 50, abortController.signal);
-    return () => abortController.abort();
-  }, [fetchArchivedDownloads]);
+  const prevPageRef = useRef(pagination?.page ?? 1);
+  const prevSearchForEffectRef = useRef(search);
 
-  const getArchivedDownloads = () => {
-    return archivedDownloads;
-  };
+  useEffect(() => {
+    if (!apiKey) {
+      setLoading(false);
+      return;
+    }
+
+    if (usesExternalPagination) {
+      const pageChanged = prevPageRef.current !== pagination.page;
+      const searchChanged = prevSearchForEffectRef.current !== search;
+      prevPageRef.current = pagination.page;
+      prevSearchForEffectRef.current = search;
+
+      if (pageChanged && !searchChanged && skipPageChangeFetchRef.current) {
+        skipPageChangeFetchRef.current = false;
+        return;
+      }
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    fetchArchivedDownloads(
+      usesExternalPagination ? effectivePageRef.current : 1,
+      usesExternalPagination ? pagination.limit : 50,
+      abortController.signal
+    );
+
+    return () => abortController.abort();
+  }, [
+    apiKey,
+    fetchArchivedDownloads,
+    usesExternalPagination,
+    pagination?.page,
+    pagination?.limit,
+    search,
+  ]);
+
+  const getArchivedDownloads = () => archivedDownloads;
 
   const archiveDownload = async (download) => {
     if (!apiKey) {
@@ -104,15 +194,16 @@ export function useArchive(apiKey) {
       const data = await response.json();
 
       if (data.success) {
-        // Refresh the list
-        await fetchArchivedDownloads(pagination.page, pagination.limit);
+        await fetchArchivedDownloads(
+          usesExternalPagination ? effectivePageRef.current : 1,
+          usesExternalPagination ? pagination.limit : 50
+        );
         return data.data;
-      } else {
-        throw new Error(data.error || 'Failed to archive download');
       }
-    } catch (error) {
-      console.error('Error archiving download:', error);
-      throw error;
+      throw new Error(data.error || 'Failed to archive download');
+    } catch (err) {
+      console.error('Error archiving download:', err);
+      throw err;
     }
   };
 
@@ -121,9 +212,8 @@ export function useArchive(apiKey) {
       throw new Error('API key is required');
     }
 
-    // Find the archive entry to get the archive database ID
     const archiveEntry = archivedDownloads.find((item) => item.id === downloadId);
-    if (!archiveEntry || !archiveEntry.archiveId) {
+    if (!archiveEntry?.archiveId) {
       throw new Error('Archive entry not found');
     }
 
@@ -143,23 +233,41 @@ export function useArchive(apiKey) {
       const data = await response.json();
 
       if (data.success) {
-        // Refresh the list
-        await fetchArchivedDownloads(pagination.page, pagination.limit);
+        await fetchArchivedDownloads(
+          usesExternalPagination ? effectivePageRef.current : 1,
+          usesExternalPagination ? pagination.limit : 50
+        );
         return archivedDownloads.filter((item) => item.id !== downloadId);
-      } else {
-        throw new Error(data.error || 'Failed to remove from archive');
       }
-    } catch (error) {
-      console.error('Error removing from archive:', error);
-      throw error;
+      throw new Error(data.error || 'Failed to remove from archive');
+    } catch (err) {
+      console.error('Error removing from archive:', err);
+      throw err;
     }
   };
 
   const clearArchive = async () => {
-    // Clear all archived downloads one by one
-    // Note: We could add a bulk delete endpoint if needed
-    const deletePromises = archivedDownloads.map((item) => removeFromArchive(item.id));
-    await Promise.all(deletePromises);
+    const ids = archivedDownloads.map((item) => item.archiveId).filter(Boolean);
+    if (ids.length === 0) return [];
+
+    const response = await fetch('/api/archived-downloads/bulk', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to clear archive');
+    }
+
+    await fetchArchivedDownloads(
+      usesExternalPagination ? effectivePageRef.current : 1,
+      usesExternalPagination ? pagination.limit : 50
+    );
     return [];
   };
 
@@ -180,14 +288,33 @@ export function useArchive(apiKey) {
       if (!result.success) {
         throw new Error(result.error);
       }
-
-      // Optionally remove from archive after successful restore
-      // await removeFromArchive(download.id);
-    } catch (error) {
-      console.error('Failed to restore from archive:', error);
-      throw error;
+    } catch (err) {
+      console.error('Failed to restore from archive:', err);
+      throw err;
     }
   };
+
+  const refresh = useCallback(() => {
+    return fetchArchivedDownloads(
+      usesExternalPagination ? effectivePageRef.current : 1,
+      usesExternalPagination ? pagination.limit : 50
+    );
+  }, [fetchArchivedDownloads, usesExternalPagination, pagination?.limit]);
+
+  const fetchPage = useCallback(
+    (page) => {
+      if (usesExternalPagination) {
+        setPagination((prev) => ({ ...prev, page }));
+      } else {
+        fetchArchivedDownloads(page, internalPaginationRef.current?.limit ?? 50);
+      }
+    },
+    [fetchArchivedDownloads, setPagination, usesExternalPagination]
+  );
+
+  const resolvedPagination = usesExternalPagination
+    ? pagination
+    : internalPaginationRef.current ?? { page: 1, limit: 50, total: 0, totalPages: 0 };
 
   return {
     getArchivedDownloads,
@@ -197,8 +324,9 @@ export function useArchive(apiKey) {
     restoreFromArchive,
     loading,
     error,
-    pagination,
-    refresh: () => fetchArchivedDownloads(pagination.page, pagination.limit),
-    fetchPage: (page) => fetchArchivedDownloads(page, pagination.limit),
+    pagination: resolvedPagination,
+    refresh,
+    fetchPage,
+    fetchArchivedDownloads: refresh,
   };
 }
