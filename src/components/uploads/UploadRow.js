@@ -67,7 +67,7 @@ export default function UploadRow({
           : ''
       }`}
     >
-      <td className="p-3 text-sm text-primary-text dark:text-primary-text-dark w-12">
+      <td className="px-2.5 py-1.5 text-xs text-primary-text dark:text-primary-text-dark w-12">
         <input
           type="checkbox"
           checked={selected}
@@ -77,7 +77,7 @@ export default function UploadRow({
           aria-label={upload.name || 'Select upload'}
         />
       </td>
-      <td className="p-3 text-sm text-primary-text dark:text-primary-text-dark">
+      <td className="px-2.5 py-1.5 text-xs text-primary-text dark:text-primary-text-dark">
         <div className="flex items-center gap-2">
           {isSortable && (
             <button
@@ -90,7 +90,7 @@ export default function UploadRow({
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="size-5"
+                className="size-4"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -110,35 +110,35 @@ export default function UploadRow({
           </div>
         </div>
         {upload.error_message && (
-          <div className="text-xs text-red-500 dark:text-red-400 mt-1" title={upload.error_message}>
+          <div className="text-xs text-red-500 dark:text-red-400 mt-0.5" title={upload.error_message}>
             {formatErrorMessage(upload.error_message)}
           </div>
         )}
       </td>
-      <td className="p-3 text-sm text-primary-text dark:text-primary-text-dark">
+      <td className="px-2.5 py-1.5 text-xs text-primary-text dark:text-primary-text-dark">
         {TYPE_LABELS[upload.type] || upload.type}
       </td>
-      <td className="p-3">
+      <td className="px-2.5 py-1.5">
         <span
-          className={`px-2 py-1 rounded text-xs font-medium ${STATUS_COLORS[upload.status] || STATUS_COLORS.queued}`}
+          className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[upload.status] || STATUS_COLORS.queued}`}
         >
           {upload.status}
         </span>
       </td>
-      <td className="p-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+      <td className="px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70">
         <UploadDateCell dateString={upload.created_at} t={t} />
       </td>
-      <td className="p-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
+      <td className="px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70">
         <UploadDateCell dateString={upload.last_processed_at} t={t} />
       </td>
-      <td className="p-3">
-        <div className="flex gap-2 items-center">
+      <td className="px-2.5 py-1.5">
+        <div className="flex gap-1.5 items-center">
           {canDownload && (
             <button
               type="button"
               onClick={() => onDownload(upload.id)}
               disabled={uploadId != null && downloading.has(uploadId)}
-              className="p-1.5 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
+              className="p-1 text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark rounded transition-colors"
               title="Download original file"
               aria-label="Download original file"
             >
@@ -163,7 +163,7 @@ export default function UploadRow({
               type="button"
               onClick={() => onCopy(upload.url, upload.id)}
               disabled={uploadId != null && copying.has(uploadId)}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1 rounded transition-colors ${
                 copySuccess === uploadId
                   ? 'text-green-500 dark:text-green-400 bg-green-500/20 dark:bg-green-400/20'
                   : 'text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
@@ -191,7 +191,7 @@ export default function UploadRow({
               type="button"
               onClick={() => onRetry(upload.id)}
               disabled={uploadId != null && retrying.has(uploadId)}
-              className="px-3 py-1 text-xs bg-accent text-white rounded hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50"
+              className="px-2 py-0.5 text-xs bg-accent text-white rounded hover:bg-accent/90 dark:bg-accent-dark dark:hover:bg-accent-dark/90 disabled:opacity-50"
             >
               {uploadId != null && retrying.has(uploadId) ? 'Retrying...' : 'Retry'}
             </button>
@@ -200,7 +200,7 @@ export default function UploadRow({
             type="button"
             onClick={() => onDelete(upload.id)}
             disabled={uploadId == null || deleting.has(uploadId)}
-            className="px-3 py-1 text-xs bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2 py-0.5 text-xs bg-label-danger-text dark:bg-label-danger-text-dark text-white rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploadId != null && deleting.has(uploadId) ? 'Deleting...' : 'Delete'}
           </button>
