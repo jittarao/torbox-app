@@ -28,6 +28,7 @@ export default function UploadRow({
   copying,
   selected,
   onSelect,
+  rowIndex,
   copySuccess,
   isSortable = false,
 }) {
@@ -71,7 +72,12 @@ export default function UploadRow({
         <input
           type="checkbox"
           checked={selected}
-          onChange={(e) => onSelect(upload.id, e.target.checked)}
+          onMouseDown={(e) => {
+            if (e.shiftKey) e.preventDefault();
+          }}
+          onChange={(e) =>
+            onSelect(upload.id, e.target.checked, rowIndex, e.shiftKey)
+          }
           className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
           onClick={(e) => e.stopPropagation()}
           aria-label={upload.name || 'Select upload'}

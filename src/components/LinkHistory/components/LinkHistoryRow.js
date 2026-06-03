@@ -7,6 +7,7 @@ const LinkHistoryRow = memo(
     item,
     isSelected,
     onSelect,
+    rowIndex,
     onCopy,
     onDelete,
     onOpen,
@@ -32,7 +33,12 @@ const LinkHistoryRow = memo(
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={(e) => onSelect(item.id, e.target.checked)}
+            onMouseDown={(e) => {
+              if (e.shiftKey) e.preventDefault();
+            }}
+            onChange={(e) =>
+              onSelect(item.id, e.target.checked, rowIndex, e.shiftKey)
+            }
             className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
             aria-label={linkHistoryT('actions.selectItem')}
           />

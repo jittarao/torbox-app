@@ -57,10 +57,11 @@ const LinkHistoryTable = memo(
             </tr>
           </thead>
           <tbody className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark">
-            {history.map((item) => (
+            {history.map((item, rowIndex) => (
               <LinkHistoryRow
                 key={item.id}
                 item={item}
+                rowIndex={rowIndex}
                 isSelected={selectedLinks.has(item.id)}
                 onSelect={onSelectLink}
                 onCopy={onCopy}

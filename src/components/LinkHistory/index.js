@@ -11,6 +11,7 @@ import SearchBar from './components/SearchBar';
 import LinkHistoryTable from './components/LinkHistoryTable';
 import Pagination from './components/Pagination';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
 
 const LinkHistory = ({ apiKey }) => {
   const t = useTranslations('Common');
@@ -41,6 +42,9 @@ const LinkHistory = ({ apiKey }) => {
   const { deleting, bulkDeleting, copySuccess, handleDelete, handleBulkDelete, handleCopy } =
     useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks);
 
+  const getLinkRowId = useCallback((item) => item.id, []);
+  const { buildSelectionUpdater } = useShiftRangeRowSelection(history, getLinkRowId);
+
   // Debounce search input - update search value after 500ms of no typing
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -61,17 +65,12 @@ const LinkHistory = ({ apiKey }) => {
     [history]
   );
 
-  const handleSelectLink = useCallback((id, checked) => {
-    setSelectedLinks((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
-  }, []);
+  const handleSelectLink = useCallback(
+    (id, checked, rowIndex, isShiftKey = false) => {
+      setSelectedLinks(buildSelectionUpdater(id, checked, rowIndex, isShiftKey));
+    },
+    [buildSelectionUpdater]
+  );
 
   const handlePageChange = useCallback((page) => {
     setPagination((prev) => ({ ...prev, page }));
