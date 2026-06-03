@@ -78,7 +78,8 @@
     "actions": {
       "addToTorBox": "Add to TorBox",
       "copyMagnet": "Copy Magnet",
-      "remove": "Remove"
+      "remove": "Remove",
+      "selectItem": "Select archived download"
     },
     "columns": {
       "actions": "Actions",
@@ -90,6 +91,7 @@
     "emptyState": {
       "description": "Set up an automation rule to archive downloads automatically. When a download gets archived, you'll find it here to restore, copy, or delete.",
       "howItWorks": "How it works:",
+      "noSearchResults": "No archived downloads match your search.",
       "step1": "Add a rule with \"Archive Download\" action",
       "step2": "When the rule triggers, matching downloads are archived",
       "step3": "They show up here so you can restore, copy, or delete",
@@ -97,7 +99,11 @@
     },
     "title": "Archived Downloads",
     "toast": {
-      "magnetCopied": "Magnet link copied to clipboard"
+      "magnetCopied": "Magnet link copied to clipboard",
+      "removeError": "Failed to remove from archive",
+      "removed": "Removed from archive",
+      "restoreError": "Failed to add to TorBox",
+      "restored": "Added to TorBox"
     }
   },
   "AutomationRules": {

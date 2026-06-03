@@ -77,7 +77,8 @@
     "actions": {
       "addToTorBox": "Añadir a TorBox",
       "copyMagnet": "Copiar imán",
-      "remove": "Eliminar"
+      "remove": "Eliminar",
+      "selectItem": "Seleccionar descarga archivada"
     },
     "columns": {
       "actions": "Acciones",
@@ -89,6 +90,7 @@
     "emptyState": {
       "description": "Configura una regla de automatización para archivar descargas automáticamente. Cuando una descarga se archiva, la encontrarás aquí para restaurar, copiar o eliminar.",
       "howItWorks": "Cómo funciona:",
+      "noSearchResults": "Ninguna descarga archivada coincide con tu búsqueda.",
       "step1": "Añade una regla con \"Archivar descarga\" como acción",
       "step2": "Cuando la regla se activa, las descargas que coincidan con las condiciones se archivan",
       "step3": "Aparecen aquí para que puedas restaurar, copiar o eliminar",
@@ -96,7 +98,11 @@
     },
     "title": "Descargas archivadas",
     "toast": {
-      "magnetCopied": "Enlace magnético copiado al portapapeles"
+      "magnetCopied": "Enlace magnético copiado al portapapeles",
+      "removeError": "Error al eliminar del archivo",
+      "removed": "Eliminado del archivo",
+      "restoreError": "Error al añadir a TorBox",
+      "restored": "Añadido a TorBox"
     }
   },
   "AutomationRules": {

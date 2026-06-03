@@ -1,56 +1,132 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Archive, Copy, Restore, Times } from '@/components/icons';
 import { useArchive } from '@/hooks/useArchive';
 import { timeAgo } from '@/components/downloads/utils/formatters';
 import useIsMobile from '@/hooks/useIsMobile';
 import Toast from '@/components/shared/Toast';
+import SearchBar from '@/components/LinkHistory/components/SearchBar';
+import { useArchivedDownloadsActions } from './hooks/useArchivedDownloadsActions';
 
 export default function ArchivedDownloads({ apiKey }) {
   const t = useTranslations('Common');
   const archivedT = useTranslations('ArchivedDownloads');
   const isMobile = useIsMobile();
   const [toast, setToast] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+  });
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const selectAllRef = useRef(null);
+
   const {
     getArchivedDownloads,
     removeFromArchive,
     restoreFromArchive,
     loading,
     error,
-    pagination,
+    pagination: resolvedPagination,
     fetchPage,
-  } = useArchive(apiKey);
+    fetchArchivedDownloads,
+  } = useArchive(apiKey, pagination, setPagination, search);
+
+  const { bulkDeleting, handleBulkDelete, handleRemove } = useArchivedDownloadsActions(
+    apiKey,
+    fetchArchivedDownloads,
+    setSelectedItems,
+    removeFromArchive
+  );
+
   const archivedItems = getArchivedDownloads();
 
-  const handleRemove = async (id) => {
-    try {
-      await removeFromArchive(id);
-      setToast({
-        message: archivedT('toast.removed'),
-        type: 'success',
-      });
-    } catch (error) {
-      console.error('Error removing from archive:', error);
-      setToast({
-        message: error.message || archivedT('toast.removeError'),
-        type: 'error',
-      });
-    }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const handleSelectAll = useCallback(
+    (checked) => {
+      if (checked) {
+        setSelectedItems(new Set(archivedItems.map((item) => item.archiveId)));
+      } else {
+        setSelectedItems(new Set());
+      }
+    },
+    [archivedItems]
+  );
+
+  const handleSelectItem = useCallback((archiveId, checked) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(archiveId);
+      } else {
+        next.delete(archiveId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSearchChange = useCallback((value) => {
+    setSearchInput(value);
+  }, []);
+
+  const handleBulkDeleteClick = useCallback(() => {
+    handleBulkDelete(selectedItems);
+  }, [handleBulkDelete, selectedItems]);
+
+  const allSelected = useMemo(
+    () => archivedItems.length > 0 && selectedItems.size === archivedItems.length,
+    [archivedItems.length, selectedItems.size]
+  );
+
+  const someSelected = useMemo(
+    () => selectedItems.size > 0 && selectedItems.size < archivedItems.length,
+    [selectedItems.size, archivedItems.length]
+  );
+
+  if (selectAllRef.current) {
+    selectAllRef.current.indeterminate = someSelected;
+  }
+
+  const onRemove = async (id) => {
+    await handleRemove(
+      id,
+      () =>
+        setToast({
+          message: archivedT('toast.removed') || 'Removed from archive',
+          type: 'success',
+        }),
+      (err) => {
+        console.error('Error removing from archive:', err);
+        setToast({
+          message: err.message || archivedT('toast.removeError') || 'Failed to remove',
+          type: 'error',
+        });
+      }
+    );
   };
 
   const handleRestore = async (download) => {
     try {
       await restoreFromArchive(download);
       setToast({
-        message: archivedT('toast.restored'),
+        message: archivedT('toast.restored') || 'Added to TorBox',
         type: 'success',
       });
-    } catch (error) {
-      console.error('Error restoring from archive:', error);
+    } catch (err) {
+      console.error('Error restoring from archive:', err);
       setToast({
-        message: error.message || archivedT('toast.restoreError'),
+        message: err.message || archivedT('toast.restoreError') || 'Failed to restore',
         type: 'error',
       });
     }
@@ -66,111 +142,127 @@ export default function ArchivedDownloads({ apiKey }) {
     });
   };
 
-  if (loading) {
-    return (
-      <>
-        <h1 className="text-md lg:text-xl mb-4 font-medium text-primary-text dark:text-primary-text-dark">
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-md font-medium text-primary-text dark:text-primary-text-dark lg:text-xl">
           {archivedT('title')}
         </h1>
-        <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
+        <SearchBar
+          search={searchInput}
+          onSearchChange={handleSearchChange}
+          selectedCount={selectedItems.size}
+          onBulkDelete={handleBulkDeleteClick}
+          bulkDeleting={bulkDeleting}
+          onRefresh={fetchArchivedDownloads}
+          ariaLabel="Archived downloads actions"
+        />
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-label-danger-text/20 bg-label-danger-bg p-4 text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="rounded-lg border border-border bg-surface p-8 dark:border-border-dark dark:bg-surface-dark md:p-12">
           <div className="text-center">
             <p className="text-md text-primary-text/70 dark:text-primary-text-dark/70">
               {t('loading') || 'Loading...'}
             </p>
           </div>
         </div>
-      </>
-    );
-  }
+      )}
 
-  if (error) {
-    return (
-      <>
-        <h1 className="text-md lg:text-xl mb-4 font-medium text-primary-text dark:text-primary-text-dark">
-          {archivedT('title')}
-        </h1>
-        <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
+      {!loading && archivedItems.length === 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-8 dark:border-border-dark dark:bg-surface-dark md:p-12">
           <div className="text-center">
-            <p className="text-md text-red-500 dark:text-red-400">{error}</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <h1 className="text-md lg:text-xl mb-4 font-medium text-primary-text dark:text-primary-text-dark">
-        {archivedT('title')}
-      </h1>
-      {archivedItems.length === 0 ? (
-        <div className="rounded-lg border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-8 md:p-12">
-          <div className="text-center">
-            <Archive className="size-16 mx-auto mb-4 text-primary-text/40 dark:text-primary-text-dark/40" />
-            <h2 className="text-lg font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <Archive className="mx-auto mb-4 size-16 text-primary-text/40 dark:text-primary-text-dark/40" />
+            <h2 className="mb-2 text-lg font-medium text-primary-text dark:text-primary-text-dark">
               {archivedT('emptyState.title')}
             </h2>
-            <p className="text-md text-primary-text/70 dark:text-primary-text-dark/70 max-w-2xl mx-auto mb-4">
-              {archivedT('emptyState.description')}
+            <p className="mx-auto mb-4 max-w-2xl text-md text-primary-text/70 dark:text-primary-text-dark/70">
+              {search ? archivedT('emptyState.noSearchResults') : archivedT('emptyState.description')}
             </p>
-            <div className="mt-6 p-4 bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark">
-              <p className="text-md text-primary-text/60 dark:text-primary-text-dark/60 mb-2">
-                <strong className="text-primary-text dark:text-primary-text-dark">
-                  {archivedT('emptyState.howItWorks')}
-                </strong>
-              </p>
-              <ul className="text-sm text-primary-text/60 dark:text-primary-text-dark/60 text-left space-y-1 max-w-md mx-auto">
-                <li>• {archivedT('emptyState.step1')}</li>
-                <li>• {archivedT('emptyState.step2')}</li>
-                <li>• {archivedT('emptyState.step3')}</li>
-              </ul>
-            </div>
+            {!search && (
+              <div className="mt-6 rounded-lg border border-border bg-surface-alt p-4 dark:border-border-dark dark:bg-surface-alt-dark">
+                <p className="mb-2 text-md text-primary-text/60 dark:text-primary-text-dark/60">
+                  <strong className="text-primary-text dark:text-primary-text-dark">
+                    {archivedT('emptyState.howItWorks')}
+                  </strong>
+                </p>
+                <ul className="mx-auto max-w-md space-y-1 text-left text-sm text-primary-text/60 dark:text-primary-text-dark/60">
+                  <li>• {archivedT('emptyState.step1')}</li>
+                  <li>• {archivedT('emptyState.step2')}</li>
+                  <li>• {archivedT('emptyState.step3')}</li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
+      ) : null}
+
+      {!loading && archivedItems.length > 0 && (
         <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border dark:border-border-dark">
-          <table className="min-w-full table-fixed divide-y divide-border dark:divide-border-dark relative">
+          <table className="relative min-w-full table-fixed divide-y divide-border dark:divide-border-dark">
             <thead className="bg-surface-alt dark:bg-surface-alt-dark">
               <tr className="table-rowbg-surface-alt dark:bg-surface-alt-dark">
-                <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[120px] min-w-[120px] max-w-[150px]">
+                <th className="w-12 px-3 py-2 text-left text-xs font-medium uppercase text-primary-text dark:text-primary-text-dark md:px-4">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="size-4 cursor-pointer accent-accent dark:accent-accent-dark"
+                    aria-label={archivedT('actions.selectItem')}
+                  />
+                </th>
+                <th className="relative group w-[120px] min-w-[120px] max-w-[150px] cursor-pointer select-none px-2.5 py-2 text-left text-xs font-medium uppercase text-primary-text transition-colors hover:bg-surface-hover dark:text-primary-text-dark dark:hover:bg-surface-hover-dark md:px-3">
                   {archivedT('columns.itemId')}
                 </th>
-                <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors">
+                <th className="relative group cursor-pointer select-none px-2.5 py-2 text-left text-xs font-medium uppercase text-primary-text transition-colors hover:bg-surface-hover dark:text-primary-text-dark dark:hover:bg-surface-hover-dark md:px-3">
                   {archivedT('columns.itemName')}
                 </th>
-                <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[200px] min-w-[200px] max-w-[200px]">
+                <th className="relative group w-[200px] min-w-[200px] max-w-[200px] cursor-pointer select-none px-2.5 py-2 text-left text-xs font-medium uppercase text-primary-text transition-colors hover:bg-surface-hover dark:text-primary-text-dark dark:hover:bg-surface-hover-dark md:px-3">
                   {archivedT('columns.archivedAt')}
                 </th>
-                <th className="px-2.5 md:px-3 py-2 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[150px]">
+                <th className="sticky right-0 w-[100px] min-w-[100px] max-w-[150px] bg-surface-alt px-2.5 py-2 text-right text-xs font-medium uppercase text-primary-text dark:bg-surface-alt-dark dark:text-primary-text-dark md:px-3">
                   {archivedT('columns.actions')}
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-surface dark:bg-surface-dark divide-y divide-border dark:divide-border-dark">
+            <tbody className="divide-y divide-border bg-surface dark:divide-border-dark dark:bg-surface-dark">
               {archivedItems.map((item) => (
                 <tr
-                  key={item.id}
+                  key={item.archiveId}
                   className="bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark"
                 >
-                  <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                  <td className="px-2.5 py-1.5 md:px-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.has(item.archiveId)}
+                      onChange={(e) => handleSelectItem(item.archiveId, e.target.checked)}
+                      className="size-4 cursor-pointer accent-accent dark:accent-accent-dark"
+                      aria-label={archivedT('actions.selectItem')}
+                    />
+                  </td>
+                  <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
                     {item.id}
                   </td>
-                  <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
+                  <td className="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
                     {item.name}
                   </td>
-                  <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+                  <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
                     {timeAgo(item.archivedAt, t)}
                   </td>
                   <td
-                    className={`px-2.5 md:px-3 py-1.5 whitespace-nowrap text-right text-xs font-medium sticky right-0 z-10 bg-inherit dark:bg-inherit flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-1.5`}
+                    className={`sticky right-0 z-10 flex bg-inherit px-2.5 py-1.5 text-right text-xs font-medium dark:bg-inherit md:px-3 ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-1.5 whitespace-nowrap`}
                   >
-                    {/* Add to TorBox Button */}
                     <button
                       type="button"
                       onClick={() => handleRestore(item)}
-                      className={`p-1 rounded-full text-green-500 dark:text-green-400 
-                        hover:bg-green-500/5 dark:hover:bg-green-400/5 transition-all duration-200
-                        disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+                      className={`rounded-full p-1 text-green-500 transition-all duration-200 hover:bg-green-500/5 disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-400/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
                       title={archivedT('actions.addToTorBox')}
                     >
                       {isMobile ? (
@@ -182,13 +274,10 @@ export default function ArchivedDownloads({ apiKey }) {
                       )}
                     </button>
 
-                    {/* Copy Magnet Button */}
                     <button
                       type="button"
                       onClick={() => handleCopyMagnet(item)}
-                      className={`p-1 rounded-full text-blue-500 dark:text-blue-400 
-                        hover:bg-label-active-text/5 dark:hover:bg-label-active-text-dark/5 transition-all duration-200
-                        disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+                      className={`rounded-full p-1 text-blue-500 transition-all duration-200 hover:bg-label-active-text/5 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-label-active-text-dark/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
                       title={archivedT('actions.copyMagnet')}
                     >
                       {isMobile ? (
@@ -200,13 +289,10 @@ export default function ArchivedDownloads({ apiKey }) {
                       )}
                     </button>
 
-                    {/* Remove Button */}
                     <button
                       type="button"
-                      onClick={() => handleRemove(item.id)}
-                      className={`p-1 rounded-full text-red-500 dark:text-red-400 
-                        hover:bg-red-500/5 dark:hover:bg-red-400/5 transition-all duration-200
-                        disabled:opacity-50 ${isMobile ? 'w-full flex items-center justify-center py-1 rounded-md' : ''}`}
+                      onClick={() => onRemove(item.id)}
+                      className={`rounded-full p-1 text-red-500 transition-all duration-200 hover:bg-red-500/5 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-400/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
                       title={archivedT('actions.remove')}
                     >
                       {isMobile ? (
@@ -225,28 +311,28 @@ export default function ArchivedDownloads({ apiKey }) {
         </div>
       )}
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {!loading && resolvedPagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <div className="text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-            {t('showing') || 'Showing'} {(pagination.page - 1) * pagination.limit + 1} -{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} {t('of') || 'of'}{' '}
-            {pagination.total}
+            {t('showing') || 'Showing'}{' '}
+            {(resolvedPagination.page - 1) * resolvedPagination.limit + 1} -{' '}
+            {Math.min(resolvedPagination.page * resolvedPagination.limit, resolvedPagination.total)}{' '}
+            {t('of') || 'of'} {resolvedPagination.total}
           </div>
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => fetchPage(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className="px-4 py-2 rounded-md border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+              onClick={() => fetchPage(resolvedPagination.page - 1)}
+              disabled={resolvedPagination.page === 1}
+              className="rounded-md border border-border bg-surface px-4 py-2 text-primary-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-dark dark:bg-surface-dark dark:text-primary-text-dark dark:hover:bg-surface-alt-dark"
             >
               {t('previous') || 'Previous'}
             </button>
             <button
               type="button"
-              onClick={() => fetchPage(pagination.page + 1)}
-              disabled={pagination.page >= pagination.totalPages}
-              className="px-4 py-2 rounded-md border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
+              onClick={() => fetchPage(resolvedPagination.page + 1)}
+              disabled={resolvedPagination.page >= resolvedPagination.totalPages}
+              className="rounded-md border border-border bg-surface px-4 py-2 text-primary-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-dark dark:bg-surface-dark dark:text-primary-text-dark dark:hover:bg-surface-alt-dark"
             >
               {t('next') || 'Next'}
             </button>
