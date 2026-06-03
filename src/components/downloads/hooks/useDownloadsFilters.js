@@ -12,6 +12,12 @@ import {
   getActiveTagIds,
 } from '@/components/downloads/filters/filterHelpers';
 
+/** Loose id match (API may return number or string). */
+function sameViewId(a, b) {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
 export function useDownloadsFilters({
   apiKey,
   isBackendAvailable,
@@ -70,6 +76,10 @@ export function useDownloadsFilters({
   const filterDepsRef = useRef({ filterModalMode, editingView, activeType, search, sortField, sortDirection });
   filterDepsRef.current = { filterModalMode, editingView, activeType, search, sortField, sortDirection };
 
+  /** Prevents URL ?view= from re-applying after the user clears the active view. */
+  const suppressUrlViewSyncRef = useRef(false);
+  const lastSyncedUrlViewIdRef = useRef(null);
+
   useEffect(() => {
     if (isBackendAvailable && apiKey && !viewsHasLoaded && !viewsLoading) {
       loadViews();
@@ -77,11 +87,13 @@ export function useDownloadsFilters({
   }, [apiKey, isBackendAvailable, viewsHasLoaded, viewsLoading, loadViews]);
 
   const handleClearFilters = useCallback(() => {
+    suppressUrlViewSyncRef.current = true;
+    lastSyncedUrlViewIdRef.current = urlViewId ?? null;
     clearView();
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
     setColumnFilters(empty);
     clearAllFilterCriteria();
-  }, [clearView, clearAllFilterCriteria]);
+  }, [clearView, clearAllFilterCriteria, urlViewId]);
 
   const applyViewFilters = useCallback(
     (view) => {
@@ -100,6 +112,8 @@ export function useDownloadsFilters({
         criteriaPatch.sortDirection = view.sort_direction || 'desc';
       }
       patchFilterCriteria(criteriaPatch);
+      lastSyncedUrlViewIdRef.current = view.id;
+      suppressUrlViewSyncRef.current = false;
 
       let visibleColumns = view.visible_columns;
       if (visibleColumns) {
@@ -124,22 +138,37 @@ export function useDownloadsFilters({
   );
 
   useEffect(() => {
-    if (urlViewId == null || !viewsHasLoaded || !views?.length) return;
-    const view = views.find((v) => v.id === urlViewId || v.id === Number(urlViewId));
-    if (!view || activeView?.id === view.id) return;
+    if (urlViewId == null) {
+      lastSyncedUrlViewIdRef.current = null;
+      suppressUrlViewSyncRef.current = false;
+      return;
+    }
+    if (!viewsHasLoaded || !views?.length) return;
+    if (suppressUrlViewSyncRef.current) return;
+    if (lastSyncedUrlViewIdRef.current != null && sameViewId(lastSyncedUrlViewIdRef.current, urlViewId)) {
+      return;
+    }
+
+    const view = views.find((v) => sameViewId(v.id, urlViewId));
+    if (!view) return;
+
+    lastSyncedUrlViewIdRef.current = urlViewId;
+    if (sameViewId(activeView?.id, view.id)) return;
+
     applyViewFilters(view);
   }, [urlViewId, viewsHasLoaded, views, activeView?.id, applyViewFilters]);
 
   const handleApplyView = useCallback(
     (view) => {
-      if (activeView?.id === view.id) {
+      if (sameViewId(activeView?.id, view.id)) {
         handleClearFilters();
         setMobileFiltersOpen(false);
         return;
       }
+      suppressUrlViewSyncRef.current = false;
       return applyViewFilters(view);
     },
-    [activeView, handleClearFilters, applyViewFilters]
+    [activeView?.id, handleClearFilters, applyViewFilters]
   );
 
   const handleApplyTag = useCallback(
