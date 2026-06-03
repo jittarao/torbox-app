@@ -92,7 +92,6 @@ export function useDownloadsPageState(apiKey) {
     activeType,
     setToast,
     handleColumnChange,
-    updateTagName,
     filterParams,
   });
 

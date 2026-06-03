@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
+import { useTags } from '@/components/shared/hooks/useTags';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
 import {
   EMPTY_FILTERS,
@@ -24,10 +25,10 @@ export function useDownloadsFilters({
   activeType,
   setToast,
   handleColumnChange,
-  updateTagName,
   filterParams,
 }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
+  const { updateTag: updateTagName } = useTags(apiKey);
 
   const {
     search,
