@@ -1,6 +1,20 @@
 import { useSortable } from '@dnd-kit/sortable';
-import { formatErrorMessage, formatDate, normalizeUploadId } from './utils';
+import { useTranslations } from 'next-intl';
+import Tooltip from '@/components/shared/Tooltip';
+import { formatErrorMessage, formatDate, formatTimeAgo, normalizeUploadId } from './utils';
 import { STATUS_COLORS, TYPE_LABELS } from './constants';
+
+function UploadDateCell({ dateString, t }) {
+  if (!dateString) {
+    return 'N/A';
+  }
+
+  return (
+    <Tooltip content={formatDate(dateString)}>
+      <span className="cursor-default">{formatTimeAgo(dateString, t)}</span>
+    </Tooltip>
+  );
+}
 
 export default function UploadRow({
   upload,
@@ -17,6 +31,7 @@ export default function UploadRow({
   copySuccess,
   isSortable = false,
 }) {
+  const t = useTranslations('Common');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: upload.id,
     disabled: !isSortable,
@@ -111,10 +126,10 @@ export default function UploadRow({
         </span>
       </td>
       <td className="p-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-        {formatDate(upload.created_at)}
+        <UploadDateCell dateString={upload.created_at} t={t} />
       </td>
       <td className="p-3 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-        {formatDate(upload.last_processed_at)}
+        <UploadDateCell dateString={upload.last_processed_at} t={t} />
       </td>
       <td className="p-3">
         <div className="flex gap-2 items-center">

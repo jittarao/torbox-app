@@ -1,3 +1,6 @@
+import { parseUtcDate } from '@/utils/parseUtcDate';
+import { timeAgo } from '@/components/downloads/utils/formatters';
+
 /** Stable numeric id for Set lookups and API payloads (SQLite/json may use number or string). */
 export function normalizeUploadId(id) {
   if (id == null || id === '') return null;
@@ -38,35 +41,12 @@ export const formatErrorMessage = (errorMessage) => {
 };
 
 // Format date in local browser timezone with consistent formatting
-// Backend stores dates in UTC (from SQLite CURRENT_TIMESTAMP), so we need to parse them as UTC
 export const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
-    // SQLite returns dates as "YYYY-MM-DD HH:MM:SS" in UTC (without timezone indicator)
-    // We need to explicitly treat them as UTC by appending 'Z' or using UTC parsing
-    let date;
-    if (typeof dateString === 'string') {
-      // If it's already in ISO format with 'Z', use it directly
-      if (dateString.includes('T') && dateString.includes('Z')) {
-        date = new Date(dateString);
-      } else if (dateString.includes('T')) {
-        // ISO format without Z - assume UTC
-        date = new Date(dateString + 'Z');
-      } else {
-        // SQLite format: "YYYY-MM-DD HH:MM:SS" - replace space with T and add Z for UTC
-        const utcString = dateString.replace(' ', 'T') + 'Z';
-        date = new Date(utcString);
-      }
-    } else {
-      date = new Date(dateString);
-    }
-
-    // Check if date is valid
+    const date = parseUtcDate(dateString);
     if (isNaN(date.getTime())) return 'Invalid date';
 
-    // Format with locale-specific options for consistent display in local timezone
-    // toLocaleString automatically converts from UTC to local timezone
-    // Use a more human-readable format: "Jan 15, 2026, 2:41:23 PM"
     return date.toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
@@ -76,7 +56,18 @@ export const formatDate = (dateString) => {
       second: '2-digit',
       hour12: true,
     });
-  } catch (error) {
+  } catch {
     return 'Invalid date';
+  }
+};
+
+export const formatTimeAgo = (dateString, t) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = parseUtcDate(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
+    return timeAgo(date.toISOString(), t);
+  } catch {
+    return 'N/A';
   }
 };
