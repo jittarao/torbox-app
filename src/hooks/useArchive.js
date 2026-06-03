@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { parseUtcDate } from '@/utils/parseUtcDate';
 import { uploadItem } from '@/utils/uploadActions';
 
 export function useArchive(apiKey) {
@@ -42,7 +43,7 @@ export function useArchive(apiKey) {
             hash: item.hash,
             tracker: item.tracker,
             name: item.name,
-            archivedAt: new Date(item.archived_at).getTime(),
+            archivedAt: parseUtcDate(item.archived_at).getTime(),
             archiveId: item.id, // Store the archive database ID for deletion
           }));
 
