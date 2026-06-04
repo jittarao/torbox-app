@@ -1,6 +1,7 @@
 import axios from 'axios';
 import logger from '../utils/logger.js';
 import WeightedFairSemaphore from '../utils/WeightedFairSemaphore.js';
+import torboxApiOutageCoordinator from './TorboxApiOutageCoordinator.js';
 
 /**
  * Simple circuit breaker for upstream API calls.
@@ -29,9 +30,10 @@ class CircuitBreaker {
   recordFailure() {
     this.failures++;
     this.lastFailureAt = Date.now();
-    if (this.failures >= this.failureThreshold) {
+    if (this.failures >= this.failureThreshold && this.state !== 'open') {
       this.state = 'open';
       logger.warn('Circuit breaker opened', { name: this.name, failures: this.failures });
+      torboxApiOutageCoordinator.notifyCircuitBreakerOpened();
     }
   }
 
@@ -50,6 +52,11 @@ class CircuitBreaker {
 
 const _globalCircuitBreaker = new CircuitBreaker('torbox-api');
 
+/** Reset global TorBox circuit breaker after platform recovery (coordinator only). */
+export function resetTorboxCircuitBreaker() {
+  _globalCircuitBreaker.recordSuccess();
+}
+
 // Constants
 const DEFAULT_TIMEOUT = 30000;
 // Fetch (getTorrents) timeout; shorter than default to leave headroom in per-user poll budget (POLL_KICKOUT_MS).
@@ -62,7 +69,17 @@ const DEFAULT_API_VERSION = 'v1';
 const DEFAULT_PACKAGE_VERSION = '0.1.0';
 
 const AUTH_ERROR_CODES = ['AUTH_ERROR', 'NO_AUTH', 'BAD_TOKEN'];
-const CONNECTION_ERROR_CODES = ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'];
+const CONNECTION_ERROR_CODES = [
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'ECONNABORTED',
+];
+const RECOVERY_PROBE_TIMEOUT_MS = Math.max(
+  1000,
+  parseInt(process.env.TORBOX_RECOVERY_PROBE_TIMEOUT_MS || '10000', 10)
+);
 const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
 
 /** Normalize API active field to boolean (API may return true, 1, or 'true') */
@@ -242,8 +259,10 @@ class ApiClient {
       context = {},
     } = options;
 
-    // Fast-fail if circuit breaker is open
-    if (_globalCircuitBreaker.isOpen()) {
+    const automationPaused = !torboxApiOutageCoordinator.isAutomationAllowed();
+
+    // Fast-fail if circuit breaker is open (unless automation already paused — coordinator owns recovery)
+    if (_globalCircuitBreaker.isOpen() && !automationPaused) {
       const cbError = new Error(`Circuit breaker open for TorBox API (${_globalCircuitBreaker.state})`);
       cbError.isCircuitBreakerOpen = true;
       cbError.isConnectionError = true;
@@ -253,6 +272,18 @@ class ApiClient {
           : connectionErrorFallback;
       }
       throw cbError;
+    }
+
+    if (automationPaused) {
+      const pausedError = new Error('TorBox API automation paused');
+      pausedError.isConnectionError = true;
+      pausedError.isAutomationPaused = true;
+      if (connectionErrorFallback !== null) {
+        return typeof connectionErrorFallback === 'function'
+          ? connectionErrorFallback(pausedError)
+          : connectionErrorFallback;
+      }
+      throw pausedError;
     }
 
     const pool = semaphore === 'fetch' ? _fetchSemaphore : _actionSemaphore;
@@ -284,7 +315,9 @@ class ApiClient {
 
       // Handle connection/server errors — record failure for circuit breaker
       if (this.isConnectionError(error)) {
-        _globalCircuitBreaker.recordFailure();
+        if (torboxApiOutageCoordinator.isAutomationAllowed()) {
+          _globalCircuitBreaker.recordFailure();
+        }
         const errorDetails = this.buildErrorDetails(error, { endpoint, ...context });
         const logMessage =
           connectionErrorFallback !== null
@@ -651,6 +684,52 @@ class ApiClient {
   // ============================================================================
   // Health Check Methods
   // ============================================================================
+
+  /**
+   * Lightweight recovery / liveness probe (matches frontend /api/health/torbox).
+   * Does not use handleApiCall, semaphores, or circuit breaker.
+   * @returns {Promise<{ ok: boolean, kind?: 'auth'|'connection'|'api', status?: number, error?: string }>}
+   */
+  async probeUserMe() {
+    try {
+      const response = await this.client.get('/api/user/me', {
+        timeout: RECOVERY_PROBE_TIMEOUT_MS,
+      });
+      const data = response.data ?? {};
+
+      if (response.status >= 200 && response.status < 300 && data.success === true) {
+        return { ok: true };
+      }
+
+      if (
+        response.status === 401 ||
+        response.status === 403 ||
+        (data.error && AUTH_ERROR_CODES.includes(data.error))
+      ) {
+        return { ok: false, kind: 'auth', status: response.status, error: data.error };
+      }
+
+      return {
+        ok: false,
+        kind: 'api',
+        status: response.status,
+        error: data.error || data.detail,
+      };
+    } catch (error) {
+      if (error.response && this.isAuthError(error)) {
+        return {
+          ok: false,
+          kind: 'auth',
+          status: error.response.status,
+          error: error.response?.data?.error,
+        };
+      }
+      if (this.isConnectionError(error)) {
+        return { ok: false, kind: 'connection', error: error.code || error.message };
+      }
+      return { ok: false, kind: 'connection', error: error.message };
+    }
+  }
 
   async testConnection() {
     try {

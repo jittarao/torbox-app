@@ -1,6 +1,7 @@
 import UserPoller from './UserPoller.js';
 import AutomationEngine from './AutomationEngine.js';
 import ApiClient from '../api/ApiClient.js';
+import torboxApiOutageCoordinator from '../api/TorboxApiOutageCoordinator.js';
 import GlobalActionQueue from './GlobalActionQueue.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
@@ -447,9 +448,9 @@ class PollingScheduler {
   }
 
   /**
-   * Handle a poll that was aborted because TorBox API was unreachable (network failure / 5xx).
-   * Shadow state was NOT touched, so we simply schedule a fast retry and avoid penalising the
-   * user's consecutive-timeout counter (this is an external outage, not a runaway poll).
+   * Handle a poll fetch aborted because TorBox API was unreachable (network failure / 5xx).
+   * Shadow state was NOT touched. next_poll_at was already reserved for MIN_POLL_INTERVAL_MS
+   * at cycle start; during platform pause the coordinator owns recovery and we leave it unchanged.
    * @param {string} authId - User authentication ID
    * @param {number} duration - Poll duration in seconds
    */
@@ -459,28 +460,20 @@ class PollingScheduler {
       return;
     }
 
-    try {
-      // Retry in ERROR_RETRY_INTERVAL_MS (30 min). The reserveUntil written at poll start is
-      // already 30 min from now, so this is a no-op in the common case — but it makes intent
-      // explicit and covers edge cases where the poll finished quickly.
-      const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
-      this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
+    this.metrics.failedPolls++;
 
-      this.metrics.failedPolls++;
-
-      logger.warn('Poll aborted: TorBox API unreachable — scheduling fast retry', {
+    if (!torboxApiOutageCoordinator.isAutomationAllowed()) {
+      logger.debug('Poll fetch failed during platform pause — next_poll_at unchanged', {
         authId,
-        nextPollAt: nextPollAt.toISOString(),
-        retryIn: '30 minutes',
         duration: `${duration.toFixed(2)}s`,
       });
-    } catch (error) {
-      logger.error('Failed to handle connection error for poll', error, {
-        authId,
-        duration,
-        errorMessage: error.message,
-      });
+      return;
     }
+
+    logger.debug('Poll fetch connection error — platform coordinator tracks outage', {
+      authId,
+      duration: `${duration.toFixed(2)}s`,
+    });
   }
 
   /**
@@ -631,6 +624,22 @@ class PollingScheduler {
     this.processSemaphore = new Semaphore(this.maxConcurrentProcess);
     this.globalActionQueue = new GlobalActionQueue(this);
 
+    torboxApiOutageCoordinator.setDependencies(this.masterDb, decrypt);
+    torboxApiOutageCoordinator.onRecovery(async () => {
+      await this.pollDueUsers().catch((err) => {
+        logger.error('Catch-up poll after TorBox recovery failed', err, {
+          errorMessage: err.message,
+        });
+      });
+      if (this.globalActionQueue) {
+        await this.globalActionQueue.drain().catch((err) => {
+          logger.error('Catch-up action drain after TorBox recovery failed', err, {
+            errorMessage: err.message,
+          });
+        });
+      }
+    });
+
     // Resume any pending actions persisted before a crash/restart
     this.globalActionQueue.loadFromPersistence().catch((err) => {
       logger.error('loadFromPersistence failed', err, { errorMessage: err.message });
@@ -690,6 +699,8 @@ class PollingScheduler {
       this.intervalId = null;
       logger.debug('Polling interval cleared');
     }
+
+    torboxApiOutageCoordinator.stop();
     if (this.pendingCleanupIntervalId) {
       clearInterval(this.pendingCleanupIntervalId);
       this.pendingCleanupIntervalId = null;
@@ -1110,6 +1121,11 @@ class PollingScheduler {
       return;
     }
 
+    if (!torboxApiOutageCoordinator.isAutomationAllowed()) {
+      logger.debug('Skipping poll cycle — TorBox API automation paused');
+      return;
+    }
+
     if (this._pollCheckInProgress) {
       const maxCycleMs = this._getMaxPollCycleMs();
       if (this._pollCycleStartedAt != null && Date.now() - this._pollCycleStartedAt > maxCycleMs) {
@@ -1185,7 +1201,14 @@ class PollingScheduler {
           authIds: usersToFetch.flatMap((u) => (u?.auth_id ? [u.auth_id] : [])),
         });
 
-        const counters = { success: 0, skipped: 0, error: 0 };
+        const counters = {
+          success: 0,
+          skipped: 0,
+          error: 0,
+          attempted: 0,
+          connectionErrors: 0,
+          fetchSuccesses: 0,
+        };
         const pollSem = this.pollSemaphore;
         const processSem = this.processSemaphore;
         if (!pollSem) {
@@ -1203,11 +1226,13 @@ class PollingScheduler {
             await pipelineMutex.acquire();
             await pollSem.acquire();
             try {
+              counters.attempted++;
               const result = await this.fetchTorrentsForUser(user, null);
               if (result.error) {
                 counters.error++;
                 const resultAuthId = result.user.auth_id;
                 if (result.error.isConnectionError) {
+                  counters.connectionErrors++;
                   this.handleConnectionError(resultAuthId, 0);
                 } else if (result.error.isPlanRestrictedFeature === true) {
                   await this.handlePlanRestrictedPollFailure(resultAuthId);
@@ -1223,6 +1248,9 @@ class PollingScheduler {
                 continue;
               }
               if (!result.torrents) continue;
+
+              counters.fetchSuccesses++;
+              torboxApiOutageCoordinator.noteSuccessfulCall(auth_id);
 
               if (!processSem) {
                 await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
@@ -1262,6 +1290,12 @@ class PollingScheduler {
           skippedCount: counters.skipped,
           errorCount: counters.error,
           totalDuration: `${totalDuration}s`,
+        });
+
+        torboxApiOutageCoordinator.recordPollCycleResult({
+          attempted: counters.attempted,
+          connectionErrors: counters.connectionErrors,
+          successes: counters.fetchSuccesses,
         });
       } catch (error) {
         const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
@@ -1368,6 +1402,7 @@ class PollingScheduler {
     return {
       isRunning: this.isRunning,
       activePollers: this.pollers.size,
+      torboxApi: torboxApiOutageCoordinator.getSnapshot(),
       pollers: pollerStatuses,
       metrics: {
         ...this.metrics,
@@ -1397,6 +1432,15 @@ class PollingScheduler {
   async triggerPoll(authId) {
     if (!authId) {
       throw new Error('authId is required for triggerPoll');
+    }
+
+    if (!torboxApiOutageCoordinator.isAutomationAllowed()) {
+      return {
+        success: false,
+        skipped: true,
+        reason: 'torbox_api_paused',
+        snapshot: torboxApiOutageCoordinator.getSnapshot(),
+      };
     }
 
     logger.info('Manually triggering poll for user', {
