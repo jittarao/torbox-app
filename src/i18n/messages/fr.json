@@ -713,6 +713,11 @@
   "LinkHistory": {
     "actions": {
       "copy": "Copier",
+      "copySelected": "Copier ({count})",
+      "copySelectedTitle": "Copier les liens sélectionnés dans le presse-papiers",
+      "deleteSelected": "Supprimer ({count})",
+      "deleteSelectedTitle": "Supprimer les liens sélectionnés",
+      "deletingSelected": "Suppression en cours",
       "download": "Télécharger",
       "remove": "Supprimer",
       "selectItem": "Sélectionner le lien"
@@ -735,7 +740,11 @@
     "status": {
       "failed": "Échec"
     },
-    "title": "Historique des liens"
+    "title": "Historique des liens",
+    "toast": {
+      "linkCopied": "Lien copié dans le presse-papiers !",
+      "linksCopied": "{count, plural, one {# lien copié dans le presse-papiers !} other {# liens copiés dans le presse-papiers !}}"
+    }
   },
   "MoreOptionsDropdown": {
     "archive": "Archiver",

@@ -724,6 +724,11 @@
   "LinkHistory": {
     "actions": {
       "copy": "コピー",
+      "copySelected": "コピー ({count})",
+      "copySelectedTitle": "選択したリンクをクリップボードにコピー",
+      "deleteSelected": "削除 ({count})",
+      "deleteSelectedTitle": "選択したリンクを削除",
+      "deletingSelected": "削除中",
       "download": "ダウンロード",
       "remove": "削除",
       "selectItem": "リンクを選択"
@@ -747,7 +752,11 @@
     "status": {
       "failed": "失敗"
     },
-    "title": "リンク履歴"
+    "title": "リンク履歴",
+    "toast": {
+      "linkCopied": "リンクをクリップボードにコピーしました！",
+      "linksCopied": "{count, plural, other {# 件のリンクをクリップボードにコピーしました！}}"
+    }
   },
   "MoreOptionsDropdown": {
     "archive": "アーカイブ",

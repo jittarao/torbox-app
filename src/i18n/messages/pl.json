@@ -725,6 +725,11 @@
   "LinkHistory": {
     "actions": {
       "copy": "Skopiuj",
+      "copySelected": "Kopiuj ({count})",
+      "copySelectedTitle": "Kopiuj wybrane linki do schowka",
+      "deleteSelected": "Usuń ({count})",
+      "deleteSelectedTitle": "Usuń wybrane linki",
+      "deletingSelected": "Usuwanie",
       "download": "Pobierz",
       "remove": "Usuń",
       "selectItem": "Wybierz link"
@@ -748,7 +753,11 @@
     "status": {
       "failed": "Nieudane"
     },
-    "title": "Historia linków"
+    "title": "Historia linków",
+    "toast": {
+      "linkCopied": "Link skopiowany do schowka!",
+      "linksCopied": "{count, plural, one {Skopiowano # link do schowka!} few {Skopiowano # linki do schowka!} many {Skopiowano # linków do schowka!} other {Skopiowano # linków do schowka!}}"
+    }
   },
   "MoreOptionsDropdown": {
     "archive": "Archiwizuj",
