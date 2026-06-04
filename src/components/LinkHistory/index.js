@@ -39,8 +39,16 @@ const LinkHistory = ({ apiKey }) => {
     search
   );
 
-  const { deleting, bulkDeleting, copySuccess, handleDelete, handleBulkDelete, handleCopy } =
-    useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks);
+  const {
+    deleting,
+    bulkDeleting,
+    copySuccess,
+    copiedLinkCount,
+    handleDelete,
+    handleBulkDelete,
+    handleCopy,
+    handleBulkCopy,
+  } = useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks);
 
   const getLinkRowId = useCallback((item) => item.id, []);
   const { buildSelectionUpdater } = useShiftRangeRowSelection(history, getLinkRowId);
@@ -88,6 +96,19 @@ const LinkHistory = ({ apiKey }) => {
     handleBulkDelete(selectedLinks);
   }, [handleBulkDelete, selectedLinks]);
 
+  const handleBulkCopyClick = useCallback(() => {
+    const selectedItems = history.filter((item) => selectedLinks.has(item.id));
+    handleBulkCopy(selectedItems);
+  }, [handleBulkCopy, history, selectedLinks]);
+
+  const selectedCopyableCount = useMemo(
+    () =>
+      history.filter(
+        (item) => selectedLinks.has(item.id) && item.status !== 'failed' && item.url
+      ).length,
+    [history, selectedLinks]
+  );
+
   // Memoize derived values
   const allSelected = useMemo(
     () => history.length > 0 && selectedLinks.size === history.length,
@@ -109,6 +130,8 @@ const LinkHistory = ({ apiKey }) => {
           search={searchInput}
           onSearchChange={handleSearchChange}
           selectedCount={selectedLinks.size}
+          selectedCopyableCount={selectedCopyableCount}
+          onBulkCopy={handleBulkCopyClick}
           onBulkDelete={handleBulkDeleteClick}
           bulkDeleting={bulkDeleting}
           onRefresh={fetchLinkHistory}
@@ -129,7 +152,9 @@ const LinkHistory = ({ apiKey }) => {
 
       {copySuccess && (
         <div className="p-2 bg-label-success-bg dark:bg-label-success-bg-dark text-label-success-text dark:text-label-success-text-dark border border-label-success-text/20 rounded-lg text-sm mb-4">
-          Link copied to clipboard!
+          {copiedLinkCount > 1
+            ? linkHistoryT('toast.linksCopied', { count: copiedLinkCount })
+            : linkHistoryT('toast.linkCopied')}
         </div>
       )}
 

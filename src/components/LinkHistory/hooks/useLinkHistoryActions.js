@@ -4,6 +4,7 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
   const [deleting, setDeleting] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [copiedLinkCount, setCopiedLinkCount] = useState(0);
 
   const handleDelete = useCallback(
     async (id) => {
@@ -90,23 +91,53 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
     [apiKey, fetchLinkHistory, setSelectedLinks]
   );
 
-  const handleCopy = useCallback(async (url) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      alert('Failed to copy to clipboard');
-    }
+  const showCopySuccess = useCallback((count) => {
+    setCopiedLinkCount(count);
+    setCopySuccess(true);
+    setTimeout(() => {
+      setCopySuccess(false);
+      setCopiedLinkCount(0);
+    }, 2000);
   }, []);
+
+  const handleCopy = useCallback(
+    async (url) => {
+      try {
+        await navigator.clipboard.writeText(url);
+        showCopySuccess(1);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+      }
+    },
+    [showCopySuccess]
+  );
+
+  const handleBulkCopy = useCallback(
+    async (selectedItems) => {
+      const copyable = selectedItems.filter((item) => item.status !== 'failed' && item.url);
+      if (copyable.length === 0) return;
+
+      const text = copyable.map((item) => item.url).join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+        showCopySuccess(copyable.length);
+      } catch (err) {
+        console.error('Failed to copy links:', err);
+        alert('Failed to copy to clipboard');
+      }
+    },
+    [showCopySuccess]
+  );
 
   return {
     deleting,
     bulkDeleting,
     copySuccess,
+    copiedLinkCount,
     handleDelete,
     handleBulkDelete,
     handleCopy,
+    handleBulkCopy,
   };
 }

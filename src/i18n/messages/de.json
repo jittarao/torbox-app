@@ -720,6 +720,11 @@
   "LinkHistory": {
     "actions": {
       "copy": "Kopieren",
+      "copySelected": "Kopieren ({count})",
+      "copySelectedTitle": "Ausgewählte Links in die Zwischenablage kopieren",
+      "deleteSelected": "Löschen ({count})",
+      "deleteSelectedTitle": "Ausgewählte Links löschen",
+      "deletingSelected": "Wird gelöscht",
       "download": "Herunterladen",
       "remove": "Entfernen",
       "selectItem": "Link auswählen"
@@ -743,7 +748,11 @@
     "status": {
       "failed": "Fehlgeschlagen"
     },
-    "title": "Link-Verlauf"
+    "title": "Link-Verlauf",
+    "toast": {
+      "linkCopied": "Link in die Zwischenablage kopiert!",
+      "linksCopied": "{count, plural, one {# Link in die Zwischenablage kopiert!} other {# Links in die Zwischenablage kopiert!}}"
+    }
   },
   "MoreOptionsDropdown": {
     "archive": "Archivieren",
