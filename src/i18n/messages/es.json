@@ -725,6 +725,11 @@
   "LinkHistory": {
     "actions": {
       "copy": "Copiar",
+      "copySelected": "Copiar ({count})",
+      "copySelectedTitle": "Copiar enlaces seleccionados al portapapeles",
+      "deleteSelected": "Eliminar ({count})",
+      "deleteSelectedTitle": "Eliminar enlaces seleccionados",
+      "deletingSelected": "Eliminando",
       "download": "Descargar",
       "remove": "Eliminar",
       "selectItem": "Seleccionar enlace"
@@ -748,7 +753,11 @@
     "status": {
       "failed": "Fallido"
     },
-    "title": "Historial de enlaces"
+    "title": "Historial de enlaces",
+    "toast": {
+      "linkCopied": "¡Enlace copiado al portapapeles!",
+      "linksCopied": "{count, plural, one {¡# enlace copiado al portapapeles!} other {¡# enlaces copiados al portapapeles!}}"
+    }
   },
   "MoreOptionsDropdown": {
     "archive": "Archivar",

@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { Refresh, Trash } from '@/components/icons';
+import { useTranslations } from 'next-intl';
+import { Copy, Refresh, Trash } from '@/components/icons';
 import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactSearchInputClass, compactToolbarClass } from '@/components/shared/compactToolbar';
 
@@ -8,11 +9,14 @@ const SearchBar = memo(
     search,
     onSearchChange,
     selectedCount,
+    selectedCopyableCount = 0,
+    onBulkCopy,
     onBulkDelete,
     bulkDeleting,
     onRefresh,
     ariaLabel = 'Link history actions',
   }) => {
+    const linkHistoryT = useTranslations('LinkHistory');
     return (
       <div className={compactToolbarClass} role="toolbar" aria-label={ariaLabel}>
         <input
@@ -23,14 +27,28 @@ const SearchBar = memo(
           className={compactSearchInputClass}
         />
         {selectedCount > 0 && (
-          <BulkActionButton
-            variant="danger"
-            onClick={onBulkDelete}
-            loading={bulkDeleting}
-            icon={<Trash />}
-            label={bulkDeleting ? 'Deleting' : `Delete (${selectedCount})`}
-            title="Delete selected links"
-          />
+          <>
+            <BulkActionButton
+              variant="accent"
+              onClick={onBulkCopy}
+              disabled={selectedCopyableCount === 0}
+              icon={<Copy />}
+              label={linkHistoryT('actions.copySelected', { count: selectedCount })}
+              title={linkHistoryT('actions.copySelectedTitle')}
+            />
+            <BulkActionButton
+              variant="danger"
+              onClick={onBulkDelete}
+              loading={bulkDeleting}
+              icon={<Trash />}
+              label={
+                bulkDeleting
+                  ? linkHistoryT('actions.deletingSelected')
+                  : linkHistoryT('actions.deleteSelected', { count: selectedCount })
+              }
+              title={linkHistoryT('actions.deleteSelectedTitle')}
+            />
+          </>
         )}
         <BulkActionButton
           variant="primary"

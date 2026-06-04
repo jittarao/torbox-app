@@ -786,6 +786,11 @@
   "LinkHistory": {
     "actions": {
       "copy": "Copy",
+      "copySelected": "Copy ({count})",
+      "copySelectedTitle": "Copy selected links to clipboard",
+      "deleteSelected": "Delete ({count})",
+      "deleteSelectedTitle": "Delete selected links",
+      "deletingSelected": "Deleting",
       "download": "Download",
       "remove": "Remove",
       "selectItem": "Select link"
@@ -809,7 +814,11 @@
     "status": {
       "failed": "Failed"
     },
-    "title": "Link History"
+    "title": "Link History",
+    "toast": {
+      "linkCopied": "Link copied to clipboard!",
+      "linksCopied": "{count, plural, one {# link copied to clipboard!} other {# links copied to clipboard!}}"
+    }
   },
   "MoreOptionsDropdown": {
     "archive": "Archive",
