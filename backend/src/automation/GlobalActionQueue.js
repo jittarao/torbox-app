@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js';
+import torboxApiOutageCoordinator from '../api/TorboxApiOutageCoordinator.js';
 
 /** Max action batches run in parallel (each batch uses RULE_ACTION_CONCURRENCY API calls) */
 const GLOBAL_ACTION_QUEUE_CONCURRENCY = Math.min(
@@ -158,6 +159,10 @@ class GlobalActionQueue {
   }
 
   async drain() {
+    if (!torboxApiOutageCoordinator.isAutomationAllowed()) {
+      return;
+    }
+
     const ready = this._takeReadyPending();
     if (ready.length === 0) return;
 

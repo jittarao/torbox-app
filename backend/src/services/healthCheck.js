@@ -1,5 +1,6 @@
 import fs from 'fs';
 import ApiClient from '../api/ApiClient.js';
+import torboxApiOutageCoordinator from '../api/TorboxApiOutageCoordinator.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 
@@ -60,13 +61,25 @@ export class HealthCheckService {
    */
   async checkTorBoxAPI() {
     try {
-      // Try to get an active user to test API connection
+      const outage = torboxApiOutageCoordinator.getSnapshot();
+
+      if (outage.automationPaused) {
+        return {
+          status: 'unhealthy',
+          message: `TorBox API automation paused (${outage.pauseReason || 'outage'})`,
+          tested: true,
+          automationPaused: true,
+          torboxApi: outage,
+        };
+      }
+
       const activeUsers = this.masterDatabase ? this.masterDatabase.getActiveUsers() : [];
 
       if (activeUsers.length === 0) {
         return {
           status: 'not_configured',
           message: 'No active users to test API connection',
+          torboxApi: outage,
         };
       }
 
@@ -79,7 +92,9 @@ export class HealthCheckService {
         const probeUser = activeUsers.find((u) => u.encrypted_key);
         if (probeUser?.encrypted_key) {
           try {
-            apiClient = new ApiClient(decrypt(probeUser.encrypted_key));
+            apiClient = new ApiClient(decrypt(probeUser.encrypted_key), {
+              authId: probeUser.auth_id,
+            });
           } catch (decryptError) {
             logger.warn('Health check: could not decrypt probe API key', {
               errorMessage: decryptError.message,
@@ -91,43 +106,48 @@ export class HealthCheckService {
       if (apiClient) {
         try {
           const startTime = Date.now();
-          const testResult = await apiClient.testConnection();
+          const probeResult = await apiClient.probeUserMe();
           const responseTime = Date.now() - startTime;
 
-          if (testResult.success) {
+          if (probeResult.ok) {
             return {
               status: 'healthy',
               message: `API connection successful (${activeUsers.length} active user(s))`,
               activeUsers: activeUsers.length,
               responseTime: `${responseTime}ms`,
               tested: true,
+              probe: 'user/me',
+              torboxApi: outage,
             };
           }
           return {
             status: 'unhealthy',
-            message: `API connection test failed: ${testResult.error || 'Unknown error'}`,
+            message: `API probe failed (${probeResult.kind || 'unknown'})`,
             activeUsers: activeUsers.length,
             tested: true,
-            error: testResult.error,
+            probe: 'user/me',
+            error: probeResult.error,
+            torboxApi: outage,
           };
         } catch (testError) {
-          logger.warn('Failed to test API connection during health check', testError);
+          logger.warn('Failed to probe API during health check', testError);
           return {
             status: 'configured',
-            message: `${activeUsers.length} active user(s) registered, but API test failed`,
+            message: `${activeUsers.length} active user(s) registered, but API probe failed`,
             activeUsers: activeUsers.length,
             tested: false,
             testError: testError.message,
+            torboxApi: outage,
           };
         }
       }
 
-      // Fallback: just report configured status if we can't test
       return {
         status: 'configured',
         message: `${activeUsers.length} active user(s) registered`,
         activeUsers: activeUsers.length,
         tested: false,
+        torboxApi: outage,
       };
     } catch (error) {
       logger.error('TorBox API health check failed', error);
@@ -200,6 +220,7 @@ export class HealthCheckService {
         database: await this.checkDatabase(),
         api: await this.checkTorBoxAPI(),
         pollers: this.pollingScheduler ? this.pollingScheduler.getStatus() : null,
+        torboxApi: torboxApiOutageCoordinator.getSnapshot(),
         memory: this.getMemoryUsage(),
         system: this.getSystemInfo(),
         services: {
