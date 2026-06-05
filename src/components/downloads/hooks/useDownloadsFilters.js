@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
+import { useCustomViewsStore } from '@/store/customViewsStore';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
 import {
@@ -106,6 +107,7 @@ export function useDownloadsFilters({
       const criteriaPatch = {
         statusFilter: 'all',
         viewId: view.id,
+        tagIds: null,
         search: view.search_query || '',
       };
       if (view.sort_field) {
@@ -138,6 +140,9 @@ export function useDownloadsFilters({
     [applyView, patchFilterCriteria, handleColumnChange]
   );
 
+  // Sync store from URL when ?view= changes (e.g. shared link). Do not depend on activeView?.id:
+  // applying a sidebar view updates the store before replaceState runs; re-running here with a
+  // stale ?view= would snap back to the previous view and block view/tag switches.
   useEffect(() => {
     if (urlViewId == null) {
       lastSyncedUrlViewIdRef.current = null;
@@ -154,10 +159,11 @@ export function useDownloadsFilters({
     if (!view) return;
 
     lastSyncedUrlViewIdRef.current = urlViewId;
-    if (sameViewId(activeView?.id, view.id)) return;
+    const storeActiveViewId = useCustomViewsStore.getState().activeView?.id;
+    if (sameViewId(storeActiveViewId, view.id)) return;
 
     applyViewFilters(view);
-  }, [urlViewId, viewsHasLoaded, views, activeView?.id, applyViewFilters]);
+  }, [urlViewId, viewsHasLoaded, views, applyViewFilters]);
 
   const handleApplyView = useCallback(
     (view) => {
