@@ -30,11 +30,18 @@
     "downloadLinksTitle": "Get download links for selection",
     "bulkForceStartPartial": "Force started {success} torrents, {failed} failed",
     "bulkForceStarted": "Force started {count} torrents",
+    "bulkRetryPartial": "Re-queued {success} downloads, {failed} failed",
+    "bulkRetryStarted": "Re-queued {count} downloads",
     "bulkSeedingPartial": "Stopped seeding for {success} torrents, {failed} failed",
     "bulkSeedingStopped": "Stopped seeding for {count} torrents",
     "forceStart": "Start",
     "forceStartTitle": "Force start queued torrents",
     "forceStarting": "Starting…",
+    "retry": {
+      "label": "Retry",
+      "title": "Retry selected downloads"
+    },
+    "retrying": "Retrying…",
     "exporting": "Exporting…",
     "exportSelected": "Export",
     "exportSelectedTitle": "Export selected torrents",
@@ -668,6 +675,10 @@
     "stop": {
       "label": "Stop",
       "title": "Stop seeding"
+    },
+    "retry": {
+      "label": "Retry",
+      "title": "Retry download"
     }
   },
   "ItemActions": {
@@ -689,7 +700,10 @@
       "exportTorrentSuccess": "Torrent file exported successfully",
       "noFiles": "No files available to download",
       "seedingStopFailed": "Torrent stop seeding failed",
-      "seedingStopped": "Torrent stopped seeding successfully"
+      "seedingStopped": "Torrent stopped seeding successfully",
+      "retryFailed": "Failed to retry download",
+      "retrySourceUnavailable": "Cannot retry: source link is not available",
+      "retrySuccess": "Re-queued for download"
     }
   },
   "ItemUploader": {
@@ -830,6 +844,7 @@
     "exportTorrent": "Export .torrent",
     "label": "More",
     "reannounce": "Reannounce",
+    "retry": "Retry",
     "title": "More Options",
     "toast": {
       "clipboardError": "Failed to copy to clipboard",
