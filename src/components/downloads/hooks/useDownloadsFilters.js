@@ -13,12 +13,7 @@ import {
   mergeViewAssetTypeFilter,
   getActiveTagIds,
 } from '@/components/downloads/filters/filterHelpers';
-
-/** Loose id match (API may return number or string). */
-function sameViewId(a, b) {
-  if (a == null || b == null) return false;
-  return String(a) === String(b);
-}
+import { sameViewId, sidebarUrlMatchesPending } from '@/components/downloads/filters/sidebarFilterSync';
 
 export function useDownloadsFilters({
   apiKey,
@@ -81,6 +76,10 @@ export function useDownloadsFilters({
   /** Prevents URL ?view= from re-applying after the user clears the active view. */
   const suppressUrlViewSyncRef = useRef(false);
   const lastSyncedUrlViewIdRef = useRef(null);
+  /** @type {import('react').MutableRefObject<{ kind: string, viewId?: number|string, tagId?: number }|null>} */
+  const pendingSidebarFilterRef = useRef(null);
+  const viewsRef = useRef(views);
+  viewsRef.current = views;
 
   useEffect(() => {
     if (isBackendAvailable && apiKey && !viewsHasLoaded && !viewsLoading) {
@@ -89,6 +88,7 @@ export function useDownloadsFilters({
   }, [apiKey, isBackendAvailable, viewsHasLoaded, viewsLoading, loadViews]);
 
   const handleClearFilters = useCallback(() => {
+    pendingSidebarFilterRef.current = { kind: 'clear' };
     suppressUrlViewSyncRef.current = true;
     lastSyncedUrlViewIdRef.current = urlViewId ?? null;
     clearView();
@@ -98,7 +98,12 @@ export function useDownloadsFilters({
   }, [clearView, clearAllFilterCriteria, urlViewId]);
 
   const applyViewFilters = useCallback(
-    (view) => {
+    (view, { fromUrlSync = false } = {}) => {
+      if (!fromUrlSync) {
+        pendingSidebarFilterRef.current = { kind: 'view', viewId: view.id };
+        suppressUrlViewSyncRef.current = true;
+      }
+
       applyView(view);
 
       const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
@@ -116,7 +121,6 @@ export function useDownloadsFilters({
       }
       patchFilterCriteria(criteriaPatch);
       lastSyncedUrlViewIdRef.current = view.id;
-      suppressUrlViewSyncRef.current = false;
 
       let visibleColumns = view.visible_columns;
       if (visibleColumns) {
@@ -140,30 +144,40 @@ export function useDownloadsFilters({
     [applyView, patchFilterCriteria, handleColumnChange]
   );
 
-  // Sync store from URL when ?view= changes (e.g. shared link). Do not depend on activeView?.id:
-  // applying a sidebar view updates the store before replaceState runs; re-running here with a
-  // stale ?view= would snap back to the previous view and block view/tag switches.
+  const applyViewFiltersRef = useRef(applyViewFilters);
+  applyViewFiltersRef.current = applyViewFilters;
+
+  // Sync store from URL when ?view= changes (e.g. shared link). Sidebar clicks set
+  // pendingSidebarFilterRef until replaceState catches up — do not re-apply a stale ?view=.
   useEffect(() => {
-    if (urlViewId == null) {
-      lastSyncedUrlViewIdRef.current = null;
-      suppressUrlViewSyncRef.current = false;
+    const pending = pendingSidebarFilterRef.current;
+    if (pending && !sidebarUrlMatchesPending(urlViewId, urlAppliedFilters, pending)) {
       return;
     }
-    if (!viewsHasLoaded || !views?.length) return;
+    if (pending) {
+      pendingSidebarFilterRef.current = null;
+      suppressUrlViewSyncRef.current = false;
+    }
+
+    if (urlViewId == null) {
+      lastSyncedUrlViewIdRef.current = null;
+      return;
+    }
+    if (!viewsHasLoaded || !viewsRef.current?.length) return;
     if (suppressUrlViewSyncRef.current) return;
     if (lastSyncedUrlViewIdRef.current != null && sameViewId(lastSyncedUrlViewIdRef.current, urlViewId)) {
       return;
     }
 
-    const view = views.find((v) => sameViewId(v.id, urlViewId));
+    const view = viewsRef.current.find((v) => sameViewId(v.id, urlViewId));
     if (!view) return;
 
     lastSyncedUrlViewIdRef.current = urlViewId;
     const storeActiveViewId = useCustomViewsStore.getState().activeView?.id;
     if (sameViewId(storeActiveViewId, view.id)) return;
 
-    applyViewFilters(view);
-  }, [urlViewId, viewsHasLoaded, views, applyViewFilters]);
+    applyViewFiltersRef.current(view, { fromUrlSync: true });
+  }, [urlViewId, urlAppliedFilters, viewsHasLoaded]);
 
   const handleApplyView = useCallback(
     (view) => {
@@ -172,7 +186,6 @@ export function useDownloadsFilters({
         setMobileFiltersOpen(false);
         return;
       }
-      suppressUrlViewSyncRef.current = false;
       return applyViewFilters(view);
     },
     [activeView?.id, handleClearFilters, applyViewFilters]
@@ -188,6 +201,10 @@ export function useDownloadsFilters({
         setMobileFiltersOpen(false);
         return;
       }
+
+      pendingSidebarFilterRef.current = { kind: 'tag', tagId: id };
+      suppressUrlViewSyncRef.current = true;
+      lastSyncedUrlViewIdRef.current = null;
 
       clearView();
       const tagFilter = buildTagFilter(id);
