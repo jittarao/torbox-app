@@ -46,13 +46,13 @@ async function resolveMagnetForTorrentRetry(apiKey, item) {
       'x-api-key': apiKey,
     },
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => null);
 
-  if (data.success && data.data) {
+  if (data?.success && data.data) {
     return data.data;
   }
 
-  throw new Error(data.error || data.detail || 'Failed to export magnet link');
+  throw new Error(data?.error || data?.detail || 'Failed to export magnet link');
 }
 
 /**

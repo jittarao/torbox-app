@@ -38,7 +38,28 @@ export async function GET(request) {
 
     // For magnet links, return JSON
     if (type === 'magnet') {
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              data?.error ||
+              data?.detail ||
+              `TorBox responded with status: ${response.status}`,
+          },
+          { status: response.status }
+        );
+      }
+
+      if (!data || typeof data !== 'object') {
+        return NextResponse.json(
+          { success: false, error: 'Invalid response from TorBox export API' },
+          { status: 502 }
+        );
+      }
+
       return NextResponse.json(data);
     }
 
