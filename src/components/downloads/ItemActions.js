@@ -5,6 +5,7 @@ import { useDownloadsActions } from './DownloadsActionsContext';
 import { useDownloadsContext } from './DownloadsContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
 import { controlTorrent, controlQueuedItem } from '@/utils/uploadActions';
+import { canRetryDownload, retryDownload } from '@/utils/retryDownload';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
@@ -26,6 +27,7 @@ export default function ItemActions({
 }) {
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const { downloadSingle } = useDownloadsActions();
   const { archiveItem, isArchiving } = useDownloadsContext();
   const { isBackendAvailable } = useDownloadsUIContext();
@@ -133,13 +135,52 @@ export default function ItemActions({
     phEvent('archive_item');
   };
 
+  const showRetry = canRetryDownload(item, activeType);
+
+  const handleRetry = async () => {
+    if (isRetrying) return;
+    setIsRetrying(true);
+    try {
+      const result = await retryDownload(apiKey, item, activeType);
+      if (result.success) {
+        setToast({
+          message: t('toast.retrySuccess'),
+          type: 'success',
+        });
+        phEvent('retry_download_item');
+        return;
+      }
+
+      if (result.error === 'source_url_unavailable') {
+        setToast({
+          message: t('toast.retrySourceUnavailable'),
+          type: 'error',
+        });
+        return;
+      }
+
+      setToast({
+        message: result.userMessage || t('toast.retryFailed'),
+        type: 'error',
+      });
+    } catch (error) {
+      console.error('Error retrying download:', error);
+      setToast({
+        message: t('toast.retryFailed'),
+        type: 'error',
+      });
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   const showStopSeeding =
     activeType === 'torrents' &&
     item.download_finished &&
     item.download_present &&
     item.active;
   const showForceStart = activeType === 'torrents' && !item.download_state;
-  const hasCardActions = showStopSeeding || showForceStart || item.download_present;
+  const hasCardActions = showStopSeeding || showForceStart || showRetry || item.download_present;
 
   const actionButtons = (
     <ItemActionButtons
@@ -151,6 +192,9 @@ export default function ItemActions({
       activeType={activeType}
       onStopSeeding={handleStopSeeding}
       onForceStart={handleForceStart}
+      onRetry={handleRetry}
+      showRetry={showRetry}
+      isRetrying={isRetrying}
       onDownload={handleDownload}
       compact={compact || mobileBar}
       mobileBar={mobileBar}
@@ -173,6 +217,9 @@ export default function ItemActions({
       showArchive={showArchive}
       onArchive={handleArchive}
       isArchiving={isArchiving}
+      showRetry={showRetry}
+      onRetry={handleRetry}
+      isRetrying={isRetrying}
     />
   );
 

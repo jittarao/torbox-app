@@ -5,6 +5,7 @@ import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 import { createApiClient } from '@/utils/apiClient';
+import { buildShortMagnetLink } from '@/utils/retryDownload';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from './Tags/TagAssignmentModal';
 import ModalOverlay from '@/components/shared/ModalOverlay';
@@ -66,8 +67,10 @@ function MenuItems({
   actionT,
   isExporting,
   isReannouncing,
+  isRetrying,
   isDeleting,
   showDownload,
+  showRetry,
   showDelete,
   showArchive,
   onDownload,
@@ -79,10 +82,26 @@ function MenuItems({
   onCopyShortMagnet,
   onCopyFullMagnet,
   onReannounce,
+  onRetry,
   onExportTorrent,
   onCopySourceUrl,
 }) {
   const items = [];
+
+  if (showRetry && onRetry) {
+    items.push(
+      <MenuItemButton
+        key="retry"
+        menuVariant={menuVariant}
+        tone="accent"
+        onClick={onRetry}
+        disabled={isRetrying}
+        icon={isRetrying ? <Spinner size="xs" /> : <Refresh />}
+      >
+        {actionT('retry.label')}
+      </MenuItemButton>
+    );
+  }
 
   if (showDownload && onDownload) {
     items.push(
@@ -245,6 +264,9 @@ export default function MoreOptionsDropdown({
   showArchive = false,
   onArchive,
   isArchiving = false,
+  showRetry = false,
+  onRetry,
+  isRetrying = false,
   compact = false,
   mobileBar = false,
 }) {
@@ -426,8 +448,7 @@ export default function MoreOptionsDropdown({
       });
       return;
     }
-    const encodedName = encodeURIComponent(item.name || 'Unknown');
-    const magnetLink = `magnet:?xt=urn:btih:${item.hash}&dn=${encodedName}`;
+    const magnetLink = buildShortMagnetLink({ hash: item.hash, name: item.name });
     copyToClipboard(magnetLink, t('toast.shortMagnetCopied'));
     phEvent('copy_short_magnet');
     setIsMenuOpen(false);
@@ -661,8 +682,10 @@ export default function MoreOptionsDropdown({
       actionT={actionT}
       isExporting={isExporting}
       isReannouncing={isReannouncing}
+      isRetrying={isRetrying}
       isDeleting={isDeleting}
       showDownload={showDownload}
+      showRetry={showRetry}
       showDelete={showDelete}
       showArchive={showArchive}
       onArchive={
@@ -698,6 +721,15 @@ export default function MoreOptionsDropdown({
       onCopyShortMagnet={handleCopyShortMagnet}
       onCopyFullMagnet={handleCopyFullMagnet}
       onReannounce={handleReannounce}
+      onRetry={
+        onRetry
+          ? (e) => {
+              e.stopPropagation();
+              onRetry();
+              setIsMenuOpen(false);
+            }
+          : undefined
+      }
       onExportTorrent={handleExportTorrent}
       onCopySourceUrl={handleCopySourceUrl}
     />

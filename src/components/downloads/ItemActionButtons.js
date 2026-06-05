@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Delete, Download, Files, Play, Stop } from '@/components/icons';
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Delete,
+  Download,
+  Files,
+  Play,
+  Refresh,
+  Stop,
+} from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
@@ -23,6 +33,9 @@ export default function ItemActionButtons({
   activeType = 'torrents',
   onStopSeeding,
   onForceStart,
+  onRetry,
+  showRetry = false,
+  isRetrying = false,
   onDownload,
   compact = false,
   mobileBar = false,
@@ -50,6 +63,16 @@ export default function ItemActionButtons({
       phEvent('force_start_item');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleRetry = async (e) => {
+    e.stopPropagation();
+    if (!onRetry) return;
+    try {
+      await onRetry();
+    } catch {
+      // ItemActions handles toast/errors
     }
   };
 
@@ -113,6 +136,21 @@ export default function ItemActionButtons({
           title={t('start.title')}
         >
           {isDownloading ? <Spinner size="sm" /> : <Play />}
+        </button>
+      )}
+
+      {/* Retry button for inactive/failed torrents and web downloads */}
+      {showRetry && onRetry && (
+        <button
+          type="button"
+          onClick={handleRetry}
+          disabled={isRetrying}
+          className={`${tableIconButtonClass} text-accent dark:text-accent-dark
+            hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed`}
+          title={t('retry.title')}
+        >
+          {isRetrying ? <Spinner size="sm" /> : <Refresh />}
         </button>
       )}
 
