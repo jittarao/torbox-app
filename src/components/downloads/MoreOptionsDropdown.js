@@ -465,9 +465,9 @@ export default function MoreOptionsDropdown({
           'x-api-key': apiKey,
         },
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
-      if (data.success && data.data) {
+      if (data?.success && data.data) {
         await copyToClipboard(data.data, t('toast.fullMagnetCopied'));
         setToast({
           message: t('toast.exportMagnetSuccess'),
@@ -475,7 +475,7 @@ export default function MoreOptionsDropdown({
         });
         phEvent('copy_full_magnet');
       } else {
-        throw new Error(data.error || data.detail || t('toast.exportMagnetFailed'));
+        throw new Error(data?.error || data?.detail || t('toast.exportMagnetFailed'));
       }
     } catch (error) {
       console.error('Error getting magnet link:', error);
