@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { uploadItem } from '@/utils/uploadActions';
+import { buildShortMagnetLink } from '@/utils/retryDownload';
 
 function transformArchivedItem(item) {
   return {
@@ -287,8 +288,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   };
 
   const restoreFromArchive = async (download) => {
-    const encodedName = encodeURIComponent(download.name || 'Unknown');
-    const magnetLink = `magnet:?xt=urn:btih:${download.hash}&dn=${encodedName}`;
+    const magnetLink = buildShortMagnetLink({ hash: download.hash, name: download.name });
 
     try {
       const result = await uploadItem(apiKey, {

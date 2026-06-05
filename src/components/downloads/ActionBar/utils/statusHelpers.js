@@ -87,3 +87,9 @@ export function isTorrentSeeding(item) {
 export function isTorrentQueued(item) {
   return isQueuedItem(item);
 }
+
+/** Inactive or failed TorBox download status (matches STATUS_OPTIONS labels). */
+export function isInactiveOrFailed(item) {
+  const status = getMatchingStatus(item);
+  return status.label === 'Inactive' || status.label === 'Failed';
+}

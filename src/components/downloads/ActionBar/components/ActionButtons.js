@@ -1,7 +1,18 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
-import { Archive, Delete, Download, FileDown, Play, Question, Stop, Tag, Times } from '@/components/icons';
+import {
+  Archive,
+  Delete,
+  Download,
+  FileDown,
+  Play,
+  Question,
+  Refresh,
+  Stop,
+  Tag,
+  Times,
+} from '@/components/icons';
 import BulkActionButton from './BulkActionButton';
 import Tooltip from '@/components/shared/Tooltip';
 import { createApiClient } from '@/utils/apiClient';
@@ -17,6 +28,7 @@ import { controlQueuedItem, controlTorrent } from '@/utils/uploadActions';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { isTorrentQueued, isTorrentSeeding } from '../utils/statusHelpers';
+import { canRetryDownload, retryDownload } from '@/utils/retryDownload';
 import { removeQueuedAfterForceStartBulk } from '@/store/downloadListReconcile';
 import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
 
@@ -50,6 +62,7 @@ export default function ActionButtons({
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
   const [isForceStarting, setIsForceStarting] = useState(false);
+  const [isBulkRetrying, setIsBulkRetrying] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
@@ -97,6 +110,23 @@ export default function ActionButtons({
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
 
   const showBulkForceStart = selectedQueuedTorrents.length > 0;
+
+  const selectedRetryable = useMemo(() => {
+    if (hasSelectedFiles || selectedItemCount === 0) return [];
+    if (activeType !== 'torrents' && activeType !== 'webdl' && activeType !== 'all') return [];
+
+    const selectionIds = Array.from(getSelectedItems().items || []);
+    const resolved = selectionIds
+      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
+      .filter(Boolean);
+
+    if (resolved.length !== selectionIds.length) return [];
+
+    const allRetryable = resolved.every((item) => canRetryDownload(item, activeType));
+    return allRetryable ? resolved : [];
+  }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
+
+  const showBulkRetry = selectedRetryable.length > 0;
 
   const selectedArchivableTorrents = useMemo(() => {
     if (hasSelectedFiles || selectedItemCount === 0) return [];
@@ -228,6 +258,52 @@ export default function ActionButtons({
       });
     } finally {
       setIsStoppingSeeding(false);
+    }
+  };
+
+  const handleBulkRetry = async () => {
+    if (isBulkRetrying || !apiKey || selectedRetryable.length === 0) return;
+
+    setIsBulkRetrying(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      for (const item of selectedRetryable) {
+        const result = await retryDownload(apiKey, item, activeType);
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+
+      if (successCount > 0 && failCount === 0) {
+        setToast({
+          message: t('bulkRetryStarted', { count: successCount }),
+          type: 'success',
+        });
+        phEvent('bulk_retry_downloads', { count: successCount });
+      } else if (successCount > 0) {
+        setToast({
+          message: t('bulkRetryPartial', { success: successCount, failed: failCount }),
+          type: 'warning',
+        });
+        phEvent('bulk_retry_downloads', { count: successCount, failed: failCount });
+      } else {
+        setToast({
+          message: tItemActions('retryFailed'),
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error in bulk retry:', error);
+      setToast({
+        message: tItemActions('retryFailed'),
+        type: 'error',
+      });
+    } finally {
+      setIsBulkRetrying(false);
     }
   };
 
@@ -450,6 +526,18 @@ export default function ActionButtons({
           icon={<Play className="stroke-[2.5]" />}
           label={isForceStarting ? t('forceStarting') : t('forceStart')}
           title={t('forceStartTitle')}
+        />
+      )}
+
+      {showBulkRetry && (
+        <BulkActionButton
+          variant="accent"
+          onClick={handleBulkRetry}
+          disabled={isBulkRetrying}
+          loading={isBulkRetrying}
+          icon={<Refresh />}
+          label={isBulkRetrying ? t('retrying') : t('retry.label')}
+          title={t('retry.title')}
         />
       )}
 
