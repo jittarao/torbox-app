@@ -23,6 +23,22 @@ TorBox-compatible **async torrent upload** surface for integrations and coding a
 
 This is **not** a passthrough to `api.torbox.app` — it requires the TorBox Manager backend (`BACKEND_URL`, backend not disabled).
 
+## TBM queue status vs TorBox torrent status
+
+Third-party integrations must treat these as **two different status systems**:
+
+| | TBM upload queue (`GET /api/v1/uploads/:id`) | TorBox API (`api.torbox.app`) |
+|---|---------------------------------------------|-------------------------------|
+| **What it tracks** | Whether TBM accepted, processed, and submitted your upload | Whether the torrent exists on TorBox and its download/cache state |
+| **Source** | Per-user SQLite `uploads` table (local backend) | TorBox cloud |
+| **Typical values** | `queued`, `processing`, `completed`, `failed` | e.g. downloading, seeding, cached, queued (TorBox-side) |
+| **Live on each poll?** | No — reads last state written by TBM's upload processor | Yes — reflects current TorBox state |
+| **When to use** | Wait until TBM has finished calling TorBox `createtorrent` | After `status === "completed"`, track the actual torrent |
+
+`GET /api/v1/uploads/:id` **does not** call TorBox. It returns **TorBox Manager's internal queue status** only. A `completed` upload means TBM successfully submitted the torrent to TorBox and stored `hash`, `torrent_id`, and `auth_id` — not that the download has finished on TorBox.
+
+To monitor download progress, cache state, errors, or presence in TorBox's queued list, call the **TorBox API directly** with the same API key, using the ids from a completed upload (for example `torrent_id` with `GET https://api.torbox.app/v1/api/torrents/mylist`, or TorBox's queued endpoints if you used `as_queued`). See [TorBox API documentation](https://torbox.app/api) for authoritative field names and status values.
+
 ## Authentication
 
 Send the user's TorBox API key using either header (Bearer is checked first):
@@ -59,13 +75,13 @@ Success responses mirror TorBox-style fields:
 
 | Field | When present | Description |
 |-------|----------------|-------------|
-| `upload_id` | always | Local queue row id (poll via GET upload status) |
-| `status` | always | `queued` \| `processing` \| `completed` \| `failed` |
-| `queue_order` | always | Position in queue (`null` if not queued) |
-| `hash` | `status === "completed"` | TorBox infohash from createtorrent |
-| `torrent_id` | `status === "completed"` | TorBox torrent id |
+| `upload_id` | always | TBM local queue row id (poll via GET upload status) |
+| `status` | always | **TBM internal queue status** — `queued` \| `processing` \| `completed` \| `failed`. Not TorBox download/cache status. |
+| `queue_order` | always | Position in TBM queue (`null` if not queued) |
+| `hash` | `status === "completed"` | TorBox infohash returned by createtorrent (use for TorBox API lookups) |
+| `torrent_id` | `status === "completed"` | TorBox torrent id (use for TorBox API lookups) |
 | `auth_id` | `status === "completed"` | TorBox auth id from createtorrent |
-| `error_message` | `status === "failed"` | Failure reason |
+| `error_message` | `status === "failed"` | TBM queue/processor failure reason (not a live TorBox API error) |
 
 `detail` strings: `Torrent Queued Successfully`, `Torrent Created Successfully`, `Torrent Upload Failed`.
 
@@ -74,14 +90,16 @@ Errors: `{ "success": false, "error": "message", "detail"?: "..." }`.
 ## Upload lifecycle
 
 ```text
-POST createtorrent/batch  →  status=queued  →  backend processor  →  TorBox createtorrent
+POST createtorrent/batch  →  TBM status=queued  →  backend processor  →  TorBox createtorrent
                                       ↓
-                            GET /api/v1/uploads/:id (poll)
+                            GET /api/v1/uploads/:id (poll TBM queue only)
                                       ↓
                          completed (hash, torrent_id, auth_id) | failed (error_message)
+                                      ↓
+              TorBox API separately (mylist / getqueued) for real torrent status
 ```
 
-Poll interval: agent's choice; uploads are processed every ~5s (`UPLOAD_PROCESSOR_INTERVAL_MS`).
+Poll TBM until `completed` or `failed`. Poll interval: your choice; TBM processes uploads every ~5s (`UPLOAD_PROCESSOR_INTERVAL_MS`). After `completed`, use `torrent_id` / `hash` against TorBox for ongoing download state.
 
 ---
 
@@ -194,7 +212,9 @@ Rules:
 
 ## GET `/api/v1/uploads/:id`
 
-Poll queue status for a single upload.
+Poll **TBM internal queue status** for a single upload.
+
+This endpoint proxies to the self-hosted backend (`GET /api/uploads/:id`), which reads the local `uploads` table. **It does not contact `api.torbox.app`.** The `status` field reflects where the item is in TBM's queue pipeline, not whether TorBox is still downloading, cached, or errored.
 
 **Example:**
 
@@ -206,6 +226,16 @@ curl -sS "$BASE/api/v1/uploads/42" \
 Returns the same envelope as createtorrent. Use `upload_id` from POST responses.
 
 `404` if upload id does not exist for the authenticated user.
+
+**After `status === "completed"`**, use `data.torrent_id` and/or `data.hash` to query TorBox directly, for example:
+
+```bash
+# TorBox torrent list / status (not a TBM route)
+curl -sS "https://api.torbox.app/v1/api/torrents/mylist?id=${TORRENT_ID}" \
+  -H "Authorization: Bearer $TORBOX_API_KEY"
+```
+
+If the upload was created with `as_queued: true`, the torrent may appear in TorBox's queued list instead of `mylist` until TorBox promotes it — consult TorBox API docs for `getqueued` and related endpoints.
 
 ---
 
@@ -225,10 +255,11 @@ Prefer **v1** routes for TorBox-compatible integrations.
 
 1. Confirm backend is enabled (`BACKEND_DISABLED` not true).
 2. `POST` createtorrent or batch → save `data.upload_id`(s).
-3. Poll `GET /api/v1/uploads/:id` until `status` is `completed` or `failed`.
+3. Poll `GET /api/v1/uploads/:id` until TBM `status` is `completed` or `failed` (this is queue status, not TorBox download status).
 4. On `completed`, read `hash`, `torrent_id`, `auth_id` from `data`.
-5. On `failed`, read `data.error_message`.
+5. On `failed`, read `data.error_message` (TBM processor/queue failure).
 6. Do not call TorBox `createtorrent` directly if using this queue — the backend processor owns that call.
+7. For live TorBox torrent state (progress, cache, errors), call TorBox API separately using `torrent_id` / `hash` — do not infer it from TBM `status` after step 3.
 
 ## Common errors
 
