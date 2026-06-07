@@ -20,7 +20,7 @@ const MAX_UPLOAD_FILE_SIZE =
 
 function estimateBase64DecodedBytes(base64) {
   const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
-  return Math.floor(base64.length * 3 / 4) - padding;
+  return Math.floor((base64.length * 3) / 4) - padding;
 }
 
 /**
@@ -82,313 +82,340 @@ export function setupUploadsRoutes(app, backend) {
   });
 
   // POST /api/uploads/file - Upload file to storage
-  app.post('/api/uploads/file', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
+  app.post(
+    '/api/uploads/file',
+    backend.requireRegisteredUser,
+    uploadRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
 
-      // Verify API key is registered and active
-      if (!backend.masterDatabase?.getApiKey(authId)) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid or inactive API key',
+        // Verify API key is registered and active
+        if (!backend.masterDatabase?.getApiKey(authId)) {
+          return res.status(401).json({
+            success: false,
+            error: 'Invalid or inactive API key',
+          });
+        }
+
+        const { file_data, filename, type } = req.body; // file_data is base64 string
+
+        if (!file_data || !filename || !type) {
+          return res.status(400).json({
+            success: false,
+            error: 'file_data (base64), filename, and type are required',
+          });
+        }
+
+        // Validate type against allowed values to prevent path traversal
+        if (!['torrent', 'usenet', 'webdl'].includes(type)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid type. Must be torrent, usenet, or webdl',
+          });
+        }
+
+        // Validate file extension matches the type to prevent unauthorized file uploads
+        const extensionError = validateFileExtension(type, 'file', filename);
+        if (extensionError) {
+          return res.status(400).json({
+            success: false,
+            error: extensionError,
+          });
+        }
+
+        // Reject oversized payloads before decoding (base64 expands ~4/3 × binary)
+        if (estimateBase64DecodedBytes(file_data) > MAX_UPLOAD_FILE_SIZE) {
+          return res.status(400).json({
+            success: false,
+            error: `File too large. Maximum size is ${Math.round(MAX_UPLOAD_FILE_SIZE / 1024 / 1024)} MB.`,
+          });
+        }
+
+        const fileBuffer = Buffer.from(file_data, 'base64');
+        if (fileBuffer.length > MAX_UPLOAD_FILE_SIZE) {
+          return res.status(400).json({
+            success: false,
+            error: `File too large. Maximum size is ${Math.round(MAX_UPLOAD_FILE_SIZE / 1024 / 1024)} MB.`,
+          });
+        }
+
+        // Save file
+        const filePath = await saveUploadFile(authId, fileBuffer, filename, type);
+
+        res.json({
+          success: true,
+          data: {
+            file_path: filePath,
+          },
         });
-      }
-
-      const { file_data, filename, type } = req.body; // file_data is base64 string
-
-      if (!file_data || !filename || !type) {
-        return res.status(400).json({
-          success: false,
-          error: 'file_data (base64), filename, and type are required',
+      } catch (error) {
+        logger.error('Error uploading file', error, {
+          endpoint: '/api/uploads/file',
+          method: 'POST',
         });
+        res.status(500).json(serverErrorPayload(error));
       }
-
-      // Validate type against allowed values to prevent path traversal
-      if (!['torrent', 'usenet', 'webdl'].includes(type)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid type. Must be torrent, usenet, or webdl',
-        });
-      }
-
-      // Validate file extension matches the type to prevent unauthorized file uploads
-      const extensionError = validateFileExtension(type, 'file', filename);
-      if (extensionError) {
-        return res.status(400).json({
-          success: false,
-          error: extensionError,
-        });
-      }
-
-      // Reject oversized payloads before decoding (base64 expands ~4/3 × binary)
-      if (estimateBase64DecodedBytes(file_data) > MAX_UPLOAD_FILE_SIZE) {
-        return res.status(400).json({
-          success: false,
-          error: `File too large. Maximum size is ${Math.round(MAX_UPLOAD_FILE_SIZE / 1024 / 1024)} MB.`,
-        });
-      }
-
-      const fileBuffer = Buffer.from(file_data, 'base64');
-      if (fileBuffer.length > MAX_UPLOAD_FILE_SIZE) {
-        return res.status(400).json({
-          success: false,
-          error: `File too large. Maximum size is ${Math.round(MAX_UPLOAD_FILE_SIZE / 1024 / 1024)} MB.`,
-        });
-      }
-
-      // Save file
-      const filePath = await saveUploadFile(authId, fileBuffer, filename, type);
-
-      res.json({
-        success: true,
-        data: {
-          file_path: filePath,
-        },
-      });
-    } catch (error) {
-      logger.error('Error uploading file', error, {
-        endpoint: '/api/uploads/file',
-        method: 'POST',
-      });
-      res.status(500).json(serverErrorPayload(error));
     }
-  });
+  );
 
   // DELETE /api/uploads/file - Delete file from storage by file_path
-  app.delete('/api/uploads/file', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
+  app.delete(
+    '/api/uploads/file',
+    backend.requireRegisteredUser,
+    uploadRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
 
-      // Verify API key is registered and active
-      if (!backend.masterDatabase?.getApiKey(authId)) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid or inactive API key',
+        // Verify API key is registered and active
+        if (!backend.masterDatabase?.getApiKey(authId)) {
+          return res.status(401).json({
+            success: false,
+            error: 'Invalid or inactive API key',
+          });
+        }
+
+        const { file_path } = req.body;
+
+        if (!file_path) {
+          return res.status(400).json({
+            success: false,
+            error: 'file_path is required',
+          });
+        }
+
+        // Delete file (with authId for security validation)
+        await deleteUploadFile(authId, file_path);
+
+        res.json({
+          success: true,
+          message: 'File deleted successfully',
         });
-      }
-
-      const { file_path } = req.body;
-
-      if (!file_path) {
-        return res.status(400).json({
-          success: false,
-          error: 'file_path is required',
+      } catch (error) {
+        logger.error('Error deleting file', error, {
+          endpoint: '/api/uploads/file',
+          method: 'DELETE',
         });
+        res.status(500).json(serverErrorPayload(error));
       }
-
-      // Delete file (with authId for security validation)
-      await deleteUploadFile(authId, file_path);
-
-      res.json({
-        success: true,
-        message: 'File deleted successfully',
-      });
-    } catch (error) {
-      logger.error('Error deleting file', error, {
-        endpoint: '/api/uploads/file',
-        method: 'DELETE',
-      });
-      res.status(500).json(serverErrorPayload(error));
     }
-  });
+  );
 
   // POST /api/uploads/batch - Create multiple upload entries efficiently
-  app.post('/api/uploads/batch', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
+  app.post(
+    '/api/uploads/batch',
+    backend.requireRegisteredUser,
+    uploadRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
 
-      if (!backend.userDatabaseManager) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service is initializing, please try again in a moment',
-        });
-      }
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
 
-      const { uploads } = req.body; // Array of upload objects
+        const { uploads } = req.body; // Array of upload objects
 
-      if (!Array.isArray(uploads) || uploads.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'uploads array is required and must not be empty',
-        });
-      }
+        if (!Array.isArray(uploads) || uploads.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'uploads array is required and must not be empty',
+          });
+        }
 
-      if (uploads.length > 1000) {
-        return res.status(400).json({
-          success: false,
-          error: 'Maximum 1000 uploads per batch request',
-        });
-      }
+        if (uploads.length > 1000) {
+          return res.status(400).json({
+            success: false,
+            error: 'Maximum 1000 uploads per batch request',
+          });
+        }
 
-      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-      // Get max queue_order once for the entire batch (optimization)
-      const maxOrderResult = userDb.db
-        .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
-        .get('queued');
+        // Get max queue_order once for the entire batch (optimization)
+        const maxOrderResult = userDb.db
+          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
+          .get('queued');
 
-      let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
+        let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
 
-      // Prepare insert statement
-      const insertStmt = userDb.db.prepare(
-        `
+        // Prepare insert statement
+        const insertStmt = userDb.db.prepare(
+          `
           INSERT INTO uploads (
             type, upload_type, file_path, url, name, status,
-            seed, allow_zip, as_queued, password, queue_order,
+            seed, allow_zip, as_queued, add_only_if_cached, password, queue_order,
             next_attempt_at, created_at, updated_at
           )
-          VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `
-      );
+        );
 
-      const selectStmt = userDb.db.prepare(
-        `
+        const selectStmt = userDb.db.prepare(
+          `
           SELECT id, type, upload_type, file_path, url, name, status,
-                 error_message, retry_count, seed, allow_zip, as_queued, password,
-                 queue_order, last_processed_at, completed_at, created_at, updated_at, next_attempt_at
+                 error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+                 queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+                 last_processed_at, completed_at, created_at, updated_at, next_attempt_at
           FROM uploads
           WHERE id = ?
         `
-      );
+        );
 
-      const createdUploads = [];
-      const errors = [];
+        const createdUploads = [];
+        const errors = [];
 
-      // Use transaction for batch insert
-      const VALID_TYPES = new Set(['torrent', 'usenet', 'webdl']);
-      const VALID_UPLOAD_TYPES = new Set(['file', 'magnet', 'link']);
-      const insertMany = userDb.db.transaction((uploads) => {
-        const results = [];
-        for (const upload of uploads) {
-          const { type, upload_type, file_path, url, name, seed, allow_zip, as_queued, password } =
-            upload;
+        // Use transaction for batch insert
+        const VALID_TYPES = new Set(['torrent', 'usenet', 'webdl']);
+        const VALID_UPLOAD_TYPES = new Set(['file', 'magnet', 'link']);
+        const insertMany = userDb.db.transaction((uploads) => {
+          const results = [];
+          for (const upload of uploads) {
+            const {
+              type,
+              upload_type,
+              file_path,
+              url,
+              name,
+              seed,
+              allow_zip,
+              as_queued,
+              add_only_if_cached,
+              password,
+            } = upload;
 
-          // Validation
-          if (!type || !VALID_TYPES.has(type)) {
-            errors.push({ upload, error: 'Invalid type. Must be torrent, usenet, or webdl' });
-            continue;
-          }
+            // Validation
+            if (!type || !VALID_TYPES.has(type)) {
+              errors.push({ upload, error: 'Invalid type. Must be torrent, usenet, or webdl' });
+              continue;
+            }
 
-          if (!upload_type || !VALID_UPLOAD_TYPES.has(upload_type)) {
-            errors.push({
-              upload,
-              error: 'Invalid upload_type. Must be file, magnet, or link',
-            });
-            continue;
-          }
-
-          // Validate that magnet links can only be used with torrent type
-          if (upload_type === 'magnet' && type !== 'torrent') {
-            errors.push({
-              upload,
-              error: 'Invalid combination: magnet links can only be used with type="torrent"',
-            });
-            continue;
-          }
-
-          if (!name) {
-            errors.push({ upload, error: 'name is required' });
-            continue;
-          }
-
-          if (upload_type === 'file' && !file_path) {
-            errors.push({ upload, error: 'file_path is required for file uploads' });
-            continue;
-          }
-
-          // Validate file extension when upload_type is 'file' to prevent unauthorized file types
-          const extensionError = validateFileExtension(type, upload_type, file_path);
-          if (extensionError) {
-            errors.push({
-              upload,
-              error: extensionError,
-            });
-            continue;
-          }
-
-          // Security: Validate that file_path belongs to the authenticated user
-          if (upload_type === 'file' && file_path) {
-            if (!validateFilePathOwnership(authId, file_path)) {
-              logger.error('File path ownership validation failed', {
-                authId,
-                file_path,
-                endpoint: '/api/uploads/batch',
-                method: 'POST',
-              });
+            if (!upload_type || !VALID_UPLOAD_TYPES.has(upload_type)) {
               errors.push({
                 upload,
-                error: 'Invalid file path: file must belong to authenticated user',
+                error: 'Invalid upload_type. Must be file, magnet, or link',
               });
               continue;
             }
+
+            // Validate that magnet links can only be used with torrent type
+            if (upload_type === 'magnet' && type !== 'torrent') {
+              errors.push({
+                upload,
+                error: 'Invalid combination: magnet links can only be used with type="torrent"',
+              });
+              continue;
+            }
+
+            if (!name) {
+              errors.push({ upload, error: 'name is required' });
+              continue;
+            }
+
+            if (upload_type === 'file' && !file_path) {
+              errors.push({ upload, error: 'file_path is required for file uploads' });
+              continue;
+            }
+
+            // Validate file extension when upload_type is 'file' to prevent unauthorized file types
+            const extensionError = validateFileExtension(type, upload_type, file_path);
+            if (extensionError) {
+              errors.push({
+                upload,
+                error: extensionError,
+              });
+              continue;
+            }
+
+            // Security: Validate that file_path belongs to the authenticated user
+            if (upload_type === 'file' && file_path) {
+              if (!validateFilePathOwnership(authId, file_path)) {
+                logger.error('File path ownership validation failed', {
+                  authId,
+                  file_path,
+                  endpoint: '/api/uploads/batch',
+                  method: 'POST',
+                });
+                errors.push({
+                  upload,
+                  error: 'Invalid file path: file must belong to authenticated user',
+                });
+                continue;
+              }
+            }
+
+            if ((upload_type === 'magnet' || upload_type === 'link') && !url) {
+              errors.push({ upload, error: 'url is required for magnet/link uploads' });
+              continue;
+            }
+
+            try {
+              const result = insertStmt.run(
+                type,
+                upload_type,
+                file_path || null,
+                url || null,
+                name,
+                seed || null,
+                allow_zip !== undefined ? allow_zip : true,
+                as_queued !== undefined ? as_queued : false,
+                add_only_if_cached !== undefined ? add_only_if_cached : false,
+                password || null,
+                currentQueueOrder++
+              );
+
+              const createdUpload = selectStmt.get(result.lastInsertRowid);
+              results.push(createdUpload);
+            } catch (error) {
+              errors.push({ upload, error: error.message });
+            }
           }
+          return results;
+        });
 
-          if ((upload_type === 'magnet' || upload_type === 'link') && !url) {
-            errors.push({ upload, error: 'url is required for magnet/link uploads' });
-            continue;
-          }
+        const successfulUploads = insertMany(uploads);
 
-          try {
-            const result = insertStmt.run(
-              type,
-              upload_type,
-              file_path || null,
-              url || null,
-              name,
-              seed || null,
-              allow_zip !== undefined ? allow_zip : true,
-              as_queued !== undefined ? as_queued : false,
-              password || null,
-              currentQueueOrder++
-            );
-
-            const createdUpload = selectStmt.get(result.lastInsertRowid);
-            results.push(createdUpload);
-          } catch (error) {
-            errors.push({ upload, error: error.message });
-          }
-        }
-        return results;
-      });
-
-      const successfulUploads = insertMany(uploads);
-
-      logger.info('Batch upload created', {
-        authId,
-        total: uploads.length,
-        successful: successfulUploads.length,
-        errors: errors.length,
-      });
-
-      // Update upload counter in master DB (recalculate for accuracy after batch)
-      if (successfulUploads.length > 0) {
-        await backend.masterDatabase.updateUploadCounters(authId, userDb);
-      }
-
-      res.json({
-        success: true,
-        data: {
-          uploads: successfulUploads,
-          errors: errors.length > 0 ? errors : undefined,
-        },
-        meta: {
+        logger.info('Batch upload created', {
+          authId,
           total: uploads.length,
           successful: successfulUploads.length,
-          failed: errors.length,
-        },
-      });
-    } catch (error) {
-      logger.error('Error creating batch upload', error, {
-        endpoint: '/api/uploads/batch',
-        method: 'POST',
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (req.validatedAuthId && backend.userDatabaseManager) {
-        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+          errors: errors.length,
+        });
+
+        // Update upload counter in master DB (recalculate for accuracy after batch)
+        if (successfulUploads.length > 0) {
+          await backend.masterDatabase.updateUploadCounters(authId, userDb);
+        }
+
+        res.json({
+          success: true,
+          data: {
+            uploads: successfulUploads,
+            errors: errors.length > 0 ? errors : undefined,
+          },
+          meta: {
+            total: uploads.length,
+            successful: successfulUploads.length,
+            failed: errors.length,
+          },
+        });
+      } catch (error) {
+        logger.error('Error creating batch upload', error, {
+          endpoint: '/api/uploads/batch',
+          method: 'POST',
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
-  });
+  );
 
   // POST /api/uploads - Create upload entry
   app.post('/api/uploads', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
@@ -402,8 +429,18 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
-      const { type, upload_type, file_path, url, name, seed, allow_zip, as_queued, password } =
-        req.body;
+      const {
+        type,
+        upload_type,
+        file_path,
+        url,
+        name,
+        seed,
+        allow_zip,
+        as_queued,
+        add_only_if_cached,
+        password,
+      } = req.body;
 
       // Validation
       if (!type || !['torrent', 'usenet', 'webdl'].includes(type)) {
@@ -489,10 +526,10 @@ export function setupUploadsRoutes(app, backend) {
           `
             INSERT INTO uploads (
               type, upload_type, file_path, url, name, status,
-              seed, allow_zip, as_queued, password, queue_order,
+              seed, allow_zip, as_queued, add_only_if_cached, password, queue_order,
               next_attempt_at, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           `
         )
         .run(
@@ -504,6 +541,7 @@ export function setupUploadsRoutes(app, backend) {
           seed || null,
           allow_zip !== undefined ? allow_zip : true,
           as_queued !== undefined ? as_queued : false,
+          add_only_if_cached !== undefined ? add_only_if_cached : false,
           password || null,
           queueOrder
         );
@@ -513,8 +551,9 @@ export function setupUploadsRoutes(app, backend) {
         .prepare(
           `
             SELECT id, type, upload_type, file_path, url, name, status,
-                   error_message, retry_count, seed, allow_zip, as_queued, password,
-                   queue_order, last_processed_at, completed_at, created_at, updated_at, next_attempt_at
+                   error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+                   queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+                   last_processed_at, completed_at, created_at, updated_at, next_attempt_at
             FROM uploads
             WHERE id = ?
           `
@@ -660,8 +699,9 @@ export function setupUploadsRoutes(app, backend) {
       // Get paginated results
       const query = `
           SELECT id, type, upload_type, file_path, url, name, status,
-                 error_message, retry_count, seed, allow_zip, as_queued, password,
-                 queue_order, last_processed_at, completed_at, created_at, updated_at
+                 error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+                 queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+                 last_processed_at, completed_at, created_at, updated_at
           FROM uploads
           ${whereClause}
           ${orderBy}
@@ -721,8 +761,9 @@ export function setupUploadsRoutes(app, backend) {
           .prepare(
             `
             SELECT id, type, upload_type, file_path, url, name, status,
-                   error_message, retry_count, seed, allow_zip, as_queued, password,
-                   queue_order, last_processed_at, completed_at, created_at, updated_at
+                   error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+                   queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+                   last_processed_at, completed_at, created_at, updated_at
             FROM uploads
             WHERE id = ?
           `
@@ -1025,6 +1066,9 @@ export function setupUploadsRoutes(app, backend) {
             SET status = 'queued',
                 error_message = NULL,
                 retry_count = 0,
+                torbox_hash = NULL,
+                torbox_torrent_id = NULL,
+                torbox_auth_id = NULL,
                 next_attempt_at = NULL,
                 queue_order = ?,
                 updated_at = CURRENT_TIMESTAMP
@@ -1050,8 +1094,9 @@ export function setupUploadsRoutes(app, backend) {
           .prepare(
             `
             SELECT id, type, upload_type, file_path, url, name, status,
-                   error_message, retry_count, seed, allow_zip, as_queued, password,
-                   queue_order, last_processed_at, completed_at, created_at, updated_at, next_attempt_at
+                   error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+                   queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+                   last_processed_at, completed_at, created_at, updated_at, next_attempt_at
             FROM uploads
             WHERE id = ?
           `
@@ -1077,83 +1122,87 @@ export function setupUploadsRoutes(app, backend) {
   );
 
   // PATCH /api/uploads/reorder - Update queue order for a single item
-  app.patch('/api/uploads/reorder', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
+  app.patch(
+    '/api/uploads/reorder',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
 
-      if (!backend.userDatabaseManager) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service is initializing, please try again in a moment',
-        });
-      }
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
 
-      const { id, old_order, new_order } = req.body;
+        const { id, old_order, new_order } = req.body;
 
-      // Validate required fields
-      if (id === undefined || old_order === undefined || new_order === undefined) {
-        return res.status(400).json({
-          success: false,
-          error: 'id, old_order, and new_order are required',
-        });
-      }
+        // Validate required fields
+        if (id === undefined || old_order === undefined || new_order === undefined) {
+          return res.status(400).json({
+            success: false,
+            error: 'id, old_order, and new_order are required',
+          });
+        }
 
-      if (!validateNumericId(id)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid id. Must be a positive integer.',
-        });
-      }
+        if (!validateNumericId(id)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid id. Must be a positive integer.',
+          });
+        }
 
-      const uploadId = parseInt(id, 10);
-      const oldOrder = parseInt(old_order, 10);
-      const newOrder = parseInt(new_order, 10);
+        const uploadId = parseInt(id, 10);
+        const oldOrder = parseInt(old_order, 10);
+        const newOrder = parseInt(new_order, 10);
 
-      if (oldOrder === newOrder) {
-        return res.status(400).json({
-          success: false,
-          error: 'old_order and new_order must be different',
-        });
-      }
+        if (oldOrder === newOrder) {
+          return res.status(400).json({
+            success: false,
+            error: 'old_order and new_order must be different',
+          });
+        }
 
-      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-      // Validate upload exists, belongs to user, and is queued
-      const upload = userDb.db
-        .prepare('SELECT id, status, queue_order FROM uploads WHERE id = ?')
-        .get(uploadId);
+        // Validate upload exists, belongs to user, and is queued
+        const upload = userDb.db
+          .prepare('SELECT id, status, queue_order FROM uploads WHERE id = ?')
+          .get(uploadId);
 
-      if (!upload) {
-        return res.status(404).json({
-          success: false,
-          error: 'Upload not found',
-        });
-      }
+        if (!upload) {
+          return res.status(404).json({
+            success: false,
+            error: 'Upload not found',
+          });
+        }
 
-      if (upload.status !== 'queued') {
-        return res.status(400).json({
-          success: false,
-          error: 'Can only reorder queued uploads',
-        });
-      }
+        if (upload.status !== 'queued') {
+          return res.status(400).json({
+            success: false,
+            error: 'Can only reorder queued uploads',
+          });
+        }
 
-      // Verify old_order matches current queue_order
-      if (upload.queue_order !== oldOrder) {
-        return res.status(400).json({
-          success: false,
-          error: 'old_order does not match current queue_order',
-        });
-      }
+        // Verify old_order matches current queue_order
+        if (upload.queue_order !== oldOrder) {
+          return res.status(400).json({
+            success: false,
+            error: 'old_order does not match current queue_order',
+          });
+        }
 
-      // Update queue_order in transaction
-      // If moving down (new_order > old_order), shift items up
-      // If moving up (new_order < old_order), shift items down
-      userDb.db.transaction(() => {
-        if (newOrder > oldOrder) {
-          // Moving down: shift items between old_order+1 and new_order up by 1
-          userDb.db
-            .prepare(
-              `
+        // Update queue_order in transaction
+        // If moving down (new_order > old_order), shift items up
+        // If moving up (new_order < old_order), shift items down
+        userDb.db.transaction(() => {
+          if (newOrder > oldOrder) {
+            // Moving down: shift items between old_order+1 and new_order up by 1
+            userDb.db
+              .prepare(
+                `
                 UPDATE uploads
                 SET queue_order = queue_order - 1,
                     updated_at = CURRENT_TIMESTAMP
@@ -1161,13 +1210,13 @@ export function setupUploadsRoutes(app, backend) {
                   AND queue_order > ?
                   AND queue_order <= ?
               `
-            )
-            .run(oldOrder, newOrder);
-        } else {
-          // Moving up: shift items between new_order and old_order-1 down by 1
-          userDb.db
-            .prepare(
-              `
+              )
+              .run(oldOrder, newOrder);
+          } else {
+            // Moving up: shift items between new_order and old_order-1 down by 1
+            userDb.db
+              .prepare(
+                `
                 UPDATE uploads
                 SET queue_order = queue_order + 1,
                     updated_at = CURRENT_TIMESTAMP
@@ -1175,174 +1224,181 @@ export function setupUploadsRoutes(app, backend) {
                   AND queue_order >= ?
                   AND queue_order < ?
               `
+              )
+              .run(newOrder, oldOrder);
+          }
+
+          // Update the moved item's queue_order
+          userDb.db
+            .prepare(
+              'UPDATE uploads SET queue_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
             )
-            .run(newOrder, oldOrder);
-        }
+            .run(newOrder, uploadId);
+        })();
 
-        // Update the moved item's queue_order
-        userDb.db
+        // Get updated upload
+        const updatedUpload = userDb.db
           .prepare(
-            'UPDATE uploads SET queue_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-          )
-          .run(newOrder, uploadId);
-      })();
-
-      // Get updated upload
-      const updatedUpload = userDb.db
-        .prepare(
-          `
+            `
             SELECT id, type, upload_type, file_path, url, name, status,
-                   error_message, retry_count, seed, allow_zip, as_queued, password,
-                   queue_order, last_processed_at, completed_at, created_at, updated_at, next_attempt_at
+                   error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+                   queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+                   last_processed_at, completed_at, created_at, updated_at, next_attempt_at
             FROM uploads
             WHERE id = ?
           `
-        )
-        .get(uploadId);
+          )
+          .get(uploadId);
 
-      logger.info('Queue order updated', {
-        authId,
-        uploadId,
-        oldOrder,
-        newOrder,
-      });
+        logger.info('Queue order updated', {
+          authId,
+          uploadId,
+          oldOrder,
+          newOrder,
+        });
 
-      res.json({ success: true, data: updatedUpload });
-    } catch (error) {
-      logger.error('Error reordering uploads', error, {
-        endpoint: '/api/uploads/reorder',
-        method: 'PATCH',
-        authId: req.validatedAuthId,
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (req.validatedAuthId && backend.userDatabaseManager) {
-        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        res.json({ success: true, data: updatedUpload });
+      } catch (error) {
+        logger.error('Error reordering uploads', error, {
+          endpoint: '/api/uploads/reorder',
+          method: 'PATCH',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
-  });
+  );
 
   // DELETE /api/uploads/bulk - Bulk delete uploads
   // NOTE: This must be defined BEFORE /api/uploads/:id to avoid route conflict
-  app.delete('/api/uploads/bulk', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
-      const { ids } = req.body; // Array of upload IDs
+  app.delete(
+    '/api/uploads/bulk',
+    backend.requireRegisteredUser,
+    uploadRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+        const { ids } = req.body; // Array of upload IDs
 
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'ids array is required and must not be empty',
-        });
-      }
-
-      // Validate all IDs are positive integers
-      const invalidIds = ids.filter((id) => !validateNumericId(id));
-      if (invalidIds.length > 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid ids. All IDs must be positive integers.',
-        });
-      }
-
-      // Convert all IDs to numbers
-      const numericIds = ids.map((id) => parseInt(id, 10));
-
-      if (!backend.userDatabaseManager) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service is initializing, please try again in a moment',
-        });
-      }
-
-      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-
-      // Get uploads to check status and file_paths
-      const placeholders = numericIds.map(() => '?').join(',');
-      const uploads = userDb.db
-        .prepare(`SELECT id, file_path, status FROM uploads WHERE id IN (${placeholders})`)
-        .all(...numericIds);
-
-      if (uploads.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'No uploads found',
-        });
-      }
-
-      let deletedCount = 0;
-      let queuedDeletedCount = 0;
-
-      // Delete files and records
-      const deleteResults = await Promise.allSettled(
-        uploads.map(async (upload) => {
-          // Delete file if exists (with authId for security validation)
-          if (upload.file_path) {
-            await deleteUploadFile(authId, upload.file_path);
-          }
-
-          // Re-read status after async file deletion to check if UploadProcessor
-          // completed the upload during the file deletion (race condition fix)
-          const currentUpload = userDb.db
-            .prepare('SELECT status FROM uploads WHERE id = ?')
-            .get(upload.id);
-
-          // Delete from database
-          userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
-
-          // Check if status was still queued or processing
-          const wasQueued =
-            currentUpload &&
-            (currentUpload.status === 'queued' || currentUpload.status === 'processing');
-
-          return { deleted: true, wasQueued };
-        })
-      );
-
-      for (const r of deleteResults) {
-        if (r.status === 'fulfilled') {
-          deletedCount++;
-          if (r.value.wasQueued) queuedDeletedCount++;
-        } else {
-          logger.error('Error deleting upload in bulk operation', r.reason, {
-            endpoint: this.endpoint,
+        if (!Array.isArray(ids) || ids.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids array is required and must not be empty',
           });
         }
-      }
 
-      // Update counter (decrement for each queued or processing upload deleted)
-      for (let i = 0; i < queuedDeletedCount; i++) {
-        backend.masterDatabase.decrementUploadCounter(authId);
-      }
+        // Validate all IDs are positive integers
+        const invalidIds = ids.filter((id) => !validateNumericId(id));
+        if (invalidIds.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid ids. All IDs must be positive integers.',
+          });
+        }
 
-      logger.info('Bulk upload delete', {
-        authId,
-        requested: numericIds.length,
-        deleted: deletedCount,
-        queuedDeleted: queuedDeletedCount,
-      });
+        // Convert all IDs to numbers
+        const numericIds = ids.map((id) => parseInt(id, 10));
 
-      res.json({
-        success: true,
-        message: `Deleted ${deletedCount} upload(s)`,
-        data: {
-          deleted: deletedCount,
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+
+        // Get uploads to check status and file_paths
+        const placeholders = numericIds.map(() => '?').join(',');
+        const uploads = userDb.db
+          .prepare(`SELECT id, file_path, status FROM uploads WHERE id IN (${placeholders})`)
+          .all(...numericIds);
+
+        if (uploads.length === 0) {
+          return res.status(404).json({
+            success: false,
+            error: 'No uploads found',
+          });
+        }
+
+        let deletedCount = 0;
+        let queuedDeletedCount = 0;
+
+        // Delete files and records
+        const deleteResults = await Promise.allSettled(
+          uploads.map(async (upload) => {
+            // Delete file if exists (with authId for security validation)
+            if (upload.file_path) {
+              await deleteUploadFile(authId, upload.file_path);
+            }
+
+            // Re-read status after async file deletion to check if UploadProcessor
+            // completed the upload during the file deletion (race condition fix)
+            const currentUpload = userDb.db
+              .prepare('SELECT status FROM uploads WHERE id = ?')
+              .get(upload.id);
+
+            // Delete from database
+            userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
+
+            // Check if status was still queued or processing
+            const wasQueued =
+              currentUpload &&
+              (currentUpload.status === 'queued' || currentUpload.status === 'processing');
+
+            return { deleted: true, wasQueued };
+          })
+        );
+
+        for (const r of deleteResults) {
+          if (r.status === 'fulfilled') {
+            deletedCount++;
+            if (r.value.wasQueued) queuedDeletedCount++;
+          } else {
+            logger.error('Error deleting upload in bulk operation', r.reason, {
+              endpoint: this.endpoint,
+            });
+          }
+        }
+
+        // Update counter (decrement for each queued or processing upload deleted)
+        for (let i = 0; i < queuedDeletedCount; i++) {
+          backend.masterDatabase.decrementUploadCounter(authId);
+        }
+
+        logger.info('Bulk upload delete', {
+          authId,
           requested: numericIds.length,
-        },
-      });
-    } catch (error) {
-      logger.error('Error bulk deleting uploads', error, {
-        endpoint: '/api/uploads/bulk',
-        method: 'DELETE',
-        authId: req.validatedAuthId,
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (req.validatedAuthId && backend.userDatabaseManager) {
-        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+          deleted: deletedCount,
+          queuedDeleted: queuedDeletedCount,
+        });
+
+        res.json({
+          success: true,
+          message: `Deleted ${deletedCount} upload(s)`,
+          data: {
+            deleted: deletedCount,
+            requested: numericIds.length,
+          },
+        });
+      } catch (error) {
+        logger.error('Error bulk deleting uploads', error, {
+          endpoint: '/api/uploads/bulk',
+          method: 'DELETE',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
-  });
+  );
 
   // DELETE /api/uploads/:id - Delete upload
   app.delete(

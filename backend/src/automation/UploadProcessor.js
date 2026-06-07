@@ -11,7 +11,7 @@ import {
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
-import { isTorboxUploadApiFailure } from './uploadResponseValidation.js';
+import { getUploadResourceId, isTorboxUploadApiFailure } from './uploadResponseValidation.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -23,6 +23,21 @@ const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
 const MAX_RETRIES = 3;
+
+function extractTorboxTorrentResult(response, type) {
+  if (type !== 'torrent') {
+    return { torboxHash: null, torboxTorrentId: null, torboxAuthId: null };
+  }
+
+  const torboxData =
+    response?.data?.data && typeof response.data.data === 'object' ? response.data.data : {};
+
+  return {
+    torboxHash: torboxData.hash ?? null,
+    torboxTorrentId: getUploadResourceId(torboxData, type),
+    torboxAuthId: torboxData.auth_id ?? null,
+  };
+}
 const MIN_INTERVAL_THRESHOLD = 7; // Only enforce spacing when 7+ in last minute
 const RATE_LIMIT_BUFFER_MS = 1000; // 1 second buffer for rate limit calculations
 const API_TIMEOUT_MS = 30000;
@@ -430,6 +445,7 @@ class UploadProcessor {
       seed,
       allow_zip,
       as_queued,
+      add_only_if_cached,
       password,
       type,
       authId,
@@ -458,6 +474,9 @@ class UploadProcessor {
       const allowZipValue = allow_zip !== null && allow_zip !== undefined ? allow_zip : 1;
       formData.append('seed', seedValue);
       formData.append('allow_zip', allowZipValue);
+      if (add_only_if_cached === true || add_only_if_cached === 1) {
+        formData.append('add_only_if_cached', 'true');
+      }
     }
 
     // Only include as_queued if it's true (handle both boolean true and SQLite integer 1)
@@ -565,6 +584,10 @@ class UploadProcessor {
    */
   handleSuccessfulUpload(upload, userDb, type, response) {
     const { id } = upload;
+    const { torboxHash, torboxTorrentId, torboxAuthId } = extractTorboxTorrentResult(
+      response,
+      type
+    );
 
     // Log successful attempt
     this.logUploadAttempt(userDb, id, type, response.status, true, null, null);
@@ -578,12 +601,15 @@ class UploadProcessor {
         UPDATE uploads
         SET status = 'completed',
             error_message = NULL,
+            torbox_hash = ?,
+            torbox_torrent_id = ?,
+            torbox_auth_id = ?,
             completed_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `
       )
-      .run(id);
+      .run(torboxHash, torboxTorrentId, torboxAuthId, id);
 
     // Update counter only if the upload still exists (wasn't deleted during processing)
     // If the upload was deleted, the UPDATE returns 0 rows affected, so we skip decrement
@@ -1083,18 +1109,33 @@ class UploadProcessor {
               finalUserDb = await this.userDatabaseManager.getUserDatabase(upload.authId);
             }
 
+            const {
+              torboxHash: recoveryHash,
+              torboxTorrentId: recoveryTorrentId,
+              torboxAuthId: recoveryAuthId,
+            } = extractTorboxTorrentResult(response, type);
+
             const updateResult = finalUserDb.db
               .prepare(
                 `
                 UPDATE uploads
                 SET status = 'completed',
                     error_message = ?,
+                    torbox_hash = ?,
+                    torbox_torrent_id = ?,
+                    torbox_auth_id = ?,
                     completed_at = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
               `
               )
-              .run(`Database update failed after successful upload: ${lastDbError.message}`, id);
+              .run(
+                `Database update failed after successful upload: ${lastDbError.message}`,
+                recoveryHash,
+                recoveryTorrentId,
+                recoveryAuthId,
+                id
+              );
 
             if (updateResult.changes > 0) {
               this.masterDatabase.decrementUploadCounter(upload.authId);
@@ -1282,8 +1323,9 @@ class UploadProcessor {
   getQueuedUploads(userDb, authId, type = null) {
     let query = `
       SELECT id, type, upload_type, file_path, url, name, status,
-             error_message, retry_count, seed, allow_zip, as_queued, password,
-             queue_order, last_processed_at, completed_at, created_at, updated_at, next_attempt_at
+             error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+             queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+             last_processed_at, completed_at, created_at, updated_at, next_attempt_at
       FROM uploads
       WHERE status = 'queued'
         AND (file_deleted IS NULL OR file_deleted = false)
@@ -1507,10 +1549,13 @@ class UploadProcessor {
                       .prepare('SELECT status FROM uploads WHERE id = ?')
                       .get(upload.id);
                     if (after?.status === 'processing') {
-                      logger.warn('Upload still processing after processUpload; resetting to queued', {
-                        uploadId: upload.id,
-                        authId: auth_id,
-                      });
+                      logger.warn(
+                        'Upload still processing after processUpload; resetting to queued',
+                        {
+                          uploadId: upload.id,
+                          authId: auth_id,
+                        }
+                      );
                       currentUserDb.db
                         .prepare(
                           `
