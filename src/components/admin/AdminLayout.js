@@ -48,7 +48,7 @@ export default function AdminLayout({ children }) {
       <div className="flex min-h-screen min-w-0 flex-col pl-0 transition-[padding-left] duration-300 md:pl-[var(--admin-sidebar-width)]">
         <AdminMobileNav locale={locale} />
         <main className="min-w-0 flex-1">
-          <div className="w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">{children}</div>
+          <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>
