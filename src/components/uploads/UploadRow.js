@@ -59,27 +59,36 @@ export default function UploadRow({
       }
     : {};
 
+  const handleRowSelect = (shiftKey) => {
+    onSelect(upload.id, !selected, rowIndex, shiftKey);
+  };
+
   return (
     <tr
       {...rowProps}
-      className={`border-b border-border dark:border-border-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark ${
+      role="row"
+      aria-selected={selected}
+      className={`border-b border-border dark:border-border-dark cursor-pointer hover:bg-surface-alt dark:hover:bg-surface-alt-dark ${
         selected
           ? 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark hover:bg-surface-alt-selected-hover dark:hover:bg-surface-alt-selected-hover-dark'
           : ''
       }`}
+      onMouseDown={(e) => {
+        if (e.shiftKey) e.preventDefault();
+      }}
+      onClick={(e) => {
+        if (e.target.closest('button')) return;
+        handleRowSelect(e.shiftKey);
+      }}
     >
       <td className="px-2.5 py-1.5 text-xs text-primary-text dark:text-primary-text-dark w-12">
         <input
           type="checkbox"
           checked={selected}
-          onMouseDown={(e) => {
-            if (e.shiftKey) e.preventDefault();
-          }}
-          onChange={(e) =>
-            onSelect(upload.id, e.target.checked, rowIndex, e.shiftKey)
-          }
-          className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
-          onClick={(e) => e.stopPropagation()}
+          readOnly
+          tabIndex={-1}
+          style={{ pointerEvents: 'none' }}
+          className="size-4 accent-accent dark:accent-accent-dark"
           aria-label={upload.name || 'Select upload'}
         />
       </td>
