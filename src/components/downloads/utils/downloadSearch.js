@@ -205,11 +205,30 @@ export function itemHasFileNameSearchMatch(item, query) {
   return item.files?.some((file) => fileMatchesDownloadSearch(file, parsed)) ?? false;
 }
 
+/** Max matching files before search skips auto-expand (avoids huge inline lists). */
+export const MAX_AUTO_EXPAND_MATCHING_FILES = 15;
+
+/**
+ * Auto-expand only when file names match, the item title does not already surface
+ * the hit, and the match count is small enough to browse inline.
+ */
+export function shouldAutoExpandItemForSearch(item, query) {
+  if (isEmptyDownloadSearchQuery(query)) return false;
+  const parsed = getParsedDownloadSearch(query);
+  if (!parsed || !item.files?.length) return false;
+  if (itemNameMatchesDownloadSearch(item, parsed)) return false;
+
+  const matchingFiles = item.files.filter((file) => fileMatchesDownloadSearch(file, parsed));
+  return (
+    matchingFiles.length > 0 && matchingFiles.length <= MAX_AUTO_EXPAND_MATCHING_FILES
+  );
+}
+
 /**
  * Files to show when an item is expanded.
  * - No query: all files
- * - Item title matches: all files
- * - Only file names match: matching files only
+ * - File names match: matching files only
+ * - Title-only match: all files
  */
 export function getFilesVisibleForDownloadSearch(item, query) {
   if (!item) return [];
@@ -217,6 +236,8 @@ export function getFilesVisibleForDownloadSearch(item, query) {
   if (isEmptyDownloadSearchQuery(query)) return files;
 
   const parsed = getParsedDownloadSearch(query);
+  const matchingFiles = files.filter((file) => fileMatchesDownloadSearch(file, parsed));
+  if (matchingFiles.length > 0) return matchingFiles;
   if (itemNameMatchesDownloadSearch(item, parsed)) return files;
-  return files.filter((file) => fileMatchesDownloadSearch(file, parsed));
+  return matchingFiles;
 }

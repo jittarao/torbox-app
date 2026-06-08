@@ -4,6 +4,8 @@ import {
   itemMatchesDownloadSearch,
   getFilesVisibleForDownloadSearch,
   itemHasFileNameSearchMatch,
+  shouldAutoExpandItemForSearch,
+  MAX_AUTO_EXPAND_MATCHING_FILES,
 } from '../downloadSearch.js';
 
 describe('parseDownloadSearchQuery', () => {
@@ -132,8 +134,19 @@ describe('getFilesVisibleForDownloadSearch', () => {
     ],
   };
 
-  test('title match shows all files', () => {
+  test('title-only match shows all files when no file names match', () => {
     expect(getFilesVisibleForDownloadSearch(item, 'pack')).toHaveLength(2);
+  });
+
+  test('title and file match prefers matching files only', () => {
+    const batch = {
+      name: 'One Piece Batch',
+      files: [
+        { name: 'One Piece - 001.mkv' },
+        { name: 'readme.txt' },
+      ],
+    };
+    expect(getFilesVisibleForDownloadSearch(batch, 'one piece')).toHaveLength(1);
   });
 
   test('file-only match filters files', () => {
@@ -154,5 +167,31 @@ describe('itemHasFileNameSearchMatch', () => {
     const item = { name: 'visible title', files: [{ name: 'other.mkv' }] };
     expect(itemHasFileNameSearchMatch(item, 'visible')).toBe(false);
     expect(itemHasFileNameSearchMatch(item, 'other')).toBe(true);
+  });
+});
+
+describe('shouldAutoExpandItemForSearch', () => {
+  test('false when title already matches search', () => {
+    const item = {
+      name: 'One Piece Batch 02',
+      files: [{ name: 'One Piece - 0131.mkv' }],
+    };
+    expect(shouldAutoExpandItemForSearch(item, 'one piece')).toBe(false);
+  });
+
+  test('true for small file-only matches', () => {
+    const item = {
+      name: 'Unrelated pack',
+      files: [{ name: 'bonus-clip.mkv' }],
+    };
+    expect(shouldAutoExpandItemForSearch(item, 'bonus')).toBe(true);
+  });
+
+  test('false when too many files match', () => {
+    const files = Array.from({ length: MAX_AUTO_EXPAND_MATCHING_FILES + 1 }, (_, i) => ({
+      name: `episode-${i}.mkv`,
+    }));
+    const item = { name: 'Season pack', files };
+    expect(shouldAutoExpandItemForSearch(item, 'episode')).toBe(false);
   });
 });

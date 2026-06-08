@@ -205,14 +205,14 @@ export function useDownloadsPageState(apiKey) {
     setToast
   );
 
-  const { searchExpandedItemIdsRef, collapseAllFiles } = useDownloadsSearchExpand({
-    search: filterData.search,
-    sortedItems,
-    selectedItems,
-    expandedById,
-    setExpanded,
-    collapseAllExpanded,
-  });
+  const { searchExpandedItemIdsRef, collapseAllFiles, notifySearchToggleFiles } =
+    useDownloadsSearchExpand({
+      search: filterData.search,
+      sortedItems,
+      selectedItems,
+      setExpanded,
+      collapseAllExpanded,
+    });
 
   const expandAllFiles = useCallback(() => {
     searchExpandedItemIdsRef.current = new Set();
@@ -242,10 +242,10 @@ export function useDownloadsPageState(apiKey) {
 
   const toggleFiles = useCallback(
     (itemId) => {
-      searchExpandedItemIdsRef.current.delete(itemId);
+      notifySearchToggleFiles(itemId, Boolean(expandedById[itemId]));
       toggleExpanded(itemId);
     },
-    [toggleExpanded, searchExpandedItemIdsRef]
+    [toggleExpanded, notifySearchToggleFiles, expandedById]
   );
 
   useEffect(() => {
