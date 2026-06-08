@@ -109,10 +109,7 @@ export default class UploadQuotaService {
         if (!row.file_path) continue;
         const sizeBytes = await this.resolveAndPersistFileSize(userDb, row.id, row.file_path);
         if (sizeBytes > 0) {
-          const exists = await fileExists(row.file_path);
-          if (exists) {
-            this.masterDatabase.adjustUploadQuotaCounters(authId, 1, 0);
-          }
+          this.masterDatabase.adjustUploadQuotaCounters(authId, 1, 0);
         }
       }
     }
@@ -264,6 +261,13 @@ export default class UploadQuotaService {
       upload = current;
     }
 
+    const currentUpload = userDb.db.prepare('SELECT status FROM uploads WHERE id = ?').get(upload.id);
+    if (!currentUpload) return false;
+
+    if (ACTIVE_STATUSES.has(currentUpload.status)) {
+      return false;
+    }
+
     const fileSizeBytes = upload.file_size_bytes || 0;
     let hadFile = false;
 
@@ -284,14 +288,11 @@ export default class UploadQuotaService {
       }
     }
 
-    const currentUpload = userDb.db.prepare('SELECT status FROM uploads WHERE id = ?').get(upload.id);
-    if (!currentUpload) return false;
-
-    if (ACTIVE_STATUSES.has(currentUpload.status)) {
-      return false;
-    }
-
     userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
+
+    if (isUnlimitedTier(this.getTier(authId))) {
+      return true;
+    }
 
     if (currentUpload.status === 'queued' || currentUpload.status === 'processing') {
       this.masterDatabase.decrementUploadCounter(authId);
@@ -390,7 +391,7 @@ export default class UploadQuotaService {
       totalRetainedStorageMb: (totalBytes / (1024 * 1024)).toFixed(2),
     });
 
-    return { total: users.length, processed, errors, totalRetainedStorageMb: totalBytes };
+    return { total: users.length, processed, errors, totalRetainedStorageBytes: totalBytes };
   }
 
   /**
