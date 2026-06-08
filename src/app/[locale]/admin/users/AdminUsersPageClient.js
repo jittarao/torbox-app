@@ -19,6 +19,7 @@ export default function AdminUsersPageClient() {
     userFilters,
     fetchUsers,
     setUserFilter,
+    setUserSort,
   } = useAdminStore(
     useShallow((s) => ({
       users: s.users,
@@ -27,6 +28,7 @@ export default function AdminUsersPageClient() {
       userFilters: s.userFilters,
       fetchUsers: s.fetchUsers,
       setUserFilter: s.setUserFilter,
+      setUserSort: s.setUserSort,
     }))
   );
   const [toast, setToast] = useState(null);
@@ -54,6 +56,11 @@ export default function AdminUsersPageClient() {
     fetchUsers({ search, page: 1 });
   };
 
+  const handleSort = (field) => {
+    setUserSort(field);
+    fetchUsers();
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -76,6 +83,9 @@ export default function AdminUsersPageClient() {
           onPageChange={handlePageChange}
           onStatusFilter={handleStatusFilter}
           onSearch={handleSearch}
+          onSort={handleSort}
+          sort={userFilters.sort}
+          sortDirection={userFilters.sortDirection}
         />
       </div>
 

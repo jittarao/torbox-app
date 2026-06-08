@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronDown, ChevronUp } from '@/components/icons';
+
 /** Shared admin portal styling aligned with tailwind theme + globals ui-* classes */
 
 export const adminCardClass =
@@ -151,5 +153,57 @@ export function AdminStatRow({ label, value, hint }) {
       </span>
       <span className="font-medium text-text dark:text-text-dark">{value ?? '—'}</span>
     </div>
+  );
+}
+
+export function AdminSortableTh({
+  label,
+  sortKey,
+  activeSort,
+  activeDirection,
+  onSort,
+  className = '',
+  title,
+  align = 'left',
+}) {
+  const isActive = activeSort === sortKey;
+  const ariaSort = isActive ? (activeDirection === 'asc' ? 'ascending' : 'descending') : 'none';
+  const alignClass =
+    align === 'right' ? 'justify-end text-right' : align === 'center' ? 'justify-center text-center' : 'text-left';
+
+  const sortHint = isActive
+    ? activeDirection === 'asc'
+      ? ' (ascending — click to reverse)'
+      : ' (descending — click to reverse)'
+    : ' (click to sort)';
+
+  return (
+    <th scope="col" aria-sort={ariaSort} className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        title={(title || label) + sortHint}
+        className={`group -mx-1 flex w-full items-center gap-1 rounded-md px-1 py-0.5 text-inherit transition-colors hover:bg-surface-hover hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:hover:bg-surface-hover-dark dark:hover:text-text-dark dark:focus-visible:ring-accent-dark/40 ${alignClass} ${isActive ? 'text-text dark:text-text-dark' : ''}`}
+      >
+        <span className="truncate">{label}</span>
+        <span
+          className={`inline-flex shrink-0 flex-col leading-none ${isActive ? 'text-accent dark:text-accent-dark' : 'text-muted/50 group-hover:text-muted dark:text-muted-dark/50 dark:group-hover:text-muted-dark'}`}
+          aria-hidden
+        >
+          {isActive ? (
+            activeDirection === 'asc' ? (
+              <ChevronUp className="size-3.5" />
+            ) : (
+              <ChevronDown className="size-3.5" />
+            )
+          ) : (
+            <>
+              <ChevronUp className="size-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
+              <ChevronDown className="-mt-1 size-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
+            </>
+          )}
+        </span>
+      </button>
+    </th>
   );
 }
