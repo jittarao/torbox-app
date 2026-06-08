@@ -7,6 +7,7 @@ import { setupDatabaseRoutes } from './admin/databases.js';
 import { setupAutomationRoutes } from './admin/automation.js';
 import { setupConfigRoutes } from './admin/config.js';
 import { setupDiagnosticsRoutes } from './admin/diagnostics.js';
+import { setupSystemRoutes } from './admin/system.js';
 
 /**
  * Admin API Routes
@@ -42,6 +43,7 @@ export function setupAdminRoutes(app, backend) {
   setupAutomationRoutes(router, backend);
   setupConfigRoutes(router, backend);
   setupDiagnosticsRoutes(router, backend);
+  setupSystemRoutes(router, backend);
 
   // Mount admin routes
   app.use('/api/admin', router);
