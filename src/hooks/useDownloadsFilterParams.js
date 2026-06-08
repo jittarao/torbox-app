@@ -85,6 +85,20 @@ function writeStatusFilterToParams(params, value) {
   else params.delete('status');
 }
 
+/**
+ * Whether a batched criteria patch should write raw `appliedFilters` to the URL.
+ * Skip only when the same patch selects a saved view or tag shortcut (those encode
+ * filters via `view` / `tag` params). Clearing view/tag with explicit null/empty must
+ * still write filters (e.g. custom view preview).
+ * @param {{ appliedFilters?: object, viewId?: number|string|null, tagIds?: number[]|null }} patch
+ */
+export function shouldWriteAppliedFiltersInCriteriaPatch(patch) {
+  if (patch.appliedFilters === undefined) return false;
+  if (patch.viewId != null) return false;
+  if (patch.tagIds != null && patch.tagIds.length > 0) return false;
+  return true;
+}
+
 /** @param {URLSearchParams} params */
 function writeSortToParams(params, sortField, sortDirection = 'asc') {
   if (sortField && sortField !== DEFAULT_SORT.sortField) {
@@ -229,10 +243,8 @@ export function useDownloadsFilterParams() {
             params.delete('tags');
           }
         }
-        if (patch.appliedFilters !== undefined) {
-          if (patch.viewId === undefined && patch.tagIds === undefined) {
-            filtersWritten = writeAppliedFiltersToParams(params, patch.appliedFilters, filterStorage);
-          }
+        if (shouldWriteAppliedFiltersInCriteriaPatch(patch)) {
+          filtersWritten = writeAppliedFiltersToParams(params, patch.appliedFilters, filterStorage);
         }
       });
       return filtersWritten;

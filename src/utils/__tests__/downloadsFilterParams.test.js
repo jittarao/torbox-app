@@ -4,7 +4,9 @@ import {
   downloadsSearchParamFromValue,
   parseStatusFilterParam,
   serializeStatusFilterParam,
+  shouldWriteAppliedFiltersInCriteriaPatch,
 } from '@/hooks/useDownloadsFilterParams';
+import { LOGIC_OPERATORS } from '@/components/downloads/AutomationRules/constants';
 
 describe('downloadsFilterParams search URL encoding', () => {
   test('preserves spaces while typing multi-word queries', () => {
@@ -16,6 +18,45 @@ describe('downloadsFilterParams search URL encoding', () => {
   test('clears search param for empty input', () => {
     expect(downloadsSearchParamFromValue('')).toBeNull();
     expect(downloadsSearchParamFromValue(null)).toBeNull();
+  });
+});
+
+describe('shouldWriteAppliedFiltersInCriteriaPatch', () => {
+  const sampleFilters = {
+    logicOperator: LOGIC_OPERATORS.AND,
+    groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: [{ column: 'name', operator: 'contains', value: 'test' }] }],
+  };
+
+  test('writes filters when clearing view and tag in the same patch', () => {
+    expect(
+      shouldWriteAppliedFiltersInCriteriaPatch({
+        viewId: null,
+        tagIds: null,
+        appliedFilters: sampleFilters,
+      })
+    ).toBe(true);
+  });
+
+  test('skips filters when selecting a saved view', () => {
+    expect(
+      shouldWriteAppliedFiltersInCriteriaPatch({
+        viewId: 42,
+        appliedFilters: sampleFilters,
+      })
+    ).toBe(false);
+  });
+
+  test('skips filters when selecting a tag shortcut', () => {
+    expect(
+      shouldWriteAppliedFiltersInCriteriaPatch({
+        tagIds: [3],
+        appliedFilters: sampleFilters,
+      })
+    ).toBe(false);
+  });
+
+  test('writes filters when only appliedFilters is present', () => {
+    expect(shouldWriteAppliedFiltersInCriteriaPatch({ appliedFilters: sampleFilters })).toBe(true);
   });
 });
 
