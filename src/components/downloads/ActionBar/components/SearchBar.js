@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { MagnifyingGlass, Question, Times } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -11,6 +11,15 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
   const isMobile = useIsMobile();
   const inputId = useId();
   const inputRef = useRef(null);
+  const [draft, setDraft] = useState(search);
+  const lastEmittedRef = useRef(search);
+
+  useEffect(() => {
+    if (search !== lastEmittedRef.current) {
+      setDraft(search);
+      lastEmittedRef.current = search;
+    }
+  }, [search]);
 
   const placeholder = isMobile
     ? t('placeholderDownloadsShort')
@@ -34,18 +43,34 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
     [t]
   );
 
+  const handleChange = useCallback(
+    (e) => {
+      const value = e.target.value;
+      setDraft(value);
+      lastEmittedRef.current = value;
+      onSearchChange(value);
+    },
+    [onSearchChange]
+  );
+
+  const handleClear = useCallback(() => {
+    setDraft('');
+    lastEmittedRef.current = '';
+    onSearchChange('');
+  }, [onSearchChange]);
+
   const handleKeyDown = useCallback(
     (e) => {
-      if (e.key === 'Escape' && search) {
+      if (e.key === 'Escape' && draft) {
         e.preventDefault();
-        onSearchChange('');
+        handleClear();
         inputRef.current?.blur();
       }
     },
-    [search, onSearchChange]
+    [draft, handleClear]
   );
 
-  const hasQuery = Boolean(search?.trim());
+  const hasQuery = Boolean(draft?.trim());
 
   return (
     <div className={`flex min-w-0 items-center gap-1 ${className}`.trim()}>
@@ -77,8 +102,8 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
             autoComplete="off"
             spellCheck={false}
             placeholder={placeholder}
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={draft}
+            onChange={handleChange}
             onKeyDown={handleKeyDown}
             className="w-full min-w-0 bg-transparent py-1.5 pl-9 pr-8 text-sm text-primary-text dark:text-primary-text-dark
             placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50
@@ -87,7 +112,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
           {hasQuery && (
             <button
               type="button"
-              onClick={() => onSearchChange('')}
+              onClick={handleClear}
               className="absolute right-1.5 flex size-6 shrink-0 items-center justify-center rounded
               text-primary-text/40 hover:text-primary-text dark:text-primary-text-dark/40 dark:hover:text-primary-text-dark
               focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
