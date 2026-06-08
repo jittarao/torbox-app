@@ -82,6 +82,37 @@ export function parsePagination(req) {
   return { page, limit, offset };
 }
 
+/** Whitelisted user-list sort keys → SQL ORDER BY expressions */
+export const USER_LIST_SORT_COLUMNS = {
+  auth_id: 'ur.auth_id',
+  key_name: "COALESCE(ak.key_name, '')",
+  status: 'ur.status',
+  has_active_rules: 'ur.has_active_rules',
+  upload_tier: 'ur.upload_tier',
+  upload_retained_file_count: 'ur.upload_retained_file_count',
+  upload_retained_storage_bytes: 'ur.upload_retained_storage_bytes',
+  created_at: 'ur.created_at',
+};
+
+/**
+ * Parse user list sort parameters from request
+ * @param {Object} req - Express request object
+ * @returns {{ sort: string, sortDirection: 'asc'|'desc', orderByClause: string }}
+ */
+export function parseUserListSort(req) {
+  const sort = String(req.query.sort || 'created_at');
+  const rawDirection = String(req.query.sortDirection || req.query.direction || 'desc').toLowerCase();
+  const sortDirection = rawDirection === 'asc' ? 'asc' : 'desc';
+  const column = USER_LIST_SORT_COLUMNS[sort] || USER_LIST_SORT_COLUMNS.created_at;
+  const resolvedSort = USER_LIST_SORT_COLUMNS[sort] ? sort : 'created_at';
+
+  return {
+    sort: resolvedSort,
+    sortDirection,
+    orderByClause: `ORDER BY ${column} ${sortDirection.toUpperCase()}`,
+  };
+}
+
 /**
  * Send success response
  * @param {Object} res - Express response object

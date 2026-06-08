@@ -112,6 +112,8 @@ class AdminApiClient {
     if (params.limit) queryParams.append('limit', params.limit);
     if (params.status) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
+    if (params.sort) queryParams.append('sort', params.sort);
+    if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
 
     const query = queryParams.toString();
     return this.request(`/users${query ? `?${query}` : ''}`);

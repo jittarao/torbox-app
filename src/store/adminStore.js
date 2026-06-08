@@ -32,6 +32,8 @@ const useAdminStore = create((set, get) => ({
     search: '',
     page: 1,
     limit: 50,
+    sort: 'created_at',
+    sortDirection: 'desc',
   },
 
   // ===== Authentication =====
@@ -177,6 +179,31 @@ const useAdminStore = create((set, get) => ({
     set({ userFilters: filters });
   },
 
+  setUserSort(field) {
+    const defaultDirectionByField = {
+      auth_id: 'asc',
+      key_name: 'asc',
+      status: 'asc',
+      has_active_rules: 'desc',
+      upload_tier: 'asc',
+      upload_retained_file_count: 'desc',
+      upload_retained_storage_bytes: 'desc',
+      created_at: 'desc',
+    };
+    const filters = get().userFilters;
+    const currentSort = filters.sort || 'created_at';
+    const currentDir = filters.sortDirection || 'desc';
+    const sortDirection =
+      currentSort === field
+        ? currentDir === 'asc'
+          ? 'desc'
+          : 'asc'
+        : defaultDirectionByField[field] || 'asc';
+    const next = { ...filters, sort: field, sortDirection, page: 1 };
+    set({ userFilters: next });
+    return next;
+  },
+
   clearUserFilters() {
     set({
       userFilters: {
@@ -184,6 +211,8 @@ const useAdminStore = create((set, get) => ({
         search: '',
         page: 1,
         limit: 50,
+        sort: 'created_at',
+        sortDirection: 'desc',
       },
     });
   },
