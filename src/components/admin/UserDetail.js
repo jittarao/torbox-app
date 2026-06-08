@@ -10,8 +10,11 @@ export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [automationInfo, setAutomationInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { updateUserStatus } = useAdminStore(
-    useShallow((s) => ({ updateUserStatus: s.updateUserStatus }))
+  const { updateUserStatus, updateUserUploadTier } = useAdminStore(
+    useShallow((s) => ({
+      updateUserStatus: s.updateUserStatus,
+      updateUserUploadTier: s.updateUserUploadTier,
+    }))
   );
 
   useEffect(() => {
@@ -39,6 +42,20 @@ export default function UserDetail({ user }) {
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
     try {
       await updateUserStatus(user.auth_id, newStatus);
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const handleTierChange = async (newTier) => {
+    if (user.upload_tier === newTier) return;
+    const label = newTier === 'unlimited' ? 'Unlimited' : 'Limited';
+    if (!confirm(`Change upload tier to ${label}?`)) return;
+    try {
+      const result = await updateUserUploadTier(user.auth_id, newTier);
+      if (!result.success) {
+        alert(`Error: ${result.error}`);
+      }
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
@@ -114,6 +131,59 @@ export default function UserDetail({ user }) {
           </div>
         </AdminCard>
       ) : null}
+
+      <AdminCard
+        title="Upload quota"
+        action={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleTierChange('limited')}
+              className={
+                user.upload_tier !== 'unlimited' ? 'ui-btn-accent' : 'ui-btn-ghost'
+              }
+            >
+              Limited
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTierChange('unlimited')}
+              className={
+                user.upload_tier === 'unlimited' ? 'ui-btn-accent' : 'ui-btn-ghost'
+              }
+            >
+              Unlimited
+            </button>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex items-center justify-between gap-4 text-sm md:col-span-2">
+            <span className="text-muted dark:text-muted-dark">Tier</span>
+            <AdminBadge status={user.upload_tier === 'unlimited' ? 'active' : 'inactive'}>
+              {user.upload_tier === 'unlimited' ? 'Unlimited' : 'Limited'}
+            </AdminBadge>
+          </div>
+          <AdminStatRow
+            label="Retained files"
+            value={`${user.upload_retained_file_count ?? 0} / ${user.upload_limit_max_files ?? '—'}`}
+          />
+          <AdminStatRow
+            label="Storage used"
+            value={`${user.upload_storage_formatted || '0 B'} / ${user.upload_limit_storage_formatted || '—'}`}
+          />
+          <AdminStatRow
+            label="Quota status"
+            value={
+              user.upload_tier === 'unlimited'
+                ? 'N/A (unlimited)'
+                : user.over_quota
+                  ? 'Over quota'
+                  : 'Within limits'
+            }
+          />
+        </div>
+      </AdminCard>
 
       {automationInfo ? (
         <AdminCard title="Automation">

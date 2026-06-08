@@ -132,6 +132,17 @@ class AdminApiClient {
     });
   }
 
+  async updateUserUploadTier(authId, tier) {
+    return this.request(`/users/${authId}/upload-tier`, {
+      method: 'PUT',
+      body: JSON.stringify({ tier }),
+    });
+  }
+
+  async getUserUploadQuota(authId) {
+    return this.request(`/users/${authId}/upload-quota`);
+  }
+
   /**
    * Bulk reactivate API keys. Pass authIds to reactivate only those; omit to reactivate all inactive keys.
    * @param {string[]} [authIds]

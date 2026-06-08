@@ -134,6 +134,19 @@ const useAdminStore = create((set, get) => ({
     }
   },
 
+  async updateUserUploadTier(authId, tier) {
+    try {
+      await adminApiClient.updateUserUploadTier(authId, tier);
+      await get().fetchUsers();
+      if (get().selectedUser === authId) {
+        await get().fetchUser(authId);
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
   // ===== Metrics =====
 
   async fetchOverviewMetrics() {

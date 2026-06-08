@@ -31,6 +31,7 @@ import { setupTagsRoutes } from './routes/tags.js';
 import { setupDownloadTagsRoutes } from './routes/downloadTags.js';
 import { setupUploadsRoutes } from './routes/uploads.js';
 import { setupLinkHistoryRoutes } from './routes/linkHistory.js';
+import UploadQuotaService from './services/UploadQuotaService.js';
 
 class TorBoxBackend {
   constructor() {
@@ -40,6 +41,7 @@ class TorBoxBackend {
     this.userDatabaseManager = null;
     this.pollingScheduler = null;
     this.uploadProcessor = null;
+    this.uploadQuotaService = null;
     this.eventNotifier = new EventNotifier();
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
     this.memoryLogIntervalId = null;
@@ -292,6 +294,9 @@ class TorBoxBackend {
       this.userDatabaseManager = new UserDatabaseManager(this.masterDatabase, userDbDir);
       logger.info('User database manager initialized', { userDbDir });
 
+      // Upload quota service (tier-based retention for LIMITED users)
+      this.uploadQuotaService = new UploadQuotaService(this.masterDatabase);
+
       // Initialize upload processor
       this.uploadProcessor = new UploadProcessor(this.userDatabaseManager, this.masterDatabase);
 
@@ -314,6 +319,10 @@ class TorBoxBackend {
       logger.info('Syncing upload counters for all users...');
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
       logger.info('Upload counter sync completed');
+
+      logger.info('Backfilling upload quota counters for all users...');
+      await this.uploadQuotaService.backfillAllUsers(this.userDatabaseManager);
+      logger.info('Upload quota backfill completed');
 
       // Sync has_active_rules before the scheduler starts so spreadOverdueUsersOnStartup() and
       // the first poll tick see corrected flags (admin: POST /api/admin/automation/sync-rules-flags).

@@ -1,5 +1,6 @@
 import { sendSuccess, sendError } from './helpers.js';
 import { getMasterDbPath, getUserDbDir } from '../../utils/dataPaths.js';
+import { getUploadQuotaLimits } from '../../config/uploadQuota.js';
 
 /**
  * System Configuration Routes
@@ -28,6 +29,14 @@ export function setupConfigRoutes(router, backend) {
           master_db_path: getMasterDbPath(),
           user_db_dir: getUserDbDir(),
         },
+        upload_quotas: (() => {
+          const limits = getUploadQuotaLimits();
+          return {
+            max_storage_mb: limits.maxStorageMb,
+            max_files: limits.maxFiles,
+            default_tier: 'limited',
+          };
+        })(),
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',
         node_env: process.env.NODE_ENV || 'development',
       };

@@ -6,8 +6,6 @@ import {
   getUploadFilePath,
   fileExists,
   deleteUploadFile,
-  calculateUserUploadDirSize,
-  getUserUploadFiles,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
@@ -45,9 +43,6 @@ const INITIAL_BACKOFF_MS = 30000; // 30 seconds
 const MAX_BACKOFF_MS = 300000; // 5 minutes
 const CLEANUP_RETENTION_DAYS = 7;
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
-const MAX_UPLOAD_DIR_SIZE_BYTES = parseInt(process.env.MAX_UPLOAD_DIR_SIZE_BYTES || '52428800', 10); // 50MB default
-const UPLOAD_FILE_RETENTION_DAYS = parseInt(process.env.UPLOAD_FILE_RETENTION_DAYS || '30', 10); // 30 days default
-const FILE_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // Cleanup files every 6 hours
 const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
 const API_CLIENT_CACHE_TTL_MS = parseInt(
   process.env.UPLOAD_API_CLIENT_CACHE_TTL_MS || String(30 * 60 * 1000),
@@ -81,7 +76,6 @@ class UploadProcessor {
     this._processingInProgress = false;
     this.lastCleanupAt = null;
     this.lastRecoveryAt = null;
-    this.lastFileCleanupAt = null;
     this.cleanupIntervalMs = 24 * 60 * 60 * 1000; // Cleanup once per day
 
     // API clients cache: bounded TTL to prevent unbounded memory growth
@@ -592,9 +586,7 @@ class UploadProcessor {
     // Log successful attempt
     this.logUploadAttempt(userDb, id, type, response.status, true, null, null);
 
-    // Update upload status
-    // Note: Files are NOT deleted here - they are kept and cleaned up periodically
-    // by cleanupUserFiles() based on size limits and retention period
+    // Update upload status (staged files retained until tier quota eviction)
     const updateResult = userDb.db
       .prepare(
         `
@@ -1384,10 +1376,6 @@ class UploadProcessor {
       // This ensures uploads stuck in 'processing' state are recovered even if startup recovery missed them
       const shouldRecover = !this.lastRecoveryAt || now - this.lastRecoveryAt >= 60 * 60 * 1000;
 
-      // Cleanup files periodically (every 6 hours)
-      const shouldCleanupFiles =
-        !this.lastFileCleanupAt || now - this.lastFileCleanupAt >= FILE_CLEANUP_INTERVAL_MS;
-
       // Process users concurrently with a bounded semaphore so that a user waiting on a rate-limit
       // sleep does not block uploads for all subsequent users in the same 5-second cycle.
       const UPLOAD_CONCURRENCY = Math.max(
@@ -1427,11 +1415,6 @@ class UploadProcessor {
           // Recover stuck processing uploads if needed
           if (shouldRecover) {
             this.recoverStuckProcessingUploads(userDb, auth_id);
-          }
-
-          // Cleanup files if needed (size limits and retention period)
-          if (shouldCleanupFiles) {
-            await this.cleanupUserFiles(userDb, auth_id);
           }
 
           // Process one upload per type per cycle to respect rate limits
@@ -1594,141 +1577,10 @@ class UploadProcessor {
       if (shouldRecover) {
         this.lastRecoveryAt = now;
       }
-      if (shouldCleanupFiles) {
-        this.lastFileCleanupAt = now;
-      }
     } catch (error) {
       logger.error('Error in upload processing cycle', error);
     } finally {
       this._processingInProgress = false;
-    }
-  }
-
-  /**
-   * Cleanup old files for a user based on size limits and retention period
-   * @param {Object} userDb - User database instance
-   * @param {string} authId - User authentication ID
-   */
-  async cleanupUserFiles(userDb, authId) {
-    try {
-      const now = Date.now();
-      const retentionCutoff = new Date(now - UPLOAD_FILE_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-      let deletedCount = 0;
-      let freedBytes = 0;
-
-      // Get all files with their stats, sorted by oldest first
-      const files = await getUserUploadFiles(authId);
-
-      // First, delete files older than retention period (in parallel)
-      const retentionResults = await Promise.allSettled(
-        files.flatMap((file) =>
-          file.mtime < retentionCutoff
-            ? [
-                (async () => {
-                  await deleteUploadFile(authId, file.relativePath);
-
-                  const uploadBeforeDelete = userDb.db
-                    .prepare(
-                      `SELECT status FROM uploads WHERE file_path = ? AND file_deleted = false`
-                    )
-                    .get(file.relativePath);
-
-                  const wasQueued = uploadBeforeDelete?.status === 'queued';
-
-                  userDb.db
-                    .prepare(
-                      `UPDATE uploads SET file_deleted = true WHERE file_path = ? AND file_deleted = false`
-                    )
-                    .run(file.relativePath);
-
-                  if (wasQueued) {
-                    this.masterDatabase.decrementUploadCounter(authId);
-                  }
-
-                  return { size: file.size, wasQueued };
-                })(),
-              ]
-            : []
-        )
-      );
-
-      for (const r of retentionResults) {
-        if (r.status === 'fulfilled') {
-          deletedCount++;
-          freedBytes += r.value.size;
-        } else {
-          logger.error('Error deleting old file', r.reason, { authId });
-        }
-      }
-
-      // Then, check size limit and delete oldest files if needed
-      // Recalculate size after retention cleanup
-      const currentSize = await calculateUserUploadDirSize(authId);
-      if (currentSize > MAX_UPLOAD_DIR_SIZE_BYTES) {
-        const remainingFiles = await getUserUploadFiles(authId);
-        let sizeToFree = currentSize - MAX_UPLOAD_DIR_SIZE_BYTES;
-
-        const filesToDelete = [];
-        for (const file of remainingFiles) {
-          if (sizeToFree <= 0) break;
-          filesToDelete.push(file);
-          sizeToFree -= file.size;
-        }
-
-        const deleteResults = await Promise.allSettled(
-          filesToDelete.map(async (file) => {
-            const result = { file, wasQueued: false };
-            try {
-              await deleteUploadFile(authId, file.relativePath);
-              result.deleted = true;
-              result.freedSize = file.size;
-
-              const uploadBeforeDelete = userDb.db
-                .prepare(`SELECT status FROM uploads WHERE file_path = ? AND file_deleted = false`)
-                .get(file.relativePath);
-              result.wasQueued = uploadBeforeDelete?.status === 'queued';
-
-              userDb.db
-                .prepare(
-                  `UPDATE uploads SET file_deleted = true WHERE file_path = ? AND file_deleted = false`
-                )
-                .run(file.relativePath);
-
-              if (result.wasQueued) {
-                this.masterDatabase.decrementUploadCounter(authId);
-              }
-            } catch (error) {
-              logger.error('Error deleting file for size limit', error, {
-                authId,
-                filePath: file.relativePath,
-              });
-              result.deleted = false;
-            }
-            return result;
-          })
-        );
-
-        for (const r of deleteResults) {
-          if (r.status === 'fulfilled' && r.value.deleted) {
-            deletedCount++;
-            freedBytes += r.value.freedSize;
-          }
-        }
-      }
-
-      if (deletedCount > 0) {
-        logger.info('File cleanup completed', {
-          authId,
-          deletedCount,
-          freedBytes,
-          freedMB: (freedBytes / (1024 * 1024)).toFixed(2),
-        });
-      }
-
-      return { deletedCount, freedBytes };
-    } catch (error) {
-      logger.error('Error cleaning up user files', error, { authId });
-      return { deletedCount: 0, freedBytes: 0 };
     }
   }
 
