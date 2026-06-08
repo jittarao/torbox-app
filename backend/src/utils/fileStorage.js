@@ -48,7 +48,7 @@ function generateSafeFilename(originalFilename) {
  * @param {Buffer|Uint8Array} fileBuffer - File buffer
  * @param {string} originalFilename - Original filename
  * @param {string} type - Upload type (torrent, usenet, webdl)
- * @returns {Promise<string>} File path relative to storage root
+ * @returns {Promise<{ relativePath: string, sizeBytes: number }>} File path and size
  */
 export async function saveUploadFile(authId, fileBuffer, originalFilename, type) {
   try {
@@ -73,7 +73,7 @@ export async function saveUploadFile(authId, fileBuffer, originalFilename, type)
       relativePath,
     });
 
-    return relativePath;
+    return { relativePath, sizeBytes: fileBuffer.length };
   } catch (error) {
     logger.error('Error saving upload file', error, {
       authId,

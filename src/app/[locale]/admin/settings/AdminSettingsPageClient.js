@@ -62,6 +62,19 @@ export default function AdminSettingsPageClient() {
               </div>
             </AdminCard>
 
+            <AdminCard title="Upload retention (LIMITED tier defaults)">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <AdminStatRow
+                  label="Max staged storage (MB)"
+                  value={config.upload_quotas?.max_storage_mb}
+                />
+                <AdminStatRow
+                  label="Max retained files"
+                  value={config.upload_quotas?.max_files}
+                />
+              </div>
+            </AdminCard>
+
             <AdminCard title="Database">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <AdminStatRow

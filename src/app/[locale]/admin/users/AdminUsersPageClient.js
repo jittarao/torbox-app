@@ -11,6 +11,7 @@ import { AdminPageHeader } from '@/components/admin/AdminUi';
 
 export default function AdminUsersPageClient() {
   const { push } = useRouter();
+  const locale = useParams()?.locale || 'en';
   const {
     users,
     usersLoading,
@@ -35,7 +36,6 @@ export default function AdminUsersPageClient() {
   }, [fetchUsers]);
 
   const handleUserClick = (authId) => {
-    const locale = useParams()?.locale || 'en';
     push(`/${locale}/admin/users/${authId}`);
   };
 

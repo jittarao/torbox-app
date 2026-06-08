@@ -31,6 +31,9 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-}
       - SENTRY_DEBUG=${SENTRY_DEBUG:-}
+      # Upload retention quotas (LIMITED tier users; backend only)
+      - UPLOAD_LIMIT_MAX_STORAGE_MB=${UPLOAD_LIMIT_MAX_STORAGE_MB:-100}
+      - UPLOAD_LIMIT_MAX_FILES=${UPLOAD_LIMIT_MAX_FILES:-500}
     # Persistent volume for backend data (databases, user files, etc.)
     volumes:
       - backend-data:/app/data

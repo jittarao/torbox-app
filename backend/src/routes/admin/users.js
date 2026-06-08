@@ -11,6 +11,23 @@ import {
 } from './helpers.js';
 import { decrypt } from '../../utils/crypto.js';
 import logger from '../../utils/logger.js';
+import { isValidUploadTier } from '../../config/uploadQuota.js';
+
+function attachUploadQuotaFields(user, uploadQuotaService) {
+  if (!uploadQuotaService || !user) return user;
+
+  const usage = uploadQuotaService.buildUsageSnapshot(user.auth_id, user.upload_tier || 'limited');
+  return {
+    ...user,
+    upload_tier: usage.tier,
+    upload_retained_file_count: usage.fileCount,
+    upload_retained_storage_bytes: usage.storageBytes,
+    upload_storage_formatted: usage.storageFormatted,
+    upload_limit_storage_formatted: usage.limitStorageFormatted,
+    upload_limit_max_files: usage.limits.maxFiles,
+    over_quota: usage.overQuota,
+  };
+}
 
 /**
  * User Management Routes
@@ -34,6 +51,9 @@ export function setupUserRoutes(router, backend) {
         ur.next_poll_at,
         ur.created_at,
         ur.updated_at,
+        ur.upload_tier,
+        ur.upload_retained_file_count,
+        ur.upload_retained_storage_bytes,
         ak.key_name,
         ak.is_active as api_key_active
       FROM user_registry ur
@@ -74,12 +94,15 @@ export function setupUserRoutes(router, backend) {
       const usersWithSizes = await Promise.all(
         users.map(async (user) => {
           const dbStats = getDatabaseStats(user.db_path);
-          return {
-            ...user,
-            db_size: dbStats?.size || null,
-            db_exists: dbStats?.exists || false,
-            db_size_formatted: dbStats?.size_formatted || null,
-          };
+          return attachUploadQuotaFields(
+            {
+              ...user,
+              db_size: dbStats?.size || null,
+              db_exists: dbStats?.exists || false,
+              db_size_formatted: dbStats?.size_formatted || null,
+            },
+            backend.uploadQuotaService
+          );
         })
       );
 
@@ -154,11 +177,81 @@ export function setupUserRoutes(router, backend) {
       const pollerStatus = backend.pollingScheduler?.pollers.get(authId)?.getStatus() || null;
 
       sendSuccess(res, {
-        user: {
-          ...user,
-          db_info: dbInfo,
-          poller: pollerStatus,
-        },
+        user: attachUploadQuotaFields(
+          {
+            ...user,
+            db_info: dbInfo,
+            poller: pollerStatus,
+          },
+          backend.uploadQuotaService
+        ),
+      });
+    })
+  );
+
+  // Get upload quota details for a user
+  router.get(
+    '/users/:authId/upload-quota',
+    asyncHandler(async (req, res) => {
+      const authId = validateAuthIdParam(req, res);
+      if (!authId) return;
+
+      const user = backend.masterDatabase.getQuery(
+        'SELECT auth_id FROM user_registry WHERE auth_id = ?',
+        [authId]
+      );
+
+      if (!user) {
+        return sendError(res, 'User not found', 404);
+      }
+
+      if (!backend.uploadQuotaService) {
+        return sendError(res, 'Upload quota service unavailable', 503);
+      }
+
+      sendSuccess(res, {
+        quota: backend.uploadQuotaService.getUsage(authId),
+      });
+    })
+  );
+
+  // Update user upload tier
+  router.put(
+    '/users/:authId/upload-tier',
+    asyncHandler(async (req, res) => {
+      const authId = validateAuthIdParam(req, res);
+      if (!authId) return;
+
+      const { tier } = req.body;
+
+      if (!isValidUploadTier(tier)) {
+        return sendError(res, 'Tier must be "limited" or "unlimited"', 400);
+      }
+
+      const user = backend.masterDatabase.getQuery(
+        'SELECT auth_id FROM user_registry WHERE auth_id = ?',
+        [authId]
+      );
+
+      if (!user) {
+        return sendError(res, 'User not found', 404);
+      }
+
+      if (!backend.uploadQuotaService) {
+        return sendError(res, 'Upload quota service unavailable', 503);
+      }
+
+      logger.info('Admin updating user upload tier', {
+        authId,
+        tier,
+        adminIp: req.ip,
+      });
+
+      backend.uploadQuotaService.setTier(authId, tier);
+
+      sendSuccess(res, {
+        message: 'Upload tier updated successfully',
+        quota: backend.uploadQuotaService.getUsage(authId),
       });
     })
   );
