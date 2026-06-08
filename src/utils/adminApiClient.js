@@ -184,6 +184,14 @@ class AdminApiClient {
     return this.request('/metrics/performance');
   }
 
+  async getUploadQuotaSummary() {
+    return this.request('/system/upload-quota-summary');
+  }
+
+  async enforceUploadQuotas() {
+    return this.request('/system/enforce-upload-quotas', { method: 'POST' });
+  }
+
   // ===== Database Management =====
 
   async getDatabases() {

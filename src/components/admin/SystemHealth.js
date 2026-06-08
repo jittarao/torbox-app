@@ -1,12 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import adminApiClient from '@/utils/adminApiClient';
 import { AdminAlert, AdminBadge, AdminCard, AdminStatRow } from './AdminUi';
 
 export default function SystemHealth({ metrics, onRefresh }) {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
+  const [quotaSummary, setQuotaSummary] = useState(null);
+  const [quotaEnforcing, setQuotaEnforcing] = useState(false);
+  const [quotaMessage, setQuotaMessage] = useState(null);
+
+  const loadQuotaSummary = async () => {
+    try {
+      const data = await adminApiClient.getUploadQuotaSummary();
+      setQuotaSummary(data.summary);
+    } catch {
+      setQuotaSummary(null);
+    }
+  };
+
+  useEffect(() => {
+    loadQuotaSummary();
+  }, []);
+
+  const handleEnforceUploadQuotas = async () => {
+    const over = quotaSummary?.over_quota_users ?? 0;
+    const limits = quotaSummary?.limits;
+    const storageLimit = quotaSummary?.limit_storage_formatted ?? '—';
+    const fileLimit = limits?.maxFiles ?? '—';
+
+    const confirmed = window.confirm(
+      `Enforce upload quotas for LIMITED users over limits?\n\n` +
+        `This hard-deletes oldest completed/failed staged files (and their upload log rows) ` +
+        `until each affected user is within ${storageLimit} and ${fileLimit} files.\n\n` +
+        `Queued/processing uploads are never removed.\n` +
+        `UNLIMITED users are skipped.\n\n` +
+        `Users currently over quota: ${over}\n\n` +
+        `Set tiers under Admin → Users before running this if heavy users should be exempt.`
+    );
+    if (!confirmed) return;
+
+    setQuotaEnforcing(true);
+    setQuotaMessage(null);
+    try {
+      const data = await adminApiClient.enforceUploadQuotas();
+      const r = data.result;
+      setQuotaMessage({
+        type: 'success',
+        text: `Evicted ${r?.total_evicted ?? 0} upload(s) across ${r?.users_with_evictions ?? 0} user(s). ` +
+          `${r?.still_over_quota ?? 0} user(s) still over quota (e.g. only active queue items left).`,
+      });
+      await loadQuotaSummary();
+      onRefresh?.();
+    } catch (err) {
+      setQuotaMessage({ type: 'error', text: err.message || 'Enforcement failed' });
+    } finally {
+      setQuotaEnforcing(false);
+    }
+  };
 
   const handleSyncRulesFlags = async () => {
     setSyncing(true);
@@ -68,6 +120,56 @@ export default function SystemHealth({ metrics, onRefresh }) {
         ) : (
           <p className="text-sm text-muted dark:text-muted-dark">No database metrics available.</p>
         )}
+      </AdminCard>
+
+      <AdminCard title="Upload retention">
+        <div className="space-y-3">
+          <p className="text-sm text-muted dark:text-muted-dark">
+            Deploy only recounts staged upload usage — it does not delete files. Set user tiers
+            under Users, then run enforcement when ready.
+          </p>
+          {quotaSummary ? (
+            <>
+              <AdminStatRow
+                label="LIMITED users over quota"
+                value={quotaSummary.over_quota_users ?? 0}
+                hint={`Limits: ${quotaSummary.limit_storage_formatted ?? '—'} storage, ${quotaSummary.limits?.maxFiles ?? '—'} files`}
+              />
+              <AdminStatRow
+                label="LIMITED users (total)"
+                value={quotaSummary.limited_users ?? 0}
+              />
+            </>
+          ) : (
+            <p className="text-sm text-muted dark:text-muted-dark">Quota summary unavailable.</p>
+          )}
+          <div className="border-t border-border/50 pt-4 dark:border-border-dark/50">
+            <button
+              type="button"
+              onClick={handleEnforceUploadQuotas}
+              disabled={quotaEnforcing || !quotaSummary?.over_quota_users}
+              className="ui-btn-accent disabled:opacity-50"
+              title={
+                quotaSummary?.over_quota_users
+                  ? 'Evict oldest eligible staged files for over-quota LIMITED users'
+                  : 'No LIMITED users are over quota'
+              }
+            >
+              {quotaEnforcing ? 'Enforcing…' : 'Enforce upload quotas'}
+            </button>
+            {quotaMessage ? (
+              <p
+                className={`mt-2 text-sm ${
+                  quotaMessage.type === 'success'
+                    ? 'text-label-success-text dark:text-label-success-text-dark'
+                    : 'text-label-danger-text dark:text-label-danger-text-dark'
+                }`}
+              >
+                {quotaMessage.text}
+              </p>
+            ) : null}
+          </div>
+        </div>
       </AdminCard>
 
       {metrics.polling ? (
