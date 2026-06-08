@@ -155,6 +155,13 @@ Staged upload files (`.torrent`, `.nzb`) live under the backend data volume (`da
 
 Magnet/link-only queue rows do not count toward the file quota (no staged file). TorBox-side downloads are unaffected — only local staging artifacts are evicted.
 
+**Deploy / upgrade:** startup backfill only **recounts** usage into the master DB. It does **not** delete files. Recommended rollout:
+
+1. Deploy the new version (users keep existing staged files).
+2. In **Admin → Users**, set **`unlimited`** for any heavy users that should keep their backlog.
+3. When ready, open **Admin → System** and click **Enforce upload quotas** to evict oldest eligible staged files for remaining LIMITED over-quota users.
+4. After that, LIMITED users are trimmed automatically on each new upload that would exceed limits.
+
 ## Backend authentication & network layout
 
 This section describes the **recommended self-hosted topology** and when optional hardening env vars matter.

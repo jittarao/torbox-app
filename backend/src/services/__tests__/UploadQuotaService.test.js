@@ -118,4 +118,17 @@ describe('UploadQuotaService', () => {
     expect(master.counters.fileCount).toBe(1);
     expect(master.counters.storageBytes).toBe(1024);
   });
+
+  test('getAdminSummary reads limited and over-quota counts from master DB', () => {
+    master.getQuery = (sql) => {
+      if (sql.includes('over_quota') || sql.includes('upload_retained_file_count')) {
+        return { count: 3 };
+      }
+      return { count: 10 };
+    };
+    const summary = service.getAdminSummary();
+    expect(summary.limited_users).toBe(10);
+    expect(summary.over_quota_users).toBe(3);
+    expect(summary.limits.maxFiles).toBe(500);
+  });
 });

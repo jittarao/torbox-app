@@ -389,6 +389,110 @@ export default class UploadQuotaService {
       errors,
       totalRetainedStorageMb: (totalBytes / (1024 * 1024)).toFixed(2),
     });
+
+    return { total: users.length, processed, errors, totalRetainedStorageMb: totalBytes };
+  }
+
+  /**
+   * Summary for admin UI (no filesystem scans).
+   */
+  getAdminSummary() {
+    const limits = this.getLimits();
+    const limitedUsers =
+      this.masterDatabase.getQuery(
+        `
+        SELECT COUNT(*) as count
+        FROM user_registry
+        WHERE COALESCE(upload_tier, 'limited') = 'limited'
+      `
+      )?.count ?? 0;
+
+    const overQuotaUsers =
+      this.masterDatabase.getQuery(
+        `
+        SELECT COUNT(*) as count
+        FROM user_registry
+        WHERE COALESCE(upload_tier, 'limited') = 'limited'
+          AND (
+            COALESCE(upload_retained_file_count, 0) > ?
+            OR COALESCE(upload_retained_storage_bytes, 0) > ?
+          )
+      `,
+        [limits.maxFiles, limits.maxStorageBytes]
+      )?.count ?? 0;
+
+    return {
+      limits,
+      limited_users: limitedUsers,
+      over_quota_users: overQuotaUsers,
+      limit_storage_formatted: formatBytes(limits.maxStorageBytes),
+    };
+  }
+
+  /**
+   * Admin-triggered cleanup for LIMITED users over quota.
+   * Does not run on deploy — call explicitly when tiers are configured.
+   */
+  async enforceQuotaForAllLimitedUsers(userDatabaseManager) {
+    if (!userDatabaseManager) {
+      throw new Error('UserDatabaseManager not available');
+    }
+
+    const limits = this.getLimits();
+    const users = this.masterDatabase.getAllRegisteredAuthIds();
+    const summary = {
+      users_scanned: 0,
+      users_over_quota: 0,
+      users_with_evictions: 0,
+      total_evicted: 0,
+      still_over_quota: 0,
+      errors: 0,
+    };
+
+    for (const { auth_id: authId } of users) {
+      summary.users_scanned++;
+
+      if (isUnlimitedTier(this.getTier(authId))) {
+        continue;
+      }
+
+      const usage = this.masterDatabase.getUploadQuotaCounters(authId);
+      if (!this.isOverQuota(usage, limits)) {
+        continue;
+      }
+
+      summary.users_over_quota++;
+
+      try {
+        const userDb = await userDatabaseManager.getUserDatabase(authId);
+        const { evicted } = await this.enforceQuota(authId, userDb);
+        summary.total_evicted += evicted;
+        if (evicted > 0) {
+          summary.users_with_evictions++;
+        }
+
+        const after = this.masterDatabase.getUploadQuotaCounters(authId);
+        if (this.isOverQuota(after, limits)) {
+          summary.still_over_quota++;
+        }
+      } catch (error) {
+        summary.errors++;
+        logger.error('Admin upload quota enforcement failed for user', error, { authId });
+      } finally {
+        userDatabaseManager.closeConnection(authId);
+      }
+
+      if (summary.users_over_quota % 100 === 0) {
+        logger.info('Admin upload quota enforcement progress', {
+          users_over_quota: summary.users_over_quota,
+          total_evicted: summary.total_evicted,
+        });
+      }
+    }
+
+    logger.info('Admin upload quota enforcement completed', summary);
+
+    return summary;
   }
 }
 
