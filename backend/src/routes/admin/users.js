@@ -2,6 +2,7 @@ import fs from 'fs';
 import {
   validateAuthIdParam,
   parsePagination,
+  parseUserListSort,
   getDatabaseStats,
   getTableCounts,
   sendSuccess,
@@ -38,6 +39,7 @@ export function setupUserRoutes(router, backend) {
     '/users',
     asyncHandler(async (req, res) => {
       const { page, limit, offset } = parsePagination(req);
+      const { sort, sortDirection, orderByClause } = parseUserListSort(req);
       const status = req.query.status; // 'active', 'inactive', or undefined for all
       const search = req.query.search; // Search in key_name or auth_id
 
@@ -78,7 +80,7 @@ export function setupUserRoutes(router, backend) {
         query += ' WHERE ' + conditions.join(' AND ');
       }
 
-      query += ' ORDER BY ur.created_at DESC';
+      query += ` ${orderByClause}`;
 
       // Get total count
       const countQuery = query.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
@@ -114,6 +116,8 @@ export function setupUserRoutes(router, backend) {
           total,
           totalPages: Math.ceil(total / limit),
         },
+        sort,
+        sortDirection,
       });
     })
   );
