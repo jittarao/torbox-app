@@ -3,6 +3,54 @@
  * @typedef {{ include: DownloadSearchTerm[], exclude: DownloadSearchTerm[] }} ParsedDownloadSearch
  */
 
+/** Split release/file names into tokens (spaces, dots, hyphens, underscores, etc.). */
+const SEARCH_TOKEN_SPLIT = /[.\-_+\s/\\[\](){}|,;:!?@#%&*='"`~]+/;
+
+/**
+ * Unquoted terms with separators (e.g. foo-bar, c++) use substring matching.
+ * Plain alphanumeric terms match whole tokens only (so "one" does not match "alone").
+ */
+const SUBSTRING_TERM_PATTERN = /[.\-_+]/;
+
+/**
+ * @param {string} text
+ * @returns {string[]}
+ */
+function tokenizeSearchHaystack(text) {
+  return (text || '').toLowerCase().split(SEARCH_TOKEN_SPLIT).filter(Boolean);
+}
+
+/**
+ * @param {string} token
+ * @param {string} term
+ */
+function tokenMatchesSearchTerm(token, term) {
+  if (token === term) return true;
+  if (!token.startsWith(term)) return false;
+
+  const suffix = token.slice(term.length);
+  if (!suffix) return true;
+
+  // disc1, ep02, 1080p — common release naming; rejects one inside alone (suffix "ne").
+  return /^(\d+|[a-z]{1,2})$/i.test(suffix);
+}
+
+/**
+ * @param {string} text
+ * @param {string} term
+ */
+function textIncludesSearchTerm(text, term) {
+  const haystack = (text || '').toLowerCase();
+  const needle = (term || '').toLowerCase();
+  if (!needle) return true;
+
+  if (SUBSTRING_TERM_PATTERN.test(needle)) {
+    return haystack.includes(needle);
+  }
+
+  return tokenizeSearchHaystack(haystack).some((token) => tokenMatchesSearchTerm(token, needle));
+}
+
 /**
  * @param {string} segment
  * @returns {string[]}
@@ -18,9 +66,10 @@ function wordsFromSegment(segment) {
 
 /**
  * Parse downloads search syntax:
- * - `"exact phrase"` — must contain the phrase (case-insensitive)
- * - `word1 word2` — either word matches (OR)
- * - `word1+word2` — both words must match (AND)
+ * - `"exact phrase"` — must contain the phrase (case-insensitive substring)
+ * - `word1 word2` — either whole word matches (OR); tokens split on . - _ space etc.
+ * - `word1+word2` — both whole words must match (AND)
+ * - `foo-bar` / `c++` — substring match when the term contains . - _ or +
  * - `-term` or `-"phrase"` — exclude
  * - Multiple terms are combined with AND
  *
@@ -83,10 +132,23 @@ export function parseDownloadSearchQuery(query) {
   return { include, exclude };
 }
 
+/**
+ * Multi-word phrases use substring matching; single-word phrases use whole-token rules.
+ * @param {string} text
+ * @param {string} phrase
+ */
+function phraseMatches(text, phrase) {
+  const haystack = (text || '').toLowerCase();
+  const value = (phrase || '').toLowerCase();
+  if (!value) return true;
+  if (value.includes(' ')) return haystack.includes(value);
+  return textIncludesSearchTerm(haystack, value);
+}
+
 /** @param {string} text @param {string[]} words */
 function alternativeMatches(text, words) {
   for (let w = 0; w < words.length; w++) {
-    if (!text.includes(words[w])) return false;
+    if (!textIncludesSearchTerm(text, words[w])) return false;
   }
   return true;
 }
@@ -115,7 +177,7 @@ function haystackMatchesInclude(haystack, parsed) {
   for (let t = 0; t < parsed.include.length; t++) {
     const term = parsed.include[t];
     if (term.type === 'phrase') {
-      if (!text.includes(term.value)) return false;
+      if (!phraseMatches(text, term.value)) return false;
     } else if (!orTermMatches(text, term)) {
       return false;
     }
@@ -133,7 +195,7 @@ function haystackMatchesExclude(haystack, parsed) {
   for (let t = 0; t < parsed.exclude.length; t++) {
     const term = parsed.exclude[t];
     if (term.type === 'phrase') {
-      if (text.includes(term.value)) return true;
+      if (phraseMatches(text, term.value)) return true;
     } else if (orTermMatches(text, term)) {
       return true;
     }
