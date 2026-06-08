@@ -123,6 +123,22 @@ describe('itemMatchesDownloadSearch', () => {
     expect(itemMatchesDownloadSearch(tagged, 'foo-bar')).toBe(true);
     expect(itemMatchesDownloadSearch(tagged, '-release')).toBe(false);
   });
+
+  test('unquoted words match whole tokens, not substrings inside tokens', () => {
+    const alone = { name: 'Home Alone 1990', files: [] };
+    const onePiece = { name: 'One Piece Batch', files: [] };
+    expect(itemMatchesDownloadSearch(alone, 'one')).toBe(false);
+    expect(itemMatchesDownloadSearch(alone, '"one"')).toBe(false);
+    expect(itemMatchesDownloadSearch(onePiece, 'one')).toBe(true);
+    expect(itemMatchesDownloadSearch(onePiece, '"one"')).toBe(true);
+  });
+
+  test('numbered token suffixes still match short prefixes', () => {
+    const item = { name: 'disc1 backup', files: [] };
+    expect(itemMatchesDownloadSearch(item, 'disc')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'disc1')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'discord')).toBe(false);
+  });
 });
 
 describe('getFilesVisibleForDownloadSearch', () => {
