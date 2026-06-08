@@ -6,9 +6,10 @@ import {
   saveUploadFile,
   getUploadFilePath,
   validateFilePathOwnership,
+  fileExists,
 } from '../utils/fileStorage.js';
 import rateLimit from 'express-rate-limit';
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import path from 'path';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -60,7 +61,7 @@ function validateFileExtension(type, upload_type, filePathOrName) {
  * Handles queued uploads for torrents, usenet, and webdl
  */
 export function setupUploadsRoutes(app, backend) {
-  const { userRateLimiter } = backend;
+  const { userRateLimiter, uploadQuotaService } = backend;
 
   // Create a more permissive rate limiter for upload endpoints
   // Allows 1000 requests per 15 minutes (vs 200 for general endpoints)
@@ -141,7 +142,23 @@ export function setupUploadsRoutes(app, backend) {
         }
 
         // Save file
-        const filePath = await saveUploadFile(authId, fileBuffer, filename, type);
+        const { relativePath: filePath, sizeBytes } = await saveUploadFile(
+          authId,
+          fileBuffer,
+          filename,
+          type
+        );
+
+        if (uploadQuotaService && backend.userDatabaseManager) {
+          const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+          try {
+            await uploadQuotaService.onFileStaged(authId, sizeBytes, userDb);
+          } finally {
+            backend.userDatabaseManager.releaseConnection(authId);
+          }
+        } else if (uploadQuotaService) {
+          await uploadQuotaService.onFileStaged(authId, sizeBytes);
+        }
 
         res.json({
           success: true,
@@ -186,7 +203,19 @@ export function setupUploadsRoutes(app, backend) {
         }
 
         // Delete file (with authId for security validation)
+        let bytesRemoved = 0;
+        try {
+          const stats = await stat(getUploadFilePath(file_path));
+          bytesRemoved = stats.size;
+        } catch {
+          bytesRemoved = 0;
+        }
+
         await deleteUploadFile(authId, file_path);
+
+        if (uploadQuotaService && bytesRemoved > 0) {
+          uploadQuotaService.onFileRemoved(authId, bytesRemoved);
+        }
 
         res.json({
           success: true,
@@ -389,6 +418,13 @@ export function setupUploadsRoutes(app, backend) {
         // Update upload counter in master DB (recalculate for accuracy after batch)
         if (successfulUploads.length > 0) {
           await backend.masterDatabase.updateUploadCounters(authId, userDb);
+
+          if (uploadQuotaService) {
+            await uploadQuotaService.onUploadRecorded(authId, userDb, {
+              newUploadIds: successfulUploads.map((u) => u.id),
+              excludeUploadIds: successfulUploads.map((u) => u.id),
+            });
+          }
         }
 
         res.json({
@@ -570,6 +606,13 @@ export function setupUploadsRoutes(app, backend) {
 
       // Update upload counter in master DB (optimized increment)
       backend.masterDatabase.incrementUploadCounter(authId, null);
+
+      if (uploadQuotaService) {
+        await uploadQuotaService.onUploadRecorded(authId, userDb, {
+          newUploadIds: [upload.id],
+          excludeUploadIds: [upload.id],
+        });
+      }
 
       res.json({ success: true, data: upload });
     } catch (error) {
@@ -1315,7 +1358,9 @@ export function setupUploadsRoutes(app, backend) {
         // Get uploads to check status and file_paths
         const placeholders = numericIds.map(() => '?').join(',');
         const uploads = userDb.db
-          .prepare(`SELECT id, file_path, status FROM uploads WHERE id IN (${placeholders})`)
+          .prepare(
+            `SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id IN (${placeholders})`
+          )
           .all(...numericIds);
 
         if (uploads.length === 0) {
@@ -1331,6 +1376,11 @@ export function setupUploadsRoutes(app, backend) {
         // Delete files and records
         const deleteResults = await Promise.allSettled(
           uploads.map(async (upload) => {
+            const hadRetainedFile =
+              upload.file_path &&
+              !upload.file_deleted &&
+              (await fileExists(upload.file_path));
+
             // Delete file if exists (with authId for security validation)
             if (upload.file_path) {
               await deleteUploadFile(authId, upload.file_path);
@@ -1344,6 +1394,10 @@ export function setupUploadsRoutes(app, backend) {
 
             // Delete from database
             userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
+
+            if (uploadQuotaService && hadRetainedFile) {
+              uploadQuotaService.onUploadDeleted(authId, upload.file_size_bytes, true);
+            }
 
             // Check if status was still queued or processing
             const wasQueued =
@@ -1422,7 +1476,9 @@ export function setupUploadsRoutes(app, backend) {
 
         // Get upload to check file_path and status
         const upload = userDb.db
-          .prepare('SELECT id, file_path, status FROM uploads WHERE id = ?')
+          .prepare(
+            'SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?'
+          )
           .get(uploadId);
 
         if (!upload) {
@@ -1431,6 +1487,9 @@ export function setupUploadsRoutes(app, backend) {
             error: 'Upload not found',
           });
         }
+
+        const hadRetainedFile =
+          upload.file_path && !upload.file_deleted && (await fileExists(upload.file_path));
 
         // Delete file if exists (with authId for security validation)
         if (upload.file_path) {
@@ -1445,6 +1504,10 @@ export function setupUploadsRoutes(app, backend) {
 
         // Delete from database
         userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(uploadId);
+
+        if (uploadQuotaService && hadRetainedFile) {
+          uploadQuotaService.onUploadDeleted(authId, upload.file_size_bytes, true);
+        }
 
         // Update counter only if status was still queued or processing
         // at the time of deletion (not if UploadProcessor completed it)

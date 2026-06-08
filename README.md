@@ -35,6 +35,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
   - Intelligent polling based on user activity
   - State diffing for efficient change detection
   - Speed aggregation for performance metrics
+  - **Upload retention**: tier-based staged-file quotas (`LIMITED` / `UNLIMITED`) with admin controls; configurable via `UPLOAD_LIMIT_MAX_STORAGE_MB` and `UPLOAD_LIMIT_MAX_FILES`
 
 ### Audiobook & Media
 
@@ -81,6 +82,7 @@ The self-hosted backend uses a **multi-user architecture**:
 - **User Databases**: Separate SQLite database per user for data isolation
 - **Connection Pooling**: LRU cache for efficient database connection management
 - **Automatic Provisioning**: User databases are created on-demand when API keys are entered
+- **Upload quotas**: Default `LIMITED` tier enforces staged `.torrent`/`.nzb` retention limits; admins can set `UNLIMITED` per user in the admin panel
 
 ### Self-hosted security (typical setup)
 

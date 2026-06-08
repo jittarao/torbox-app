@@ -1233,6 +1233,92 @@ class Database {
     cache.setUserRegistry(authId, userInfo);
     return userInfo;
   }
+
+  /**
+   * @param {string} authId
+   * @returns {'limited'|'unlimited'}
+   */
+  getUploadTier(authId) {
+    const row = this.getQuery('SELECT upload_tier FROM user_registry WHERE auth_id = ?', [authId]);
+    return row?.upload_tier === 'unlimited' ? 'unlimited' : 'limited';
+  }
+
+  /**
+   * @param {string} authId
+   * @param {'limited'|'unlimited'} tier
+   */
+  setUploadTier(authId, tier) {
+    this.runQuery(
+      `
+      UPDATE user_registry
+      SET upload_tier = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE auth_id = ?
+    `,
+      [tier, authId]
+    );
+    cache.invalidateUserRegistry(authId);
+  }
+
+  /**
+   * @param {string} authId
+   * @returns {{ fileCount: number, storageBytes: number }}
+   */
+  getUploadQuotaCounters(authId) {
+    const row = this.getQuery(
+      `
+      SELECT upload_retained_file_count, upload_retained_storage_bytes
+      FROM user_registry
+      WHERE auth_id = ?
+    `,
+      [authId]
+    );
+    return {
+      fileCount: row?.upload_retained_file_count || 0,
+      storageBytes: row?.upload_retained_storage_bytes || 0,
+    };
+  }
+
+  /**
+   * Set retained upload quota counters (absolute values).
+   * @param {string} authId
+   * @param {number} fileCount
+   * @param {number} storageBytes
+   */
+  updateUploadQuotaCounters(authId, fileCount, storageBytes) {
+    this.runQuery(
+      `
+      UPDATE user_registry
+      SET upload_retained_file_count = ?,
+          upload_retained_storage_bytes = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE auth_id = ?
+    `,
+      [Math.max(0, fileCount), Math.max(0, storageBytes), authId]
+    );
+    cache.invalidateUserRegistry(authId);
+  }
+
+  /**
+   * Adjust retained upload quota counters by delta.
+   * @param {string} authId
+   * @param {number} deltaCount
+   * @param {number} deltaBytes
+   */
+  adjustUploadQuotaCounters(authId, deltaCount, deltaBytes) {
+    const current = this.getUploadQuotaCounters(authId);
+    this.updateUploadQuotaCounters(
+      authId,
+      current.fileCount + deltaCount,
+      current.storageBytes + deltaBytes
+    );
+  }
+
+  /**
+   * @returns {Array<{ auth_id: string }>}
+   */
+  getAllRegisteredAuthIds() {
+    return this.allQuery('SELECT auth_id FROM user_registry ORDER BY auth_id');
+  }
 }
 
 export default Database;

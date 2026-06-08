@@ -12,6 +12,8 @@
 #   SENTRY_DSN                — omit or leave empty to disable error reporting
 #   BACKEND_SERVICE_SECRET    — same value on both services; optional hardening
 #   SEARCH_PAGE_DISABLED      — "true" to hide search page
+#   UPLOAD_LIMIT_MAX_STORAGE_MB — staged upload storage cap per LIMITED user (default 100)
+#   UPLOAD_LIMIT_MAX_FILES      — staged file count cap per LIMITED user (default 500)
 #
 # Before first deploy:
 #   1. Create external volume:  docker volume create torbox-backend-data
@@ -41,6 +43,8 @@ services:
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENABLED: ${SENTRY_ENABLED:-true}
       SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.2}
+      UPLOAD_LIMIT_MAX_STORAGE_MB: ${UPLOAD_LIMIT_MAX_STORAGE_MB:-100}
+      UPLOAD_LIMIT_MAX_FILES: ${UPLOAD_LIMIT_MAX_FILES:-500}
 
     volumes:
       # Persist SQLite DBs and uploads only — never mount over /app/src or /app/config

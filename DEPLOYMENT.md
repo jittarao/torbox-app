@@ -139,8 +139,21 @@ bun run dev
 | `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
 | `BACKEND_REQUIRE_API_KEY` | Require `x-api-key` on all user routes (disables legacy `authId`-only access) | unset (`false`)          | No       |
 | `BACKEND_SERVICE_SECRET` | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE) | unset                    | No       |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max staged upload storage (MB) per **LIMITED** tier user | `100`                    | No       |
+| `UPLOAD_LIMIT_MAX_FILES` | Max retained staged files per **LIMITED** tier user | `500`                    | No       |
 
 Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
+
+### Upload retention quotas
+
+Staged upload files (`.torrent`, `.nzb`) live under the backend data volume (`data/uploads/user_{authId}/`). By default every user is **LIMITED** and subject to both quotas above. When a new upload would exceed storage **or** file count, the backend evicts oldest completed/failed staged files (hard delete — row + disk). **UNLIMITED** users bypass quotas; change tier in the admin panel (`/admin` → user detail → Upload quota).
+
+| Variable | Applies to | Restart required |
+| -------- | ---------- | ---------------- |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Backend only | Yes (backend container) |
+| `UPLOAD_LIMIT_MAX_FILES` | Backend only | Yes (backend container) |
+
+Magnet/link-only queue rows do not count toward the file quota (no staged file). TorBox-side downloads are unaffected — only local staging artifacts are evicted.
 
 ## Backend authentication & network layout
 
@@ -265,6 +278,10 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 # Optional: ffprobe for audiobook chapter extraction (frontend container)
 # FFPROBE_AUTO_DIR=/tmp/.ffprobe
 # FFPROBE_PATH=/usr/bin/ffprobe
+
+# Optional: upload retention quotas (backend — LIMITED tier users)
+# UPLOAD_LIMIT_MAX_STORAGE_MB=100
+# UPLOAD_LIMIT_MAX_FILES=500
 ```
 
 **Important**:
@@ -321,8 +338,9 @@ The `docker-compose.yml` configuration provides:
 
 - **Persistent Storage**:
   - Backend data is stored in a Docker volume (`backend-data`)
-  - Includes user databases, automation rules, and application data
+  - Includes user databases, staged upload files, automation rules, and application data
   - Data persists across container restarts
+  - Upload retention is governed by tier quotas — see [Upload retention quotas](#upload-retention-quotas)
 
 - **Automatic Restarts**: Both services are configured with `restart: unless-stopped`
 
@@ -436,6 +454,8 @@ docker network create torbox-network
 | `SENTRY_DSN` | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set) |
 | `BACKEND_SERVICE_SECRET` | Same value on both services; optional hardening |
 | `SEARCH_PAGE_DISABLED` | `true` to hide the search page |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Staged upload storage cap (MB) per LIMITED user (default `100`) |
+| `UPLOAD_LIMIT_MAX_FILES` | Staged file count cap per LIMITED user (default `500`) |
 
 #### Deploy
 

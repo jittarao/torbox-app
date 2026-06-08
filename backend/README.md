@@ -167,6 +167,17 @@ When the Next.js frontend proxies to the backend (typical Docker Compose setup),
 
 Override via environment variables (see `.env.example` in the repo root or `backend/.env.local.example` for local dev).
 
+### Upload retention quotas
+
+LIMITED tier users (default for all new users) have staged upload files capped by **both** limits below. UNLIMITED users bypass enforcement. Tier is stored in `user_registry.upload_tier` and managed via admin API/UI (`PUT /api/admin/users/:authId/upload-tier`).
+
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max total staged upload storage per LIMITED user | `100` |
+| `UPLOAD_LIMIT_MAX_FILES` | Max retained staged files per LIMITED user | `500` |
+
+Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uploadQuota.js`. Counters are cached in the master DB; startup backfill reconciles usage from per-user SQLite + disk.
+
 ## Performance
 
 - **Connection Pooling**: LRU cache prevents connection exhaustion
