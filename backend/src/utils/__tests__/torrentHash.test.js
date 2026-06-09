@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import {
   extractHashFromMagnet,
   extractInfoHashFromTorrentBuffer,
+  normalizeInfoHash,
 } from '../torrentHash.js';
 
 function bencode(value) {
@@ -21,6 +22,17 @@ describe('torrentHash', () => {
     expect(
       extractHashFromMagnet('magnet:?xt=urn:btih:ABCDEF0123456789ABCDEF0123456789ABCDEF01&dn=test')
     ).toBe('abcdef0123456789abcdef0123456789abcdef01');
+  });
+
+  test('normalizeInfoHash decodes base32 and lowercases hex', () => {
+    expect(normalizeInfoHash('ROGO6RFRIZE26EIBT7IL5WWJZMOHTHNA')).toBe(
+      '8b8cef44b14649af11019fd0bedac9cb1c799da0'
+    );
+    expect(normalizeInfoHash('ABCDEF0123456789ABCDEF0123456789ABCDEF01')).toBe(
+      'abcdef0123456789abcdef0123456789abcdef01'
+    );
+    expect(normalizeInfoHash(undefined)).toBeNull();
+    expect(normalizeInfoHash('')).toBeNull();
   });
 
   test('extractInfoHashFromTorrentBuffer computes SHA1 of info dict', () => {

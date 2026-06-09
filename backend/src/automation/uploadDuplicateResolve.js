@@ -4,7 +4,11 @@ import {
   fileExists,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
-import { extractHashFromMagnet, extractInfoHashFromTorrentBuffer } from '../utils/torrentHash.js';
+import {
+  extractHashFromMagnet,
+  extractInfoHashFromTorrentBuffer,
+  normalizeInfoHash,
+} from '../utils/torrentHash.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
 
 export const TORBOX_UNAVAILABLE_MESSAGE =
@@ -66,13 +70,25 @@ export async function getExpectedTorrentHash(upload) {
 export function matchTorboxResource(upload, torrents, expectedHash) {
   let match = null;
 
-  if (expectedHash) {
-    const normalized = expectedHash.toLowerCase();
-    match = torrents.find((item) => (item.hash || '').toLowerCase() === normalized) || null;
+  const normalizedExpected = normalizeInfoHash(expectedHash);
+
+  if (normalizedExpected) {
+    match =
+      torrents.find((item) => {
+        const itemHash = normalizeInfoHash(item.hash);
+        return itemHash !== null && itemHash === normalizedExpected;
+      }) ||
+      null;
   }
 
   if (!match && upload.name) {
-    match = torrents.find((item) => item.name === upload.name) || null;
+    const lowerName = upload.name.toLowerCase();
+    match =
+      torrents.find((item) => {
+        const itemName = item.name || '';
+        return itemName.toLowerCase() === lowerName;
+      }) ||
+      null;
   }
 
   return {
