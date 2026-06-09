@@ -11,6 +11,10 @@ import {
 import rateLimit from 'express-rate-limit';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
+import {
+  splitRetriesByTorboxPresence,
+  UPLOAD_RETRY_SELECT_FIELDS,
+} from '../automation/uploadDuplicateResolve.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -54,6 +58,69 @@ function validateFileExtension(type, upload_type, filePathOrName) {
   }
 
   return null;
+}
+
+const UPLOAD_DETAIL_SELECT = `
+  id, type, upload_type, file_path, url, name, status,
+  error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
+  queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
+  last_processed_at, completed_at, created_at, updated_at, next_attempt_at
+`;
+
+function getUploadProcessorClient(backend) {
+  if (!backend.uploadProcessor) {
+    throw new Error('Upload processor is not available');
+  }
+  return (authId) => backend.uploadProcessor.getApiClient(authId);
+}
+
+async function resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, failedUploads) {
+  if (failedUploads.length === 0) {
+    return { completedIds: [], toRequeue: [] };
+  }
+
+  try {
+    return await splitRetriesByTorboxPresence({
+      failedUploads,
+      authId,
+      userDb,
+      getApiClient: getUploadProcessorClient(backend),
+    });
+  } catch (error) {
+    logger.warn('TorBox lookup failed during upload retry; falling back to re-queue', {
+      authId,
+      uploadCount: failedUploads.length,
+      error: error.message,
+    });
+    return { completedIds: [], toRequeue: failedUploads };
+  }
+}
+
+function requeueFailedUpload(userDb, masterDatabase, authId, uploadId, queueOrder) {
+  const updateResult = userDb.db
+    .prepare(
+      `
+      UPDATE uploads
+      SET status = 'queued',
+          error_message = NULL,
+          retry_count = 0,
+          torbox_hash = NULL,
+          torbox_torrent_id = NULL,
+          torbox_auth_id = NULL,
+          next_attempt_at = NULL,
+          queue_order = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND status = 'failed'
+    `
+    )
+    .run(queueOrder, uploadId);
+
+  if (updateResult.changes > 0) {
+    masterDatabase.incrementUploadCounter(authId, null);
+  }
+
+  return updateResult.changes > 0;
 }
 
 /**
@@ -965,7 +1032,9 @@ export function setupUploadsRoutes(app, backend) {
         // Get uploads to check status
         const placeholders = numericIds.map(() => '?').join(',');
         const uploads = userDb.db
-          .prepare(`SELECT id, status FROM uploads WHERE id IN (${placeholders})`)
+          .prepare(
+            `SELECT ${UPLOAD_RETRY_SELECT_FIELDS} FROM uploads WHERE id IN (${placeholders})`
+          )
           .all(...numericIds);
 
         if (uploads.length === 0) {
@@ -985,6 +1054,13 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
+        const { completedIds, toRequeue } = await resolveDuplicateRetriesBeforeRequeue(
+          backend,
+          authId,
+          userDb,
+          failedUploads
+        );
+
         // Get max queue_order to append to end
         const maxOrderResult = userDb.db
           .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
@@ -993,29 +1069,11 @@ export function setupUploadsRoutes(app, backend) {
         let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
         const retriedUploads = [];
 
-        // Reset failed uploads to queued status
-        for (const upload of failedUploads) {
+        for (const upload of toRequeue) {
           try {
-            const updateResult = userDb.db
-              .prepare(
-                `
-                UPDATE uploads
-                SET status = 'queued',
-                    error_message = NULL,
-                    retry_count = 0,
-                    next_attempt_at = NULL,
-                    queue_order = ?,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `
-              )
-              .run(currentQueueOrder++, upload.id);
-
-            // Only add to retriedUploads and increment counter if the update actually modified a row
-            // This prevents counter drift if the upload was deleted between SELECT and UPDATE
-            if (updateResult.changes > 0) {
+            if (requeueFailedUpload(userDb, backend.masterDatabase, authId, upload.id, currentQueueOrder)) {
               retriedUploads.push(upload.id);
-              backend.masterDatabase.incrementUploadCounter(authId, null);
+              currentQueueOrder++;
             }
           } catch (error) {
             logger.error('Error retrying upload in bulk operation', error, {
@@ -1029,15 +1087,29 @@ export function setupUploadsRoutes(app, backend) {
           authId,
           requested: numericIds.length,
           retried: retriedUploads.length,
+          completedFromTorbox: completedIds.length,
         });
+
+        const messageParts = [];
+        if (completedIds.length > 0) {
+          messageParts.push(`completed ${completedIds.length} existing on TorBox`);
+        }
+        if (retriedUploads.length > 0) {
+          messageParts.push(`re-queued ${retriedUploads.length}`);
+        }
 
         res.json({
           success: true,
-          message: `Retried ${retriedUploads.length} upload(s)`,
+          message:
+            messageParts.length > 0
+              ? `Upload retry: ${messageParts.join(', ')}`
+              : 'No uploads were retried',
           data: {
             retried: retriedUploads.length,
+            completed: completedIds.length,
             requested: numericIds.length,
             uploadIds: retriedUploads,
+            completedIds,
           },
         });
       } catch (error) {
@@ -1075,9 +1147,8 @@ export function setupUploadsRoutes(app, backend) {
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-        // Check if upload exists and is failed
         const upload = userDb.db
-          .prepare('SELECT id, status FROM uploads WHERE id = ?')
+          .prepare(`SELECT ${UPLOAD_RETRY_SELECT_FIELDS} FROM uploads WHERE id = ?`)
           .get(uploadId);
 
         if (!upload) {
@@ -1094,59 +1165,47 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        // Get max queue_order to append to end
+        const { completedIds, toRequeue } = await resolveDuplicateRetriesBeforeRequeue(
+          backend,
+          authId,
+          userDb,
+          [upload]
+        );
+
+        if (completedIds.length > 0) {
+          const completedUpload = userDb.db
+            .prepare(`SELECT ${UPLOAD_DETAIL_SELECT} FROM uploads WHERE id = ?`)
+            .get(uploadId);
+
+          logger.info('Upload completed on retry via TorBox lookup', { authId, uploadId });
+
+          return res.json({
+            success: true,
+            completedFromTorbox: true,
+            data: completedUpload,
+          });
+        }
+
         const maxOrderResult = userDb.db
           .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
           .get('queued');
 
         const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
 
-        // Reset to queued status
-        const updateResult = userDb.db
-          .prepare(
-            `
-            UPDATE uploads
-            SET status = 'queued',
-                error_message = NULL,
-                retry_count = 0,
-                torbox_hash = NULL,
-                torbox_torrent_id = NULL,
-                torbox_auth_id = NULL,
-                next_attempt_at = NULL,
-                queue_order = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `
-          )
-          .run(queueOrder, uploadId);
-
-        // Only update counter if the update actually modified a row
-        // This prevents counter drift if the upload was deleted between SELECT and UPDATE
-        if (updateResult.changes > 0) {
-          backend.masterDatabase.incrementUploadCounter(authId, null);
-        } else {
-          // Upload was deleted between SELECT and UPDATE, return 404
+        if (
+          !requeueFailedUpload(userDb, backend.masterDatabase, authId, uploadId, queueOrder)
+        ) {
           return res.status(404).json({
             success: false,
             error: 'Upload not found or was deleted',
           });
         }
 
-        // Get updated upload
         const updatedUpload = userDb.db
-          .prepare(
-            `
-            SELECT id, type, upload_type, file_path, url, name, status,
-                   error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
-                   queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
-                   last_processed_at, completed_at, created_at, updated_at, next_attempt_at
-            FROM uploads
-            WHERE id = ?
-          `
-          )
+          .prepare(`SELECT ${UPLOAD_DETAIL_SELECT} FROM uploads WHERE id = ?`)
           .get(uploadId);
 
-        logger.info('Upload retried', { authId, uploadId });
+        logger.info('Upload retried', { authId, uploadId, requeued: toRequeue.length > 0 });
 
         res.json({ success: true, data: updatedUpload });
       } catch (error) {
