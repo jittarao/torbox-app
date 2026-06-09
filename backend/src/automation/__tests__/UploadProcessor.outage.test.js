@@ -85,7 +85,7 @@ describe('UploadProcessor outage handling', () => {
   test('handleFailedUpload fails immediately on TorBox API error without re-queue', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
-      decrementUploadCounter() {},
+      updateUploadCounters: async () => {},
     });
 
     processor.logUploadAttempt = () => {};
