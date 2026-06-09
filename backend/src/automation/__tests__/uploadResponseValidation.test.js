@@ -4,6 +4,7 @@ import {
   hasUploadResourcePayload,
   isTorboxDuplicateUploadResponse,
   isTorboxOutageResponse,
+  isTorboxTransientQueuedResponse,
   isTorboxUploadApiFailure,
   isTorboxUploadApiSuccess,
 } from '../uploadResponseValidation.js';
@@ -208,6 +209,79 @@ describe('uploadResponseValidation', () => {
           },
         })
       ).toBe(false);
+    });
+  });
+
+  describe('isTorboxTransientQueuedResponse', () => {
+    test('detects success:false with detail "Torrent Queued Successfully"', () => {
+      expect(
+        isTorboxTransientQueuedResponse({
+          data: {
+            success: false,
+            error: null,
+            detail: 'Torrent Queued Successfully',
+            data: { upload_id: 2185, status: 'queued', queue_order: 2 },
+          },
+        })
+      ).toBe(true);
+    });
+
+    test('detects lowercase variant', () => {
+      expect(
+        isTorboxTransientQueuedResponse({
+          data: {
+            success: false,
+            error: null,
+            detail: 'torrent queued successfully',
+            data: null,
+          },
+        })
+      ).toBe(true);
+    });
+
+    test('rejects success:true (legitimate queued response)', () => {
+      expect(
+        isTorboxTransientQueuedResponse({
+          data: {
+            success: true,
+            error: null,
+            detail: 'Torrent Queued Successfully',
+            data: null,
+          },
+        })
+      ).toBe(false);
+    });
+
+    test('rejects success:false without queued detail (real failures)', () => {
+      expect(
+        isTorboxTransientQueuedResponse({
+          data: {
+            success: false,
+            error: 'ACTIVE_LIMIT',
+            detail: 'Active download limit reached',
+            data: null,
+          },
+        })
+      ).toBe(false);
+    });
+
+    test('rejects success:false with duplicate/error detail', () => {
+      expect(
+        isTorboxTransientQueuedResponse({
+          data: {
+            success: false,
+            error: 'DUPLICATE_ITEM',
+            detail: 'This item already exists.',
+          },
+        })
+      ).toBe(false);
+    });
+
+    test('rejects null/undefined responses', () => {
+      expect(isTorboxTransientQueuedResponse({ data: null })).toBe(false);
+      expect(isTorboxTransientQueuedResponse({ data: undefined })).toBe(false);
+      expect(isTorboxTransientQueuedResponse({ data: {} })).toBe(false);
+      expect(isTorboxTransientQueuedResponse({})).toBe(false);
     });
   });
 });

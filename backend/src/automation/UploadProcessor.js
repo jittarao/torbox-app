@@ -12,6 +12,7 @@ import {
   getUploadResourceId,
   isTorboxDuplicateUploadResponse,
   isTorboxOutageResponse,
+  isTorboxTransientQueuedResponse,
   isTorboxUploadApiFailure,
 } from './uploadResponseValidation.js';
 import {
@@ -589,6 +590,88 @@ class UploadProcessor {
 
     if (deferOthersResult.changes > 0) {
       logger.debug('Deferred other queued uploads due to TorBox outage', {
+        type,
+        deferredCount: deferOthersResult.changes,
+        nextAttemptAt,
+      });
+    }
+
+    await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
+    return false;
+  }
+
+  /**
+   * Handle TorBox transient "queued but failed" response.
+   * TorBox sometimes returns `success: false` with detail "Torrent Queued Successfully"
+   * when the upload was accepted but not yet fully processed. Defer and retry with
+   * exponential backoff instead of marking as permanently failed.
+   * @param {Object} upload - Upload record
+   * @param {Object} userDb - User database instance
+   * @param {string} type - Upload type
+   * @param {Object} response - Axios response
+   * @returns {Promise<boolean>} False (not processed)
+   */
+  async handleTransientTorboxDeferral(upload, userDb, type, response) {
+    const data = (response?.data && typeof response.data === 'object') ? response.data : {};
+    const retryCount = (upload.retry_count ?? 0) + 1;
+    const deferMs = this.calculateBackoffDelay(retryCount);
+    const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + deferMs));
+
+    this.logUploadAttempt(
+      userDb,
+      upload.id,
+      type,
+      response?.status ?? 200,
+      false,
+      'TRANSIENT_QUEUED',
+      data.detail || 'TorBox returned transient queued response'
+    );
+
+    logger.warn('TorBox returned transient queued response, will retry', {
+      uploadId: upload.id,
+      type,
+      retryCount,
+      waitTimeMs: deferMs,
+      nextAttemptAt,
+      detail: data.detail,
+    });
+
+    userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET status = 'queued',
+            error_message = ?,
+            retry_count = ?,
+            next_attempt_at = ?,
+            last_processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      )
+      .run(
+        `TorBox queued this upload but did not return resource IDs. Retry ${retryCount} in ${Math.round(deferMs / 1000)}s.`,
+        retryCount,
+        nextAttemptAt,
+        upload.id
+      );
+
+    // Defer other queued uploads of this type to avoid cascading transient failures
+    const deferOthersResult = userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET next_attempt_at = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE status = 'queued'
+          AND type = ?
+          AND id != ?
+      `
+      )
+      .run(nextAttemptAt, type, upload.id);
+
+    if (deferOthersResult.changes > 0) {
+      logger.debug('Deferred other queued uploads due to TorBox transient response', {
         type,
         deferredCount: deferOthersResult.changes,
         nextAttemptAt,
@@ -1235,7 +1318,6 @@ class UploadProcessor {
       }
 
       // TorBox can return HTTP 200 with { success: false, error, detail } when the torrent was not created.
-      // Treat that as failure so we do not mark the upload as completed.
       if (isTorboxUploadApiFailure(response, type)) {
         if (isTorboxOutageResponse(response)) {
           await this.handleConnectionDeferral(
@@ -1248,6 +1330,12 @@ class UploadProcessor {
             })
           );
           return false;
+        }
+
+        // TorBox may return success:false with contradictory detail like "Torrent Queued Successfully" —
+        // a transient condition where the upload was accepted but not fully processed.
+        if (isTorboxTransientQueuedResponse(response)) {
+          return await this.handleTransientTorboxDeferral(upload, userDb, type, response);
         }
 
         const data = response?.data && typeof response.data === 'object' ? response.data : {};
@@ -1266,6 +1354,18 @@ class UploadProcessor {
         );
         await this.handleFailedUpload(upload, userDb, type, syntheticError, originalStatusValue);
         return false;
+      }
+
+      // TorBox may return success:true with detail "Torrent Queued Successfully" but no
+      // resource IDs (hash, torrent_id, auth_id all null). This is a transient async
+      // condition — the upload was accepted but not yet processed. Defer and retry
+      // instead of marking as completed with nothing to track.
+      if (type === 'torrent') {
+        const { torboxHash, torboxTorrentId, torboxAuthId } =
+          extractTorboxTorrentResult(response, type);
+        if (torboxHash == null && torboxTorrentId == null && torboxAuthId == null) {
+          return await this.handleTransientTorboxDeferral(upload, userDb, type, response);
+        }
       }
 
       // API call succeeded - now handle the database update
