@@ -115,10 +115,11 @@ async function resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, fai
   }
 }
 
-function requeueFailedUpload(userDb, masterDatabase, authId, uploadId, queueOrder) {
-  const updateResult = userDb.db
-    .prepare(
-      `
+function requeueFailedUpload(userDb, uploadId, queueOrder) {
+  return (
+    userDb.db
+      .prepare(
+        `
       UPDATE uploads
       SET status = 'queued',
           error_message = NULL,
@@ -132,14 +133,9 @@ function requeueFailedUpload(userDb, masterDatabase, authId, uploadId, queueOrde
       WHERE id = ?
         AND status = 'failed'
     `
-    )
-    .run(queueOrder, uploadId);
-
-  if (updateResult.changes > 0) {
-    masterDatabase.incrementUploadCounter(authId, null);
-  }
-
-  return updateResult.changes > 0;
+      )
+      .run(queueOrder, uploadId).changes > 0
+  );
 }
 
 /**
@@ -1098,7 +1094,7 @@ export function setupUploadsRoutes(app, backend) {
 
         for (const upload of toRequeue) {
           try {
-            if (requeueFailedUpload(userDb, backend.masterDatabase, authId, upload.id, currentQueueOrder)) {
+            if (requeueFailedUpload(userDb, upload.id, currentQueueOrder)) {
               retriedUploads.push(upload.id);
               currentQueueOrder++;
             }
@@ -1108,6 +1104,10 @@ export function setupUploadsRoutes(app, backend) {
               uploadId: upload.id,
             });
           }
+        }
+
+        if (retriedUploads.length > 0) {
+          await backend.masterDatabase.updateUploadCounters(authId, userDb);
         }
 
         logger.info('Bulk upload retry', {
@@ -1227,14 +1227,14 @@ export function setupUploadsRoutes(app, backend) {
 
         const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
 
-        if (
-          !requeueFailedUpload(userDb, backend.masterDatabase, authId, uploadId, queueOrder)
-        ) {
+        if (!requeueFailedUpload(userDb, uploadId, queueOrder)) {
           return res.status(404).json({
             success: false,
             error: 'Upload not found or was deleted',
           });
         }
+
+        await backend.masterDatabase.updateUploadCounters(authId, userDb);
 
         const updatedUpload = userDb.db
           .prepare(`SELECT ${UPLOAD_DETAIL_SELECT} FROM uploads WHERE id = ?`)

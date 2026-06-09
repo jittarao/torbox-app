@@ -1786,10 +1786,12 @@ class UploadProcessor {
           // Process one upload per type per cycle to respect rate limits
           const types = ['torrent', 'usenet', 'webdl'];
           let torboxTorrentListCache = undefined;
+          let foundAnyUpload = false;
+          let currentUserDb = userDb;
 
           for (const type of types) {
             let queuedUploads;
-            let currentUserDb = userDb;
+            currentUserDb = userDb;
 
             try {
               queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
@@ -1811,6 +1813,7 @@ class UploadProcessor {
             }
 
             if (queuedUploads.length > 0) {
+              foundAnyUpload = true;
               const upload = queuedUploads[0]; // Get first (highest priority)
 
               if (type === 'torrent' && torboxTorrentListCache === undefined) {
@@ -1944,6 +1947,18 @@ class UploadProcessor {
                 }
               }
             }
+          }
+
+          if (!foundAnyUpload) {
+            logger.debug('No queued uploads found for user; recalculating counter', {
+              authId: auth_id,
+              reportedCount: user.queued_uploads_count,
+            });
+            await this.masterDatabase.updateUploadCounters(auth_id, currentUserDb).catch((error) => {
+              logger.error('Failed to recalculate upload counter for user', error, {
+                authId: auth_id,
+              });
+            });
           }
         } catch (error) {
           logger.error('Error processing uploads for user', error, {
