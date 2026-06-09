@@ -87,3 +87,23 @@ export function isTorboxUploadApiSuccess(response, uploadType) {
 export function isTorboxUploadApiFailure(response, uploadType) {
   return !isTorboxUploadApiSuccess(response, uploadType);
 }
+
+/**
+ * TorBox returns DUPLICATE_ITEM (or similar detail) when createtorrent is called again
+ * for content already on the account. That is an idempotent success for TBM's queue.
+ * @param {Object|undefined} response - Axios response ({ data })
+ * @returns {boolean}
+ */
+export function isTorboxDuplicateUploadResponse(response) {
+  const envelope = response?.data;
+  if (envelope == null || typeof envelope !== 'object' || Array.isArray(envelope)) {
+    return false;
+  }
+  if (envelope.success !== false) return false;
+
+  const error = envelope.error;
+  const detail = String(envelope.detail || '');
+
+  if (error === 'DUPLICATE_ITEM') return true;
+  return /already\s+(queued|exists)/i.test(detail);
+}

@@ -5,14 +5,20 @@ import logger from '../utils/logger.js';
 import {
   getUploadFilePath,
   fileExists,
-  deleteUploadFile,
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
-import { getUploadResourceId, isTorboxUploadApiFailure } from './uploadResponseValidation.js';
+import {
+  getUploadResourceId,
+  isTorboxDuplicateUploadResponse,
+  isTorboxUploadApiFailure,
+} from './uploadResponseValidation.js';
+import {
+  getExpectedTorrentHash,
+  matchTorboxResource,
+} from './uploadDuplicateResolve.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
-import path from 'path';
 
 // Rate limits: 10 per minute, 60 per hour per type
 const RATE_LIMIT_PER_MINUTE = 10;
@@ -61,6 +67,7 @@ const NON_RETRYABLE_ERRORS = [
   'DOWNLOAD_TOO_LARGE',
   'MONTHLY_LIMIT',
   'ACTIVE_LIMIT',
+  'DUPLICATE_ITEM',
 ];
 
 /**
@@ -568,6 +575,119 @@ class UploadProcessor {
   }
 
   /**
+   * Look up an existing TorBox torrent/queued item for idempotent duplicate handling.
+   * @param {ApiClient} apiClient
+   * @param {Object} upload
+   * @param {string} type
+   * @returns {Promise<{ hash: string|null, torrentId: string|number|null, authId: string|null }>}
+   */
+  async resolveExistingTorboxResource(apiClient, upload, type) {
+    if (type !== 'torrent') {
+      return { hash: null, torrentId: null, authId: null };
+    }
+
+    const expectedHash = await getExpectedTorrentHash(upload);
+    const torrents = await apiClient.getTorrents(true);
+    return matchTorboxResource(upload, torrents, expectedHash);
+  }
+
+  /**
+   * Complete an upload when TorBox reports the item already exists/queued.
+   * @param {Object} upload
+   * @param {Object} userDb
+   * @param {string} type
+   * @param {Object} response - TorBox API response
+   * @param {ApiClient} apiClient
+   * @returns {Promise<boolean>}
+   */
+  async handleIdempotentDuplicate(upload, userDb, type, response, apiClient) {
+    const { id } = upload;
+    const data = response?.data && typeof response.data === 'object' ? response.data : {};
+
+    this.logUploadAttempt(
+      userDb,
+      id,
+      type,
+      response?.status ?? 200,
+      true,
+      data.error ?? 'DUPLICATE_ITEM',
+      data.detail ?? null
+    );
+
+    logger.info('TorBox reported duplicate upload; resolving existing resource', {
+      uploadId: id,
+      type,
+      upload_type: upload.upload_type,
+      name: upload.name,
+      error: data.error,
+      detail: data.detail,
+    });
+
+    let resolved = { hash: null, torrentId: null, authId: null };
+    try {
+      resolved = await this.resolveExistingTorboxResource(apiClient, upload, type);
+    } catch (lookupError) {
+      logger.warn('Failed to resolve existing TorBox resource for duplicate upload', {
+        uploadId: id,
+        type,
+        error: lookupError.message,
+      });
+    }
+
+    const syntheticResponse = {
+      status: response?.status ?? 200,
+      data: {
+        success: true,
+        error: null,
+        detail: data.detail || 'Download already exists on TorBox',
+        data: {
+          hash: resolved.hash,
+          torrent_id: resolved.torrentId,
+          auth_id: resolved.authId,
+        },
+      },
+    };
+
+    if (resolved.hash || resolved.torrentId != null) {
+      this.handleSuccessfulUpload(upload, userDb, type, syntheticResponse);
+      return true;
+    }
+
+    // Could not resolve ids, but TorBox already has the item — mark completed to avoid re-queue loops.
+    // Preserve torbox_hash from the expected hash so the record isn't completely orphaned.
+    const fallbackHash = await getExpectedTorrentHash(upload).catch(() => null);
+
+    const updateResult = userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET status = 'completed',
+            error_message = NULL,
+            torbox_hash = ?,
+            torbox_torrent_id = NULL,
+            torbox_auth_id = NULL,
+            completed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      )
+      .run(fallbackHash, id);
+
+    if (updateResult.changes > 0) {
+      this.masterDatabase.decrementUploadCounter(upload.authId);
+    }
+
+    logger.warn('Marked duplicate upload completed without TorBox ids', {
+      uploadId: id,
+      type,
+      name: upload.name,
+      preservedHash: fallbackHash,
+    });
+
+    return true;
+  }
+
+  /**
    * Handle successful upload
    * Files are kept after successful upload and will be cleaned up by periodic cleanup
    * based on size limits (50MB) or retention period (30 days)
@@ -948,6 +1068,11 @@ class UploadProcessor {
       // Make API request
       const response = await this.makeApiRequest(apiClient, endpoint, formData);
 
+      // Duplicate submissions mean TorBox already has this item — treat as success.
+      if (isTorboxDuplicateUploadResponse(response)) {
+        return await this.handleIdempotentDuplicate(upload, userDb, type, response, apiClient);
+      }
+
       // TorBox can return HTTP 200 with { success: false, error, detail } when the torrent was not created.
       // Treat that as failure so we do not mark the upload as completed.
       if (isTorboxUploadApiFailure(response, type)) {
@@ -1221,18 +1346,15 @@ class UploadProcessor {
    * @param {string} authId - User authentication ID
    * @returns {number} Number of uploads recovered
    */
-  recoverStuckProcessingUploads(userDb, authId) {
+  async recoverStuckProcessingUploads(userDb, authId) {
     try {
       const timeoutThreshold = this.formatDateForSQL(new Date(Date.now() - PROCESSING_TIMEOUT_MS));
 
-      const result = userDb.db
+      const stuckUploads = userDb.db
         .prepare(
           `
-          UPDATE uploads
-          SET status = 'queued',
-              error_message = NULL,
-              last_processed_at = CURRENT_TIMESTAMP,
-              updated_at = CURRENT_TIMESTAMP
+          SELECT id, type, upload_type, file_path, url, name, status
+          FROM uploads
           WHERE status = 'processing'
             AND (
               last_processed_at IS NULL
@@ -1240,22 +1362,90 @@ class UploadProcessor {
             )
         `
         )
-        .run(timeoutThreshold);
+        .all(timeoutThreshold);
 
-      if (result.changes > 0) {
+      if (stuckUploads.length === 0) {
+        return 0;
+      }
+
+      let recoveredToQueued = 0;
+      let completedAfterApiSuccess = 0;
+
+      for (const upload of stuckUploads) {
+        const successAttempt = userDb.db
+          .prepare(
+            `
+            SELECT 1 AS ok
+            FROM upload_attempts
+            WHERE upload_id = ?
+              AND success = 1
+            LIMIT 1
+          `
+          )
+          .get(upload.id);
+
+        if (successAttempt) {
+          try {
+            const apiClient = await this.getApiClient(authId);
+            const completed = await this.handleIdempotentDuplicate(
+              { ...upload, authId },
+              userDb,
+              upload.type,
+              {
+                status: 200,
+                data: {
+                  success: false,
+                  error: 'DUPLICATE_ITEM',
+                  detail: 'Recovered stuck upload after successful TorBox submission',
+                },
+              },
+              apiClient
+            );
+            if (completed) {
+              completedAfterApiSuccess++;
+            }
+          } catch (error) {
+            logger.error('Failed to complete stuck upload after successful API attempt', error, {
+              authId,
+              uploadId: upload.id,
+            });
+          }
+          continue;
+        }
+
+        const result = userDb.db
+          .prepare(
+            `
+            UPDATE uploads
+            SET status = 'queued',
+                error_message = NULL,
+                last_processed_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+              AND status = 'processing'
+          `
+          )
+          .run(upload.id);
+
+        if (result.changes > 0) {
+          recoveredToQueued++;
+        }
+      }
+
+      if (recoveredToQueued > 0 || completedAfterApiSuccess > 0) {
         logger.info('Recovered stuck processing uploads', {
           authId,
-          recoveredCount: result.changes,
+          recoveredToQueued,
+          completedAfterApiSuccess,
           timeoutThreshold,
         });
 
-        // Update counters after recovery
-        this.masterDatabase.updateUploadCounters(authId, userDb).catch((error) => {
+        await this.masterDatabase.updateUploadCounters(authId, userDb).catch((error) => {
           logger.error('Failed to update counters after recovery', error, { authId });
         });
       }
 
-      return result.changes;
+      return recoveredToQueued + completedAfterApiSuccess;
     } catch (error) {
       logger.error('Failed to recover stuck processing uploads', error, { authId });
       return 0;
@@ -1414,7 +1604,9 @@ class UploadProcessor {
 
           // Recover stuck processing uploads if needed
           if (shouldRecover) {
-            this.recoverStuckProcessingUploads(userDb, auth_id);
+            this.recoverStuckProcessingUploads(userDb, auth_id).catch((error) => {
+              logger.error('Recovery failed for user', error, { authId: auth_id });
+            });
           }
 
           // Process one upload per type per cycle to respect rate limits
@@ -1519,19 +1711,21 @@ class UploadProcessor {
 
                 // Only process if the UPDATE succeeded (another thread didn't claim it first)
                 if (result.changes > 0) {
+                  let apiSucceeded = false;
                   try {
                     // Process upload (pass original status to ensure counter updates work correctly)
-                    await this.processUpload(
+                    apiSucceeded = await this.processUpload(
                       { ...upload, authId: auth_id },
                       currentUserDb,
                       originalStatus
                     );
                   } finally {
-                    // If processUpload exited without updating status, avoid leaving rows stuck in processing
+                    // Only reset to queued when TorBox was not reached successfully.
+                    // Re-queuing after a successful API call causes duplicate createtorrent errors.
                     const after = currentUserDb.db
                       .prepare('SELECT status FROM uploads WHERE id = ?')
                       .get(upload.id);
-                    if (after?.status === 'processing') {
+                    if (after?.status === 'processing' && !apiSucceeded) {
                       logger.warn(
                         'Upload still processing after processUpload; resetting to queued',
                         {
