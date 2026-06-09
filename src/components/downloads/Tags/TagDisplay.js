@@ -15,7 +15,7 @@ export default function TagDisplay({ tags = EMPTY_ARRAY, onTagClick, className =
   }
 
   return (
-    <div className={`flex flex-row gap-1.5 ${className}`}>
+    <div className={`flex min-w-0 flex-row gap-1.5 overflow-hidden ${className}`}>
       {tags.map((tag) => (
         <span
           key={tag.id}
@@ -29,7 +29,7 @@ export default function TagDisplay({ tags = EMPTY_ARRAY, onTagClick, className =
             }
           }}
           className={`
-            inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md
+            inline-flex min-w-0 max-w-[8rem] shrink items-center truncate px-2 py-0.5 text-xs font-medium rounded-md
             bg-accent/10 dark:bg-accent-dark/10
             text-accent dark:text-accent-dark
             border border-accent/20 dark:border-accent-dark/20

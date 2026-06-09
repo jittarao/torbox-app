@@ -109,7 +109,7 @@ const DateCellMemo = memo(DateCell);
 
 function StateCell({ item, style }) {
   return (
-    <td className={`${tableDataCellPad} whitespace-nowrap`} style={style}>
+    <td className={`${tableDataCellPad} overflow-hidden whitespace-nowrap`} style={style}>
       <DownloadStateBadge item={item} />
     </td>
   );
@@ -250,12 +250,18 @@ function PrivateCell({ item, style }) {
 const PrivateCellMemo = memo(PrivateCell);
 
 function ErrorCell({ item, style }) {
+  const error = item.error?.trim() || null;
+
   return (
     <td
-      className={`${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-red-500`}
+      className={`${tableDataCellPad} overflow-hidden text-sm md:text-xs lg:text-sm text-red-500`}
       style={style}
     >
-      {item.error || ''}
+      {error ? (
+        <Tooltip content={error}>
+          <span className="block min-w-0 truncate">{error}</span>
+        </Tooltip>
+      ) : null}
     </td>
   );
 }
@@ -264,7 +270,7 @@ const ErrorCellMemo = memo(ErrorCell);
 function TagsCell({ item, style }) {
   return (
     <td
-      className={`${tableDataCellPad} text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
+      className={`${tableDataCellPad} overflow-hidden text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
       style={style}
     >
       {item.tags && item.tags.length > 0 ? (
@@ -278,9 +284,21 @@ function TagsCell({ item, style }) {
 const TagsCellMemo = memo(TagsCell);
 
 function DefaultCell({ item, columnId, style }) {
+  const value = item[columnId];
+  const display = value == null || value === '' ? null : String(value);
+
   return (
-    <td className={tableDataCellText} style={style}>
-      {item[columnId]}
+    <td
+      className={`${tableDataCellPad} overflow-hidden text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
+      style={style}
+    >
+      {display ? (
+        <Tooltip content={display}>
+          <span className="block min-w-0 truncate">{display}</span>
+        </Tooltip>
+      ) : (
+        <span className="text-primary-text/40 dark:text-primary-text-dark/40">-</span>
+      )}
     </td>
   );
 }
@@ -361,7 +379,7 @@ function ItemRow({
       id={isExpanded ? filesRegionId : undefined}
       className={`${rowSurfaceClass} ${tableRowFocusClasses} ${!hasSelectedFiles && 'cursor-pointer'}`}
       style={style}
-      tabIndex={-1}
+      tabIndex={0}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
         if (e.shiftKey) {
@@ -385,7 +403,6 @@ function ItemRow({
           handleItemSelection(selectionId, !isSelected, rowIndex, e.shiftKey);
         }
       }}
-      tabIndex={0}
     >
       <td className={tableCheckboxCell}>
         <input
