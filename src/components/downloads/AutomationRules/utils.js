@@ -62,7 +62,7 @@ export const isBooleanCondition = (conditionType) => {
 
 // Helper to check if a condition type is string-based
 export const isStringCondition = (conditionType) => {
-  return [CONDITION_TYPES.TRACKER, CONDITION_TYPES.NAME].includes(conditionType);
+  return [CONDITION_TYPES.TRACKER, CONDITION_TYPES.NAME, CONDITION_TYPES.ORIGINAL_URL].includes(conditionType);
 };
 
 // Helper to check if a condition type requires hours parameter
@@ -235,6 +235,8 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
       }
     } else if (condition.type === CONDITION_TYPES.TRACKER) {
       return `tracker ${textOpT} "${condition.value}"`;
+    } else if (condition.type === CONDITION_TYPES.ORIGINAL_URL) {
+      return `source url ${textOpT} "${condition.value}"`;
     }
 
     return '';
@@ -344,6 +346,7 @@ const CONDITION_TO_COLUMN_MAP = {
   [CONDITION_TYPES.TOTAL_UPLOADED]: 'total_uploaded',
   [CONDITION_TYPES.TOTAL_DOWNLOADED]: 'total_downloaded',
   [CONDITION_TYPES.EXPIRES_AT]: 'expires_at',
+  [CONDITION_TYPES.ORIGINAL_URL]: 'original_url',
 };
 
 // Get column key for a condition type (if applicable)
@@ -593,6 +596,11 @@ export const getConditionTypeOptions = (t, assetTypes = null) => {
           value: CONDITION_TYPES.NAME,
           label: t('conditions.name'),
           description: t('conditions.nameDescription'),
+        },
+        {
+          value: CONDITION_TYPES.ORIGINAL_URL,
+          label: t('conditions.originalUrl'),
+          description: t('conditions.originalUrlDescription'),
         },
         {
           value: CONDITION_TYPES.PRIVATE,
