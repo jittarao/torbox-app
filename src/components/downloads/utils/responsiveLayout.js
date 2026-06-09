@@ -24,7 +24,7 @@ export const tableActionsCellShadows =
 
 export const tableDataCellPad = `px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5 ${tableRowSeparator}`;
 
-export const tableDataCellText = `${tableDataCellPad} whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
+export const tableDataCellText = `${tableDataCellPad} overflow-hidden whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
 
 /** ~6 icon buttons (stop seeding, files, download, delete, menu) — export lives in More dropdown */
 const actionsColumnWidthClass =
