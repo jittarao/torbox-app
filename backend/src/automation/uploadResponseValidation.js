@@ -116,6 +116,25 @@ export function isTorboxOutageResponse(response) {
   return true;
 }
 
+/**
+ * TorBox may return HTTP 200 with `success: false` but a detail that says
+ * the torrent was queued (e.g. `"Torrent Queued Successfully"`). This is a
+ * contradictory / transient response — the request was accepted at TorBox
+ * but did not return resource IDs. Treat as retryable, not permanent failure.
+ * @param {Object|undefined} response - Axios response ({ data })
+ * @returns {boolean}
+ */
+export function isTorboxTransientQueuedResponse(response) {
+  const envelope = response?.data;
+  if (envelope == null || typeof envelope !== 'object' || Array.isArray(envelope)) {
+    return false;
+  }
+  if (envelope.success !== false) return false;
+  const detail = String(envelope.detail || '');
+  // Detail reads like a positive queued confirmation despite success:false
+  return /queued\s+successfully/i.test(detail);
+}
+
 export function isTorboxDuplicateUploadResponse(response) {
   const envelope = response?.data;
   if (envelope == null || typeof envelope !== 'object' || Array.isArray(envelope)) {
