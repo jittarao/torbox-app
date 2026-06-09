@@ -15,7 +15,7 @@
 export const UPLOAD_RESOURCE_ID_KEYS = {
   torrent: ['torrent_id', 'id'],
   usenet: ['usenet_id', 'id'],
-  webdl: ['webdl_id', 'web_id', 'id'],
+  webdl: ['webdownload_id', 'webdl_id', 'web_id', 'id'],
 };
 
 /**
