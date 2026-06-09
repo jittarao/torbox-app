@@ -20,7 +20,7 @@ const CREATE_TORRENT_SUCCESS = {
   },
 };
 
-/** Documented asynccreatetorrent success — not used by UploadProcessor; must not count as upload created */
+/** Documented asynccreatetorrent success — TorBox may return data:null even for createtorrent */
 const ASYNC_CREATE_TORRENT_SUCCESS = {
   success: true,
   error: null,
@@ -91,10 +91,10 @@ describe('uploadResponseValidation', () => {
       ).toBe(true);
     });
 
-    test('rejects asynccreatetorrent-style success with data null', () => {
+    test('accepts asynccreatetorrent-style success with data null', () => {
       expect(
         isTorboxUploadApiSuccess({ data: ASYNC_CREATE_TORRENT_SUCCESS }, 'torrent')
-      ).toBe(false);
+      ).toBe(true);
     });
 
     test('rejects explicit API failure envelope', () => {
@@ -113,15 +113,15 @@ describe('uploadResponseValidation', () => {
       ).toBe(false);
     });
 
-    test('rejects success:true without resource id (false positive case)', () => {
+    test('accepts success:true without resource id (TorBox queued response)', () => {
       expect(
         isTorboxUploadApiSuccess(
           {
-            data: { success: true, error: null, detail: 'ok', data: null },
+            data: { success: true, error: null, detail: 'Torrent queued successfully', data: null },
           },
           'torrent'
         )
-      ).toBe(false);
+      ).toBe(true);
     });
 
     test('rejects empty object, string, and missing body (old bug)', () => {
