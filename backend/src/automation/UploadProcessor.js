@@ -784,8 +784,13 @@ class UploadProcessor {
       )
       .run(fallbackHash, id);
 
-    if (updateResult.changes > 0) {
-      this.masterDatabase.decrementUploadCounter(upload.authId);
+    if (updateResult.changes > 0 && upload.authId) {
+      void this.masterDatabase.updateUploadCounters(upload.authId, userDb).catch((error) => {
+        logger.error('Failed to update counters after duplicate completion', error, {
+          authId: upload.authId,
+          uploadId: id,
+        });
+      });
     }
 
     logger.warn('Marked duplicate upload completed without TorBox ids', {
@@ -835,9 +840,13 @@ class UploadProcessor {
       .run(torboxHash, torboxTorrentId, torboxAuthId, id);
 
     // Update counter only if the upload still exists (wasn't deleted during processing)
-    // If the upload was deleted, the UPDATE returns 0 rows affected, so we skip decrement
-    if (updateResult.changes > 0) {
-      this.masterDatabase.decrementUploadCounter(upload.authId);
+    if (updateResult.changes > 0 && upload.authId) {
+      void this.masterDatabase.updateUploadCounters(upload.authId, userDb).catch((error) => {
+        logger.error('Failed to update counters after successful upload', error, {
+          authId: upload.authId,
+          uploadId: id,
+        });
+      });
     }
 
     logger.info('Upload processed successfully', {
@@ -1054,11 +1063,6 @@ class UploadProcessor {
     const nextAttemptAt =
       deferMs > 0 ? this.formatDateForSQL(new Date(Date.now() + deferMs)) : null;
 
-    // Check if upload was queued before processing started
-    // Use the explicitly passed originalStatus parameter to ensure we get the correct
-    // status before processUploads() changed it to 'processing'. This prevents counter drift.
-    const wasQueued = (originalStatus ?? upload.status) === 'queued';
-
     // Create user-friendly error message
     const userFriendlyError = isConnection
       ? 'TorBox API unavailable. Will retry automatically.'
@@ -1109,12 +1113,8 @@ class UploadProcessor {
 
     // Update counters only if the upload still exists (wasn't deleted during processing)
     // If the upload was deleted, the UPDATE returns 0 rows affected, so we skip counter updates
-    if (updateResult.changes > 0) {
-      if (finalStatus === 'failed' && wasQueued) {
-        this.masterDatabase.decrementUploadCounter(upload.authId);
-      } else if (finalStatus === 'queued') {
-        await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
-      }
+    if (updateResult.changes > 0 && upload.authId) {
+      await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
     }
 
     // Log appropriate message (include TorBox response in rate-limit log so prod sees it in one place)
@@ -1428,8 +1428,15 @@ class UploadProcessor {
                 id
               );
 
-            if (updateResult.changes > 0) {
-              this.masterDatabase.decrementUploadCounter(upload.authId);
+            if (updateResult.changes > 0 && upload.authId) {
+              void this.masterDatabase
+                .updateUploadCounters(upload.authId, finalUserDb)
+                .catch((error) => {
+                  logger.error('Failed to update counters after recovery completion', error, {
+                    authId: upload.authId,
+                    uploadId: id,
+                  });
+                });
               logger.warn('Manually marked upload as completed to prevent duplicate uploads', {
                 uploadId: id,
                 attempt: finalAttempt + 1,
@@ -1713,6 +1720,224 @@ class UploadProcessor {
   }
 
   /**
+   * Sync counters and process uploads for a single user (e.g. after manual retry).
+   * @param {string} authId
+   */
+  async processUserUploads(authId) {
+    if (!this.userDatabaseManager) {
+      return;
+    }
+
+    const userDb = await this.userDatabaseManager.getUserDatabase(authId);
+    try {
+      await this.masterDatabase.updateUploadCounters(authId, userDb);
+      await this.recoverStuckProcessingUploads(userDb, authId);
+
+      const registry = this.masterDatabase.getUserRegistryInfo(authId);
+      if ((registry?.queued_uploads_count ?? 0) <= 0) {
+        return;
+      }
+
+      await this._processUserUploads(
+        { auth_id: authId, queued_uploads_count: registry.queued_uploads_count },
+        { shouldCleanup: false, shouldRecover: false }
+      );
+    } catch (error) {
+      logger.error('Error processing uploads for user (nudged)', error, { authId });
+    } finally {
+      this.userDatabaseManager.closeConnection(authId);
+    }
+  }
+
+  /**
+   * Process queued uploads for one user.
+   * @param {Object} user - Row from getUsersWithQueuedUploads (needs auth_id)
+   * @param {{ shouldCleanup: boolean, shouldRecover: boolean }} options
+   */
+  async _processUserUploads(user, { shouldCleanup, shouldRecover }) {
+    const { auth_id } = user;
+    const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+    this.userDatabaseManager.pool.markActive(auth_id);
+
+    try {
+      if (shouldCleanup) {
+        this.cleanupOldAttempts(userDb);
+      }
+
+      if (shouldRecover) {
+        await this.recoverStuckProcessingUploads(userDb, auth_id).catch((error) => {
+          logger.error('Recovery failed for user', error, { authId: auth_id });
+        });
+      }
+
+      const types = ['torrent', 'usenet', 'webdl'];
+      let torboxTorrentListCache = undefined;
+      let foundAnyUpload = false;
+      let currentUserDb = userDb;
+
+      for (const type of types) {
+        let queuedUploads;
+        currentUserDb = userDb;
+
+        try {
+          queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
+        } catch (error) {
+          if (error.message === 'DATABASE_CLOSED') {
+            try {
+              currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+              queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
+            } catch (retryError) {
+              logger.error('Failed to re-fetch database connection', retryError, {
+                authId: auth_id,
+              });
+              continue;
+            }
+          } else {
+            throw error;
+          }
+        }
+
+        if (queuedUploads.length > 0) {
+          foundAnyUpload = true;
+          const upload = queuedUploads[0];
+
+          if (type === 'torrent' && torboxTorrentListCache === undefined) {
+            try {
+              const apiClient = await this.getApiClient(auth_id);
+              torboxTorrentListCache = await apiClient.getTorrents(true);
+            } catch (listError) {
+              logger.warn('Failed to prefetch TorBox torrent list for upload pre-check', {
+                authId: auth_id,
+                error: listError.message,
+              });
+              torboxTorrentListCache = null;
+            }
+          }
+
+          let currentStatus;
+          try {
+            currentStatus = currentUserDb.db
+              .prepare('SELECT status FROM uploads WHERE id = ?')
+              .get(upload.id);
+          } catch (error) {
+            if (isClosedDatabaseError(error)) {
+              try {
+                currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+                currentStatus = currentUserDb.db
+                  .prepare('SELECT status FROM uploads WHERE id = ?')
+                  .get(upload.id);
+              } catch (retryError) {
+                logger.error('Failed to re-fetch database connection', retryError, {
+                  authId: auth_id,
+                });
+                continue;
+              }
+            } else {
+              throw error;
+            }
+          }
+
+          if (currentStatus?.status === 'queued') {
+            const originalStatus = currentStatus.status;
+            let result;
+            try {
+              result = currentUserDb.db
+                .prepare(
+                  `
+                      UPDATE uploads
+                      SET status = 'processing',
+                          last_processed_at = CURRENT_TIMESTAMP,
+                          updated_at = CURRENT_TIMESTAMP
+                      WHERE id = ? AND status = 'queued'
+                    `
+                )
+                .run(upload.id);
+            } catch (error) {
+              if (isClosedDatabaseError(error)) {
+                try {
+                  currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
+                  result = currentUserDb.db
+                    .prepare(
+                      `
+                          UPDATE uploads
+                          SET status = 'processing',
+                              last_processed_at = CURRENT_TIMESTAMP,
+                              updated_at = CURRENT_TIMESTAMP
+                          WHERE id = ? AND status = 'queued'
+                        `
+                    )
+                    .run(upload.id);
+                } catch (retryError) {
+                  logger.error('Failed to re-fetch database connection', retryError, {
+                    authId: auth_id,
+                  });
+                  continue;
+                }
+              } else {
+                throw error;
+              }
+            }
+
+            if (result.changes > 0) {
+              let apiSucceeded = false;
+              try {
+                apiSucceeded = await this.processUpload(
+                  {
+                    ...upload,
+                    authId: auth_id,
+                    _torboxTorrentList: type === 'torrent' ? torboxTorrentListCache : undefined,
+                  },
+                  currentUserDb,
+                  originalStatus
+                );
+              } finally {
+                const after = currentUserDb.db
+                  .prepare('SELECT status FROM uploads WHERE id = ?')
+                  .get(upload.id);
+                if (after?.status === 'processing' && !apiSucceeded) {
+                  logger.warn('Upload still processing after processUpload; resetting to queued', {
+                    uploadId: upload.id,
+                    authId: auth_id,
+                  });
+                  currentUserDb.db
+                    .prepare(
+                      `
+                          UPDATE uploads
+                          SET status = 'queued',
+                              error_message = NULL,
+                              last_processed_at = CURRENT_TIMESTAMP,
+                              updated_at = CURRENT_TIMESTAMP
+                          WHERE id = ? AND status = 'processing'
+                        `
+                    )
+                    .run(upload.id);
+                  await this.masterDatabase.updateUploadCounters(auth_id, currentUserDb);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (!foundAnyUpload) {
+        logger.debug('No queued uploads found for user; recalculating counter', {
+          authId: auth_id,
+          reportedCount: user.queued_uploads_count,
+        });
+        await this.masterDatabase.updateUploadCounters(auth_id, currentUserDb).catch((error) => {
+          logger.error('Failed to recalculate upload counter for user', error, {
+            authId: auth_id,
+          });
+        });
+      }
+    } catch (error) {
+      logger.error('Error processing uploads for user', error, {
+        authId: auth_id,
+      });
+    }
+  }
+
+  /**
    * Process uploads for all active users
    * Uses optimized query to only process users with queued uploads
    */
@@ -1768,202 +1993,7 @@ class UploadProcessor {
         const { auth_id } = user;
         await acquireUploadSlot();
         try {
-          const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-          this.userDatabaseManager.pool.markActive(auth_id);
-
-          // Cleanup old attempts if needed
-          if (shouldCleanup) {
-            this.cleanupOldAttempts(userDb);
-          }
-
-          // Recover stuck processing uploads if needed
-          if (shouldRecover) {
-            this.recoverStuckProcessingUploads(userDb, auth_id).catch((error) => {
-              logger.error('Recovery failed for user', error, { authId: auth_id });
-            });
-          }
-
-          // Process one upload per type per cycle to respect rate limits
-          const types = ['torrent', 'usenet', 'webdl'];
-          let torboxTorrentListCache = undefined;
-          let foundAnyUpload = false;
-          let currentUserDb = userDb;
-
-          for (const type of types) {
-            let queuedUploads;
-            currentUserDb = userDb;
-
-            try {
-              queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
-            } catch (error) {
-              // If database was closed, re-fetch the connection and retry
-              if (error.message === 'DATABASE_CLOSED') {
-                try {
-                  currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-                  queuedUploads = this.getQueuedUploads(currentUserDb, auth_id, type);
-                } catch (retryError) {
-                  logger.error('Failed to re-fetch database connection', retryError, {
-                    authId: auth_id,
-                  });
-                  continue; // Skip this type for this user
-                }
-              } else {
-                throw error; // Re-throw other errors
-              }
-            }
-
-            if (queuedUploads.length > 0) {
-              foundAnyUpload = true;
-              const upload = queuedUploads[0]; // Get first (highest priority)
-
-              if (type === 'torrent' && torboxTorrentListCache === undefined) {
-                try {
-                  const apiClient = await this.getApiClient(auth_id);
-                  torboxTorrentListCache = await apiClient.getTorrents(true);
-                } catch (listError) {
-                  logger.warn('Failed to prefetch TorBox torrent list for upload pre-check', {
-                    authId: auth_id,
-                    error: listError.message,
-                  });
-                  torboxTorrentListCache = null;
-                }
-              }
-
-              // Check if upload is currently being processed (avoid concurrent processing)
-              let currentStatus;
-              try {
-                currentStatus = currentUserDb.db
-                  .prepare('SELECT status FROM uploads WHERE id = ?')
-                  .get(upload.id);
-              } catch (error) {
-                // If database was closed, re-fetch the connection and retry
-                if (isClosedDatabaseError(error)) {
-                  try {
-                    currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-                    currentStatus = currentUserDb.db
-                      .prepare('SELECT status FROM uploads WHERE id = ?')
-                      .get(upload.id);
-                  } catch (retryError) {
-                    logger.error('Failed to re-fetch database connection', retryError, {
-                      authId: auth_id,
-                    });
-                    continue; // Skip this upload
-                  }
-                } else {
-                  throw error; // Re-throw other errors
-                }
-              }
-
-              if (currentStatus?.status === 'queued') {
-                // Capture original status before updating (needed for counter management)
-                const originalStatus = currentStatus.status;
-
-                // Mark as processing - use atomic UPDATE with status check to prevent race conditions
-                // Only proceed if the UPDATE actually changed a row (result.changes > 0)
-                let result;
-                try {
-                  result = currentUserDb.db
-                    .prepare(
-                      `
-                      UPDATE uploads
-                      SET status = 'processing',
-                          last_processed_at = CURRENT_TIMESTAMP,
-                          updated_at = CURRENT_TIMESTAMP
-                      WHERE id = ? AND status = 'queued'
-                    `
-                    )
-                    .run(upload.id);
-                } catch (error) {
-                  // If database was closed, re-fetch the connection and retry
-                  if (isClosedDatabaseError(error)) {
-                    try {
-                      currentUserDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-                      result = currentUserDb.db
-                        .prepare(
-                          `
-                          UPDATE uploads
-                          SET status = 'processing',
-                              last_processed_at = CURRENT_TIMESTAMP,
-                              updated_at = CURRENT_TIMESTAMP
-                          WHERE id = ? AND status = 'queued'
-                        `
-                        )
-                        .run(upload.id);
-                    } catch (retryError) {
-                      logger.error('Failed to re-fetch database connection', retryError, {
-                        authId: auth_id,
-                      });
-                      continue; // Skip this upload
-                    }
-                  } else {
-                    throw error; // Re-throw other errors
-                  }
-                }
-
-                // Only process if the UPDATE succeeded (another thread didn't claim it first)
-                if (result.changes > 0) {
-                  let apiSucceeded = false;
-                  try {
-                    // Process upload (pass original status to ensure counter updates work correctly)
-                    apiSucceeded = await this.processUpload(
-                      {
-                        ...upload,
-                        authId: auth_id,
-                        _torboxTorrentList:
-                          type === 'torrent' ? torboxTorrentListCache : undefined,
-                      },
-                      currentUserDb,
-                      originalStatus
-                    );
-                  } finally {
-                    // Only reset to queued when TorBox was not reached successfully.
-                    // Re-queuing after a successful API call causes duplicate createtorrent errors.
-                    const after = currentUserDb.db
-                      .prepare('SELECT status FROM uploads WHERE id = ?')
-                      .get(upload.id);
-                    if (after?.status === 'processing' && !apiSucceeded) {
-                      logger.warn(
-                        'Upload still processing after processUpload; resetting to queued',
-                        {
-                          uploadId: upload.id,
-                          authId: auth_id,
-                        }
-                      );
-                      currentUserDb.db
-                        .prepare(
-                          `
-                          UPDATE uploads
-                          SET status = 'queued',
-                              error_message = NULL,
-                              last_processed_at = CURRENT_TIMESTAMP,
-                              updated_at = CURRENT_TIMESTAMP
-                          WHERE id = ? AND status = 'processing'
-                        `
-                        )
-                        .run(upload.id);
-                      await this.masterDatabase.updateUploadCounters(auth_id, currentUserDb);
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          if (!foundAnyUpload) {
-            logger.debug('No queued uploads found for user; recalculating counter', {
-              authId: auth_id,
-              reportedCount: user.queued_uploads_count,
-            });
-            await this.masterDatabase.updateUploadCounters(auth_id, currentUserDb).catch((error) => {
-              logger.error('Failed to recalculate upload counter for user', error, {
-                authId: auth_id,
-              });
-            });
-          }
-        } catch (error) {
-          logger.error('Error processing uploads for user', error, {
-            authId: auth_id,
-          });
+          await this._processUserUploads(user, { shouldCleanup, shouldRecover });
         } finally {
           this.userDatabaseManager.closeConnection(auth_id);
           releaseUploadSlot();
@@ -1975,6 +2005,11 @@ class UploadProcessor {
       // Update cleanup and recovery timestamps after processing all users
       if (shouldCleanup) {
         this.lastCleanupAt = now;
+        void this.masterDatabase
+          .syncUploadCountersForAllUsers(this.userDatabaseManager)
+          .catch((error) => {
+            logger.error('Daily upload counter sync failed', error);
+          });
       }
       if (shouldRecover) {
         this.lastRecoveryAt = now;

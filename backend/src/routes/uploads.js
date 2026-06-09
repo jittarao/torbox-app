@@ -115,6 +115,26 @@ async function resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, fai
   }
 }
 
+function countPendingUploads(userDb) {
+  const row = userDb.db
+    .prepare(
+      `
+      SELECT COUNT(*) as count
+      FROM uploads
+      WHERE status IN ('queued', 'processing')
+        AND (file_deleted IS NULL OR file_deleted = 0)
+    `
+    )
+    .get();
+  return row?.count ?? 0;
+}
+
+async function syncUploadCountersIfPending(authId, userDb, masterDatabase) {
+  if (countPendingUploads(userDb) > 0) {
+    await masterDatabase.updateUploadCounters(authId, userDb);
+  }
+}
+
 function requeueFailedUpload(userDb, uploadId, queueOrder) {
   return (
     userDb.db
@@ -128,6 +148,7 @@ function requeueFailedUpload(userDb, uploadId, queueOrder) {
           torbox_torrent_id = NULL,
           torbox_auth_id = NULL,
           next_attempt_at = NULL,
+          last_processed_at = NULL,
           queue_order = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
@@ -136,6 +157,15 @@ function requeueFailedUpload(userDb, uploadId, queueOrder) {
       )
       .run(queueOrder, uploadId).changes > 0
   );
+}
+
+function nudgeUploadProcessor(backend, authId) {
+  if (!backend.uploadProcessor?.isRunning) {
+    return;
+  }
+  void backend.uploadProcessor.processUserUploads(authId).catch((error) => {
+    logger.warn('Upload processor nudge failed after retry', error, { authId });
+  });
 }
 
 /**
@@ -725,6 +755,8 @@ export function setupUploadsRoutes(app, backend) {
 
       const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
+      await syncUploadCountersIfPending(authId, userDb, backend.masterDatabase);
+
       // Query parameters
       const status = req.query.status; // optional filter
       const type = req.query.type; // optional filter
@@ -1108,6 +1140,7 @@ export function setupUploadsRoutes(app, backend) {
 
         if (retriedUploads.length > 0) {
           await backend.masterDatabase.updateUploadCounters(authId, userDb);
+          nudgeUploadProcessor(backend, authId);
         }
 
         logger.info('Bulk upload retry', {
@@ -1235,6 +1268,7 @@ export function setupUploadsRoutes(app, backend) {
         }
 
         await backend.masterDatabase.updateUploadCounters(authId, userDb);
+        nudgeUploadProcessor(backend, authId);
 
         const updatedUpload = userDb.db
           .prepare(`SELECT ${UPLOAD_DETAIL_SELECT} FROM uploads WHERE id = ?`)

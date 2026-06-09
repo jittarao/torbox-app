@@ -30,7 +30,7 @@ describe('UploadProcessor duplicate upload handling', () => {
   test('handleIdempotentDuplicate marks upload completed using existing TorBox item', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
-      decrementUploadCounter() {},
+      updateUploadCounters: async () => {},
     });
 
     processor.logUploadAttempt = () => {};
