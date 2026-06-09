@@ -2,8 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import {
   completeUploadWithTorboxResult,
   isDuplicateUploadFailure,
+  markUploadsTorboxUnavailable,
   matchTorboxResource,
+  resolveTorrentFromExistingList,
   splitRetriesByTorboxPresence,
+  TORBOX_UNAVAILABLE_MESSAGE,
 } from '../uploadDuplicateResolve.js';
 
 function createRecordingDb() {
@@ -93,6 +96,56 @@ describe('uploadDuplicateResolve', () => {
     const updateCall = userDb.calls.find((call) => call.sql.includes("status = 'completed'"));
     expect(updateCall.params).toContain('abcdef0123456789abcdef0123456789abcdef01');
     expect(updateCall.params).toContain(99);
+  });
+
+  test('resolveTorrentFromExistingList returns null when torrent is absent', async () => {
+    const resolved = await resolveTorrentFromExistingList(
+      {
+        type: 'torrent',
+        upload_type: 'magnet',
+        url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
+        name: 'Missing',
+      },
+      []
+    );
+    expect(resolved).toBeNull();
+  });
+
+  test('splitRetriesByTorboxPresence propagates connection errors', async () => {
+    const userDb = createRecordingDb();
+    const timeoutError = Object.assign(new Error('timeout of 30000ms exceeded'), {
+      code: 'ECONNABORTED',
+    });
+
+    await expect(
+      splitRetriesByTorboxPresence({
+        failedUploads: [
+          {
+            id: 1,
+            type: 'torrent',
+            upload_type: 'magnet',
+            url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
+            name: 'One',
+            error_message: 'Download already queued.',
+          },
+        ],
+        authId: 'auth-1',
+        userDb,
+        getApiClient: async () => ({
+          getTorrents: async () => {
+            throw timeoutError;
+          },
+        }),
+      })
+    ).rejects.toThrow('timeout of 30000ms exceeded');
+  });
+
+  test('markUploadsTorboxUnavailable updates failed rows only', () => {
+    const userDb = createRecordingDb();
+    markUploadsTorboxUnavailable(userDb, [{ id: 9 }]);
+    const updateCall = userDb.calls[0];
+    expect(updateCall.sql).toContain("AND status = 'failed'");
+    expect(updateCall.params).toContain(TORBOX_UNAVAILABLE_MESSAGE);
   });
 
   test('completeUploadWithTorboxResult only updates failed rows', () => {

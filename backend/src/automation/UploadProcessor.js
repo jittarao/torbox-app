@@ -11,12 +11,15 @@ import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import {
   getUploadResourceId,
   isTorboxDuplicateUploadResponse,
+  isTorboxOutageResponse,
   isTorboxUploadApiFailure,
 } from './uploadResponseValidation.js';
 import {
   getExpectedTorrentHash,
   matchTorboxResource,
+  resolveTorrentFromExistingList,
 } from './uploadDuplicateResolve.js';
+import { isConnectionError } from '../utils/torboxErrors.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 
@@ -26,7 +29,6 @@ const RATE_LIMIT_PER_HOUR = 60;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
-const MAX_RETRIES = 3;
 
 function extractTorboxTorrentResult(response, type) {
   if (type !== 'torrent') {
@@ -47,6 +49,7 @@ const RATE_LIMIT_BUFFER_MS = 1000; // 1 second buffer for rate limit calculation
 const API_TIMEOUT_MS = 30000;
 const INITIAL_BACKOFF_MS = 30000; // 30 seconds
 const MAX_BACKOFF_MS = 300000; // 5 minutes
+const CONNECTION_DEFER_MS = parseInt(process.env.UPLOAD_CONNECTION_DEFER_MS || '900000', 10); // 15 min
 const CLEANUP_RETENTION_DAYS = 7;
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
 const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
@@ -522,6 +525,110 @@ class UploadProcessor {
    * @param {string} type - Upload type
    * @returns {Promise<boolean>} False (not processed)
    */
+  /**
+   * Defer upload when TorBox is unreachable (do not burn createtorrent retries).
+   * @param {Object} upload
+   * @param {Object} userDb
+   * @param {string} type
+   * @param {Error} [error]
+   * @returns {Promise<boolean>}
+   */
+  async handleConnectionDeferral(upload, userDb, type, error = null) {
+    const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + CONNECTION_DEFER_MS));
+
+    logger.warn('TorBox API unavailable, deferring upload', {
+      uploadId: upload.id,
+      type,
+      waitTimeMs: CONNECTION_DEFER_MS,
+      nextAttemptAt,
+      error: error?.message,
+    });
+
+    if (error) {
+      this.logUploadAttempt(
+        userDb,
+        upload.id,
+        type,
+        error.response?.status ?? null,
+        false,
+        'CONNECTION_ERROR',
+        error.message
+      );
+    }
+
+    userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET status = 'queued',
+            error_message = 'TorBox API unavailable. Will retry automatically.',
+            next_attempt_at = ?,
+            last_processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      )
+      .run(nextAttemptAt, upload.id);
+
+    const deferOthersResult = userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET next_attempt_at = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE status = 'queued'
+          AND type = ?
+          AND id != ?
+      `
+      )
+      .run(nextAttemptAt, type, upload.id);
+
+    if (deferOthersResult.changes > 0) {
+      logger.debug('Deferred other queued uploads due to TorBox outage', {
+        type,
+        deferredCount: deferOthersResult.changes,
+        nextAttemptAt,
+      });
+    }
+
+    await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
+    return false;
+  }
+
+  /**
+   * Complete a torrent upload when it already exists on TorBox (mylist/getqueued pre-check).
+   * @returns {Promise<boolean>}
+   */
+  async tryCompleteTorrentFromExistingList(upload, userDb, type, torrents) {
+    const resolved = await resolveTorrentFromExistingList(upload, torrents);
+    if (!resolved) {
+      return false;
+    }
+
+    logger.info('Completing upload from TorBox list pre-check (skipping createtorrent)', {
+      uploadId: upload.id,
+      name: upload.name,
+      hash: resolved.hash,
+      torrentId: resolved.torrentId,
+    });
+
+    this.handleSuccessfulUpload(upload, userDb, type, {
+      status: 200,
+      data: {
+        success: true,
+        error: null,
+        detail: 'Resolved from existing TorBox torrent',
+        data: {
+          hash: resolved.hash,
+          torrent_id: resolved.torrentId,
+          auth_id: resolved.authId,
+        },
+      },
+    });
+
+    return true;
+  }
+
   async handleRateLimitDeferral(upload, userDb, type) {
     const waitTime = this.calculateWaitTime(userDb, type);
     const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + waitTime));
@@ -905,20 +1012,39 @@ class UploadProcessor {
         type,
         message: error.message,
       });
+    } else if (isConnectionError(error)) {
+      this.logUploadAttempt(
+        userDb,
+        id,
+        type,
+        error.response?.status ?? null,
+        false,
+        'CONNECTION_ERROR',
+        error.message
+      );
+      logger.warn('TorBox connection error during upload', {
+        uploadId: id,
+        type,
+        message: error.message,
+        code: error.code,
+      });
     }
 
     const isRateLimit = this.isRateLimitError(error);
+    const isConnection = isConnectionError(error);
     const isNonRetryable = this.isNonRetryableError(error);
-    const newRetryCount = (upload.retry_count ?? 0) + 1;
-    const shouldRetry = !isNonRetryable && newRetryCount < MAX_RETRIES && !isRateLimit;
-    const finalRetryCount = isRateLimit ? (upload.retry_count ?? 0) : newRetryCount;
-    const finalStatus = isRateLimit ? 'queued' : shouldRetry ? 'queued' : 'failed';
+    // Only defer (and call TorBox again later) for rate limits and platform outages.
+    // All other API failures get a single createtorrent attempt; use manual Retry to try again.
+    const shouldDefer = isConnection || isRateLimit;
+    const finalRetryCount = shouldDefer
+      ? (upload.retry_count ?? 0)
+      : Math.max(1, (upload.retry_count ?? 0) + 1);
+    const finalStatus = shouldDefer ? 'queued' : 'failed';
 
-    // Calculate delay
-    const deferMs = isRateLimit
-      ? this.calculateRateLimitDelay(error, userDb, type)
-      : shouldRetry
-        ? this.calculateBackoffDelay(finalRetryCount)
+    const deferMs = isConnection
+      ? CONNECTION_DEFER_MS
+      : isRateLimit
+        ? this.calculateRateLimitDelay(error, userDb, type)
         : 0;
 
     const nextAttemptAt =
@@ -930,7 +1056,9 @@ class UploadProcessor {
     const wasQueued = (originalStatus ?? upload.status) === 'queued';
 
     // Create user-friendly error message
-    const userFriendlyError = this.createUserFriendlyError(error, isRateLimit);
+    const userFriendlyError = isConnection
+      ? 'TorBox API unavailable. Will retry automatically.'
+      : this.createUserFriendlyError(error, isRateLimit);
 
     // Update upload record
     const updateResult = userDb.db
@@ -952,7 +1080,7 @@ class UploadProcessor {
     // making API calls for the rest of the queue (our pre-check uses local limits and may
     // not match the API's stricter limit, so 554, 555, ... would otherwise each get tried
     // and each get 429 until the window passes).
-    if (isRateLimit && nextAttemptAt) {
+    if ((isRateLimit || isConnection) && nextAttemptAt) {
       const deferOthersResult = userDb.db
         .prepare(
           `
@@ -966,8 +1094,9 @@ class UploadProcessor {
         )
         .run(nextAttemptAt, type, id);
       if (deferOthersResult.changes > 0) {
-        logger.debug('Deferred other queued uploads due to API rate limit', {
+        logger.debug('Deferred other queued uploads due to TorBox backoff', {
           type,
+          reason: isConnection ? 'connection_error' : 'rate_limit',
           deferredCount: deferOthersResult.changes,
           nextAttemptAt,
         });
@@ -985,7 +1114,14 @@ class UploadProcessor {
     }
 
     // Log appropriate message (include TorBox response in rate-limit log so prod sees it in one place)
-    if (isRateLimit) {
+    if (isConnection) {
+      logger.warn('TorBox unavailable, will retry later', {
+        uploadId: id,
+        type,
+        waitTimeMs: deferMs,
+        error: error.message,
+      });
+    } else if (isRateLimit) {
       logger.warn('Rate limit hit, will retry later', {
         uploadId: id,
         type,
@@ -997,15 +1133,6 @@ class UploadProcessor {
             error.response.headers?.['retry-after'] ?? error.response.headers?.['Retry-After'],
           data: error.response.data,
         }),
-      });
-    } else if (shouldRetry) {
-      logger.warn('Upload failed, will retry', {
-        uploadId: id,
-        type,
-        retryCount: finalRetryCount,
-        maxRetries: MAX_RETRIES,
-        backoffDelayMs: deferMs,
-        error: error.message,
       });
     } else {
       logger.error('Upload failed permanently', {
@@ -1049,6 +1176,27 @@ class UploadProcessor {
       // Wait for rate limit if needed
       await this.waitForRateLimit(userDb, type);
 
+      if (type === 'torrent' && upload._torboxTorrentList === null) {
+        return await this.handleConnectionDeferral(
+          upload,
+          userDb,
+          type,
+          new Error('TorBox torrent list unavailable')
+        );
+      }
+
+      if (type === 'torrent' && Array.isArray(upload._torboxTorrentList)) {
+        const completedFromList = await this.tryCompleteTorrentFromExistingList(
+          upload,
+          userDb,
+          type,
+          upload._torboxTorrentList
+        );
+        if (completedFromList) {
+          return true;
+        }
+      }
+
       // Build FormData
       const formData = await this.buildFormData(upload);
 
@@ -1066,7 +1214,16 @@ class UploadProcessor {
       });
 
       // Make API request
-      const response = await this.makeApiRequest(apiClient, endpoint, formData);
+      let response;
+      try {
+        response = await this.makeApiRequest(apiClient, endpoint, formData);
+      } catch (apiError) {
+        if (isConnectionError(apiError)) {
+          await this.handleConnectionDeferral(upload, userDb, type, apiError);
+          return false;
+        }
+        throw apiError;
+      }
 
       // Duplicate submissions mean TorBox already has this item — treat as success.
       if (isTorboxDuplicateUploadResponse(response)) {
@@ -1076,6 +1233,19 @@ class UploadProcessor {
       // TorBox can return HTTP 200 with { success: false, error, detail } when the torrent was not created.
       // Treat that as failure so we do not mark the upload as completed.
       if (isTorboxUploadApiFailure(response, type)) {
+        if (isTorboxOutageResponse(response)) {
+          await this.handleConnectionDeferral(
+            upload,
+            userDb,
+            type,
+            Object.assign(new Error('TorBox API returned an unexpected response'), {
+              isConnectionError: true,
+              response,
+            })
+          );
+          return false;
+        }
+
         const data = response?.data && typeof response.data === 'object' ? response.data : {};
         const syntheticError = Object.assign(
           new Error(
@@ -1611,6 +1781,7 @@ class UploadProcessor {
 
           // Process one upload per type per cycle to respect rate limits
           const types = ['torrent', 'usenet', 'webdl'];
+          let torboxTorrentListCache = undefined;
 
           for (const type of types) {
             let queuedUploads;
@@ -1637,6 +1808,19 @@ class UploadProcessor {
 
             if (queuedUploads.length > 0) {
               const upload = queuedUploads[0]; // Get first (highest priority)
+
+              if (type === 'torrent' && torboxTorrentListCache === undefined) {
+                try {
+                  const apiClient = await this.getApiClient(auth_id);
+                  torboxTorrentListCache = await apiClient.getTorrents(true);
+                } catch (listError) {
+                  logger.warn('Failed to prefetch TorBox torrent list for upload pre-check', {
+                    authId: auth_id,
+                    error: listError.message,
+                  });
+                  torboxTorrentListCache = null;
+                }
+              }
 
               // Check if upload is currently being processed (avoid concurrent processing)
               let currentStatus;
@@ -1715,7 +1899,12 @@ class UploadProcessor {
                   try {
                     // Process upload (pass original status to ensure counter updates work correctly)
                     apiSucceeded = await this.processUpload(
-                      { ...upload, authId: auth_id },
+                      {
+                        ...upload,
+                        authId: auth_id,
+                        _torboxTorrentList:
+                          type === 'torrent' ? torboxTorrentListCache : undefined,
+                      },
                       currentUserDb,
                       originalStatus
                     );
