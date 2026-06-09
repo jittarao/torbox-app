@@ -49,10 +49,32 @@ describe('uploadResponseValidation', () => {
       expect(hasUploadResourcePayload({ id: 5 }, 'usenet')).toBe(true);
     });
 
-    test('webdl: prefers webdl_id then web_id then id', () => {
+    test('webdl: prefers webdownload_id then webdl_id then web_id then id', () => {
+      expect(getUploadResourceId({ webdownload_id: 1133079 }, 'webdl')).toBe(1133079);
       expect(getUploadResourceId({ webdl_id: 3 }, 'webdl')).toBe(3);
       expect(getUploadResourceId({ web_id: 8 }, 'webdl')).toBe(8);
       expect(hasUploadResourcePayload({ id: 2 }, 'webdl')).toBe(true);
+    });
+
+    test('webdl: accepts real TorBox createwebdownload response', () => {
+      expect(
+        isTorboxUploadApiSuccess(
+          {
+            data: {
+              success: true,
+              detail: 'Kemono download started. Please wait for the download to complete.',
+              error: null,
+              data: {
+                hash: '995c705662605fe10080182f86da9346',
+                webdownload_id: 1133079,
+                auth_id: 'e9e162c0-4b5c-4d91-82fa-4f08890b0435',
+                link_list: ['https://coomer.st/onlyfans/user/jodie_johnson/post/1006337470'],
+              },
+            },
+          },
+          'webdl'
+        )
+      ).toBe(true);
     });
 
     test('rejects empty or missing payload', () => {
