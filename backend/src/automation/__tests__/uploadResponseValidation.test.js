@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   getUploadResourceId,
   hasUploadResourcePayload,
+  isTorboxDuplicateUploadResponse,
   isTorboxUploadApiFailure,
   isTorboxUploadApiSuccess,
 } from '../uploadResponseValidation.js';
@@ -126,6 +127,44 @@ describe('uploadResponseValidation', () => {
       const bad = { data: { success: false, error: 'AUTH_ERROR', data: null } };
       expect(isTorboxUploadApiFailure(ok, 'torrent')).toBe(false);
       expect(isTorboxUploadApiFailure(bad, 'torrent')).toBe(true);
+    });
+  });
+
+  describe('isTorboxDuplicateUploadResponse', () => {
+    test('detects DUPLICATE_ITEM', () => {
+      expect(
+        isTorboxDuplicateUploadResponse({
+          data: {
+            success: false,
+            error: 'DUPLICATE_ITEM',
+            detail: 'This item already exists.',
+          },
+        })
+      ).toBe(true);
+    });
+
+    test('detects already queued detail', () => {
+      expect(
+        isTorboxDuplicateUploadResponse({
+          data: {
+            success: false,
+            error: 'SOME_CODE',
+            detail: 'Download already queued.',
+          },
+        })
+      ).toBe(true);
+    });
+
+    test('rejects unrelated failures', () => {
+      expect(
+        isTorboxDuplicateUploadResponse({
+          data: {
+            success: false,
+            error: 'ACTIVE_LIMIT',
+            detail: 'Active download limit reached',
+          },
+        })
+      ).toBe(false);
     });
   });
 });
