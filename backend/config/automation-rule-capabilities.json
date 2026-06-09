@@ -53,7 +53,8 @@
     "PRIVATE",
     "CACHED",
     "ALLOW_ZIP",
-    "TAGS"
+    "TAGS",
+    "ORIGINAL_URL"
   ],
   "allActions": [
     "stop_seeding",

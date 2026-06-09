@@ -55,6 +55,7 @@ class RuleEvaluator {
       ['FILE_COUNT', this.handleFileCount.bind(this)],
       ['NAME', this.handleName.bind(this)],
       ['TRACKER', this.handleTracker.bind(this)],
+      ['ORIGINAL_URL', this.handleOriginalUrl.bind(this)],
       ['PRIVATE', this.handlePrivate.bind(this)],
       ['CACHED', this.handleCached.bind(this)],
       ['AVAILABILITY', this.handleAvailability.bind(this)],
@@ -972,6 +973,20 @@ class RuleEvaluator {
       return false;
     }
     return this.compareStringValues(torrent.tracker, condition.operator, condition.value);
+  }
+
+  handleOriginalUrl(
+    condition,
+    torrent,
+    telemetry,
+    telemetryMap,
+    tagsByDownloadId,
+    speedHistoryMap
+  ) {
+    if (!this.validateStringCondition(condition, 'ORIGINAL_URL')) {
+      return false;
+    }
+    return this.compareStringValues(torrent.original_url, condition.operator, condition.value);
   }
 
   handlePrivate(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap) {
