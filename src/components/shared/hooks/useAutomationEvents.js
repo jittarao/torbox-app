@@ -1,38 +1,61 @@
 import { useEffect, useRef } from 'react';
-import { resetPollTimer } from '@/store/pollTimerReset';
 import { POLLING_CONFIG } from './pollingConfig';
 
 /**
- * SSE subscription for backend automation events — debounced torrent list refetch.
+ * Parse SSE data line payload into a tag-change event.
+ * @param {string} line
+ * @returns {'tags_changed' | null}
+ */
+export function parseAutomationSseEvent(line) {
+  if (!line.startsWith('data:')) return null;
+  const raw = line.slice(5).trim();
+  if (!raw) return null;
+  try {
+    const payload = JSON.parse(raw);
+    if (payload?.event === 'tags_changed') return 'tags_changed';
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * SSE subscription for backend tag-mapping changes (automation, manual assign, tag CRUD).
  *
  * @param {Object} options
  * @param {boolean} options.enabled
  * @param {string|null} options.apiKey
- * @param {(bypassCache?: boolean) => void | Promise<void>} options.onTorrentsChanged
+ * @param {() => void | Promise<void>} [options.onTagsChanged]
  */
-export function useAutomationTorrentEvents({ enabled, apiKey, onTorrentsChanged }) {
-  const onTorrentsChangedRef = useRef(onTorrentsChanged);
-  const debounceTimerRef = useRef(null);
+export function useAutomationEvents({ enabled, apiKey, onTagsChanged }) {
+  const onTagsChangedRef = useRef(onTagsChanged);
+  const tagsDebounceRef = useRef(null);
 
   useEffect(() => {
-    onTorrentsChangedRef.current = onTorrentsChanged;
-  }, [onTorrentsChanged]);
+    onTagsChangedRef.current = onTagsChanged;
+  }, [onTagsChanged]);
 
   useEffect(() => {
-    if (!enabled || !apiKey) return;
+    if (!enabled || !apiKey || !onTagsChanged) return;
 
     const ac = new AbortController();
     let buffer = '';
     let reconnectTimer = null;
     let retryCount = 0;
 
-    const scheduleTorrentRefetch = () => {
-      resetPollTimer();
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
-        debounceTimerRef.current = null;
-        onTorrentsChangedRef.current(false);
+    const scheduleTagsRefetch = () => {
+      if (!onTagsChangedRef.current) return;
+      if (tagsDebounceRef.current) clearTimeout(tagsDebounceRef.current);
+      tagsDebounceRef.current = setTimeout(() => {
+        tagsDebounceRef.current = null;
+        onTagsChangedRef.current();
       }, POLLING_CONFIG.sseDebounceMs);
+    };
+
+    const handleSseLine = (line) => {
+      if (parseAutomationSseEvent(line) === 'tags_changed') {
+        scheduleTagsRefetch();
+      }
     };
 
     const isPermanentError = (status) => status === 401 || status === 403 || status === 503;
@@ -73,10 +96,7 @@ export function useAutomationTorrentEvents({ enabled, apiKey, onTorrentsChanged 
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
                 for (const line of lines) {
-                  if (line.startsWith('data:')) {
-                    scheduleTorrentRefetch();
-                    break;
-                  }
+                  handleSseLine(line);
                 }
                 read();
               })
@@ -99,10 +119,10 @@ export function useAutomationTorrentEvents({ enabled, apiKey, onTorrentsChanged 
     return () => {
       ac.abort();
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
+      if (tagsDebounceRef.current) {
+        clearTimeout(tagsDebounceRef.current);
+        tagsDebounceRef.current = null;
       }
     };
-  }, [enabled, apiKey]);
+  }, [enabled, apiKey, onTagsChanged]);
 }

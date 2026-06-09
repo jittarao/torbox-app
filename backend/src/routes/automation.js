@@ -3,6 +3,7 @@ import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import RuleRepository from '../automation/helpers/RuleRepository.js';
 import AutomationEngine from '../automation/AutomationEngine.js';
+import { isTagActionType, notifyTagsChanged } from '../utils/userEvents.js';
 
 /**
  * Create an automation engine for a single request (not cached).
@@ -276,6 +277,9 @@ export function setupAutomationRoutes(app, backend) {
               backend.pollingScheduler.pollKickoutMs
             )
           : await runRule();
+        if (result?.successCount > 0 && isTagActionType(result.actionType)) {
+          notifyTagsChanged(backend, authId);
+        }
         res.json({ success: true, result });
       } catch (error) {
         logger.error('Error running rule manually', error, {

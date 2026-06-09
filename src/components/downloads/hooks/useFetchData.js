@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
-import { useBackendMode } from '@/hooks/useBackendMode';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { hasCachedDataForView } from '@/store/torboxDownloadsSelectors';
 import {
@@ -19,7 +18,6 @@ import {
   resetDownloadSyncRefs,
 } from '@/store/torboxDownloadsRefs';
 import { useDownloadListPolling } from '@/components/shared/hooks/useDownloadListPolling';
-import { useAutomationTorrentEvents } from '@/components/shared/hooks/useAutomationTorrentEvents';
 import {
   registerDownloadsSyncContext,
   unregisterDownloadsSyncContext,
@@ -35,7 +33,6 @@ import { resetPollTimer } from '@/store/pollTimerReset';
 
 export function useFetchData(apiKey, type = 'torrents') {
   const pollingPaused = usePollingPauseStore(selectIsPaused);
-  const { mode: backendMode } = useBackendMode();
 
   const {
     loading,
@@ -181,13 +178,6 @@ export function useFetchData(apiKey, type = 'torrents') {
     isRateLimited,
     onPollSkipped: markRateLimited,
     onScheduleUpdate: handlePollScheduleUpdate,
-  });
-
-  useAutomationTorrentEvents({
-    enabled: backendMode === 'backend' && !!apiKey && (type === 'torrents' || type === 'all'),
-    apiKey,
-    onTorrentsChanged: (bypassCache) =>
-      fetchDownloadType(apiKey, 'torrents', type, { bypassCache, skipLoading: true }),
   });
 
   return {
