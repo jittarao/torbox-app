@@ -18,6 +18,7 @@ import {
   UPLOAD_RETRY_SELECT_FIELDS,
 } from '../automation/uploadDuplicateResolve.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
+import { getUploadRateLimitConfig } from '../config/uploadRateLimits.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -808,10 +809,7 @@ export function setupUploadsRoutes(app, backend) {
           usenets: uploadStats?.usenets_last_hour || 0,
           webdls: uploadStats?.webdls_last_hour || 0,
         },
-        rateLimit: {
-          perMinute: 10,
-          perHour: 60,
-        },
+        rateLimit: getUploadRateLimitConfig(),
       };
 
       // Build ORDER BY - queued items by queue_order, others by last activity

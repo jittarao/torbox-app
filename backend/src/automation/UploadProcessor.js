@@ -20,12 +20,16 @@ import {
   resolveTorrentFromExistingList,
 } from './uploadDuplicateResolve.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
+import {
+  UPLOAD_RATE_LIMIT_PER_HOUR,
+  UPLOAD_RATE_LIMIT_PER_MINUTE,
+} from '../config/uploadRateLimits.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 
 // Rate limits: 10 per minute, 60 per hour per type
-const RATE_LIMIT_PER_MINUTE = 10;
-const RATE_LIMIT_PER_HOUR = 60;
+const RATE_LIMIT_PER_MINUTE = UPLOAD_RATE_LIMIT_PER_MINUTE;
+const RATE_LIMIT_PER_HOUR = UPLOAD_RATE_LIMIT_PER_HOUR;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
