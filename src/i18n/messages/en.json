@@ -227,7 +227,10 @@
       "uploadSpeed": "Current Upload Speed",
       "uploadSpeedDescription": "Current upload speed (MB/s)",
       "uploadStalledTime": "Upload Stalled Time",
-      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)"
+      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)",
+      "originalUrl": "Source URL",
+      "originalUrlDescription": "Original URL that was used to create the download (supports text search)",
+      "originalUrlPlaceholder": "Enter URL to search..."
     },
     "delete": "Delete",
     "details": "Details",

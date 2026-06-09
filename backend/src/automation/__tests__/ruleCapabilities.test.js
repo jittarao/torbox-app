@@ -49,6 +49,7 @@ describe('ruleCapabilities', () => {
     expect(conditions).not.toContain('LAST_DOWNLOAD_ACTIVITY_AT');
     expect(conditions).toContain('STATUS');
     expect(conditions).toContain('PROGRESS');
+    expect(conditions).toContain('ORIGINAL_URL');
     expect(actions).not.toContain('stop_seeding');
     expect(actions).not.toContain('archive');
     expect(actions).toContain('delete');

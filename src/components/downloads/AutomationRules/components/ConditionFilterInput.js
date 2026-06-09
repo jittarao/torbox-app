@@ -291,7 +291,9 @@ export default function ConditionFilterInput({
               placeholder={
                 condition.type === CONDITION_TYPES.NAME
                   ? t('conditions.namePlaceholder')
-                  : t('conditions.trackerPlaceholder')
+                  : condition.type === CONDITION_TYPES.ORIGINAL_URL
+                    ? t('conditions.originalUrlPlaceholder')
+                    : t('conditions.trackerPlaceholder')
               }
               className="w-full sm:flex-1 sm:min-w-[120px] px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
             />

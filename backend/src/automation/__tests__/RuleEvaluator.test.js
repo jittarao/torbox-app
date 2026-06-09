@@ -691,6 +691,22 @@ describe('RuleEvaluator', () => {
         expect(result).toBe(true);
       });
 
+      it('should evaluate ORIGINAL_URL condition', () => {
+        const condition = { type: 'ORIGINAL_URL', operator: 'contains', value: 'example.com' };
+        const torrent = { id: '1', original_url: 'https://example.com/file.zip' };
+
+        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        expect(result).toBe(true);
+      });
+
+      it('should evaluate ORIGINAL_URL condition when field is missing', () => {
+        const condition = { type: 'ORIGINAL_URL', operator: 'contains', value: 'example' };
+        const torrent = { id: '1' };
+
+        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        expect(result).toBe(false);
+      });
+
       it('should evaluate PRIVATE condition as boolean', () => {
         const condition = { type: 'PRIVATE', value: true };
         const torrent = { id: '1', private: true };

@@ -291,9 +291,10 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
     },
     {
       label: getGroupLabel('metadata'),
-      // Order: name, size, file_count, tags, tracker, availability, private, cached, allow_zip
+      // Order: name, size, file_count, tags, tracker, original_url, availability, private, cached, allow_zip
       options: getOrderedOptions([
         'tracker',
+        'original_url',
         'availability',
         'size',
         'file_count',

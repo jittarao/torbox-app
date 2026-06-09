@@ -47,6 +47,9 @@ export const CONDITION_TYPES = {
 
   // Tags
   TAGS: 'TAGS',
+
+  // Source URL
+  ORIGINAL_URL: 'ORIGINAL_URL',
 };
 
 export const COMPARISON_OPERATORS = {
