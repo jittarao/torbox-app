@@ -3,6 +3,21 @@ import { createHash } from 'crypto';
 const BASE32_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
 
 /**
+ * Normalize an infohash for comparison (hex, base32, or passthrough lowercase).
+ * @param {string|null|undefined} hash
+ * @returns {string|null} Lowercase hex when decodable, otherwise lowercase raw string
+ */
+export function normalizeInfoHash(hash) {
+  if (!hash || typeof hash !== 'string') return null;
+  const trimmed = hash.trim();
+  if (trimmed.length === 0) return null;
+  const lower = trimmed.toLowerCase();
+  if (/^[a-f0-9]{40}$/.test(lower)) return lower;
+  if (/^[a-z2-7]{32}$/.test(lower)) return decodeBase32Infohash(lower);
+  return lower;
+}
+
+/**
  * Decode a base32-encoded infohash (common in magnet links).
  * @param {string} encoded
  * @returns {string|null} Lowercase hex hash
