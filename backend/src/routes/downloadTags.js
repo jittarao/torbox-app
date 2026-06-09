@@ -1,6 +1,7 @@
 import { validateNumericId } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
+import { notifyTagsChanged } from '../utils/userEvents.js';
 
 /**
  * Download tags routes
@@ -237,6 +238,8 @@ export function setupDownloadTagsRoutes(app, backend) {
       });
 
       transaction();
+
+      notifyTagsChanged(backend, authId);
 
       res.json({
         success: true,

@@ -8,6 +8,7 @@ import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
 import Semaphore from '../utils/semaphore.js';
 import Mutex from '../utils/mutex.js';
+import { isTagActionType, notifyTagsChanged } from '../utils/userEvents.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
@@ -948,6 +949,9 @@ class PollingScheduler {
         );
         await engine.ruleRepository.updateLastEvaluatedAt(rule.id);
         cache.invalidateRecentRuleExecutions(authId);
+        if (isTagActionType(rule.action?.type)) {
+          notifyTagsChanged({ eventNotifier: this.eventNotifier }, authId);
+        }
       }
     } catch (error) {
       logger.error('runActionBatch failed', error, {

@@ -1,6 +1,7 @@
 import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
+import { notifyTagsChanged } from '../utils/userEvents.js';
 
 /**
  * Tags routes
@@ -283,6 +284,8 @@ export function setupTagsRoutes(app, backend) {
           )
           .get(tagId);
 
+        notifyTagsChanged(backend, authId);
+
         res.json({ success: true, tag });
       } catch (error) {
         logger.error('Error updating tag', error, {
@@ -344,6 +347,8 @@ export function setupTagsRoutes(app, backend) {
         `
           )
           .run(tagId);
+
+        notifyTagsChanged(backend, authId);
 
         res.json({ success: true, message: 'Tag deleted successfully' });
       } catch (error) {

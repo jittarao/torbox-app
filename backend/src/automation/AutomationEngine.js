@@ -1085,6 +1085,7 @@ class AutomationEngine {
       return {
         ruleId: rule.id,
         ruleName: rule.name,
+        actionType: rule.action?.type,
         totalTorrents: torrents.length,
         matchedTorrents: matchingTorrents.length,
         processedTorrents: torrentsToProcess.length,
