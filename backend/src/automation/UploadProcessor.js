@@ -1170,7 +1170,7 @@ class UploadProcessor {
       }
 
       // Check rate limit before making request or getting API client
-      if (this.isAtRateLimit(userDb, type) || this.isTooCloseToRateLimit(userDb, type)) {
+      if (this.isAtRateLimit(userDb, type)) {
         return await this.handleRateLimitDeferral(upload, userDb, type);
       }
 
