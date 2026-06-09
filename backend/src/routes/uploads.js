@@ -12,9 +12,12 @@ import rateLimit from 'express-rate-limit';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
 import {
+  markUploadsTorboxUnavailable,
   splitRetriesByTorboxPresence,
+  TORBOX_UNAVAILABLE_MESSAGE,
   UPLOAD_RETRY_SELECT_FIELDS,
 } from '../automation/uploadDuplicateResolve.js';
+import { isConnectionError } from '../utils/torboxErrors.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -87,6 +90,21 @@ async function resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, fai
       getApiClient: getUploadProcessorClient(backend),
     });
   } catch (error) {
+    if (isConnectionError(error)) {
+      markUploadsTorboxUnavailable(userDb, failedUploads);
+      logger.warn('TorBox unavailable during upload retry; leaving uploads failed', {
+        authId,
+        uploadCount: failedUploads.length,
+        error: error.message,
+      });
+      return {
+        completedIds: [],
+        toRequeue: [],
+        torboxUnavailable: true,
+        unavailableIds: failedUploads.map((upload) => upload.id),
+      };
+    }
+
     logger.warn('TorBox lookup failed during upload retry; falling back to re-queue', {
       authId,
       uploadCount: failedUploads.length,
@@ -1054,12 +1072,23 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        const { completedIds, toRequeue } = await resolveDuplicateRetriesBeforeRequeue(
-          backend,
-          authId,
-          userDb,
-          failedUploads
-        );
+        const { completedIds, toRequeue, torboxUnavailable } =
+          await resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, failedUploads);
+
+        if (torboxUnavailable) {
+          return res.status(503).json({
+            success: false,
+            error: TORBOX_UNAVAILABLE_MESSAGE,
+            data: {
+              retried: 0,
+              completed: 0,
+              requested: numericIds.length,
+              uploadIds: [],
+              completedIds,
+              unavailable: failedUploads.length,
+            },
+          });
+        }
 
         // Get max queue_order to append to end
         const maxOrderResult = userDb.db
@@ -1165,12 +1194,20 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        const { completedIds, toRequeue } = await resolveDuplicateRetriesBeforeRequeue(
-          backend,
-          authId,
-          userDb,
-          [upload]
-        );
+        const { completedIds, toRequeue, torboxUnavailable } =
+          await resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, [upload]);
+
+        if (torboxUnavailable) {
+          const unavailableUpload = userDb.db
+            .prepare(`SELECT ${UPLOAD_DETAIL_SELECT} FROM uploads WHERE id = ?`)
+            .get(uploadId);
+
+          return res.status(503).json({
+            success: false,
+            error: TORBOX_UNAVAILABLE_MESSAGE,
+            data: unavailableUpload,
+          });
+        }
 
         if (completedIds.length > 0) {
           const completedUpload = userDb.db

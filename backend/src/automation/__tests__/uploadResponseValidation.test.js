@@ -3,6 +3,7 @@ import {
   getUploadResourceId,
   hasUploadResourcePayload,
   isTorboxDuplicateUploadResponse,
+  isTorboxOutageResponse,
   isTorboxUploadApiFailure,
   isTorboxUploadApiSuccess,
 } from '../uploadResponseValidation.js';
@@ -127,6 +128,26 @@ describe('uploadResponseValidation', () => {
       const bad = { data: { success: false, error: 'AUTH_ERROR', data: null } };
       expect(isTorboxUploadApiFailure(ok, 'torrent')).toBe(false);
       expect(isTorboxUploadApiFailure(bad, 'torrent')).toBe(true);
+    });
+  });
+
+  describe('isTorboxOutageResponse', () => {
+    test('detects empty or non-object bodies', () => {
+      expect(isTorboxOutageResponse({ data: null })).toBe(true);
+      expect(isTorboxOutageResponse({ data: {} })).toBe(true);
+      expect(isTorboxOutageResponse({ data: '<html>error</html>' })).toBe(true);
+    });
+
+    test('rejects real TorBox error envelopes', () => {
+      expect(
+        isTorboxOutageResponse({
+          data: {
+            success: false,
+            error: 'ACTIVE_LIMIT',
+            detail: 'Active download limit reached',
+          },
+        })
+      ).toBe(false);
     });
   });
 

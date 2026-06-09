@@ -5,6 +5,10 @@ import {
   validateFilePathOwnership,
 } from '../utils/fileStorage.js';
 import { extractHashFromMagnet, extractInfoHashFromTorrentBuffer } from '../utils/torrentHash.js';
+import { isConnectionError } from '../utils/torboxErrors.js';
+
+export const TORBOX_UNAVAILABLE_MESSAGE =
+  'TorBox API unavailable. Retry when the API is back online.';
 
 /**
  * Whether a failed upload error indicates TorBox already has the item.
@@ -85,6 +89,50 @@ export function matchTorboxResource(upload, torrents, expectedHash) {
  * @param {{ hash: string|null, torrentId: string|number|null, authId: string|null }} resolved
  * @returns {{ changes: number }}
  */
+/**
+ * Try to complete a torrent upload from a pre-fetched mylist + getqueued snapshot.
+ * @param {Object} upload
+ * @param {Array<Object>|null|undefined} torrents
+ * @returns {Promise<{ hash: string|null, torrentId: string|number|null, authId: string|null }|null>}
+ */
+export async function resolveTorrentFromExistingList(upload, torrents) {
+  if (upload.type !== 'torrent' || !Array.isArray(torrents)) {
+    return null;
+  }
+
+  const expectedHash = await getExpectedTorrentHash(upload);
+  const resolved = matchTorboxResource(upload, torrents, expectedHash);
+
+  if (!resolved.hash && resolved.torrentId == null) {
+    return null;
+  }
+
+  return resolved;
+}
+
+/**
+ * Keep failed uploads failed when TorBox cannot be reached for duplicate resolution.
+ * @param {Object} userDb
+ * @param {Array<Object>} uploads
+ */
+export function markUploadsTorboxUnavailable(userDb, uploads) {
+  if (!uploads.length) return;
+
+  const stmt = userDb.db.prepare(
+    `
+    UPDATE uploads
+    SET error_message = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+      AND status = 'failed'
+  `
+  );
+
+  for (const upload of uploads) {
+    stmt.run(TORBOX_UNAVAILABLE_MESSAGE, upload.id);
+  }
+}
+
 export function completeUploadWithTorboxResult(userDb, uploadId, resolved) {
   return userDb.db
     .prepare(
@@ -138,7 +186,14 @@ export async function splitRetriesByTorboxPresence({
 
   if (torrentDuplicates.length > 0) {
     const apiClient = await getApiClient(authId);
-    torrents = await apiClient.getTorrents(true);
+    try {
+      torrents = await apiClient.getTorrents(true);
+    } catch (error) {
+      if (isConnectionError(error)) {
+        throw error;
+      }
+      torrents = null;
+    }
   }
 
   const completedIds = [];

@@ -94,6 +94,26 @@ export function isTorboxUploadApiFailure(response, uploadType) {
  * @param {Object|undefined} response - Axios response ({ data })
  * @returns {boolean}
  */
+/**
+ * True when createtorrent returned HTTP 200 but the body is not a valid TorBox envelope
+ * (proxy/gateway HTML, empty JSON, etc.) — usually indicates platform outage.
+ * @param {Object|undefined} response
+ * @returns {boolean}
+ */
+export function isTorboxOutageResponse(response) {
+  const envelope = response?.data;
+  if (envelope == null) return true;
+  if (typeof envelope !== 'object' || Array.isArray(envelope)) return true;
+
+  if (envelope.success === true) return false;
+
+  if (envelope.success === false) {
+    return !(envelope.error || envelope.detail);
+  }
+
+  return true;
+}
+
 export function isTorboxDuplicateUploadResponse(response) {
   const envelope = response?.data;
   if (envelope == null || typeof envelope !== 'object' || Array.isArray(envelope)) {
