@@ -76,7 +76,9 @@ export function isTorboxUploadApiSuccess(response, uploadType) {
   if (envelope.success === false) return false;
   if (envelope.error != null && envelope.error !== '') return false;
   if (envelope.success !== true) return false;
-  return hasUploadResourcePayload(envelope.data, uploadType);
+  // TorBox may return data: null even for successful createtorrent calls
+  // (e.g. async processing). Trust success: true over data shape.
+  return true;
 }
 
 /**
