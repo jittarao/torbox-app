@@ -22,7 +22,7 @@ describe('UploadProcessor TorBox result persistence', () => {
   test('persists torrent hash, torrent_id, and auth_id after success', () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
-      decrementUploadCounter() {},
+      updateUploadCounters: async () => {},
     });
 
     processor.handleSuccessfulUpload(
