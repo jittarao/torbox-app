@@ -29,6 +29,8 @@ import { useTranslations } from 'next-intl';
 import useFiltersSidebarCollapsed from '@/components/downloads/FiltersSidebar/useFiltersSidebarCollapsed';
 import { useDownloadsPlayerActions } from '@/components/downloads/DownloadsPlayersHost';
 import { useDownloadsProviderValues } from './useDownloadsProviderValues';
+import { useAutomationEvents } from '@/components/shared/hooks/useAutomationEvents';
+import { useDownloadTagsStore } from '@/store/downloadTagsStore';
 
 export const FILTERS_SIDEBAR_EXPANDED = '14rem';
 export const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
@@ -124,6 +126,18 @@ export function useDownloadsPageState(apiKey) {
     tagMappings,
     updateTagName,
   } = useDownloadsListData(activeType, apiKey, isBackendAvailable, listFilterParams);
+
+  const handleSseTagsChanged = useCallback(() => {
+    if (apiKey) {
+      useDownloadTagsStore.getState().fetchDownloadTags(apiKey, { force: true });
+    }
+  }, [apiKey]);
+
+  useAutomationEvents({
+    enabled: isBackendAvailable && !!apiKey,
+    apiKey,
+    onTagsChanged: handleSseTagsChanged,
+  });
 
   const showFullPageSpinner = loading && viewItems.length === 0;
   const isRefreshing = refreshing || (loading && viewItems.length > 0);
