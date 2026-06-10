@@ -10,9 +10,24 @@ import {
   normalizeInfoHash,
 } from '../utils/torrentHash.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
+import { getTorrentStatus } from '../utils/torrentStatus.js';
 
 export const TORBOX_UNAVAILABLE_MESSAGE =
   'TorBox API unavailable. Retry when the API is back online.';
+
+/**
+ * Filter out failed and inactive torrents from the list so duplicate checks
+ * do not match against items that won't resolve or that should be re-uploaded.
+ * @param {Array<Object>} torrents
+ * @returns {Array<Object>}
+ */
+function filterActiveTorboxTorrents(torrents) {
+  if (!Array.isArray(torrents)) return torrents;
+  return torrents.filter((item) => {
+    const status = getTorrentStatus(item);
+    return status !== 'failed' && status !== 'inactive';
+  });
+}
 
 /**
  * Whether a failed upload error indicates TorBox already has the item.
@@ -117,7 +132,11 @@ export async function resolveTorrentFromExistingList(upload, torrents) {
   }
 
   const expectedHash = await getExpectedTorrentHash(upload);
-  const resolved = matchTorboxResource(upload, torrents, expectedHash);
+  const resolved = matchTorboxResource(
+    upload,
+    filterActiveTorboxTorrents(torrents),
+    expectedHash
+  );
 
   if (!resolved.hash && resolved.torrentId == null) {
     return null;
@@ -222,7 +241,11 @@ export async function splitRetriesByTorboxPresence({
     }
 
     const expectedHash = await getExpectedTorrentHash({ ...upload, authId });
-    const resolved = matchTorboxResource(upload, torrents, expectedHash);
+    const resolved = matchTorboxResource(
+      upload,
+      filterActiveTorboxTorrents(torrents),
+      expectedHash
+    );
 
     if (resolved.hash || resolved.torrentId != null) {
       const result = completeUploadWithTorboxResult(userDb, upload.id, resolved);
