@@ -711,7 +711,7 @@ class UploadProcessor {
           auth_id: resolved.authId,
         },
       },
-    });
+    }, { skipLogAttempt: true });
 
     return true;
   }
@@ -895,15 +895,16 @@ class UploadProcessor {
    * @param {string} type - Upload type
    * @param {Object} response - API response
    */
-  handleSuccessfulUpload(upload, userDb, type, response) {
+  handleSuccessfulUpload(upload, userDb, type, response, options = {}) {
     const { id } = upload;
     const { torboxHash, torboxTorrentId, torboxAuthId } = extractTorboxTorrentResult(
       response,
       type
     );
 
-    // Log successful attempt
-    this.logUploadAttempt(userDb, id, type, response.status, true, null, null);
+    if (!options.skipLogAttempt) {
+      this.logUploadAttempt(userDb, id, type, response.status, true, null, null);
+    }
 
     // Update upload status (staged files retained until tier quota eviction)
     const updateResult = userDb.db
