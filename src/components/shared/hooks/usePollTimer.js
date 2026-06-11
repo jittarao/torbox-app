@@ -176,18 +176,36 @@ export function usePollTimer({
 
     // SharedWorker for accurate background timing (not clamped by Chrome in hidden tabs)
     let workerPort = null;
+    let workerFailed = false;
     try {
       const sw = new SharedWorker('/poll-worker.js');
       workerPort = sw.port;
       workerPort.start();
+      sw.onerror = () => {
+        if (!workerFailed) {
+          workerFailed = true;
+          workerPort = null;
+        }
+      };
     } catch {
+      workerFailed = true;
       // SharedWorker not supported — fall back to setTimeout
     }
 
+    // Track last tick time for sleep-wake detection
+    let lastTickTime = Date.now();
+    const resetLastTickTime = () => { lastTickTime = Date.now(); };
+    let tickCount = 0;
+
     const handlePollTick = () => {
+      tickCount += 1;
       const tickState = getPollState();
       if (tickState.shouldPoll) {
-        runPollTick(false);
+        const now = Date.now();
+        const elapsed = now - lastTickTime;
+        const isOverdue = elapsed > tickState.intervalMs * 2;
+        lastTickTime = now;
+        runPollTick(isOverdue);
       }
       if (tickState.shouldPoll) {
         scheduleNextPoll(tickState.intervalMs);
@@ -216,6 +234,14 @@ export function usePollTimer({
 
       if (workerPort) {
         workerPort.postMessage({ type: 'start', intervalMs: delayMs });
+        // Safety net: fall back to setTimeout if SharedWorker silently fails
+        clearTimeout(pollTimeoutId);
+        pollTimeoutId = setTimeout(() => {
+          if (cancelled) return;
+          workerPort = null;
+          workerFailed = true;
+          handlePollTick();
+        }, delayMs * 2);
       } else {
         pollTimeoutId = setTimeout(handlePollTick, delayMs);
       }
@@ -235,6 +261,7 @@ export function usePollTimer({
 
     const startPolling = (firstDelayMs) => {
       stopPolling();
+      resetLastTickTime();
       const pollState = getPollState();
       if (!pollState.shouldPoll) {
         emitSchedule(0, pollState);
@@ -277,6 +304,7 @@ export function usePollTimer({
       }
       if (immediateRefresh) {
         runImmediateRefresh();
+        resetLastTickTime();
       }
       clearGraceStopTimeout();
       startPolling(POLLING_CONFIG.activeIntervalMs);
