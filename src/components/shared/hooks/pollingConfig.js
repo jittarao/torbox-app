@@ -13,7 +13,7 @@ export const POLLING_CONFIG = {
   /** Poll interval when disengaged without auto-start (legacy / tests) */
   inactiveIntervalMs: 60_000,
   /** Disengaged + auto-start + queued torrents: fill slots without hammering the API */
-  autoStartQueuedIntervalMs: 30_000,
+  autoStartQueuedIntervalMs: 120_000,
   /** Disengaged + auto-start + empty queue: watch for newly queued uploads */
   autoStartWatchIntervalMs: 15 * 60_000,
   /**
