@@ -57,6 +57,7 @@ export function usePollTimer({
 
   useEffect(() => {
     let pollTimeoutId = null;
+    let safetyTimeoutId = null;
     let graceStopTimeoutId = null;
     let cancelled = false;
 
@@ -222,6 +223,13 @@ export function usePollTimer({
       };
     }
 
+    const clearSafetyTimeout = () => {
+      if (safetyTimeoutId) {
+        clearTimeout(safetyTimeoutId);
+        safetyTimeoutId = null;
+      }
+    };
+
     const scheduleNextPoll = (delayMs) => {
       if (cancelled) return;
       const pollState = getPollState();
@@ -235,11 +243,14 @@ export function usePollTimer({
       if (workerPort) {
         workerPort.postMessage({ type: 'start', intervalMs: delayMs });
         // Safety net: fall back to setTimeout if SharedWorker silently fails
-        clearTimeout(pollTimeoutId);
-        pollTimeoutId = setTimeout(() => {
+        // Uses its own timer (safetyTimeoutId) so resetPollTimer→stopPolling doesn't clear it
+        clearSafetyTimeout();
+        safetyTimeoutId = setTimeout(() => {
+          safetyTimeoutId = null;
           if (cancelled) return;
           workerPort = null;
           workerFailed = true;
+          clearTimeout(pollTimeoutId);
           handlePollTick();
         }, delayMs * 2);
       } else {
@@ -248,6 +259,7 @@ export function usePollTimer({
     };
 
     const stopPolling = () => {
+      clearSafetyTimeout();
       if (workerPort) {
         workerPort.postMessage({ type: 'stop' });
       }
@@ -345,6 +357,7 @@ export function usePollTimer({
       cancelled = true;
       unregisterPollTimerReset();
       stopPolling();
+      clearSafetyTimeout();
       clearGraceStopTimeout();
       if (workerPort) {
         try { workerPort.close(); } catch {}
