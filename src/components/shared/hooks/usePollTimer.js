@@ -279,7 +279,13 @@ export function usePollTimer({
 
     registerPollTimerReset(() => {
       if (cancelled) return;
-      startPolling(POLLING_CONFIG.activeIntervalMs);
+      const pollState = getPollState();
+      if (pollState.shouldPoll) {
+        startPolling(pollState.intervalMs);
+      } else {
+        stopPolling();
+        emitSchedule(0, pollState);
+      }
     });
 
     return () => {
