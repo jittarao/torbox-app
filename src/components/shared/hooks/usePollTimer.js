@@ -174,6 +174,36 @@ export function usePollTimer({
       onPollRef.current(type, bypassCache);
     };
 
+    // SharedWorker for accurate background timing (not clamped by Chrome in hidden tabs)
+    let workerPort = null;
+    try {
+      const sw = new SharedWorker('/poll-worker.js');
+      workerPort = sw.port;
+      workerPort.start();
+    } catch {
+      // SharedWorker not supported — fall back to setTimeout
+    }
+
+    const handlePollTick = () => {
+      const tickState = getPollState();
+      if (tickState.shouldPoll) {
+        runPollTick(false);
+      }
+      if (tickState.shouldPoll) {
+        scheduleNextPoll(tickState.intervalMs);
+      } else {
+        emitSchedule(0, tickState);
+      }
+    };
+
+    if (workerPort) {
+      workerPort.onmessage = (event) => {
+        if (event.data?.type === 'tick' && !cancelled) {
+          handlePollTick();
+        }
+      };
+    }
+
     const scheduleNextPoll = (delayMs) => {
       if (cancelled) return;
       const pollState = getPollState();
@@ -183,23 +213,18 @@ export function usePollTimer({
       }
 
       emitSchedule(delayMs, pollState);
-      pollTimeoutId = setTimeout(() => {
-        if (cancelled) return;
 
-        const tickState = getPollState();
-        if (tickState.shouldPoll) {
-          runPollTick(false);
-        }
-
-        if (tickState.shouldPoll) {
-          scheduleNextPoll(tickState.intervalMs);
-        } else {
-          emitSchedule(0, tickState);
-        }
-      }, delayMs);
+      if (workerPort) {
+        workerPort.postMessage({ type: 'start', intervalMs: delayMs });
+      } else {
+        pollTimeoutId = setTimeout(handlePollTick, delayMs);
+      }
     };
 
     const stopPolling = () => {
+      if (workerPort) {
+        workerPort.postMessage({ type: 'stop' });
+      }
       if (pollTimeoutId) {
         clearTimeout(pollTimeoutId);
         pollTimeoutId = null;
@@ -293,6 +318,9 @@ export function usePollTimer({
       unregisterPollTimerReset();
       stopPolling();
       clearGraceStopTimeout();
+      if (workerPort) {
+        try { workerPort.close(); } catch {}
+      }
       onReEngagedRef.current = () => {};
       onDisengagedRef.current = () => {};
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
