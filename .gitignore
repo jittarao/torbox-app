@@ -86,20 +86,13 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
-.next
-
 # PWA build artifacts
 public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
-Torbox_API
+
 # Nuxt.js build / generate output
 .nuxt
-dist
-
-# Gatsby files
-.cache/
 
 # Vuepress build output
 .vuepress/dist
@@ -145,6 +138,7 @@ docker/
 .claude/
 .agents/
 .opencode/
+.commandcode/
 AGENTS.md
 /prompts
 /docs/superpowers/
@@ -165,8 +159,7 @@ Thumbs.db
 # Project specific
 /data
 backend/data/
-/logs
-.next/cache/
+Torbox_API
 
 # Temporary files
 tmp/
@@ -180,4 +173,3 @@ temp/
 
 # Audiobook
 .ffprobe/
-.audiobook-cache/
