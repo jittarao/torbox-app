@@ -64,9 +64,12 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    // Always load from DB for add_tag filtering — preloaded maps may be empty when the rule
-    // has no TAGS condition (only an add_tag action).
-    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
+    // Use preloaded tags from RuleEvaluator when available; fall back to a per-rule DB query
+    // when the rule has no TAGS condition and the evaluator did not load tags.
+    const tagsByDownloadId =
+      options.tagsByDownloadId && options.tagsByDownloadId.size > 0
+        ? options.tagsByDownloadId
+        : await this._buildTagsByDownloadId(matchingTorrents);
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
     const targetTagIds = new Set(action.tagIds);
@@ -124,7 +127,12 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
+    // Use preloaded tags from RuleEvaluator when available; fall back to a per-rule DB query
+    // when the rule has no TAGS condition and the evaluator did not load tags.
+    const tagsByDownloadId =
+      options.tagsByDownloadId && options.tagsByDownloadId.size > 0
+        ? options.tagsByDownloadId
+        : await this._buildTagsByDownloadId(matchingTorrents);
 
     // Unified format: tagsByDownloadId values are number[] (tag ids)
     const targetTagIds = new Set(action.tagIds);
