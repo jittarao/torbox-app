@@ -161,11 +161,25 @@ function orTermMatches(text, term) {
   return false;
 }
 
+const parsedSearchCache = new Map();
+export const MAX_PARSED_SEARCH_CACHE = 50;
+
 /** @param {string} query */
-function getParsedDownloadSearch(query) {
+export function getParsedDownloadSearch(query) {
+  if (parsedSearchCache.has(query)) {
+    return parsedSearchCache.get(query);
+  }
+
   const normalized = (query || '').trim().toLowerCase();
-  if (!normalized) return null;
-  return parseDownloadSearchQuery(normalized);
+  const parsed = normalized ? parseDownloadSearchQuery(normalized) : null;
+
+  if (parsedSearchCache.size >= MAX_PARSED_SEARCH_CACHE) {
+    const firstKey = parsedSearchCache.keys().next().value;
+    parsedSearchCache.delete(firstKey);
+  }
+
+  parsedSearchCache.set(query, parsed);
+  return parsed;
 }
 
 /** @param {string} haystack @param {ParsedDownloadSearch} parsed */

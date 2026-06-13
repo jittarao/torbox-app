@@ -6,6 +6,8 @@ import {
   itemHasFileNameSearchMatch,
   shouldAutoExpandItemForSearch,
   MAX_AUTO_EXPAND_MATCHING_FILES,
+  getParsedDownloadSearch,
+  MAX_PARSED_SEARCH_CACHE,
 } from '../downloadSearch.js';
 
 describe('parseDownloadSearchQuery', () => {
@@ -209,5 +211,22 @@ describe('shouldAutoExpandItemForSearch', () => {
     }));
     const item = { name: 'Season pack', files };
     expect(shouldAutoExpandItemForSearch(item, 'episode')).toBe(false);
+  });
+});
+
+describe('getParsedDownloadSearch', () => {
+  test('returns the same object reference on repeated calls', () => {
+    const first = getParsedDownloadSearch('foo -bar');
+    for (let i = 0; i < 999; i += 1) {
+      expect(getParsedDownloadSearch('foo -bar')).toBe(first);
+    }
+  });
+
+  test('evicts oldest entries when cache exceeds max size', () => {
+    const first = getParsedDownloadSearch('__cache-test-query-0__');
+    for (let i = 1; i <= MAX_PARSED_SEARCH_CACHE; i += 1) {
+      getParsedDownloadSearch(`__cache-test-query-${i}__`);
+    }
+    expect(getParsedDownloadSearch('__cache-test-query-0__')).not.toBe(first);
   });
 });
