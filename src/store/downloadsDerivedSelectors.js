@@ -298,7 +298,12 @@ export function selectVisibleSortedIds(
       : buildDownloadHistoryLookup(downloadHistoryOrLookup || []);
 
   const filtered = filterIds(viewIds, entities, criteria, tagMappings, lookup);
-  return sortIds(filtered, entities, criteria.sortField || 'created_at', criteria.sortDirection || 'desc');
+  return sortIds(
+    filtered,
+    entities,
+    criteria.sortField || 'created_at',
+    criteria.sortDirection || 'desc'
+  );
 }
 
 /**
@@ -309,14 +314,14 @@ export function selectVisibleSortedIds(
  * @param {Record<string, object>} entities
  * @returns {string[]}
  */
-export function selectVisibleSortedFromMap(
-  viewIds,
-  enrichedMap,
-  criteria,
-  entities
-) {
+export function selectVisibleSortedFromMap(viewIds, enrichedMap, criteria, entities) {
   const filtered = filterEnrichedIds(viewIds, enrichedMap, criteria);
-  return sortIds(filtered, entities, criteria.sortField || 'created_at', criteria.sortDirection || 'desc');
+  return sortIds(
+    filtered,
+    entities,
+    criteria.sortField || 'created_at',
+    criteria.sortDirection || 'desc'
+  );
 }
 
 /**

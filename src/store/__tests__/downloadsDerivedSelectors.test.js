@@ -56,10 +56,14 @@ describe('downloadsDerivedSelectors', () => {
   });
 
   test('enrichRowForFilter attaches tags', () => {
-    const row = enrichRowForFilter(entities[entityKey('torrents', 1)], { 1: [{ id: 9, name: 'Tag' }] }, {
-      itemDownloads: new Set(),
-      fileDownloads: new Set(),
-    });
+    const row = enrichRowForFilter(
+      entities[entityKey('torrents', 1)],
+      { 1: [{ id: 9, name: 'Tag' }] },
+      {
+        itemDownloads: new Set(),
+        fileDownloads: new Set(),
+      }
+    );
     expect(row.tags).toHaveLength(1);
   });
 

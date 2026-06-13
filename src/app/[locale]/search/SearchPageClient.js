@@ -53,9 +53,7 @@ export default function SearchPageClient() {
   };
 
   if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-surface dark:bg-surface-dark font-sans" aria-hidden />
-    );
+    return <div className="min-h-screen bg-surface dark:bg-surface-dark font-sans" aria-hidden />;
   }
 
   return (

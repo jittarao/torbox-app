@@ -8,10 +8,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     if (!body?.apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'API key is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'API key is required' }, { status: 400 });
     }
     const url = new URL(`${BACKEND_URL}/api/backend/api-key`);
 

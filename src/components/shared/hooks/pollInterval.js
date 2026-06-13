@@ -53,6 +53,10 @@ export function resolvePollInterval({
 }
 
 /** Background auto-start only needs torrent list updates (saves usenet/webdl calls on All tab). */
-export function shouldPollTorrentsOnly({ isDisengaged, isWithinEngagementGrace, autoStartEnabled }) {
+export function shouldPollTorrentsOnly({
+  isDisengaged,
+  isWithinEngagementGrace,
+  autoStartEnabled,
+}) {
   return autoStartEnabled && isDisengaged && !isWithinEngagementGrace;
 }

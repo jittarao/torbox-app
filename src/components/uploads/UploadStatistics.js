@@ -23,8 +23,7 @@ export default function UploadStatistics({ uploadStatistics }) {
 
   const activeTypes = types.filter((t) => t.count > 0);
   const isAtLimit = activeTypes.some((t) => t.count >= t.limit);
-  const isApproaching =
-    !isAtLimit && activeTypes.some((t) => t.count >= t.limit * 0.8);
+  const isApproaching = !isAtLimit && activeTypes.some((t) => t.count >= t.limit * 0.8);
 
   return (
     <div className="mt-4 p-4 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg">

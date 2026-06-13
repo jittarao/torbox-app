@@ -22,7 +22,9 @@ export default function SectionErrorFallbackView({
       role="alert"
       className={`flex flex-col items-center justify-center gap-4 rounded-lg border border-border/60 bg-surface/50 px-6 py-10 text-center dark:border-border-dark/60 dark:bg-surface-dark/50 ${className}`}
     >
-      <h2 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">{title}</h2>
+      <h2 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
+        {title}
+      </h2>
       <p className="max-w-md text-sm text-primary-text/70 dark:text-primary-text-dark/70">
         {message}
       </p>

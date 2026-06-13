@@ -43,7 +43,8 @@ export default function RssPageClient() {
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
-      const plan = data.success && data.data ? data.data.plan : data.plan || data.data?.plan || null;
+      const plan =
+        data.success && data.data ? data.data.plan : data.plan || data.data?.plan || null;
       if (!abortSignal?.aborted) {
         setUserPlan(plan);
       }
@@ -125,10 +126,7 @@ export default function RssPageClient() {
   }
 
   return (
-    <AppShell
-      apiKey={apiKey}
-      className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
-    >
+    <AppShell apiKey={apiKey} className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}>
       <div className="container mx-auto p-4">
         <div className="mx-auto max-w-6xl">
           {checkingPlan ? (

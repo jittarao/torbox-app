@@ -32,7 +32,9 @@ class LRUMap {
       // Delete oldest entry (first key in iteration order)
       const oldest = this._map.keys().next().value;
       if (oldest) {
-        try { this._map.get(oldest)?.finalize?.(); } catch (_) {}
+        try {
+          this._map.get(oldest)?.finalize?.();
+        } catch (_) {}
         this._map.delete(oldest);
       }
     }
@@ -40,11 +42,15 @@ class LRUMap {
   }
   clear() {
     for (const stmt of this._map.values()) {
-      try { stmt.finalize?.(); } catch (_) {}
+      try {
+        stmt.finalize?.();
+      } catch (_) {}
     }
     this._map.clear();
   }
-  get size() { return this._map.size; }
+  get size() {
+    return this._map.size;
+  }
 }
 
 /**
@@ -174,7 +180,9 @@ class Database {
           const delayMs = 50 * Math.pow(2, attempt);
           // Spin-wait: bun:sqlite doesn't support async during prepare/run
           const deadline = Date.now() + delayMs;
-          while (Date.now() < deadline) { /* spin */ }
+          while (Date.now() < deadline) {
+            /* spin */
+          }
           continue;
         }
         throw error;

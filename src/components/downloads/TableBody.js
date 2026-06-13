@@ -97,10 +97,7 @@ function useTableBodyState(props) {
   const deferredUncappedFileExpandById = useDeferredValue(uncappedFileExpandById);
 
   const expandedItemsKey = useMemo(
-    () =>
-      Object.keys(deferredExpandedById)
-        .sort()
-        .join(','),
+    () => Object.keys(deferredExpandedById).sort().join(','),
     [deferredExpandedById]
   );
 
@@ -247,17 +244,10 @@ function useTableBodyState(props) {
   };
 }
 
-function VirtualizedTableBodyInner({
-  virtualizer,
-  state,
-  currentVirtualRows,
-  scrollMargin,
-}) {
+function VirtualizedTableBodyInner({ virtualizer, state, currentVirtualRows, scrollMargin }) {
   const totalVirtualSize = virtualizer.getTotalSize();
   const paddingTop =
-    currentVirtualRows.length > 0
-      ? Math.max(0, currentVirtualRows[0].start - scrollMargin)
-      : 0;
+    currentVirtualRows.length > 0 ? Math.max(0, currentVirtualRows[0].start - scrollMargin) : 0;
   const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
   const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
@@ -283,7 +273,11 @@ function VirtualizedTableBodyInner({
   }
 
   return (
-    <tbody ref={state.tbodyRef} className="bg-surface dark:bg-surface-dark" aria-label={state.t('downloadsTable')}>
+    <tbody
+      ref={state.tbodyRef}
+      className="bg-surface dark:bg-surface-dark"
+      aria-label={state.t('downloadsTable')}
+    >
       {paddingTop > 0 && (
         <tr>
           <td
@@ -410,10 +404,7 @@ function WindowVirtualizedBody(props) {
 function ContainerVirtualizedBody(props) {
   const state = useTableBodyState(props);
 
-  const getScrollElement = useCallback(
-    () => state.fullscreenScrollEl,
-    [state.fullscreenScrollEl]
-  );
+  const getScrollElement = useCallback(() => state.fullscreenScrollEl, [state.fullscreenScrollEl]);
 
   const containerVirtualizer = useVirtualizer({
     count: state.flattenedRows.length,

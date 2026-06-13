@@ -1,7 +1,6 @@
 import { FETCH_TIMEOUT_MS } from '@/components/constants';
 
-export const TORBOX_TIMEOUT_ERROR =
-  'Request timeout - API took longer than 30 seconds to respond';
+export const TORBOX_TIMEOUT_ERROR = 'Request timeout - API took longer than 30 seconds to respond';
 
 /**
  * fetch() to TorBox with an abort timeout (default {@link FETCH_TIMEOUT_MS}).

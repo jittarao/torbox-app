@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { isInactiveOrFailed } from '@/components/downloads/ActionBar/utils/statusHelpers';
-import {
-  buildShortMagnetLink,
-  canRetryDownload,
-  retryDownload,
-} from '@/utils/retryDownload';
+import { buildShortMagnetLink, canRetryDownload, retryDownload } from '@/utils/retryDownload';
 
 const originalFetch = globalThis.fetch;
 
@@ -15,15 +11,13 @@ afterEach(() => {
 
 describe('buildShortMagnetLink', () => {
   test('builds encoded short magnet link', () => {
-    expect(
-      buildShortMagnetLink({ hash: 'abc123', name: 'My Torrent' })
-    ).toBe('magnet:?xt=urn:btih:abc123&dn=My%20Torrent');
+    expect(buildShortMagnetLink({ hash: 'abc123', name: 'My Torrent' })).toBe(
+      'magnet:?xt=urn:btih:abc123&dn=My%20Torrent'
+    );
   });
 
   test('falls back to Unknown display name', () => {
-    expect(buildShortMagnetLink({ hash: 'abc123' })).toBe(
-      'magnet:?xt=urn:btih:abc123&dn=Unknown'
-    );
+    expect(buildShortMagnetLink({ hash: 'abc123' })).toBe('magnet:?xt=urn:btih:abc123&dn=Unknown');
   });
 });
 

@@ -22,7 +22,10 @@ describe('sidebar count selectors', () => {
   test('countDownloadsPerTagFromStore', () => {
     const counts = countDownloadsPerTagFromStore(torboxState, 'torrents', {
       1: [{ id: 10, name: 'Tag' }],
-      2: [{ id: 10, name: 'Tag' }, { id: 11, name: 'Other' }],
+      2: [
+        { id: 10, name: 'Tag' },
+        { id: 11, name: 'Other' },
+      ],
     });
     expect(counts[10]).toBe(2);
     expect(counts[11]).toBe(1);

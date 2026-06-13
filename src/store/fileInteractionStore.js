@@ -25,8 +25,7 @@ export const useFileInteractionStore = create((set, get) => ({
       isStreaming: { ...state.isStreaming, [key]: value },
     })),
 
-  clearAll: () =>
-    set({ isDownloading: {}, isCopying: {}, isStreaming: {} }),
+  clearAll: () => set({ isDownloading: {}, isCopying: {}, isStreaming: {} }),
 }));
 
 /** Granular selector — subscribes to ONE file's status. */

@@ -101,7 +101,9 @@ export const USER_LIST_SORT_COLUMNS = {
  */
 export function parseUserListSort(req) {
   const sort = String(req.query.sort || 'created_at');
-  const rawDirection = String(req.query.sortDirection || req.query.direction || 'desc').toLowerCase();
+  const rawDirection = String(
+    req.query.sortDirection || req.query.direction || 'desc'
+  ).toLowerCase();
   const sortDirection = rawDirection === 'asc' ? 'asc' : 'desc';
   const column = USER_LIST_SORT_COLUMNS[sort] || USER_LIST_SORT_COLUMNS.created_at;
   const resolvedSort = USER_LIST_SORT_COLUMNS[sort] ? sort : 'created_at';

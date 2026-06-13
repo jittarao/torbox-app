@@ -2,11 +2,7 @@ import { TTLCache } from '@isaacs/ttlcache';
 import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
-import {
-  getUploadFilePath,
-  fileExists,
-  validateFilePathOwnership,
-} from '../utils/fileStorage.js';
+import { getUploadFilePath, fileExists, validateFilePathOwnership } from '../utils/fileStorage.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import {
   getUploadResourceId,
@@ -608,7 +604,7 @@ class UploadProcessor {
    * @returns {Promise<boolean>} False (not processed)
    */
   async handleTransientTorboxDeferral(upload, userDb, type, response) {
-    const data = (response?.data && typeof response.data === 'object') ? response.data : {};
+    const data = response?.data && typeof response.data === 'object' ? response.data : {};
     const retryCount = (upload.retry_count ?? 0) + 1;
     const deferMs = this.calculateBackoffDelay(retryCount);
     const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + deferMs));
@@ -695,19 +691,25 @@ class UploadProcessor {
       torrentId: resolved.torrentId,
     });
 
-    this.handleSuccessfulUpload(upload, userDb, type, {
-      status: 200,
-      data: {
-        success: true,
-        error: null,
-        detail: 'Resolved from existing TorBox torrent',
+    this.handleSuccessfulUpload(
+      upload,
+      userDb,
+      type,
+      {
+        status: 200,
         data: {
-          hash: resolved.hash,
-          torrent_id: resolved.torrentId,
-          auth_id: resolved.authId,
+          success: true,
+          error: null,
+          detail: 'Resolved from existing TorBox torrent',
+          data: {
+            hash: resolved.hash,
+            torrent_id: resolved.torrentId,
+            auth_id: resolved.authId,
+          },
         },
       },
-    }, { skipLogAttempt: true });
+      { skipLogAttempt: true }
+    );
 
     return true;
   }
@@ -1358,8 +1360,10 @@ class UploadProcessor {
       // condition — the upload was accepted but not yet processed. Defer and retry
       // instead of marking as completed with nothing to track.
       if (type === 'torrent') {
-        const { torboxHash, torboxTorrentId, torboxAuthId } =
-          extractTorboxTorrentResult(response, type);
+        const { torboxHash, torboxTorrentId, torboxAuthId } = extractTorboxTorrentResult(
+          response,
+          type
+        );
         if (torboxHash == null && torboxTorrentId == null && torboxAuthId == null) {
           return await this.handleTransientTorboxDeferral(upload, userDb, type, response);
         }

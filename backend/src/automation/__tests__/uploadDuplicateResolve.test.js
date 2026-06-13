@@ -48,11 +48,11 @@ describe('uploadDuplicateResolve', () => {
   });
 
   test('matchTorboxResource is case-insensitive for hex infohashes', () => {
-    const torrents = [
-      { id: 1, hash: 'ABCDEF0123456789ABCDEF0123456789ABCDEF01', name: 'Target' },
-    ];
+    const torrents = [{ id: 1, hash: 'ABCDEF0123456789ABCDEF0123456789ABCDEF01', name: 'Target' }];
 
-    expect(matchTorboxResource({ name: 'Wrong' }, torrents, 'abcdef0123456789abcdef0123456789abcdef01')).toEqual({
+    expect(
+      matchTorboxResource({ name: 'Wrong' }, torrents, 'abcdef0123456789abcdef0123456789abcdef01')
+    ).toEqual({
       hash: 'ABCDEF0123456789ABCDEF0123456789ABCDEF01',
       torrentId: 1,
       authId: null,
@@ -65,7 +65,9 @@ describe('uploadDuplicateResolve', () => {
       { id: 2, hash: 'abcdef0123456789abcdef0123456789abcdef01', name: 'Target' },
     ];
 
-    expect(matchTorboxResource({ name: 'Wrong' }, torrents, 'abcdef0123456789abcdef0123456789abcdef01')).toEqual({
+    expect(
+      matchTorboxResource({ name: 'Wrong' }, torrents, 'abcdef0123456789abcdef0123456789abcdef01')
+    ).toEqual({
       hash: 'abcdef0123456789abcdef0123456789abcdef01',
       torrentId: 2,
       authId: null,
@@ -73,9 +75,7 @@ describe('uploadDuplicateResolve', () => {
   });
 
   test('matchTorboxResource is case-insensitive for name fallback', () => {
-    const torrents = [
-      { id: 1, hash: null, name: 'My Torrent Name' },
-    ];
+    const torrents = [{ id: 1, hash: null, name: 'My Torrent Name' }];
 
     expect(matchTorboxResource({ name: 'my torrent name' }, torrents, null)).toEqual({
       hash: null,

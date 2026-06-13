@@ -159,10 +159,7 @@ describe('getFilesVisibleForDownloadSearch', () => {
   test('title and file match prefers matching files only', () => {
     const batch = {
       name: 'One Piece Batch',
-      files: [
-        { name: 'One Piece - 001.mkv' },
-        { name: 'readme.txt' },
-      ],
+      files: [{ name: 'One Piece - 001.mkv' }, { name: 'readme.txt' }],
     };
     expect(getFilesVisibleForDownloadSearch(batch, 'one piece')).toHaveLength(1);
   });

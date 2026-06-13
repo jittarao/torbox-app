@@ -93,10 +93,7 @@ export function hasCachedDataForView(state, viewType) {
   switch (viewType) {
     case 'all':
       return (
-        (order.torrents?.length || 0) +
-          (order.usenet?.length || 0) +
-          (order.webdl?.length || 0) >
-        0
+        (order.torrents?.length || 0) + (order.usenet?.length || 0) + (order.webdl?.length || 0) > 0
       );
     case 'usenet':
       return (order.usenet?.length || 0) > 0;

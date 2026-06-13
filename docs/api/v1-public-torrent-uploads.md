@@ -27,13 +27,13 @@ This is **not** a passthrough to `api.torbox.app` — it requires the TorBox Man
 
 Third-party integrations must treat these as **two different status systems**:
 
-| | TBM upload queue (`GET /api/v1/uploads/:id`) | TorBox API (`api.torbox.app`) |
-|---|---------------------------------------------|-------------------------------|
-| **What it tracks** | Whether TBM accepted, processed, and submitted your upload | Whether the torrent exists on TorBox and its download/cache state |
-| **Source** | Per-user SQLite `uploads` table (local backend) | TorBox cloud |
-| **Typical values** | `queued`, `processing`, `completed`, `failed` | e.g. downloading, seeding, cached, queued (TorBox-side) |
-| **Live on each poll?** | No — reads last state written by TBM's upload processor | Yes — reflects current TorBox state |
-| **When to use** | Wait until TBM has finished calling TorBox `createtorrent` | After `status === "completed"`, track the actual torrent |
+|                        | TBM upload queue (`GET /api/v1/uploads/:id`)               | TorBox API (`api.torbox.app`)                                     |
+| ---------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| **What it tracks**     | Whether TBM accepted, processed, and submitted your upload | Whether the torrent exists on TorBox and its download/cache state |
+| **Source**             | Per-user SQLite `uploads` table (local backend)            | TorBox cloud                                                      |
+| **Typical values**     | `queued`, `processing`, `completed`, `failed`              | e.g. downloading, seeding, cached, queued (TorBox-side)           |
+| **Live on each poll?** | No — reads last state written by TBM's upload processor    | Yes — reflects current TorBox state                               |
+| **When to use**        | Wait until TBM has finished calling TorBox `createtorrent` | After `status === "completed"`, track the actual torrent          |
 
 `GET /api/v1/uploads/:id` **does not** call TorBox. It returns **TorBox Manager's internal queue status** only. A `completed` upload means TBM successfully submitted the torrent to TorBox and stored `hash`, `torrent_id`, and `auth_id` — not that the download has finished on TorBox.
 
@@ -73,15 +73,15 @@ Success responses mirror TorBox-style fields:
 }
 ```
 
-| Field | When present | Description |
-|-------|----------------|-------------|
-| `upload_id` | always | TBM local queue row id (poll via GET upload status) |
-| `status` | always | **TBM internal queue status** — `queued` \| `processing` \| `completed` \| `failed`. Not TorBox download/cache status. |
-| `queue_order` | always | Position in TBM queue (`null` if not queued) |
-| `hash` | `status === "completed"` | TorBox infohash returned by createtorrent (use for TorBox API lookups) |
-| `torrent_id` | `status === "completed"` | TorBox torrent id (use for TorBox API lookups) |
-| `auth_id` | `status === "completed"` | TorBox auth id from createtorrent |
-| `error_message` | `status === "failed"` | TBM queue/processor failure reason (not a live TorBox API error) |
+| Field           | When present             | Description                                                                                                            |
+| --------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `upload_id`     | always                   | TBM local queue row id (poll via GET upload status)                                                                    |
+| `status`        | always                   | **TBM internal queue status** — `queued` \| `processing` \| `completed` \| `failed`. Not TorBox download/cache status. |
+| `queue_order`   | always                   | Position in TBM queue (`null` if not queued)                                                                           |
+| `hash`          | `status === "completed"` | TorBox infohash returned by createtorrent (use for TorBox API lookups)                                                 |
+| `torrent_id`    | `status === "completed"` | TorBox torrent id (use for TorBox API lookups)                                                                         |
+| `auth_id`       | `status === "completed"` | TorBox auth id from createtorrent                                                                                      |
+| `error_message` | `status === "failed"`    | TBM queue/processor failure reason (not a live TorBox API error)                                                       |
 
 `detail` strings: `Torrent Queued Successfully`, `Torrent Created Successfully`, `Torrent Upload Failed`.
 
@@ -109,15 +109,15 @@ TorBox-shaped single torrent enqueue. **File or magnet only** (no `link`).
 
 **Content-Type:** `multipart/form-data`
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `file` | one of `file` \| `magnet` | file | `.torrent` file |
-| `magnet` | one of `file` \| `magnet` | string | magnet URI |
-| `name` | no | string | display name (defaults to filename) |
-| `seed` | no | int | seeding ratio hint |
-| `allow_zip` | no | bool-ish | `true`/`1`/`"true"`; omitted → backend default `true` |
-| `as_queued` | no | bool-ish | add to TorBox queued list when processed |
-| `add_only_if_cached` | no | bool-ish | TorBox `add_only_if_cached`; only sent when true |
+| Field                | Required                  | Type     | Notes                                                 |
+| -------------------- | ------------------------- | -------- | ----------------------------------------------------- |
+| `file`               | one of `file` \| `magnet` | file     | `.torrent` file                                       |
+| `magnet`             | one of `file` \| `magnet` | string   | magnet URI                                            |
+| `name`               | no                        | string   | display name (defaults to filename)                   |
+| `seed`               | no                        | int      | seeding ratio hint                                    |
+| `allow_zip`          | no                        | bool-ish | `true`/`1`/`"true"`; omitted → backend default `true` |
+| `as_queued`          | no                        | bool-ish | add to TorBox queued list when processed              |
+| `add_only_if_cached` | no                        | bool-ish | TorBox `add_only_if_cached`; only sent when true      |
 
 Validation:
 
@@ -172,11 +172,11 @@ Batch enqueue (up to **1000** items). **JSON body.**
 }
 ```
 
-| `upload_type` | Required fields |
-|---------------|-----------------|
-| `magnet` | `url` (magnet), `name` |
-| `link` | `url`, `name` (supported in batch; not on createtorrent) |
-| `file` | `file_data` (base64), `filename`, `name` |
+| `upload_type` | Required fields                                          |
+| ------------- | -------------------------------------------------------- |
+| `magnet`      | `url` (magnet), `name`                                   |
+| `link`        | `url`, `name` (supported in batch; not on createtorrent) |
+| `file`        | `file_data` (base64), `filename`, `name`                 |
 
 Rules:
 
@@ -241,11 +241,11 @@ If the upload was created with `as_queued: true`, the torrent may appear in TorB
 
 ## Related internal routes (UI / same backend)
 
-| Route | Purpose |
-|-------|---------|
-| `POST /api/torrents` | App UI upload (multipart; supports `link`; internal response shape) |
-| `POST /api/uploads/batch` | Raw backend proxy (full upload objects, all types) |
-| `GET /api/uploads` | List/filter uploads (internal) |
+| Route                     | Purpose                                                             |
+| ------------------------- | ------------------------------------------------------------------- |
+| `POST /api/torrents`      | App UI upload (multipart; supports `link`; internal response shape) |
+| `POST /api/uploads/batch` | Raw backend proxy (full upload objects, all types)                  |
+| `GET /api/uploads`        | List/filter uploads (internal)                                      |
 
 Prefer **v1** routes for TorBox-compatible integrations.
 
@@ -263,11 +263,11 @@ Prefer **v1** routes for TorBox-compatible integrations.
 
 ## Common errors
 
-| HTTP | `error` | Cause |
-|------|---------|-------|
-| 401 | API key is required | Missing/invalid auth header |
-| 400 | multipart/form-data body is required | createtorrent without multipart |
-| 400 | Exactly one of file or magnet is required | createtorrent validation |
-| 400 | link is not supported on this endpoint | createtorrent with `link` |
-| 503 | backend disabled message | `BACKEND_DISABLED=true` |
-| 404 | Upload not found | unknown `upload_id` |
+| HTTP | `error`                                   | Cause                           |
+| ---- | ----------------------------------------- | ------------------------------- |
+| 401  | API key is required                       | Missing/invalid auth header     |
+| 400  | multipart/form-data body is required      | createtorrent without multipart |
+| 400  | Exactly one of file or magnet is required | createtorrent validation        |
+| 400  | link is not supported on this endpoint    | createtorrent with `link`       |
+| 503  | backend disabled message                  | `BACKEND_DISABLED=true`         |
+| 404  | Upload not found                          | unknown `upload_id`             |

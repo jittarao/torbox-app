@@ -36,9 +36,7 @@ const LinkHistoryRow = memo(
             onMouseDown={(e) => {
               if (e.shiftKey) e.preventDefault();
             }}
-            onChange={(e) =>
-              onSelect(item.id, e.target.checked, rowIndex, e.shiftKey)
-            }
+            onChange={(e) => onSelect(item.id, e.target.checked, rowIndex, e.shiftKey)}
             className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
             aria-label={linkHistoryT('actions.selectItem')}
           />

@@ -60,7 +60,10 @@ function wordsFromSegment(segment) {
   if (!word) return [];
   if (!word.includes('+')) return [word];
 
-  const parts = word.split('+').map((part) => part.trim()).filter(Boolean);
+  const parts = word
+    .split('+')
+    .map((part) => part.trim())
+    .filter(Boolean);
   return parts.length > 1 ? parts : [word];
 }
 
@@ -111,7 +114,9 @@ export function parseDownloadSearchQuery(query) {
       const words = wordsFromSegment(segment);
       if (words.length) alternatives.push(words);
     }
-    return alternatives.length ? /** @type {DownloadSearchTerm} */ ({ type: 'or', alternatives }) : null;
+    return alternatives.length
+      ? /** @type {DownloadSearchTerm} */ ({ type: 'or', alternatives })
+      : null;
   };
 
   while (i < len) {
@@ -271,7 +276,9 @@ export function itemMatchesDownloadSearch(item, query) {
     return !itemHasExcludedHaystack(item, parsed);
   }
 
-  return collectItemSearchHaystacks(item).some((haystack) => haystackMatchesParsed(haystack, parsed));
+  return collectItemSearchHaystacks(item).some((haystack) =>
+    haystackMatchesParsed(haystack, parsed)
+  );
 }
 
 /** True when at least one file name matches (used to auto-expand). */
@@ -295,9 +302,7 @@ export function shouldAutoExpandItemForSearch(item, query) {
   if (itemNameMatchesDownloadSearch(item, parsed)) return false;
 
   const matchingFiles = item.files.filter((file) => fileMatchesDownloadSearch(file, parsed));
-  return (
-    matchingFiles.length > 0 && matchingFiles.length <= MAX_AUTO_EXPAND_MATCHING_FILES
-  );
+  return matchingFiles.length > 0 && matchingFiles.length <= MAX_AUTO_EXPAND_MATCHING_FILES;
 }
 
 /**

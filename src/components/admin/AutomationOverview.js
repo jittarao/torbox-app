@@ -37,7 +37,9 @@ export default function AutomationOverview({ stats, rules, executions, errors })
                 {errors.slice(0, 10).map((error) => (
                   <tr key={error.id} className="bg-white dark:bg-surface-alt-dark">
                     <td className={`${adminTdClass} font-medium`}>{error.rule_name}</td>
-                    <td className={`${adminTdClass} text-label-danger-text dark:text-label-danger-text-dark`}>
+                    <td
+                      className={`${adminTdClass} text-label-danger-text dark:text-label-danger-text-dark`}
+                    >
                       {error.error_message || 'Unknown error'}
                     </td>
                     <td className={`${adminTdClass} text-muted dark:text-muted-dark`}>

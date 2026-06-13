@@ -13,7 +13,10 @@ import {
   mergeViewAssetTypeFilter,
   getActiveTagIds,
 } from '@/components/downloads/filters/filterHelpers';
-import { sameViewId, sidebarUrlMatchesPending } from '@/components/downloads/filters/sidebarFilterSync';
+import {
+  sameViewId,
+  sidebarUrlMatchesPending,
+} from '@/components/downloads/filters/sidebarFilterSync';
 
 export function useDownloadsFilters({
   apiKey,
@@ -70,8 +73,22 @@ export function useDownloadsFilters({
 
   const activeTagIds = getActiveTagIds(appliedFilters);
 
-  const filterDepsRef = useRef({ filterModalMode, editingView, activeType, search, sortField, sortDirection });
-  filterDepsRef.current = { filterModalMode, editingView, activeType, search, sortField, sortDirection };
+  const filterDepsRef = useRef({
+    filterModalMode,
+    editingView,
+    activeType,
+    search,
+    sortField,
+    sortDirection,
+  });
+  filterDepsRef.current = {
+    filterModalMode,
+    editingView,
+    activeType,
+    search,
+    sortField,
+    sortDirection,
+  };
 
   /** Prevents URL ?view= from re-applying after the user clears the active view. */
   const suppressUrlViewSyncRef = useRef(false);
@@ -165,7 +182,10 @@ export function useDownloadsFilters({
     }
     if (!viewsHasLoaded || !viewsRef.current?.length) return;
     if (suppressUrlViewSyncRef.current) return;
-    if (lastSyncedUrlViewIdRef.current != null && sameViewId(lastSyncedUrlViewIdRef.current, urlViewId)) {
+    if (
+      lastSyncedUrlViewIdRef.current != null &&
+      sameViewId(lastSyncedUrlViewIdRef.current, urlViewId)
+    ) {
       return;
     }
 
@@ -317,7 +337,8 @@ export function useDownloadsFilters({
 
   const handlePreviewFiltersFromModal = useCallback(
     (filters, { includeSort = false, includeSearch = false } = {}) => {
-      const { filterModalMode, editingView, activeType, search, sortField, sortDirection } = filterDepsRef.current;
+      const { filterModalMode, editingView, activeType, search, sortField, sortDirection } =
+        filterDepsRef.current;
       const assetType =
         filterModalMode === 'edit' && editingView?.asset_type ? editingView.asset_type : activeType;
       const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);

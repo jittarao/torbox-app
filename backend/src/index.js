@@ -320,7 +320,9 @@ class TorBoxBackend {
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
       logger.info('Upload counter sync completed');
 
-      logger.info('Backfilling upload quota counters for all users (accounting only, no eviction)...');
+      logger.info(
+        'Backfilling upload quota counters for all users (accounting only, no eviction)...'
+      );
       await this.uploadQuotaService.backfillAllUsers(this.userDatabaseManager);
       logger.info('Upload quota backfill completed');
 

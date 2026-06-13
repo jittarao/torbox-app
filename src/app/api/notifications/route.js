@@ -12,15 +12,17 @@ export async function GET() {
   }
 
   try {
-
-    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/notifications/mynotifications`, {
-      cache: 'no-store',
-      next: { revalidate: 0 },
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-      },
-    });
+    const response = await torboxFetch(
+      `${API_BASE}/${API_VERSION}/api/notifications/mynotifications`,
+      {
+        cache: 'no-store',
+        next: { revalidate: 0 },
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

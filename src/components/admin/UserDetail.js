@@ -139,18 +139,14 @@ export default function UserDetail({ user }) {
             <button
               type="button"
               onClick={() => handleTierChange('limited')}
-              className={
-                user.upload_tier !== 'unlimited' ? 'ui-btn-accent' : 'ui-btn-ghost'
-              }
+              className={user.upload_tier !== 'unlimited' ? 'ui-btn-accent' : 'ui-btn-ghost'}
             >
               Limited
             </button>
             <button
               type="button"
               onClick={() => handleTierChange('unlimited')}
-              className={
-                user.upload_tier === 'unlimited' ? 'ui-btn-accent' : 'ui-btn-ghost'
-              }
+              className={user.upload_tier === 'unlimited' ? 'ui-btn-accent' : 'ui-btn-ghost'}
             >
               Unlimited
             </button>
@@ -188,10 +184,7 @@ export default function UserDetail({ user }) {
       {automationInfo ? (
         <AdminCard title="Automation">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <AdminStatRow
-              label="Total rules"
-              value={automationInfo.statistics?.total_rules || 0}
-            />
+            <AdminStatRow label="Total rules" value={automationInfo.statistics?.total_rules || 0} />
             <AdminStatRow
               label="Enabled rules"
               value={automationInfo.statistics?.enabled_rules || 0}

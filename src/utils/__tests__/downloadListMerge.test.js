@@ -13,7 +13,10 @@ import {
 
 describe('sortItemsNonMutating', () => {
   test('does not mutate input', () => {
-    const input = [{ id: 1, added: '2020-01-02' }, { id: 2, added: '2020-01-03' }];
+    const input = [
+      { id: 1, added: '2020-01-02' },
+      { id: 2, added: '2020-01-03' },
+    ];
     const sorted = sortItemsNonMutating(input);
     expect(input[0].id).toBe(1);
     expect(sorted[0].id).toBe(2);
@@ -180,9 +183,7 @@ describe('itemsReconcileStructureUnchanged', () => {
   });
 
   test('returns false when a row reference changes', () => {
-    expect(
-      itemsReconcileStructureUnchanged([row], [{ ...row, progress: 50 }])
-    ).toBe(false);
+    expect(itemsReconcileStructureUnchanged([row], [{ ...row, progress: 50 }])).toBe(false);
   });
 
   test('returns false when list length changes', () => {

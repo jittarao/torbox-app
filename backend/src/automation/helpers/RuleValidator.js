@@ -132,10 +132,7 @@ class RuleValidator {
           errors.push(
             `Invalid action type: ${action.type}. Valid types: ${validActionTypes.join(', ')}`
           );
-        } else if (
-          this._ruleAssetTypes &&
-          !isActionSupported(action.type, this._ruleAssetTypes)
-        ) {
+        } else if (this._ruleAssetTypes && !isActionSupported(action.type, this._ruleAssetTypes)) {
           errors.push(
             `Action ${action.type} is not supported for asset types [${this._ruleAssetTypes.join(', ')}]`
           );

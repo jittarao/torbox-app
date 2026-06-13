@@ -584,12 +584,9 @@ class AutomationEngine {
 
         const ruleTypes = rule.assetTypes || ['torrent'];
         // Shadow diff is torrent-only; narrowed scope must not hide usenet/webdl for multi-asset rules.
-        const isTorrentOnlyRule =
-          ruleTypes.length === 1 && ruleTypes[0] === 'torrent';
+        const isTorrentOnlyRule = ruleTypes.length === 1 && ruleTypes[0] === 'torrent';
         const usesTorrentDiff =
-          isTorrentOnlyRule &&
-          changes &&
-          ruleEvaluator.ruleCanUseChangedOnlyScope(rule);
+          isTorrentOnlyRule && changes && ruleEvaluator.ruleCanUseChangedOnlyScope(rule);
         const torrentOnly = torrents.filter((t) => (t.assetType || 'torrent') === 'torrent');
         const torrentList = usesTorrentDiff
           ? this._buildChangedOnlySubset(torrentOnly, changes)
@@ -852,11 +849,7 @@ class AutomationEngine {
       await this.ruleRepository.updateLastEvaluatedAt(rule.id);
 
       const ruleAssetTypes = rule.assetTypes || ['torrent'];
-      const downloads = await fetchDownloadsForAssetTypes(
-        this.apiClient,
-        ruleAssetTypes,
-        true
-      );
+      const downloads = await fetchDownloadsForAssetTypes(this.apiClient, ruleAssetTypes, true);
       logger.debug('Downloads fetched for manual execution', {
         authId: this.authId,
         ruleId,
@@ -1198,13 +1191,7 @@ class AutomationEngine {
       }
     }
     // Error path: log only (do not update last_executed_at / execution_count)
-    await this.ruleRepository.recordExecution(
-      rule.id,
-      rule.name,
-      0,
-      false,
-      error.message
-    );
+    await this.ruleRepository.recordExecution(rule.id, rule.name, 0, false, error.message);
   }
 
   /**

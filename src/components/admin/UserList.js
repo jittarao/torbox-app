@@ -22,8 +22,7 @@ import {
 const userThClass =
   'whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-muted-dark lg:px-4';
 
-const userTdClass =
-  'whitespace-nowrap px-3 py-2.5 text-sm text-text dark:text-text-dark lg:px-4';
+const userTdClass = 'whitespace-nowrap px-3 py-2.5 text-sm text-text dark:text-text-dark lg:px-4';
 
 function truncateAuthId(authId) {
   if (!authId) return '—';

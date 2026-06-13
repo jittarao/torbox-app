@@ -39,7 +39,8 @@ export default function TagSelector({
   const createInputRef = useRef(null);
 
   const sortedTags = useMemo(
-    () => [...tags].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    () =>
+      [...tags].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
     [tags]
   );
 

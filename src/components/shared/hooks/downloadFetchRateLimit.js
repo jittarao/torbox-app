@@ -35,16 +35,17 @@ export function createDownloadFetchRateLimiter() {
     }
   };
 
-  const wouldBlock = (activeType, additionalCalls = 1, now = Date.now(), { skipMinInterval = false } = {}) => {
+  const wouldBlock = (
+    activeType,
+    additionalCalls = 1,
+    now = Date.now(),
+    { skipMinInterval = false } = {}
+  ) => {
     prune(now);
 
     const typeState = getTypeState(activeType);
     const minInterval = MIN_INTERVAL_BY_TYPE[activeType] || MIN_INTERVAL_BETWEEN_CALLS;
-    if (
-      !skipMinInterval &&
-      additionalCalls === 1 &&
-      now - typeState.lastFetchTime < minInterval
-    ) {
+    if (!skipMinInterval && additionalCalls === 1 && now - typeState.lastFetchTime < minInterval) {
       return true;
     }
 
@@ -103,4 +104,4 @@ export function createDownloadFetchRateLimiter() {
       return getTypeState(activeType).latestFetchId;
     },
   };
-};
+}

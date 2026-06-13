@@ -24,9 +24,7 @@ const emptyOrder = { torrents: [], usenet: [], webdl: [] };
 function pollScheduleEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
-  return (
-    a.mode === b.mode && a.nextPollAt === b.nextPollAt && a.intervalMs === b.intervalMs
-  );
+  return a.mode === b.mode && a.nextPollAt === b.nextPollAt && a.intervalMs === b.intervalMs;
 }
 
 /**
@@ -130,7 +128,10 @@ export const useTorboxDownloadsStore = create((set, get) => ({
    */
   updateList: (assetType, updater) => {
     const listKey = getListKeyForAssetType(assetType);
-    const prev = selectItemsForView(get(), assetType === 'usenet' ? 'usenet' : assetType === 'webdl' ? 'webdl' : 'torrents');
+    const prev = selectItemsForView(
+      get(),
+      assetType === 'usenet' ? 'usenet' : assetType === 'webdl' ? 'webdl' : 'torrents'
+    );
     const next = updater(prev);
     get().applyListMerge(assetType, next);
   },
@@ -175,8 +176,7 @@ export const useTorboxDownloadsStore = create((set, get) => ({
 
     const nextRow = { ...prev, ...partial };
     const listKey = getListKeyForAssetType(assetType);
-    const storedRow =
-      downloadRowEqual(prev, nextRow) ? prev : nextRow;
+    const storedRow = downloadRowEqual(prev, nextRow) ? prev : nextRow;
 
     set({
       entities: { ...state.entities, [key]: storedRow },

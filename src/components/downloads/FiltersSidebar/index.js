@@ -8,7 +8,16 @@ import SidebarListItem from './SidebarListItem';
 import SidebarOverflowMenu from './SidebarOverflowMenu';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 
-function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall, sheet }) {
+function SidebarSection({
+  title,
+  children,
+  emptyMessage,
+  emptyAction,
+  onAdd,
+  addLabel,
+  tall,
+  sheet,
+}) {
   return (
     <div className={`flex min-h-0 flex-col ${sheet ? 'min-h-0 flex-1' : ''}`}>
       <div className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'p-1'}`}>

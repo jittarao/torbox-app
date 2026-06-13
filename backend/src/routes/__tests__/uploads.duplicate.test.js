@@ -37,15 +37,12 @@ describe('upload duplicate resolution routes', () => {
   });
 
   async function createFailedDuplicate() {
-    const res = await request(app)
-      .post('/api/uploads')
-      .set('x-api-key', env.apiKey)
-      .send({
-        type: 'torrent',
-        upload_type: 'magnet',
-        url: 'magnet:?xt=urn:btih:abc123',
-        name: 'Duplicate Magnet',
-      });
+    const res = await request(app).post('/api/uploads').set('x-api-key', env.apiKey).send({
+      type: 'torrent',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:abc123',
+      name: 'Duplicate Magnet',
+    });
     expect(res.status).toBe(200);
     const id = res.body.data.id;
 
@@ -80,15 +77,12 @@ describe('upload duplicate resolution routes', () => {
   test('POST /api/uploads/bulk/retry completes duplicate and re-queues non-duplicate failures', async () => {
     const duplicateId = await createFailedDuplicate();
 
-    const other = await request(app)
-      .post('/api/uploads')
-      .set('x-api-key', env.apiKey)
-      .send({
-        type: 'torrent',
-        upload_type: 'magnet',
-        url: 'magnet:?xt=urn:btih:other',
-        name: 'Other Failure',
-      });
+    const other = await request(app).post('/api/uploads').set('x-api-key', env.apiKey).send({
+      type: 'torrent',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:other',
+      name: 'Other Failure',
+    });
     const otherId = other.body.data.id;
 
     const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);

@@ -41,9 +41,9 @@ describe('UploadQuotaService', () => {
 
   test('isOverQuota when storage exceeds limit', () => {
     const limits = { maxFiles: 500, maxStorageBytes: 100 * 1024 * 1024 };
-    expect(service.isOverQuota({ fileCount: 1, storageBytes: limits.maxStorageBytes + 1 }, limits)).toBe(
-      true
-    );
+    expect(
+      service.isOverQuota({ fileCount: 1, storageBytes: limits.maxStorageBytes + 1 }, limits)
+    ).toBe(true);
   });
 
   test('isOverQuota when file count exceeds limit', () => {
@@ -53,9 +53,9 @@ describe('UploadQuotaService', () => {
 
   test('isOverQuota when within both limits', () => {
     const limits = { maxFiles: 500, maxStorageBytes: 100 * 1024 * 1024 };
-    expect(service.isOverQuota({ fileCount: 500, storageBytes: limits.maxStorageBytes }, limits)).toBe(
-      false
-    );
+    expect(
+      service.isOverQuota({ fileCount: 500, storageBytes: limits.maxStorageBytes }, limits)
+    ).toBe(false);
   });
 
   test('getUsage marks unlimited users as not over quota even when counters high', () => {
@@ -78,11 +78,17 @@ describe('UploadQuotaService', () => {
 
   test('isDeletable rejects queued and processing uploads', () => {
     const exclude = new Set();
-    expect(service.isDeletable({ id: 1, file_path: 'a.torrent', status: 'queued' }, { excludeUploadIds: exclude })).toBe(
-      false
-    );
     expect(
-      service.isDeletable({ id: 1, file_path: 'a.torrent', status: 'processing' }, { excludeUploadIds: exclude })
+      service.isDeletable(
+        { id: 1, file_path: 'a.torrent', status: 'queued' },
+        { excludeUploadIds: exclude }
+      )
+    ).toBe(false);
+    expect(
+      service.isDeletable(
+        { id: 1, file_path: 'a.torrent', status: 'processing' },
+        { excludeUploadIds: exclude }
+      )
     ).toBe(false);
   });
 
@@ -98,7 +104,10 @@ describe('UploadQuotaService', () => {
 
   test('isDeletable allows completed file uploads', () => {
     expect(
-      service.isDeletable({ id: 1, file_path: 'a.torrent', status: 'completed' }, { excludeUploadIds: new Set() })
+      service.isDeletable(
+        { id: 1, file_path: 'a.torrent', status: 'completed' },
+        { excludeUploadIds: new Set() }
+      )
     ).toBe(true);
   });
 

@@ -46,11 +46,7 @@ export function PostHogProvider({ children }) {
   }, []);
 
   if (!client) {
-    return (
-      <PostHogClientContext.Provider value={null}>
-        {children}
-      </PostHogClientContext.Provider>
-    );
+    return <PostHogClientContext.Provider value={null}>{children}</PostHogClientContext.Provider>;
   }
 
   return (

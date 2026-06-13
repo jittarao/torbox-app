@@ -18,7 +18,13 @@ function AdminSidebarBrand({ collapsed }) {
         collapsed ? 'justify-center' : 'gap-2.5'
       }`}
     >
-      <Image src="/images/TBM-logo.png" alt="TorBox Manager" width={28} height={28} className="shrink-0" />
+      <Image
+        src="/images/TBM-logo.png"
+        alt="TorBox Manager"
+        width={28}
+        height={28}
+        className="shrink-0"
+      />
       {!collapsed ? (
         <div className="min-w-0 flex-col">
           <span className="truncate text-sm font-semibold text-primary-text dark:text-primary-text-dark">

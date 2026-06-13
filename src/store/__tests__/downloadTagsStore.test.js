@@ -85,10 +85,11 @@ describe('useDownloadTagsStore loading state', () => {
 
   test('stale request resets loading when API key changes before fetch resolves', async () => {
     let resolveFetch;
-    globalThis.fetch = mock(() =>
-      new Promise((resolve) => {
-        resolveFetch = resolve;
-      })
+    globalThis.fetch = mock(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
     );
 
     const fetchPromise = useDownloadTagsStore.getState().fetchDownloadTags('key-a');

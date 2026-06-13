@@ -15,7 +15,9 @@ const USER_ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
  */
 export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   const awaySinceRef = useRef(null);
-  const isVisibleRef = useRef(typeof document !== 'undefined' && document.visibilityState === 'visible');
+  const isVisibleRef = useRef(
+    typeof document !== 'undefined' && document.visibilityState === 'visible'
+  );
   const userIdleRef = useRef(false);
   const wasDisengagedRef = useRef(false);
   const lastImmediateRefreshAtRef = useRef(0);
@@ -23,8 +25,12 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   const onReEngagedRef = useRef(onReEngaged);
   const onDisengagedRef = useRef(onDisengaged);
 
-  useEffect(() => { onReEngagedRef.current = onReEngaged; }, [onReEngaged]);
-  useEffect(() => { onDisengagedRef.current = onDisengaged; }, [onDisengaged]);
+  useEffect(() => {
+    onReEngagedRef.current = onReEngaged;
+  }, [onReEngaged]);
+  useEffect(() => {
+    onDisengagedRef.current = onDisengaged;
+  }, [onDisengaged]);
 
   const clearIdleTimeout = useCallback(() => {
     if (idleTimeoutIdRef.current) {
@@ -69,8 +75,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       userIdleRef.current = false;
       resetIdleTimer();
       if (wasIdle) {
-        const refreshedRecently =
-          Date.now() - lastImmediateRefreshAtRef.current < 2_000;
+        const refreshedRecently = Date.now() - lastImmediateRefreshAtRef.current < 2_000;
         notifyReEngaged(!refreshedRecently);
       }
     };
@@ -131,9 +136,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('focus', handleWindowFocus);
-      USER_ACTIVITY_EVENTS.forEach((name) =>
-        document.removeEventListener(name, onUserActivity)
-      );
+      USER_ACTIVITY_EVENTS.forEach((name) => document.removeEventListener(name, onUserActivity));
     };
   }, [pollingPaused, resetIdleTimer, clearIdleTimeout, notifyReEngaged]);
 

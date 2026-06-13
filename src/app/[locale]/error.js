@@ -10,11 +10,6 @@ export default function LocaleError({ error, reset }) {
   }, [error]);
 
   return (
-    <SectionErrorFallback
-      error={error}
-      onRetry={reset}
-      showReload
-      className="min-h-[50vh] my-8"
-    />
+    <SectionErrorFallback error={error} onRetry={reset} showReload className="min-h-[50vh] my-8" />
   );
 }
