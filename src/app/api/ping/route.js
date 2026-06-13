@@ -1,12 +1,27 @@
 import { NextResponse } from 'next/server';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
+import { validateExternalUrl } from '@/utils/validateExternalUrl';
+
 export async function POST(request) {
   try {
+    const auth = await requireTorboxApiKey();
+    if (auth.response) {
+      return auth.response;
+    }
+
     const { domain, region, serverName } = await request.json();
 
     if (!domain) {
       return NextResponse.json({ success: false, error: 'Domain is required' }, { status: 400 });
     }
+
+    const validation = validateExternalUrl(domain);
+    if (!validation.valid) {
+      return NextResponse.json({ success: false, error: validation.reason }, { status: 400 });
+    }
+
+    const validatedDomain = validation.url;
 
     // Server-side ping test
     const startTime = Date.now();
@@ -30,7 +45,7 @@ export async function POST(request) {
         headers['Accept-Encoding'] = 'gzip, deflate, br';
       }
 
-      const response = await fetch(domain, {
+      const response = await fetch(validatedDomain, {
         method: 'HEAD',
         cache: 'no-store',
         headers,
@@ -45,7 +60,7 @@ export async function POST(request) {
         success: true,
         ping: pingTime,
         status: response.status,
-        domain: domain,
+        domain: validatedDomain,
         serverType: serverName,
       });
     } catch (error) {
@@ -63,7 +78,7 @@ export async function POST(request) {
       return NextResponse.json({
         success: false,
         error: errorMessage,
-        domain: domain,
+        domain: validatedDomain,
         details: sanitizeError(error),
         serverType: serverName,
       });
