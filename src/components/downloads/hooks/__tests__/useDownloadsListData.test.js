@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  buildRowDataSignature,
-  collectDirtyRowKeys,
-} from '@/utils/downloadListSignatures';
+import { buildRowDataSignature, collectDirtyRowKeys } from '@/utils/downloadListSignatures';
 
 describe('useDownloadsListData dirty-key path', () => {
   test('incremental enrichment only revisits dirty row keys', () => {

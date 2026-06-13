@@ -4,14 +4,8 @@ export const TORBOX_NATIVE_TRACKERS = ['Newznab'];
  * Apply server-side search filters to raw results (derived, not stored).
  */
 export function applySearchFilters(results, filters) {
-  const {
-    seasonFilter,
-    episodeFilter,
-    yearFilter,
-    qualityFilter,
-    sizeFilter,
-    seedersFilter,
-  } = filters;
+  const { seasonFilter, episodeFilter, yearFilter, qualityFilter, sizeFilter, seedersFilter } =
+    filters;
 
   if (!results?.length) return [];
 

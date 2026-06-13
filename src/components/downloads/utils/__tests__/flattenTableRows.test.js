@@ -17,13 +17,7 @@ describe('buildFlattenedTableRows', () => {
       name: `f${i}`,
     }));
     const itemWithFiles = { ...item, files };
-    const rows = buildFlattenedTableRows(
-      [itemWithFiles],
-      new Set([1]),
-      {},
-      () => files,
-      ''
-    );
+    const rows = buildFlattenedTableRows([itemWithFiles], new Set([1]), {}, () => files, '');
     const fileRows = rows.filter((r) => r.type === 'file');
     const overflow = rows.filter((r) => r.type === 'fileOverflow');
     expect(fileRows).toHaveLength(MAX_INLINE_FILE_ROWS);

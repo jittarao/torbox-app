@@ -83,8 +83,7 @@ export default function ActionButtons({
     if (resolved.length !== selectionIds.length) return [];
 
     const allSeedingTorrents = resolved.every(
-      (item) =>
-        resolveItemAssetType(item, activeType) === 'torrents' && isTorrentSeeding(item)
+      (item) => resolveItemAssetType(item, activeType) === 'torrents' && isTorrentSeeding(item)
     );
     return allSeedingTorrents ? resolved : [];
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
@@ -103,8 +102,7 @@ export default function ActionButtons({
     if (resolved.length !== selectionIds.length) return [];
 
     const allQueuedTorrents = resolved.every(
-      (item) =>
-        resolveItemAssetType(item, activeType) === 'torrents' && isTorrentQueued(item)
+      (item) => resolveItemAssetType(item, activeType) === 'torrents' && isTorrentQueued(item)
     );
     return allQueuedTorrents ? resolved : [];
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
@@ -140,8 +138,7 @@ export default function ActionButtons({
     if (resolved.length !== selectionIds.length) return [];
 
     const allArchivable = resolved.every(
-      (item) =>
-        resolveItemAssetType(item, activeType) === 'torrents' && Boolean(item.hash)
+      (item) => resolveItemAssetType(item, activeType) === 'torrents' && Boolean(item.hash)
     );
     return allArchivable ? resolved : [];
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);

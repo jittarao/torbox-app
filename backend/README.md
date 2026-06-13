@@ -124,10 +124,10 @@ Rules are evaluated on each polling cycle:
 
 ### How users are identified
 
-| Concept | Meaning |
-| -------- | -------- |
-| **TorBox API key** | Secret credential from [torbox.app/settings](https://torbox.app/settings). Proves the caller owns the account. |
-| **`authId`** | `SHA-256(apiKey)` — stable 64-char hex id used for DB filenames and queries. Identifies the user; **not** equivalent to proving possession of the API key. |
+| Concept            | Meaning                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **TorBox API key** | Secret credential from [torbox.app/settings](https://torbox.app/settings). Proves the caller owns the account.                                             |
+| **`authId`**       | `SHA-256(apiKey)` — stable 64-char hex id used for DB filenames and queries. Identifies the user; **not** equivalent to proving possession of the API key. |
 
 ### Request paths (Express `requireRegisteredUser`)
 
@@ -140,11 +140,11 @@ Some Next.js handlers also add `?authId=` on the backend URL for convenience; th
 
 ### Optional environment variables
 
-| Variable | Default | Purpose |
-| -------- | ------- | ------- |
-| `BACKEND_REQUIRE_API_KEY` | unset (`false`) | When `true`, user routes reject `authId`-only requests. Use when port `3001` is exposed on the public internet. |
-| `BACKEND_SERVICE_SECRET` | unset | Same value on frontend and backend; Next.js sends `x-backend-service-secret` on internal routes (`/api/backend/api-key*`). Optional hardening when something besides Next.js can reach the backend. |
-| `ADMIN_API_KEY` | unset | Protects `/api/admin/*`; if unset, admin API returns 503. |
+| Variable                  | Default         | Purpose                                                                                                                                                                                             |
+| ------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BACKEND_REQUIRE_API_KEY` | unset (`false`) | When `true`, user routes reject `authId`-only requests. Use when port `3001` is exposed on the public internet.                                                                                     |
+| `BACKEND_SERVICE_SECRET`  | unset           | Same value on frontend and backend; Next.js sends `x-backend-service-secret` on internal routes (`/api/backend/api-key*`). Optional hardening when something besides Next.js can reach the backend. |
+| `ADMIN_API_KEY`           | unset           | Protects `/api/admin/*`; if unset, admin API returns 503.                                                                                                                                           |
 
 **Typical self-hosted production** (Caddy → `localhost:3000`, Docker `127.0.0.1:3001:3001`, frontend `BACKEND_URL=http://torbox-backend:3001`): you do **not** need to set `BACKEND_REQUIRE_API_KEY` or `BACKEND_SERVICE_SECRET`. Startup log warnings about legacy auth are informational.
 
@@ -171,10 +171,10 @@ Override via environment variables (see `.env.example` in the repo root or `back
 
 LIMITED tier users (default for all new users) have staged upload files capped by **both** limits below. UNLIMITED users bypass enforcement. Tier is stored in `user_registry.upload_tier` and managed via admin API/UI (`PUT /api/admin/users/:authId/upload-tier`).
 
-| Variable | Description | Default |
-| -------- | ----------- | ------- |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max total staged upload storage per LIMITED user | `100` |
-| `UPLOAD_LIMIT_MAX_FILES` | Max retained staged files per LIMITED user | `500` |
+| Variable                      | Description                                      | Default |
+| ----------------------------- | ------------------------------------------------ | ------- |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max total staged upload storage per LIMITED user | `100`   |
+| `UPLOAD_LIMIT_MAX_FILES`      | Max retained staged files per LIMITED user       | `500`   |
 
 Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uploadQuota.js`. Counters are cached in the master DB; startup backfill reconciles usage from per-user SQLite + disk.
 

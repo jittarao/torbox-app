@@ -20,10 +20,7 @@ describe('upload create routes', () => {
   });
 
   test('POST /api/uploads without required fields returns 400', async () => {
-    const res = await request(app)
-      .post('/api/uploads')
-      .set('x-api-key', env.apiKey)
-      .send({});
+    const res = await request(app).post('/api/uploads').set('x-api-key', env.apiKey).send({});
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -31,15 +28,12 @@ describe('upload create routes', () => {
   });
 
   test('POST /api/uploads creates a queued torrent magnet upload', async () => {
-    const res = await request(app)
-      .post('/api/uploads')
-      .set('x-api-key', env.apiKey)
-      .send({
-        type: 'torrent',
-        upload_type: 'magnet',
-        url: 'magnet:?xt=urn:btih:abc123',
-        name: 'Test Magnet',
-      });
+    const res = await request(app).post('/api/uploads').set('x-api-key', env.apiKey).send({
+      type: 'torrent',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:abc123',
+      name: 'Test Magnet',
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -48,15 +42,12 @@ describe('upload create routes', () => {
   });
 
   test('POST /api/uploads rejects invalid type', async () => {
-    const res = await request(app)
-      .post('/api/uploads')
-      .set('x-api-key', env.apiKey)
-      .send({
-        type: 'invalid',
-        upload_type: 'magnet',
-        url: 'magnet:?xt=urn:btih:abc123',
-        name: 'Bad Type',
-      });
+    const res = await request(app).post('/api/uploads').set('x-api-key', env.apiKey).send({
+      type: 'invalid',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:abc123',
+      name: 'Bad Type',
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Invalid type/i);

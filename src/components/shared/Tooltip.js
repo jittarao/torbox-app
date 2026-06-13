@@ -224,9 +224,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
   const arrowPosition = {
     left: tooltipPosition.arrowLeft,
     transform: 'translateX(-50%)',
-    ...(isBelow
-      ? { top: 'auto', bottom: '100%', marginTop: 0, marginBottom: -2 }
-      : {}),
+    ...(isBelow ? { top: 'auto', bottom: '100%', marginTop: 0, marginBottom: -2 } : {}),
   };
 
   if (!content) return children;
@@ -242,12 +240,7 @@ export default function Tooltip({ children, content, position = 'top' }) {
       {children}
       {isVisible &&
         createPortal(
-          <div
-            ref={tooltipRef}
-            style={tooltipStyles}
-            className="ui-tooltip"
-            role="tooltip"
-          >
+          <div ref={tooltipRef} style={tooltipStyles} className="ui-tooltip" role="tooltip">
             {content}
             <div className="ui-tooltip-arrow" style={arrowPosition} aria-hidden>
               <svg

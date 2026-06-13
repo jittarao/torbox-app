@@ -3,10 +3,29 @@
  */
 
 const ROW_COMPARE_FIELDS = [
-  'id', 'name', 'size', 'progress', 'download_speed', 'upload_speed',
-  'download_state', 'download_finished', 'download_present', 'active', 'eta',
-  'peers', 'seeds', 'ratio', 'status', 'cached', 'error', 'tracker',
-  'tracker_domain', 'tracker_icon', 'updated_at', 'expires_at', 'availability',
+  'id',
+  'name',
+  'size',
+  'progress',
+  'download_speed',
+  'upload_speed',
+  'download_state',
+  'download_finished',
+  'download_present',
+  'active',
+  'eta',
+  'peers',
+  'seeds',
+  'ratio',
+  'status',
+  'cached',
+  'error',
+  'tracker',
+  'tracker_domain',
+  'tracker_icon',
+  'updated_at',
+  'expires_at',
+  'availability',
   'max_download_speed',
 ];
 
@@ -193,9 +212,7 @@ export function mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, a
  * @param {'torrents' | 'usenet' | 'webdl'} assetType
  */
 export function mergeDownloadEntities(prevEntities, prevOrderKeys, payload, assetType) {
-  const prevList = (prevOrderKeys || [])
-    .map((key) => prevEntities[key])
-    .filter(Boolean);
+  const prevList = (prevOrderKeys || []).map((key) => prevEntities[key]).filter(Boolean);
   const mergedList = mergeDownloadList(prevList, payload, assetType);
   return mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType);
 }

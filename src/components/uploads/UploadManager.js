@@ -96,10 +96,7 @@ export default function UploadManager({ apiKey }) {
   }, [activeTab, filters.search]);
 
   const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
-  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(
-    uploads,
-    getUploadRowId
-  );
+  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(uploads, getUploadRowId);
 
   // Drop selection from other tabs/pages so bulk actions match visible checkboxes
   useEffect(() => {
@@ -109,9 +106,7 @@ export default function UploadManager({ apiKey }) {
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      const ids = uploads
-        .map((u) => normalizeUploadId(u.id))
-        .filter((id) => id !== null);
+      const ids = uploads.map((u) => normalizeUploadId(u.id)).filter((id) => id !== null);
       setSelectedUploads(new Set(ids));
     } else {
       setSelectedUploads(new Set());

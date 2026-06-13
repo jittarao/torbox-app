@@ -20,15 +20,12 @@ describe('upload lifecycle routes', () => {
   });
 
   async function createUpload(name = 'Lifecycle Upload') {
-    const res = await request(app)
-      .post('/api/uploads')
-      .set('x-api-key', env.apiKey)
-      .send({
-        type: 'torrent',
-        upload_type: 'magnet',
-        url: 'magnet:?xt=urn:btih:abc123',
-        name,
-      });
+    const res = await request(app).post('/api/uploads').set('x-api-key', env.apiKey).send({
+      type: 'torrent',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:abc123',
+      name,
+    });
     expect(res.status).toBe(200);
     return res.body.data;
   }

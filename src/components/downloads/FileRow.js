@@ -144,153 +144,139 @@ function FileRowInner({
       ref={attachMeasureRef ? measureRef : undefined}
       data-index={attachMeasureRef ? dataIndex : undefined}
       className={`${rowSurfaceClass} transition-colors ${!isDisabled && 'cursor-pointer'}`}
-            onMouseDown={(e) => {
-              // Prevent text selection on shift+click
-              if (e.shiftKey) {
-                e.preventDefault();
-              }
-            }}
-            onClick={(e) => {
-              // Ignore clicks on buttons or if disabled
-              if (e.target.closest('button') || isDisabled) return;
-              handleFileSelection(selectionId, actualIndex, file, !isChecked, e.shiftKey);
-            }}
+      onMouseDown={(e) => {
+        // Prevent text selection on shift+click
+        if (e.shiftKey) {
+          e.preventDefault();
+        }
+      }}
+      onClick={(e) => {
+        // Ignore clicks on buttons or if disabled
+        if (e.target.closest('button') || isDisabled) return;
+        handleFileSelection(selectionId, actualIndex, file, !isChecked, e.shiftKey);
+      }}
+    >
+      {/* Checkbox */}
+      <td className={`${tableCheckboxCell} py-2 md:py-1.5 lg:py-2`}>
+        <input
+          type="checkbox"
+          checked={isChecked}
+          disabled={isDisabled}
+          onChange={(e) =>
+            handleFileSelection(selectionId, actualIndex, file, e.target.checked, e.shiftKey)
+          }
+          style={{ pointerEvents: 'none' }}
+          className="accent-accent dark:accent-accent-dark"
+        />
+      </td>
+
+      {/* File Name and Size */}
+      <td
+        className={`pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2 overflow-hidden ${tableRowSeparator}`}
+        colSpan={isMobile ? 1 : activeColumns.length}
+      >
+        <div
+          className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 md:gap-2.5 lg:gap-4'}`}
+          style={{
+            maxWidth: isMobile
+              ? '100%'
+              : tableWidth -
+                getActionsColumnWidthPx() -
+                getCheckboxColumnWidthPx() -
+                EXTRA_COLUMN_PADDING,
+          }}
+        >
+          <div
+            className={`text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-md lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
           >
-            {/* Checkbox */}
-            <td className={`${tableCheckboxCell} py-2 md:py-1.5 lg:py-2`}>
-              <input
-                type="checkbox"
-                checked={isChecked}
-                disabled={isDisabled}
-                onChange={(e) =>
-                  handleFileSelection(selectionId, actualIndex, file, e.target.checked, e.shiftKey)
-                }
-                style={{ pointerEvents: 'none' }}
-                className="accent-accent dark:accent-accent-dark"
-              />
-            </td>
-
-            {/* File Name and Size */}
-            <td
-              className={`pl-3 md:pl-4 lg:pl-6 py-2 md:py-1.5 lg:py-2 overflow-hidden ${tableRowSeparator}`}
-              colSpan={isMobile ? 1 : activeColumns.length}
-            >
-              <div
-                className={`${isMobile ? 'grid grid-cols-1 gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 md:gap-2.5 lg:gap-4'}`}
-                style={{
-                  maxWidth: isMobile
-                    ? '100%'
-                    : tableWidth -
-                      getActionsColumnWidthPx() -
-                      getCheckboxColumnWidthPx() -
-                      EXTRA_COLUMN_PADDING,
-                }}
-              >
-                <div
-                  className={`text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-md lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
-                >
-                  <Tooltip content={isBlurred ? '' : file.short_name || file.name}>
-                    {file.short_name || file.name}
-                  </Tooltip>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full bg-surface-alt dark:bg-surface-alt-dark 
+            <Tooltip content={isBlurred ? '' : file.short_name || file.name}>
+              {file.short_name || file.name}
+            </Tooltip>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs px-2 py-0.5 rounded-full bg-surface-alt dark:bg-surface-alt-dark 
                     text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap"
-                  >
-                    {formatSize(file.size || 0)}
-                  </span>
-                  {file.mimetype && (
-                    <Tooltip
-                      content={getDisplayMimetype(file.mimetype, file.name || file.short_name)}
-                    >
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 
+            >
+              {formatSize(file.size || 0)}
+            </span>
+            {file.mimetype && (
+              <Tooltip content={getDisplayMimetype(file.mimetype, file.name || file.short_name)}>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full bg-accent/5 dark:bg-accent-dark/5 
                         text-accent dark:text-accent-dark min-w-0 max-w-[7rem] sm:max-w-[9rem] md:max-w-[12rem] truncate inline-block"
-                      >
-                        {getDisplayMimetype(file.mimetype, file.name || file.short_name)}
-                      </span>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-            </td>
+                >
+                  {getDisplayMimetype(file.mimetype, file.name || file.short_name)}
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+      </td>
 
-            {/* File Actions — fixed slots: [play] [copy] [download] */}
-            <td className={`${tableActionsCell} ${actionsSurfaceClass} [&_button]:md:p-1`}>
-              <div className={tableActionsCellInner}>
-                <span className={FILE_ACTION_SLOT_CLASS}>
-                  {isVideoFile(file) && handleFileStream ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFileStream(item.id, file);
-                      }}
-                      disabled={isFileStreaming}
-                      className={FILE_ACTION_BUTTON_CLASS}
-                      title={t('play')}
-                    >
-                      {isFileStreaming ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <Play />
-                      )}
-                    </button>
-                  ) : isAudioFile(file) && handleAudioPlay ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAudioPlay(item.id, file);
-                      }}
-                      disabled={isFileStreaming}
-                      className={FILE_ACTION_BUTTON_CLASS}
-                      title={t('play')}
-                    >
-                      {isFileStreaming ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <Play />
-                      )}
-                    </button>
-                  ) : null}
-                </span>
-                <span className={FILE_ACTION_SLOT_CLASS}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFileDownload(item.id, file, true);
-                    }}
-                    disabled={isFileCopying}
-                    className={FILE_ACTION_BUTTON_CLASS}
-                    title={t('copyLink')}
-                  >
-                    {isFileCopying ? <Spinner size="sm" /> : <Copy />}
-                  </button>
-                </span>
-                <span className={FILE_ACTION_SLOT_CLASS}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFileDownload(item.id, file);
-                    }}
-                    disabled={isFileDownloading}
-                    className={FILE_ACTION_BUTTON_CLASS}
-                    title={t('download')}
-                  >
-                    {isFileDownloading ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <Download />
-                    )}
-                  </button>
-                </span>
-              </div>
-            </td>
-          </tr>
+      {/* File Actions — fixed slots: [play] [copy] [download] */}
+      <td className={`${tableActionsCell} ${actionsSurfaceClass} [&_button]:md:p-1`}>
+        <div className={tableActionsCellInner}>
+          <span className={FILE_ACTION_SLOT_CLASS}>
+            {isVideoFile(file) && handleFileStream ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFileStream(item.id, file);
+                }}
+                disabled={isFileStreaming}
+                className={FILE_ACTION_BUTTON_CLASS}
+                title={t('play')}
+              >
+                {isFileStreaming ? <Spinner size="sm" /> : <Play />}
+              </button>
+            ) : isAudioFile(file) && handleAudioPlay ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAudioPlay(item.id, file);
+                }}
+                disabled={isFileStreaming}
+                className={FILE_ACTION_BUTTON_CLASS}
+                title={t('play')}
+              >
+                {isFileStreaming ? <Spinner size="sm" /> : <Play />}
+              </button>
+            ) : null}
+          </span>
+          <span className={FILE_ACTION_SLOT_CLASS}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFileDownload(item.id, file, true);
+              }}
+              disabled={isFileCopying}
+              className={FILE_ACTION_BUTTON_CLASS}
+              title={t('copyLink')}
+            >
+              {isFileCopying ? <Spinner size="sm" /> : <Copy />}
+            </button>
+          </span>
+          <span className={FILE_ACTION_SLOT_CLASS}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFileDownload(item.id, file);
+              }}
+              disabled={isFileDownloading}
+              className={FILE_ACTION_BUTTON_CLASS}
+              title={t('download')}
+            >
+              {isFileDownloading ? <Spinner size="sm" /> : <Download />}
+            </button>
+          </span>
+        </div>
+      </td>
+    </tr>
   );
 }
 

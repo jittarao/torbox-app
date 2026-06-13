@@ -24,12 +24,7 @@ export function bulkArchiveDownloadsInDb(db, downloads) {
 
   const archiveMany = db.transaction((entries) => {
     for (const entry of entries) {
-      insertStmt.run(
-        entry.torrent_id,
-        entry.hash,
-        entry.tracker ?? null,
-        entry.name ?? null
-      );
+      insertStmt.run(entry.torrent_id, entry.hash, entry.tracker ?? null, entry.name ?? null);
       const row = existsStmt.get(entry.torrent_id);
       if (row) {
         torrentIds.push(String(entry.torrent_id));
@@ -94,9 +89,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
               .get(queryParams[0], queryParams[1], queryParams[2], queryParams[3])
           : userDb.db.prepare(countQuery).get();
 
-        const archived = userDb.db
-          .prepare(dataQuery)
-          .all(...queryParams, limit, offset);
+        const archived = userDb.db.prepare(dataQuery).all(...queryParams, limit, offset);
 
         res.json({
           success: true,
@@ -238,8 +231,7 @@ export function setupArchivedDownloadsRoutes(app, backend) {
         const seenIds = new Set();
 
         for (const entry of downloads) {
-          const torrent_id =
-            entry?.torrent_id != null ? String(entry.torrent_id) : '';
+          const torrent_id = entry?.torrent_id != null ? String(entry.torrent_id) : '';
           const hash = entry?.hash != null ? String(entry.hash) : '';
 
           if (!torrent_id || !hash) {

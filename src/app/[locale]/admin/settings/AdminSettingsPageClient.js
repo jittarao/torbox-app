@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
-import { AdminAlert, AdminCard, AdminEmpty, AdminLoading, AdminPageHeader, AdminStatRow } from '@/components/admin/AdminUi';
+import {
+  AdminAlert,
+  AdminCard,
+  AdminEmpty,
+  AdminLoading,
+  AdminPageHeader,
+  AdminStatRow,
+} from '@/components/admin/AdminUi';
 
 export default function AdminSettingsPageClient() {
   const [config, setConfig] = useState(null);
@@ -68,19 +75,13 @@ export default function AdminSettingsPageClient() {
                   label="Max staged storage (MB)"
                   value={config.upload_quotas?.max_storage_mb}
                 />
-                <AdminStatRow
-                  label="Max retained files"
-                  value={config.upload_quotas?.max_files}
-                />
+                <AdminStatRow label="Max retained files" value={config.upload_quotas?.max_files} />
               </div>
             </AdminCard>
 
             <AdminCard title="Database">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <AdminStatRow
-                  label="Max connections"
-                  value={config.database?.max_db_connections}
-                />
+                <AdminStatRow label="Max connections" value={config.database?.max_db_connections} />
                 <div className="text-sm">
                   <span className="text-muted dark:text-muted-dark">Master DB path</span>
                   <p className="mt-1 break-all font-mono text-xs text-text dark:text-text-dark">

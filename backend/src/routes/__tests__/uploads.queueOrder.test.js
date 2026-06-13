@@ -166,10 +166,9 @@ describe('upload queue_order assignment', () => {
 
     const failedA = create('failed-a');
     const failedB = create('failed-b');
-    userDb.db.prepare("UPDATE uploads SET status = 'failed' WHERE id IN (?, ?)").run(
-      failedA.id,
-      failedB.id
-    );
+    userDb.db
+      .prepare("UPDATE uploads SET status = 'failed' WHERE id IN (?, ?)")
+      .run(failedA.id, failedB.id);
 
     const retry = createRetryTransaction(userDb);
 

@@ -6,13 +6,7 @@ import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
-export function useDelete(
-  apiKey,
-  setSelectedItems,
-  setToast,
-  _fetchItems,
-  assetType = 'torrents'
-) {
+export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, assetType = 'torrents') {
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
 
@@ -36,8 +30,7 @@ export function useDelete(
         if (ids.length > 0) store.removeByIds(type, ids);
       }
     } else {
-      const type =
-        assetType === 'usenet' ? 'usenet' : assetType === 'webdl' ? 'webdl' : 'torrents';
+      const type = assetType === 'usenet' ? 'usenet' : assetType === 'webdl' ? 'webdl' : 'torrents';
       store.removeByIds(type, successfulIds);
     }
   };

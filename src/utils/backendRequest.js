@@ -17,7 +17,10 @@ export function backendProxyHeaders(apiKey, extraHeaders = {}) {
 /**
  * fetch() wrapper that always forwards x-api-key (and optional service secret) to the backend.
  */
-export function backendFetch(url, { apiKey, method = 'GET', body, headers: extraHeaders, ...rest } = {}) {
+export function backendFetch(
+  url,
+  { apiKey, method = 'GET', body, headers: extraHeaders, ...rest } = {}
+) {
   const headers = backendProxyHeaders(apiKey, {
     ...(body !== undefined && body !== null ? { 'Content-Type': 'application/json' } : {}),
     ...extraHeaders,

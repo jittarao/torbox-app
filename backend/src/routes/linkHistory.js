@@ -140,128 +140,21 @@ export function setupLinkHistoryRoutes(app, backend) {
   });
 
   // POST /api/link-history - Create new link history entry
-  app.post('/api/link-history', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
+  app.post(
+    '/api/link-history',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
 
-      if (!backend.userDatabaseManager) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service is initializing, please try again in a moment',
-        });
-      }
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
 
-      const { item_id, file_id, url, asset_type, item_name, file_name, status: rawStatus } =
-        req.body;
-      const status = rawStatus === 'failed' ? 'failed' : 'success';
-      const urlValue = url != null ? String(url) : '';
-
-      if (!item_id || !asset_type) {
-        return res.status(400).json({
-          success: false,
-          error: 'item_id and asset_type are required',
-        });
-      }
-
-      if (status === 'success' && !urlValue) {
-        return res.status(400).json({
-          success: false,
-          error: 'url is required for successful link history entries',
-        });
-      }
-
-      if (!['torrents', 'usenet', 'webdl'].includes(asset_type)) {
-        return res.status(400).json({
-          success: false,
-          error: 'asset_type must be one of: torrents, usenet, webdl',
-        });
-      }
-
-      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-
-      // Delete existing entry with same item_id and file_id (upsert behavior)
-      // Users regenerate links when old ones expire, so replace old with new
-      userDb.db
-        .prepare(
-          `
-            DELETE FROM link_history 
-            WHERE item_id = ? AND file_id IS ? AND asset_type = ?
-          `
-        )
-        .run(item_id, file_id || null, asset_type);
-
-      // Insert new link history entry
-      const result = userDb.db
-        .prepare(
-          `
-            INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-          `
-        )
-        .run(
-          item_id,
-          file_id || null,
-          urlValue,
-          asset_type,
-          item_name || null,
-          file_name || null,
-          status
-        );
-
-      const linkHistory = userDb.db
-        .prepare(
-          `
-            SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at, status
-            FROM link_history
-            WHERE id = ?
-          `
-        )
-        .get(result.lastInsertRowid);
-
-      res.json({ success: true, data: linkHistory });
-    } catch (error) {
-      logger.error('Error creating link history entry', error, {
-        endpoint: '/api/link-history',
-        method: 'POST',
-        authId: req.validatedAuthId,
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (req.validatedAuthId && backend.userDatabaseManager) {
-        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
-      }
-    }
-  });
-
-  // POST /api/link-history/bulk - Bulk create link history entries (for migration)
-  app.post('/api/link-history/bulk', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
-      const { entries } = req.body; // Array of link history entries
-
-      if (!Array.isArray(entries) || entries.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'entries array is required and must not be empty',
-        });
-      }
-
-      if (!backend.userDatabaseManager) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service is initializing, please try again in a moment',
-        });
-      }
-
-      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-
-      const VALID_ASSET_TYPES = new Set(['torrents', 'usenet', 'webdl']);
-
-      // Validate all entries and deduplicate
-      const validatedEntries = [];
-      const seenKeys = new Set(); // Track item_id + file_id combinations to deduplicate
-
-      for (const entry of entries) {
         const {
           item_id,
           file_id,
@@ -269,128 +162,252 @@ export function setupLinkHistoryRoutes(app, backend) {
           asset_type,
           item_name,
           file_name,
-          generated_at,
-          status: entryStatus,
-        } = entry;
-        const status = entryStatus === 'failed' ? 'failed' : 'success';
+          status: rawStatus,
+        } = req.body;
+        const status = rawStatus === 'failed' ? 'failed' : 'success';
         const urlValue = url != null ? String(url) : '';
 
         if (!item_id || !asset_type) {
-          continue; // Skip invalid entries
+          return res.status(400).json({
+            success: false,
+            error: 'item_id and asset_type are required',
+          });
         }
 
         if (status === 'success' && !urlValue) {
-          continue;
+          return res.status(400).json({
+            success: false,
+            error: 'url is required for successful link history entries',
+          });
         }
 
-        if (!VALID_ASSET_TYPES.has(asset_type)) {
-          continue; // Skip invalid asset types
+        if (!['torrents', 'usenet', 'webdl'].includes(asset_type)) {
+          return res.status(400).json({
+            success: false,
+            error: 'asset_type must be one of: torrents, usenet, webdl',
+          });
         }
 
-        const itemIdStr = String(item_id);
-        const fileIdStr = file_id ? String(file_id) : null;
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-        // Create a unique key for deduplication (item_id + file_id combination)
-        const uniqueKey = `${itemIdStr}:${fileIdStr || 'null'}:${asset_type}`;
+        // Delete existing entry with same item_id and file_id (upsert behavior)
+        // Users regenerate links when old ones expire, so replace old with new
+        userDb.db
+          .prepare(
+            `
+            DELETE FROM link_history 
+            WHERE item_id = ? AND file_id IS ? AND asset_type = ?
+          `
+          )
+          .run(item_id, file_id || null, asset_type);
 
-        // Skip if we've already seen this combination in the input
-        if (seenKeys.has(uniqueKey)) {
-          continue;
-        }
-        seenKeys.add(uniqueKey);
+        // Insert new link history entry
+        const result = userDb.db
+          .prepare(
+            `
+            INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+          `
+          )
+          .run(
+            item_id,
+            file_id || null,
+            urlValue,
+            asset_type,
+            item_name || null,
+            file_name || null,
+            status
+          );
 
-        validatedEntries.push({
-          item_id: itemIdStr,
-          file_id: fileIdStr,
-          url: urlValue,
-          asset_type: String(asset_type),
-          item_name: item_name || null,
-          file_name: file_name || null,
-          generated_at: generated_at || null,
-          status,
+        const linkHistory = userDb.db
+          .prepare(
+            `
+            SELECT id, item_id, file_id, url, asset_type, item_name, file_name, generated_at, created_at, status
+            FROM link_history
+            WHERE id = ?
+          `
+          )
+          .get(result.lastInsertRowid);
+
+        res.json({ success: true, data: linkHistory });
+      } catch (error) {
+        logger.error('Error creating link history entry', error, {
+          endpoint: '/api/link-history',
+          method: 'POST',
+          authId: req.validatedAuthId,
         });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
+    }
+  );
 
-      if (validatedEntries.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'No valid entries to insert',
-        });
-      }
+  // POST /api/link-history/bulk - Bulk create link history entries (for migration)
+  app.post(
+    '/api/link-history/bulk',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+        const { entries } = req.body; // Array of link history entries
 
-      // Delete existing entries and insert new ones (upsert behavior)
-      // Users regenerate links when old ones expire, so replace old with new
-      const deleteStmt = userDb.db.prepare(
-        `DELETE FROM link_history WHERE item_id = ? AND file_id IS ? AND asset_type = ?`
-      );
+        if (!Array.isArray(entries) || entries.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'entries array is required and must not be empty',
+          });
+        }
 
-      const insertStmt = userDb.db.prepare(
-        `
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+
+        const VALID_ASSET_TYPES = new Set(['torrents', 'usenet', 'webdl']);
+
+        // Validate all entries and deduplicate
+        const validatedEntries = [];
+        const seenKeys = new Set(); // Track item_id + file_id combinations to deduplicate
+
+        for (const entry of entries) {
+          const {
+            item_id,
+            file_id,
+            url,
+            asset_type,
+            item_name,
+            file_name,
+            generated_at,
+            status: entryStatus,
+          } = entry;
+          const status = entryStatus === 'failed' ? 'failed' : 'success';
+          const urlValue = url != null ? String(url) : '';
+
+          if (!item_id || !asset_type) {
+            continue; // Skip invalid entries
+          }
+
+          if (status === 'success' && !urlValue) {
+            continue;
+          }
+
+          if (!VALID_ASSET_TYPES.has(asset_type)) {
+            continue; // Skip invalid asset types
+          }
+
+          const itemIdStr = String(item_id);
+          const fileIdStr = file_id ? String(file_id) : null;
+
+          // Create a unique key for deduplication (item_id + file_id combination)
+          const uniqueKey = `${itemIdStr}:${fileIdStr || 'null'}:${asset_type}`;
+
+          // Skip if we've already seen this combination in the input
+          if (seenKeys.has(uniqueKey)) {
+            continue;
+          }
+          seenKeys.add(uniqueKey);
+
+          validatedEntries.push({
+            item_id: itemIdStr,
+            file_id: fileIdStr,
+            url: urlValue,
+            asset_type: String(asset_type),
+            item_name: item_name || null,
+            file_name: file_name || null,
+            generated_at: generated_at || null,
+            status,
+          });
+        }
+
+        if (validatedEntries.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'No valid entries to insert',
+          });
+        }
+
+        // Delete existing entries and insert new ones (upsert behavior)
+        // Users regenerate links when old ones expire, so replace old with new
+        const deleteStmt = userDb.db.prepare(
+          `DELETE FROM link_history WHERE item_id = ? AND file_id IS ? AND asset_type = ?`
+        );
+
+        const insertStmt = userDb.db.prepare(
+          `
         INSERT INTO link_history (item_id, file_id, url, asset_type, item_name, file_name, generated_at, status)
         VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), ?)
       `
-      );
+        );
 
-      const upsertMany = userDb.db.transaction((entries) => {
-        let deletedCount = 0;
-        let insertedCount = 0;
+        const upsertMany = userDb.db.transaction((entries) => {
+          let deletedCount = 0;
+          let insertedCount = 0;
 
-        for (const entry of entries) {
-          // Delete existing entry with same item_id, file_id, and asset_type
-          const deleteResult = deleteStmt.run(entry.item_id, entry.file_id, entry.asset_type);
-          deletedCount += deleteResult.changes;
+          for (const entry of entries) {
+            // Delete existing entry with same item_id, file_id, and asset_type
+            const deleteResult = deleteStmt.run(entry.item_id, entry.file_id, entry.asset_type);
+            deletedCount += deleteResult.changes;
 
-          // Insert new entry
-          insertStmt.run(
-            entry.item_id,
-            entry.file_id,
-            entry.url,
-            entry.asset_type,
-            entry.item_name,
-            entry.file_name,
-            entry.generated_at,
-            entry.status
-          );
-          insertedCount++;
-        }
+            // Insert new entry
+            insertStmt.run(
+              entry.item_id,
+              entry.file_id,
+              entry.url,
+              entry.asset_type,
+              entry.item_name,
+              entry.file_name,
+              entry.generated_at,
+              entry.status
+            );
+            insertedCount++;
+          }
 
-        return { deleted: deletedCount, inserted: insertedCount };
-      });
+          return { deleted: deletedCount, inserted: insertedCount };
+        });
 
-      const result = upsertMany(validatedEntries);
-      const insertedCount = result.inserted;
+        const result = upsertMany(validatedEntries);
+        const insertedCount = result.inserted;
 
-      logger.info('Bulk link history migration', {
-        authId,
-        requested: entries.length,
-        validated: validatedEntries.length,
-        deleted: result.deleted,
-        inserted: insertedCount,
-      });
-
-      res.json({
-        success: true,
-        message: `Migrated ${insertedCount} link history entr${insertedCount === 1 ? 'y' : 'ies'}`,
-        data: {
+        logger.info('Bulk link history migration', {
+          authId,
           requested: entries.length,
           validated: validatedEntries.length,
           deleted: result.deleted,
           inserted: insertedCount,
-        },
-      });
-    } catch (error) {
-      logger.error('Error bulk creating link history entries', error, {
-        endpoint: '/api/link-history/bulk',
-        method: 'POST',
-        authId: req.validatedAuthId,
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (req.validatedAuthId && backend.userDatabaseManager) {
-        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        });
+
+        res.json({
+          success: true,
+          message: `Migrated ${insertedCount} link history entr${insertedCount === 1 ? 'y' : 'ies'}`,
+          data: {
+            requested: entries.length,
+            validated: validatedEntries.length,
+            deleted: result.deleted,
+            inserted: insertedCount,
+          },
+        });
+      } catch (error) {
+        logger.error('Error bulk creating link history entries', error, {
+          endpoint: '/api/link-history/bulk',
+          method: 'POST',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
-  });
+  );
 
   // DELETE /api/link-history/bulk - Bulk delete entries
   // NOTE: This must be registered BEFORE /api/link-history/:id to prevent "bulk" from matching the :id parameter

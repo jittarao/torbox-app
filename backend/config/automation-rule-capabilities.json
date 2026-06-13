@@ -56,12 +56,5 @@
     "TAGS",
     "ORIGINAL_URL"
   ],
-  "allActions": [
-    "stop_seeding",
-    "archive",
-    "delete",
-    "force_start",
-    "add_tag",
-    "remove_tag"
-  ]
+  "allActions": ["stop_seeding", "archive", "delete", "force_start", "add_tag", "remove_tag"]
 }

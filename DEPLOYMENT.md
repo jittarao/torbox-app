@@ -65,14 +65,14 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 
 ### Environment Variables
 
-| Variable               | Description                                                                                    | Default                 | Required |
-| ---------------------- | ---------------------------------------------------------------------------------------------- | ----------------------- | -------- |
-| `BACKEND_URL`          | URL of the backend API server                                                                  | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED`     | Disable backend usage (set to `true`/`false`)                                                  | `false`                 | No       |
-| `SEARCH_PAGE_DISABLED` | Hide the search page and top-nav link (`true`/`1`/`yes`)                                       | `false`                 | No       |
-| `FFPROBE_PATH`         | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used. | —                       | No       |
-| `FFPROBE_AUTO_DIR`     | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set). | `<project>/.ffprobe`    | No       |
-| `BACKEND_SERVICE_SECRET` | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout)) | unset | No       |
+| Variable                 | Description                                                                                                   | Default                 | Required |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------- | -------- |
+| `BACKEND_URL`            | URL of the backend API server                                                                                 | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED`       | Disable backend usage (set to `true`/`false`)                                                                 | `false`                 | No       |
+| `SEARCH_PAGE_DISABLED`   | Hide the search page and top-nav link (`true`/`1`/`yes`)                                                      | `false`                 | No       |
+| `FFPROBE_PATH`           | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                | —                       | No       |
+| `FFPROBE_AUTO_DIR`       | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                | `<project>/.ffprobe`    | No       |
+| `BACKEND_SERVICE_SECRET` | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout)) | unset                   | No       |
 
 ### Backend
 
@@ -122,25 +122,25 @@ bun run dev
 
 ### Environment Variables
 
-| Variable               | Description                                                                      | Default                  | Required |
-| ---------------------- | -------------------------------------------------------------------------------- | ------------------------ | -------- |
-| `FRONTEND_URL`         | Frontend URL for CORS                                                            | `http://localhost:3000`  | Yes      |
-| `ENCRYPTION_KEY`       | Base64-encoded key for API key encryption                                        | -                        | Yes      |
-| `PORT`                 | Port for backend server                                                          | `3001`                   | No       |
-| `NODE_ENV`             | Node environment                                                                 | `production`             | No       |
-| `TORBOX_API_BASE`      | TorBox API base URL                                                              | `https://api.torbox.app` | No       |
-| `TORBOX_API_VERSION`   | TorBox API version                                                               | `v1`                     | No       |
-| `MASTER_DB_PATH`       | Directory for master database                                                    | `/app/data/master.db`    | No       |
-| `USER_DB_DIR`          | Directory for user database files                                                | `/app/data/users`        | No       |
-| `MAX_DB_CONNECTIONS`   | Maximum pooled database connections                                              | `200`                    | No       |
-| `SQLITE_CACHE_SIZE_KB` | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)       | `-1000`                  | No       |
-| `IP_RATE_LIMIT_MAX`    | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`                   | No       |
-| `USER_RATE_LIMIT_MAX`  | Max API requests per authenticated user per 15 minutes                           | `500`                    | No       |
-| `TRUST_PROXY`          | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
-| `BACKEND_REQUIRE_API_KEY` | Require `x-api-key` on all user routes (disables legacy `authId`-only access) | unset (`false`)          | No       |
-| `BACKEND_SERVICE_SECRET` | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE) | unset                    | No       |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max staged upload storage (MB) per **LIMITED** tier user | `100`                    | No       |
-| `UPLOAD_LIMIT_MAX_FILES` | Max retained staged files per **LIMITED** tier user | `500`                    | No       |
+| Variable                      | Description                                                                      | Default                  | Required |
+| ----------------------------- | -------------------------------------------------------------------------------- | ------------------------ | -------- |
+| `FRONTEND_URL`                | Frontend URL for CORS                                                            | `http://localhost:3000`  | Yes      |
+| `ENCRYPTION_KEY`              | Base64-encoded key for API key encryption                                        | -                        | Yes      |
+| `PORT`                        | Port for backend server                                                          | `3001`                   | No       |
+| `NODE_ENV`                    | Node environment                                                                 | `production`             | No       |
+| `TORBOX_API_BASE`             | TorBox API base URL                                                              | `https://api.torbox.app` | No       |
+| `TORBOX_API_VERSION`          | TorBox API version                                                               | `v1`                     | No       |
+| `MASTER_DB_PATH`              | Directory for master database                                                    | `/app/data/master.db`    | No       |
+| `USER_DB_DIR`                 | Directory for user database files                                                | `/app/data/users`        | No       |
+| `MAX_DB_CONNECTIONS`          | Maximum pooled database connections                                              | `200`                    | No       |
+| `SQLITE_CACHE_SIZE_KB`        | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)       | `-1000`                  | No       |
+| `IP_RATE_LIMIT_MAX`           | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`                   | No       |
+| `USER_RATE_LIMIT_MAX`         | Max API requests per authenticated user per 15 minutes                           | `500`                    | No       |
+| `TRUST_PROXY`                 | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
+| `BACKEND_REQUIRE_API_KEY`     | Require `x-api-key` on all user routes (disables legacy `authId`-only access)    | unset (`false`)          | No       |
+| `BACKEND_SERVICE_SECRET`      | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE)  | unset                    | No       |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max staged upload storage (MB) per **LIMITED** tier user                         | `100`                    | No       |
+| `UPLOAD_LIMIT_MAX_FILES`      | Max retained staged files per **LIMITED** tier user                              | `500`                    | No       |
 
 Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
 
@@ -148,10 +148,10 @@ Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compos
 
 Staged upload files (`.torrent`, `.nzb`) live under the backend data volume (`data/uploads/user_{authId}/`). By default every user is **LIMITED** and subject to both quotas above. When a new upload would exceed storage **or** file count, the backend evicts oldest completed/failed staged files (hard delete — row + disk). **UNLIMITED** users bypass quotas; change tier in the admin panel (`/admin` → user detail → Upload quota).
 
-| Variable | Applies to | Restart required |
-| -------- | ---------- | ---------------- |
+| Variable                      | Applies to   | Restart required        |
+| ----------------------------- | ------------ | ----------------------- |
 | `UPLOAD_LIMIT_MAX_STORAGE_MB` | Backend only | Yes (backend container) |
-| `UPLOAD_LIMIT_MAX_FILES` | Backend only | Yes (backend container) |
+| `UPLOAD_LIMIT_MAX_FILES`      | Backend only | Yes (backend container) |
 
 Magnet/link-only queue rows do not count toward the file quota (no staged file). TorBox-side downloads are unaffected — only local staging artifacts are evicted.
 
@@ -191,28 +191,28 @@ Docker port bindings should keep the backend off the public interface:
 
 ```yaml
 ports:
-  - "127.0.0.1:3000:3000"   # frontend
-  - "127.0.0.1:3001:3001"   # backend — localhost on host only
+  - '127.0.0.1:3000:3000' # frontend
+  - '127.0.0.1:3001:3001' # backend — localhost on host only
 ```
 
 The frontend container uses `BACKEND_URL=http://torbox-backend:3001` (service name on the Docker network), not `localhost:3001`.
 
 ### What each credential is for
 
-| Credential | Role |
-| ---------- | ---- |
-| **TorBox API key** | Real secret; required by Next.js API routes for users. |
-| **`authId`** | `SHA-256(apiKey)` — user id for backend SQLite; added by many Next.js proxies server-side. Not a substitute for the API key when the backend is locked down. |
-| **`BACKEND_SERVICE_SECRET`** | Optional; proves the caller is *your* Next.js app on internal routes (API key registration), not end users. |
-| **`ENCRYPTION_KEY`** | Required; encrypts stored TorBox API keys in the master DB. |
+| Credential                   | Role                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **TorBox API key**           | Real secret; required by Next.js API routes for users.                                                                                                       |
+| **`authId`**                 | `SHA-256(apiKey)` — user id for backend SQLite; added by many Next.js proxies server-side. Not a substitute for the API key when the backend is locked down. |
+| **`BACKEND_SERVICE_SECRET`** | Optional; proves the caller is _your_ Next.js app on internal routes (API key registration), not end users.                                                  |
+| **`ENCRYPTION_KEY`**         | Required; encrypts stored TorBox API keys in the master DB.                                                                                                  |
 
 ### Do you need `BACKEND_REQUIRE_API_KEY` or `BACKEND_SERVICE_SECRET`?
 
-| Your setup | `BACKEND_REQUIRE_API_KEY` | `BACKEND_SERVICE_SECRET` |
-| -------- | ------------------------- | ------------------------ |
-| Caddy → `:3000` only, backend `127.0.0.1:3001` or Docker-internal | **Not required** (default) | **Not required** (default) |
-| Backend published as `0.0.0.0:3001` or reachable from the internet | **Recommended** (`true`) | Consider setting |
-| Untrusted containers on the same Docker network as `torbox-backend` | Consider `true` | **Recommended** |
+| Your setup                                                          | `BACKEND_REQUIRE_API_KEY`  | `BACKEND_SERVICE_SECRET`   |
+| ------------------------------------------------------------------- | -------------------------- | -------------------------- |
+| Caddy → `:3000` only, backend `127.0.0.1:3001` or Docker-internal   | **Not required** (default) | **Not required** (default) |
+| Backend published as `0.0.0.0:3001` or reachable from the internet  | **Recommended** (`true`)   | Consider setting           |
+| Untrusted containers on the same Docker network as `torbox-backend` | Consider `true`            | **Recommended**            |
 
 With the recommended layout, internet users never talk to port `3001`. They use Next.js, which **requires `x-api-key`** on user-facing `/api/*` routes and forwards it to the backend. Legacy `authId`-only mode on the backend only matters if something can call the backend **directly** without the TorBox API key (host access, mis-published port, compromised container on `torbox-network`). The `authId` query param on some server-side proxies is extra metadata, not a substitute for the key.
 
@@ -449,20 +449,20 @@ docker network create torbox-network
 
 #### Required stack environment variables
 
-| Variable | Description |
-| -------- | ----------- |
-| `ENCRYPTION_KEY` | `openssl rand -base64 32` — do not change after data exists |
-| `FRONTEND_URL` | Public browser origin for CORS, e.g. `https://yourdomain.com` (no trailing slash) |
+| Variable         | Description                                                                       |
+| ---------------- | --------------------------------------------------------------------------------- |
+| `ENCRYPTION_KEY` | `openssl rand -base64 32` — do not change after data exists                       |
+| `FRONTEND_URL`   | Public browser origin for CORS, e.g. `https://yourdomain.com` (no trailing slash) |
 
 #### Optional stack environment variables
 
-| Variable | Description |
-| -------- | ----------- |
-| `SENTRY_DSN` | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set) |
-| `BACKEND_SERVICE_SECRET` | Same value on both services; optional hardening |
-| `SEARCH_PAGE_DISABLED` | `true` to hide the search page |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Staged upload storage cap (MB) per LIMITED user (default `100`) |
-| `UPLOAD_LIMIT_MAX_FILES` | Staged file count cap per LIMITED user (default `500`) |
+| Variable                      | Description                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `SENTRY_DSN`                  | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set) |
+| `BACKEND_SERVICE_SECRET`      | Same value on both services; optional hardening                             |
+| `SEARCH_PAGE_DISABLED`        | `true` to hide the search page                                              |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Staged upload storage cap (MB) per LIMITED user (default `100`)             |
+| `UPLOAD_LIMIT_MAX_FILES`      | Staged file count cap per LIMITED user (default `500`)                      |
 
 #### Deploy
 

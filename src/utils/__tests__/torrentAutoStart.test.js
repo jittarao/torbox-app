@@ -12,7 +12,8 @@ const controlQueuedItemMock = mock(async (apiKey, queuedId) => {
 
 mock.module('@/utils/utility', () => ({
   getAutoStartOptions: () => uploadOptions,
-  isActiveDownload: (item) => item?.active === true || item?.active === 1 || item?.active === 'true',
+  isActiveDownload: (item) =>
+    item?.active === true || item?.active === 1 || item?.active === 'true',
   isQueuedItem: (item) => {
     if (!item) return false;
     if (item.status && String(item.status).toLowerCase() === 'queued') return true;

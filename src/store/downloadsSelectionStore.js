@@ -38,9 +38,7 @@ export function emptySelection() {
 function serializeSelection({ items, files }) {
   return JSON.stringify({
     items: Array.from(items),
-    files: Object.fromEntries(
-      Array.from(files).map(([key, value]) => [key, Array.from(value)])
-    ),
+    files: Object.fromEntries(Array.from(files).map(([key, value]) => [key, Array.from(value)])),
   });
 }
 
@@ -118,9 +116,7 @@ export function pruneSelectionAgainstItems(selection, currentItems) {
     if (!item) continue;
 
     const fileIdSet = new Set(item.files?.map((f) => f.id) ?? []);
-    const validFileIds = new Set(
-      Array.from(fileIds).filter((fileId) => fileIdSet.has(fileId))
-    );
+    const validFileIds = new Set(Array.from(fileIds).filter((fileId) => fileIdSet.has(fileId)));
 
     if (validFileIds.size > 0) {
       validFiles.set(getDownloadSelectionId(item), validFileIds);

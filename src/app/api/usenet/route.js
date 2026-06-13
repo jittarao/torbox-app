@@ -25,16 +25,19 @@ export async function GET(request) {
 
     // Fetch both regular and queued usenet downloads in parallel
     const [downloadsResponse, queuedResponse] = await Promise.all([
-      torboxFetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?bypass_cache=true&_t=${timestamp}`, {
-        cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
-          Expires: '0',
-        },
-      }),
+      torboxFetch(
+        `${API_BASE}/${API_VERSION}/api/usenet/mylist?bypass_cache=true&_t=${timestamp}`,
+        {
+          cache: 'no-store',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      ),
       torboxFetch(
         `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet&bypass_cache=true&_t=${timestamp}`,
         {

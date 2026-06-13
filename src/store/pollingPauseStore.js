@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
-export const selectIsPaused = (state) =>
-  Object.values(state.pauseReasons).some(Boolean);
+export const selectIsPaused = (state) => Object.values(state.pauseReasons).some(Boolean);
 
 export const usePollingPauseStore = create((set) => ({
   pauseReasons: {},

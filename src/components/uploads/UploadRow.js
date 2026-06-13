@@ -125,7 +125,10 @@ export default function UploadRow({
           </div>
         </div>
         {upload.error_message && (
-          <div className="text-xs text-red-500 dark:text-red-400 mt-0.5" title={upload.error_message}>
+          <div
+            className="text-xs text-red-500 dark:text-red-400 mt-0.5"
+            title={upload.error_message}
+          >
             {formatErrorMessage(upload.error_message)}
           </div>
         )}

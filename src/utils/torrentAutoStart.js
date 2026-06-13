@@ -4,10 +4,8 @@ import { processedQueueIdsRef } from '@/store/torboxDownloadsRefs';
 import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
 
-const {
-  autoStartBetweenStartsMs: BETWEEN_STARTS_MS,
-  autoStartProcessedTtlMs: PROCESSED_TTL_MS,
-} = POLLING_CONFIG;
+const { autoStartBetweenStartsMs: BETWEEN_STARTS_MS, autoStartProcessedTtlMs: PROCESSED_TTL_MS } =
+  POLLING_CONFIG;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

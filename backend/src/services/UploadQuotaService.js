@@ -15,11 +15,7 @@ import {
   getUploadFilePath,
 } from '../utils/fileStorage.js';
 import { stat } from 'fs/promises';
-import {
-  getUploadQuotaLimits,
-  isUnlimitedTier,
-  UPLOAD_TIERS,
-} from '../config/uploadQuota.js';
+import { getUploadQuotaLimits, isUnlimitedTier, UPLOAD_TIERS } from '../config/uploadQuota.js';
 
 const ACTIVE_STATUSES = new Set(['queued', 'processing']);
 const DELETABLE_STATUSES = new Set(['completed', 'failed']);
@@ -253,7 +249,9 @@ export default class UploadQuotaService {
   async deleteUpload(authId, userDb, upload, reason = 'manual') {
     if (!this.isDeletable(upload) && reason === 'quota_eviction') {
       const current = userDb.db
-        .prepare('SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?')
+        .prepare(
+          'SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?'
+        )
         .get(upload.id);
       if (!current || ACTIVE_STATUSES.has(current.status)) {
         return false;
@@ -261,7 +259,9 @@ export default class UploadQuotaService {
       upload = current;
     }
 
-    const currentUpload = userDb.db.prepare('SELECT status FROM uploads WHERE id = ?').get(upload.id);
+    const currentUpload = userDb.db
+      .prepare('SELECT status FROM uploads WHERE id = ?')
+      .get(upload.id);
     if (!currentUpload) return false;
 
     if (ACTIVE_STATUSES.has(currentUpload.status)) {

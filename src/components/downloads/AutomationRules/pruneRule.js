@@ -1,9 +1,6 @@
 import { ACTION_TYPES, CONDITION_TYPES } from './constants';
 import { getSupportedActions, getSupportedConditions } from './capabilities';
-import {
-  getDefaultOperatorForConditionType,
-  getDefaultValueForConditionType,
-} from './utils';
+import { getDefaultOperatorForConditionType, getDefaultValueForConditionType } from './utils';
 
 /**
  * Remove conditions/actions unsupported for the given asset types (intersection).
@@ -30,8 +27,7 @@ export function pruneRuleForAssetTypes(rule, assetTypes) {
     }
   }
 
-  const defaultConditionType =
-    getSupportedConditions(assetTypes)[0] || CONDITION_TYPES.STATUS;
+  const defaultConditionType = getSupportedConditions(assetTypes)[0] || CONDITION_TYPES.STATUS;
 
   for (const group of groups) {
     if (group.conditions.length === 0) {

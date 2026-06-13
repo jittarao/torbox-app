@@ -43,9 +43,9 @@ describe('RuleValidator assetTypes', () => {
     };
     const { valid, errors } = validator.validate(rule);
     expect(valid).toBe(false);
-    expect(errors.some((e) => e.includes('Condition RATIO is not supported for asset types [usenet]'))).toBe(
-      true
-    );
+    expect(
+      errors.some((e) => e.includes('Condition RATIO is not supported for asset types [usenet]'))
+    ).toBe(true);
   });
 
   test('rejects stop_seeding for webdl rule', () => {

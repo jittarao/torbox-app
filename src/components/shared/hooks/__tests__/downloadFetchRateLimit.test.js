@@ -16,24 +16,19 @@ describe('downloadFetchRateLimiter', () => {
     expect(limiter.acquire('torrents')).toBeNull();
   });
 
-  it(
-    'blocks a type after maxCalls within the window',
-    async () => {
-      const limiter = createDownloadFetchRateLimiter();
-      const gap =
-        (POLLING_CONFIG.minIntervalByType.torrents ||
-          POLLING_CONFIG.minIntervalBetweenCallsMs) + 50;
+  it('blocks a type after maxCalls within the window', async () => {
+    const limiter = createDownloadFetchRateLimiter();
+    const gap =
+      (POLLING_CONFIG.minIntervalByType.torrents || POLLING_CONFIG.minIntervalBetweenCallsMs) + 50;
 
-      expect(limiter.acquire('torrents')).toBe(1);
-      await Bun.sleep(gap);
-      expect(limiter.acquire('torrents')).toBe(2);
-      await Bun.sleep(gap);
-      expect(limiter.acquire('torrents')).toBe(3);
-      await Bun.sleep(gap);
-      expect(limiter.acquire('torrents')).toBeNull();
-    },
-    10_000
-  );
+    expect(limiter.acquire('torrents')).toBe(1);
+    await Bun.sleep(gap);
+    expect(limiter.acquire('torrents')).toBe(2);
+    await Bun.sleep(gap);
+    expect(limiter.acquire('torrents')).toBe(3);
+    await Bun.sleep(gap);
+    expect(limiter.acquire('torrents')).toBeNull();
+  }, 10_000);
 
   it('canManualRefresh on all tab requires each type to have budget', () => {
     const limiter = createDownloadFetchRateLimiter();

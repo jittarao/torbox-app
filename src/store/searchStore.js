@@ -52,8 +52,7 @@ export const useSearchStore = create((set, get) => ({
   },
 
   loadHistory: () => {
-    const history =
-      getJSON('torboxSearchHistory:v1') ?? getJSON('torboxSearchHistory');
+    const history = getJSON('torboxSearchHistory:v1') ?? getJSON('torboxSearchHistory');
     if (history && Array.isArray(history)) {
       set({ searchHistory: history });
     }

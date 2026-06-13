@@ -97,9 +97,7 @@ describe('TorboxApiOutageCoordinator', () => {
     torboxApiOutageCoordinator.setDependencies(
       {
         getUserRegistryInfo: (authId) =>
-          authId === 'user1'
-            ? { auth_id: 'user1', encrypted_key: 'enc' }
-            : null,
+          authId === 'user1' ? { auth_id: 'user1', encrypted_key: 'enc' } : null,
         getActiveUsers: () => [],
       },
       () => 'plain-key'

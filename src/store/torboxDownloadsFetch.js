@@ -142,9 +142,7 @@ export async function fetchDownloadType(
   const currentFetchId = rateLimiter.acquire(activeType, { forMutation });
   if (currentFetchId == null) {
     if (forMutation && !mutationRetried) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, POLLING_CONFIG.minIntervalBetweenCallsMs)
-      );
+      await new Promise((resolve) => setTimeout(resolve, POLLING_CONFIG.minIntervalBetweenCallsMs));
       return fetchDownloadType(apiKey, activeType, viewType, {
         bypassCache,
         retryCount,
@@ -171,8 +169,7 @@ export async function fetchDownloadType(
 
   const now = Date.now();
   const isLatestFetch = () =>
-    rateLimiter.getLatestFetchId(activeType) === currentFetchId &&
-    prevApiKeyRef.current === apiKey;
+    rateLimiter.getLatestFetchId(activeType) === currentFetchId && prevApiKeyRef.current === apiKey;
 
   let endpoint;
   switch (activeType) {
@@ -282,9 +279,7 @@ export async function fetchDownloadType(
         assetType
       );
 
-      const sortedItems = orderKeys
-        .map((key) => entities[key])
-        .filter(Boolean);
+      const sortedItems = orderKeys.map((key) => entities[key]).filter(Boolean);
 
       if (data.cursor) {
         deltaCursorRef.current[activeType] = data.cursor;
@@ -339,7 +334,15 @@ export async function fetchDownloadType(
       finishFetchFlags();
       return [];
     }
-    return handleFetchError(err, activeType, viewType, currentFetchId, skipLoading, null, manualRefresh);
+    return handleFetchError(
+      err,
+      activeType,
+      viewType,
+      currentFetchId,
+      skipLoading,
+      null,
+      manualRefresh
+    );
   }
 }
 

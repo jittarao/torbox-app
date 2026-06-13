@@ -103,9 +103,8 @@ const LinkHistory = ({ apiKey }) => {
 
   const selectedCopyableCount = useMemo(
     () =>
-      history.filter(
-        (item) => selectedLinks.has(item.id) && item.status !== 'failed' && item.url
-      ).length,
+      history.filter((item) => selectedLinks.has(item.id) && item.status !== 'failed' && item.url)
+        .length,
     [history, selectedLinks]
   );
 

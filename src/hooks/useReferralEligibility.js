@@ -24,52 +24,55 @@ export function useReferralEligibility(apiKey, options = {}) {
     reason: 'loading',
   });
 
-  const refresh = useCallback(async (signal) => {
-    if (!apiKey || apiKey.length < 20) {
-      setUserData(null);
-      setSubscriptions(null);
-      setEligibility({ showCallout: false, canAutoApply: false, reason: 'no_api_key' });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const [profile, subsResponse] = await Promise.all([
-        fetchUserProfile(apiKey, { signal }),
-        fetch('/api/user/subscriptions', {
-          headers: { 'x-api-key': apiKey },
-          signal,
-        }).then((r) => (r.ok ? r.json() : null)),
-      ]);
-
-      if (signal?.aborted) return;
-
-      const subs = subsResponse?.success ? subsResponse.data : null;
-      setUserData(profile);
-      setSubscriptions(subs);
-
-      if (isOwnReferralCode(profile)) {
-        markReferralAppliedForKey(apiKey);
+  const refresh = useCallback(
+    async (signal) => {
+      if (!apiKey || apiKey.length < 20) {
+        setUserData(null);
+        setSubscriptions(null);
+        setEligibility({ showCallout: false, canAutoApply: false, reason: 'no_api_key' });
+        return;
       }
 
-      const next = getReferralEligibility({
-        apiKey,
-        userData: profile,
-        subscriptions: subs,
-        ignoreDismissal: promptFromQuery,
-        ignoreSessionCap: promptFromQuery,
-      });
-      setEligibility(next);
-    } catch (error) {
-      if (signal?.aborted || error?.name === 'AbortError') return;
-      console.error('Error loading referral eligibility:', error);
-      setEligibility({ showCallout: false, canAutoApply: false, reason: 'error' });
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
+      setLoading(true);
+      try {
+        const [profile, subsResponse] = await Promise.all([
+          fetchUserProfile(apiKey, { signal }),
+          fetch('/api/user/subscriptions', {
+            headers: { 'x-api-key': apiKey },
+            signal,
+          }).then((r) => (r.ok ? r.json() : null)),
+        ]);
+
+        if (signal?.aborted) return;
+
+        const subs = subsResponse?.success ? subsResponse.data : null;
+        setUserData(profile);
+        setSubscriptions(subs);
+
+        if (isOwnReferralCode(profile)) {
+          markReferralAppliedForKey(apiKey);
+        }
+
+        const next = getReferralEligibility({
+          apiKey,
+          userData: profile,
+          subscriptions: subs,
+          ignoreDismissal: promptFromQuery,
+          ignoreSessionCap: promptFromQuery,
+        });
+        setEligibility(next);
+      } catch (error) {
+        if (signal?.aborted || error?.name === 'AbortError') return;
+        console.error('Error loading referral eligibility:', error);
+        setEligibility({ showCallout: false, canAutoApply: false, reason: 'error' });
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
-    }
-  }, [apiKey, promptFromQuery]);
+    },
+    [apiKey, promptFromQuery]
+  );
 
   useEffect(() => {
     const abortController = new AbortController();

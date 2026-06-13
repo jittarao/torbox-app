@@ -54,10 +54,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Error fetching web download link:', error);
     if (isTorboxFetchTimeout(error)) {
-      return NextResponse.json(
-        { success: false, error: TORBOX_TIMEOUT_ERROR },
-        { status: 408 }
-      );
+      return NextResponse.json({ success: false, error: TORBOX_TIMEOUT_ERROR }, { status: 408 });
     }
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }

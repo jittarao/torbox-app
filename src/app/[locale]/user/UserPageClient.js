@@ -35,18 +35,11 @@ export default function UserPageClient() {
   };
 
   if (!hydrated) {
-    return (
-      <div
-        className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
-      ></div>
-    );
+    return <div className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}></div>;
   }
 
   return (
-    <AppShell
-      apiKey={apiKey}
-      className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}
-    >
+    <AppShell apiKey={apiKey} className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text dark:text-text-dark mb-2">{t('title')}</h1>

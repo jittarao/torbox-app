@@ -47,5 +47,3 @@ export function setJSON(key, value) {
     console.error(`storage.setJSON error: ${key}`, e);
   }
 }
-
-

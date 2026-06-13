@@ -1,9 +1,5 @@
 import { readFileSync } from 'fs';
-import {
-  getUploadFilePath,
-  fileExists,
-  validateFilePathOwnership,
-} from '../utils/fileStorage.js';
+import { getUploadFilePath, fileExists, validateFilePathOwnership } from '../utils/fileStorage.js';
 import {
   extractHashFromMagnet,
   extractInfoHashFromTorrentBuffer,
@@ -92,8 +88,7 @@ export function matchTorboxResource(upload, torrents, expectedHash) {
       torrents.find((item) => {
         const itemHash = normalizeInfoHash(item.hash);
         return itemHash !== null && itemHash === normalizedExpected;
-      }) ||
-      null;
+      }) || null;
   }
 
   if (!match && upload.name) {
@@ -102,8 +97,7 @@ export function matchTorboxResource(upload, torrents, expectedHash) {
       torrents.find((item) => {
         const itemName = item.name || '';
         return itemName.toLowerCase() === lowerName;
-      }) ||
-      null;
+      }) || null;
   }
 
   return {
@@ -132,11 +126,7 @@ export async function resolveTorrentFromExistingList(upload, torrents) {
   }
 
   const expectedHash = await getExpectedTorrentHash(upload);
-  const resolved = matchTorboxResource(
-    upload,
-    filterActiveTorboxTorrents(torrents),
-    expectedHash
-  );
+  const resolved = matchTorboxResource(upload, filterActiveTorboxTorrents(torrents), expectedHash);
 
   if (!resolved.hash && resolved.torrentId == null) {
     return null;

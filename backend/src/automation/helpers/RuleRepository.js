@@ -424,15 +424,7 @@ class RuleRepository {
                  (name, enabled, trigger_config, conditions, action_config, metadata, asset_types, cooldown_minutes)
                VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
             )
-            .run(
-              name,
-              enabled,
-              triggerConfig,
-              conditions,
-              actionConfig,
-              metadata,
-              assetTypesJson
-            );
+            .run(name, enabled, triggerConfig, conditions, actionConfig, metadata, assetTypesJson);
           savedId = result.lastInsertRowid;
         }
 

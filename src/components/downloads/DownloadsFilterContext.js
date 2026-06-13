@@ -5,7 +5,9 @@ import { createContext, useContext } from 'react';
 const DownloadsFilterContext = createContext(null);
 
 export function DownloadsFilterProvider({ children, value }) {
-  return <DownloadsFilterContext.Provider value={value}>{children}</DownloadsFilterContext.Provider>;
+  return (
+    <DownloadsFilterContext.Provider value={value}>{children}</DownloadsFilterContext.Provider>
+  );
 }
 
 export function useDownloadsFilterContext() {

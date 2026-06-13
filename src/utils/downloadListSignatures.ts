@@ -3,7 +3,10 @@ import { fileListSignature } from '@/utils/downloadListMerge';
 type EntityMap = Record<string, Record<string, unknown> | undefined>;
 
 /** Per-entity signature for list derivation cache (progress, state, files). */
-export function buildRowDataSignature(key: string, entity: Record<string, unknown> | undefined): string {
+export function buildRowDataSignature(
+  key: string,
+  entity: Record<string, unknown> | undefined
+): string {
   if (!entity) return `${key}:missing`;
   const files = entity.files as unknown[] | undefined;
   return `${key}:${entity.progress ?? 0}:${entity.download_state ?? ''}:${entity.active ? 1 : 0}:${entity.download_finished ? 1 : 0}:${fileListSignature(files)}:${entity.updated_at ?? ''}`;

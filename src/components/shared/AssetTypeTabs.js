@@ -43,7 +43,10 @@ export default function AssetTypeTabs({ activeType, onTypeChange, isTypeAvailabl
 
   return (
     <div className="border-b border-border dark:border-border-dark overflow-x-auto overflow-y-hidden">
-      <nav className="-mb-px flex justify-start md:justify-center gap-x-2 md:gap-x-8 px-4 md:px-0" role="tablist">
+      <nav
+        className="-mb-px flex justify-start md:justify-center gap-x-2 md:gap-x-8 px-4 md:px-0"
+        role="tablist"
+      >
         {tabs.flatMap((tab) => {
           if (!isTypeAvailable(tab.id)) return [];
           return [

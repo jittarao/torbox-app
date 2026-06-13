@@ -4,7 +4,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { formatSize, SIZE_BASE_DECIMAL } from '@/components/downloads/utils/formatters';
 import Spinner from '@/components/shared/Spinner';
-import { AlertCircle, BarChart3, Check, CheckCircle, Copy, CreditCard, Download, User } from '@/components/icons';
+import {
+  AlertCircle,
+  BarChart3,
+  Check,
+  CheckCircle,
+  Copy,
+  CreditCard,
+  Download,
+  User,
+} from '@/components/icons';
 import BandwidthChart from '@/components/user/BandwidthChart';
 import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
 import { buildTorboxSubscriptionReferralUrl } from '@/utils/referralLinks';
@@ -263,11 +272,7 @@ export default function UserProfile({ apiKey, setToast }) {
                         title={t('copyLink')}
                         aria-label={t('copyLink')}
                       >
-                        {copiedLink ? (
-                          <Check className="size-5" />
-                        ) : (
-                          <Copy className="size-5" />
-                        )}
+                        {copiedLink ? <Check className="size-5" /> : <Copy className="size-5" />}
                       </button>
                     </div>
                   </div>

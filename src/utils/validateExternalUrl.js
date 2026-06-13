@@ -2,6 +2,20 @@
  * Validate that a user-supplied URL is safe for server-side fetch.
  * Returns { valid: true, url } or { valid: false, reason }.
  */
+/**
+ * Given a hostname that may contain an IPv4-mapped IPv6 suffix (dotted decimal
+ * embedded in the last segment, e.g. "::ffff:127.0.0.1"), extract and re-check
+ * the embedded IPv4 against private/reserved ranges.
+ */
+function checkIpv4Mapped(parts) {
+  const last = parts[parts.length - 1];
+  // Dotted decimal embedded in the last segment (common SSRF vector)
+  if (last.includes('.')) {
+    return isPrivateOrReservedIp(last);
+  }
+  return false;
+}
+
 export function validateExternalUrl(input) {
   let url;
   try {
@@ -91,6 +105,9 @@ function isPrivateOrReservedIp(hostname) {
     if ((first & 0xfe00) === 0xfc00) return true;
     // Multicast ff00::/8
     if ((first & 0xff00) === 0xff00) return true;
+
+    // IPv4-mapped or embedded IPv4 (e.g. ::ffff:127.0.0.1, ::ffff:c0a8:101)
+    if (checkIpv4Mapped(parts)) return true;
 
     return false;
   }

@@ -57,7 +57,7 @@ export function useDownloadRowInteractions({
     const keys = entityKeysRef.current;
     if (keys?.length) {
       const key = keys[index];
-      return key ? useTorboxDownloadsStore.getState().entities[key] ?? null : null;
+      return key ? (useTorboxDownloadsStore.getState().entities[key] ?? null) : null;
     }
     return itemsRef.current?.[index] ?? null;
   }, []);
@@ -181,13 +181,7 @@ export function useDownloadRowInteractions({
           }
         });
     },
-    [
-      assetKey,
-      activeType,
-      downloadSingle,
-      setToast,
-      toastMessages,
-    ]
+    [assetKey, activeType, downloadSingle, setToast, toastMessages]
   );
 
   return {

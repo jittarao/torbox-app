@@ -41,10 +41,7 @@ export function useRssFeeds(apiKey) {
     }
   }, [apiKey, fetchFeeds]);
 
-  const addFeed = useCallback(
-    (feedData) => addFeedStore(apiKey, feedData),
-    [apiKey, addFeedStore]
-  );
+  const addFeed = useCallback((feedData) => addFeedStore(apiKey, feedData), [apiKey, addFeedStore]);
 
   const modifyFeed = useCallback(
     (feedData) => modifyFeedStore(apiKey, feedData),

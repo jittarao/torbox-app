@@ -1635,7 +1635,11 @@ describe('RuleEvaluator', () => {
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.controlQueuedDownload).toHaveBeenCalledWith('torrent-1', 'start', 'torrent');
+      expect(mockApiClient.controlQueuedDownload).toHaveBeenCalledWith(
+        'torrent-1',
+        'start',
+        'torrent'
+      );
     });
 
     it('should execute force_start for queued usenet via controlQueuedDownload', async () => {
@@ -1644,7 +1648,11 @@ describe('RuleEvaluator', () => {
 
       await ruleEvaluator.executeAction(action, torrent);
 
-      expect(mockApiClient.controlQueuedDownload).toHaveBeenCalledWith('usenet-1', 'start', 'usenet');
+      expect(mockApiClient.controlQueuedDownload).toHaveBeenCalledWith(
+        'usenet-1',
+        'start',
+        'usenet'
+      );
     });
 
     it('should execute archive action', async () => {

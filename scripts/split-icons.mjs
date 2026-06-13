@@ -26,9 +26,13 @@ const indexLines = [
   ...names.map(({ name, exportName }) => `import ${name} from './${exportName}';'`),
 ];
 // fix typo in import lines
-const imports = names.map(({ name, exportName }) => `import ${name} from './${exportName}';`).join('\n');
+const imports = names
+  .map(({ name, exportName }) => `import ${name} from './${exportName}';`)
+  .join('\n');
 const iconEntries = names.map(({ name, exportName }) => `  ${exportName}: ${name},`).join('\n');
-const reexports = names.map(({ exportName }) => `export { default as ${exportName} } from './${exportName}';`).join('\n');
+const reexports = names
+  .map(({ exportName }) => `export { default as ${exportName} } from './${exportName}';`)
+  .join('\n');
 
 const indexContent = `/** Tree-shakeable named icon exports; default object kept for legacy imports. */
 ${imports}

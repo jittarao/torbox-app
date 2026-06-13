@@ -87,8 +87,7 @@ export const useDownloadsPlayerStore = create((set, get) => ({
     set({ video: INITIAL_VIDEO });
   },
 
-  setVideoStreamUrl: (streamUrl) =>
-    set((state) => ({ video: { ...state.video, streamUrl } })),
+  setVideoStreamUrl: (streamUrl) => set((state) => ({ video: { ...state.video, streamUrl } })),
 
   openAudio: (payload) => {
     usePollingPauseStore.getState().setPauseReason('audioPlayer', true);
@@ -148,12 +147,10 @@ export const useDownloadsPlayerStore = create((set, get) => ({
     const item = findItemById(itemId, activeType);
     const resolvedAssetType = resolveItemAssetType(item, at || activeType);
     const idField = getIdFieldForItem(item, at || activeType);
-    const result = await requestDownloadLink(
-      itemId,
-      { fileId },
-      idField,
-      { assetType: resolvedAssetType, item }
-    );
+    const result = await requestDownloadLink(itemId, { fileId }, idField, {
+      assetType: resolvedAssetType,
+      item,
+    });
     if (result.success && result.data?.url) {
       get().setAudioUrl(result.data.url);
       return result.data.url;

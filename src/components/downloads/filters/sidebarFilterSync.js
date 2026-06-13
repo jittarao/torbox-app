@@ -1,8 +1,4 @@
-import {
-  buildTagFilter,
-  getActiveTagIds,
-  hasActiveFilters,
-} from './filterHelpers';
+import { buildTagFilter, getActiveTagIds, hasActiveFilters } from './filterHelpers';
 
 /** Loose id match (API may return number or string). */
 export function sameViewId(a, b) {

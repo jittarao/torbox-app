@@ -8,10 +8,8 @@ import ItemsTable from './ItemsTable';
 import CardList from './CardList';
 
 export default function DownloadsContentArea() {
-  const {
-    appliedFilters, activeView, tags,
-    handleClearFilters, handleEditActiveFilters,
-  } = useDownloadsFilterContext();
+  const { appliedFilters, activeView, tags, handleClearFilters, handleEditActiveFilters } =
+    useDownloadsFilterContext();
   const { isBackendAvailable, displayViewMode } = useDownloadsUIContext();
 
   return (

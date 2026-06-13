@@ -62,7 +62,9 @@ export const isBooleanCondition = (conditionType) => {
 
 // Helper to check if a condition type is string-based
 export const isStringCondition = (conditionType) => {
-  return [CONDITION_TYPES.TRACKER, CONDITION_TYPES.NAME, CONDITION_TYPES.ORIGINAL_URL].includes(conditionType);
+  return [CONDITION_TYPES.TRACKER, CONDITION_TYPES.NAME, CONDITION_TYPES.ORIGINAL_URL].includes(
+    conditionType
+  );
 };
 
 // Helper to check if a condition type requires hours parameter
@@ -435,8 +437,7 @@ export const getDefaultValueForConditionType = (conditionType) => {
 // Get condition type options for dropdown (similar to getFilterableColumns)
 // Accepts translation function `t` and optional assetTypes for capability filtering
 export const getConditionTypeOptions = (t, assetTypes = null) => {
-  const allowedSet =
-    assetTypes != null ? new Set(getSupportedConditions(assetTypes)) : null;
+  const allowedSet = assetTypes != null ? new Set(getSupportedConditions(assetTypes)) : null;
 
   const filterOptions = (options) => {
     if (!allowedSet) return options;
@@ -645,12 +646,36 @@ export { getFlatConditionTypeOptions };
 export function getSupportedActionOptions(t, assetTypes) {
   const supported = new Set(getSupportedActions(assetTypes || ['torrent']));
   const all = [
-    { value: ACTION_TYPES.STOP_SEEDING, label: t('actions.stopSeeding'), desc: t('actions.stopSeedingDescription') },
-    { value: ACTION_TYPES.ARCHIVE, label: t('actions.archive'), desc: t('actions.archiveDescription') },
-    { value: ACTION_TYPES.DELETE, label: t('actions.delete'), desc: t('actions.deleteDescription') },
-    { value: ACTION_TYPES.FORCE_START, label: t('actions.forceStart'), desc: t('actions.forceStartDescription') },
-    { value: ACTION_TYPES.ADD_TAG, label: t('actions.addTag'), desc: t('actions.addTagDescription') },
-    { value: ACTION_TYPES.REMOVE_TAG, label: t('actions.removeTag'), desc: t('actions.removeTagDescription') },
+    {
+      value: ACTION_TYPES.STOP_SEEDING,
+      label: t('actions.stopSeeding'),
+      desc: t('actions.stopSeedingDescription'),
+    },
+    {
+      value: ACTION_TYPES.ARCHIVE,
+      label: t('actions.archive'),
+      desc: t('actions.archiveDescription'),
+    },
+    {
+      value: ACTION_TYPES.DELETE,
+      label: t('actions.delete'),
+      desc: t('actions.deleteDescription'),
+    },
+    {
+      value: ACTION_TYPES.FORCE_START,
+      label: t('actions.forceStart'),
+      desc: t('actions.forceStartDescription'),
+    },
+    {
+      value: ACTION_TYPES.ADD_TAG,
+      label: t('actions.addTag'),
+      desc: t('actions.addTagDescription'),
+    },
+    {
+      value: ACTION_TYPES.REMOVE_TAG,
+      label: t('actions.removeTag'),
+      desc: t('actions.removeTagDescription'),
+    },
   ];
   return all.filter((opt) => supported.has(opt.value));
 }

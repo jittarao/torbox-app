@@ -180,7 +180,9 @@ export default function ArchivedDownloads({ apiKey }) {
               {archivedT('emptyState.title')}
             </h2>
             <p className="mx-auto mb-4 max-w-2xl text-md text-primary-text/70 dark:text-primary-text-dark/70">
-              {search ? archivedT('emptyState.noSearchResults') : archivedT('emptyState.description')}
+              {search
+                ? archivedT('emptyState.noSearchResults')
+                : archivedT('emptyState.description')}
             </p>
             {!search && (
               <div className="mt-6 rounded-lg border border-border bg-surface-alt p-4 dark:border-border-dark dark:bg-surface-alt-dark">
@@ -243,12 +245,7 @@ export default function ArchivedDownloads({ apiKey }) {
                         if (e.shiftKey) e.preventDefault();
                       }}
                       onChange={(e) =>
-                        handleSelectItem(
-                          item.archiveId,
-                          e.target.checked,
-                          rowIndex,
-                          e.shiftKey
-                        )
+                        handleSelectItem(item.archiveId, e.target.checked, rowIndex, e.shiftKey)
                       }
                       className="size-4 cursor-pointer accent-accent dark:accent-accent-dark"
                       aria-label={archivedT('actions.selectItem')}

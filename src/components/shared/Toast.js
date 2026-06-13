@@ -23,7 +23,12 @@ export default function Toast({ message, type = 'success', onClose }) {
       }`}
     >
       {message}
-      <button type="button" onClick={onClose} className="ml-2 opacity-70 hover:opacity-100" aria-label="Close notification">
+      <button
+        type="button"
+        onClick={onClose}
+        className="ml-2 opacity-70 hover:opacity-100"
+        aria-label="Close notification"
+      >
         ✕
       </button>
     </div>

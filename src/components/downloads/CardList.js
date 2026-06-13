@@ -1,11 +1,4 @@
-import {
-  useRef,
-  useState,
-  useMemo,
-  useDeferredValue,
-  useCallback,
-  useLayoutEffect,
-} from 'react';
+import { useRef, useState, useMemo, useDeferredValue, useCallback, useLayoutEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsFilterContext } from './DownloadsFilterContext';
@@ -100,12 +93,9 @@ function VirtualizedCardList({
   const itemGap = getCardListItemGapPx();
   const lastIndex = deferredEntityKeys.length - 1;
 
-  const paddingTop =
-    virtualRows.length > 0 ? Math.max(0, virtualRows[0].start - scrollMargin) : 0;
+  const paddingTop = virtualRows.length > 0 ? Math.max(0, virtualRows[0].start - scrollMargin) : 0;
   const lastVirtualRow = virtualRows[virtualRows.length - 1];
-  const paddingBottom = lastVirtualRow
-    ? Math.max(0, totalSize - lastVirtualRow.end)
-    : 0;
+  const paddingBottom = lastVirtualRow ? Math.max(0, totalSize - lastVirtualRow.end) : 0;
 
   return (
     <div ref={parentRef} className="relative w-full" style={{ height: `${totalSize}px` }}>
@@ -120,9 +110,7 @@ function VirtualizedCardList({
             data-index={virtualRow.index}
             ref={virtualizer.measureElement}
             className="w-full box-border"
-            style={
-              virtualRow.index < lastIndex ? { paddingBottom: itemGap } : undefined
-            }
+            style={virtualRow.index < lastIndex ? { paddingBottom: itemGap } : undefined}
           >
             {renderCard(entityKey, virtualRow.index)}
           </div>
@@ -257,9 +245,7 @@ export default function CardList() {
     activeColumns,
     downloadHistoryLookup,
   } = useDownloadsDataContext();
-  const {
-    search: fileSearch = '',
-  } = useDownloadsFilterContext();
+  const { search: fileSearch = '' } = useDownloadsFilterContext();
 
   const {
     activeType,

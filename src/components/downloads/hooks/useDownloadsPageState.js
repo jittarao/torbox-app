@@ -148,12 +148,11 @@ export function useDownloadsPageState(apiKey) {
     backendIsLoading
   );
 
-  const {
-    selectedItems,
-    handleSelectAll,
-    handleFileSelect,
-    setSelectedItems,
-  } = useSelection(viewItems, activeType, apiKey);
+  const { selectedItems, handleSelectAll, handleFileSelect, setSelectedItems } = useSelection(
+    viewItems,
+    activeType,
+    apiKey
+  );
 
   useEffect(() => {
     if (!canUseUsenet && activeType === 'usenet') {
@@ -287,18 +286,21 @@ export function useDownloadsPageState(apiKey) {
 
     const itemMap = buildSelectionIdMap(viewItems);
 
-    const filesSize = Array.from(selectedItems.files.entries()).reduce((acc, [selectionId, fileIds]) => {
-      const item = itemMap.get(selectionId);
-      if (!item) return acc;
-      const fileIdSet = new Set(fileIds);
-      const files = item.files || [];
-      for (let i = 0; i < files.length; i++) {
-        if (fileIdSet.has(files[i].id)) {
-          acc += files[i].size || 0;
+    const filesSize = Array.from(selectedItems.files.entries()).reduce(
+      (acc, [selectionId, fileIds]) => {
+        const item = itemMap.get(selectionId);
+        if (!item) return acc;
+        const fileIdSet = new Set(fileIds);
+        const files = item.files || [];
+        for (let i = 0; i < files.length; i++) {
+          if (fileIdSet.has(files[i].id)) {
+            acc += files[i].size || 0;
+          }
         }
-      }
-      return acc;
-    }, 0);
+        return acc;
+      },
+      0
+    );
 
     const itemsSize = Array.from(selectedItems.items).reduce((acc, selectionId) => {
       const item = itemMap.get(selectionId);

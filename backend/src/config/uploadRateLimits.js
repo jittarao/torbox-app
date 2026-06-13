@@ -10,8 +10,6 @@ export function getUploadRateLimitConfig() {
   return {
     perMinute: UPLOAD_RATE_LIMIT_PER_MINUTE,
     perHour: UPLOAD_RATE_LIMIT_PER_HOUR,
-    perType: Object.fromEntries(
-      UPLOAD_TYPES.map((type) => [type, UPLOAD_RATE_LIMIT_PER_HOUR])
-    ),
+    perType: Object.fromEntries(UPLOAD_TYPES.map((type) => [type, UPLOAD_RATE_LIMIT_PER_HOUR])),
   };
 }

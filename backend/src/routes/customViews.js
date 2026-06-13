@@ -78,78 +78,83 @@ export function setupCustomViewsRoutes(app, backend) {
   });
 
   // POST /api/custom-views - Create custom view
-  app.post('/api/custom-views', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
-    try {
-      const authId = req.validatedAuthId;
+  app.post(
+    '/api/custom-views',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
 
-      if (!backend.userDatabaseManager) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service is initializing, please try again in a moment',
-        });
-      }
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
 
-      const {
-        name,
-        filters,
-        sort_field,
-        sort_direction,
-        visible_columns,
-        asset_type,
-        search_query,
-      } = req.body;
+        const {
+          name,
+          filters,
+          sort_field,
+          sort_direction,
+          visible_columns,
+          asset_type,
+          search_query,
+        } = req.body;
 
-      if (!name || !filters) {
-        return res.status(400).json({
-          success: false,
-          error: 'name and filters are required',
-        });
-      }
+        if (!name || !filters) {
+          return res.status(400).json({
+            success: false,
+            error: 'name and filters are required',
+          });
+        }
 
-      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-      const result = userDb.db
-        .prepare(
-          `
+        const result = userDb.db
+          .prepare(
+            `
           INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `
-        )
-        .run(
-          name,
-          JSON.stringify(filters),
-          sort_field || null,
-          sort_direction || null,
-          visible_columns ? JSON.stringify(visible_columns) : null,
-          asset_type || null,
-          search_query?.trim() || null
-        );
+          )
+          .run(
+            name,
+            JSON.stringify(filters),
+            sort_field || null,
+            sort_direction || null,
+            visible_columns ? JSON.stringify(visible_columns) : null,
+            asset_type || null,
+            search_query?.trim() || null
+          );
 
-      const view = userDb.db
-        .prepare(
-          `
+        const view = userDb.db
+          .prepare(
+            `
           SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
           FROM custom_views
           WHERE id = ?
         `
-        )
-        .get(result.lastInsertRowid);
+          )
+          .get(result.lastInsertRowid);
 
-      const parsedView = parseViewJsonFields(view);
-      res.json({ success: true, view: parsedView });
-    } catch (error) {
-      logger.error('Error creating custom view', error, {
-        endpoint: '/api/custom-views',
-        method: 'POST',
-        authId: req.validatedAuthId,
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (req.validatedAuthId && backend.userDatabaseManager) {
-        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        const parsedView = parseViewJsonFields(view);
+        res.json({ success: true, view: parsedView });
+      } catch (error) {
+        logger.error('Error creating custom view', error, {
+          endpoint: '/api/custom-views',
+          method: 'POST',
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
       }
     }
-  });
+  );
 
   // GET /api/custom-views/:id - Get single custom view
   app.get(

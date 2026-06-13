@@ -18,7 +18,14 @@ import OverlayPortal from '@/components/shared/OverlayPortal';
  * @param {boolean} props.searchable - Show search field in the dropdown
  * @param {string} props.searchPlaceholder - Placeholder for search input
  */
-function OptionsList({ options, optgroups, value, onSelect, optionsRef, emptyMessage = 'No matches' }) {
+function OptionsList({
+  options,
+  optgroups,
+  value,
+  onSelect,
+  optionsRef,
+  emptyMessage = 'No matches',
+}) {
   const items = [];
   let optionIndex = 0;
 
@@ -244,8 +251,7 @@ export default function Select({
         options: group.options.filter(matches),
       }))
       .filter((group) => group.options.length > 0);
-    const count =
-      nextOptions.length + nextOptgroups.reduce((n, g) => n + g.options.length, 0);
+    const count = nextOptions.length + nextOptgroups.reduce((n, g) => n + g.options.length, 0);
 
     return {
       filteredOptions: nextOptions,
@@ -475,9 +481,7 @@ export default function Select({
         </svg>
       </button>
 
-      {dropdownContent ? (
-        <OverlayPortal open={isOpen}>{dropdownContent}</OverlayPortal>
-      ) : null}
+      {dropdownContent ? <OverlayPortal open={isOpen}>{dropdownContent}</OverlayPortal> : null}
     </div>
   );
 }
