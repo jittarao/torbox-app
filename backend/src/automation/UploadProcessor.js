@@ -35,11 +35,7 @@ const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
 
-function extractTorboxTorrentResult(response, type) {
-  if (type !== 'torrent') {
-    return { torboxHash: null, torboxTorrentId: null, torboxAuthId: null };
-  }
-
+export function extractTorboxTorrentResult(response, type) {
   const torboxData =
     response?.data?.data && typeof response.data.data === 'object' ? response.data.data : {};
 
