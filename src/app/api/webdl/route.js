@@ -62,7 +62,10 @@ export async function GET(request) {
     // Merge the data
     const mergedData = {
       success: downloadsData.success && queuedData.success,
-      data: [...(downloadsData.data || []), ...(queuedData.data || [])],
+      data: [
+        ...(downloadsData.data || []),
+        ...(queuedData.data || []).map((item) => ({ ...item, status: 'queued' })),
+      ],
     };
 
     const cacheHeaders = {

@@ -138,6 +138,9 @@ describe('uploadDuplicateResolve', () => {
               hash: 'abcdef0123456789abcdef0123456789abcdef01',
               auth_id: 'torbox-auth',
               name: 'One',
+              active: true,
+              download_present: true,
+              download_finished: true,
             },
           ];
         },

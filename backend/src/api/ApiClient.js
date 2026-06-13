@@ -402,7 +402,7 @@ class ApiClient {
           ...t,
           active: normalizeActive(t.active),
           assetType: 'torrent',
-          _isQueuedItem: true,
+          status: 'queued',
         }));
         return [...torrents, ...queued];
       },
@@ -530,7 +530,7 @@ class ApiClient {
         const queued = (queuedResponse.data.data || []).map((t) => ({
           ...t,
           active: normalizeActive(t.active),
-          _isQueuedItem: true,
+          status: 'queued',
         }));
         return [...active, ...queued];
       },
@@ -564,7 +564,7 @@ class ApiClient {
         const queued = (queuedResponse.data.data || []).map((t) => ({
           ...t,
           active: normalizeActive(t.active),
-          _isQueuedItem: true,
+          status: 'queued',
         }));
         return [...active, ...queued];
       },
@@ -642,13 +642,13 @@ class ApiClient {
   }
 
   /**
-   * @param {Object} download - Item with id, assetType, optional _isQueuedItem
+   * @param {Object} download - Item with id, assetType
    * @returns {Promise<*>}
    */
   async deleteDownload(download) {
     const assetType = download.assetType || 'torrent';
     const id = download.id;
-    const isQueued = download._isQueuedItem === true;
+    const isQueued = String(download.status).toLowerCase() === 'queued';
 
     if (assetType === 'usenet') {
       if (isQueued) {
