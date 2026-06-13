@@ -4,18 +4,8 @@ import { getJSON } from '@/utils/storage';
 export const isQueuedItem = (item) => {
   if (!item) return false;
 
-  if (item.status && String(item.status).toLowerCase() === 'queued') {
-    return true;
-  }
-
-  if (item.download_state) {
-    const state = String(item.download_state).toLowerCase();
-    if (state.includes('queued')) {
-      return true;
-    }
-  }
-
-  return !item.download_state && !item.download_finished && !item.active;
+  if (item.status && String(item.status).toLowerCase() === 'queued') return true;
+  return false;
 };
 
 /** API may return active as boolean, 1, or the string "true". */

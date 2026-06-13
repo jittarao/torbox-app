@@ -59,7 +59,10 @@ export async function GET(request) {
     // Merge the data
     const mergedData = {
       success: torrentsData.success && queuedData.success,
-      data: [...(torrentsData.data || []), ...(queuedData.data || [])],
+      data: [
+        ...(torrentsData.data || []),
+        ...(queuedData.data || []).map((item) => ({ ...item, status: 'queued' })),
+      ],
     };
 
     const cacheHeaders = {

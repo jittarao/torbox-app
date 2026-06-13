@@ -29,7 +29,7 @@ export function tagDownloadsWithAssetType(items, assetType, options = {}) {
   return (items || []).map((item) => ({
     ...item,
     assetType,
-    ...(fromQueued ? { _isQueuedItem: true } : {}),
+    ...(fromQueued ? { status: 'queued' } : {}),
   }));
 }
 

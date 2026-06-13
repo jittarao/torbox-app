@@ -42,7 +42,7 @@ describe('UploadProcessor duplicate upload handling', () => {
           hash: 'abc123',
           auth_id: 'torbox-auth',
           name: 'Example.torrent',
-          _isQueuedItem: true,
+          status: 'queued',
         },
       ],
     };

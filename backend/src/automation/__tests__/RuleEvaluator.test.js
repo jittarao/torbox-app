@@ -44,7 +44,7 @@ describe('RuleEvaluator', () => {
       controlQueuedDownload: mock(() => Promise.resolve({ success: true })),
       deleteTorrent: mock(() => Promise.resolve({ success: true })),
       deleteDownload: mock((item) =>
-        mockApiClient.deleteTorrent(item.id, { isQueued: item._isQueuedItem === true })
+        mockApiClient.deleteTorrent(item.id, { isQueued: item.status === 'queued' })
       ),
     };
 
@@ -809,9 +809,7 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'STATUS', value: ['queued'] };
         const torrent = {
           id: '1',
-          download_state: null,
-          download_finished: false,
-          active: false,
+          status: 'queued',
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -977,9 +975,7 @@ describe('RuleEvaluator', () => {
         const condition = { type: 'STATUS', value: 'queued' };
         const torrent = {
           id: '1',
-          download_state: null,
-          download_finished: false,
-          active: false,
+          status: 'queued',
         };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
@@ -1370,23 +1366,9 @@ describe('RuleEvaluator', () => {
   describe('getTorrentStatus', () => {
     it('should return queued status', () => {
       const torrent = {
-        download_state: null,
-        download_finished: false,
-        active: false,
+        status: 'queued',
       };
 
-      const status = ruleEvaluator.getTorrentStatus(torrent);
-      expect(status).toBe('queued');
-    });
-
-    it('should return queued status when API provides status field', () => {
-      const torrent = { id: '1', status: 'queued' };
-      const status = ruleEvaluator.getTorrentStatus(torrent);
-      expect(status).toBe('queued');
-    });
-
-    it('should return queued status when download_state includes queued', () => {
-      const torrent = { id: '1', download_state: 'queued' };
       const status = ruleEvaluator.getTorrentStatus(torrent);
       expect(status).toBe('queued');
     });
@@ -1631,7 +1613,7 @@ describe('RuleEvaluator', () => {
 
     it('should execute force_start for queued torrent via controlQueuedDownload', async () => {
       const action = { type: 'force_start' };
-      const torrent = { id: 'torrent-1', assetType: 'torrent', _isQueuedItem: true };
+      const torrent = { id: 'torrent-1', assetType: 'torrent', status: 'queued' };
 
       await ruleEvaluator.executeAction(action, torrent);
 
@@ -1644,7 +1626,7 @@ describe('RuleEvaluator', () => {
 
     it('should execute force_start for queued usenet via controlQueuedDownload', async () => {
       const action = { type: 'force_start' };
-      const torrent = { id: 'usenet-1', assetType: 'usenet', _isQueuedItem: true };
+      const torrent = { id: 'usenet-1', assetType: 'usenet', status: 'queued' };
 
       await ruleEvaluator.executeAction(action, torrent);
 
@@ -1676,9 +1658,9 @@ describe('RuleEvaluator', () => {
         'test'
       );
 
-      // Verify torrent was deleted after archiving (no download_state => queued)
+      // Verify torrent was deleted after archiving (not queued)
       expect(mockApiClient.deleteTorrent).toHaveBeenCalledWith('torrent-1', {
-        isQueued: true,
+        isQueued: false,
       });
     });
 

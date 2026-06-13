@@ -6,7 +6,6 @@ function resolveDownloadAssetType(download) {
 }
 
 function isQueuedDownload(download) {
-  if (download?._isQueuedItem === true) return true;
   return getTorrentStatusUtil(download) === 'queued';
 }
 
