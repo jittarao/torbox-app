@@ -201,7 +201,7 @@ export default function FilterEditorModal({
     }
     // columnFilters, normalizeFilters, EMPTY_FILTERS intentionally omitted to
     // avoid resetting filters on every change — effect should only run on open/close.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isOpen, setColumnFilters]);
 
   if (!isOpen) return null;
