@@ -55,7 +55,7 @@ export const useDownloadTagsStore = create((set, get) => ({
   loading: false,
   error: null,
   hasLoaded: false,
-  ...createApiKeyScopedSlice(set, get, { tagMappings: {}, error: null, hasLoaded: false }),
+  ...createApiKeyScopedSlice(set, get, { tagMappings: {}, error: null, hasLoaded: false, loading: false }),
 
   // Fetch all download-tag mappings from /api/downloads/tags
   fetchDownloadTags: async (apiKey, { force = false } = {}) => {
@@ -97,6 +97,7 @@ export const useDownloadTagsStore = create((set, get) => ({
       });
 
       if (!get().isRequestCurrent(apiKey, requestId)) {
+        set({ loading: false });
         return;
       }
 
@@ -112,6 +113,7 @@ export const useDownloadTagsStore = create((set, get) => ({
 
       const data = await response.json();
       if (!get().isRequestCurrent(apiKey, requestId)) {
+        set({ loading: false });
         return;
       }
 
@@ -127,6 +129,7 @@ export const useDownloadTagsStore = create((set, get) => ({
       });
     } catch (err) {
       if (!get().isRequestCurrent(apiKey, requestId)) {
+        set({ loading: false });
         return;
       }
       console.error('Error loading download tags:', err);

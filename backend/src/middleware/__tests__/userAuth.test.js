@@ -86,6 +86,47 @@ describe('userAuth middleware', () => {
     expect(nextCalled).toBe(false);
     expect(res.statusCode).toBe(403);
   });
+
+  it('rejects authId-only requests when BACKEND_REQUIRE_API_KEY is true', () => {
+    const prev = process.env.BACKEND_REQUIRE_API_KEY;
+    process.env.BACKEND_REQUIRE_API_KEY = 'true';
+    try {
+      const req = { query: { authId }, headers: {}, body: {} };
+      const res = mockRes();
+      let nextCalled = false;
+      requireRegisteredUser(req, res, () => {
+        nextCalled = true;
+      });
+      expect(nextCalled).toBe(false);
+      expect(res.statusCode).toBe(401);
+    } finally {
+      if (prev === undefined) delete process.env.BACKEND_REQUIRE_API_KEY;
+      else process.env.BACKEND_REQUIRE_API_KEY = prev;
+    }
+  });
+
+  it('rejects inactive registry users', () => {
+    masterDb.getQuery = () => undefined;
+    const req = { query: {}, headers: { 'x-api-key': apiKey }, body: {} };
+    const res = mockRes();
+    let nextCalled = false;
+    requireRegisteredUser(req, res, () => {
+      nextCalled = true;
+    });
+    expect(nextCalled).toBe(false);
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('rejects malformed API keys', () => {
+    const req = { query: {}, headers: { 'x-api-key': 'short' }, body: {} };
+    const res = mockRes();
+    let nextCalled = false;
+    requireRegisteredUser(req, res, () => {
+      nextCalled = true;
+    });
+    expect(nextCalled).toBe(false);
+    expect(res.statusCode).toBe(400);
+  });
 });
 
 describe('requireInternalServiceAuth', () => {

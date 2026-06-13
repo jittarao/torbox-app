@@ -1,5 +1,20 @@
-import { describe, expect, test } from 'bun:test';
-import { applyOptimisticTagMappings } from '@/store/downloadTagsStore';
+import { describe, expect, test, mock, beforeEach } from 'bun:test';
+import { applyOptimisticTagMappings, useDownloadTagsStore } from '@/store/downloadTagsStore';
+
+mock.module('@/utils/backendModeCache', () => ({
+  isBackendAvailable: () => true,
+}));
+
+function resetStore() {
+  useDownloadTagsStore.setState({
+    tagMappings: {},
+    loading: false,
+    error: null,
+    hasLoaded: false,
+    currentApiKey: null,
+    activeRequestId: 0,
+  });
+}
 
 describe('applyOptimisticTagMappings', () => {
   const allTags = [
@@ -51,5 +66,39 @@ describe('applyOptimisticTagMappings', () => {
       allTags
     );
     expect(next['42']).toEqual([{ id: 2, name: 'TV' }]);
+  });
+});
+
+describe('useDownloadTagsStore loading state', () => {
+  beforeEach(() => {
+    resetStore();
+    globalThis.fetch = undefined;
+    globalThis.window = { location: { origin: 'http://localhost' } };
+  });
+
+  test('API key change resets loading to false', () => {
+    useDownloadTagsStore.setState({ loading: true, currentApiKey: 'key-a' });
+    useDownloadTagsStore.getState().setApiKey('key-b');
+    expect(useDownloadTagsStore.getState().loading).toBe(false);
+    expect(useDownloadTagsStore.getState().currentApiKey).toBe('key-b');
+  });
+
+  test('stale request resets loading when API key changes before fetch resolves', async () => {
+    let resolveFetch;
+    globalThis.fetch = mock(() =>
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+
+    const fetchPromise = useDownloadTagsStore.getState().fetchDownloadTags('key-a');
+    expect(useDownloadTagsStore.getState().loading).toBe(true);
+
+    useDownloadTagsStore.getState().setApiKey('key-b');
+
+    resolveFetch({ ok: true, json: async () => ({ success: true, mappings: {} }) });
+    await fetchPromise;
+
+    expect(useDownloadTagsStore.getState().loading).toBe(false);
   });
 });
