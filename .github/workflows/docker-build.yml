@@ -37,8 +37,42 @@ env:
   DOCKER_BUILDKIT: 1
 
 jobs:
+  # Quality gate - runs lint, typecheck, tests, and format check before building images
+  quality:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'))
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck:strict
+
+      - name: Frontend tests
+        run: bun run test
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Backend tests
+        working-directory: ./backend
+        run: bun test
+
   # Main build job - builds Docker images for multiple platforms
   build:
+    # Wait for quality gate to pass before building images
+    needs: quality
     # Timeout after 60 minutes to prevent stuck builds
     timeout-minutes: 60
     # Build strategy: run builds for multiple platforms in parallel
@@ -67,7 +101,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       # Set up Bun runtime for extracting version from package.json
       - name: Set up Bun
@@ -302,7 +336,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       # Set up Bun for version extraction
       - name: Set up Bun
