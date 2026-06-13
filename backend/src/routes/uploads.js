@@ -78,6 +78,50 @@ function getUploadProcessorClient(backend) {
   return (authId) => backend.uploadProcessor.getApiClient(authId);
 }
 
+/**
+ * Delete a single upload's file and database row, returning whether the row
+ * was in a queued/processing state at the moment it was deleted.
+ * The status read and row delete are executed inside a SQLite transaction so
+ * the status cannot change between the two operations.
+ */
+export async function deleteUploadAndDetermineStatus(
+  authId,
+  upload,
+  userDb,
+  uploadQuotaService
+) {
+  const hadRetainedFile =
+    upload.file_path &&
+    !upload.file_deleted &&
+    (await fileExists(upload.file_path));
+
+  // Delete file if exists (with authId for security validation)
+  if (upload.file_path) {
+    await deleteUploadFile(authId, upload.file_path);
+  }
+
+  // Read status and delete row atomically so the status cannot race with
+  // the upload processor between the read and the delete.
+  let wasQueued = false;
+  userDb.db.transaction(() => {
+    const currentUpload = userDb.db
+      .prepare('SELECT status FROM uploads WHERE id = ?')
+      .get(upload.id);
+
+    userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
+
+    wasQueued =
+      currentUpload &&
+      (currentUpload.status === 'queued' || currentUpload.status === 'processing');
+  })();
+
+  if (uploadQuotaService && hadRetainedFile) {
+    uploadQuotaService.onUploadDeleted(authId, upload.file_size_bytes, true);
+  }
+
+  return { deleted: true, wasQueued };
+}
+
 async function resolveDuplicateRetriesBeforeRequeue(backend, authId, userDb, failedUploads) {
   if (failedUploads.length === 0) {
     return { completedIds: [], toRequeue: [] };
@@ -1503,53 +1547,23 @@ export function setupUploadsRoutes(app, backend) {
 
         // Delete files and records
         const deleteResults = await Promise.allSettled(
-          uploads.map(async (upload) => {
-            const hadRetainedFile =
-              upload.file_path &&
-              !upload.file_deleted &&
-              (await fileExists(upload.file_path));
-
-            // Delete file if exists (with authId for security validation)
-            if (upload.file_path) {
-              await deleteUploadFile(authId, upload.file_path);
-            }
-
-            // Re-read status after async file deletion to check if UploadProcessor
-            // completed the upload during the file deletion (race condition fix)
-            const currentUpload = userDb.db
-              .prepare('SELECT status FROM uploads WHERE id = ?')
-              .get(upload.id);
-
-            // Delete from database
-            userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
-
-            if (uploadQuotaService && hadRetainedFile) {
-              uploadQuotaService.onUploadDeleted(authId, upload.file_size_bytes, true);
-            }
-
-            // Check if status was still queued or processing
-            const wasQueued =
-              currentUpload &&
-              (currentUpload.status === 'queued' || currentUpload.status === 'processing');
-
-            return { deleted: true, wasQueued };
-          })
+          uploads.map((upload) =>
+            deleteUploadAndDetermineStatus(authId, upload, userDb, uploadQuotaService)
+          )
         );
 
         for (const r of deleteResults) {
           if (r.status === 'fulfilled') {
             deletedCount++;
-            if (r.value.wasQueued) queuedDeletedCount++;
+            if (r.value.wasQueued) {
+              queuedDeletedCount++;
+              backend.masterDatabase.decrementUploadCounter(authId);
+            }
           } else {
             logger.error('Error deleting upload in bulk operation', r.reason, {
               endpoint: this.endpoint,
             });
           }
-        }
-
-        // Update counter (decrement for each queued or processing upload deleted)
-        for (let i = 0; i < queuedDeletedCount; i++) {
-          backend.masterDatabase.decrementUploadCounter(authId);
         }
 
         logger.info('Bulk upload delete', {
