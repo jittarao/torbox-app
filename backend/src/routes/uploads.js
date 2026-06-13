@@ -421,13 +421,6 @@ export function setupUploadsRoutes(app, backend) {
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-        // Get max queue_order once for the entire batch (optimization)
-        const maxOrderResult = userDb.db
-          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
-          .get('queued');
-
-        let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
-
         // Prepare insert statement
         const insertStmt = userDb.db.prepare(
           `
@@ -454,10 +447,16 @@ export function setupUploadsRoutes(app, backend) {
         const createdUploads = [];
         const errors = [];
 
-        // Use transaction for batch insert
+        // Use transaction for batch insert; read MAX(queue_order) inside the
+        // transaction so concurrent requests cannot compute the same next value.
         const VALID_TYPES = new Set(['torrent', 'usenet', 'webdl']);
         const VALID_UPLOAD_TYPES = new Set(['file', 'magnet', 'link']);
         const insertMany = userDb.db.transaction((uploads) => {
+          const maxOrderResult = userDb.db
+            .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
+            .get('queued');
+
+          let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
           const results = [];
           for (const upload of uploads) {
             const {
@@ -705,17 +704,18 @@ export function setupUploadsRoutes(app, backend) {
 
       const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
-      // Get max queue_order for this user to append to end
-      const maxOrderResult = userDb.db
-        .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
-        .get('queued');
+      // Read MAX(queue_order) and insert inside a transaction so concurrent
+      // create requests cannot compute the same next value.
+      const insertUpload = userDb.db.transaction(() => {
+        const maxOrderResult = userDb.db
+          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
+          .get('queued');
 
-      const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
+        const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
 
-      // Insert upload entry
-      const result = userDb.db
-        .prepare(
-          `
+        const result = userDb.db
+          .prepare(
+            `
             INSERT INTO uploads (
               type, upload_type, file_path, url, name, status,
               seed, allow_zip, as_queued, add_only_if_cached, password, queue_order,
@@ -723,20 +723,25 @@ export function setupUploadsRoutes(app, backend) {
             )
             VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           `
-        )
-        .run(
-          type,
-          upload_type,
-          file_path || null,
-          url || null,
-          name,
-          seed || null,
-          allow_zip !== undefined ? allow_zip : true,
-          as_queued !== undefined ? as_queued : false,
-          add_only_if_cached !== undefined ? add_only_if_cached : false,
-          password || null,
-          queueOrder
-        );
+          )
+          .run(
+            type,
+            upload_type,
+            file_path || null,
+            url || null,
+            name,
+            seed || null,
+            allow_zip !== undefined ? allow_zip : true,
+            as_queued !== undefined ? as_queued : false,
+            add_only_if_cached !== undefined ? add_only_if_cached : false,
+            password || null,
+            queueOrder
+          );
+
+        return { queueOrder, result };
+      });
+
+      const { result } = insertUpload();
 
       // Get created upload
       const upload = userDb.db
@@ -1160,27 +1165,34 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        // Get max queue_order to append to end
-        const maxOrderResult = userDb.db
-          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
-          .get('queued');
+        // Read MAX(queue_order) and requeue inside a transaction so concurrent
+        // retry requests cannot compute the same next value.
+        const requeueMany = userDb.db.transaction((toRequeue) => {
+          const maxOrderResult = userDb.db
+            .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
+            .get('queued');
 
-        let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
-        const retriedUploads = [];
+          let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
+          const retriedUploads = [];
 
-        for (const upload of toRequeue) {
-          try {
-            if (requeueFailedUpload(userDb, upload.id, currentQueueOrder)) {
-              retriedUploads.push(upload.id);
-              currentQueueOrder++;
+          for (const upload of toRequeue) {
+            try {
+              if (requeueFailedUpload(userDb, upload.id, currentQueueOrder)) {
+                retriedUploads.push(upload.id);
+                currentQueueOrder++;
+              }
+            } catch (error) {
+              logger.error('Error retrying upload in bulk operation', error, {
+                authId,
+                uploadId: upload.id,
+              });
             }
-          } catch (error) {
-            logger.error('Error retrying upload in bulk operation', error, {
-              authId,
-              uploadId: upload.id,
-            });
           }
-        }
+
+          return retriedUploads;
+        });
+
+        const retriedUploads = requeueMany(toRequeue);
 
         if (retriedUploads.length > 0) {
           await backend.masterDatabase.updateUploadCounters(authId, userDb);
@@ -1298,13 +1310,21 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        const maxOrderResult = userDb.db
-          .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
-          .get('queued');
+        // Read MAX(queue_order) and update inside a transaction so concurrent
+        // retry requests cannot compute the same next value.
+        const requeueOne = userDb.db.transaction(() => {
+          const maxOrderResult = userDb.db
+            .prepare('SELECT MAX(queue_order) as max_order FROM uploads WHERE status = ?')
+            .get('queued');
 
-        const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
+          const queueOrder = (maxOrderResult?.max_order ?? -1) + 1;
+          const requeued = requeueFailedUpload(userDb, uploadId, queueOrder);
+          return { queueOrder, requeued };
+        });
 
-        if (!requeueFailedUpload(userDb, uploadId, queueOrder)) {
+        const { requeued } = requeueOne();
+
+        if (!requeued) {
           return res.status(404).json({
             success: false,
             error: 'Upload not found or was deleted',
