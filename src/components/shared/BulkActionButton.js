@@ -14,8 +14,7 @@ const VARIANT_CLASS = {
     'bg-label-danger-text text-white border border-label-danger-text/30 hover:brightness-95 dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark dark:border-label-danger-text-dark/20 dark:hover:bg-label-danger-bg-dark/80',
   ghost:
     'border border-transparent text-primary-text/70 hover:text-primary-text hover:bg-primary-text/5 dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark dark:hover:bg-primary-text-dark/5',
-  stop:
-    'border border-label-danger-text/25 text-label-danger-text hover:bg-label-danger-text/10 dark:border-label-danger-text-dark/30 dark:text-label-danger-text-dark dark:hover:bg-label-danger-text-dark/10',
+  stop: 'border border-label-danger-text/25 text-label-danger-text hover:bg-label-danger-text/10 dark:border-label-danger-text-dark/30 dark:text-label-danger-text-dark dark:hover:bg-label-danger-text-dark/10',
 };
 
 /**

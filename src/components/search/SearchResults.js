@@ -58,7 +58,16 @@ export default function SearchResults({ apiKey }) {
         { sortKey, sortDir, showCachedOnly, hideTorBoxIndexers },
         filters
       ),
-    [searchState, results, searchType, sortKey, sortDir, showCachedOnly, hideTorBoxIndexers, filters]
+    [
+      searchState,
+      results,
+      searchType,
+      sortKey,
+      sortDir,
+      showCachedOnly,
+      hideTorBoxIndexers,
+      filters,
+    ]
   );
 
   // Clear results when API key changes

@@ -14,10 +14,7 @@ import {
   ACTION_TYPES,
 } from './constants';
 import { getSupportedConditions } from './capabilities';
-import {
-  getDefaultOperatorForConditionType,
-  getDefaultValueForConditionType,
-} from './utils';
+import { getDefaultOperatorForConditionType, getDefaultValueForConditionType } from './utils';
 import { pruneRuleForAssetTypes } from './pruneRule';
 import RuleCard from './components/RuleCard';
 import RuleForm from './components/RuleForm';
@@ -641,8 +638,7 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
   const handleAddCondition = (groupIndex) => {
     setNewRule((prevRule) => {
       const assetTypes = prevRule.assetTypes?.length ? prevRule.assetTypes : ['torrent'];
-      const defaultType =
-        getSupportedConditions(assetTypes)[0] || CONDITION_TYPES.STATUS;
+      const defaultType = getSupportedConditions(assetTypes)[0] || CONDITION_TYPES.STATUS;
       const newGroups = [...(prevRule.groups || [])];
       newGroups[groupIndex] = {
         ...newGroups[groupIndex],

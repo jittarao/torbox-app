@@ -13,7 +13,10 @@ import {
   writeAppliedFiltersToParams,
   tryParseLegacyFilters,
 } from '@/utils/downloadsFilterUrlCodec';
-import { LOGIC_OPERATORS, MULTI_SELECT_OPERATORS } from '@/components/downloads/AutomationRules/constants';
+import {
+  LOGIC_OPERATORS,
+  MULTI_SELECT_OPERATORS,
+} from '@/components/downloads/AutomationRules/constants';
 import { hasActiveFilters } from '@/components/downloads/filters/filterHelpers';
 
 describe('downloadsFilterUrlCodec status', () => {
@@ -142,7 +145,12 @@ describe('downloadsFilterUrlCodec compact filters', () => {
     const legacy = encodeURIComponent(
       JSON.stringify({
         logicOperator: 'and',
-        groups: [{ logicOperator: 'and', filters: [{ column: 'tags', operator: 'is_any_of', value: [2] }] }],
+        groups: [
+          {
+            logicOperator: 'and',
+            filters: [{ column: 'tags', operator: 'is_any_of', value: [2] }],
+          },
+        ],
       })
     );
     expect(() => compactFiltersFromUrl(legacy)).not.toThrow();

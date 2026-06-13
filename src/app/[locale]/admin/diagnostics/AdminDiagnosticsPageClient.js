@@ -3,12 +3,7 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import adminApiClient from '@/utils/adminApiClient';
-import {
-  AdminAlert,
-  AdminBadge,
-  AdminLoading,
-  AdminPageHeader,
-} from '@/components/admin/AdminUi';
+import { AdminAlert, AdminBadge, AdminLoading, AdminPageHeader } from '@/components/admin/AdminUi';
 
 export default function AdminDiagnosticsPageClient() {
   const [diagnostics, setDiagnostics] = useState(null);
@@ -100,7 +95,9 @@ export default function AdminDiagnosticsPageClient() {
         {/* Summary Card */}
         <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">Summary</h3>
+            <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
+              Summary
+            </h3>
             <AdminBadge status={summary.status}>{summary.status}</AdminBadge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -137,12 +134,12 @@ export default function AdminDiagnosticsPageClient() {
 
         {/* Statistics */}
         <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
-          <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark mb-4">Statistics</h3>
+          <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark mb-4">
+            Statistics
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-sm font-medium text-muted dark:text-muted-dark mb-2">
-                API Keys
-              </h4>
+              <h4 className="text-sm font-medium text-muted dark:text-muted-dark mb-2">API Keys</h4>
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted dark:text-muted-dark">Total:</span>
@@ -303,9 +300,7 @@ export default function AdminDiagnosticsPageClient() {
                               (Active)
                             </span>
                           ) : (
-                            <span className="ml-2 text-muted dark:text-muted-dark">
-                              (Inactive)
-                            </span>
+                            <span className="ml-2 text-muted dark:text-muted-dark">(Inactive)</span>
                           )}
                         </div>
                       </div>

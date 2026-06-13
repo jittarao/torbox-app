@@ -12,10 +12,7 @@ import {
   enrichRowForFilter,
 } from '@/store/downloadsDerivedSelectors';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
-import {
-  buildRowDataSignature,
-  collectDirtyRowKeys,
-} from '@/utils/downloadListSignatures';
+import { buildRowDataSignature, collectDirtyRowKeys } from '@/utils/downloadListSignatures';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 
@@ -84,13 +81,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     useShallow((s) => ({ entities: s.entities, order: s.order }))
   );
 
-  const {
-    search,
-    statusFilter,
-    appliedFilters,
-    sortField,
-    sortDirection,
-  } = filterParams;
+  const { search, statusFilter, appliedFilters, sortField, sortDirection } = filterParams;
 
   const filterCriteria = useMemo(
     () => ({
@@ -141,9 +132,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     let map = cache.enrichedMap;
 
     const needsFullListRebuild =
-      !metaUnchanged ||
-      dirtyKeys === null ||
-      dirtyKeys.length === viewIds.length;
+      !metaUnchanged || dirtyKeys === null || dirtyKeys.length === viewIds.length;
 
     if (needsFullListRebuild) {
       rows = idsToRows(viewIds, entities, stableTagMappings, stableDownloadHistory);

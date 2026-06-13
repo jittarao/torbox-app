@@ -105,8 +105,8 @@ export default function RuleCard({
       </div>
       <div className="mt-2 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
         Every {rule.trigger?.value ?? 30} {commonT('minutes')}, if{' '}
-        {getRuleConditionText(rule, t, commonT)}
-        , then {rule.action?.type?.replace('_', ' ') || 'unknown'}
+        {getRuleConditionText(rule, t, commonT)}, then{' '}
+        {rule.action?.type?.replace('_', ' ') || 'unknown'}
       </div>
       {rule.last_evaluated_at && (
         <div className="mt-1 text-xs text-primary-text/50 dark:text-primary-text-dark/50">

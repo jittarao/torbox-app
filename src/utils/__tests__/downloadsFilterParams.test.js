@@ -24,7 +24,12 @@ describe('downloadsFilterParams search URL encoding', () => {
 describe('shouldWriteAppliedFiltersInCriteriaPatch', () => {
   const sampleFilters = {
     logicOperator: LOGIC_OPERATORS.AND,
-    groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: [{ column: 'name', operator: 'contains', value: 'test' }] }],
+    groups: [
+      {
+        logicOperator: LOGIC_OPERATORS.AND,
+        filters: [{ column: 'name', operator: 'contains', value: 'test' }],
+      },
+    ],
   };
 
   test('writes filters when clearing view and tag in the same patch', () => {

@@ -5,7 +5,23 @@ import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import { All, ArrowLeftRight, Clock, ClockArrowDown, CloudDownload, CloudUpload, DownArrow, Download, Files, Hash, Layers, Link, Percent, Private, UpArrow } from '@/components/icons';
+import {
+  All,
+  ArrowLeftRight,
+  Clock,
+  ClockArrowDown,
+  CloudDownload,
+  CloudUpload,
+  DownArrow,
+  Download,
+  Files,
+  Hash,
+  Layers,
+  Link,
+  Percent,
+  Private,
+  UpArrow,
+} from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';
@@ -306,15 +322,11 @@ function ItemCard({
     item.active ? (
       <div className="flex items-center gap-2 md:gap-3 lg:gap-4 text-xs md:text-sm lg:text-[14.5px] text-primary-text/70 dark:text-primary-text-dark/70">
         <div className="flex items-center gap-1">
-          <span className="text-label-success-text-dark dark:text-label-success-text-dark">
-            ↓
-          </span>
+          <span className="text-label-success-text-dark dark:text-label-success-text-dark">↓</span>
           <span>{formatSpeed(item.download_speed)}</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">
-            ↑
-          </span>
+          <span className="text-label-danger-text-dark dark:text-label-danger-text-dark">↑</span>
           <span>{formatSpeed(item.upload_speed)}</span>
         </div>
       </div>
@@ -359,20 +371,10 @@ function ItemCard({
         isExpanded ? 'overflow-visible' : 'overflow-hidden'
       } cursor-pointer w-full text-left`}
     >
-      <div
-        className={
-          isMobile
-            ? 'flex flex-col gap-2'
-            : 'flex justify-between gap-2 md:gap-3'
-        }
-      >
+      <div className={isMobile ? 'flex flex-col gap-2' : 'flex justify-between gap-2 md:gap-3'}>
         <div className="flex flex-col justify-center gap-1.5 md:gap-2 min-w-0 flex-1">
           <div
-            className={
-              isMobile
-                ? 'flex items-start gap-2'
-                : 'flex items-center gap-2 md:gap-2.5'
-            }
+            className={isMobile ? 'flex items-start gap-2' : 'flex items-center gap-2 md:gap-2.5'}
           >
             <input
               type="checkbox"
@@ -396,9 +398,7 @@ function ItemCard({
                     : 'flex items-center gap-2'
                 }
               >
-                <div
-                  className={`flex shrink-0 gap-2 ${isMobile ? 'items-start' : 'items-center'}`}
-                >
+                <div className={`flex shrink-0 gap-2 ${isMobile ? 'items-start' : 'items-center'}`}>
                   <Tooltip content={item.cached ? 'Cached' : 'Not cached'}>
                     <span
                       className={`inline-block size-2 rounded-full shrink-0 mt-1.5 ${

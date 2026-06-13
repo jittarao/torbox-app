@@ -69,67 +69,77 @@ export function setupAutomationRoutes(app, backend) {
   }
 
   // GET /api/automation/rules - Get all automation rules (direct DB, no engine)
-  app.get('/api/automation/rules', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
-    const authId = req.validatedAuthId;
-    const userDatabaseManager = backend.userDatabaseManager;
-    if (!userDatabaseManager) {
-      logger.error('User database manager not initialized', {
-        endpoint: '/api/automation/rules',
-        authId,
-      });
-      return res.status(503).json({
-        success: false,
-        error: 'Service initializing',
-      });
-    }
-    let userDbConnection;
-    try {
-      userDbConnection = await userDatabaseManager.getUserDatabase(authId);
-      if (!userDbConnection?.db) {
-        return res.status(404).json({ success: false, error: 'User not found' });
+  app.get(
+    '/api/automation/rules',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      const authId = req.validatedAuthId;
+      const userDatabaseManager = backend.userDatabaseManager;
+      if (!userDatabaseManager) {
+        logger.error('User database manager not initialized', {
+          endpoint: '/api/automation/rules',
+          authId,
+        });
+        return res.status(503).json({
+          success: false,
+          error: 'Service initializing',
+        });
       }
-      const repo = new RuleRepository(authId, () => Promise.resolve(userDbConnection.db));
-      const rules = await repo.getRules();
-      res.json({ success: true, rules });
-    } catch (error) {
-      logger.error('Error fetching automation rules', error, {
-        endpoint: '/api/automation/rules',
-        method: 'GET',
-        authId,
-      });
-      res.status(500).json(serverErrorPayload(error));
-    } finally {
-      if (authId && userDatabaseManager) {
-        userDatabaseManager.releaseConnection(authId);
+      let userDbConnection;
+      try {
+        userDbConnection = await userDatabaseManager.getUserDatabase(authId);
+        if (!userDbConnection?.db) {
+          return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const repo = new RuleRepository(authId, () => Promise.resolve(userDbConnection.db));
+        const rules = await repo.getRules();
+        res.json({ success: true, rules });
+      } catch (error) {
+        logger.error('Error fetching automation rules', error, {
+          endpoint: '/api/automation/rules',
+          method: 'GET',
+          authId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (authId && userDatabaseManager) {
+          userDatabaseManager.releaseConnection(authId);
+        }
       }
     }
-  });
+  );
 
   // POST /api/automation/rules - Save automation rules (engine on demand)
-  app.post('/api/automation/rules', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
-    const authId = req.validatedAuthId;
-    try {
-      const engine = await getEngineForRequest(backend, authId);
-      if (!engine) {
-        return sendEngineUnavailableResponse(res, backend, authId);
+  app.post(
+    '/api/automation/rules',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      const authId = req.validatedAuthId;
+      try {
+        const engine = await getEngineForRequest(backend, authId);
+        if (!engine) {
+          return sendEngineUnavailableResponse(res, backend, authId);
+        }
+        const { rules } = req.body;
+        const savedRules = await engine.saveAutomationRules(rules);
+        await engine.reloadRules();
+        invalidateSchedulerEngine(pollingScheduler, authId);
+        if (pollingScheduler) {
+          await pollingScheduler.refreshPollers();
+        }
+        res.json({ success: true, message: 'Rules saved successfully', rules: savedRules });
+      } catch (error) {
+        logger.error('Error saving automation rules', error, {
+          endpoint: '/api/automation/rules',
+          method: 'POST',
+          authId,
+        });
+        res.status(500).json(serverErrorPayload(error));
       }
-      const { rules } = req.body;
-      const savedRules = await engine.saveAutomationRules(rules);
-      await engine.reloadRules();
-      invalidateSchedulerEngine(pollingScheduler, authId);
-      if (pollingScheduler) {
-        await pollingScheduler.refreshPollers();
-      }
-      res.json({ success: true, message: 'Rules saved successfully', rules: savedRules });
-    } catch (error) {
-      logger.error('Error saving automation rules', error, {
-        endpoint: '/api/automation/rules',
-        method: 'POST',
-        authId,
-      });
-      res.status(500).json(serverErrorPayload(error));
     }
-  });
+  );
 
   // PUT /api/automation/rules/:id - Update rule status (engine on demand)
   app.put(

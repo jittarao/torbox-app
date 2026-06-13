@@ -35,9 +35,7 @@ export default function ItemActions({
 
   const itemAssetType = resolveItemAssetType(item, activeType);
   const showArchive =
-    isBackendAvailable &&
-    item.hash &&
-    (activeType === 'torrents' || itemAssetType === 'torrents');
+    isBackendAvailable && item.hash && (activeType === 'torrents' || itemAssetType === 'torrents');
 
   // Downloads a torrent or a webdl/usenet item
   const handleDownload = async () => {
@@ -175,10 +173,7 @@ export default function ItemActions({
   };
 
   const showStopSeeding =
-    activeType === 'torrents' &&
-    item.download_finished &&
-    item.download_present &&
-    item.active;
+    activeType === 'torrents' && item.download_finished && item.download_present && item.active;
   const showForceStart = activeType === 'torrents' && !item.download_state;
   const hasCardActions = showStopSeeding || showForceStart || showRetry || item.download_present;
 

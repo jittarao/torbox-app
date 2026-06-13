@@ -45,9 +45,7 @@ export async function GET(request) {
           {
             success: false,
             error:
-              data?.error ||
-              data?.detail ||
-              `TorBox responded with status: ${response.status}`,
+              data?.error || data?.detail || `TorBox responded with status: ${response.status}`,
           },
           { status: response.status }
         );

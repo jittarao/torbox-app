@@ -16,7 +16,8 @@ import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
-const mobileIconButtonClass = 'ui-header-icon-btn !h-11 !w-11 !min-w-11 shrink-0 touch-manipulation';
+const mobileIconButtonClass =
+  'ui-header-icon-btn !h-11 !w-11 !min-w-11 shrink-0 touch-manipulation';
 
 const mobileDownloadButtonClass =
   'ui-header-icon-btn !h-12 !w-12 !min-w-12 shrink-0 touch-manipulation text-accent dark:text-accent-dark [&_svg]:size-6 hover:bg-accent/10 dark:hover:bg-accent-dark/10 active:bg-accent/15 dark:active:bg-accent-dark/15';

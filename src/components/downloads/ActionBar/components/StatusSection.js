@@ -116,53 +116,50 @@ export default function StatusSection({
       {!(selectedItemCount > 0 || hasSelectedFiles) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           {STATUS_OPTIONS.reduce((acc, option) => {
-              const { label: status } = option;
-              const count = statusCounts[status] || 0;
-              if (count === 0) return acc;
+            const { label: status } = option;
+            const count = statusCounts[status] || 0;
+            if (count === 0) return acc;
 
-              const isDownloadingGroup =
-                status === 'Downloading' ||
-                status === 'Meta_DL' ||
-                status === 'Checking_Resume_Data';
+            const isDownloadingGroup =
+              status === 'Downloading' || status === 'Meta_DL' || status === 'Checking_Resume_Data';
 
-              if (isDownloadingGroup) {
-                const existing = acc.find(([s]) => s === 'Downloading');
-                if (existing) {
-                  existing[1] += count;
-                } else {
-                  acc.push(['Downloading', count]);
-                }
-              } else if (!option.hidden) {
-                acc.push([status, count]);
+            if (isDownloadingGroup) {
+              const existing = acc.find(([s]) => s === 'Downloading');
+              if (existing) {
+                existing[1] += count;
+              } else {
+                acc.push(['Downloading', count]);
               }
-              return acc;
-            }, [])
-            .map(([status, count]) => {
-              const isSelected = Array.isArray(statusFilter)
-                ? statusFilter.some((filter) => isStatusSelected(status, filter))
-                : isStatusSelected(status, statusFilter);
+            } else if (!option.hidden) {
+              acc.push([status, count]);
+            }
+            return acc;
+          }, []).map(([status, count]) => {
+            const isSelected = Array.isArray(statusFilter)
+              ? statusFilter.some((filter) => isStatusSelected(status, filter))
+              : isStatusSelected(status, statusFilter);
 
-              return (
-                <button
-                  type="button"
-                  key={status}
-                  onClick={() => handleStatusClick(status)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleStatusClick(status);
-                    }
-                  }}
-                  className={`text-xs font-medium border-b border-dashed cursor-pointer sm:text-sm
+            return (
+              <button
+                type="button"
+                key={status}
+                onClick={() => handleStatusClick(status)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleStatusClick(status);
+                  }
+                }}
+                className={`text-xs font-medium border-b border-dashed cursor-pointer sm:text-sm
                     ${getStatusStyles(status)}
                     ${statusFilter !== 'all' && isSelected ? 'opacity-100' : statusFilter !== 'all' ? 'opacity-70' : 'opacity-100'}
                     ${isSelected ? 'border-current' : 'hover:opacity-80 border-current/20 hover:border-current'}
                     transition-all`}
-                >
-                  {count} {statusT(`${status.toLowerCase()}`)}
-                </button>
-              );
-            })}
+              >
+                {count} {statusT(`${status.toLowerCase()}`)}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

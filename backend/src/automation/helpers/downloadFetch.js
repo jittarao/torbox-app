@@ -57,7 +57,9 @@ export async function fetchDownloadsForAssetTypes(apiClient, assetTypes, bypassC
   }
   if (types.has('webdl')) {
     fetches.push(
-      apiClient.getWebDownloads(bypassCache).then((list) => tagDownloadsWithAssetType(list, 'webdl'))
+      apiClient
+        .getWebDownloads(bypassCache)
+        .then((list) => tagDownloadsWithAssetType(list, 'webdl'))
     );
   }
 

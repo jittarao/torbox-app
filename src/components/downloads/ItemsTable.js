@@ -18,29 +18,15 @@ import { tableContainerClass } from './utils/responsiveLayout';
 import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
 
 export default function ItemsTable() {
-  const {
-    sortedItems,
-    activeColumns,
-    downloadHistoryLookup,
-    tagMappings,
-  } = useDownloadsDataContext();
+  const { sortedItems, activeColumns, downloadHistoryLookup, tagMappings } =
+    useDownloadsDataContext();
 
   const selectedItems = useDownloadsSelectionStore(useShallow((s) => s.selectedItems));
 
-  const {
-    sortField,
-    sortDirection,
-    handleSort,
-    search: fileSearch,
-  } = useDownloadsFilterContext();
+  const { sortField, sortDirection, handleSort, search: fileSearch } = useDownloadsFilterContext();
 
-  const {
-    activeType,
-    isBlurred,
-    isFullscreen,
-    displayViewMode,
-    scrollContainerRef,
-  } = useDownloadsUIContext();
+  const { activeType, isBlurred, isFullscreen, displayViewMode, scrollContainerRef } =
+    useDownloadsUIContext();
 
   const {
     apiKey,

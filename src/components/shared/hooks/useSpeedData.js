@@ -29,8 +29,7 @@ const ensureValidNumber = (value) => {
  * @param {object[] | (() => object[])} itemsOrGetter — torrent rows, or a getter (e.g. from Zustand) read on each tick
  */
 export function useSpeedData(itemsOrGetter, timeRange = '10m') {
-  const getItems =
-    typeof itemsOrGetter === 'function' ? itemsOrGetter : () => itemsOrGetter;
+  const getItems = typeof itemsOrGetter === 'function' ? itemsOrGetter : () => itemsOrGetter;
 
   const [speedData, setSpeedData] = useState({
     labels: [],

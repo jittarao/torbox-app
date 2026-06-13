@@ -263,7 +263,9 @@ class ApiClient {
 
     // Fast-fail if circuit breaker is open (unless automation already paused — coordinator owns recovery)
     if (_globalCircuitBreaker.isOpen() && !automationPaused) {
-      const cbError = new Error(`Circuit breaker open for TorBox API (${_globalCircuitBreaker.state})`);
+      const cbError = new Error(
+        `Circuit breaker open for TorBox API (${_globalCircuitBreaker.state})`
+      );
       cbError.isCircuitBreakerOpen = true;
       cbError.isConnectionError = true;
       if (connectionErrorFallback !== null) {

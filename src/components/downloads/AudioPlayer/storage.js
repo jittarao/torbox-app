@@ -9,7 +9,8 @@ function getStorage() {
   const data = getJSON(AUDIO_STORAGE_KEY);
   if (!data) return { volume: 1, byFile: {} };
   return {
-    volume: typeof data.volume === 'number' && data.volume >= 0 && data.volume <= 1 ? data.volume : 1,
+    volume:
+      typeof data.volume === 'number' && data.volume >= 0 && data.volume <= 1 ? data.volume : 1,
     byFile: data.byFile && typeof data.byFile === 'object' ? data.byFile : {},
   };
 }

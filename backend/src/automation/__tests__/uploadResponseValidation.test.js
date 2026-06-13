@@ -87,15 +87,13 @@ describe('uploadResponseValidation', () => {
 
   describe('isTorboxUploadApiSuccess', () => {
     test('accepts documented createtorrent envelope', () => {
-      expect(
-        isTorboxUploadApiSuccess({ data: CREATE_TORRENT_SUCCESS }, 'torrent')
-      ).toBe(true);
+      expect(isTorboxUploadApiSuccess({ data: CREATE_TORRENT_SUCCESS }, 'torrent')).toBe(true);
     });
 
     test('accepts asynccreatetorrent-style success with data null', () => {
-      expect(
-        isTorboxUploadApiSuccess({ data: ASYNC_CREATE_TORRENT_SUCCESS }, 'torrent')
-      ).toBe(true);
+      expect(isTorboxUploadApiSuccess({ data: ASYNC_CREATE_TORRENT_SUCCESS }, 'torrent')).toBe(
+        true
+      );
     });
 
     test('rejects explicit API failure envelope', () => {

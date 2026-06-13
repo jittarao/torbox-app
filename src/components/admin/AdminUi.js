@@ -27,15 +27,24 @@ export const adminInputClass =
   'w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text placeholder:text-muted shadow-sm transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:placeholder:text-muted-dark dark:focus:border-accent-dark dark:focus:ring-accent-dark/25';
 
 const STATUS_STYLES = {
-  healthy: 'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark',
-  success: 'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark',
-  active: 'bg-label-active-bg text-label-active-text dark:bg-label-active-bg-dark dark:text-label-active-text-dark',
-  warning: 'bg-label-warning-bg text-label-warning-text dark:bg-label-warning-bg-dark dark:text-label-warning-text-dark',
-  critical: 'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
-  danger: 'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
-  error: 'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
-  inactive: 'bg-label-default-bg text-label-default-text dark:bg-label-default-bg-dark dark:text-label-default-text-dark',
-  default: 'bg-label-default-bg text-label-default-text dark:bg-label-default-bg-dark dark:text-label-default-text-dark',
+  healthy:
+    'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark',
+  success:
+    'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark',
+  active:
+    'bg-label-active-bg text-label-active-text dark:bg-label-active-bg-dark dark:text-label-active-text-dark',
+  warning:
+    'bg-label-warning-bg text-label-warning-text dark:bg-label-warning-bg-dark dark:text-label-warning-text-dark',
+  critical:
+    'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
+  danger:
+    'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
+  error:
+    'bg-label-danger-bg text-label-danger-text dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
+  inactive:
+    'bg-label-default-bg text-label-default-text dark:bg-label-default-bg-dark dark:text-label-default-text-dark',
+  default:
+    'bg-label-default-bg text-label-default-text dark:bg-label-default-bg-dark dark:text-label-default-text-dark',
 };
 
 export function adminStatusBadgeClass(status) {
@@ -53,16 +62,21 @@ export function AdminPageHeader({ title, description, actions, meta }) {
         {description ? (
           <p className="max-w-2xl text-sm text-muted dark:text-muted-dark">{description}</p>
         ) : null}
-        {meta ? (
-          <p className="text-xs text-muted dark:text-muted-dark">{meta}</p>
-        ) : null}
+        {meta ? <p className="text-xs text-muted dark:text-muted-dark">{meta}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </header>
   );
 }
 
-export function AdminCard({ title, description, action, children, className = '', bodyClassName = '' }) {
+export function AdminCard({
+  title,
+  description,
+  action,
+  children,
+  className = '',
+  bodyClassName = '',
+}) {
   return (
     <section className={`${adminCardClass} ${className}`}>
       {title ? (
@@ -169,7 +183,11 @@ export function AdminSortableTh({
   const isActive = activeSort === sortKey;
   const ariaSort = isActive ? (activeDirection === 'asc' ? 'ascending' : 'descending') : 'none';
   const alignClass =
-    align === 'right' ? 'justify-end text-right' : align === 'center' ? 'justify-center text-center' : 'text-left';
+    align === 'right'
+      ? 'justify-end text-right'
+      : align === 'center'
+        ? 'justify-center text-center'
+        : 'text-left';
 
   const sortHint = isActive
     ? activeDirection === 'asc'

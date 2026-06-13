@@ -3,9 +3,5 @@
   "compilerOptions": {
     "strict": true
   },
-  "include": [
-    "src/store/**/*.ts",
-    "src/utils/downloadList*.ts",
-    "src/config/**/*.ts"
-  ]
+  "include": ["src/store/**/*.ts", "src/utils/downloadList*.ts", "src/config/**/*.ts"]
 }

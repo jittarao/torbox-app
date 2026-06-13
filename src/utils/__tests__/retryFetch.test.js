@@ -10,14 +10,15 @@ describe('retryFetch timeout', () => {
   });
 
   it('aborts hung requests after the configured timeout', async () => {
-    globalThis.fetch = mock((_url, init) =>
-      new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () => {
-          const err = new Error('The operation was aborted');
-          err.name = 'AbortError';
-          reject(err);
-        });
-      })
+    globalThis.fetch = mock(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const err = new Error('The operation was aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        })
     );
 
     const result = await retryFetch('/api/torrents/download?torrent_id=1', {

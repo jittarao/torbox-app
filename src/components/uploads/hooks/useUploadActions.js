@@ -58,7 +58,11 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
   const handleDelete = useCallback(
     async (id) => {
       const uploadId = normalizeUploadId(id);
-      if (uploadId == null || deleting.has(uploadId) || !confirm('Are you sure you want to delete this upload?')) {
+      if (
+        uploadId == null ||
+        deleting.has(uploadId) ||
+        !confirm('Are you sure you want to delete this upload?')
+      ) {
         return;
       }
 
@@ -310,9 +314,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
       try {
         setBulkRetrying(true);
 
-        const ids = failedUploads
-          .map((u) => normalizeUploadId(u.id))
-          .filter((id) => id !== null);
+        const ids = failedUploads.map((u) => normalizeUploadId(u.id)).filter((id) => id !== null);
 
         if (ids.length === 0) {
           alert('No valid upload IDs to retry');

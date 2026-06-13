@@ -86,9 +86,7 @@ export default function HomePageClient() {
   };
 
   if (!isClient || !hydrated) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0b] font-sans" aria-hidden inert />
-    );
+    return <div className="min-h-screen bg-[#0a0a0b] font-sans" aria-hidden inert />;
   }
 
   if (!apiKey) {
@@ -100,10 +98,7 @@ export default function HomePageClient() {
   }
 
   return (
-    <AppShell
-      apiKey={apiKey}
-      className="min-h-screen bg-surface dark:bg-surface-dark font-sans"
-    >
+    <AppShell apiKey={apiKey} className="min-h-screen bg-surface dark:bg-surface-dark font-sans">
       <div
         ref={mainRef}
         tabIndex={-1}

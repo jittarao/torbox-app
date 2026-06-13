@@ -26,13 +26,16 @@ export async function GET(request) {
   }
 
   try {
-    const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/user/stats?${query.toString()}`, {
-      cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-      },
-    });
+    const response = await torboxFetch(
+      `${API_BASE}/${API_VERSION}/api/user/stats?${query.toString()}`,
+      {
+        cache: 'no-store',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

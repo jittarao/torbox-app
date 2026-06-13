@@ -100,9 +100,9 @@ describe('downloadsSelectionStore', () => {
       hasHydratedSelection: true,
     });
 
-    useDownloadsSelectionStore.getState().reconcileWithItems([
-      { id: 1, assetType: 'torrents', files: [{ id: 100, size: 1 }] },
-    ]);
+    useDownloadsSelectionStore
+      .getState()
+      .reconcileWithItems([{ id: 1, assetType: 'torrents', files: [{ id: 100, size: 1 }] }]);
 
     const files = useDownloadsSelectionStore.getState().selectedItems.files.get('torrents:1');
     expect(files ? Array.from(files) : []).toEqual([100]);

@@ -116,7 +116,12 @@ export async function batchArchiveAndRemove(items, apiKey) {
   const successfulIds = [];
 
   await runWithConcurrency(toRemove, CONCURRENT_ARCHIVE_DELETES, async (item) => {
-    const result = await deleteItemHelper(String(item.id), apiKey, 'torrents', BULK_DELETE_FETCH_OPTIONS);
+    const result = await deleteItemHelper(
+      String(item.id),
+      apiKey,
+      'torrents',
+      BULK_DELETE_FETCH_OPTIONS
+    );
     if (result.success) {
       successfulIds.push(item.id);
     }

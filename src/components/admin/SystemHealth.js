@@ -48,7 +48,8 @@ export default function SystemHealth({ metrics, onRefresh }) {
       const r = data.result;
       setQuotaMessage({
         type: 'success',
-        text: `Evicted ${r?.total_evicted ?? 0} upload(s) across ${r?.users_with_evictions ?? 0} user(s). ` +
+        text:
+          `Evicted ${r?.total_evicted ?? 0} upload(s) across ${r?.users_with_evictions ?? 0} user(s). ` +
           `${r?.still_over_quota ?? 0} user(s) still over quota (e.g. only active queue items left).`,
       });
       await loadQuotaSummary();
@@ -135,10 +136,7 @@ export default function SystemHealth({ metrics, onRefresh }) {
                 value={quotaSummary.over_quota_users ?? 0}
                 hint={`Limits: ${quotaSummary.limit_storage_formatted ?? '—'} storage, ${quotaSummary.limits?.maxFiles ?? '—'} files`}
               />
-              <AdminStatRow
-                label="LIMITED users (total)"
-                value={quotaSummary.limited_users ?? 0}
-              />
+              <AdminStatRow label="LIMITED users (total)" value={quotaSummary.limited_users ?? 0} />
             </>
           ) : (
             <p className="text-sm text-muted dark:text-muted-dark">Quota summary unavailable.</p>

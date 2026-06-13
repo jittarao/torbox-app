@@ -47,7 +47,11 @@ export default function UserDetailPageClient() {
       <AdminLayout>
         <AdminEmpty message="User not found." />
         <div className="mt-4 text-center">
-          <button type="button" onClick={() => push(`/${locale}/admin/users`)} className="ui-btn-accent">
+          <button
+            type="button"
+            onClick={() => push(`/${locale}/admin/users`)}
+            className="ui-btn-accent"
+          >
             Back to users
           </button>
         </div>
@@ -62,7 +66,11 @@ export default function UserDetailPageClient() {
           title="User details"
           description={selectedUserData.key_name || selectedUserData.auth_id}
           actions={
-            <button type="button" onClick={() => push(`/${locale}/admin/users`)} className="ui-btn-ghost">
+            <button
+              type="button"
+              onClick={() => push(`/${locale}/admin/users`)}
+              className="ui-btn-ghost"
+            >
               ← Users
             </button>
           }

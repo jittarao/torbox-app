@@ -53,6 +53,19 @@ class RuleFilter {
   }
 
   /**
+   * Resolve tags map: use preloaded tags from RuleEvaluator when available;
+   * fall back to a per-rule DB query when the evaluator did not load tags.
+   * @param {Array} matchingTorrents
+   * @param {Object} [options]
+   * @returns {Promise<Map<string, number[]>>}
+   */
+  async _resolveTags(matchingTorrents, options = {}) {
+    return options.tagsByDownloadId && options.tagsByDownloadId.size > 0
+      ? options.tagsByDownloadId
+      : await this._buildTagsByDownloadId(matchingTorrents);
+  }
+
+  /**
    * Filter torrents for add_tag action - skip torrents that already have all the tags
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
    * @param {Object} action - Action configuration
@@ -64,14 +77,7 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    // Use preloaded tags from RuleEvaluator when available; fall back to a per-rule DB query
-    // when the rule has no TAGS condition and the evaluator did not load tags.
-    const tagsByDownloadId =
-      options.tagsByDownloadId && options.tagsByDownloadId.size > 0
-        ? options.tagsByDownloadId
-        : await this._buildTagsByDownloadId(matchingTorrents);
-
-    // Unified format: tagsByDownloadId values are number[] (tag ids)
+    const tagsByDownloadId = await this._resolveTags(matchingTorrents, options);
     const targetTagIds = new Set(action.tagIds);
     const filtered = matchingTorrents.filter((torrent) => {
       const downloadId =
@@ -80,12 +86,10 @@ class RuleFilter {
         torrent.usenet_id?.toString() ||
         torrent.web_id?.toString();
       if (!downloadId) {
-        return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
+        return true;
       }
 
       const existingTagIds = new Set(tagsByDownloadId.get(downloadId) || []);
-
-      // Check if torrent already has all the tags
       const hasAllTags = Array.from(targetTagIds).every((tagId) => existingTagIds.has(tagId));
 
       if (hasAllTags) {
@@ -115,26 +119,12 @@ class RuleFilter {
     return filtered;
   }
 
-  /**
-   * Filter torrents for remove_tag action - skip torrents that don't have any of the tags
-   * @param {Array} matchingTorrents - Torrents that matched the rule conditions
-   * @param {Object} action - Action configuration
-   * @param {Object} [options] - Optional; tagsByDownloadId from RuleEvaluator
-   * @returns {Promise<Array>} - Filtered torrents
-   */
   async filterForRemoveTag(matchingTorrents, action, options = {}) {
     if (action.type !== 'remove_tag' || !action.tagIds || action.tagIds.length === 0) {
       return matchingTorrents;
     }
 
-    // Use preloaded tags from RuleEvaluator when available; fall back to a per-rule DB query
-    // when the rule has no TAGS condition and the evaluator did not load tags.
-    const tagsByDownloadId =
-      options.tagsByDownloadId && options.tagsByDownloadId.size > 0
-        ? options.tagsByDownloadId
-        : await this._buildTagsByDownloadId(matchingTorrents);
-
-    // Unified format: tagsByDownloadId values are number[] (tag ids)
+    const tagsByDownloadId = await this._resolveTags(matchingTorrents, options);
     const targetTagIds = new Set(action.tagIds);
     const filtered = matchingTorrents.filter((torrent) => {
       const downloadId =
@@ -143,12 +133,10 @@ class RuleFilter {
         torrent.usenet_id?.toString() ||
         torrent.web_id?.toString();
       if (!downloadId) {
-        return true; // Keep torrents without ID (will fail later, but let it fail explicitly)
+        return true;
       }
 
       const existingTagIds = new Set(tagsByDownloadId.get(downloadId) || []);
-
-      // Check if torrent has at least one of the tags to remove
       const hasAnyTag = Array.from(targetTagIds).some((tagId) => existingTagIds.has(tagId));
 
       if (!hasAnyTag) {

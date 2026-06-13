@@ -18,7 +18,7 @@ describe('ruleCapabilities', () => {
   test('backend/config registry JSON matches repo-root config/', () => {
     const file = 'automation-rule-capabilities.json';
     expect(readFileSync(join(backendRoot, 'config', file), 'utf8')).toBe(
-      readFileSync(join(repoRoot, 'config', file), 'utf8'),
+      readFileSync(join(repoRoot, 'config', file), 'utf8')
     );
   });
 

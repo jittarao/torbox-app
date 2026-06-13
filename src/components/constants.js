@@ -1,8 +1,4 @@
-export {
-  REFERRAL_CODE,
-  REFERRAL_LINK,
-  REFERRAL_SIGNUP_LINK,
-} from '@/config/referral';
+export { REFERRAL_CODE, REFERRAL_LINK, REFERRAL_SIGNUP_LINK } from '@/config/referral';
 export const REFERRAL_HELP_URL =
   'https://support.torbox.app/en/articles/9875657-how-does-the-torbox-referral-system-work';
 export const ABUSE_POLICY_URL =

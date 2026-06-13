@@ -8,12 +8,7 @@ import ItemCard from './ItemCard';
 /**
  * Subscribes to a single download entity — keeps card view in sync with polls (like table rows).
  */
-function DownloadCardContainer({
-  entityKey,
-  tagMappings,
-  downloadHistoryLookup,
-  ...cardProps
-}) {
+function DownloadCardContainer({ entityKey, tagMappings, downloadHistoryLookup, ...cardProps }) {
   const entity = useTorboxDownloadsStore((state) => state.entities[entityKey]);
   const item = useMemo(() => {
     if (!entity) return null;

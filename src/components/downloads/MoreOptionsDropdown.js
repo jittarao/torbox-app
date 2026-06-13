@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { Archive, Copy, Delete, Download, FileDown, Refresh, VerticalEllipsis } from '@/components/icons';
+import {
+  Archive,
+  Copy,
+  Delete,
+  Download,
+  FileDown,
+  Refresh,
+  VerticalEllipsis,
+} from '@/components/icons';
 import Spinner from '../shared/Spinner';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
@@ -36,8 +44,7 @@ function menuDividerClass(menuVariant) {
 }
 
 function MenuItemButton({ menuVariant, tone, onClick, disabled, icon, children }) {
-  const labelClass =
-    menuVariant === 'sheet' ? 'min-w-0 flex-1 text-left' : 'ml-2';
+  const labelClass = menuVariant === 'sheet' ? 'min-w-0 flex-1 text-left' : 'ml-2';
   const iconWrapClass =
     menuVariant === 'sheet'
       ? 'flex size-5 shrink-0 items-center justify-center [&_svg]:size-5'
@@ -50,11 +57,7 @@ function MenuItemButton({ menuVariant, tone, onClick, disabled, icon, children }
       disabled={disabled}
       className={menuButtonClass(menuVariant, tone)}
     >
-      {menuVariant === 'sheet' ? (
-        <span className={iconWrapClass}>{icon}</span>
-      ) : (
-        icon
-      )}
+      {menuVariant === 'sheet' ? <span className={iconWrapClass}>{icon}</span> : icon}
       <span className={labelClass}>{children}</span>
     </button>
   );
@@ -153,23 +156,13 @@ function MenuItems({
   }
 
   items.push(
-    <MenuItemButton
-      key="copy-id"
-      menuVariant={menuVariant}
-      onClick={onCopyId}
-      icon={<Copy />}
-    >
+    <MenuItemButton key="copy-id" menuVariant={menuVariant} onClick={onCopyId} icon={<Copy />}>
       {t('copyId')}
     </MenuItemButton>
   );
 
   items.push(
-    <MenuItemButton
-      key="copy-hash"
-      menuVariant={menuVariant}
-      onClick={onCopyHash}
-      icon={<Copy />}
-    >
+    <MenuItemButton key="copy-hash" menuVariant={menuVariant} onClick={onCopyHash} icon={<Copy />}>
       {t('copyHash')}
     </MenuItemButton>
   );
@@ -736,7 +729,10 @@ export default function MoreOptionsDropdown({
   );
 
   return (
-    <div className={mobileBar ? 'ml-auto shrink-0' : 'relative'} ref={mobileBar ? undefined : menuRef}>
+    <div
+      className={mobileBar ? 'ml-auto shrink-0' : 'relative'}
+      ref={mobileBar ? undefined : menuRef}
+    >
       <button
         type="button"
         ref={buttonRef}
@@ -770,10 +766,7 @@ export default function MoreOptionsDropdown({
             className="ui-bottom-sheet fixed bottom-0 left-0 right-0 z-[1] flex max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border-0 border-t border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark"
           >
             <div className="flex shrink-0 justify-center pt-2.5 pb-1">
-              <div
-                className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600"
-                aria-hidden
-              />
+              <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />
             </div>
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/40 px-4 py-2.5 dark:border-border-dark/40">
               <h2 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">

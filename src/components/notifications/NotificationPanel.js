@@ -2,7 +2,16 @@
 
 import { useRef, useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, Bell, Check, CheckCircle, ExclamationTriangle, Times, Trash, XCircle } from '@/components/icons';
+import {
+  AlertCircle,
+  Bell,
+  Check,
+  CheckCircle,
+  ExclamationTriangle,
+  Times,
+  Trash,
+  XCircle,
+} from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -69,9 +78,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
       case 'success':
         return <CheckCircle className="size-4 text-green-600 dark:text-green-400" />;
       case 'warning':
-        return (
-          <ExclamationTriangle className="size-4 text-yellow-600 dark:text-yellow-400" />
-        );
+        return <ExclamationTriangle className="size-4 text-yellow-600 dark:text-yellow-400" />;
       case 'error':
         return <XCircle className="size-4 text-red-600 dark:text-red-400" />;
       case 'info':

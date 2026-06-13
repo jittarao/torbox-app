@@ -34,14 +34,23 @@ function applyReplacements(content) {
   let next = content;
 
   next = next.replace(/await fetch\(`\$\{API_BASE\}/g, 'await torboxFetch(`${API_BASE}');
-  next = next.replace(/await fetch\(`\$\{API_SEARCH_BASE\}/g, 'await torboxFetch(`${API_SEARCH_BASE}');
+  next = next.replace(
+    /await fetch\(`\$\{API_SEARCH_BASE\}/g,
+    'await torboxFetch(`${API_SEARCH_BASE}'
+  );
   next = next.replace(/fetch\(\s*\n\s*`(\$\{API_BASE\})/g, 'torboxFetch(\n      `$1');
   next = next.replace(/(?<![\w.])fetch\(`\$\{API_BASE\}/g, 'torboxFetch(`${API_BASE}');
-  next = next.replace(/(?<![\w.])fetch\(`\$\{API_SEARCH_BASE\}/g, 'torboxFetch(`${API_SEARCH_BASE}');
+  next = next.replace(
+    /(?<![\w.])fetch\(`\$\{API_SEARCH_BASE\}/g,
+    'torboxFetch(`${API_SEARCH_BASE}'
+  );
   next = next.replace(/await fetch\(API_BASE/g, 'await torboxFetch(API_BASE');
   next = next.replace(/await fetch\(apiUrl,/g, 'await torboxFetch(apiUrl,');
   next = next.replace(/await fetch\(endpoint,/g, 'await torboxFetch(endpoint,');
-  next = next.replace(/await fetch\(\s*\n\s*`(\$\{API_BASE\}|\$\{API_SEARCH_BASE\})/g, 'await torboxFetch(\n      `$1');
+  next = next.replace(
+    /await fetch\(\s*\n\s*`(\$\{API_BASE\}|\$\{API_SEARCH_BASE\})/g,
+    'await torboxFetch(\n      `$1'
+  );
 
   // Manual AbortController blocks superseded by torboxFetch default timeout
   next = next.replace(

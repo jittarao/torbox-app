@@ -6,7 +6,11 @@ import { getItem, setItem } from '@/utils/storage';
 /**
  * Hydration-safe localStorage preference with server default until client mounts.
  */
-export function useLocalStoragePreference(storageKey, serverDefault, { parse = (v) => v, serialize = (v) => String(v), validate } = {}) {
+export function useLocalStoragePreference(
+  storageKey,
+  serverDefault,
+  { parse = (v) => v, serialize = (v) => String(v), validate } = {}
+) {
   const [value, setValue] = useState(() => {
     if (typeof window === 'undefined') return serverDefault;
     const raw = getItem(storageKey);

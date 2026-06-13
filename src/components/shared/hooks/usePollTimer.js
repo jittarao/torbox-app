@@ -49,11 +49,21 @@ export function usePollTimer({
   const onScheduleUpdateRef = useRef(onScheduleUpdate);
   const getUserPresenceRef = useRef(getUserPresence);
 
-  useEffect(() => { onPollRef.current = onPoll; }, [onPoll]);
-  useEffect(() => { isRateLimitedRef.current = isRateLimited; }, [isRateLimited]);
-  useEffect(() => { onPollSkippedRef.current = onPollSkipped; }, [onPollSkipped]);
-  useEffect(() => { onScheduleUpdateRef.current = onScheduleUpdate; }, [onScheduleUpdate]);
-  useEffect(() => { getUserPresenceRef.current = getUserPresence; }, [getUserPresence]);
+  useEffect(() => {
+    onPollRef.current = onPoll;
+  }, [onPoll]);
+  useEffect(() => {
+    isRateLimitedRef.current = isRateLimited;
+  }, [isRateLimited]);
+  useEffect(() => {
+    onPollSkippedRef.current = onPollSkipped;
+  }, [onPollSkipped]);
+  useEffect(() => {
+    onScheduleUpdateRef.current = onScheduleUpdate;
+  }, [onScheduleUpdate]);
+  useEffect(() => {
+    getUserPresenceRef.current = getUserPresence;
+  }, [getUserPresence]);
 
   useEffect(() => {
     let pollTimeoutId = null;
@@ -103,11 +113,7 @@ export function usePollTimer({
     const emitSchedule = (delayMs, pollState = getPollState()) => {
       const nextPollAt = delayMs > 0 ? Date.now() + delayMs : null;
       onScheduleUpdateRef.current?.(
-        createPollSchedule(
-          pollState.mode,
-          nextPollAt,
-          delayMs > 0 ? delayMs : pollState.intervalMs
-        )
+        createPollSchedule(pollState.mode, nextPollAt, delayMs > 0 ? delayMs : pollState.intervalMs)
       );
     };
 
@@ -195,7 +201,9 @@ export function usePollTimer({
 
     // Track last tick time for sleep-wake detection
     let lastTickTime = Date.now();
-    const resetLastTickTime = () => { lastTickTime = Date.now(); };
+    const resetLastTickTime = () => {
+      lastTickTime = Date.now();
+    };
     let tickCount = 0;
 
     const handlePollTick = () => {
@@ -360,18 +368,13 @@ export function usePollTimer({
       clearSafetyTimeout();
       clearGraceStopTimeout();
       if (workerPort) {
-        try { workerPort.close(); } catch {}
+        try {
+          workerPort.close();
+        } catch {}
       }
       onReEngagedRef.current = () => {};
       onDisengagedRef.current = () => {};
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
     };
-  }, [
-    type,
-    pollingPaused,
-    autoStartApplies,
-    hasQueuedTorrents,
-    onReEngagedRef,
-    onDisengagedRef,
-  ]);
+  }, [type, pollingPaused, autoStartApplies, hasQueuedTorrents, onReEngagedRef, onDisengagedRef]);
 }

@@ -84,16 +84,9 @@ function getUploadProcessorClient(backend) {
  * The status read and row delete are executed inside a SQLite transaction so
  * the status cannot change between the two operations.
  */
-export async function deleteUploadAndDetermineStatus(
-  authId,
-  upload,
-  userDb,
-  uploadQuotaService
-) {
+export async function deleteUploadAndDetermineStatus(authId, upload, userDb, uploadQuotaService) {
   const hadRetainedFile =
-    upload.file_path &&
-    !upload.file_deleted &&
-    (await fileExists(upload.file_path));
+    upload.file_path && !upload.file_deleted && (await fileExists(upload.file_path));
 
   // Delete file if exists (with authId for security validation)
   if (upload.file_path) {
@@ -111,8 +104,7 @@ export async function deleteUploadAndDetermineStatus(
     userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(upload.id);
 
     wasQueued =
-      currentUpload &&
-      (currentUpload.status === 'queued' || currentUpload.status === 'processing');
+      currentUpload && (currentUpload.status === 'queued' || currentUpload.status === 'processing');
   })();
 
   if (uploadQuotaService && hadRetainedFile) {
@@ -1650,33 +1642,16 @@ export function setupUploadsRoutes(app, backend) {
           });
         }
 
-        const hadRetainedFile =
-          upload.file_path && !upload.file_deleted && (await fileExists(upload.file_path));
-
-        // Delete file if exists (with authId for security validation)
-        if (upload.file_path) {
-          await deleteUploadFile(authId, upload.file_path);
-        }
-
-        // Re-read status after async file deletion to check if UploadProcessor
-        // completed the upload during the file deletion (race condition fix)
-        const currentUpload = userDb.db
-          .prepare('SELECT status FROM uploads WHERE id = ?')
-          .get(uploadId);
-
-        // Delete from database
-        userDb.db.prepare('DELETE FROM uploads WHERE id = ?').run(uploadId);
-
-        if (uploadQuotaService && hadRetainedFile) {
-          uploadQuotaService.onUploadDeleted(authId, upload.file_size_bytes, true);
-        }
+        const { wasQueued } = await deleteUploadAndDetermineStatus(
+          authId,
+          upload,
+          userDb,
+          uploadQuotaService
+        );
 
         // Update counter only if status was still queued or processing
         // at the time of deletion (not if UploadProcessor completed it)
-        if (
-          currentUpload &&
-          (currentUpload.status === 'queued' || currentUpload.status === 'processing')
-        ) {
+        if (wasQueued) {
           backend.masterDatabase.decrementUploadCounter(authId);
         }
 

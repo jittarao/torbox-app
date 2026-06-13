@@ -9,18 +9,25 @@ import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
  * Subscribes only to player store — keeps stream URL updates off Downloads.
  */
 export default function DownloadsPlayersHost({ apiKey, activeType, requestDownloadLink }) {
-  const { video, audio, closeVideo, closeAudio, setVideoStreamUrl, setActiveType, refreshAudioUrl } =
-    useDownloadsPlayerStore(
-      useShallow((s) => ({
-        video: s.video,
-        audio: s.audio,
-        closeVideo: s.closeVideo,
-        closeAudio: s.closeAudio,
-        setVideoStreamUrl: s.setVideoStreamUrl,
-        setActiveType: s.setActiveType,
-        refreshAudioUrl: s.refreshAudioUrl,
-      }))
-    );
+  const {
+    video,
+    audio,
+    closeVideo,
+    closeAudio,
+    setVideoStreamUrl,
+    setActiveType,
+    refreshAudioUrl,
+  } = useDownloadsPlayerStore(
+    useShallow((s) => ({
+      video: s.video,
+      audio: s.audio,
+      closeVideo: s.closeVideo,
+      closeAudio: s.closeAudio,
+      setVideoStreamUrl: s.setVideoStreamUrl,
+      setActiveType: s.setActiveType,
+      refreshAudioUrl: s.refreshAudioUrl,
+    }))
+  );
 
   useEffect(() => {
     setActiveType(activeType);

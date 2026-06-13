@@ -6,10 +6,7 @@ import {
   saveHealthHistory,
   statusToSegment,
 } from '@/utils/healthHistory';
-import {
-  checkBackendAvailability,
-  getBackendModeSnapshot,
-} from '@/utils/backendModeCache';
+import { checkBackendAvailability, getBackendModeSnapshot } from '@/utils/backendModeCache';
 import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 
 /** Interval between automatic platform / TorBox / backend status checks */

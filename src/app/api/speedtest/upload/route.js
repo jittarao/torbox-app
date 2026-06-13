@@ -14,7 +14,10 @@ export async function POST(request) {
     const contentLength = request.headers.get('content-length');
     if (contentLength && Number(contentLength) > MAX_SPEEDTEST_FILE_SIZE_BYTES) {
       return NextResponse.json(
-        { success: false, error: `File size exceeds the ${MAX_SPEEDTEST_FILE_SIZE_BYTES / 1024 / 1024} MB limit` },
+        {
+          success: false,
+          error: `File size exceeds the ${MAX_SPEEDTEST_FILE_SIZE_BYTES / 1024 / 1024} MB limit`,
+        },
         { status: 400 }
       );
     }
@@ -30,7 +33,10 @@ export async function POST(request) {
 
     if (file.size > MAX_SPEEDTEST_FILE_SIZE_BYTES) {
       return NextResponse.json(
-        { success: false, error: `File size exceeds the ${MAX_SPEEDTEST_FILE_SIZE_BYTES / 1024 / 1024} MB limit` },
+        {
+          success: false,
+          error: `File size exceeds the ${MAX_SPEEDTEST_FILE_SIZE_BYTES / 1024 / 1024} MB limit`,
+        },
         { status: 400 }
       );
     }

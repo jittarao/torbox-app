@@ -47,7 +47,9 @@ describe('torrentHash', () => {
       }),
       'binary'
     );
-    const expected = createHash('sha1').update(Buffer.from(bencode(info), 'binary')).digest('hex');
+    const expected = createHash('sha1')
+      .update(Buffer.from(bencode(info), 'binary'))
+      .digest('hex');
     expect(extractInfoHashFromTorrentBuffer(torrent)).toBe(expected);
   });
 });

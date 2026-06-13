@@ -1,4 +1,13 @@
-import { Archive, Bolt, Download, History, MagnifyingGlass, Rss, Upload, User } from '@/components/icons';
+import {
+  Archive,
+  Bolt,
+  Download,
+  History,
+  MagnifyingGlass,
+  Rss,
+  Upload,
+  User,
+} from '@/components/icons';
 
 /** Profile link — rendered after main nav items with a separator */
 export const USER_NAV_ITEM = {

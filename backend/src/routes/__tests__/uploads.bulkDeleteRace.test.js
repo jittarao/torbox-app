@@ -63,7 +63,9 @@ describe('bulk upload delete status race', () => {
 
     const userDb = await userDatabaseManager.getUserDatabase(authId);
     const upload = userDb.db
-      .prepare('SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?')
+      .prepare(
+        'SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?'
+      )
       .get(uploadId);
 
     const result = await deleteUploadAndDetermineStatus(authId, upload, userDb, null);
@@ -91,7 +93,9 @@ describe('bulk upload delete status race', () => {
     userDb.db.prepare("UPDATE uploads SET status = 'completed' WHERE id = ?").run(uploadId);
 
     const upload = userDb.db
-      .prepare('SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?')
+      .prepare(
+        'SELECT id, file_path, status, file_deleted, file_size_bytes FROM uploads WHERE id = ?'
+      )
       .get(uploadId);
 
     const result = await deleteUploadAndDetermineStatus(authId, upload, userDb, null);

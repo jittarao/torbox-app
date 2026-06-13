@@ -45,9 +45,7 @@ describe('bulkArchiveDownloadsInDb', () => {
   });
 
   it('skips invalid entries when called with only valid rows', () => {
-    const torrentIds = bulkArchiveDownloadsInDb(db, [
-      { torrent_id: '1', hash: 'aaa' },
-    ]);
+    const torrentIds = bulkArchiveDownloadsInDb(db, [{ torrent_id: '1', hash: 'aaa' }]);
 
     expect(torrentIds).toEqual(['1']);
   });

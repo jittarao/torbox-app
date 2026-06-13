@@ -1,6 +1,15 @@
 'use client';
 
-import { CollapseAll, ExpandAll, Eye, EyeOff, List, Maximize, Minimize, Table } from '@/components/icons';
+import {
+  CollapseAll,
+  ExpandAll,
+  Eye,
+  EyeOff,
+  List,
+  Maximize,
+  Minimize,
+  Table,
+} from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
@@ -67,8 +76,7 @@ export default function ViewControls({
   const itemsWithFiles =
     unfilteredItems?.filter((item) => item.files && item.files.length > 0) ?? [];
   const hasItemsWithFiles = itemsWithFiles.length > 0;
-  const allExpanded =
-    hasItemsWithFiles && itemsWithFiles.every((item) => expandedById[item.id]);
+  const allExpanded = hasItemsWithFiles && itemsWithFiles.every((item) => expandedById[item.id]);
 
   return (
     <div

@@ -84,10 +84,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     useTorboxDownloadsStore.getState().markRateLimited();
   }, []);
 
-  const isRateLimited = useCallback(
-    (activeType = type) => peekRateLimited(activeType),
-    [type]
-  );
+  const isRateLimited = useCallback((activeType = type) => peekRateLimited(activeType), [type]);
 
   useEffect(() => {
     if (prevApiKeyRef.current !== apiKey) {

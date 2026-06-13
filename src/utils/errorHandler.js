@@ -94,11 +94,14 @@ export function handleChunkError(error, retryCount = 0) {
 
   setTimeout(() => {
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.update();
-        });
-      }).catch(() => {});
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.update();
+          });
+        })
+        .catch(() => {});
     }
 
     scheduleReload(0);
@@ -129,26 +132,33 @@ export function handleServiceWorkerError(error) {
     return true;
   }
 
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister().then(() => {
-        console.log('Service worker unregistered');
-        if ('caches' in window) {
-          caches
-            .keys()
-            .then((cacheNames) => {
-              return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
-            })
-            .then(() => {
-              console.log('All caches cleared');
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => {
+      registrations.forEach((registration) => {
+        registration
+          .unregister()
+          .then(() => {
+            console.log('Service worker unregistered');
+            if ('caches' in window) {
+              caches
+                .keys()
+                .then((cacheNames) => {
+                  return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+                })
+                .then(() => {
+                  console.log('All caches cleared');
+                  scheduleReload(500);
+                })
+                .catch(() => {});
+            } else {
               scheduleReload(500);
-            }).catch(() => {});
-        } else {
-          scheduleReload(500);
-        }
-      }).catch(() => {});
-    });
-  }).catch(() => {});
+            }
+          })
+          .catch(() => {});
+      });
+    })
+    .catch(() => {});
 
   return true;
 }
