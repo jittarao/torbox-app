@@ -1,12 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { STATUS_OPTIONS } from '@/components/constants';
-
-// Helper to check if torrent is queued
-const isQueued = (torrent) =>
-  !torrent.download_state &&
-  !torrent.download_finished &&
-  !torrent.active &&
-  torrent.type === 'torrent';
+import { isQueuedItem } from '@/utils/utility';
 
 export function useSort() {
   const [sortField, setSortField] = useState('created_at');
@@ -40,7 +34,7 @@ export function useSort() {
 
   const getStatusPriority = useCallback(
     (torrent) => {
-      if (isQueued(torrent)) return statusPriorityMap['Queued'];
+      if (isQueuedItem(torrent)) return statusPriorityMap['Queued'];
 
       const status = STATUS_OPTIONS.find((option) => {
         if (option.value === 'all' || option.value.is_queued) return false;

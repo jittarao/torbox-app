@@ -2,16 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import { isQueuedItem, isActiveDownload } from '../utility';
 
 describe('isQueuedItem', () => {
-  test('classic queued row (no download_state)', () => {
-    expect(isQueuedItem({ id: 1, active: false })).toBe(true);
+  test('inactive/failed row is not queued', () => {
+    expect(isQueuedItem({ id: 1, active: false, download_present: false })).toBe(false);
   });
 
   test('queued via status field from getqueued API', () => {
-    expect(isQueuedItem({ id: 1, status: 'queued', download_state: 'paused' })).toBe(true);
-  });
-
-  test('queued via download_state', () => {
-    expect(isQueuedItem({ id: 1, download_state: 'queued', active: false })).toBe(true);
+    expect(isQueuedItem({ id: 1, status: 'queued' })).toBe(true);
   });
 
   test('active downloading torrent is not queued', () => {

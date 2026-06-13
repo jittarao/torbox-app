@@ -12,16 +12,11 @@ import {
 import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { isQueuedItem } from '@/utils/utility';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
 /** @typedef {{ entities?: Record<string, object>, order?: { torrents?: string[], usenet?: string[], webdl?: string[] } }} TorboxDownloadsState */
 /** @typedef {{ search?: string, statusFilter?: string, appliedFilters?: object, sortField?: string, sortDirection?: 'asc'|'desc' }} FilterCriteria */
-
-const isQueued = (torrent) =>
-  !torrent.download_state &&
-  !torrent.download_finished &&
-  !torrent.active &&
-  torrent.type === 'torrent';
 
 const STATUS_PRIORITY_MAP = {
   Completed: 6,
@@ -68,7 +63,7 @@ const FIELD_TYPE_MAP = {
 };
 
 function getStatusPriority(torrent) {
-  if (isQueued(torrent)) return STATUS_PRIORITY_MAP.Queued;
+  if (isQueuedItem(torrent)) return STATUS_PRIORITY_MAP.Queued;
 
   const status = STATUS_OPTIONS.find((option) => {
     if (option.value === 'all' || option.value.is_queued) return false;

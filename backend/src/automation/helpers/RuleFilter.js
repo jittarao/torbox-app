@@ -220,7 +220,7 @@ class RuleFilter {
     }
 
     const filtered = matchingTorrents.filter((torrent) => {
-      const isQueued = torrent._isQueuedItem === true || getTorrentStatus(torrent) === 'queued';
+      const isQueued = getTorrentStatus(torrent) === 'queued';
 
       if (!isQueued) {
         logger.debug('Skipping torrent for force_start - not queued', {
