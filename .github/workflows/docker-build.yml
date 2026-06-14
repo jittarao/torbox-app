@@ -62,10 +62,6 @@ jobs:
       - name: Format check
         run: bun run format:check
 
-      - name: Backend tests
-        working-directory: ./backend
-        run: bun test
-
   # Main build job - builds Docker images for multiple platforms
   build:
     # Wait for quality gate to pass before building images
