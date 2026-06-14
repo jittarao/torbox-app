@@ -75,7 +75,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
           params.append('search', currentSearch);
         }
 
-        const response = await fetch(`/api/archived-downloads?${params.toString()}`, {
+        const response = await globalThis.fetch(`/api/archived-downloads?${params.toString()}`, {
           headers: {
             'x-api-key': currentApiKey,
           },
@@ -190,7 +190,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     }
 
     try {
-      const response = await fetch('/api/archived-downloads', {
+      const response = await globalThis.fetch('/api/archived-downloads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     }
 
     try {
-      const response = await fetch(`/api/archived-downloads/${archiveEntry.archiveId}`, {
+      const response = await globalThis.fetch(`/api/archived-downloads/${archiveEntry.archiveId}`, {
         method: 'DELETE',
         headers: {
           'x-api-key': apiKey,
@@ -268,7 +268,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     const ids = archivedDownloads.map((item) => item.archiveId).filter(Boolean);
     if (ids.length === 0) return [];
 
-    const response = await fetch('/api/archived-downloads/bulk', {
+    const response = await globalThis.fetch('/api/archived-downloads/bulk', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
