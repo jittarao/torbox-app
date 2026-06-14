@@ -1,8 +1,29 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { createDownloadFetchRateLimiter } from '../downloadFetchRateLimit';
 import { POLLING_CONFIG } from '../pollingConfig';
 
 describe('downloadFetchRateLimiter', () => {
+  let origDateNow;
+  let fakeNow;
+
+  beforeEach(() => {
+    origDateNow = Date.now;
+    fakeNow = 100_000;
+    Date.now = () => fakeNow;
+  });
+
+  afterEach(() => {
+    Date.now = origDateNow;
+  });
+
+  // Helper: advance fake clock past the min interval for the given type
+  function advancePastMinInterval(type) {
+    const gap =
+      (POLLING_CONFIG.minIntervalByType[type] || POLLING_CONFIG.minIntervalBetweenCallsMs) + 1;
+    fakeNow += gap;
+    return gap;
+  }
+
   it('allows first fetch for each asset type without a shared global bucket', () => {
     const limiter = createDownloadFetchRateLimiter();
     expect(limiter.acquire('torrents')).toBe(1);
@@ -16,19 +37,18 @@ describe('downloadFetchRateLimiter', () => {
     expect(limiter.acquire('torrents')).toBeNull();
   });
 
-  it('blocks a type after maxCalls within the window', async () => {
+  it('blocks a type after maxCalls within the window', () => {
     const limiter = createDownloadFetchRateLimiter();
-    const gap =
-      (POLLING_CONFIG.minIntervalByType.torrents || POLLING_CONFIG.minIntervalBetweenCallsMs) + 50;
 
     expect(limiter.acquire('torrents')).toBe(1);
-    await Bun.sleep(gap);
+    advancePastMinInterval('torrents');
     expect(limiter.acquire('torrents')).toBe(2);
-    await Bun.sleep(gap);
+    advancePastMinInterval('torrents');
     expect(limiter.acquire('torrents')).toBe(3);
-    await Bun.sleep(gap);
+    advancePastMinInterval('torrents');
+    // 4th call within the sliding window → blocked
     expect(limiter.acquire('torrents')).toBeNull();
-  }, 10_000);
+  });
 
   it('canManualRefresh on all tab requires each type to have budget', () => {
     const limiter = createDownloadFetchRateLimiter();

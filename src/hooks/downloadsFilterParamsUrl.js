@@ -35,7 +35,7 @@ export function getDownloadsFilterSearchParamsSnapshot() {
     return EMPTY_SEARCH_PARAMS;
   }
 
-  const search = window.location.search;
+  const search = String(window.location.search);
   if (search === cachedSearchString) {
     return cachedSearchParams;
   }
