@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { uploadItem } from '@/utils/uploadActions';
 import { buildShortMagnetLink } from '@/utils/retryDownload';
+import fetch from '@/utils/fetch';
 
 function transformArchivedItem(item) {
   return {
@@ -75,7 +76,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
           params.append('search', currentSearch);
         }
 
-        const response = await globalThis.fetch(`/api/archived-downloads?${params.toString()}`, {
+        const response = await fetch(`/api/archived-downloads?${params.toString()}`, {
           headers: {
             'x-api-key': currentApiKey,
           },
@@ -190,7 +191,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     }
 
     try {
-      const response = await globalThis.fetch('/api/archived-downloads', {
+      const response = await fetch('/api/archived-downloads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -236,7 +237,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     }
 
     try {
-      const response = await globalThis.fetch(`/api/archived-downloads/${archiveEntry.archiveId}`, {
+      const response = await fetch(`/api/archived-downloads/${archiveEntry.archiveId}`, {
         method: 'DELETE',
         headers: {
           'x-api-key': apiKey,
@@ -268,7 +269,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
     const ids = archivedDownloads.map((item) => item.archiveId).filter(Boolean);
     if (ids.length === 0) return [];
 
-    const response = await globalThis.fetch('/api/archived-downloads/bulk', {
+    const response = await fetch('/api/archived-downloads/bulk', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

@@ -1,7 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, mock } from 'bun:test';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { useArchive } from '@/hooks/useArchive';
 
 function createPaginationState() {
   return { page: 1, limit: 50, total: 0, totalPages: 0 };
@@ -19,21 +18,20 @@ function createMockResponse() {
   };
 }
 
+let fetchCalls;
+
+mock.module('@/utils/fetch', () => ({
+  default: mock((...args) => {
+    fetchCalls += 1;
+    return Promise.resolve(createMockResponse());
+  }),
+}));
+
+const { useArchive } = await import('@/hooks/useArchive');
+
 describe('useArchive', () => {
-  let origFetch;
-  let fetchCalls;
-
   beforeEach(() => {
-    origFetch = globalThis.fetch;
     fetchCalls = 0;
-    globalThis.fetch = mock(() => {
-      fetchCalls += 1;
-      return Promise.resolve(createMockResponse());
-    });
-  });
-
-  afterEach(() => {
-    globalThis.fetch = origFetch;
   });
 
   it('loads archived downloads once on mount', async () => {
