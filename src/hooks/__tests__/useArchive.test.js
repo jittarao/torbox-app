@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { useArchive } from '@/hooks/useArchive';
@@ -12,7 +12,7 @@ describe('useArchive', () => {
 
   beforeEach(() => {
     fetchCalls = 0;
-    globalThis.fetch = mock(async () => {
+    globalThis.fetch = async () => {
       fetchCalls += 1;
       return {
         ok: true,
@@ -22,11 +22,11 @@ describe('useArchive', () => {
           pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
         }),
       };
-    });
+    };
   });
 
   afterEach(() => {
-    mock.restore();
+    delete globalThis.fetch;
   });
 
   it('loads archived downloads once on mount', async () => {
