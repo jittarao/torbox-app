@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import {
   getDownloadsFilterSearchParamsSnapshot,
   resetDownloadsFilterSearchParamsCacheForTests,
@@ -6,6 +6,11 @@ import {
 
 describe('downloadsFilterParamsUrl snapshot', () => {
   beforeEach(() => {
+    resetDownloadsFilterSearchParamsCacheForTests();
+  });
+
+  afterEach(() => {
+    window.location.search = '';
     resetDownloadsFilterSearchParamsCacheForTests();
   });
 
@@ -17,11 +22,9 @@ describe('downloadsFilterParamsUrl snapshot', () => {
 
   test('getDownloadsFilterSearchParamsSnapshot returns a new reference when search changes', () => {
     const first = getDownloadsFilterSearchParamsSnapshot();
-    window.history.replaceState(window.history.state, '', '?q=test');
+    window.location.search = '?q=test';
     const second = getDownloadsFilterSearchParamsSnapshot();
     expect(second).not.toBe(first);
     expect(second.get('q')).toBe('test');
-    window.history.replaceState(window.history.state, '', '/');
-    resetDownloadsFilterSearchParamsCacheForTests();
   });
 });
