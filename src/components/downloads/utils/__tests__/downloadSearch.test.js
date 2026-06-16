@@ -84,31 +84,31 @@ describe('parseDownloadSearchQuery', () => {
 
 describe('itemMatchesDownloadSearch', () => {
   const item = {
-    name: 'The Matrix 1999 1080p',
-    files: [{ name: 'matrix.mkv', short_name: 'matrix.mkv' }],
+    name: 'Frankenstein 1818 scan',
+    files: [{ name: 'frankenstein.epub', short_name: 'frankenstein.epub' }],
   };
 
   test('OR matches any word in title', () => {
-    expect(itemMatchesDownloadSearch(item, 'bluray 720p')).toBe(false);
-    expect(itemMatchesDownloadSearch(item, '1080p 720p')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'hardcover 720p')).toBe(false);
+    expect(itemMatchesDownloadSearch(item, 'scan 720p')).toBe(true);
   });
 
   test('plus requires all joined words', () => {
-    expect(itemMatchesDownloadSearch(item, 'matrix+1999')).toBe(true);
-    expect(itemMatchesDownloadSearch(item, 'matrix+720p')).toBe(false);
-    expect(itemMatchesDownloadSearch(item, 'matrix+1999 720p')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'frankenstein+1818')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'frankenstein+720p')).toBe(false);
+    expect(itemMatchesDownloadSearch(item, 'frankenstein+1818 scan')).toBe(true);
   });
 
   test('quoted phrase requires exact substring', () => {
-    expect(itemMatchesDownloadSearch(item, '"matrix 1999"')).toBe(true);
-    expect(itemMatchesDownloadSearch(item, '"1999 1080"')).toBe(true);
-    expect(itemMatchesDownloadSearch(item, '"matrix 720"')).toBe(false);
+    expect(itemMatchesDownloadSearch(item, '"frankenstein 1818"')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, '"1818 scan"')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, '"frankenstein 720"')).toBe(false);
   });
 
   test('exclude on a haystack rejects that path but other files can match', () => {
-    expect(itemMatchesDownloadSearch(item, 'matrix -1999')).toBe(true);
-    expect(itemMatchesDownloadSearch(item, '-1999')).toBe(false);
-    expect(itemMatchesDownloadSearch(item, 'matrix -sample')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, 'frankenstein -1818')).toBe(true);
+    expect(itemMatchesDownloadSearch(item, '-1818')).toBe(false);
+    expect(itemMatchesDownloadSearch(item, 'frankenstein -sample')).toBe(true);
   });
 
   test('matches file name when title does not', () => {
@@ -127,12 +127,12 @@ describe('itemMatchesDownloadSearch', () => {
   });
 
   test('unquoted words match whole tokens, not substrings inside tokens', () => {
-    const alone = { name: 'Home Alone 1990', files: [] };
-    const onePiece = { name: 'One Piece Batch', files: [] };
-    expect(itemMatchesDownloadSearch(alone, 'one')).toBe(false);
-    expect(itemMatchesDownloadSearch(alone, '"one"')).toBe(false);
-    expect(itemMatchesDownloadSearch(onePiece, 'one')).toBe(true);
-    expect(itemMatchesDownloadSearch(onePiece, '"one"')).toBe(true);
+    const treasureIsland = { name: 'Treasure Island 1883', files: [] };
+    const oneThousandNights = { name: 'One Thousand Nights', files: [] };
+    expect(itemMatchesDownloadSearch(treasureIsland, 'one')).toBe(false);
+    expect(itemMatchesDownloadSearch(treasureIsland, '"one"')).toBe(false);
+    expect(itemMatchesDownloadSearch(oneThousandNights, 'one')).toBe(true);
+    expect(itemMatchesDownloadSearch(oneThousandNights, '"one"')).toBe(true);
   });
 
   test('numbered token suffixes still match short prefixes', () => {
@@ -140,6 +140,24 @@ describe('itemMatchesDownloadSearch', () => {
     expect(itemMatchesDownloadSearch(item, 'disc')).toBe(true);
     expect(itemMatchesDownloadSearch(item, 'disc1')).toBe(true);
     expect(itemMatchesDownloadSearch(item, 'discord')).toBe(false);
+  });
+
+  test('token prefix matching supports partial words', () => {
+    const frankenstein = {
+      name: 'gutenberg.org - Frankenstein (1818) Mary Shelley.epub',
+      files: [],
+    };
+    expect(itemMatchesDownloadSearch(frankenstein, 'Franken')).toBe(true);
+    expect(itemMatchesDownloadSearch(frankenstein, 'Frankenstein')).toBe(true);
+
+    const shanios = { name: 'shanios.iso', files: [] };
+    expect(itemMatchesDownloadSearch(shanios, 'shani')).toBe(true);
+    expect(itemMatchesDownloadSearch(shanios, 'shan')).toBe(true);
+    expect(itemMatchesDownloadSearch(shanios, 'sh')).toBe(true);
+
+    const shanti = { name: 'shanti-release', files: [] };
+    expect(itemMatchesDownloadSearch(shanti, 'shan')).toBe(true);
+    expect(itemMatchesDownloadSearch(shanti, 'shanti')).toBe(true);
   });
 });
 
@@ -158,10 +176,10 @@ describe('getFilesVisibleForDownloadSearch', () => {
 
   test('title and file match prefers matching files only', () => {
     const batch = {
-      name: 'One Piece Batch',
-      files: [{ name: 'One Piece - 001.mkv' }, { name: 'readme.txt' }],
+      name: 'Treasure Island Batch',
+      files: [{ name: 'Treasure Island - ch01.epub' }, { name: 'readme.txt' }],
     };
-    expect(getFilesVisibleForDownloadSearch(batch, 'one piece')).toHaveLength(1);
+    expect(getFilesVisibleForDownloadSearch(batch, 'treasure island')).toHaveLength(1);
   });
 
   test('file-only match filters files', () => {
@@ -188,10 +206,10 @@ describe('itemHasFileNameSearchMatch', () => {
 describe('shouldAutoExpandItemForSearch', () => {
   test('false when title already matches search', () => {
     const item = {
-      name: 'One Piece Batch 02',
-      files: [{ name: 'One Piece - 0131.mkv' }],
+      name: 'Treasure Island Batch 02',
+      files: [{ name: 'Treasure Island - ch13.epub' }],
     };
-    expect(shouldAutoExpandItemForSearch(item, 'one piece')).toBe(false);
+    expect(shouldAutoExpandItemForSearch(item, 'treasure island')).toBe(false);
   });
 
   test('true for small file-only matches', () => {
