@@ -8,7 +8,8 @@ const SEARCH_TOKEN_SPLIT = /[.\-_+\s/\\[\](){}|,;:!?@#%&*='"`~]+/;
 
 /**
  * Unquoted terms with separators (e.g. foo-bar, c++) use substring matching.
- * Plain alphanumeric terms match whole tokens only (so "one" does not match "alone").
+ * Plain alphanumeric terms match token prefixes (so "shan" matches "shanios" but
+ * "one" does not match "alone" because it is not a leading substring of a token).
  */
 const SUBSTRING_TERM_PATTERN = /[.\-_+]/;
 
@@ -25,14 +26,8 @@ function tokenizeSearchHaystack(text) {
  * @param {string} term
  */
 function tokenMatchesSearchTerm(token, term) {
-  if (token === term) return true;
-  if (!token.startsWith(term)) return false;
-
-  const suffix = token.slice(term.length);
-  if (!suffix) return true;
-
-  // disc1, ep02, 1080p — common release naming; rejects one inside alone (suffix "ne").
-  return /^(\d+|[a-z]{1,2})$/i.test(suffix);
+  if (!term) return true;
+  return token === term || token.startsWith(term);
 }
 
 /**
@@ -70,8 +65,8 @@ function wordsFromSegment(segment) {
 /**
  * Parse downloads search syntax:
  * - `"exact phrase"` — must contain the phrase (case-insensitive substring)
- * - `word1 word2` — either whole word matches (OR); tokens split on . - _ space etc.
- * - `word1+word2` — both whole words must match (AND)
+ * - `word1 word2` — any token prefix matches (OR); tokens split on . - _ space etc.
+ * - `word1+word2` — every joined token prefix must match (AND)
  * - `foo-bar` / `c++` — substring match when the term contains . - _ or +
  * - `-term` or `-"phrase"` — exclude
  * - Multiple terms are combined with AND
