@@ -49,6 +49,7 @@ describe('ruleCapabilities', () => {
     expect(conditions).not.toContain('LAST_DOWNLOAD_ACTIVITY_AT');
     expect(conditions).toContain('STATUS');
     expect(conditions).toContain('PROGRESS');
+    expect(conditions).toContain('AGE');
     expect(conditions).toContain('ORIGINAL_URL');
     expect(actions).not.toContain('stop_seeding');
     expect(actions).not.toContain('archive');
@@ -65,9 +66,16 @@ describe('ruleCapabilities', () => {
     expect(actions).toContain('delete');
   });
 
+  test('webdl includes AGE condition', () => {
+    const conditions = getSupportedConditions(['webdl']);
+    expect(conditions).toContain('AGE');
+  });
+
   test('isConditionSupported and isActionSupported', () => {
     expect(isConditionSupported('RATIO', ['torrent'])).toBe(true);
     expect(isConditionSupported('RATIO', ['usenet'])).toBe(false);
+    expect(isConditionSupported('AGE', ['usenet'])).toBe(true);
+    expect(isConditionSupported('AGE', ['webdl'])).toBe(true);
     expect(isActionSupported('archive', ['webdl'])).toBe(false);
     expect(isActionSupported('delete', ['webdl'])).toBe(true);
   });

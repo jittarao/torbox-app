@@ -163,7 +163,7 @@
     },
     "conditions": {
       "age": "Age",
-      "ageDescription": "Time since the torrent was added (in hours)",
+      "ageDescription": "Time since the download was added (in hours)",
       "allowZip": "Allow Zip",
       "allowZipDescription": "Whether the torrent allows ZIP file extraction",
       "availability": "Availability",

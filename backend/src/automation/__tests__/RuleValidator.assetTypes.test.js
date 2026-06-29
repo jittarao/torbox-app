@@ -81,4 +81,34 @@ describe('RuleValidator assetTypes', () => {
     const { valid } = validator.validate(rule);
     expect(valid).toBe(true);
   });
+
+  test('accepts AGE for usenet-only rule', () => {
+    const rule = {
+      ...baseRule(),
+      assetTypes: ['usenet'],
+      groups: [
+        {
+          logicOperator: 'and',
+          conditions: [{ type: 'AGE', operator: 'gt', value: 24 }],
+        },
+      ],
+    };
+    const { valid } = validator.validate(rule);
+    expect(valid).toBe(true);
+  });
+
+  test('accepts AGE for webdl-only rule', () => {
+    const rule = {
+      ...baseRule(),
+      assetTypes: ['webdl'],
+      groups: [
+        {
+          logicOperator: 'and',
+          conditions: [{ type: 'AGE', operator: 'gt', value: 24 }],
+        },
+      ],
+    };
+    const { valid } = validator.validate(rule);
+    expect(valid).toBe(true);
+  });
 });
