@@ -539,9 +539,12 @@ class RuleEvaluator {
   /**
    * Condition types that are safe to evaluate on "changed only" scope (new + state transitions).
    * Rules that use only these conditions can be evaluated against a subset of torrents to save work.
+   *
+   * STATUS is intentionally excluded: interval rules match steady states (e.g. inactive, queued)
+   * that do not produce state transitions on every poll, so narrowing to the diff skips them.
    */
   static get TRANSITION_ONLY_CONDITION_TYPES() {
-    return new Set(['STATUS']);
+    return new Set([]);
   }
 
   /**
