@@ -109,7 +109,7 @@ export default function RuleCard({
         {rule.action?.type?.replace('_', ' ') || 'unknown'}
       </div>
       {rule.last_evaluated_at && (
-        <div className="mt-1 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
+        <div className="flex gap-1 mt-1 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
           {t('lastRanAt') || 'Last ran at'}:{' '}
           <LastEvaluatedAtValue
             at={rule.last_evaluated_at}
