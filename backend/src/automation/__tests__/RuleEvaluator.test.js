@@ -2173,4 +2173,31 @@ describe('RuleEvaluator', () => {
       expect(ruleEvaluator.isValidNumericOperator('contains')).toBe(false);
     });
   });
+
+  describe('ruleCanUseChangedOnlyScope', () => {
+    it('returns false for STATUS-only rules so interval sweeps use the full list', () => {
+      const rule = {
+        groups: [
+          {
+            conditions: [{ type: 'STATUS', operator: 'is_any_of', value: ['inactive'] }],
+          },
+        ],
+      };
+      expect(ruleEvaluator.ruleCanUseChangedOnlyScope(rule)).toBe(false);
+    });
+
+    it('returns false when any condition is not transition-only', () => {
+      const rule = {
+        groups: [
+          {
+            conditions: [
+              { type: 'STATUS', operator: 'is_any_of', value: ['inactive'] },
+              { type: 'AGE', operator: 'gt', value: 24 },
+            ],
+          },
+        ],
+      };
+      expect(ruleEvaluator.ruleCanUseChangedOnlyScope(rule)).toBe(false);
+    });
+  });
 });
