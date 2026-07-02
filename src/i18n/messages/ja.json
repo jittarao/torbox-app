@@ -1,5 +1,22 @@
 {
   "ActionButtons": {
+    "archive": "アーカイブ",
+    "archiveConfirm": {
+      "archiving": "アーカイブ中…",
+      "cancel": "キャンセル",
+      "confirm": "アーカイブ",
+      "message": "{count}件のトレントをアーカイブしますか？アーカイブされたダウンロードに表示され、アクティブなリストから削除されます。",
+      "title": "アーカイブの確認"
+    },
+    "archiveTitle": "選択したトレントをTBMにアーカイブし、TorBoxから削除",
+    "assignTags": "タグ",
+    "assignTagsTitle": "選択項目にタグを付ける",
+    "bulkForceStartPartial": "{success}件を強制開始、{failed}件失敗",
+    "bulkForceStarted": "{count}件のトレントを強制開始しました",
+    "bulkRetryPartial": "{success} 件のダウンロードを再キュー、{failed} 件失敗",
+    "bulkRetryStarted": "{count} 件のダウンロードを再キュー",
+    "bulkSeedingPartial": "{success}件のシードを停止、{failed}件失敗",
+    "bulkSeedingStopped": "{count}件のトレントのシードを停止しました",
     "bulkUploadFailed": "アイテムのアップロードに失敗しました",
     "bulkUploadPartial": "{success} アイテムが正常にアップロードされました、{failed} 失敗しました",
     "bulkUploadSuccess": "{count} アイテムが {provider} に正常にアップロードされました",
@@ -15,36 +32,27 @@
       "message": "{count} {type} を削除してもよろしいですか？この操作は取り消しできません。",
       "title": "削除の確認"
     },
-    "archive": "アーカイブ",
-    "archiveTitle": "選択したトレントをTBMにアーカイブし、TorBoxから削除",
-    "archiveConfirm": {
-      "archiving": "アーカイブ中…",
-      "confirm": "アーカイブ",
-      "message": "{count}件のトレントをアーカイブしますか？アーカイブされたダウンロードに表示され、アクティブなリストから削除されます。",
-      "title": "アーカイブの確認"
-    },
-    "assignTags": "タグ",
-    "assignTagsTitle": "選択項目にタグを付ける",
     "downloadLinks": "ダウンロード",
     "downloadLinksMobile": "ダウンロード",
     "downloadLinksTitle": "選択項目のダウンロードリンクを取得",
-    "bulkForceStartPartial": "{success}件を強制開始、{failed}件失敗",
-    "bulkForceStarted": "{count}件のトレントを強制開始しました",
-    "bulkSeedingPartial": "{success}件のシードを停止、{failed}件失敗",
-    "bulkSeedingStopped": "{count}件のトレントのシードを停止しました",
+    "exportSelected": "出力",
+    "exportSelectedTitle": "選択したトレントをエクスポート",
+    "exporting": "出力中…",
+    "fetchingLinks": "取得中…",
     "forceStart": "開始",
     "forceStartTitle": "キュー中のトレントを強制開始",
     "forceStarting": "開始中…",
-    "exporting": "出力中…",
-    "exportSelected": "出力",
-    "exportSelectedTitle": "選択したトレントをエクスポート",
-    "fetchingLinks": "取得中…",
+    "retry": {
+      "label": "リトライ",
+      "title": "選択したダウンロードをリトライ"
+    },
+    "retrying": "リトライ中…",
     "stopSeeding": "シード停止",
     "stopSeedingTitle": "選択したトレントのシードを停止",
     "stoppingSeeding": "停止中…",
     "toolbarLabel": "選択アクション",
-    "uploading": "アップロード中...",
-    "uploadToCloud": "クラウドにアップロード"
+    "uploadToCloud": "クラウドにアップロード",
+    "uploading": "アップロード中..."
   },
   "ApiKeyInput": {
     "hide": "APIキーを隠す",
@@ -60,10 +68,12 @@
     "addNewKey": "新しいAPIキーを追加",
     "addNewKeyHint": "ラベルでアカウントを一目で区別できます。",
     "apiKey": "APIキー",
+    "apiKeyPlaceholder": "APIキーを入力してください",
     "cancel": "キャンセル",
     "close": "閉じる",
     "deleteKey": "キーを削除",
     "keyLabel": "キーラベル",
+    "keyLabelPlaceholder": "例: 個人用、家族用",
     "keysCount": "{count, plural, =0 {キーなし} other {# 件のキー}}",
     "managerPinned": "閉じるには「開いたままにする」をオフにしてください",
     "noKeys": "保存されたキーがありません",
@@ -105,7 +115,11 @@
   },
   "AutomationRules": {
     "action": "アクション",
+    "actionFailed": "失敗したアクション",
+    "actionPerformed": "実行したアクション",
     "actions": {
+      "addAirlock": "Airlockを追加",
+      "addAirlockDescription": "TorBox Airlockでダウンロードをロック",
       "addTag": "タグを追加",
       "addTagDescription": "ダウンロードに1つ以上のタグを追加します",
       "archive": "アーカイブ",
@@ -114,16 +128,27 @@
       "deleteDescription": "ダウンロードとそのファイルを完全に削除します",
       "forceStart": "強制開始",
       "forceStartDescription": "ダウンロードを強制的に開始します",
+      "removeAirlock": "Airlockを削除",
+      "removeAirlockDescription": "TorBox Airlockのロックを解除",
       "removeTag": "タグを削除",
       "removeTagDescription": "ダウンロードから1つ以上のタグを削除します",
       "selectTags": "タグを選択",
       "stopSeeding": "シーディングを停止",
       "stopSeedingDescription": "シーディングを停止しますが、ダウンロードリストには残します"
     },
+    "actionsFailed": "失敗したアクション",
+    "actionsPerformed": "実行したアクション",
     "add": "ルールを追加",
     "addCondition": "条件を追加",
     "addConditionToGroup": "条件をグループに追加",
     "addRule": "ルールを追加",
+    "assetTypes": {
+      "hint": "条件とアクションは、選択された各タイプがサポートするものに制限されます。",
+      "label": "タイプ",
+      "torrent": "トレント",
+      "usenet": "Usenet",
+      "webdl": "Webダウンロード"
+    },
     "booleanOperators": {
       "isFalse": "偽である",
       "isTrue": "真である"
@@ -173,6 +198,8 @@
       "hours": "時間",
       "isActive": "アクティブ",
       "isActiveDescription": "トレントが現在アクティブかどうか（ダウンロード中またはシード中）",
+      "isAirlocked": "ロック中",
+      "isAirlockedDescription": "ダウンロードがTorBox Airlockでロックされているかどうか",
       "lastDownloadActivity": "最終ダウンロード活動",
       "lastDownloadActivityDescription": "最終ダウンロード活動からの経過時間（分単位で比較されます）",
       "lastUploadActivity": "最終アップロード活動",
@@ -182,6 +209,9 @@
       "name": "名前",
       "nameDescription": "トレント名（テキスト検索対応）",
       "namePlaceholder": "検索するテキストを入力...",
+      "originalUrl": "ソースURL",
+      "originalUrlDescription": "ダウンロードの作成に使用された元のURL（テキスト検索対応）",
+      "originalUrlPlaceholder": "検索するURLを入力...",
       "peers": "ピア数",
       "peersDescription": "現在接続されているピアの数",
       "private": "プライベート",
@@ -214,11 +244,23 @@
     },
     "delete": "ルールを削除",
     "details": "詳細",
+    "emptyState": {
+      "backendRequired": "24時間自動化にはバックエンドが必要です",
+      "backendRequiredDescription": "TorBox Manager バックエンドを接続して、ルールを保存し自動評価します。接続しないとバックグラウンドで実行できません。",
+      "createFirstRule": "最初のルールを作成",
+      "description": "条件に一致したときに、シード停止、アーカイブ、削除、タグ付け、強制開始を自動で行うルールを作成します。",
+      "howItWorks": "仕組み:",
+      "step1": "条件（比率、ステータス、タグなど）を定義し、アクションを選択",
+      "step2": "バックエンド接続時、ルールはスケジュールに従って24時間実行されます",
+      "step3": "実行ログを表示するか、カードから手動でルールを実行",
+      "title": "自動化ルールはまだありません"
+    },
     "enabledAt": "有効化日時",
     "error": "エラー",
     "executions": "実行",
     "failed": "失敗",
     "itemsAffected": "影響を受けたアイテム",
+    "lastRanAt": "最終実行",
     "lastTriggered": "最後にトリガーされた",
     "logicOperators": {
       "and": "かつ",
@@ -236,17 +278,6 @@
     "noConditionsInGroup": "このグループに条件がありません。 '条件を追加' をクリックして追加してください。",
     "noLogs": "ログがありません",
     "noRules": "自動化ルールがありません",
-    "emptyState": {
-      "title": "自動化ルールはまだありません",
-      "description": "条件に一致したときに、シード停止、アーカイブ、削除、タグ付け、強制開始を自動で行うルールを作成します。",
-      "howItWorks": "仕組み:",
-      "step1": "条件（比率、ステータス、タグなど）を定義し、アクションを選択",
-      "step2": "バックエンド接続時、ルールはスケジュールに従って24時間実行されます",
-      "step3": "実行ログを表示するか、カードから手動でルールを実行",
-      "createFirstRule": "最初のルールを作成",
-      "backendRequired": "24時間自動化にはバックエンドが必要です",
-      "backendRequiredDescription": "TorBox Manager バックエンドを接続して、ルールを保存し自動評価します。接続しないとバックグラウンドで実行できません。"
-    },
     "operators": {
       "eq": "等しい",
       "gt": "より大きい",
@@ -265,11 +296,17 @@
     },
     "removeCondition": "条件を削除",
     "removeGroup": "グループを削除",
-    "searchConditionOptionsPlaceholder": "検索…",
-    "searchConditionOptionsNoMatches": "一致するオプションがありません",
+    "ruleEvaluatedNoActions": "ルールは評価されましたが、アクションは実行されませんでした。",
+    "ruleExecuted": "ルール実行済み",
     "ruleLogs": "ルールログ",
     "ruleName": "ルール名",
     "ruleNamePlaceholder": "ルール名を入力",
+    "ruleRateLimited": "ルールのレート制限中",
+    "ruleRateLimitedDescription": "ルールの実行がレート制限されました。",
+    "runRule": "ルールを実行",
+    "running": "実行中...",
+    "searchConditionOptionsNoMatches": "一致するオプションがありません",
+    "searchConditionOptionsPlaceholder": "検索…",
     "section": {
       "hide": "ルールを非表示",
       "show": "ルールを表示"
@@ -287,8 +324,8 @@
       "isAllOf": "すべてである",
       "isAnyOf": "いずれかである",
       "isNoneOf": "いずれでもない",
-      "isSet": "設定あり",
-      "isNotSet": "設定なし"
+      "isNotSet": "設定なし",
+      "isSet": "設定あり"
     },
     "timeOperators": {
       "eq": "は",
@@ -305,6 +342,8 @@
       "lte": "以下"
     },
     "title": "自動化ルール",
+    "torrentMatched": "一致したトレント",
+    "torrentsMatched": "一致したトレント",
     "triggers": "トリガー",
     "update": "ルールを更新",
     "viewLogs": "ログを表示"
@@ -343,15 +382,19 @@
   },
   "Columns": {
     "actions": "アクション",
+    "airlocked": "ロック中",
+    "airlocked_filter": "ロック中",
     "asset_type": "タイプ",
     "cached_at": "キャッシュ日時",
     "created_at": "追加日時",
     "download_progress": "進捗",
     "download_speed": "ダウンロード速度",
     "download_state": "状態",
+    "eta": "残り時間",
     "expires_at": "有効期限",
     "file_count": "ファイル数",
     "hash": "ハッシュ",
+    "id": "ID",
     "is_downloaded": "ダウンロード済み",
     "name": "名前",
     "original_url": "ソースURL",
@@ -368,16 +411,35 @@
     "upload_speed": "アップロード速度"
   },
   "Common": {
+    "airlocked": "ロック中",
     "hours": "時間",
     "itemTypes": {
+      "All": "すべて",
+      "File": "ファイル",
+      "Files": "ファイル",
+      "Torrent": "トレント",
+      "Torrents": "トレント",
+      "Usenet": "Usenet",
+      "Usenets": "Usenets",
+      "Web": "Web",
+      "Webdl": "Webdl",
       "all": "すべて",
-      "All": "すべて"
+      "file": "ファイル",
+      "files": "ファイル",
+      "torrent": "トレント",
+      "torrents": "トレント",
+      "usenet": "usenet",
+      "usenets": "usenets",
+      "web": "web",
+      "webdl": "webdl"
     },
     "loading": "読み込み中...",
     "minutes": "分",
     "next": "次へ",
+    "notAirlocked": "ロック解除中",
     "of": "/",
     "previous": "前へ",
+    "selectRow": "{name} を選択",
     "showing": "表示",
     "time": {
       "ago": "前",
@@ -405,6 +467,8 @@
       "seeding": "シーディング",
       "timestamps": "時間"
     },
+    "createView": "ビューを作成",
+    "creating": "作成中...",
     "enterValuePlaceholder": "値を入力...",
     "includeColumns": "列を含む",
     "includeSearch": "検索を含む",
@@ -412,116 +476,37 @@
     "includeSort": "並べ替えを含む",
     "noFilters": "フィルタがありません。 '+ フィルタ' をグループにクリックして作成してください。",
     "noFiltersInGroup": "このグループにフィルタがありません。 '+ フィルタ' をクリックして追加してください。",
-    "removeGroup": "グループを削除",
-    "save": "保存",
-    "saveAsNew": "新しいビューとして保存",
-    "saving": "保存中...",
-    "selectPlaceholder": "選択...",
-    "searchFilterOptionsPlaceholder": "検索…",
-    "searchFilterOptionsNoMatches": "一致するオプションがありません",
-    "selectTagsPlaceholder": "タグを選択...",
-    "updateView": "ビューを更新",
-    "updating": "更新中...",
-    "viewNamePlaceholder": "ビュー名...",
-    "createView": "ビューを作成",
-    "creating": "作成中...",
+    "previewApplied": "リストにプレビューを適用しました。問題なければ保存するか、フィルターを調整し続けてください。",
     "previewFilters": "プレビュー",
     "previewHint": "保存せずにダウンロード一覧へフィルターを適用します。",
     "previewMatchCount": "{count, plural, =0 {一致するダウンロードはありません} other {# 件のダウンロードが一致}}",
     "previewMatchCountOfTotal": "このタブの {total} 件中 {matched} 件",
-    "previewApplied": "リストにプレビューを適用しました。問題なければ保存するか、フィルターを調整し続けてください。",
+    "removeGroup": "グループを削除",
+    "save": "保存",
+    "saveAsNew": "新しいビューとして保存",
+    "saving": "保存中...",
+    "searchFilterOptionsNoMatches": "一致するオプションがありません",
+    "searchFilterOptionsPlaceholder": "検索…",
+    "selectPlaceholder": "選択...",
+    "selectTagsPlaceholder": "タグを選択...",
+    "updateView": "ビューを更新",
+    "updating": "更新中...",
     "viewEditorDescriptionCreate": "ビューに名前を付け、フィルターを設定してダウンロード一覧を素早く切り替えます。",
     "viewEditorDescriptionEdit": "フィルターを更新し、必要に応じて並べ替え・列・検索もこのビューに含めます。",
     "viewEditorDescriptionFilter": "リストに適用するフィルターを作成するか、再利用可能なビューとして保存します。",
-    "viewEditorSaveOptions": "ビューに含める項目",
     "viewEditorFiltersSection": "フィルター条件",
-    "viewEditorNameLabel": "ビュー名"
-  },
-  "FetchStatus": {
-    "autoRefreshInactive": "このタブに戻ると自動更新が再開されます。",
-    "autoRefreshSlowHint": "タブがバックグラウンドの間は更新間隔が長くなります。",
-    "dismiss": "閉じる",
-    "lastUpdated": "最終更新 {ago}。",
-    "nextRefreshIn": "次の更新まで {seconds} 秒",
-    "nextRefreshSlow": "バックグラウンド更新まで {seconds} 秒",
-    "refreshDelayedRateLimit": "更新が遅延しています — リクエストが多すぎます。",
-    "refreshingSoon": "まもなく更新…",
-    "refreshNow": "今すぐ更新",
-    "refreshPaused": "メディア再生中は自動更新を一時停止しています。",
-    "refreshing": "更新中…",
-    "retry": "再試行",
-    "updatedHoursAgo": "{hours}時間前",
-    "updatedJustNow": "たった今",
-    "updatedMinutesAgo": "{minutes}分前"
-  },
-  "DownloadsFilters": {
-    "sidebarLabel": "フィルター",
-    "collapseSidebar": "フィルターサイドバーを折りたたむ",
-    "expandSidebar": "フィルターサイドバーを展開",
-    "viewsSection": "ビュー",
-    "tagsSection": "タグ",
-    "noViews": "保存されたビューはありません。",
-    "noTags": "タグはありません。",
-    "newFilter": "新しいフィルター",
-    "newView": "新しいビュー",
-    "newTag": "新しいタグ",
-    "newTagPrompt": "タグ名",
-    "createTagFailed": "タグの作成に失敗しました: {error}",
-    "manageTags": "タグを管理",
-    "tagManagerDescription": "ダウンロードのフィルターや整理に使うタグの作成、名前変更、削除ができます。",
-    "tagManagerSearchPlaceholder": "タグを検索…",
-    "tagManagerEmptyHint": "上でタグを追加して、ダウンロードのグループ分けを始めましょう。",
-    "tagUsageCount": "{count, plural, other {# 件のダウンロード}}",
-    "tagCountBadge": "{count, plural, other {# 個のタグ}}",
-    "tagManagerNoResults": "「{query}」に一致するタグはありません",
-    "tagAssignmentTitle": "ダウンロードのタグを管理",
-    "tagAssignmentDownloadCount": "{count, plural, other {# 件のダウンロード}}",
-    "tagAssignmentDescriptionAddSingle": "下からタグを選んで追加します。このダウンロードに既にあるタグはそのままです。",
-    "tagAssignmentDescriptionAddMulti": "下からタグを選び、{count} 件のダウンロードすべてに追加します。既存のタグは保持されます。",
-    "tagAssignmentDescriptionRemoveSingle": "下からタグを選び、このダウンロードから外します。",
-    "tagAssignmentDescriptionRemoveMulti": "下からタグを選び、選択したダウンロードから外します。",
-    "tagAssignmentModeLabel": "タグの追加または削除",
-    "tagAssignmentModeAdd": "追加",
-    "tagAssignmentModeRemove": "削除",
-    "tagAssignmentSelectLabel": "タグを選択",
-    "tagAssignmentSelectedCount": "{count, plural, other {# 個のタグを選択中}}",
-    "tagAssignmentNoAssignedTags": "選択にタグがありません",
-    "tagAssignmentNoAssignedTagsHint": "タグを作成または割り当てるには「追加」に切り替えてください。",
-    "tagAssignmentSubmitAdd": "タグを追加",
-    "tagAssignmentSubmitRemove": "タグを削除",
-    "tagAssignmentSubmittingAdd": "追加中…",
-    "tagAssignmentSubmittingRemove": "削除中…",
-    "modalTitle": "フィルターを編集",
-    "modalTitleCreate": "ビューを作成",
-    "modalTitleEdit": "ビューを編集",
-    "modalTitleEditNamed": "「{name}」を編集",
-    "viewCreated": "ビュー「{name}」を作成しました",
-    "viewUpdated": "ビュー「{name}」を更新しました",
-    "applyFilters": "フィルターを適用",
-    "clearAll": "すべてクリア",
-    "close": "閉じる",
-    "editFilters": "編集",
-    "activeView": "ビュー: {name}",
-    "activeSearch": "検索「{query}」",
-    "activeTag": "タグ: {name}",
-    "activeConditions": "{count}件のフィルターが有効",
-    "menuApply": "適用",
-    "menuEdit": "編集",
-    "menuRename": "名前を変更",
-    "menuDelete": "削除",
-    "confirmDeleteView": "ビュー「{name}」を削除しますか？",
-    "confirmDeleteTag": "タグ「{name}」を削除しますか？すべてのダウンロードから削除されます。",
-    "deleteViewFailed": "ビューの削除に失敗しました: {error}",
-    "deleteTagFailed": "タグの削除に失敗しました: {error}"
+    "viewEditorNameLabel": "ビュー名",
+    "viewEditorSaveOptions": "ビューに含める項目",
+    "viewNamePlaceholder": "ビュー名..."
   },
   "DownloadPanel": {
     "actions": {
       "clearAll": "すべてクリア",
+      "copied": "コピー済み",
       "copy": "コピー",
       "copyAll": "すべてのリンクをコピー",
       "copyLink": "リンクをコピー",
       "copyLinkWithIndex": "リンク {index}/{total} をコピー",
-      "copied": "コピー済み",
       "downloadFile": "ファイルをダウンロード",
       "downloadFileWithIndex": "ダウンロード {index}/{total} を開く",
       "open": "開く"
@@ -555,33 +540,133 @@
       "linksCopied": "リンクがクリップボードにコピーされました！"
     }
   },
+  "DownloadsFilters": {
+    "activeConditions": "{count}件のフィルターが有効",
+    "activeSearch": "検索「{query}」",
+    "activeTag": "タグ: {name}",
+    "activeView": "ビュー: {name}",
+    "applyFilters": "フィルターを適用",
+    "clearAll": "すべてクリア",
+    "close": "閉じる",
+    "collapseSidebar": "フィルターサイドバーを折りたたむ",
+    "confirmDeleteTag": "タグ「{name}」を削除しますか？すべてのダウンロードから削除されます。",
+    "confirmDeleteView": "ビュー「{name}」を削除しますか？",
+    "createTagFailed": "タグの作成に失敗しました: {error}",
+    "deleteTagFailed": "タグの削除に失敗しました: {error}",
+    "deleteViewFailed": "ビューの削除に失敗しました: {error}",
+    "editFilters": "編集",
+    "expandSidebar": "フィルターサイドバーを展開",
+    "manageTags": "タグを管理",
+    "menuApply": "適用",
+    "menuClear": "クリア",
+    "menuDelete": "削除",
+    "menuEdit": "編集",
+    "menuRename": "名前を変更",
+    "modalTitle": "フィルターを編集",
+    "modalTitleCreate": "ビューを作成",
+    "modalTitleEdit": "ビューを編集",
+    "modalTitleEditNamed": "「{name}」を編集",
+    "newFilter": "新しいフィルター",
+    "newTag": "新しいタグ",
+    "newTagPrompt": "タグ名",
+    "newView": "新しいビュー",
+    "noTags": "タグはありません。",
+    "noViews": "保存されたビューはありません。",
+    "sidebarLabel": "フィルター",
+    "tagAssignmentDescriptionAddMulti": "下からタグを選び、{count} 件のダウンロードすべてに追加します。既存のタグは保持されます。",
+    "tagAssignmentDescriptionAddSingle": "下からタグを選んで追加します。このダウンロードに既にあるタグはそのままです。",
+    "tagAssignmentDescriptionRemoveMulti": "下からタグを選び、選択したダウンロードから外します。",
+    "tagAssignmentDescriptionRemoveSingle": "下からタグを選び、このダウンロードから外します。",
+    "tagAssignmentDownloadCount": "{count, plural, other {# 件のダウンロード}}",
+    "tagAssignmentModeAdd": "追加",
+    "tagAssignmentModeLabel": "タグの追加または削除",
+    "tagAssignmentModeRemove": "削除",
+    "tagAssignmentNoAssignedTags": "選択にタグがありません",
+    "tagAssignmentNoAssignedTagsHint": "タグを作成または割り当てるには「追加」に切り替えてください。",
+    "tagAssignmentSelectLabel": "タグを選択",
+    "tagAssignmentSelectedCount": "{count, plural, other {# 個のタグを選択中}}",
+    "tagAssignmentSubmitAdd": "タグを追加",
+    "tagAssignmentSubmitRemove": "タグを削除",
+    "tagAssignmentSubmittingAdd": "追加中…",
+    "tagAssignmentSubmittingRemove": "削除中…",
+    "tagAssignmentTitle": "ダウンロードのタグを管理",
+    "tagCountBadge": "{count, plural, other {# 個のタグ}}",
+    "tagManagerDescription": "ダウンロードのフィルターや整理に使うタグの作成、名前変更、削除ができます。",
+    "tagManagerEmptyHint": "上でタグを追加して、ダウンロードのグループ分けを始めましょう。",
+    "tagManagerNoResults": "「{query}」に一致するタグはありません",
+    "tagManagerSearchPlaceholder": "タグを検索…",
+    "tagUsageCount": "{count, plural, other {# 件のダウンロード}}",
+    "tagsSection": "タグ",
+    "toggleFilterOff": "クリックで解除",
+    "toggleFilterOn": "クリックで適用",
+    "viewCreated": "ビュー「{name}」を作成しました",
+    "viewUpdated": "ビュー「{name}」を更新しました",
+    "viewsSection": "ビュー"
+  },
+  "ErrorBoundary": {
+    "reloadPage": "ページを再読み込み",
+    "sectionMessage": "このセクションで問題が発生しました。もう一度試すか、メニューから別のページを開いてください。",
+    "title": "問題が発生しました",
+    "tryAgain": "もう一度試す"
+  },
+  "FetchStatus": {
+    "autoRefreshInactive": "このタブに戻ると自動更新が再開されます。",
+    "autoRefreshSlowHint": "タブがバックグラウンドの間は更新間隔が長くなります。",
+    "autoRefreshWatchHint": "新しいキュー済みトレントを定期的にチェック中（自動開始オン）。",
+    "dismiss": "閉じる",
+    "lastUpdated": "最終更新 {ago}。",
+    "nextRefreshIn": "次の更新まで {seconds} 秒",
+    "nextRefreshSlow": "バックグラウンド更新まで {seconds} 秒",
+    "nextRefreshWatch": "キューチェックまであと {seconds}秒",
+    "refreshDelayedRateLimit": "更新が遅延しています — リクエストが多すぎます。",
+    "refreshNow": "今すぐ更新",
+    "refreshPaused": "メディア再生中は自動更新を一時停止しています。",
+    "refreshing": "更新中…",
+    "refreshingSoon": "まもなく更新…",
+    "retry": "再試行",
+    "updatedHoursAgo": "{hours}時間前",
+    "updatedJustNow": "たった今",
+    "updatedMinutesAgo": "{minutes}分前"
+  },
   "FileActions": {
     "copyLink": "リンクをコピー",
-    "download": "ファイルをダウンロード"
+    "download": "ファイルをダウンロード",
+    "play": "再生",
+    "streaming": "ストリーミング中..."
   },
   "Header": {
+    "logo": "TorBox Manager ロゴ",
     "menu": {
       "archived": "アーカイブ",
       "automation": "自動化ルール",
+      "collapseSidebar": "サイドバーを折りたたむ",
       "downloads": "ダウンロード",
+      "expandSidebar": "サイドバーを展開",
       "language": "言語",
       "linkHistory": "リンク履歴",
       "more": "もっと",
       "notifications": "通知",
+      "preferences": "設定",
       "referrals": "紹介",
       "rss": "RSSフィード",
       "search": "検索",
+      "sectionManager": "マネージャー",
       "systemStatus": "システムステータス",
       "toggle": "メニューの切り替え",
+      "tools": "ツール",
+      "uploads": "アップロード",
       "user": "ユーザー"
     },
     "theme": {
       "toggle": "テーマを切り替え"
-    }
+    },
+    "title": "TorBox Manager"
   },
   "Index": {
+    "description": "Torrent および Debrid マネージャー",
     "search": "検索",
-    "searchPlaceholder": "Torrentsを検索..."
+    "searchPlaceholder": "Torrentsを検索...",
+    "title": "TorBox Manager"
   },
   "ItemActionButtons": {
     "delete": {
@@ -602,6 +687,10 @@
       "label": "ファイル",
       "show": "ファイルを表示"
     },
+    "retry": {
+      "label": "リトライ",
+      "title": "ダウンロードをリトライ"
+    },
     "start": {
       "label": "開始",
       "title": "強制開始"
@@ -613,22 +702,28 @@
   },
   "ItemActions": {
     "toast": {
-      "deleteAllFailed": "アイテムの削除に失敗しました",
-      "deleteAllSuccess": "すべてのアイテムが正常に削除されました",
-      "deleteError": "削除に失敗しました: {error}",
-      "deletePartialSuccess": "{total} アイテムのうち {count} を削除",
-      "deleteSuccess": "削除に成功しました",
+      "airlockFailed": "Airlockの更新に失敗: {error}",
+      "airlockLocked": "ダウンロードをロックしました",
+      "airlockUnlocked": "ダウンロードのロックを解除しました",
       "archiveAllFailed": "アイテムのアーカイブに失敗しました",
       "archiveAllSuccess": "すべてのアイテムをアーカイブしました",
       "archiveError": "アーカイブエラー: {error}",
       "archiveNoHash": "アーカイブできません: トレントのハッシュがありません",
       "archivePartialSuccess": "{total}件中{count}件をアーカイブしました",
       "archiveSuccess": "アーカイブしました",
+      "deleteAllFailed": "アイテムの削除に失敗しました",
+      "deleteAllSuccess": "すべてのアイテムが正常に削除されました",
+      "deleteError": "削除に失敗しました: {error}",
+      "deletePartialSuccess": "{total} アイテムのうち {count} を削除",
+      "deleteSuccess": "削除に成功しました",
       "downloadFailed": "ダウンロード開始に失敗しました",
       "downloadStarted": "ダウンロードが正常に開始しました",
       "exportTorrentFailed": "トレントファイルのエクスポートに失敗しました",
       "exportTorrentSuccess": "トレントファイルが正常にエクスポートされました",
       "noFiles": "ダウンロード可能なファイルはありません",
+      "retryFailed": "ダウンロードのリトライに失敗",
+      "retrySourceUnavailable": "リトライ不可: ソースリンクが利用できません",
+      "retrySuccess": "ダウンロードに再キューされました",
       "seedingStopFailed": "トレントのシードに失敗しました",
       "seedingStopped": "トレントのシードが正常に停止しました"
     }
@@ -700,16 +795,17 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "APIキーは次の場所で確認できます",
+      "link": "torbox.app/settings",
       "title": "TorBox APIキーを入力"
     },
     "features": {
-      "batchUpload": {
-        "description": "ワンクリックで複数のトレントをアップロード",
-        "title": "バッチアップロード"
-      },
       "automation": {
         "description": "スマートなルールを作成してダウンロードを自動管理します。",
         "title": "自動化ルール"
+      },
+      "batchUpload": {
+        "description": "ワンクリックで複数のトレントをアップロード",
+        "title": "バッチアップロード"
       },
       "search": {
         "description": "複数のトレントサイトを検索",
@@ -717,9 +813,11 @@
       }
     },
     "footer": {
-      "description": "このアプリは完全にオープンソースで"
+      "description": "このアプリは完全にオープンソースで",
+      "github": "GitHub"
     },
-    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。"
+    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
+    "title": "TorBox Manager"
   },
   "LinkHistory": {
     "actions": {
@@ -767,7 +865,9 @@
     "copySourceUrl": "ソース URL をコピー",
     "exportTorrent": ".torrent ファイルをエクスポート",
     "label": "オプション",
+    "lockDownload": "ダウンロードをロック",
     "reannounce": "再アナウンス",
+    "retry": "リトライ",
     "title": "オプション",
     "toast": {
       "clipboardError": "クリップボードへのコピーに失敗しました",
@@ -788,6 +888,7 @@
       "uploadFailed": "アップロードに失敗しました",
       "uploadStarted": "アップロードが正常に開始されました"
     },
+    "unlockDownload": "ダウンロードのロックを解除",
     "uploadToCloud": "クラウドにアップロード"
   },
   "Navigation": {
@@ -806,74 +907,74 @@
     "testNotification": "テスト通知"
   },
   "Referral": {
+    "apply": {
+      "alreadyHasReferrer": "アカウントには既に紹介コードがあります。",
+      "applying": "適用中…",
+      "button": "アカウントに適用",
+      "cancel": "キャンセル",
+      "confirm": "コードを適用",
+      "confirmBody": "TorBox Managerの紹介コードを、サブスク前にTorBoxアカウントに追加します。",
+      "confirmBullet1": "ボーナスは初回の有料サブスクのみ対象です。",
+      "confirmBullet2": "購入月ごとに7日（例：12ヶ月＝84日）。",
+      "confirmBullet3": "既に紹介がある場合、ここでは変更できません。",
+      "confirmTitle": "紹介コードを適用しますか？",
+      "error": "適用できませんでした。サブスクリプションリンクをお試しください。",
+      "needApiKey": "先にTorBox APIキーを追加してください。",
+      "success": "紹介コードをTorBoxアカウントに適用しました。"
+    },
+    "callout": {
+      "apply": "コードを適用",
+      "compactMessage": "初回サブスクのボーナス日数 — コード適用後、TorBoxで登録。",
+      "dismiss": "30日間非表示",
+      "rssHint": "TorBoxでProにアップグレードし、紹介で初回ボーナス日数を獲得。",
+      "slimMessage": "初回TorBoxサブスクで月ごとに7日ボーナス — 支払い前に紹介をご利用ください。",
+      "subscribe": "登録する"
+    },
     "copied": "コピーしました！",
     "copyAll": "すべてコピー",
     "copyCode": "コードをコピー",
     "copyLink": "リンクをコピー",
     "description": "初回の有料TorBoxサブスクで購入月ごとに7日間のボーナス。",
     "developerNote": "これは開発者の紹介コードです",
+    "disclaimer": {
+      "firstPurchase": "ボーナスは初回有料購入のみです。",
+      "giftCards": "ギフトカードとバウチャーは対象外です。",
+      "supportsDevelopment": "このコードはTorBox Managerの開発も支援します。"
+    },
     "error": "コピーに失敗しました",
-    "landingDescription": "TorBoxは初めて？紹介リンクで登録し、初回購入でボーナス日数を獲得。",
-    "referral": "紹介",
-    "referralCode": "紹介コード",
-    "referralLink": "紹介リンク",
-    "signUp": "TorBoxにサインアップ",
-    "title": "無料のプレミアム時間を取得",
-    "visitLink": "リンクを訪問",
     "examples": {
       "oneMonth": "1ヶ月 → +7日",
       "threeMonths": "3ヶ月 → +21日",
       "twelveMonths": "12ヶ月 → +84日"
     },
+    "landingDescription": "TorBoxは初めて？紹介リンクで登録し、初回購入でボーナス日数を獲得。",
     "panel": {
-      "heroTitle": "初回サブスクでボーナス日数",
+      "helpLink": "紹介の仕組み",
       "heroSubtitle": "購入月ごとに7日のボーナス（あなたと紹介者の双方）。",
-      "openSubscription": "TorBoxサブスクを開く",
-      "helpLink": "紹介の仕組み"
+      "heroTitle": "初回サブスクでボーナス日数",
+      "openSubscription": "TorBoxサブスクを開く"
     },
-    "apply": {
-      "button": "アカウントに適用",
-      "confirmTitle": "紹介コードを適用しますか？",
-      "confirmBody": "TorBox Managerの紹介コードを、サブスク前にTorBoxアカウントに追加します。",
-      "confirmBullet1": "ボーナスは初回の有料サブスクのみ対象です。",
-      "confirmBullet2": "購入月ごとに7日（例：12ヶ月＝84日）。",
-      "confirmBullet3": "既に紹介がある場合、ここでは変更できません。",
-      "cancel": "キャンセル",
-      "confirm": "コードを適用",
-      "applying": "適用中…",
-      "success": "紹介コードをTorBoxアカウントに適用しました。",
-      "error": "適用できませんでした。サブスクリプションリンクをお試しください。",
-      "alreadyHasReferrer": "アカウントには既に紹介コードがあります。",
-      "needApiKey": "先にTorBox APIキーを追加してください。"
+    "referral": "紹介",
+    "referralCode": "紹介コード",
+    "referralLink": "紹介リンク",
+    "settings": {
+      "resetSnooze": "リマインダーを再表示",
+      "snoozeReminders": "リマインダーを30日間非表示"
     },
-    "callout": {
-      "slimMessage": "初回TorBoxサブスクで月ごとに7日ボーナス — 支払い前に紹介をご利用ください。",
-      "compactMessage": "初回サブスクのボーナス日数 — コード適用後、TorBoxで登録。",
-      "rssHint": "TorBoxでProにアップグレードし、紹介で初回ボーナス日数を獲得。",
-      "apply": "コードを適用",
-      "subscribe": "登録する",
-      "dismiss": "30日間非表示"
-    },
-    "upgradeCard": {
-      "title": "ボーナス日数付きでアップグレード",
-      "description": "コードを適用し、TorBoxで初回有料サブスクを完了 — 月ごとに7日のボーナス。"
-    },
+    "signUp": "TorBoxにサインアップ",
     "steps": {
-      "title": "手順",
+      "popupNote": "リンク利用時は、購入前にTorBoxのポップアップを確認してください。",
       "step1": "TorBoxアカウントにコードを適用（上のボタンまたはサブスクページに貼り付け）。",
       "step2": "torbox.appで登録 — リンク利用時はポップアップを許可。",
       "step3": "初回有料購入を完了すると、ボーナス日数が自動付与されます。",
-      "popupNote": "リンク利用時は、購入前にTorBoxのポップアップを確認してください。"
+      "title": "手順"
     },
-    "disclaimer": {
-      "supportsDevelopment": "このコードはTorBox Managerの開発も支援します。",
-      "firstPurchase": "ボーナスは初回有料購入のみです。",
-      "giftCards": "ギフトカードとバウチャーは対象外です。"
+    "title": "無料のプレミアム時間を取得",
+    "upgradeCard": {
+      "description": "コードを適用し、TorBoxで初回有料サブスクを完了 — 月ごとに7日のボーナス。",
+      "title": "ボーナス日数付きでアップグレード"
     },
-    "settings": {
-      "snoozeReminders": "リマインダーを30日間非表示",
-      "resetSnooze": "リマインダーを再表示"
-    }
+    "visitLink": "リンクを訪問"
   },
   "RssFeeds": {
     "actions": "アクション",
@@ -893,24 +994,24 @@
     "deleteError": "RSSフィードの削除に失敗しました",
     "deleteSuccess": "RSSフィードが正常に削除されました",
     "disable": "無効化",
-    "disabled": "無効",
     "disableError": "RSSフィードの無効化に失敗しました",
     "disableSuccess": "RSSフィードが正常に無効化されました",
+    "disabled": "無効",
+    "doRegex": "ダウンロード正規表現（オプション）",
+    "doRegexPlaceholder": "この正規表現に一致するアイテムをダウンロード",
     "dontOlderThan": "古いアイテムを除外（日）",
     "dontOlderThanPlaceholder": "X日より古いアイテムを除外",
     "dontRegex": "除外正規表現（オプション）",
     "dontRegexPlaceholder": "この正規表現に一致するアイテムを除外",
-    "doRegex": "ダウンロード正規表現（オプション）",
-    "doRegexPlaceholder": "この正規表現に一致するアイテムをダウンロード",
     "downloadType": "ダウンロードタイプ",
     "downloadTypePlaceholder": "ダウンロードタイプを選択",
     "editError": "RSSフィードの更新に失敗しました",
     "editFeed": "RSSフィードを編集",
     "editSuccess": "RSSフィードが正常に更新されました",
     "enable": "有効化",
-    "enabled": "有効",
     "enableError": "RSSフィードの有効化に失敗しました",
     "enableSuccess": "RSSフィードが正常に有効化されました",
+    "enabled": "有効",
     "error": "RSSフィードの読み込みエラー",
     "feedName": "フィード名",
     "feedNamePlaceholder": "フィード名を入力",
@@ -937,6 +1038,8 @@
     "passCheckDescription": "このフィードのキャッシュチェックをスキップ",
     "proSubscriptionRequired": "Proサブスクリプションが必要です",
     "proUserRequired": "RSSフィードを使用するには、Proユーザーである必要があります。",
+    "refresh": "更新",
+    "refreshing": "更新中",
     "save": "保存",
     "scanInterval": "スキャン間隔（分）",
     "scanIntervalPlaceholder": "このフィードをスキャンする頻度",
@@ -993,34 +1096,38 @@
     "clearSearch": "検索をクリア",
     "customEngines": "カスタムエンジン",
     "episode": "エピソード",
+    "episodePlaceholder": "E01",
     "hideAdvanced": "詳細を隠す",
     "minSeeders": "最小シーダー",
     "minSize": "最小サイズ (GB)",
     "placeholderDownloads": "検索 {itemType}…",
     "placeholderDownloadsShort": "検索…",
-    "searchDownloadsAria": "{itemType} またはファイル名を検索",
-    "searchDownloadsHelpAria": "検索の使い方",
-    "searchDownloadsHelpIntro": "ダウンロードのタイトルとファイル名を検索します。",
-    "searchDownloadsHelpOr": "複数の単語 — いずれかの単語が含まれていれば一致（例: 1080p bluray）",
-    "searchDownloadsHelpAnd": "プラス — すべての単語が含まれる場合のみ一致（例: matrix+1999）",
-    "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
-    "searchDownloadsHelpExclude": "マイナス — そのテキストを含む結果を除外（例: -sample）",
-    "searchDownloadsHelpCombine": "組み合わせ — すべての条件に一致（例: \"The Matrix\" 1080p -sample）",
     "placeholderSearch": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
     "quality": "品質",
     "qualityAll": "すべての品質",
     "recentSearches": "最近の検索",
     "search": "検索",
+    "searchDownloadsAria": "{itemType} またはファイル名を検索",
+    "searchDownloadsHelpAnd": "プラス — すべての単語が含まれる場合のみ一致（例: matrix+1999）",
+    "searchDownloadsHelpAria": "検索の使い方",
+    "searchDownloadsHelpCombine": "組み合わせ — すべての条件に一致（例: \"The Matrix\" 1080p -sample）",
+    "searchDownloadsHelpExclude": "マイナス — そのテキストを含む結果を除外（例: -sample）",
+    "searchDownloadsHelpIntro": "ダウンロードのタイトルとファイル名を検索します。",
+    "searchDownloadsHelpOr": "複数の単語 — いずれかの単語が含まれていれば一致（例: 1080p bluray）",
+    "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
     "searchExamples": "検索例",
     "season": "シーズン",
+    "seasonPlaceholder": "S01",
     "showAdvanced": "詳細を表示",
-    "year": "年"
+    "torrentSearchWarning": "TorBoxのトレント検索は現在信頼性が低く、不完全または誤った結果を返す可能性があります。利用可能な場合はUsenet検索をお勧めします。",
+    "year": "年",
+    "yearPlaceholder": "2024"
   },
   "SearchResults": {
     "actions": {
+      "addToTorBox": "TorBoxに追加",
       "added": "追加済み",
       "adding": "追加中...",
-      "addToTorBox": "TorBoxに追加",
       "copyLink": "リンクをコピー",
       "copyMagnet": "マグネットリンクをコピー"
     },
@@ -1031,6 +1138,7 @@
       "days": "日"
     },
     "noResults": "該当なし",
+    "noResultsHint": "別のクエリを試すか、カスタムエンジンを有効にするか、検索タイプを切り替えてください。",
     "results": "{count} 件ヒット",
     "sort": {
       "age": "最新",
@@ -1039,11 +1147,11 @@
     },
     "toast": {
       "magnetCopied": "マグネットリンクがクリップボードにコピーされました",
-      "nzbAdded": "NZBがTorBoxに正常に追加されました",
       "nzbAddFailed": "NZBの追加に失敗しました: {error}",
+      "nzbAdded": "NZBがTorBoxに正常に追加されました",
       "nzbCopied": "NZBリンクがクリップボードにコピーされました",
-      "torrentAdded": "TorrentがTorBoxに正常に追加されました",
       "torrentAddFailed": "Torrentの追加に失敗しました: {error}",
+      "torrentAdded": "TorrentがTorBoxに正常に追加されました",
       "uploadSuccess": "正常に {count} {type} がアップロードされました",
       "uploadSuccessPlural": "正常に {count} {type}s がアップロードされました"
     }
@@ -1074,6 +1182,12 @@
       "full": "ネットワーク活動"
     }
   },
+  "StatusSection": {
+    "selectedFiles": "{fileCount} ファイル選択中 ({size})",
+    "selectedItems": "{itemCount} {type}が選択されています ({size})",
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} 選択中 ({size})",
+    "total": "{count} {type}"
+  },
   "Statuses": {
     "checking_resume_data": "チェック中",
     "completed": "完了",
@@ -1087,9 +1201,6 @@
     "unknown": "不明",
     "uploading": "アップロード中"
   },
-  "StatusSection": {
-    "selectedItems": "{itemCount} {type}が選択されています ({size})"
-  },
   "SystemStatus": {
     "error": "エラー",
     "fullStatusPage": "詳細ステータス",
@@ -1099,21 +1210,7 @@
     "minutesAgo": "{minutes}分前",
     "never": "なし",
     "refreshStatus": "クリックで更新",
-    "uptime": {
-      "barLabel": "{label}の履歴、稼働率{percent}%",
-      "collecting": "データ収集中…",
-      "daysAgo": "{days}日前",
-      "historyNote": "バーはこのブラウザのチェック（約1分間隔）です。公式の履歴はステータスページを参照してください。",
-      "percent": "稼働率{percent}%",
-      "segment": {
-        "degraded": "応答遅延",
-        "down": "ダウン",
-        "empty": "データなし",
-        "nodata": "未確認",
-        "unknown": "不明",
-        "up": "正常"
-      }
-    },
+    "responseTime": "{ms} ミリ秒",
     "rows": {
       "app": {
         "label": "このアプリ"
@@ -1151,10 +1248,27 @@
       "platformUnhealthyDescription": "TorBoxサービスが停止している可能性があります",
       "unknown": "ステータス不明",
       "unknownDescription": "システムステータスを確認できません"
+    },
+    "uptime": {
+      "barLabel": "{label}の履歴、稼働率{percent}%",
+      "collecting": "データ収集中…",
+      "daysAgo": "{days}日前",
+      "historyNote": "バーはこのブラウザのチェック（約1分間隔）です。公式の履歴はステータスページを参照してください。",
+      "percent": "稼働率{percent}%",
+      "segment": {
+        "degraded": "応答遅延",
+        "down": "ダウン",
+        "empty": "データなし",
+        "nodata": "未確認",
+        "unknown": "不明",
+        "up": "正常"
+      }
     }
   },
   "TableBody": {
+    "downloadsTable": "ダウンロードリスト",
     "noDownloads": "ダウンロードがありません",
+    "showMoreFiles": "さらに {count} ファイルを表示",
     "toast": {
       "copyLink": "リンクがクリップボードにコピーされました",
       "copyLinkFailed": "リンクのコピーに失敗しました"
@@ -1183,18 +1297,6 @@
     },
     "title": "グローバルアップロードオプション"
   },
-  "Usage": {
-    "danger": {
-      "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。警告や制限を避けるため、すぐに使用量を減らしてください。",
-      "title": "帯域使用量が非常に多い"
-    },
-    "learnMore": "TorBoxの利用制限について",
-    "viewUsage": "使用状況グラフを表示",
-    "warning": {
-      "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。この範囲に近い利用は、TorBoxの不正利用監視の対象になる可能性があります。",
-      "title": "帯域使用量が多い"
-    }
-  },
   "UploadProgress": {
     "approachingRateLimit": "レート制限に近づいています:",
     "approachingRateLimitDetails": "分あたり {perMinute}/10、時間あたり {perHour}/60",
@@ -1207,19 +1309,31 @@
     "uploading": "{total} 件中 {current} 件をアップロード中",
     "waitingBeforeNext": "次のアップロードまで {time} 待機中"
   },
+  "Usage": {
+    "danger": {
+      "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。警告や制限を避けるため、すぐに使用量を減らしてください。",
+      "title": "帯域使用量が非常に多い"
+    },
+    "learnMore": "TorBoxの利用制限について",
+    "viewUsage": "使用状況グラフを表示",
+    "warning": {
+      "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。この範囲に近い利用は、TorBoxの不正利用監視の対象になる可能性があります。",
+      "title": "帯域使用量が多い"
+    }
+  },
   "User": {
     "bandwidth": {
-      "title": "帯域幅（過去30日間）",
+      "empty": "この期間の帯域幅データはありません",
       "grouping": "グループ化",
       "groupingOptions": {
-        "hour": "時間ごと",
         "day": "日ごと",
-        "week": "週ごと",
-        "month": "月ごと"
+        "hour": "時間ごと",
+        "month": "月ごと",
+        "week": "週ごと"
       },
-      "empty": "この期間の帯域幅データはありません",
       "loadError": "帯域幅統計の読み込みに失敗しました",
-      "retry": "再試行"
+      "retry": "再試行",
+      "title": "帯域幅（過去30日間）"
     },
     "copyLink": "リンクをコピー",
     "copyLinkFailed": "リンクのコピーに失敗しました",
@@ -1266,6 +1380,13 @@
       "free": "無料"
     },
     "title": "ユーザープロフィール"
+  },
+  "VideoPlayer": {
+    "error": "ストリームの読み込みに失敗しました",
+    "loading": "ストリームを読み込み中...",
+    "playbackSpeed": "再生速度",
+    "playbackSpeedNormal": "通常",
+    "title": "ビデオプレーヤー"
   },
   "ViewControls": {
     "cardView": "カードビュー",

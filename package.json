@@ -22,6 +22,8 @@
     "test:dom": "bun test --preload ./test-setup-dom.js src/components/notifications/__tests__ src/components/downloads/__tests__",
     "i18n:prune-deltas": "bun scripts/i18n-prune-locale-deltas.js",
     "i18n:check-deltas": "bun scripts/i18n-prune-locale-deltas.js --check",
+    "i18n:check-keys": "bun scripts/i18n-check-keys.js",
+    "i18n:check-keys:json": "bun scripts/i18n-check-keys.js --json",
     "typecheck:strict": "tsc -p tsconfig.strict.json --noEmit"
   },
   "dependencies": {
