@@ -14,7 +14,7 @@ export default function ReferralHeaderBanner({ apiKey }) {
     setPromptFromQuery(params.get('referral') === 'prompt');
   }, [pathname]);
 
-  if (!apiKey || pathname?.includes('/admin')) {
+  if (!apiKey || pathname?.includes('/admin') || pathname?.includes('/user')) {
     return null;
   }
 

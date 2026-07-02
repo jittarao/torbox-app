@@ -66,6 +66,7 @@ function fanOutApiKey(apiKey, prevApiKey) {
 export const useSessionStore = create((set, get) => ({
   apiKey: '',
   hydrated: false,
+  userData: null,
   permissions: null,
   permissionsLoading: false,
   _permissionsLoadPromise: null,
@@ -101,6 +102,7 @@ export const useSessionStore = create((set, get) => ({
     if (current !== trimmed) {
       set({
         apiKey: trimmed,
+        userData: null,
         permissions: null,
         permissionsLoading: Boolean(trimmed),
       });
@@ -111,7 +113,7 @@ export const useSessionStore = create((set, get) => ({
     if (trimmed) {
       get().loadPermissions(trimmed);
     } else {
-      set({ permissions: null, permissionsLoading: false });
+      set({ userData: null, permissions: null, permissionsLoading: false });
     }
   },
 
@@ -125,6 +127,7 @@ export const useSessionStore = create((set, get) => ({
 
     set({
       apiKey: trimmed,
+      userData: null,
       permissions: null,
       permissionsLoading: Boolean(trimmed),
     });
@@ -136,13 +139,13 @@ export const useSessionStore = create((set, get) => ({
     if (trimmed) {
       get().loadPermissions(trimmed);
     } else {
-      set({ permissions: null, permissionsLoading: false });
+      set({ userData: null, permissions: null, permissionsLoading: false });
     }
   },
 
   loadPermissions: async (apiKey = get().apiKey) => {
     if (!apiKey || apiKey.length < 20) {
-      set({ permissions: null, permissionsLoading: false });
+      set({ userData: null, permissions: null, permissionsLoading: false });
       return null;
     }
 
@@ -160,12 +163,12 @@ export const useSessionStore = create((set, get) => ({
           return null;
         }
         const permissions = userData ? getUserPermissions(userData) : null;
-        set({ permissions, permissionsLoading: false });
+        set({ userData, permissions, permissionsLoading: false });
         return permissions;
       } catch (error) {
         console.error('Error fetching user profile:', error);
         if (get().apiKey === apiKey) {
-          set({ permissions: null, permissionsLoading: false });
+          set({ userData: null, permissions: null, permissionsLoading: false });
         }
         return null;
       } finally {

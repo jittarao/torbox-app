@@ -3,6 +3,24 @@
  * Functions for fetching and checking user profile information
  */
 
+const inflightProfileRequests = new Map();
+const inflightSubscriptionRequests = new Map();
+
+function dedupeRequest(cache, key, factory) {
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
+
+  const promise = factory().finally(() => {
+    if (cache.get(key) === promise) {
+      cache.delete(key);
+    }
+  });
+
+  cache.set(key, promise);
+  return promise;
+}
+
 /**
  * Fetch user profile from API
  * @param {string} apiKey - User's API key
@@ -13,30 +31,77 @@ export async function fetchUserProfile(apiKey, options = {}) {
     return null;
   }
 
-  try {
-    const response = await fetch('/api/user/me', {
-      headers: {
-        'x-api-key': apiKey,
-      },
-      signal: options.signal,
-    });
+  const run = async () => {
+    try {
+      const response = await fetch('/api/user/me', {
+        headers: {
+          'x-api-key': apiKey,
+        },
+        signal: options.signal,
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        return data.data;
+      }
+
+      return null;
+    } catch (error) {
+      if (error?.name === 'AbortError') return null;
+      console.error('Error fetching user profile:', error);
       return null;
     }
+  };
 
-    const data = await response.json();
+  if (options.signal || options.force) {
+    return run();
+  }
 
-    if (data.success && data.data) {
-      return data.data;
-    }
+  return dedupeRequest(inflightProfileRequests, apiKey, run);
+}
 
-    return null;
-  } catch (error) {
-    if (error?.name === 'AbortError') return null;
-    console.error('Error fetching user profile:', error);
+/**
+ * Fetch user subscriptions from API
+ * @param {string} apiKey
+ * @returns {Promise<Array|null>}
+ */
+export async function fetchUserSubscriptions(apiKey, options = {}) {
+  if (!apiKey) {
     return null;
   }
+
+  const run = async () => {
+    try {
+      const response = await fetch('/api/user/subscriptions', {
+        headers: {
+          'x-api-key': apiKey,
+        },
+        signal: options.signal,
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data.success ? data.data : null;
+    } catch (error) {
+      if (error?.name === 'AbortError') return null;
+      console.error('Error fetching user subscriptions:', error);
+      return null;
+    }
+  };
+
+  if (options.signal || options.force) {
+    return run();
+  }
+
+  return dedupeRequest(inflightSubscriptionRequests, apiKey, run);
 }
 
 /**
