@@ -60,6 +60,7 @@ const FIELD_TYPE_MAP = {
   expires_at: 'date',
   download_state: 'status',
   file_count: 'file_count',
+  airlocked: 'boolean',
 };
 
 function getStatusPriority(torrent) {
@@ -100,6 +101,12 @@ function fileCountCompare(a, b) {
   return (a.files?.length || 0) - (b.files?.length || 0);
 }
 
+function booleanCompare(a, b, field) {
+  const av = a[field] === true || a[field] === 1 || a[field] === 'true' ? 1 : 0;
+  const bv = b[field] === true || b[field] === 1 || b[field] === 'true' ? 1 : 0;
+  return av - bv;
+}
+
 /**
  * @param {object} a
  * @param {object} b
@@ -117,6 +124,8 @@ function compareRows(a, b, sortField) {
       return statusCompare(a, b);
     case 'file_count':
       return fileCountCompare(a, b);
+    case 'boolean':
+      return booleanCompare(a, b, sortField);
     default:
       return textCompare(a, b, sortField);
   }

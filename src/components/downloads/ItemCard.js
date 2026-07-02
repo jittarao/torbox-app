@@ -18,8 +18,10 @@ import {
   Hash,
   Layers,
   Link,
+  Lock,
   Percent,
   Private,
+  Unlock,
   UpArrow,
 } from '@/components/icons';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -38,6 +40,10 @@ import {
   tableRowFocusClasses,
 } from './utils/responsiveLayout';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
+
+function normalizeBooleanValue(value) {
+  return value === true || value === 1 || value === 'true';
+}
 
 function ItemCard({
   item,
@@ -63,6 +69,7 @@ function ItemCard({
   const isMobile = useIsMobile();
   const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
   const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
+  const isAirlocked = normalizeBooleanValue(item.airlocked);
 
   const filteredColumns = activeColumns.filter(
     (column) =>
@@ -114,6 +121,8 @@ function ItemCard({
         return columnT('asset_type');
       case 'private':
         return columnT('private');
+      case 'airlocked':
+        return columnT('airlocked');
     }
   };
 
@@ -152,6 +161,8 @@ function ItemCard({
         return <All />;
       case 'private':
         return <Private />;
+      case 'airlocked':
+        return <Lock />;
     }
   };
 
@@ -287,6 +298,18 @@ function ItemCard({
         ) : (
           <span>Public</span>
         );
+      case 'airlocked':
+        return normalizeBooleanValue(item.airlocked) ? (
+          <div className="flex items-center gap-2">
+            <Lock className="size-4 text-accent dark:text-accent-dark" />
+            <span>{commonT('airlocked')}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Unlock className="size-4 text-primary-text/40 dark:text-primary-text-dark/40" />
+            <span>{commonT('notAirlocked')}</span>
+          </div>
+        );
     }
   };
 
@@ -411,6 +434,11 @@ function ItemCard({
                   {item.private && (
                     <Tooltip content="Private Tracker">
                       <Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
+                    </Tooltip>
+                  )}
+                  {isAirlocked && (
+                    <Tooltip content={commonT('airlocked')}>
+                      <Lock className="size-4 shrink-0 text-accent dark:text-accent-dark mt-0.5" />
                     </Tooltip>
                   )}
                 </div>

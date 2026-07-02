@@ -13,6 +13,16 @@ import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloadsSelectors';
 import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
+import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
+import { isQueuedItem } from '@/utils/utility';
+
+function normalizeBooleanValue(value) {
+  return value === true || value === 1 || value === 'true';
+}
+
+function normalizeUiAssetType(assetType) {
+  return assetType === 'torrent' ? 'torrents' : assetType;
+}
 
 export default function ItemActions({
   item,
@@ -28,6 +38,7 @@ export default function ItemActions({
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isAirlockUpdating, setIsAirlockUpdating] = useState(false);
   const { downloadSingle } = useDownloadsActions();
   const { archiveItem, isArchiving } = useDownloadsContext();
   const { isBackendAvailable } = useDownloadsUIContext();
@@ -172,9 +183,62 @@ export default function ItemActions({
     }
   };
 
+  const handleToggleAirlock = async () => {
+    if (isAirlockUpdating || isQueuedItem(item)) return;
+
+    const resolvedAssetType = resolveItemAssetType(item, activeType);
+    const uiAssetType = normalizeUiAssetType(resolvedAssetType);
+    const nextAirlocked = !normalizeBooleanValue(item.airlocked);
+    setIsAirlockUpdating(true);
+    patchItem(uiAssetType, item.id, { airlocked: nextAirlocked });
+
+    try {
+      const response = await fetch('/api/downloads/airlock', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          assetType: resolvedAssetType,
+          id: item.id,
+          airlocked: nextAirlocked,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || data.detail || 'Airlock update failed');
+      }
+
+      setToast({
+        message: nextAirlocked ? t('toast.airlockLocked') : t('toast.airlockUnlocked'),
+        type: 'success',
+      });
+      phEvent(nextAirlocked ? 'lock_download_item' : 'unlock_download_item');
+
+      await fetchDownloadType(apiKey, uiAssetType, activeType, {
+        bypassCache: true,
+        skipLoading: true,
+        forMutation: true,
+      });
+    } catch (error) {
+      console.error('Error updating airlock:', error);
+      patchItem(uiAssetType, item.id, { airlocked: !nextAirlocked });
+      setToast({
+        message: t('toast.airlockFailed', { error: error.message }),
+        type: 'error',
+      });
+    } finally {
+      setIsAirlockUpdating(false);
+    }
+  };
+
   const showStopSeeding =
     activeType === 'torrents' && item.download_finished && item.download_present && item.active;
   const showForceStart = activeType === 'torrents' && !item.download_state;
+  const showAirlock = !isQueuedItem(item);
+  const itemAirlocked = normalizeBooleanValue(item.airlocked);
   const hasCardActions = showStopSeeding || showForceStart || showRetry || item.download_present;
 
   const actionButtons = (
@@ -215,6 +279,10 @@ export default function ItemActions({
       showRetry={showRetry}
       onRetry={handleRetry}
       isRetrying={isRetrying}
+      showAirlock={showAirlock}
+      airlocked={itemAirlocked}
+      onToggleAirlock={handleToggleAirlock}
+      isAirlockUpdating={isAirlockUpdating}
     />
   );
 

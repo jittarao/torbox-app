@@ -46,6 +46,7 @@ describe('RuleEvaluator', () => {
       deleteDownload: mock((item) =>
         mockApiClient.deleteTorrent(item.id, { isQueued: item.status === 'queued' })
       ),
+      setAirlock: mock(() => Promise.resolve({ success: true })),
     };
 
     ruleEvaluator = new RuleEvaluator(mockUserDb, mockApiClient);
@@ -758,6 +759,14 @@ describe('RuleEvaluator', () => {
       it('should evaluate CACHED condition with is_false operator', () => {
         const condition = { type: 'CACHED', operator: 'is_false' };
         const torrent = { id: '1', cached: false };
+
+        const result = ruleEvaluator.evaluateCondition(condition, torrent);
+        expect(result).toBe(true);
+      });
+
+      it('should evaluate IS_AIRLOCKED condition as boolean', () => {
+        const condition = { type: 'IS_AIRLOCKED', operator: 'is_true' };
+        const torrent = { id: '1', airlocked: true };
 
         const result = ruleEvaluator.evaluateCondition(condition, torrent);
         expect(result).toBe(true);
@@ -1714,6 +1723,54 @@ describe('RuleEvaluator', () => {
       await ruleEvaluator.executeAction(action, torrent);
 
       expect(mockApiClient.deleteDownload).toHaveBeenCalledWith(torrent);
+    });
+
+    it('should execute add_airlock action', async () => {
+      const action = { type: 'add_airlock' };
+      const torrent = { id: 'torrent-1', assetType: 'torrent', name: 'test', airlocked: false };
+
+      const result = await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.setAirlock).toHaveBeenCalledWith(torrent, true);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should skip add_airlock when already airlocked', async () => {
+      const action = { type: 'add_airlock' };
+      const torrent = { id: 'torrent-1', assetType: 'torrent', airlocked: true };
+
+      const result = await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.setAirlock).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: true,
+        applied: false,
+        message: 'Download already airlocked',
+      });
+    });
+
+    it('should execute remove_airlock action', async () => {
+      const action = { type: 'remove_airlock' };
+      const torrent = { id: 'web-1', assetType: 'webdl', name: 'test', airlocked: true };
+
+      const result = await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.setAirlock).toHaveBeenCalledWith(torrent, false);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should skip remove_airlock when already unlocked', async () => {
+      const action = { type: 'remove_airlock' };
+      const torrent = { id: 'web-1', assetType: 'webdl', airlocked: false };
+
+      const result = await ruleEvaluator.executeAction(action, torrent);
+
+      expect(mockApiClient.setAirlock).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: true,
+        applied: false,
+        message: 'Download is not airlocked',
+      });
     });
 
     it('should throw error when action is missing', async () => {

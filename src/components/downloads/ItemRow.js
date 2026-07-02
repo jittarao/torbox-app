@@ -7,7 +7,7 @@ import DownloadStateBadge from './DownloadStateBadge';
 import DownloadProgressDisplay from './DownloadProgressDisplay';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import { Private } from '@/components/icons';
+import { Lock, Private, Unlock } from '@/components/icons';
 import TagDisplay from './Tags/TagDisplay';
 import {
   getTableRowSurfaceClasses,
@@ -26,7 +26,12 @@ import {
 } from '@/components/shared/hooks/useSelection';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 
+function normalizeBooleanValue(value) {
+  return value === true || value === 1 || value === 'true';
+}
+
 function NameCell({ item, isBlurred, isMobile, style, commonT }) {
+  const isAirlocked = normalizeBooleanValue(item.airlocked);
   return (
     <td className={`${tableDataCellPad} relative overflow-hidden`} style={style}>
       <div
@@ -47,6 +52,11 @@ function NameCell({ item, isBlurred, isMobile, style, commonT }) {
           {item.private && (
             <Tooltip content="Private Tracker">
               <Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400" />
+            </Tooltip>
+          )}
+          {isAirlocked && (
+            <Tooltip content={commonT('airlocked')}>
+              <Lock className="size-4 shrink-0 text-accent dark:text-accent-dark" />
             </Tooltip>
           )}
           {item.name && (
@@ -249,6 +259,23 @@ function PrivateCell({ item, style }) {
 }
 const PrivateCellMemo = memo(PrivateCell);
 
+function AirlockedCell({ item, style, commonT }) {
+  const isAirlocked = normalizeBooleanValue(item.airlocked);
+  return (
+    <td className={tableDataCellText} style={style}>
+      <div className="flex items-center gap-2">
+        {isAirlocked ? (
+          <Lock className="size-4 text-accent dark:text-accent-dark" />
+        ) : (
+          <Unlock className="size-4 text-primary-text/40 dark:text-primary-text-dark/40" />
+        )}
+        <span>{isAirlocked ? commonT('airlocked') : commonT('notAirlocked')}</span>
+      </div>
+    </td>
+  );
+}
+const AirlockedCellMemo = memo(AirlockedCell);
+
 function ErrorCell({ item, style }) {
   const error = item.error?.trim() || null;
 
@@ -326,6 +353,7 @@ const COLUMN_CELLS = {
   file_count: FileCountCellMemo,
   asset_type: AssetTypeCellMemo,
   private: PrivateCellMemo,
+  airlocked: AirlockedCellMemo,
   error: ErrorCellMemo,
   tags: TagsCellMemo,
 };
