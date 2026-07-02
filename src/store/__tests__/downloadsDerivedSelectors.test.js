@@ -75,6 +75,16 @@ describe('downloadsDerivedSelectors', () => {
     expect(row.tags).toHaveLength(1);
   });
 
+  test('enrichRowForFilter does not expose upstream TorBox tags without TBM mappings', () => {
+    const entity = {
+      ...entities[entityKey('torrents', 1)],
+      tags: ['upstream-only'],
+    };
+    const lookup = { itemDownloads: new Set(), fileDownloads: new Set() };
+    const row = enrichRowForFilter(entity, {}, lookup);
+    expect(row.tags).toEqual([]);
+  });
+
   test('enrichRowForFilter reuses entity reference when unchanged', () => {
     const entity = entities[entityKey('torrents', 1)];
     const lookup = { itemDownloads: new Set(), fileDownloads: new Set() };
