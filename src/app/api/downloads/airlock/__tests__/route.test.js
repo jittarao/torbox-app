@@ -45,7 +45,9 @@ describe('PUT /api/downloads/airlock', () => {
     }));
     const { PUT } = await import('../route.js');
 
-    const response = await PUT(makeRequest({ assetType: 'torrent', id: '', airlocked: true }, 'test-key'));
+    const response = await PUT(
+      makeRequest({ assetType: 'torrent', id: '', airlocked: true }, 'test-key')
+    );
     expect(response.status).toBe(400);
 
     const badType = await PUT(
@@ -53,7 +55,9 @@ describe('PUT /api/downloads/airlock', () => {
     );
     expect(badType.status).toBe(400);
 
-    const nonBoolean = await PUT(makeRequest({ assetType: 'torrent', id: 1, airlocked: 'true' }, 'test-key'));
+    const nonBoolean = await PUT(
+      makeRequest({ assetType: 'torrent', id: 1, airlocked: 'true' }, 'test-key')
+    );
     expect(nonBoolean.status).toBe(400);
   });
 
@@ -77,7 +81,9 @@ describe('PUT /api/downloads/airlock', () => {
     }));
     const { PUT } = await import('../route.js');
 
-    const response = await PUT(makeRequest({ assetType: 'torrent', id: 42, airlocked: true }, 'test-key'));
+    const response = await PUT(
+      makeRequest({ assetType: 'torrent', id: 42, airlocked: true }, 'test-key')
+    );
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error).toContain('queued');
@@ -103,7 +109,9 @@ describe('PUT /api/downloads/airlock', () => {
     }));
     const { PUT } = await import('../route.js');
 
-    const response = await PUT(makeRequest({ assetType: 'torrent', id: 99, airlocked: true }, 'test-key'));
+    const response = await PUT(
+      makeRequest({ assetType: 'torrent', id: 99, airlocked: true }, 'test-key')
+    );
     expect(response.status).toBe(404);
   });
 
@@ -127,7 +135,9 @@ describe('PUT /api/downloads/airlock', () => {
     }));
     const { PUT } = await import('../route.js');
 
-    const response = await PUT(makeRequest({ assetType: 'torrent', id: 1, airlocked: true }, 'test-key'));
+    const response = await PUT(
+      makeRequest({ assetType: 'torrent', id: 1, airlocked: true }, 'test-key')
+    );
     expect(response.status).toBe(503);
   });
 
@@ -151,7 +161,9 @@ describe('PUT /api/downloads/airlock', () => {
     }));
     const { PUT } = await import('../route.js');
 
-    const response = await PUT(makeRequest({ assetType: 'usenet', id: 5, airlocked: false }, 'test-key'));
+    const response = await PUT(
+      makeRequest({ assetType: 'usenet', id: 5, airlocked: false }, 'test-key')
+    );
     expect(response.status).toBe(502);
   });
 
@@ -224,7 +236,9 @@ describe('PUT /api/downloads/airlock', () => {
     }));
     const { PUT } = await import('../route.js');
 
-    const response = await PUT(makeRequest({ assetType: 'torrent', id: 1, airlocked: true }, 'test-key'));
+    const response = await PUT(
+      makeRequest({ assetType: 'torrent', id: 1, airlocked: true }, 'test-key')
+    );
     expect(response.status).toBe(408);
   });
 });

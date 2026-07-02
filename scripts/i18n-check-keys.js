@@ -106,14 +106,20 @@ if (JSON_OUT) {
 
     console.log(`\n=== ${locale}.json ===`);
     if (r.missing.length > 0) {
-      console.log(`  [missing] ${r.missing.length} key(s) present in en.json but not in ${locale}.json`);
-      console.log('  (delta-only convention: these inherit en.json values; override only if translating)');
+      console.log(
+        `  [missing] ${r.missing.length} key(s) present in en.json but not in ${locale}.json`
+      );
+      console.log(
+        '  (delta-only convention: these inherit en.json values; override only if translating)'
+      );
       for (const k of r.missing) console.log(`    - ${k}`);
     } else {
       console.log('  [missing] none');
     }
     if (r.extra.length > 0) {
-      console.log(`  [extra] ${r.extra.length} key(s) present in ${locale}.json but not in en.json — STALE, remove them`);
+      console.log(
+        `  [extra] ${r.extra.length} key(s) present in ${locale}.json but not in en.json — STALE, remove them`
+      );
       for (const k of r.extra) console.log(`    - ${k}`);
     } else {
       console.log('  [extra] none');
@@ -125,7 +131,7 @@ if (JSON_OUT) {
     const r = report[locale];
     console.log(
       `  ${locale}: missing=${r.missing.length} extra=${r.extra.length}` +
-        (r.missing.length + r.extra.length === 0 ? ' (clean)' : ''),
+        (r.missing.length + r.extra.length === 0 ? ' (clean)' : '')
     );
   }
 }
