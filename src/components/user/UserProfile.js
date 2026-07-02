@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useShallow } from 'zustand/react/shallow';
 import { formatSize, SIZE_BASE_DECIMAL } from '@/components/downloads/utils/formatters';
 import Spinner from '@/components/shared/Spinner';
 import {
@@ -14,69 +15,47 @@ import {
   Download,
   User,
 } from '@/components/icons';
+import AirlockUsage from '@/components/user/AirlockUsage';
 import BandwidthChart from '@/components/user/BandwidthChart';
+import { useUserStats } from '@/hooks/useUserStats';
+import { useSessionStore } from '@/store/sessionStore';
 import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
 import { buildTorboxSubscriptionReferralUrl } from '@/utils/referralLinks';
 
 export default function UserProfile({ apiKey, setToast }) {
   const t = useTranslations('User');
   const locale = useLocale();
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const fetchingRef = useRef(false);
+  const [bandwidthGrouping, setBandwidthGrouping] = useState('week');
+  const { userData, loading, error, loadPermissions } = useSessionStore(
+    useShallow((state) => ({
+      userData: state.userData,
+      loading: state.permissionsLoading,
+      error:
+        !state.permissionsLoading && state.apiKey && !state.userData
+          ? 'Failed to fetch user profile'
+          : null,
+      loadPermissions: state.loadPermissions,
+    }))
+  );
+  const {
+    general: statsGeneral,
+    bandwidth: statsBandwidth,
+    loading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useUserStats(apiKey, bandwidthGrouping);
 
-  const fetchUserProfile = useCallback(async () => {
-    // Prevent duplicate calls
-    if (fetchingRef.current) {
-      return;
+  const retryProfileLoad = async () => {
+    if (!apiKey) return;
+    const permissions = await loadPermissions(apiKey);
+    if (!permissions && setToast) {
+      setToast({
+        message: 'Failed to fetch user profile',
+        type: 'error',
+      });
     }
-
-    fetchingRef.current = true;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { fetchUserProfile: fetchProfile } = await import('@/utils/userProfile');
-      const profileData = await fetchProfile(apiKey);
-
-      if (profileData) {
-        setUserData(profileData);
-      } else {
-        const errorMessage = 'Failed to fetch user profile';
-        setError(errorMessage);
-        if (setToast) {
-          setToast({
-            message: errorMessage,
-            type: 'error',
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching user profile:', err);
-      const errorMessage = err.message || 'Failed to fetch user profile';
-      setError(errorMessage);
-      if (setToast) {
-        setToast({
-          message: errorMessage,
-          type: 'error',
-        });
-      }
-    } finally {
-      setLoading(false);
-      fetchingRef.current = false;
-    }
-  }, [apiKey, setToast]);
-
-  useEffect(() => {
-    if (!apiKey) {
-      setError('API key is required');
-      return;
-    }
-
-    fetchUserProfile();
-  }, [apiKey, fetchUserProfile]);
+  };
 
   const copyReferralLink = async () => {
     if (!userData?.user_referral) return;
@@ -153,6 +132,17 @@ export default function UserProfile({ apiKey, setToast }) {
 
   // Wrap the entire render in try-catch to prevent crashes
   try {
+    if (!apiKey) {
+      return (
+        <div className="p-6">
+          <div className="text-center py-12">
+            <User className="size-12 text-muted dark:text-muted-dark mx-auto mb-4" />
+            <p className="text-muted dark:text-muted-dark">{t('noData')}</p>
+          </div>
+        </div>
+      );
+    }
+
     if (loading) {
       return (
         <div className="p-6">
@@ -174,7 +164,7 @@ export default function UserProfile({ apiKey, setToast }) {
             <p className="text-muted dark:text-muted-dark mb-6">{error}</p>
             <button
               type="button"
-              onClick={fetchUserProfile}
+              onClick={retryProfileLoad}
               className="px-6 py-2.5 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
             >
               {t('retry')}
@@ -426,7 +416,21 @@ export default function UserProfile({ apiKey, setToast }) {
           </div>
         </div>
 
-        <BandwidthChart apiKey={apiKey} />
+        <AirlockUsage
+          usedBytes={statsGeneral?.airlocked_downloads ?? 0}
+          limitBytes={statsGeneral?.airlock_storage_limit ?? 0}
+          loading={statsLoading && statsGeneral == null}
+          error={statsError}
+          onRetry={refetchStats}
+        />
+        <BandwidthChart
+          bandwidthData={statsBandwidth}
+          grouping={bandwidthGrouping}
+          onGroupingChange={setBandwidthGrouping}
+          loading={statsLoading}
+          error={statsError}
+          onRetry={refetchStats}
+        />
       </div>
     );
   } catch (err) {

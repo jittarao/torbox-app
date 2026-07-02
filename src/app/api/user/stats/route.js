@@ -14,15 +14,18 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const query = new URLSearchParams();
 
+  const wantsGeneral = searchParams.get('general') === 'true';
+  const wantsBandwidth = searchParams.get('bandwidth') === 'true';
+
   // TorBox API expects opt-in flags (e.g. bandwidth=true). Sending general=false
   // causes UNKNOWN_ERROR; omit disabled sections instead (matches torbox.app).
-  if (searchParams.get('general') === 'true') {
-    query.set('general', 'true');
-  }
-  if (searchParams.get('bandwidth') === 'true') {
+  // general=true alone also fails — bandwidth responses include general stats.
+  if (wantsBandwidth) {
     query.set('bandwidth', 'true');
-    const bandwidthGrouping = searchParams.get('bandwidth_grouping') ?? 'week';
-    query.set('bandwidth_grouping', bandwidthGrouping);
+    query.set('bandwidth_grouping', searchParams.get('bandwidth_grouping') ?? 'week');
+  } else if (wantsGeneral) {
+    query.set('bandwidth', 'true');
+    query.set('bandwidth_grouping', 'week');
   }
 
   try {

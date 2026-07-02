@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -54,69 +54,27 @@ function formatDateLabel(dateStr, grouping) {
   }
 }
 
-export default function BandwidthChart({ apiKey }) {
+export default function BandwidthChart({
+  bandwidthData,
+  grouping,
+  onGroupingChange,
+  loading,
+  error,
+  onRetry,
+}) {
   const t = useTranslations('User.bandwidth');
   const locale = useLocale();
-  const [grouping, setGrouping] = useState('week');
-  const [bandwidthData, setBandwidthData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
   const chartRef = useRef(null);
-  const fetchingRef = useRef(false);
 
   const isDarkMode = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return document.documentElement.classList.contains('dark');
   }, []);
-
-  const fetchBandwidth = useCallback(async () => {
-    if (!apiKey || fetchingRef.current) return;
-
-    fetchingRef.current = true;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        bandwidth: 'true',
-        bandwidth_grouping: grouping,
-      });
-
-      const response = await fetch(`/api/user/stats?${params.toString()}`, {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || data.detail || t('loadError'));
-      }
-
-      setBandwidthData(data.data?.bandwidth || []);
-    } catch (err) {
-      console.error('Error fetching bandwidth stats:', err);
-      setError(err.message || t('loadError'));
-      setBandwidthData([]);
-    } finally {
-      setLoading(false);
-      fetchingRef.current = false;
-    }
-  }, [apiKey, grouping, t]);
-
-  useEffect(() => {
-    if (!apiKey) {
-      setLoading(false);
-      return;
-    }
-    fetchBandwidth();
-  }, [apiKey, fetchBandwidth]);
 
   useEffect(() => {
     const updateChartTheme = () => {
@@ -273,7 +231,7 @@ export default function BandwidthChart({ apiKey }) {
           <select
             id="bandwidth-grouping"
             value={grouping}
-            onChange={(e) => setGrouping(e.target.value)}
+            onChange={(e) => onGroupingChange(e.target.value)}
             disabled={loading}
             className="text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark focus:outline-none disabled:opacity-50"
           >
@@ -298,7 +256,7 @@ export default function BandwidthChart({ apiKey }) {
           <p className="text-muted dark:text-muted-dark mb-4">{error}</p>
           <button
             type="button"
-            onClick={fetchBandwidth}
+            onClick={onRetry}
             className="px-4 py-2 bg-accent dark:bg-accent-dark text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
           >
             {t('retry')}
