@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { fetchUserProfile } from '@/utils/userProfile';
+import { useEffect, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useSessionStore } from '@/store/sessionStore';
 import {
-  getReferralEligibility,
-  getReferralEligibilityCore,
-  isOwnReferralCode,
-} from '@/utils/referralEligibility';
-import { markReferralAppliedForKey } from '@/utils/referralApplied';
+  selectReferralCoreEligibility,
+  useReferralEligibilityStore,
+} from '@/store/referralEligibilityStore';
 
 /**
  * @param {string} apiKey
@@ -15,79 +14,56 @@ import { markReferralAppliedForKey } from '@/utils/referralApplied';
  */
 export function useReferralEligibility(apiKey, options = {}) {
   const { promptFromQuery = false } = options;
-  const [userData, setUserData] = useState(null);
-  const [subscriptions, setSubscriptions] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [eligibility, setEligibility] = useState({
-    showCallout: false,
-    canAutoApply: false,
-    reason: 'loading',
-  });
-
-  const refresh = useCallback(
-    async (signal) => {
-      if (!apiKey || apiKey.length < 20) {
-        setUserData(null);
-        setSubscriptions(null);
-        setEligibility({ showCallout: false, canAutoApply: false, reason: 'no_api_key' });
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const [profile, subsResponse] = await Promise.all([
-          fetchUserProfile(apiKey, { signal }),
-          fetch('/api/user/subscriptions', {
-            headers: { 'x-api-key': apiKey },
-            signal,
-          }).then((r) => (r.ok ? r.json() : null)),
-        ]);
-
-        if (signal?.aborted) return;
-
-        const subs = subsResponse?.success ? subsResponse.data : null;
-        setUserData(profile);
-        setSubscriptions(subs);
-
-        if (isOwnReferralCode(profile)) {
-          markReferralAppliedForKey(apiKey);
-        }
-
-        const next = getReferralEligibility({
-          apiKey,
-          userData: profile,
-          subscriptions: subs,
-          ignoreDismissal: promptFromQuery,
-          ignoreSessionCap: promptFromQuery,
-        });
-        setEligibility(next);
-      } catch (error) {
-        if (signal?.aborted || error?.name === 'AbortError') return;
-        console.error('Error loading referral eligibility:', error);
-        setEligibility({ showCallout: false, canAutoApply: false, reason: 'error' });
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-        }
-      }
-    },
-    [apiKey, promptFromQuery]
+  const { userData, permissionsLoading } = useSessionStore(
+    useShallow((state) => ({
+      userData: state.userData,
+      permissionsLoading: state.permissionsLoading,
+    }))
   );
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    refresh(abortController.signal);
-    return () => abortController.abort();
-  }, [refresh]);
+  const { subscriptions, eligibility, loading } = useReferralEligibilityStore(
+    useShallow((state) => ({
+      subscriptions: state.subscriptions,
+      eligibility: state.eligibility,
+      loading: state.loading,
+    }))
+  );
 
-  const coreEligibility = getReferralEligibilityCore({
-    apiKey,
-    userData,
-    subscriptions,
-  });
+  const userDataId = userData?.id ?? null;
+
+  useEffect(() => {
+    const store = useReferralEligibilityStore.getState();
+    const sessionUserData = useSessionStore.getState().userData;
+
+    if (!apiKey) {
+      store.reset();
+      return;
+    }
+
+    if (!userDataId || !sessionUserData) {
+      return;
+    }
+
+    const abortController = new AbortController();
+    store.ensureLoaded(apiKey, sessionUserData, { promptFromQuery }, abortController.signal);
+
+    return () => abortController.abort();
+  }, [apiKey, userDataId, promptFromQuery]);
+
+  const refresh = useCallback(async () => {
+    const abortController = new AbortController();
+    const sessionStore = useSessionStore.getState();
+    await sessionStore.loadPermissions(apiKey);
+    const latestUserData = useSessionStore.getState().userData;
+    await useReferralEligibilityStore
+      .getState()
+      .refresh(apiKey, latestUserData, { promptFromQuery }, abortController.signal);
+  }, [apiKey, promptFromQuery]);
+
+  const coreEligibility = selectReferralCoreEligibility({ subscriptions }, apiKey, userData);
 
   return {
-    loading,
+    loading: permissionsLoading || loading || (!userData && Boolean(apiKey)),
     userData,
     subscriptions,
     eligibility,
