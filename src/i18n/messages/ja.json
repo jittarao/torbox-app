@@ -12,6 +12,7 @@
     "assignTags": "タグ",
     "assignTagsTitle": "選択項目にタグを付ける",
     "bulkAirlockFailed": "Airlockの更新に失敗しました",
+    "bulkAirlockLimitReached": "Airlockのストレージ容量制限に達しました。Airlockedダウンロードを削除するか、プランをアップグレードして容量を増やしてください。",
     "bulkAirlockLock": "ロック",
     "bulkAirlockLockTitle": "選択したダウンロードをロック (Airlock)",
     "bulkAirlockLocked": "{count}件のダウンロードをロックしました",
@@ -713,6 +714,7 @@
   "ItemActions": {
     "toast": {
       "airlockFailed": "Airlockの更新に失敗: {error}",
+      "airlockLimitReached": "Airlockのストレージ容量制限に達しました。Airlockedダウンロードを削除するか、プランをアップグレードして容量を増やしてください。",
       "airlockLocked": "ダウンロードをロックしました",
       "airlockUnlocked": "ダウンロードのロックを解除しました",
       "archiveAllFailed": "アイテムのアーカイブに失敗しました",

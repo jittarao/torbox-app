@@ -21,3 +21,10 @@ export const NON_RETRYABLE_ERRORS = {
   DIFF_ISSUE: 'DIFF_ISSUE',
   VENDOR_DISABLED: 'VENDOR_DISABLED',
 };
+
+/**
+ * TorBox reports the user's Airlock storage quota has been exceeded.
+ * Not a server error — the request is well-formed but cannot be applied
+ * until the user removes Airlocked downloads or upgrades their plan.
+ */
+export const AIRLOCK_LIMIT_REACHED_ERROR = 'AIRLOCK_LIMIT_REACHED';

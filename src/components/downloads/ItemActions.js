@@ -15,6 +15,7 @@ import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloads
 import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
 import { isQueuedItem } from '@/utils/utility';
+import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
 
 function normalizeBooleanValue(value) {
   return value === true || value === 1 || value === 'true';
@@ -208,6 +209,14 @@ export default function ItemActions({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || data.success === false) {
+        if (data.error === AIRLOCK_LIMIT_REACHED_ERROR) {
+          patchItem(uiAssetType, item.id, { airlocked: !nextAirlocked });
+          setToast({
+            message: data.detail || t('toast.airlockLimitReached'),
+            type: 'error',
+          });
+          return;
+        }
         throw new Error(data.error || data.detail || 'Airlock update failed');
       }
 
