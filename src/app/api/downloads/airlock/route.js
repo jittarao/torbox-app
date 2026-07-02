@@ -107,18 +107,15 @@ export async function PUT(request) {
       return Response.json({ success: false, error: 'Download not found' }, { status: 404 });
     }
 
-    const editResponse = await torboxFetch(
-      `${API_BASE}/${API_VERSION}${config.editEndpoint}`,
-      {
-        cache: 'no-store',
-        method: 'PUT',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildEditPayload(currentItem, config.idField, airlocked)),
-      }
-    );
+    const editResponse = await torboxFetch(`${API_BASE}/${API_VERSION}${config.editEndpoint}`, {
+      cache: 'no-store',
+      method: 'PUT',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(buildEditPayload(currentItem, config.idField, airlocked)),
+    });
     const editData = await safeJsonParse(editResponse);
 
     if (!editResponse.ok) {
