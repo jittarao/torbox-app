@@ -50,7 +50,6 @@
     "exportSelectedTitle": "Eksportuj zaznaczone torrenty",
     "exporting": "Eksport…",
     "fetchingLinks": "Ładowanie…",
-    "forceStart": "Start",
     "forceStartTitle": "Wymuś start kolejkowanych torrentów",
     "forceStarting": "Uruchamianie…",
     "retry": {
@@ -157,7 +156,6 @@
       "hint": "Warunki i akcje są ograniczone do tego, co obsługuje każdy wybrany typ.",
       "label": "Typ",
       "torrent": "Torrenty",
-      "usenet": "Usenet",
       "webdl": "Pobieranie web"
     },
     "booleanOperators": {
@@ -238,14 +236,12 @@
       "seeds": "Seedy",
       "seedsDescription": "Liczba dostępnych seedów",
       "stalledTime": "Czas bezczynności",
-      "status": "Status",
       "statusDescription": "Aktualny status torrenta (pobieranie, seedowanie, ukończone itd.)",
       "statusPlaceholder": "Wybierz statusy...",
       "tags": "Tagi",
       "tagsPlaceholder": "Wybierz tagi...",
       "totalUploaded": "Łącznie wysłano",
       "totalUploadedDescription": "Całkowita ilość wysłanych danych (w GB)",
-      "tracker": "Tracker",
       "trackerDescription": "Adres URL lub nazwa trackera (obsługuje wyszukiwanie tekstowe)",
       "trackerPlaceholder": "Wpisz adres trackera lub nazwę...",
       "uploadSpeed": "Aktualna prędkość wysyłania",
@@ -400,12 +396,9 @@
     "created_at": "Data dodania",
     "download_progress": "Postęp",
     "download_speed": "Prędkość pobierania",
-    "download_state": "Status",
     "eta": "Pozostały czas",
     "expires_at": "Wygasa o",
     "file_count": "Liczba plików",
-    "hash": "Hash",
-    "id": "ID",
     "is_downloaded": "Pobrane",
     "name": "Nazwa",
     "original_url": "Oryginalny URL",
@@ -428,21 +421,13 @@
       "All": "Wszystkie",
       "File": "Plik",
       "Files": "Pliki",
-      "Torrent": "Torrent",
       "Torrents": "Torrenty",
-      "Usenet": "Usenet",
       "Usenets": "Usenety",
-      "Web": "Web",
-      "Webdl": "Webdl",
       "all": "wszystkie",
       "file": "plik",
       "files": "pliki",
-      "torrent": "torrent",
       "torrents": "torrenty",
-      "usenet": "usenet",
-      "usenets": "usenety",
-      "web": "web",
-      "webdl": "webdl"
+      "usenets": "usenety"
     },
     "loading": "Ładowanie...",
     "minutes": "minuty",
@@ -455,12 +440,9 @@
     "time": {
       "ago": " temu",
       "complete": "Zakończone",
-      "d": "d",
       "h": "g",
       "in": "za ",
-      "m": "m",
       "mo": "m",
-      "s": "s",
       "unknown": "Nieznane",
       "y": "l"
     }
@@ -554,7 +536,6 @@
   "DownloadsFilters": {
     "activeConditions": "{count, plural, one {# filtr} few {# filtry} many {# filtrów} other {# filtra}} aktywnych",
     "activeSearch": "wyszukiwanie „{query}”",
-    "activeTag": "Tag: {name}",
     "activeView": "Widok: {name}",
     "applyFilters": "Zastosuj filtry",
     "clearAll": "Wyczyść wszystko",
@@ -670,14 +651,12 @@
     },
     "theme": {
       "toggle": "Zmień motyw"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Zarządzacz torrentów i debrid",
     "search": "Szukaj",
-    "searchPlaceholder": "Szukaj torrentów...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Szukaj torrentów..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -807,7 +786,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Znajdź swój klucz API na",
-      "link": "torbox.app/settings",
       "title": "Wprowadź klucz API TorBox"
     },
     "features": {
@@ -825,11 +803,9 @@
       }
     },
     "footer": {
-      "description": "Ta aplikacja jest w pełni open source na",
-      "github": "GitHub"
+      "description": "Ta aplikacja jest w pełni open source na"
     },
-    "subtitle": "Alternatywa dla zaawansowanych użytkowników interfejsu TorBox. Zbudowana dla szybkości i wydajności.",
-    "title": "TorBox Manager"
+    "subtitle": "Alternatywa dla zaawansowanych użytkowników interfejsu TorBox. Zbudowana dla szybkości i wydajności."
   },
   "LinkHistory": {
     "actions": {
@@ -1037,11 +1013,8 @@
     "never": "Nigdy",
     "noFeeds": "Brak skonfigurowanych kanałów RSS",
     "options": {
-      "auto": "Auto",
       "dontSeed": "Nie seeduj",
       "seed": "Seeduj",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Pobieranie z internetu"
     },
     "pageDescription": "Zarządzaj kanałami RSS i przeglądaj elementy",
@@ -1055,7 +1028,6 @@
     "save": "Zapisz",
     "scanInterval": "Interwał skanowania (minuty)",
     "scanIntervalPlaceholder": "Jak często skanować ten kanał",
-    "status": "Status",
     "tabs": {
       "feeds": "Zarządzanie kanałami",
       "items": "Zarządzanie elementami"
@@ -1096,10 +1068,8 @@
       "downloadStarted": "Pobieranie rozpoczęte pomyślnie",
       "noLink": "Brak dostępnego linku pobierania"
     },
-    "torrent": "Torrent",
     "type": "Typ",
     "unknown": "Nieznane",
-    "usenet": "Usenet",
     "webdl": "Pobieranie z internetu"
   },
   "SearchBar": {
@@ -1108,7 +1078,6 @@
     "clearSearch": "Wyczyść wyszukiwanie",
     "customEngines": "Niestandardowe silniki",
     "episode": "Odcinek",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Ukryj zaawansowane",
     "minSeeders": "Min. seedery",
     "minSize": "Min. rozmiar (GB)",
@@ -1129,11 +1098,9 @@
     "searchDownloadsHelpPhrase": "Cudzysłowy — dopasowuje dokładną frazę (np. \"season 1\")",
     "searchExamples": "Przykłady wyszukiwania",
     "season": "Sezon",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Pokaż zaawansowane",
     "torrentSearchWarning": "Wyszukiwanie torrentów TorBox jest obecnie zawodne i może zwracać niekompletne lub nieprawidłowe wyniki. Gdy dostępne, zalecane jest wyszukiwanie Usenet.",
-    "year": "Rok",
-    "yearPlaceholder": "2024"
+    "year": "Rok"
   },
   "SearchResults": {
     "actions": {
@@ -1197,8 +1164,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} plików wybranych ({size})",
     "selectedItems": "{itemCount} {type} wybranych ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} wybranych ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} wybranych ({size})"
   },
   "Statuses": {
     "checking_resume_data": "Sprawdzanie",
@@ -1206,7 +1172,6 @@
     "downloading": "Pobieranie",
     "failed": "Nie powiodło się",
     "inactive": "Nieaktywne",
-    "meta_dl": "Meta DL",
     "queued": "W kolejce",
     "seeding": "Seedowanie",
     "stalled": "Zablokowane",
@@ -1222,7 +1187,6 @@
     "minutesAgo": "{minutes} minut temu",
     "never": "Nigdy",
     "refreshStatus": "Kliknij, aby odświeżyć",
-    "responseTime": "{ms} ms",
     "rows": {
       "app": {
         "label": "Ta aplikacja"
@@ -1334,6 +1298,15 @@
     }
   },
   "User": {
+    "airlock": {
+      "helpLink": "Dowiedz się więcej o TorBox Airlock",
+      "helpTooltip": "Trwałe przechowywanie dla Twojego konta TorBox. Airlocked pobierania nie są usuwane po 30 dniach nieaktywności.",
+      "loadError": "Nie udało się załadować danych użycia Airlock",
+      "of": "z",
+      "percentUsed": "{percent}% używany",
+      "retry": "Ponów",
+      "title": "Dane AirLocked"
+    },
     "bandwidth": {
       "empty": "Brak danych o przepustowości w tym okresie",
       "grouping": "Grupowanie",
@@ -1351,15 +1324,13 @@
     "copyLinkFailed": "Nie udało się skopiować linku",
     "description": "Zarządzaj swoim kontem i przeglądaj statystyki",
     "errors": {
+      "loadError": "Błąd ładowania profilu",
       "reloadPage": "Przeładuj stronę",
       "renderError": "Wystąpił błąd podczas renderowania profilu"
     },
     "noData": "Brak danych",
     "plans": {
-      "essential": "Essential",
       "free": "Darmowy",
-      "pro": "Pro",
-      "standard": "Standard",
       "unknown": "Nieznany"
     },
     "profile": {
@@ -1367,13 +1338,10 @@
       "basicInfo": "Podstawowe informacje",
       "createdAt": "Utworzono",
       "downloadBreakdown": "Podział pobierań",
-      "email": "Email",
       "lastLogin": "Ostatnia aktualizacja",
-      "plan": "Plan",
       "planExpiry": "Wygasanie planu",
       "ratio": "Współczynnik",
       "referralCode": "Kod polecenia",
-      "status": "Status",
       "title": "Profil użytkownika",
       "torrentDownloads": "Pobierania torrentów",
       "totalDownloads": "Całkowite pobierania",
