@@ -6,12 +6,14 @@ import {
   Delete,
   Download,
   FileDown,
+  Lock,
   Play,
   Question,
   Refresh,
   Stop,
   Tag,
   Times,
+  Unlock,
 } from '@/components/icons';
 import BulkActionButton from './BulkActionButton';
 import Tooltip from '@/components/shared/Tooltip';
@@ -31,6 +33,16 @@ import { isTorrentQueued, isTorrentSeeding } from '../utils/statusHelpers';
 import { canRetryDownload, retryDownload } from '@/utils/retryDownload';
 import { removeQueuedAfterForceStartBulk } from '@/store/downloadListReconcile';
 import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
+import { isQueuedItem } from '@/utils/utility';
+import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
+
+function normalizeBooleanValue(value) {
+  return value === true || value === 1 || value === 'true';
+}
+
+function normalizeUiAssetType(assetType) {
+  return assetType === 'torrent' ? 'torrents' : assetType;
+}
 
 export default function ActionButtons({
   setSelectedItems,
@@ -63,6 +75,7 @@ export default function ActionButtons({
   const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
   const [isForceStarting, setIsForceStarting] = useState(false);
   const [isBulkRetrying, setIsBulkRetrying] = useState(false);
+  const [isBulkAirlockUpdating, setIsBulkAirlockUpdating] = useState(false);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
@@ -125,6 +138,35 @@ export default function ActionButtons({
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
 
   const showBulkRetry = selectedRetryable.length > 0;
+
+  const selectedAirlockableItems = useMemo(() => {
+    if (hasSelectedFiles || selectedItemCount === 0) return [];
+    if (
+      activeType !== 'torrents' &&
+      activeType !== 'usenet' &&
+      activeType !== 'webdl' &&
+      activeType !== 'all'
+    )
+      return [];
+
+    const selectionIds = Array.from(getSelectedItems().items || []);
+    const resolved = selectionIds
+      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
+      .filter(Boolean);
+
+    if (resolved.length !== selectionIds.length) return [];
+    if (resolved.some((item) => isQueuedItem(item))) return [];
+
+    return resolved;
+  }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
+
+  const showBulkAirlock = selectedAirlockableItems.length > 0;
+  const showBulkAirlockLock =
+    showBulkAirlock &&
+    selectedAirlockableItems.every((item) => !normalizeBooleanValue(item.airlocked));
+  const showBulkAirlockUnlock =
+    showBulkAirlock &&
+    selectedAirlockableItems.every((item) => normalizeBooleanValue(item.airlocked));
 
   const selectedArchivableTorrents = useMemo(() => {
     if (hasSelectedFiles || selectedItemCount === 0) return [];
@@ -302,6 +344,99 @@ export default function ActionButtons({
     } finally {
       setIsBulkRetrying(false);
     }
+  };
+
+  const handleBulkAirlock = async (nextAirlocked) => {
+    if (isBulkAirlockUpdating || !apiKey || selectedAirlockableItems.length === 0) return;
+
+    setIsBulkAirlockUpdating(true);
+
+    const items = selectedAirlockableItems.map((item) => ({
+      item,
+      assetType: resolveItemAssetType(item, activeType),
+      uiAssetType: normalizeUiAssetType(resolveItemAssetType(item, activeType)),
+      previousAirlocked: normalizeBooleanValue(item.airlocked),
+    }));
+
+    for (const { uiAssetType, item } of items) {
+      patchItem(uiAssetType, item.id, { airlocked: nextAirlocked });
+    }
+
+    const results = await Promise.allSettled(
+      items.map(async ({ item, assetType }) => {
+        const response = await fetch('/api/downloads/airlock', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            assetType,
+            id: item.id,
+            airlocked: nextAirlocked,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || data.detail || 'Airlock update failed');
+        }
+      })
+    );
+
+    let successCount = 0;
+    let failCount = 0;
+    const affectedUiAssetTypes = new Set();
+
+    results.forEach((result, index) => {
+      const { uiAssetType } = items[index];
+      affectedUiAssetTypes.add(uiAssetType);
+      if (result.status === 'fulfilled') {
+        successCount++;
+      } else {
+        failCount++;
+        patchItem(uiAssetType, items[index].item.id, {
+          airlocked: items[index].previousAirlocked,
+        });
+      }
+    });
+
+    if (successCount > 0 && failCount === 0) {
+      setToast({
+        message: nextAirlocked
+          ? t('bulkAirlockLocked', { count: successCount })
+          : t('bulkAirlockUnlocked', { count: successCount }),
+        type: 'success',
+      });
+      phEvent(nextAirlocked ? 'bulk_airlock_lock' : 'bulk_airlock_unlock', {
+        count: successCount,
+      });
+    } else if (successCount > 0) {
+      setToast({
+        message: t('bulkAirlockPartial', { success: successCount, failed: failCount }),
+        type: 'warning',
+      });
+      phEvent(nextAirlocked ? 'bulk_airlock_lock' : 'bulk_airlock_unlock', {
+        count: successCount,
+        failed: failCount,
+      });
+    } else {
+      setToast({
+        message: t('bulkAirlockFailed'),
+        type: 'error',
+      });
+    }
+
+    await Promise.all(
+      Array.from(affectedUiAssetTypes).map((uiAssetType) =>
+        fetchDownloadType(apiKey, uiAssetType, activeType, {
+          bypassCache: true,
+          skipLoading: true,
+          forMutation: true,
+        })
+      )
+    );
+
+    setIsBulkAirlockUpdating(false);
   };
 
   const handleBulkForceStart = async () => {
@@ -535,6 +670,30 @@ export default function ActionButtons({
           icon={<Refresh />}
           label={isBulkRetrying ? t('retrying') : t('retry.label')}
           title={t('retry.title')}
+        />
+      )}
+
+      {showBulkAirlockLock && (
+        <BulkActionButton
+          variant="secondary"
+          onClick={() => handleBulkAirlock(true)}
+          disabled={isBulkAirlockUpdating}
+          loading={isBulkAirlockUpdating}
+          icon={<Lock />}
+          label={isBulkAirlockUpdating ? t('bulkAirlockLocking') : t('bulkAirlockLock')}
+          title={t('bulkAirlockLockTitle')}
+        />
+      )}
+
+      {showBulkAirlockUnlock && (
+        <BulkActionButton
+          variant="secondary"
+          onClick={() => handleBulkAirlock(false)}
+          disabled={isBulkAirlockUpdating}
+          loading={isBulkAirlockUpdating}
+          icon={<Unlock />}
+          label={isBulkAirlockUpdating ? t('bulkAirlockUnlocking') : t('bulkAirlockUnlock')}
+          title={t('bulkAirlockUnlockTitle')}
         />
       )}
 
