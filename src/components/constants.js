@@ -3,6 +3,7 @@ export const REFERRAL_HELP_URL =
   'https://support.torbox.app/en/articles/9875657-how-does-the-torbox-referral-system-work';
 export const ABUSE_POLICY_URL =
   'https://support.torbox.app/en/articles/10336778-the-torbox-abuse-system';
+export const AIRLOCK_HELP_URL = 'https://support.torbox.app/en/articles/15417147-torbox-airlock';
 export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
 
 export {
