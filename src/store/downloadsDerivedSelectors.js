@@ -192,7 +192,7 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
     entity.torrent_id?.toString() ||
     entity.usenet_id?.toString() ||
     entity.web_id?.toString();
-  const tags = tagMappings?.[downloadId] || entity.tags || [];
+  const tags = tagMappings?.[downloadId] || [];
   const lookup =
     downloadHistoryLookup?.itemDownloads != null
       ? downloadHistoryLookup
@@ -377,7 +377,7 @@ export function countDownloadsPerTagFromStore(torboxState, viewType, tagMappings
     const entity = entities[id];
     if (!entity) continue;
     const downloadId = entity.id?.toString();
-    const tags = tagMappings[downloadId] || entity.tags || [];
+    const tags = tagMappings[downloadId] || [];
     for (const tag of tags) {
       counts[tag.id] = (counts[tag.id] || 0) + 1;
     }
