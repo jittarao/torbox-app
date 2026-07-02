@@ -35,6 +35,11 @@ import { removeQueuedAfterForceStartBulk } from '@/store/downloadListReconcile';
 import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
 import { isQueuedItem } from '@/utils/utility';
 import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
+import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
+import { runWithConcurrency } from '@/utils/runWithConcurrency';
+
+/** Max in-flight airlock PUT requests during bulk lock/unlock (rolling pool). */
+const CONCURRENT_AIRLOCKS = 3;
 
 function normalizeBooleanValue(value) {
   return value === true || value === 1 || value === 'true';
@@ -362,8 +367,28 @@ export default function ActionButtons({
       patchItem(uiAssetType, item.id, { airlocked: nextAirlocked });
     }
 
-    const results = await Promise.allSettled(
-      items.map(async ({ item, assetType }) => {
+    // Rolling concurrency pool (mirrors bulk delete): at most CONCURRENT_AIRLOCKS
+    // requests are in flight at once, so a slow/failed slot frees up immediately.
+    const results = new Array(items.length);
+    // Airlock space is consumed cumulatively and only shrinks as locks succeed.
+    // Once a file of size S fails with AIRLOCK_LIMIT_REACHED we know remaining
+    // space is < S — so any not-yet-attempted file whose size is >= the smallest
+    // failed size will also fail. Skip those API calls. Unlocking frees space,
+    // so this inference only applies to lock (nextAirlocked === true) operations.
+    let failedSizeThreshold = Infinity;
+    await runWithConcurrency(items, CONCURRENT_AIRLOCKS, async (entry, index) => {
+      const { item, assetType } = entry;
+      const size = Number(item.size) || 0;
+
+      if (nextAirlocked && size > 0 && size >= failedSizeThreshold) {
+        const error = new Error(t('bulkAirlockLimitReached'));
+        error.code = AIRLOCK_LIMIT_REACHED_ERROR;
+        error.skipped = true;
+        results[index] = { status: 'rejected', reason: error };
+        return;
+      }
+
+      try {
         const response = await fetch('/api/downloads/airlock', {
           method: 'PUT',
           headers: {
@@ -378,13 +403,27 @@ export default function ActionButtons({
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.success === false) {
-          throw new Error(data.error || data.detail || 'Airlock update failed');
+          const error = new Error(data.detail || data.error || 'Airlock update failed');
+          error.code = data.error;
+          throw error;
         }
-      })
-    );
+        results[index] = { status: 'fulfilled' };
+      } catch (error) {
+        if (
+          nextAirlocked &&
+          error.code === AIRLOCK_LIMIT_REACHED_ERROR &&
+          size > 0 &&
+          size < failedSizeThreshold
+        ) {
+          failedSizeThreshold = size;
+        }
+        results[index] = { status: 'rejected', reason: error };
+      }
+    });
 
     let successCount = 0;
     let failCount = 0;
+    let limitReachedCount = 0;
     const affectedUiAssetTypes = new Set();
 
     results.forEach((result, index) => {
@@ -394,6 +433,9 @@ export default function ActionButtons({
         successCount++;
       } else {
         failCount++;
+        if (result.reason?.code === AIRLOCK_LIMIT_REACHED_ERROR) {
+          limitReachedCount++;
+        }
         patchItem(uiAssetType, items[index].item.id, {
           airlocked: items[index].previousAirlocked,
         });
@@ -418,6 +460,11 @@ export default function ActionButtons({
       phEvent(nextAirlocked ? 'bulk_airlock_lock' : 'bulk_airlock_unlock', {
         count: successCount,
         failed: failCount,
+      });
+    } else if (limitReachedCount > 0) {
+      setToast({
+        message: t('bulkAirlockLimitReached'),
+        type: 'error',
       });
     } else {
       setToast({

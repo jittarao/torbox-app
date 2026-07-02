@@ -214,4 +214,125 @@ describe('ActionButtons bulk Airlock', () => {
     expect(body.airlocked).toBe(true);
     expect(body.id).toBe(1);
   });
+
+  it('runs bulk Lock with a bounded rolling pool (max 3 in flight)', async () => {
+    const count = 10;
+    const allItems = Array.from({ length: count }, (_, i) => ({
+      id: i + 1,
+      airlocked: false,
+      download_state: 'completed',
+    }));
+    mockSelectionState.selectedItems.items = new Set(allItems.map((item) => String(item.id)));
+
+    let inFlight = 0;
+    let maxInFlight = 0;
+    mockFetch.mockImplementation(() => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      return Bun.sleep(15).then(() => {
+        inFlight--;
+        return { ok: true, json: () => Promise.resolve({ success: true }) };
+      });
+    });
+
+    renderButtons({ allItems });
+
+    fireEvent.click(screen.getByText('ActionButtons.bulkAirlockLock'));
+
+    // 10 requests @ ~15ms each, 3-wide → ~5 waves; allow headroom.
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(count));
+
+    expect(maxInFlight).toBeLessThanOrEqual(3);
+    expect(maxInFlight).toBeGreaterThan(1);
+  });
+
+  it('skips lock requests for files >= the smallest failed size (Airlock limit)', async () => {
+    // Concurrency is 3. The 500GB file fails fast and sets the failed-size
+    // threshold; the 1TB file (pulled next by the freed worker) is >= 500GB and
+    // is skipped without an API call. Smaller files are still attempted.
+    const GB = 1e9;
+    const allItems = [
+      { id: 1, size: 100 * GB, airlocked: false, download_state: 'completed' },
+      { id: 2, size: 500 * GB, airlocked: false, download_state: 'completed' },
+      { id: 3, size: 50 * GB, airlocked: false, download_state: 'completed' },
+      { id: 4, size: 1000 * GB, airlocked: false, download_state: 'completed' },
+    ];
+    mockSelectionState.selectedItems.items = new Set(['1', '2', '3', '4']);
+
+    const fetchedIds = [];
+    mockFetch.mockImplementation((_url, opts) => {
+      const body = JSON.parse(opts.body);
+      fetchedIds.push(body.id);
+      if (body.id === 2) {
+        return Promise.resolve({
+          ok: false,
+          status: 422,
+          json: () =>
+            Promise.resolve({
+              success: false,
+              error: 'AIRLOCK_LIMIT_REACHED',
+              detail: 'limit reached',
+            }),
+        });
+      }
+      return Bun.sleep(30).then(() => ({
+        ok: true,
+        json: () => Promise.resolve({ success: true }),
+      }));
+    });
+
+    renderButtons({ allItems });
+    fireEvent.click(screen.getByText('ActionButtons.bulkAirlockLock'));
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
+
+    // 1TB (id 4) must NOT have been fetched — it is >= the 500GB threshold.
+    expect(fetchedIds).not.toContain(4);
+    expect(fetchedIds).toContain(1);
+    expect(fetchedIds).toContain(2);
+    expect(fetchedIds).toContain(3);
+  });
+
+  it('never skips unlock requests even when a limit error occurs', async () => {
+    // Unlock frees space, so the size-threshold inference must not apply: even
+    // after a limit-reached "failure", a larger file is still attempted.
+    const GB = 1e9;
+    const allItems = [
+      { id: 1, size: 100 * GB, airlocked: true, download_state: 'completed' },
+      { id: 2, size: 50 * GB, airlocked: true, download_state: 'completed' },
+      { id: 3, size: 50 * GB, airlocked: true, download_state: 'completed' },
+      { id: 4, size: 1000 * GB, airlocked: true, download_state: 'completed' },
+    ];
+    mockSelectionState.selectedItems.items = new Set(['1', '2', '3', '4']);
+
+    const fetchedIds = [];
+    mockFetch.mockImplementation((_url, opts) => {
+      const body = JSON.parse(opts.body);
+      fetchedIds.push(body.id);
+      if (body.id === 1) {
+        return Promise.resolve({
+          ok: false,
+          status: 422,
+          json: () =>
+            Promise.resolve({
+              success: false,
+              error: 'AIRLOCK_LIMIT_REACHED',
+              detail: 'limit reached',
+            }),
+        });
+      }
+      return Bun.sleep(30).then(() => ({
+        ok: true,
+        json: () => Promise.resolve({ success: true }),
+      }));
+    });
+
+    renderButtons({ allItems });
+    fireEvent.click(screen.getByText('ActionButtons.bulkAirlockUnlock'));
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(4));
+
+    // Every file was attempted, including the 1TB file.
+    expect(fetchedIds).toContain(4);
+  });
 });

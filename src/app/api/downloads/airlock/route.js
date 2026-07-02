@@ -3,6 +3,7 @@ import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
 import {
   EDIT_CONFIG,
   QUEUED_TYPE_BY_ASSET,
@@ -126,6 +127,24 @@ export async function PUT(request) {
         error: editData.error,
         detail: editData.detail,
       });
+
+      // TorBox signals an exceeded Airlock storage quota with a 5xx + error
+      // code. This is an expected business-rule failure, not a server error —
+      // surface it as a 422 so clients can present a targeted message instead
+      // of treating it as a generic 500.
+      if (editData.error === AIRLOCK_LIMIT_REACHED_ERROR) {
+        return Response.json(
+          {
+            success: false,
+            error: AIRLOCK_LIMIT_REACHED_ERROR,
+            detail:
+              editData.detail ||
+              'You have reached your Airlock storage limit. Remove some Airlocked downloads or upgrade your plan to add more.',
+          },
+          { status: 422 }
+        );
+      }
+
       return Response.json(
         {
           success: false,

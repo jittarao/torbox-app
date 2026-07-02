@@ -12,6 +12,7 @@
     "assignTags": "Etiqueta",
     "assignTagsTitle": "Asignar etiquetas a la selección",
     "bulkAirlockFailed": "Error al actualizar Airlock",
+    "bulkAirlockLimitReached": "Límite de espacio Airlock alcanzado. Elimina algunos torrents Airlocked o actualiza tu plan para obtener más.",
     "bulkAirlockLock": "Bloquear",
     "bulkAirlockLockTitle": "Bloquear descargas seleccionadas (Airlock)",
     "bulkAirlockLocked": "{count} descargas bloqueadas",
@@ -713,6 +714,7 @@
   "ItemActions": {
     "toast": {
       "airlockFailed": "Error al actualizar Airlock: {error}",
+      "airlockLimitReached": "Límite de espacio Airlock alcanzado. Elimina algunos torrents Airlocked o actualiza tu plan para obtener más.",
       "airlockLocked": "Descarga bloqueada",
       "airlockUnlocked": "Descarga desbloqueada",
       "archiveAllFailed": "No se pudieron archivar los elementos",

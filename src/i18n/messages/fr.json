@@ -12,6 +12,7 @@
     "assignTags": "Étiqueter",
     "assignTagsTitle": "Attribuer des tags à la sélection",
     "bulkAirlockFailed": "Échec de la mise à jour d'Airlock",
+    "bulkAirlockLimitReached": "Limite d'espace Airlock atteinte. Supprimez certains téléchargements Airlocked ou mettez à niveau votre plan pour en obtenir plus.",
     "bulkAirlockLock": "Verrouiller",
     "bulkAirlockLockTitle": "Verrouiller les téléchargements sélectionnés (Airlock)",
     "bulkAirlockLocked": "{count} téléchargements verrouillés",
@@ -713,6 +714,7 @@
   "ItemActions": {
     "toast": {
       "airlockFailed": "Échec de la mise à jour Airlock : {error}",
+      "airlockLimitReached": "Limite d'espace Airlock atteinte. Supprimez certains téléchargements Airlocked ou mettez à niveau votre plan pour en obtenir plus.",
       "airlockLocked": "Téléchargement verrouillé",
       "airlockUnlocked": "Téléchargement déverrouillé",
       "archiveAllFailed": "Échec de l'archivage des éléments",

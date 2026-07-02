@@ -12,6 +12,7 @@
     "assignTags": "Oznacz",
     "assignTagsTitle": "Przypisz tagi do zaznaczenia",
     "bulkAirlockFailed": "Nie udało się zaktualizować Airlock",
+    "bulkAirlockLimitReached": "Ograniczenie przestrzeni Airlock osiągnięte. Usuń niektóre pobierania Airlocked lub zwiększ plan, aby uzyskać więcej.",
     "bulkAirlockLock": "Zablokuj",
     "bulkAirlockLockTitle": "Zablokuj wybrane pobrania (Airlock)",
     "bulkAirlockLocked": "Zablokowano {count} pobrań",
@@ -713,6 +714,7 @@
   "ItemActions": {
     "toast": {
       "airlockFailed": "Nie udało się zaktualizować Airlock: {error}",
+      "airlockLimitReached": "Ograniczenie przestrzeni Airlock osiągnięte. Usuń niektóre pobierania Airlocked lub zwiększ plan, aby uzyskać więcej.",
       "airlockLocked": "Pobieranie zablokowane",
       "airlockUnlocked": "Pobieranie odblokowane",
       "archiveAllFailed": "Nie udało się zarchiwizować elementów",
