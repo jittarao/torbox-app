@@ -6,7 +6,9 @@ import {
   Delete,
   Download,
   FileDown,
+  Lock,
   Refresh,
+  Unlock,
   VerticalEllipsis,
 } from '@/components/icons';
 import Spinner from '../shared/Spinner';
@@ -76,10 +78,14 @@ function MenuItems({
   showRetry,
   showDelete,
   showArchive,
+  showAirlock,
+  airlocked,
   onDownload,
   onDelete,
   onArchive,
+  onToggleAirlock,
   isArchiving,
+  isAirlockUpdating,
   onCopyId,
   onCopyHash,
   onCopyShortMagnet,
@@ -145,6 +151,20 @@ function MenuItems({
         icon={isArchiving ? <Spinner size="xs" /> : <Archive />}
       >
         {t('archive')}
+      </MenuItemButton>
+    );
+  }
+
+  if (showAirlock && onToggleAirlock) {
+    items.push(
+      <MenuItemButton
+        key="airlock"
+        menuVariant={menuVariant}
+        onClick={onToggleAirlock}
+        disabled={isAirlockUpdating}
+        icon={isAirlockUpdating ? <Spinner size="xs" /> : airlocked ? <Unlock /> : <Lock />}
+      >
+        {airlocked ? t('unlockDownload') : t('lockDownload')}
       </MenuItemButton>
     );
   }
@@ -260,6 +280,10 @@ export default function MoreOptionsDropdown({
   showRetry = false,
   onRetry,
   isRetrying = false,
+  showAirlock = false,
+  airlocked = false,
+  onToggleAirlock,
+  isAirlockUpdating = false,
   compact = false,
   mobileBar = false,
 }) {
@@ -681,6 +705,8 @@ export default function MoreOptionsDropdown({
       showRetry={showRetry}
       showDelete={showDelete}
       showArchive={showArchive}
+      showAirlock={showAirlock}
+      airlocked={airlocked}
       onArchive={
         onArchive
           ? (e) => {
@@ -691,6 +717,16 @@ export default function MoreOptionsDropdown({
           : undefined
       }
       isArchiving={isArchiving}
+      onToggleAirlock={
+        onToggleAirlock
+          ? (e) => {
+              e.stopPropagation();
+              onToggleAirlock();
+              setIsMenuOpen(false);
+            }
+          : undefined
+      }
+      isAirlockUpdating={isAirlockUpdating}
       onDownload={
         onDownload
           ? (e) => {

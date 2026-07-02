@@ -24,6 +24,7 @@
   "allConditions": [
     "STATUS",
     "IS_ACTIVE",
+    "IS_AIRLOCKED",
     "EXPIRES_AT",
     "SEEDING_ENABLED",
     "RATIO",
@@ -55,5 +56,14 @@
     "TAGS",
     "ORIGINAL_URL"
   ],
-  "allActions": ["stop_seeding", "archive", "delete", "force_start", "add_tag", "remove_tag"]
+  "allActions": [
+    "stop_seeding",
+    "archive",
+    "delete",
+    "force_start",
+    "add_tag",
+    "remove_tag",
+    "add_airlock",
+    "remove_airlock"
+  ]
 }

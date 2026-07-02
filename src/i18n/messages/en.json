@@ -116,6 +116,8 @@
   "AutomationRules": {
     "action": "Action",
     "actions": {
+      "addAirlock": "Add Airlock",
+      "addAirlockDescription": "Lock the download in TorBox Airlock",
       "addTag": "Add Tag",
       "addTagDescription": "Add one or more tags to the download",
       "archive": "Archive Download",
@@ -126,6 +128,8 @@
       "forceStartDescription": "Force the download to start",
       "removeTag": "Remove Tag",
       "removeTagDescription": "Remove one or more tags from the download",
+      "removeAirlock": "Remove Airlock",
+      "removeAirlockDescription": "Unlock the download from TorBox Airlock",
       "selectTags": "Select Tags",
       "stopSeeding": "Stop Seeding",
       "stopSeedingDescription": "Stop seeding the torrent but keep it in the download list"
@@ -190,6 +194,8 @@
       "hours": "Hours",
       "isActive": "Is Active",
       "isActiveDescription": "Whether the torrent is currently active (downloading or seeding)",
+      "isAirlocked": "Is airlocked",
+      "isAirlockedDescription": "Whether the download is locked in TorBox Airlock",
       "lastDownloadActivity": "Last Download Activity",
       "lastDownloadActivityDescription": "Minutes since last download activity; the value you enter is compared in minutes",
       "lastUploadActivity": "Last Upload Activity",
@@ -376,6 +382,8 @@
   },
   "Columns": {
     "actions": "Actions",
+    "airlocked": "Airlocked",
+    "airlocked_filter": "Is airlocked",
     "asset_type": "Type",
     "cached_at": "Cached Date",
     "created_at": "Added Date",
@@ -403,6 +411,8 @@
     "upload_speed": "Upload Speed"
   },
   "Common": {
+    "airlocked": "Airlocked",
+    "notAirlocked": "Not airlocked",
     "selectRow": "Select {name}",
     "hours": "hours",
     "itemTypes": {
@@ -702,6 +712,9 @@
       "exportTorrentFailed": "Failed to export torrent file",
       "exportTorrentSuccess": "Torrent file exported successfully",
       "noFiles": "No files available to download",
+      "airlockFailed": "Failed to update Airlock: {error}",
+      "airlockLocked": "Download locked",
+      "airlockUnlocked": "Download unlocked",
       "seedingStopFailed": "Torrent stop seeding failed",
       "seedingStopped": "Torrent stopped seeding successfully",
       "retryFailed": "Failed to retry download",
@@ -846,9 +859,11 @@
     "copySourceUrl": "Copy Source URL",
     "exportTorrent": "Export .torrent",
     "label": "More",
+    "lockDownload": "Lock download",
     "reannounce": "Reannounce",
     "retry": "Retry",
     "title": "More Options",
+    "unlockDownload": "Unlock download",
     "toast": {
       "clipboardError": "Failed to copy to clipboard",
       "exportMagnetFailed": "Failed to export magnet link",

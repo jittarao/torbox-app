@@ -71,6 +71,16 @@ describe('ruleCapabilities', () => {
     expect(conditions).toContain('AGE');
   });
 
+  test('airlock condition and actions are available for all asset types', () => {
+    for (const assetType of ['torrent', 'usenet', 'webdl']) {
+      const conditions = getSupportedConditions([assetType]);
+      const actions = getSupportedActions([assetType]);
+      expect(conditions).toContain('IS_AIRLOCKED');
+      expect(actions).toContain('add_airlock');
+      expect(actions).toContain('remove_airlock');
+    }
+  });
+
   test('isConditionSupported and isActionSupported', () => {
     expect(isConditionSupported('RATIO', ['torrent'])).toBe(true);
     expect(isConditionSupported('RATIO', ['usenet'])).toBe(false);

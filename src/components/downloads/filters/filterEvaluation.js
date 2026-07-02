@@ -27,6 +27,7 @@ function evaluateFilter(filter, item) {
     filter.column !== 'download_state' &&
     filter.column !== 'asset_type' &&
     filter.column !== 'is_downloaded' &&
+    filter.column !== 'airlocked' &&
     filter.column !== 'tags' &&
     (columnValue === null || columnValue === undefined)
   ) {

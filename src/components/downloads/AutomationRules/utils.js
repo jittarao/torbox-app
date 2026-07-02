@@ -52,6 +52,7 @@ export const isTimestampBasedCondition = (conditionType) => {
 export const isBooleanCondition = (conditionType) => {
   return [
     CONDITION_TYPES.IS_ACTIVE,
+    CONDITION_TYPES.IS_AIRLOCKED,
     CONDITION_TYPES.SEEDING_ENABLED,
     CONDITION_TYPES.LONG_TERM_SEEDING,
     CONDITION_TYPES.PRIVATE,
@@ -185,6 +186,10 @@ export const getConditionText = (conditions, logicOperator, t, commonT) => {
       const isActive =
         condition.value === true || condition.value === 1 || condition.value === 'true';
       return `is ${isActive ? 'active' : 'inactive'}`;
+    } else if (condition.type === CONDITION_TYPES.IS_AIRLOCKED) {
+      const isAirlocked =
+        condition.value === true || condition.value === 1 || condition.value === 'true';
+      return `is ${isAirlocked ? 'airlocked' : 'not airlocked'}`;
     } else if (condition.type === CONDITION_TYPES.SEEDING_ENABLED) {
       const seedingEnabled =
         condition.value === true || condition.value === 1 || condition.value === 'true';
@@ -318,6 +323,7 @@ export const getConditionUnit = (conditionType) => {
     conditionType === CONDITION_TYPES.PRIVATE ||
     conditionType === CONDITION_TYPES.CACHED ||
     conditionType === CONDITION_TYPES.IS_ACTIVE ||
+    conditionType === CONDITION_TYPES.IS_AIRLOCKED ||
     conditionType === CONDITION_TYPES.SEEDING_ENABLED ||
     conditionType === CONDITION_TYPES.ALLOW_ZIP ||
     conditionType === CONDITION_TYPES.LONG_TERM_SEEDING
@@ -349,6 +355,7 @@ const CONDITION_TO_COLUMN_MAP = {
   [CONDITION_TYPES.TOTAL_DOWNLOADED]: 'total_downloaded',
   [CONDITION_TYPES.EXPIRES_AT]: 'expires_at',
   [CONDITION_TYPES.ORIGINAL_URL]: 'original_url',
+  [CONDITION_TYPES.IS_AIRLOCKED]: 'airlocked',
 };
 
 // Get column key for a condition type (if applicable)
@@ -457,6 +464,11 @@ export const getConditionTypeOptions = (t, assetTypes = null) => {
           value: CONDITION_TYPES.IS_ACTIVE,
           label: t('conditions.isActive'),
           description: t('conditions.isActiveDescription'),
+        },
+        {
+          value: CONDITION_TYPES.IS_AIRLOCKED,
+          label: t('conditions.isAirlocked'),
+          description: t('conditions.isAirlockedDescription'),
         },
         {
           value: CONDITION_TYPES.EXPIRES_AT,
@@ -675,6 +687,16 @@ export function getSupportedActionOptions(t, assetTypes) {
       value: ACTION_TYPES.REMOVE_TAG,
       label: t('actions.removeTag'),
       desc: t('actions.removeTagDescription'),
+    },
+    {
+      value: ACTION_TYPES.ADD_AIRLOCK,
+      label: t('actions.addAirlock'),
+      desc: t('actions.addAirlockDescription'),
+    },
+    {
+      value: ACTION_TYPES.REMOVE_AIRLOCK,
+      label: t('actions.removeAirlock'),
+      desc: t('actions.removeAirlockDescription'),
     },
   ];
   return all.filter((opt) => supported.has(opt.value));

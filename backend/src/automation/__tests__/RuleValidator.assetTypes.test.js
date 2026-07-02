@@ -111,4 +111,23 @@ describe('RuleValidator assetTypes', () => {
     const { valid } = validator.validate(rule);
     expect(valid).toBe(true);
   });
+
+  test('accepts airlock condition and actions for all asset types', () => {
+    for (const assetType of ['torrent', 'usenet', 'webdl']) {
+      const rule = {
+        ...baseRule(),
+        assetTypes: [assetType],
+        groups: [
+          {
+            logicOperator: 'and',
+            conditions: [{ type: 'IS_AIRLOCKED', operator: 'is_true', value: true }],
+          },
+        ],
+        action: { type: 'add_airlock' },
+      };
+      const { valid, errors } = validator.validate(rule);
+      expect(errors).toEqual([]);
+      expect(valid).toBe(true);
+    }
+  });
 });

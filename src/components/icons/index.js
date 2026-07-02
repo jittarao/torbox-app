@@ -84,6 +84,8 @@ import AllIcon from './All';
 import GitHubIcon from './GitHub';
 import TagIcon from './Tag';
 import FileDownIcon from './FileDown';
+import LockIcon from './Lock';
+import UnlockIcon from './Unlock';
 
 const Icons = {
   Link: LinkIcon,
@@ -171,6 +173,8 @@ const Icons = {
   GitHub: GitHubIcon,
   Tag: TagIcon,
   FileDown: FileDownIcon,
+  Lock: LockIcon,
+  Unlock: UnlockIcon,
 };
 
 export default Icons;
@@ -259,3 +263,5 @@ export { default as All } from './All';
 export { default as GitHub } from './GitHub';
 export { default as Tag } from './Tag';
 export { default as FileDown } from './FileDown';
+export { default as Lock } from './Lock';
+export { default as Unlock } from './Unlock';

@@ -133,6 +133,12 @@ describe('downloadRowEqual', () => {
     const next = { ...prev, progress: 0.6 };
     expect(downloadRowEqual(prev, next)).toBe(false);
   });
+
+  test('returns false when airlocked changes', () => {
+    const prev = { id: 1, assetType: 'torrents', active: false, airlocked: false };
+    const next = { ...prev, airlocked: true };
+    expect(downloadRowEqual(prev, next)).toBe(false);
+  });
 });
 
 describe('downloadListIdSignature', () => {

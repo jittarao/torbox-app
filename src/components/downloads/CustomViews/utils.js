@@ -47,6 +47,7 @@ const COLUMN_FILTER_TYPES = {
   cached: 'boolean',
   allow_zip: 'boolean',
   private: 'boolean',
+  airlocked: 'boolean',
   seed_torrent: 'boolean',
   is_downloaded: 'boolean',
 
@@ -169,7 +170,12 @@ export const getFilterableColumns = (columnT, activeType = 'all') => {
     if (columnKeysToExclude.includes(key)) return acc;
     acc.push({
       key,
-      label: column.displayName ? column.displayName : columnT(key),
+      label:
+        key === 'airlocked'
+          ? columnT('airlocked_filter')
+          : column.displayName
+            ? column.displayName
+            : columnT(key),
       ...column,
     });
     return acc;
@@ -194,6 +200,7 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   // Helper to get column label
   const getColumnLabel = (key, column) => {
     if (key === 'tags') return 'Tags';
+    if (key === 'airlocked') return columnT ? columnT('airlocked_filter') : 'Is airlocked';
     return column.displayName ? column.displayName : columnT ? columnT(key) : key;
   };
 
@@ -300,6 +307,7 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
         'file_count',
         'name',
         'private',
+        'airlocked',
         'cached',
         'allow_zip',
         'tags',

@@ -27,6 +27,7 @@ const ROW_COMPARE_FIELDS = [
   'expires_at',
   'availability',
   'max_download_speed',
+  'airlocked',
 ];
 
 // Note: active items used to get a new reference on every poll, but now

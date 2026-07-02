@@ -28,6 +28,7 @@ export const DEFAULT_COLUMN_WIDTHS = {
   expires_at: 120,
   asset_type: 96,
   private: 80,
+  airlocked: 96,
   tags: 120,
 };
 
