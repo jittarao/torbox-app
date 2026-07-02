@@ -9,6 +9,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 - **Batch Upload**: Upload multiple torrent or NZB files and supported hoster or magnet links with a single click
 - **Smart Downloads**: Cherry-pick specific files across multiple torrents
 - **Multi-Format Support**: Manage torrents, Usenet (NZB), and web downloads all in one interface
+- **TorBox Airlock**: Lock or unlock downloads, filter by airlock state, and automate with rules
 - **File Selection**: Selectively download individual files from torrents
 - **Download History**: Track and manage your download links with expiration tracking
 - **Archived Downloads**: View and manage your archived download items
@@ -24,7 +25,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 ### Automation
 
 - **Automation Rules**: Create smart automation rules for torrent management
-  - Multiple condition types (status, ratio, speed, age, etc.)
+  - Multiple condition types (status, ratio, speed, age, airlock state, etc.)
   - Complex condition logic (AND/OR operators)
   - Preset rules for common scenarios
   - Rule execution logs and history

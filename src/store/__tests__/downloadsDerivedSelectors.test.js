@@ -4,6 +4,7 @@ import {
   filterIds,
   enrichRowForFilter,
   selectVisibleSortedIds,
+  countDownloadsPerTagFromStore,
 } from '../downloadsDerivedSelectors.js';
 import { entityKey } from '@/utils/downloadListMerge.js';
 import { EMPTY_FILTERS } from '@/components/downloads/filters/filterHelpers.js';
@@ -83,6 +84,25 @@ describe('downloadsDerivedSelectors', () => {
     const lookup = { itemDownloads: new Set(), fileDownloads: new Set() };
     const row = enrichRowForFilter(entity, {}, lookup);
     expect(row.tags).toEqual([]);
+    expect(row).not.toBe(entity);
+  });
+
+  test('countDownloadsPerTagFromStore ignores upstream-only TorBox tags', () => {
+    const torboxState = {
+      entities: {
+        [entityKey('torrents', 1)]: {
+          ...entities[entityKey('torrents', 1)],
+          tags: ['upstream-only'],
+        },
+      },
+      order: { torrents: [entityKey('torrents', 1)], usenet: [], webdl: [] },
+    };
+    expect(countDownloadsPerTagFromStore(torboxState, 'torrents', {})).toEqual({});
+    expect(
+      countDownloadsPerTagFromStore(torboxState, 'torrents', {
+        1: [{ id: 42, name: 'TBM' }],
+      })
+    ).toEqual({ 42: 1 });
   });
 
   test('enrichRowForFilter reuses entity reference when unchanged', () => {
