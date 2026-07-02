@@ -12,6 +12,7 @@
     "assignTags": "Tag",
     "assignTagsTitle": "Assign tags to selected downloads",
     "bulkAirlockFailed": "Failed to update Airlock",
+    "bulkAirlockLimitReached": "Airlock storage limit reached. Remove some Airlocked downloads or upgrade your plan.",
     "bulkAirlockLock": "Lock",
     "bulkAirlockLockTitle": "Lock selected downloads (Airlock)",
     "bulkAirlockLocked": "Locked {count} downloads",
@@ -757,6 +758,7 @@
   "ItemActions": {
     "toast": {
       "airlockFailed": "Failed to update Airlock: {error}",
+      "airlockLimitReached": "Airlock storage limit reached. Remove some Airlocked downloads or upgrade your plan to add more.",
       "airlockLocked": "Download locked",
       "airlockUnlocked": "Download unlocked",
       "archiveAllFailed": "Failed to archive items",

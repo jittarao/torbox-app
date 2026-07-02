@@ -217,6 +217,49 @@ describe('PUT /api/downloads/airlock', () => {
     });
   });
 
+  test('maps upstream AIRLOCK_LIMIT_REACHED to 422 with preserved detail', async () => {
+    mock.module('next/headers', () => ({
+      headers: () => new Headers({ 'x-api-key': 'test-key' }),
+    }));
+    mock.module('@/components/constants', () => ({
+      API_BASE,
+      API_VERSION,
+      TORBOX_MANAGER_VERSION: 'test',
+    }));
+    mock.module('@/app/api/lib/torboxFetch', () => ({
+      torboxFetch: async (url) => {
+        if (url.includes('getqueued')) {
+          return jsonResponse({ success: true, data: [] });
+        }
+        if (url.includes('mylist')) {
+          return jsonResponse({ success: true, data: { id: 7, name: 'Item' } });
+        }
+        if (url.includes('edittorrent')) {
+          return jsonResponse(
+            {
+              success: false,
+              error: 'AIRLOCK_LIMIT_REACHED',
+              detail: 'You have reached your Airlock storage limit.',
+            },
+            500
+          );
+        }
+        return jsonResponse({ success: false }, 404);
+      },
+      isTorboxFetchTimeout: () => false,
+    }));
+    const { PUT } = await import('../route.js');
+
+    const response = await PUT(
+      makeRequest({ assetType: 'torrent', id: 7, airlocked: true }, 'test-key')
+    );
+    expect(response.status).toBe(422);
+    const body = await response.json();
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('AIRLOCK_LIMIT_REACHED');
+    expect(body.detail).toBe('You have reached your Airlock storage limit.');
+  });
+
   test('returns 408 on TorBox fetch timeout', async () => {
     mock.module('next/headers', () => ({
       headers: () => new Headers({ 'x-api-key': 'test-key' }),

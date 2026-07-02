@@ -12,6 +12,7 @@
     "assignTags": "Markieren",
     "assignTagsTitle": "Tags den ausgewählten Downloads zuweisen",
     "bulkAirlockFailed": "Airlock konnte nicht aktualisiert werden",
+    "bulkAirlockLimitReached": "Airlock-Speicherlimit erreicht. Entfernen Sie einige Airlocked Downloads oder upgraden Sie Ihr Plan, um mehr zu erhalten.",
     "bulkAirlockLock": "Sperren",
     "bulkAirlockLockTitle": "Ausgewählte Downloads sperren (Airlock)",
     "bulkAirlockLocked": "{count} Downloads gesperrt",
@@ -713,6 +714,7 @@
   "ItemActions": {
     "toast": {
       "airlockFailed": "Airlock-Update fehlgeschlagen: {error}",
+      "airlockLimitReached": "Airlock-Speicherlimit erreicht. Entfernen Sie einige Airlocked Downloads oder upgraden Sie Ihr Plan, um mehr zu erhalten.",
       "airlockLocked": "Download gesperrt",
       "airlockUnlocked": "Download entsperrt",
       "archiveAllFailed": "Elemente konnten nicht archiviert werden",
