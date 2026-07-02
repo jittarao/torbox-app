@@ -9,7 +9,7 @@ export function buildRowDataSignature(
 ): string {
   if (!entity) return `${key}:missing`;
   const files = entity.files as unknown[] | undefined;
-  return `${key}:${entity.progress ?? 0}:${entity.download_state ?? ''}:${entity.active ? 1 : 0}:${entity.download_finished ? 1 : 0}:${fileListSignature(files)}:${entity.updated_at ?? ''}`;
+  return `${key}:${entity.progress ?? 0}:${entity.download_state ?? ''}:${entity.active ? 1 : 0}:${entity.download_finished ? 1 : 0}:${entity.airlocked ? 1 : 0}:${fileListSignature(files)}:${entity.updated_at ?? ''}`;
 }
 
 export function viewIdsOrderUnchanged(

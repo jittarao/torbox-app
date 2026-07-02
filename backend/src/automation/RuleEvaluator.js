@@ -60,6 +60,7 @@ class RuleEvaluator {
       ['AVAILABILITY', this.handleAvailability.bind(this)],
       ['ALLOW_ZIP', this.handleAllowZip.bind(this)],
       ['IS_ACTIVE', this.handleIsActive.bind(this)],
+      ['IS_AIRLOCKED', this.handleIsAirlocked.bind(this)],
       ['SEEDING_ENABLED', this.handleSeedingEnabled.bind(this)],
       ['LONG_TERM_SEEDING', this.handleLongTermSeeding.bind(this)],
       ['STATUS', this.handleStatus.bind(this)],
@@ -1026,6 +1027,11 @@ class RuleEvaluator {
     return this.evaluateBooleanCondition(isActive, condition);
   }
 
+  handleIsAirlocked(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap) {
+    const isAirlocked = this.normalizeBooleanValue(torrent.airlocked);
+    return this.evaluateBooleanCondition(isAirlocked, condition);
+  }
+
   handleSeedingEnabled(
     condition,
     torrent,
@@ -1477,9 +1483,28 @@ class RuleEvaluator {
       case 'remove_tag':
         return await this.removeTagsFromDownload(action, torrent, options);
 
+      case 'add_airlock':
+        return await this.setAirlockForDownload(torrent, true);
+
+      case 'remove_airlock':
+        return await this.setAirlockForDownload(torrent, false);
+
       default:
         throw new Error(`Unknown action type: ${action.type}`);
     }
+  }
+
+  async setAirlockForDownload(torrent, airlocked) {
+    const currentValue = this.normalizeBooleanValue(torrent.airlocked);
+    if (currentValue === airlocked) {
+      return {
+        success: true,
+        applied: false,
+        message: airlocked ? 'Download already airlocked' : 'Download is not airlocked',
+      };
+    }
+
+    return await this.apiClient.setAirlock(torrent, airlocked);
   }
 
   /**

@@ -127,6 +127,8 @@ class RuleValidator {
           'force_start',
           'add_tag',
           'remove_tag',
+          'add_airlock',
+          'remove_airlock',
         ];
         if (!validActionTypes.includes(action.type)) {
           errors.push(
@@ -277,6 +279,7 @@ class RuleValidator {
         'AVAILABILITY',
         'ALLOW_ZIP',
         'IS_ACTIVE',
+        'IS_AIRLOCKED',
         'SEEDING_ENABLED',
         'LONG_TERM_SEEDING',
         'STATUS',

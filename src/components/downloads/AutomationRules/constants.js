@@ -9,6 +9,7 @@ export const CONDITION_TYPES = {
   // Lifecycle
   STATUS: 'STATUS',
   IS_ACTIVE: 'IS_ACTIVE',
+  IS_AIRLOCKED: 'IS_AIRLOCKED',
   EXPIRES_AT: 'EXPIRES_AT',
 
   // Seeding
@@ -108,4 +109,6 @@ export const ACTION_TYPES = {
   FORCE_START: 'force_start',
   ADD_TAG: 'add_tag',
   REMOVE_TAG: 'remove_tag',
+  ADD_AIRLOCK: 'add_airlock',
+  REMOVE_AIRLOCK: 'remove_airlock',
 };

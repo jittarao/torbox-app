@@ -41,3 +41,29 @@ describe('tagFilterHelpers', () => {
     expect(tagOperatorNeedsTagSelection(TAG_OPERATORS.IS_SET)).toBe(false);
   });
 });
+
+describe('itemMatchesFilters airlocked column', () => {
+  const filtersWithAirlockRule = (operator, value) => ({
+    logicOperator: 'and',
+    groups: [
+      {
+        logicOperator: 'and',
+        filters: [{ column: 'airlocked', operator, value }],
+      },
+    ],
+  });
+
+  test('is_true matches airlocked downloads', () => {
+    const filters = filtersWithAirlockRule('is_true', true);
+    expect(itemMatchesFilters({ airlocked: true }, filters)).toBe(true);
+    expect(itemMatchesFilters({ airlocked: false }, filters)).toBe(false);
+    expect(itemMatchesFilters({}, filters)).toBe(false);
+  });
+
+  test('is_false matches unlocked downloads and missing airlocked values', () => {
+    const filters = filtersWithAirlockRule('is_false', false);
+    expect(itemMatchesFilters({ airlocked: false }, filters)).toBe(true);
+    expect(itemMatchesFilters({}, filters)).toBe(true);
+    expect(itemMatchesFilters({ airlocked: true }, filters)).toBe(false);
+  });
+});

@@ -37,4 +37,18 @@ describe('downloadListSignatures', () => {
 
     expect(dirty).toEqual([key1]);
   });
+
+  test('collectDirtyRowKeys marks a row dirty when airlocked changes', () => {
+    const entity1 = { id: 1, progress: 0, assetType: 'torrents', airlocked: false };
+    const sigs = new Map([[key1, buildRowDataSignature(key1, entity1)]]);
+
+    const dirty = collectDirtyRowKeys(
+      [key1],
+      { [key1]: { ...entity1, airlocked: true } },
+      sigs,
+      [key1]
+    );
+
+    expect(dirty).toEqual([key1]);
+  });
 });

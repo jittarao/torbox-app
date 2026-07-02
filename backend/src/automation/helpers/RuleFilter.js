@@ -166,6 +166,72 @@ class RuleFilter {
     return filtered;
   }
 
+  normalizeBooleanValue(value) {
+    return value === true || value === 1 || value === 'true';
+  }
+
+  filterForAddAirlock(matchingTorrents, action) {
+    if (action.type !== 'add_airlock') {
+      return matchingTorrents;
+    }
+
+    const filtered = matchingTorrents.filter((torrent) => {
+      const isAirlocked = this.normalizeBooleanValue(torrent.airlocked);
+      if (isAirlocked) {
+        logger.debug('Skipping download - already airlocked', {
+          authId: this.authId,
+          torrentId: torrent.id,
+          torrentName: torrent.name,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    const skippedCount = matchingTorrents.length - filtered.length;
+    if (skippedCount > 0) {
+      logger.info('Filtered downloads that are already airlocked', {
+        authId: this.authId,
+        originalCount: matchingTorrents.length,
+        filteredCount: filtered.length,
+        skippedCount,
+      });
+    }
+
+    return filtered;
+  }
+
+  filterForRemoveAirlock(matchingTorrents, action) {
+    if (action.type !== 'remove_airlock') {
+      return matchingTorrents;
+    }
+
+    const filtered = matchingTorrents.filter((torrent) => {
+      const isAirlocked = this.normalizeBooleanValue(torrent.airlocked);
+      if (!isAirlocked) {
+        logger.debug('Skipping download - not airlocked', {
+          authId: this.authId,
+          torrentId: torrent.id,
+          torrentName: torrent.name,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    const skippedCount = matchingTorrents.length - filtered.length;
+    if (skippedCount > 0) {
+      logger.info('Filtered downloads that are not airlocked', {
+        authId: this.authId,
+        originalCount: matchingTorrents.length,
+        filteredCount: filtered.length,
+        skippedCount,
+      });
+    }
+
+    return filtered;
+  }
+
   /**
    * Filter torrents for stop_seeding action - skip torrents that are not currently seeding
    * @param {Array} matchingTorrents - Torrents that matched the rule conditions
@@ -265,6 +331,10 @@ class RuleFilter {
         return await this.filterForAddTag(matchingTorrents, action, options);
       case 'remove_tag':
         return await this.filterForRemoveTag(matchingTorrents, action, options);
+      case 'add_airlock':
+        return this.filterForAddAirlock(matchingTorrents, action);
+      case 'remove_airlock':
+        return this.filterForRemoveAirlock(matchingTorrents, action);
       case 'stop_seeding':
         return await this.filterForStopSeeding(matchingTorrents, action);
       case 'force_start':

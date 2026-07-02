@@ -80,4 +80,30 @@ describe('RuleFilter', () => {
       expect(getUserDb).toHaveBeenCalled();
     });
   });
+
+  describe('airlock filters', () => {
+    it('filterForAddAirlock skips downloads that are already airlocked', async () => {
+      const torrents = [
+        { id: '1', name: 'locked', airlocked: true },
+        { id: '2', name: 'unlocked', airlocked: false },
+      ];
+
+      const result = await ruleFilter.filterForAddAirlock(torrents, { type: 'add_airlock' });
+
+      expect(result).toEqual([{ id: '2', name: 'unlocked', airlocked: false }]);
+    });
+
+    it('filterForRemoveAirlock skips downloads that are not airlocked', async () => {
+      const torrents = [
+        { id: '1', name: 'locked', airlocked: true },
+        { id: '2', name: 'unlocked', airlocked: false },
+      ];
+
+      const result = await ruleFilter.filterForRemoveAirlock(torrents, {
+        type: 'remove_airlock',
+      });
+
+      expect(result).toEqual([{ id: '1', name: 'locked', airlocked: true }]);
+    });
+  });
 });

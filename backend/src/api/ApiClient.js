@@ -87,6 +87,44 @@ function normalizeActive(value) {
   return value === true || value === 1 || value === 'true';
 }
 
+function normalizeAssetTypeForEdit(download) {
+  const rawType = download?.assetType || download?.asset_type || 'torrent';
+  if (rawType === 'torrents') return 'torrent';
+  if (rawType === 'webdownload' || rawType === 'webdl') return 'webdl';
+  return rawType;
+}
+
+function getAirlockEditConfig(assetType) {
+  switch (assetType) {
+    case 'torrent':
+      return { endpoint: '/api/torrents/edittorrent', idField: 'torrent_id' };
+    case 'usenet':
+      return { endpoint: '/api/usenet/editusenetdownload', idField: 'usenet_id' };
+    case 'webdl':
+      return { endpoint: '/api/webdl/editwebdownload', idField: 'webdl_id' };
+    default:
+      throw new Error(`Unsupported asset type for airlock edit: ${assetType}`);
+  }
+}
+
+function normalizeEditableArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function buildAirlockEditPayload(download, airlocked) {
+  const assetType = normalizeAssetTypeForEdit(download);
+  const { idField } = getAirlockEditConfig(assetType);
+  const alternativeHashes = download.alternative_hashes ?? download.alternativeHashes;
+
+  return {
+    [idField]: download.id,
+    name: download.name || '',
+    tags: normalizeEditableArray(download.tags),
+    alternative_hashes: normalizeEditableArray(alternativeHashes),
+    airlocked,
+  };
+}
+
 const _fetchConcurrency = Math.max(1, parseInt(process.env.TORBOX_FETCH_CONCURRENCY || '20', 10));
 const _actionConcurrency = Math.max(1, parseInt(process.env.TORBOX_ACTION_CONCURRENCY || '12', 10));
 
@@ -663,6 +701,36 @@ class ApiClient {
       return this.controlWebDownload(id, 'delete');
     }
     return this.deleteTorrent(id, { isQueued });
+  }
+
+  async setAirlock(download, airlocked) {
+    const assetType = normalizeAssetTypeForEdit(download);
+    const { endpoint } = getAirlockEditConfig(assetType);
+    const payload = buildAirlockEditPayload(download, airlocked);
+
+    return this.handleApiCall(
+      async () => {
+        const response = await this.client.put(endpoint, payload, {
+          timeout: DEFAULT_ACTION_TIMEOUT,
+        });
+        return response.data;
+      },
+      {
+        endpoint,
+        operation: airlocked ? 'adding airlock' : 'removing airlock',
+        connectionErrorFallback: (error) =>
+          this.buildConnectionErrorResponse(error, {
+            downloadId: download.id,
+            assetType,
+            airlocked,
+          }),
+        context: {
+          downloadId: download.id,
+          assetType,
+          airlocked,
+        },
+      }
+    );
   }
 
   // ============================================================================

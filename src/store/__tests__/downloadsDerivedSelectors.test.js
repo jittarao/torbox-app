@@ -19,6 +19,7 @@ describe('downloadsDerivedSelectors', () => {
       download_finished: true,
       active: false,
       size: 100,
+      airlocked: false,
     },
     [entityKey('torrents', 2)]: {
       id: 2,
@@ -29,6 +30,7 @@ describe('downloadsDerivedSelectors', () => {
       download_finished: true,
       active: false,
       size: 200,
+      airlocked: true,
     },
   };
 
@@ -43,6 +45,12 @@ describe('downloadsDerivedSelectors', () => {
   test('sortIds orders by name asc', () => {
     const sorted = sortIds(ids, entities, 'name', 'asc');
     expect(sorted[0]).toBe(entityKey('torrents', 1));
+  });
+
+  test('sortIds orders by airlocked boolean', () => {
+    const sorted = sortIds(ids, entities, 'airlocked', 'desc');
+    expect(sorted[0]).toBe(entityKey('torrents', 2));
+    expect(sorted[1]).toBe(entityKey('torrents', 1));
   });
 
   test('filterIds matches search on name', () => {
