@@ -1,5 +1,22 @@
 {
   "ActionButtons": {
+    "archive": "Archiver",
+    "archiveConfirm": {
+      "archiving": "Archivage…",
+      "cancel": "Annuler",
+      "confirm": "Archiver",
+      "message": "Archiver {count} torrent(s) ? Ils apparaîtront dans Téléchargements archivés et seront retirés de votre liste active.",
+      "title": "Confirmer l'archivage"
+    },
+    "archiveTitle": "Archiver les torrents sélectionnés dans TBM et les retirer de TorBox",
+    "assignTags": "Étiqueter",
+    "assignTagsTitle": "Attribuer des tags à la sélection",
+    "bulkForceStartPartial": "Démarrage forcé pour {success} torrents, {failed} échecs",
+    "bulkForceStarted": "Démarrage forcé pour {count} torrents",
+    "bulkRetryPartial": "{success} téléchargements remis en file, {failed} échoués",
+    "bulkRetryStarted": "{count} téléchargements remis en file",
+    "bulkSeedingPartial": "Partage arrêté pour {success} torrents, {failed} échecs",
+    "bulkSeedingStopped": "Partage arrêté pour {count} torrents",
     "bulkUploadFailed": "Erreur lors du téléchargement des éléments",
     "bulkUploadPartial": "{success} éléments téléchargés avec succès, {failed} échecs",
     "bulkUploadSuccess": "Téléchargé {count} éléments à {provider}",
@@ -15,34 +32,27 @@
       "message": "Êtes-vous sûr de vouloir supprimer {count} {type} ? Cette action ne peut pas être annulée.",
       "title": "Confirmer la suppression"
     },
-    "archive": "Archiver",
-    "archiveTitle": "Archiver les torrents sélectionnés dans TBM et les retirer de TorBox",
-    "archiveConfirm": {
-      "archiving": "Archivage…",
-      "confirm": "Archiver",
-      "message": "Archiver {count} torrent(s) ? Ils apparaîtront dans Téléchargements archivés et seront retirés de votre liste active.",
-      "title": "Confirmer l'archivage"
-    },
-    "assignTagsTitle": "Attribuer des tags à la sélection",
     "downloadLinks": "Télécharger",
     "downloadLinksMobile": "Télécharger",
     "downloadLinksTitle": "Obtenir les liens de téléchargement pour la sélection",
-    "bulkForceStartPartial": "Démarrage forcé pour {success} torrents, {failed} échecs",
-    "bulkForceStarted": "Démarrage forcé pour {count} torrents",
-    "bulkSeedingPartial": "Partage arrêté pour {success} torrents, {failed} échecs",
-    "bulkSeedingStopped": "Partage arrêté pour {count} torrents",
+    "exportSelected": "Exporter",
+    "exportSelectedTitle": "Exporter les torrents sélectionnés",
+    "exporting": "Export…",
+    "fetchingLinks": "Chargement…",
     "forceStart": "Démarrer",
     "forceStartTitle": "Forcer le démarrage des torrents en file",
     "forceStarting": "Démarrage…",
-    "exporting": "Export…",
-    "exportSelected": "Exporter",
-    "exportSelectedTitle": "Exporter les torrents sélectionnés",
-    "fetchingLinks": "Chargement…",
+    "retry": {
+      "label": "Réessayer",
+      "title": "Réessayer les téléchargements sélectionnés"
+    },
+    "retrying": "Réessayer…",
+    "stopSeeding": "Arrêter le partage",
     "stopSeedingTitle": "Arrêter le partage des torrents sélectionnés",
     "stoppingSeeding": "Arrêt…",
     "toolbarLabel": "Actions sur la sélection",
-    "uploading": "Téléchargement...",
-    "uploadToCloud": "Télécharger sur le Cloud"
+    "uploadToCloud": "Télécharger sur le Cloud",
+    "uploading": "Téléchargement..."
   },
   "ApiKeyInput": {
     "hide": "Masquer la clé API",
@@ -52,6 +62,7 @@
     "show": "Afficher la clé API"
   },
   "ApiKeyManager": {
+    "active": "Actif",
     "add": "Ajouter",
     "addKey": "Ajouter une clé",
     "addNewKey": "Ajouter une nouvelle clé API",
@@ -62,6 +73,7 @@
     "close": "Fermer",
     "deleteKey": "Supprimer la clé",
     "keyLabel": "Label de clé",
+    "keyLabelPlaceholder": "p. ex. Personnel, Famille",
     "keysCount": "{count, plural, =0 {Aucune clé} one {# clé} other {# clés}}",
     "managerPinned": "Désactivez « Garder ouvert » pour fermer",
     "noKeys": "Aucune clé enregistrée",
@@ -77,6 +89,7 @@
       "selectItem": "Sélectionner le téléchargement archivé"
     },
     "columns": {
+      "actions": "Actions",
       "archivedAt": "Archivé le",
       "itemId": "ID de l'élément",
       "itemName": "Nom de l'élément",
@@ -101,7 +114,12 @@
     }
   },
   "AutomationRules": {
+    "action": "Action",
+    "actionFailed": "action échouée",
+    "actionPerformed": "action effectuée",
     "actions": {
+      "addAirlock": "Ajouter Airlock",
+      "addAirlockDescription": "Verrouiller le téléchargement dans TorBox Airlock",
       "addTag": "Ajouter un tag",
       "addTagDescription": "Ajouter un ou plusieurs tags au téléchargement",
       "archive": "Archiver le téléchargement",
@@ -110,16 +128,27 @@
       "deleteDescription": "Supprimer le téléchargement et ses fichiers",
       "forceStart": "Forcer le démarrage du téléchargement",
       "forceStartDescription": "Forcer le démarrage du téléchargement",
+      "removeAirlock": "Retirer Airlock",
+      "removeAirlockDescription": "Déverrouiller le téléchargement de TorBox Airlock",
       "removeTag": "Supprimer un tag",
       "removeTagDescription": "Supprimer un ou plusieurs tags du téléchargement",
       "selectTags": "Sélectionner les tags",
       "stopSeeding": "Arrêter la semence",
       "stopSeedingDescription": "Arrêter la semence sans supprimer le torrent"
     },
+    "actionsFailed": "actions échouées",
+    "actionsPerformed": "actions effectuées",
     "add": "Ajouter une règle",
     "addCondition": "Ajouter une condition",
     "addConditionToGroup": "Ajouter une condition au groupe",
     "addRule": "Ajouter une règle",
+    "assetTypes": {
+      "hint": "Les conditions et actions sont limitées à ce que chaque type sélectionné prend en charge.",
+      "label": "Type",
+      "torrent": "Torrents",
+      "usenet": "Usenet",
+      "webdl": "Téléchargements web"
+    },
     "booleanOperators": {
       "isFalse": "Est faux",
       "isTrue": "Est vrai"
@@ -132,6 +161,7 @@
     "checkEvery": "Vérifier chaque",
     "clearLogs": "Effacer les Journaux",
     "close": "Fermer",
+    "condition": "Condition",
     "conditionGroups": {
       "downloading": "Téléchargement",
       "lifecycle": "Cycle de vie",
@@ -168,6 +198,8 @@
       "hours": "Heures",
       "isActive": "Actif",
       "isActiveDescription": "Indique si le torrent est actuellement actif (téléchargement ou partage)",
+      "isAirlocked": "Est verrouillé",
+      "isAirlockedDescription": "Si le téléchargement est verrouillé dans TorBox Airlock",
       "lastDownloadActivity": "Dernière activité de téléchargement",
       "lastDownloadActivityDescription": "Minutes depuis la dernière activité de téléchargement ; la valeur est comparée en minutes",
       "lastUploadActivity": "Dernière activité d'envoi",
@@ -177,6 +209,9 @@
       "name": "Nom",
       "nameDescription": "Nom du torrent (recherche par texte)",
       "namePlaceholder": "Entrez le texte à rechercher...",
+      "originalUrl": "URL source",
+      "originalUrlDescription": "URL d'origine utilisée pour créer le téléchargement (prend en charge la recherche textuelle)",
+      "originalUrlPlaceholder": "Entrez une URL à rechercher...",
       "peers": "Pairs",
       "peersDescription": "Nombre de pairs actuellement connectés",
       "private": "Privé",
@@ -199,6 +234,7 @@
       "tagsPlaceholder": "Sélectionner des étiquettes...",
       "totalUploaded": "Total envoyé",
       "totalUploadedDescription": "Quantité totale de données envoyées (en Go)",
+      "tracker": "Tracker",
       "trackerDescription": "URL ou nom du tracker (recherche par texte)",
       "trackerPlaceholder": "Entrez l'URL ou le nom du tracker...",
       "uploadSpeed": "Vitesse d'envoi actuelle",
@@ -208,11 +244,23 @@
     },
     "delete": "Supprimer",
     "details": "Détails",
+    "emptyState": {
+      "backendRequired": "Backend requis pour l'automatisation 24/7",
+      "backendRequiredDescription": "Connectez le backend TorBox Manager pour que les règles soient enregistrées et évaluées automatiquement. Sans lui, les règles ne peuvent pas s'exécuter en arrière-plan.",
+      "createFirstRule": "Créer votre première règle",
+      "description": "Créez des règles pour arrêter le seeding, archiver, supprimer, étiqueter ou forcer le démarrage des téléchargements lorsque les conditions sont remplies.",
+      "howItWorks": "Comment ça marche :",
+      "step1": "Définissez des conditions (ratio, statut, tags, etc.) et choisissez une action",
+      "step2": "Avec le backend connecté, les règles s'exécutent selon un planning 24h/24",
+      "step3": "Consultez les journaux d'exécution ou lancez une règle manuellement depuis sa carte",
+      "title": "Aucune règle d'automatisation pour l'instant"
+    },
     "enabledAt": "activé le",
     "error": "Erreur",
     "executions": "exécutions",
     "failed": "Échec",
     "itemsAffected": "Éléments Affectés",
+    "lastRanAt": "Dernière exécution",
     "lastTriggered": "dernier activé",
     "logicOperators": {
       "and": "ET",
@@ -230,17 +278,6 @@
     "noConditionsInGroup": "Aucune condition dans ce groupe. Cliquez sur '+ Condition' pour en ajouter une.",
     "noLogs": "Aucun journal disponible",
     "noRules": "Aucune règle d'automatisation",
-    "emptyState": {
-      "title": "Aucune règle d'automatisation pour l'instant",
-      "description": "Créez des règles pour arrêter le seeding, archiver, supprimer, étiqueter ou forcer le démarrage des téléchargements lorsque les conditions sont remplies.",
-      "howItWorks": "Comment ça marche :",
-      "step1": "Définissez des conditions (ratio, statut, tags, etc.) et choisissez une action",
-      "step2": "Avec le backend connecté, les règles s'exécutent selon un planning 24h/24",
-      "step3": "Consultez les journaux d'exécution ou lancez une règle manuellement depuis sa carte",
-      "createFirstRule": "Créer votre première règle",
-      "backendRequired": "Backend requis pour l'automatisation 24/7",
-      "backendRequiredDescription": "Connectez le backend TorBox Manager pour que les règles soient enregistrées et évaluées automatiquement. Sans lui, les règles ne peuvent pas s'exécuter en arrière-plan."
-    },
     "operators": {
       "eq": "est égal à",
       "gt": "est supérieur à",
@@ -259,11 +296,17 @@
     },
     "removeCondition": "Supprimer la condition",
     "removeGroup": "Supprimer le groupe",
-    "searchConditionOptionsPlaceholder": "Rechercher…",
-    "searchConditionOptionsNoMatches": "Aucune option correspondante",
+    "ruleEvaluatedNoActions": "La règle a été évaluée mais aucune action n'a été effectuée.",
+    "ruleExecuted": "Règle exécutée",
     "ruleLogs": "Journaux de Règle",
     "ruleName": "Nom de la règle",
     "ruleNamePlaceholder": "Entrer le nom de la règle",
+    "ruleRateLimited": "Règle limitée en débit",
+    "ruleRateLimitedDescription": "L'exécution de la règle a été limitée en débit.",
+    "runRule": "Exécuter la règle",
+    "running": "Exécution...",
+    "searchConditionOptionsNoMatches": "Aucune option correspondante",
+    "searchConditionOptionsPlaceholder": "Rechercher…",
     "section": {
       "hide": "Masquer les règles",
       "show": "Afficher les règles"
@@ -281,8 +324,8 @@
       "isAllOf": "Est tous de",
       "isAnyOf": "Est l'un de",
       "isNoneOf": "N'est aucun de",
-      "isSet": "Est défini",
-      "isNotSet": "N'est pas défini"
+      "isNotSet": "N'est pas défini",
+      "isSet": "Est défini"
     },
     "timeOperators": {
       "eq": "est",
@@ -299,6 +342,8 @@
       "lte": "au maximum"
     },
     "title": "Règles d'automatisation",
+    "torrentMatched": "torrent correspondant",
+    "torrentsMatched": "torrents correspondants",
     "triggers": "activateurs",
     "update": "Mettre à jour la règle",
     "viewLogs": "Voir les Journaux"
@@ -336,19 +381,27 @@
     "reorderColumns": "Réorganiser les colonnes"
   },
   "Columns": {
+    "actions": "Actions",
+    "airlocked": "Verrouillé",
+    "airlocked_filter": "Est verrouillé",
+    "asset_type": "Type",
     "cached_at": "Date de cache",
     "created_at": "Date d'ajout",
     "download_progress": "Progression",
     "download_speed": "Vitesse de téléchargement",
     "download_state": "État",
+    "eta": "Temps restant",
     "expires_at": "Expire à",
     "file_count": "Nombre de fichiers",
+    "hash": "Hash",
+    "id": "ID",
     "is_downloaded": "Téléchargé",
     "name": "Nom",
     "original_url": "URL source",
     "peers": "Pairs",
     "private": "Tracker Privé",
     "progress": "Progression",
+    "ratio": "Ratio",
     "seeds": "Graines",
     "size": "Taille",
     "tags": "Étiquettes",
@@ -358,27 +411,45 @@
     "upload_speed": "Vitesse de téléversement"
   },
   "Common": {
+    "airlocked": "Verrouillé",
     "hours": "heures",
     "itemTypes": {
-      "all": "tous",
       "All": "Tous",
-      "file": "fichier",
       "File": "Fichier",
+      "Files": "Fichiers",
+      "Torrent": "Torrent",
+      "Torrents": "Torrents",
+      "Usenet": "Usenet",
+      "Usenets": "Usenets",
+      "Web": "Web",
+      "Webdl": "Webdl",
+      "all": "tous",
+      "file": "fichier",
       "files": "fichiers",
-      "Files": "Fichiers"
+      "torrent": "torrent",
+      "torrents": "torrents",
+      "usenet": "usenet",
+      "usenets": "usenets",
+      "web": "web",
+      "webdl": "webdl"
     },
     "loading": "Chargement...",
+    "minutes": "minutes",
     "next": "Suivant",
+    "notAirlocked": "Non verrouillé",
     "of": "sur",
     "previous": "Précédent",
+    "selectRow": "Sélectionner {name}",
     "showing": "Affichage",
     "time": {
       "ago": " il y a",
       "complete": "Terminé",
       "d": "j",
+      "h": "h",
       "in": "dans ",
       "m": "min",
       "mo": "m",
+      "s": "s",
       "unknown": "Inconnu",
       "y": "a"
     }
@@ -396,6 +467,8 @@
       "seeding": "Sembrage",
       "timestamps": "Temps"
     },
+    "createView": "Créer une vue",
+    "creating": "Création...",
     "enterValuePlaceholder": "Entrer la valeur...",
     "includeColumns": "Inclure les colonnes",
     "includeSearch": "Inclure la recherche",
@@ -403,116 +476,37 @@
     "includeSort": "Inclure le tri",
     "noFilters": "Aucun filtre. Cliquez sur '+ Filtre' dans un groupe pour en créer un.",
     "noFiltersInGroup": "Aucun filtre dans ce groupe. Cliquez sur '+ Filtre' pour en ajouter un.",
-    "removeGroup": "Supprimer le groupe",
-    "save": "Enregistrer",
-    "saveAsNew": "Enregistrer comme nouveau",
-    "saving": "Enregistrement...",
-    "selectPlaceholder": "Sélectionner...",
-    "searchFilterOptionsPlaceholder": "Rechercher…",
-    "searchFilterOptionsNoMatches": "Aucune option correspondante",
-    "selectTagsPlaceholder": "Sélectionner des étiquettes...",
-    "updateView": "Mettre à jour la vue",
-    "updating": "Mise à jour...",
-    "viewNamePlaceholder": "Nom de la vue...",
-    "createView": "Créer une vue",
-    "creating": "Création...",
+    "previewApplied": "Aperçu appliqué à la liste. Enregistrez quand vous êtes prêt ou continuez à ajuster les filtres.",
     "previewFilters": "Aperçu",
     "previewHint": "Appliquer les filtres à la liste des téléchargements sans enregistrer.",
     "previewMatchCount": "{count, plural, =0 {Aucun téléchargement ne correspond} one {# téléchargement correspond} other {# téléchargements correspondent}}",
     "previewMatchCountOfTotal": "{matched} sur {total} dans cet onglet",
-    "previewApplied": "Aperçu appliqué à la liste. Enregistrez quand vous êtes prêt ou continuez à ajuster les filtres.",
+    "removeGroup": "Supprimer le groupe",
+    "save": "Enregistrer",
+    "saveAsNew": "Enregistrer comme nouveau",
+    "saving": "Enregistrement...",
+    "searchFilterOptionsNoMatches": "Aucune option correspondante",
+    "searchFilterOptionsPlaceholder": "Rechercher…",
+    "selectPlaceholder": "Sélectionner...",
+    "selectTagsPlaceholder": "Sélectionner des étiquettes...",
+    "updateView": "Mettre à jour la vue",
+    "updating": "Mise à jour...",
     "viewEditorDescriptionCreate": "Nommez votre vue et définissez des filtres pour basculer rapidement entre les listes de téléchargements.",
     "viewEditorDescriptionEdit": "Mettez à jour les filtres et incluez éventuellement le tri, les colonnes ou la recherche avec cette vue.",
     "viewEditorDescriptionFilter": "Créez des filtres à appliquer à votre liste ou enregistrez-les comme vue réutilisable.",
-    "viewEditorSaveOptions": "Inclure aussi dans la vue",
     "viewEditorFiltersSection": "Règles de filtre",
-    "viewEditorNameLabel": "Nom de la vue"
-  },
-  "FetchStatus": {
-    "autoRefreshInactive": "L'actualisation automatique reprend lorsque vous revenez sur cet onglet.",
-    "autoRefreshSlowHint": "Actualisation plus lente tant que cet onglet est en arrière-plan.",
-    "dismiss": "Fermer",
-    "lastUpdated": "Dernière mise à jour {ago}.",
-    "nextRefreshIn": "Prochaine actualisation dans {seconds}s",
-    "nextRefreshSlow": "Actualisation en arrière-plan dans {seconds}s",
-    "refreshDelayedRateLimit": "Actualisation retardée — trop de requêtes.",
-    "refreshingSoon": "Actualisation imminente…",
-    "refreshNow": "Actualiser",
-    "refreshPaused": "Actualisation automatique en pause pendant la lecture.",
-    "refreshing": "Actualisation…",
-    "retry": "Réessayer",
-    "updatedHoursAgo": "il y a {hours} h",
-    "updatedJustNow": "à l'instant",
-    "updatedMinutesAgo": "il y a {minutes} min"
-  },
-  "DownloadsFilters": {
-    "sidebarLabel": "Filtres",
-    "collapseSidebar": "Réduire le panneau de filtres",
-    "expandSidebar": "Développer le panneau de filtres",
-    "viewsSection": "Vues",
-    "tagsSection": "Étiquettes",
-    "noViews": "Aucune vue enregistrée.",
-    "noTags": "Aucune étiquette.",
-    "newFilter": "Nouveau filtre",
-    "newView": "Nouvelle vue",
-    "newTag": "Nouvelle étiquette",
-    "newTagPrompt": "Nom de l'étiquette",
-    "createTagFailed": "Impossible de créer l'étiquette : {error}",
-    "manageTags": "Gérer les étiquettes",
-    "tagManagerDescription": "Créez, renommez ou supprimez des étiquettes pour filtrer et organiser vos téléchargements.",
-    "tagManagerSearchPlaceholder": "Rechercher des étiquettes…",
-    "tagManagerEmptyHint": "Ajoutez une étiquette ci-dessus pour commencer à regrouper vos téléchargements.",
-    "tagUsageCount": "{count, plural, one {# téléchargement} other {# téléchargements}}",
-    "tagCountBadge": "{count, plural, one {# étiquette} other {# étiquettes}}",
-    "tagManagerNoResults": "Aucune étiquette ne correspond à « {query} »",
-    "tagAssignmentTitle": "Gérer les étiquettes des téléchargements",
-    "tagAssignmentDownloadCount": "{count, plural, one {# téléchargement} other {# téléchargements}}",
-    "tagAssignmentDescriptionAddSingle": "Sélectionnez les étiquettes ci-dessous pour les ajouter. Les étiquettes déjà présentes sur ce téléchargement restent inchangées.",
-    "tagAssignmentDescriptionAddMulti": "Sélectionnez les étiquettes ci-dessous pour les ajouter aux {count} téléchargements. Les étiquettes existantes sont conservées.",
-    "tagAssignmentDescriptionRemoveSingle": "Sélectionnez les étiquettes ci-dessous pour les retirer de ce téléchargement.",
-    "tagAssignmentDescriptionRemoveMulti": "Sélectionnez les étiquettes ci-dessous pour les retirer des téléchargements sélectionnés.",
-    "tagAssignmentModeLabel": "Ajouter ou retirer des étiquettes",
-    "tagAssignmentModeAdd": "Ajouter",
-    "tagAssignmentModeRemove": "Retirer",
-    "tagAssignmentSelectLabel": "Choisir des étiquettes",
-    "tagAssignmentSelectedCount": "{count, plural, one {# étiquette sélectionnée} other {# étiquettes sélectionnées}}",
-    "tagAssignmentNoAssignedTags": "Aucune étiquette sur cette sélection",
-    "tagAssignmentNoAssignedTagsHint": "Passez à Ajouter pour créer ou attribuer des étiquettes.",
-    "tagAssignmentSubmitAdd": "Ajouter les étiquettes",
-    "tagAssignmentSubmitRemove": "Retirer les étiquettes",
-    "tagAssignmentSubmittingAdd": "Ajout…",
-    "tagAssignmentSubmittingRemove": "Retrait…",
-    "modalTitle": "Modifier les filtres",
-    "modalTitleCreate": "Créer une vue",
-    "modalTitleEdit": "Modifier la vue",
-    "modalTitleEditNamed": "Modifier « {name} »",
-    "viewCreated": "Vue « {name} » créée",
-    "viewUpdated": "Vue « {name} » mise à jour",
-    "applyFilters": "Appliquer les filtres",
-    "clearAll": "Tout effacer",
-    "close": "Fermer",
-    "editFilters": "Modifier",
-    "activeView": "Vue : {name}",
-    "activeSearch": "recherche « {query} »",
-    "activeTag": "Étiquette : {name}",
-    "activeConditions": "{count, plural, one {# filtre} other {# filtres}} actifs",
-    "menuApply": "Appliquer",
-    "menuEdit": "Modifier",
-    "menuRename": "Renommer",
-    "menuDelete": "Supprimer",
-    "confirmDeleteView": "Supprimer la vue « {name} » ?",
-    "confirmDeleteTag": "Supprimer l'étiquette « {name} » ? Elle sera retirée de tous les téléchargements.",
-    "deleteViewFailed": "Impossible de supprimer la vue : {error}",
-    "deleteTagFailed": "Impossible de supprimer l'étiquette : {error}"
+    "viewEditorNameLabel": "Nom de la vue",
+    "viewEditorSaveOptions": "Inclure aussi dans la vue",
+    "viewNamePlaceholder": "Nom de la vue..."
   },
   "DownloadPanel": {
     "actions": {
       "clearAll": "Tout effacer",
+      "copied": "Copié",
       "copy": "Copier",
       "copyAll": "Copier tous les liens",
       "copyLink": "Copier le lien",
       "copyLinkWithIndex": "Copier le lien {index} sur {total}",
-      "copied": "Copié",
       "downloadFile": "Télécharger le fichier",
       "downloadFileWithIndex": "Ouvrir le téléchargement {index} sur {total}",
       "open": "Ouvrir"
@@ -546,34 +540,133 @@
       "linksCopied": "Liens copiés dans le presse-papiers !"
     }
   },
+  "DownloadsFilters": {
+    "activeConditions": "{count, plural, one {# filtre} other {# filtres}} actifs",
+    "activeSearch": "recherche « {query} »",
+    "activeTag": "Étiquette : {name}",
+    "activeView": "Vue : {name}",
+    "applyFilters": "Appliquer les filtres",
+    "clearAll": "Tout effacer",
+    "close": "Fermer",
+    "collapseSidebar": "Réduire le panneau de filtres",
+    "confirmDeleteTag": "Supprimer l'étiquette « {name} » ? Elle sera retirée de tous les téléchargements.",
+    "confirmDeleteView": "Supprimer la vue « {name} » ?",
+    "createTagFailed": "Impossible de créer l'étiquette : {error}",
+    "deleteTagFailed": "Impossible de supprimer l'étiquette : {error}",
+    "deleteViewFailed": "Impossible de supprimer la vue : {error}",
+    "editFilters": "Modifier",
+    "expandSidebar": "Développer le panneau de filtres",
+    "manageTags": "Gérer les étiquettes",
+    "menuApply": "Appliquer",
+    "menuClear": "Effacer",
+    "menuDelete": "Supprimer",
+    "menuEdit": "Modifier",
+    "menuRename": "Renommer",
+    "modalTitle": "Modifier les filtres",
+    "modalTitleCreate": "Créer une vue",
+    "modalTitleEdit": "Modifier la vue",
+    "modalTitleEditNamed": "Modifier « {name} »",
+    "newFilter": "Nouveau filtre",
+    "newTag": "Nouvelle étiquette",
+    "newTagPrompt": "Nom de l'étiquette",
+    "newView": "Nouvelle vue",
+    "noTags": "Aucune étiquette.",
+    "noViews": "Aucune vue enregistrée.",
+    "sidebarLabel": "Filtres",
+    "tagAssignmentDescriptionAddMulti": "Sélectionnez les étiquettes ci-dessous pour les ajouter aux {count} téléchargements. Les étiquettes existantes sont conservées.",
+    "tagAssignmentDescriptionAddSingle": "Sélectionnez les étiquettes ci-dessous pour les ajouter. Les étiquettes déjà présentes sur ce téléchargement restent inchangées.",
+    "tagAssignmentDescriptionRemoveMulti": "Sélectionnez les étiquettes ci-dessous pour les retirer des téléchargements sélectionnés.",
+    "tagAssignmentDescriptionRemoveSingle": "Sélectionnez les étiquettes ci-dessous pour les retirer de ce téléchargement.",
+    "tagAssignmentDownloadCount": "{count, plural, one {# téléchargement} other {# téléchargements}}",
+    "tagAssignmentModeAdd": "Ajouter",
+    "tagAssignmentModeLabel": "Ajouter ou retirer des étiquettes",
+    "tagAssignmentModeRemove": "Retirer",
+    "tagAssignmentNoAssignedTags": "Aucune étiquette sur cette sélection",
+    "tagAssignmentNoAssignedTagsHint": "Passez à Ajouter pour créer ou attribuer des étiquettes.",
+    "tagAssignmentSelectLabel": "Choisir des étiquettes",
+    "tagAssignmentSelectedCount": "{count, plural, one {# étiquette sélectionnée} other {# étiquettes sélectionnées}}",
+    "tagAssignmentSubmitAdd": "Ajouter les étiquettes",
+    "tagAssignmentSubmitRemove": "Retirer les étiquettes",
+    "tagAssignmentSubmittingAdd": "Ajout…",
+    "tagAssignmentSubmittingRemove": "Retrait…",
+    "tagAssignmentTitle": "Gérer les étiquettes des téléchargements",
+    "tagCountBadge": "{count, plural, one {# étiquette} other {# étiquettes}}",
+    "tagManagerDescription": "Créez, renommez ou supprimez des étiquettes pour filtrer et organiser vos téléchargements.",
+    "tagManagerEmptyHint": "Ajoutez une étiquette ci-dessus pour commencer à regrouper vos téléchargements.",
+    "tagManagerNoResults": "Aucune étiquette ne correspond à « {query} »",
+    "tagManagerSearchPlaceholder": "Rechercher des étiquettes…",
+    "tagUsageCount": "{count, plural, one {# téléchargement} other {# téléchargements}}",
+    "tagsSection": "Étiquettes",
+    "toggleFilterOff": "Cliquez pour effacer",
+    "toggleFilterOn": "Cliquez pour appliquer",
+    "viewCreated": "Vue « {name} » créée",
+    "viewUpdated": "Vue « {name} » mise à jour",
+    "viewsSection": "Vues"
+  },
+  "ErrorBoundary": {
+    "reloadPage": "Recharger la page",
+    "sectionMessage": "Cette section a rencontré un problème. Réessayez ou utilisez le menu pour ouvrir une autre page.",
+    "title": "Quelque chose s'est mal passé",
+    "tryAgain": "Réessayer"
+  },
+  "FetchStatus": {
+    "autoRefreshInactive": "L'actualisation automatique reprend lorsque vous revenez sur cet onglet.",
+    "autoRefreshSlowHint": "Actualisation plus lente tant que cet onglet est en arrière-plan.",
+    "autoRefreshWatchHint": "Vérification périodique des nouveaux torrents en file d'attente (démarrage auto activé).",
+    "dismiss": "Fermer",
+    "lastUpdated": "Dernière mise à jour {ago}.",
+    "nextRefreshIn": "Prochaine actualisation dans {seconds}s",
+    "nextRefreshSlow": "Actualisation en arrière-plan dans {seconds}s",
+    "nextRefreshWatch": "Vérification de la file dans {seconds}s",
+    "refreshDelayedRateLimit": "Actualisation retardée — trop de requêtes.",
+    "refreshNow": "Actualiser",
+    "refreshPaused": "Actualisation automatique en pause pendant la lecture.",
+    "refreshing": "Actualisation…",
+    "refreshingSoon": "Actualisation imminente…",
+    "retry": "Réessayer",
+    "updatedHoursAgo": "il y a {hours} h",
+    "updatedJustNow": "à l'instant",
+    "updatedMinutesAgo": "il y a {minutes} min"
+  },
   "FileActions": {
     "copyLink": "Copier le lien",
-    "download": "Télécharger le fichier"
+    "download": "Télécharger le fichier",
+    "play": "Lire",
+    "streaming": "Streaming..."
   },
   "Header": {
     "logo": "Logo TorBox Manager",
     "menu": {
       "archived": "Archivés",
       "automation": "Règles d'automatisation",
+      "collapseSidebar": "Réduire la barre latérale",
       "downloads": "Téléchargements",
+      "expandSidebar": "Développer la barre latérale",
       "language": "Langue",
       "linkHistory": "Historique des liens",
       "more": "Plus",
+      "notifications": "Notifications",
+      "preferences": "Préférences",
       "referrals": "Parrainage",
       "rss": "Flux RSS",
       "search": "Rechercher",
+      "sectionManager": "Gestionnaire",
       "systemStatus": "État du système",
       "toggle": "Basculer le menu",
+      "tools": "Outils",
+      "uploads": "Téléversements",
       "user": "Utilisateur"
     },
     "theme": {
       "toggle": "Changer de thème"
-    }
+    },
+    "title": "TorBox Manager"
   },
   "Index": {
     "description": "Gestionnaire de torrents et de débrideurs",
     "search": "Rechercher",
-    "searchPlaceholder": "Rechercher des torrents..."
+    "searchPlaceholder": "Rechercher des torrents...",
+    "title": "TorBox Manager"
   },
   "ItemActionButtons": {
     "delete": {
@@ -594,32 +687,43 @@
       "label": "Fichiers",
       "show": "Afficher les fichiers"
     },
+    "retry": {
+      "label": "Réessayer",
+      "title": "Réessayer le téléchargement"
+    },
     "start": {
       "label": "Démarrer",
       "title": "Forcer le démarrage"
     },
     "stop": {
+      "label": "Arrêter",
       "title": "Arrêter le partage"
     }
   },
   "ItemActions": {
     "toast": {
-      "deleteAllFailed": "Échec de la suppression des éléments",
-      "deleteAllSuccess": "Tous les éléments ont été supprimés avec succès",
-      "deleteError": "Erreur de suppression : {erreur}",
-      "deletePartialSuccess": "{count} éléments sur {total} ont été supprimés",
-      "deleteSuccess": "Suppression réussie",
+      "airlockFailed": "Échec de la mise à jour Airlock : {error}",
+      "airlockLocked": "Téléchargement verrouillé",
+      "airlockUnlocked": "Téléchargement déverrouillé",
       "archiveAllFailed": "Échec de l'archivage des éléments",
       "archiveAllSuccess": "Tous les éléments archivés avec succès",
       "archiveError": "Erreur lors de l'archivage : {error}",
       "archiveNoHash": "Archivage impossible : hash du torrent indisponible",
       "archivePartialSuccess": "{count} sur {total} éléments archivés",
       "archiveSuccess": "Archivage réussi",
+      "deleteAllFailed": "Échec de la suppression des éléments",
+      "deleteAllSuccess": "Tous les éléments ont été supprimés avec succès",
+      "deleteError": "Erreur de suppression : {erreur}",
+      "deletePartialSuccess": "{count} éléments sur {total} ont été supprimés",
+      "deleteSuccess": "Suppression réussie",
       "downloadFailed": "Échec du téléchargement",
       "downloadStarted": "Téléchargement démarré avec succès",
       "exportTorrentFailed": "Échec de l'exportation du torrent",
       "exportTorrentSuccess": "Torrent exporté avec succès",
       "noFiles": "Aucun fichier disponible au téléchargement",
+      "retryFailed": "Échec de la nouvelle tentative de téléchargement",
+      "retrySourceUnavailable": "Impossible de réessayer : le lien source n'est pas disponible",
+      "retrySuccess": "Remis en file pour téléchargement",
       "seedingStopFailed": "Échec de l'arrêt de la propagation du torrent",
       "seedingStopped": "Le torrent a cessé de se propager avec succès"
     }
@@ -627,6 +731,7 @@
   "ItemUploader": {
     "button": {
       "torrents": "Télécharger des torrents",
+      "usenet": "Télécharger NZB",
       "webdl": "Ajouter des liens"
     },
     "dropzone": {
@@ -661,6 +766,7 @@
       "show": "Afficher les options"
     },
     "placeholder": {
+      "torrents": "Collez les liens magnet ici (un par ligne)",
       "usenet": "Coller les liens NZB ici (un par ligne)",
       "webdl": "Coller les liens de téléchargement Web ici (un par ligne)",
       "webdlPassword": "Entrer le mot de passe (optionnel)"
@@ -689,16 +795,17 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Trouvez votre clé API sur",
+      "link": "torbox.app/settings",
       "title": "Entrer la clé API TorBox"
     },
     "features": {
-      "batchUpload": {
-        "description": "Téléchargez plusieurs torrents en un seul clic",
-        "title": "Téléchargement par lots"
-      },
       "automation": {
         "description": "Créez des règles intelligentes pour gérer automatiquement vos téléchargements.",
         "title": "Règles d'automatisation"
+      },
+      "batchUpload": {
+        "description": "Téléchargez plusieurs torrents en un seul clic",
+        "title": "Téléchargement par lots"
       },
       "search": {
         "description": "Recherche sur plusieurs sites de torrents",
@@ -706,9 +813,11 @@
       }
     },
     "footer": {
-      "description": "Cette application est entièrement open source sur"
+      "description": "Cette application est entièrement open source sur",
+      "github": "GitHub"
     },
-    "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité."
+    "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité.",
+    "title": "TorBox Manager"
   },
   "LinkHistory": {
     "actions": {
@@ -723,6 +832,7 @@
       "selectItem": "Sélectionner le lien"
     },
     "columns": {
+      "actions": "Actions",
       "expiresAt": "Date d'expiration",
       "fileName": "Nom du fichier",
       "itemId": "ID de l'élément",
@@ -755,7 +865,9 @@
     "copySourceUrl": "Copier l'URL source",
     "exportTorrent": "Exporter .torrent",
     "label": "Plus",
+    "lockDownload": "Verrouiller le téléchargement",
     "reannounce": "Réannoncer",
+    "retry": "Réessayer",
     "title": "Plus d'options",
     "toast": {
       "clipboardError": "Échec de la copie dans le presse-papiers",
@@ -776,6 +888,7 @@
       "uploadFailed": "Échec du téléchargement",
       "uploadStarted": "Téléchargement démarré avec succès"
     },
+    "unlockDownload": "Déverrouiller le téléchargement",
     "uploadToCloud": "Télécharger sur le Cloud"
   },
   "Navigation": {
@@ -790,79 +903,81 @@
     "markAllAsRead": "Tout marquer comme lu",
     "markAsRead": "Marquer comme lu",
     "noNotifications": "Aucune notification",
+    "notifications": "Notifications",
     "testNotification": "Notification de test"
   },
   "Referral": {
+    "apply": {
+      "alreadyHasReferrer": "Votre compte a déjà un code de parrainage.",
+      "applying": "Application…",
+      "button": "Appliquer à mon compte",
+      "cancel": "Annuler",
+      "confirm": "Appliquer le code",
+      "confirmBody": "Le code TorBox Manager sera ajouté à votre compte TorBox avant l'abonnement.",
+      "confirmBullet1": "Le bonus s'applique uniquement au premier abonnement payant.",
+      "confirmBullet2": "7 jours bonus par mois (ex. 12 mois = 84 jours).",
+      "confirmBullet3": "Un parrainage existant ne peut pas être modifié ici.",
+      "confirmTitle": "Appliquer le code de parrainage ?",
+      "error": "Impossible d'appliquer le code. Essayez le lien d'abonnement.",
+      "needApiKey": "Ajoutez d'abord votre clé API TorBox.",
+      "success": "Code de parrainage appliqué à votre compte TorBox."
+    },
+    "callout": {
+      "apply": "Appliquer le code",
+      "compactMessage": "Jours bonus au premier abonnement — appliquez le code puis abonnez-vous sur TorBox.",
+      "dismiss": "Masquer 30 jours",
+      "rssHint": "Passez à Pro sur TorBox et obtenez des jours bonus avec notre parrainage.",
+      "slimMessage": "7 jours bonus par mois sur votre premier abonnement TorBox — utilisez notre parrainage avant de payer.",
+      "subscribe": "S'abonner"
+    },
     "copied": "Copié !",
     "copyAll": "Tout copier",
     "copyCode": "Copier le code",
     "copyLink": "Copier le lien",
     "description": "7 jours supplémentaires par mois sur votre premier abonnement TorBox payant.",
     "developerNote": "Ce est le code de parrainage du développeur.",
+    "disclaimer": {
+      "firstPurchase": "Le bonus s'applique uniquement au premier achat payant.",
+      "giftCards": "Les cartes cadeaux et bons ne sont pas éligibles.",
+      "supportsDevelopment": "Ce code soutient aussi le développement de TorBox Manager."
+    },
     "error": "Erreur de copie dans le presse-papiers",
-    "landingDescription": "Nouveau sur TorBox ? Utilisez notre lien à l'abonnement pour des jours bonus au premier achat.",
-    "referral": "Parrainage",
-    "referralCode": "Code de parrainage",
-    "referralLink": "Lien de parrainage",
-    "signUp": "S'inscrire à TorBox",
-    "title": "Obtenir du temps premium gratuit",
-    "visitLink": "Visiter le lien",
     "examples": {
       "oneMonth": "1 mois → +7 j",
       "threeMonths": "3 mois → +21 j",
       "twelveMonths": "12 mois → +84 j"
     },
+    "landingDescription": "Nouveau sur TorBox ? Utilisez notre lien à l'abonnement pour des jours bonus au premier achat.",
     "panel": {
-      "heroTitle": "Jours bonus sur votre premier abonnement",
+      "helpLink": "Comment fonctionne le parrainage",
       "heroSubtitle": "7 jours bonus par mois acheté (pour vous et le parrain).",
-      "openSubscription": "Ouvrir l'abonnement TorBox",
-      "helpLink": "Comment fonctionne le parrainage"
+      "heroTitle": "Jours bonus sur votre premier abonnement",
+      "openSubscription": "Ouvrir l'abonnement TorBox"
     },
-    "apply": {
-      "button": "Appliquer à mon compte",
-      "confirmTitle": "Appliquer le code de parrainage ?",
-      "confirmBody": "Le code TorBox Manager sera ajouté à votre compte TorBox avant l'abonnement.",
-      "confirmBullet1": "Le bonus s'applique uniquement au premier abonnement payant.",
-      "confirmBullet2": "7 jours bonus par mois (ex. 12 mois = 84 jours).",
-      "confirmBullet3": "Un parrainage existant ne peut pas être modifié ici.",
-      "cancel": "Annuler",
-      "confirm": "Appliquer le code",
-      "applying": "Application…",
-      "success": "Code de parrainage appliqué à votre compte TorBox.",
-      "error": "Impossible d'appliquer le code. Essayez le lien d'abonnement.",
-      "alreadyHasReferrer": "Votre compte a déjà un code de parrainage.",
-      "needApiKey": "Ajoutez d'abord votre clé API TorBox."
+    "referral": "Parrainage",
+    "referralCode": "Code de parrainage",
+    "referralLink": "Lien de parrainage",
+    "settings": {
+      "resetSnooze": "Réafficher les rappels",
+      "snoozeReminders": "Masquer les rappels 30 jours"
     },
-    "callout": {
-      "slimMessage": "7 jours bonus par mois sur votre premier abonnement TorBox — utilisez notre parrainage avant de payer.",
-      "compactMessage": "Jours bonus au premier abonnement — appliquez le code puis abonnez-vous sur TorBox.",
-      "rssHint": "Passez à Pro sur TorBox et obtenez des jours bonus avec notre parrainage.",
-      "apply": "Appliquer le code",
-      "subscribe": "S'abonner",
-      "dismiss": "Masquer 30 jours"
-    },
-    "upgradeCard": {
-      "title": "Passer à l'offre avec jours bonus",
-      "description": "Appliquez notre code puis complétez votre premier abonnement payant sur TorBox — 7 jours bonus par mois."
-    },
+    "signUp": "S'inscrire à TorBox",
     "steps": {
-      "title": "Comment ça marche",
+      "popupNote": "Avec le lien, confirmez la popup sur TorBox avant d'acheter.",
       "step1": "Appliquez le code à votre compte TorBox (bouton ci-dessus ou sur la page abonnement).",
       "step2": "Abonnez-vous sur torbox.app — autorisez les popups si vous utilisez le lien.",
       "step3": "Finalisez votre premier achat payant ; les jours bonus sont ajoutés automatiquement.",
-      "popupNote": "Avec le lien, confirmez la popup sur TorBox avant d'acheter."
+      "title": "Comment ça marche"
     },
-    "disclaimer": {
-      "supportsDevelopment": "Ce code soutient aussi le développement de TorBox Manager.",
-      "firstPurchase": "Le bonus s'applique uniquement au premier achat payant.",
-      "giftCards": "Les cartes cadeaux et bons ne sont pas éligibles."
+    "title": "Obtenir du temps premium gratuit",
+    "upgradeCard": {
+      "description": "Appliquez notre code puis complétez votre premier abonnement payant sur TorBox — 7 jours bonus par mois.",
+      "title": "Passer à l'offre avec jours bonus"
     },
-    "settings": {
-      "snoozeReminders": "Masquer les rappels 30 jours",
-      "resetSnooze": "Réafficher les rappels"
-    }
+    "visitLink": "Visiter le lien"
   },
   "RssFeeds": {
+    "actions": "Actions",
     "active": "Actif",
     "addError": "Échec de l'ajout du flux RSS",
     "addFeed": "Ajouter un Flux RSS",
@@ -879,24 +994,24 @@
     "deleteError": "Échec de la suppression du flux RSS",
     "deleteSuccess": "Flux RSS supprimé avec succès",
     "disable": "Désactiver",
-    "disabled": "Désactivé",
     "disableError": "Échec de la désactivation du flux RSS",
     "disableSuccess": "Flux RSS désactivé avec succès",
+    "disabled": "Désactivé",
+    "doRegex": "Regex de Téléchargement (Optionnel)",
+    "doRegexPlaceholder": "Télécharger les éléments correspondant à ce regex",
     "dontOlderThan": "Ignorer Plus Ancien Que (jours)",
     "dontOlderThanPlaceholder": "Ignorer les éléments plus anciens que X jours",
     "dontRegex": "Regex d'Ignorer (Optionnel)",
     "dontRegexPlaceholder": "Ignorer les éléments correspondant à ce regex",
-    "doRegex": "Regex de Téléchargement (Optionnel)",
-    "doRegexPlaceholder": "Télécharger les éléments correspondant à ce regex",
     "downloadType": "Type de Téléchargement",
     "downloadTypePlaceholder": "Sélectionner le type de téléchargement",
     "editError": "Échec de la mise à jour du flux RSS",
     "editFeed": "Modifier le Flux RSS",
     "editSuccess": "Flux RSS mis à jour avec succès",
     "enable": "Activer",
-    "enabled": "Activé",
     "enableError": "Échec de l'activation du flux RSS",
     "enableSuccess": "Flux RSS activé avec succès",
+    "enabled": "Activé",
     "error": "Erreur lors du chargement des flux RSS",
     "feedName": "Nom du Flux",
     "feedNamePlaceholder": "Entrez le nom du flux",
@@ -910,7 +1025,11 @@
     "never": "Jamais",
     "noFeeds": "Aucun flux RSS configuré",
     "options": {
+      "auto": "Auto",
       "dontSeed": "Ne pas Seeder",
+      "seed": "Partager",
+      "torrent": "Torrent",
+      "usenet": "Usenet",
       "webdl": "Téléchargement Web"
     },
     "pageDescription": "Gérer les flux RSS et parcourir les éléments",
@@ -919,6 +1038,8 @@
     "passCheckDescription": "Ignorer la vérification du cache pour ce flux",
     "proSubscriptionRequired": "Abonnement Pro Requis",
     "proUserRequired": "Vous devez être un utilisateur Pro pour utiliser les flux RSS.",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation",
     "save": "Enregistrer",
     "scanInterval": "Intervalle de Scan (minutes)",
     "scanIntervalPlaceholder": "À quelle fréquence scanner ce flux",
@@ -939,6 +1060,7 @@
   "RssItems": {
     "allTypes": "Tous les Types",
     "category": "Catégorie",
+    "date": "Date",
     "download": "Télécharger",
     "error": "Erreur lors du chargement des éléments",
     "loading": "Chargement des éléments...",
@@ -962,7 +1084,10 @@
       "downloadStarted": "Téléchargement démarré avec succès",
       "noLink": "Aucun lien de téléchargement disponible"
     },
+    "torrent": "Torrent",
+    "type": "Type",
     "unknown": "Inconnu",
+    "usenet": "Usenet",
     "webdl": "Téléchargement Web"
   },
   "SearchBar": {
@@ -971,34 +1096,38 @@
     "clearSearch": "Effacer la recherche",
     "customEngines": "Moteurs personnalisés",
     "episode": "Épisode",
+    "episodePlaceholder": "E01",
     "hideAdvanced": "Masquer avancé",
     "minSeeders": "Seeders min.",
     "minSize": "Taille min. (GB)",
     "placeholderDownloads": "Rechercher {itemType}…",
     "placeholderDownloadsShort": "Rechercher…",
-    "searchDownloadsAria": "Rechercher {itemType} ou noms de fichiers",
-    "searchDownloadsHelpAria": "Comment fonctionne la recherche",
-    "searchDownloadsHelpIntro": "Recherche dans les titres de téléchargement et les noms de fichiers.",
-    "searchDownloadsHelpOr": "Plusieurs mots — correspond si l'un des mots apparaît (ex. 1080p bluray)",
-    "searchDownloadsHelpAnd": "Signe plus — tous les mots doivent apparaître (ex. matrix+1999)",
-    "searchDownloadsHelpPhrase": "Guillemets — correspond à la phrase exacte (ex. \"season 1\")",
-    "searchDownloadsHelpExclude": "Moins — masque les résultats contenant ce texte (ex. -sample)",
-    "searchDownloadsHelpCombine": "Combiner les termes — toutes les parties doivent correspondre (ex. \"The Matrix\" 1080p -sample)",
     "placeholderSearch": "Rechercher par titre ou IMDB ID (e.g. imdb:tt0133093)...",
     "quality": "Qualité",
     "qualityAll": "Toutes les qualités",
     "recentSearches": "Recherches récentes",
     "search": "Rechercher",
+    "searchDownloadsAria": "Rechercher {itemType} ou noms de fichiers",
+    "searchDownloadsHelpAnd": "Signe plus — tous les mots doivent apparaître (ex. matrix+1999)",
+    "searchDownloadsHelpAria": "Comment fonctionne la recherche",
+    "searchDownloadsHelpCombine": "Combiner les termes — toutes les parties doivent correspondre (ex. \"The Matrix\" 1080p -sample)",
+    "searchDownloadsHelpExclude": "Moins — masque les résultats contenant ce texte (ex. -sample)",
+    "searchDownloadsHelpIntro": "Recherche dans les titres de téléchargement et les noms de fichiers.",
+    "searchDownloadsHelpOr": "Plusieurs mots — correspond si l'un des mots apparaît (ex. 1080p bluray)",
+    "searchDownloadsHelpPhrase": "Guillemets — correspond à la phrase exacte (ex. \"season 1\")",
     "searchExamples": "Exemples de recherche",
     "season": "Saison",
+    "seasonPlaceholder": "S01",
     "showAdvanced": "Afficher avancé",
-    "year": "Année"
+    "torrentSearchWarning": "La recherche de torrents TorBox n'est actuellement pas fiable et peut retourner des résultats incomplets ou incorrects. La recherche Usenet est recommandée lorsqu'elle est disponible.",
+    "year": "Année",
+    "yearPlaceholder": "2024"
   },
   "SearchResults": {
     "actions": {
+      "addToTorBox": "Ajouter à TorBox",
       "added": "Ajouté",
       "adding": "Ajout...",
-      "addToTorBox": "Ajouter à TorBox",
       "copyLink": "Copier le lien",
       "copyMagnet": "Copier l'aimant"
     },
@@ -1009,6 +1138,7 @@
       "days": "jours"
     },
     "noResults": "Aucun résultat trouvé",
+    "noResultsHint": "Essayez une requête différente, activez les moteurs personnalisés ou changez de type de recherche.",
     "results": "{count} résultats",
     "sort": {
       "age": "Le plus récent",
@@ -1017,11 +1147,11 @@
     },
     "toast": {
       "magnetCopied": "Lien magnétique copié dans le presse-papiers",
-      "nzbAdded": "NZB ajouté à TorBox avec succès",
       "nzbAddFailed": "Échec de l'ajout du NZB : {erreur}",
+      "nzbAdded": "NZB ajouté à TorBox avec succès",
       "nzbCopied": "Lien NZB copié dans le presse-papiers",
-      "torrentAdded": "Torrent ajouté à TorBox avec succès",
       "torrentAddFailed": "Échec de l'ajout du torrent : {erreur}",
+      "torrentAdded": "Torrent ajouté à TorBox avec succès",
       "uploadSuccess": "Téléchargement {count} {type} réussi",
       "uploadSuccessPlural": "Téléchargement {count} {type}s réussi"
     }
@@ -1036,7 +1166,8 @@
       "upload": "Téléversement"
     },
     "scale": {
-      "linear": "Linéaire"
+      "linear": "Linéaire",
+      "logarithmic": "Logarithmique"
     },
     "timeRanges": {
       "10m": "Dernier 10m",
@@ -1051,6 +1182,12 @@
       "full": "Activité Réseau"
     }
   },
+  "StatusSection": {
+    "selectedFiles": "{fileCount} fichiers sélectionnés ({size})",
+    "selectedItems": "{itemCount} {type} sélectionnés ({size})",
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} sélectionnés ({size})",
+    "total": "{count} {type}"
+  },
   "Statuses": {
     "checking_resume_data": "Vérification",
     "completed": "Terminé",
@@ -1064,11 +1201,6 @@
     "unknown": "Inconnu",
     "uploading": "Téléversement"
   },
-  "StatusSection": {
-    "selectedFiles": "{fileCount} fichiers sélectionnés ({size})",
-    "selectedItems": "{itemCount} {type} sélectionnés ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} sélectionnés ({size})"
-  },
   "SystemStatus": {
     "error": "Erreur",
     "fullStatusPage": "Statut complet",
@@ -1078,21 +1210,7 @@
     "minutesAgo": "il y a {minutes} minutes",
     "never": "Jamais",
     "refreshStatus": "Cliquer pour actualiser",
-    "uptime": {
-      "barLabel": "Historique {label}, {percent}% opérationnel",
-      "collecting": "Collecte des données…",
-      "daysAgo": "il y a {days}j",
-      "historyNote": "Barres basées sur les vérifications de ce navigateur (~1 min). Historique officiel sur la page de statut.",
-      "percent": "{percent}% disponibilité",
-      "segment": {
-        "degraded": "Réponse lente",
-        "down": "Indisponible",
-        "empty": "Pas encore de données",
-        "nodata": "Non vérifié",
-        "unknown": "Inconnu",
-        "up": "Opérationnel"
-      }
-    },
+    "responseTime": "{ms} ms",
     "rows": {
       "app": {
         "label": "Cette application"
@@ -1130,10 +1248,27 @@
       "platformUnhealthyDescription": "Les services TorBox sont peut-être indisponibles",
       "unknown": "État inconnu",
       "unknownDescription": "Impossible de déterminer l'état du système"
+    },
+    "uptime": {
+      "barLabel": "Historique {label}, {percent}% opérationnel",
+      "collecting": "Collecte des données…",
+      "daysAgo": "il y a {days}j",
+      "historyNote": "Barres basées sur les vérifications de ce navigateur (~1 min). Historique officiel sur la page de statut.",
+      "percent": "{percent}% disponibilité",
+      "segment": {
+        "degraded": "Réponse lente",
+        "down": "Indisponible",
+        "empty": "Pas encore de données",
+        "nodata": "Non vérifié",
+        "unknown": "Inconnu",
+        "up": "Opérationnel"
+      }
     }
   },
   "TableBody": {
+    "downloadsTable": "Liste des téléchargements",
     "noDownloads": "Aucun téléchargement",
+    "showMoreFiles": "Afficher {count} fichiers supplémentaires",
     "toast": {
       "copyLink": "Lien copié dans le presse-papiers",
       "copyLinkFailed": "Échec de la copie du lien"
@@ -1162,18 +1297,6 @@
     },
     "title": "Options de téléchargement globales"
   },
-  "Usage": {
-    "danger": {
-      "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Réduisez votre utilisation rapidement pour éviter des avertissements ou des restrictions.",
-      "title": "Utilisation de bande passante très élevée"
-    },
-    "learnMore": "Comment fonctionnent les limites d'utilisation TorBox",
-    "viewUsage": "Voir le graphique d'utilisation",
-    "warning": {
-      "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Rester proche de cette plage peut déclencher la surveillance des abus TorBox.",
-      "title": "Utilisation de bande passante élevée"
-    }
-  },
   "UploadProgress": {
     "approachingRateLimit": "Limite de débit approchée:",
     "approachingRateLimitDetails": "{perMinute}/10 par minute, {perHour}/60 par heure",
@@ -1186,19 +1309,31 @@
     "uploading": "Téléversement de {current} sur {total}",
     "waitingBeforeNext": "Attente de {time} avant le prochain téléversement"
   },
+  "Usage": {
+    "danger": {
+      "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Réduisez votre utilisation rapidement pour éviter des avertissements ou des restrictions.",
+      "title": "Utilisation de bande passante très élevée"
+    },
+    "learnMore": "Comment fonctionnent les limites d'utilisation TorBox",
+    "viewUsage": "Voir le graphique d'utilisation",
+    "warning": {
+      "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Rester proche de cette plage peut déclencher la surveillance des abus TorBox.",
+      "title": "Utilisation de bande passante élevée"
+    }
+  },
   "User": {
     "bandwidth": {
-      "title": "Bande passante (30 derniers jours)",
+      "empty": "Aucune donnée de bande passante pour cette période",
       "grouping": "Regroupement",
       "groupingOptions": {
-        "hour": "Horaire",
         "day": "Quotidien",
-        "week": "Hebdomadaire",
-        "month": "Mensuel"
+        "hour": "Horaire",
+        "month": "Mensuel",
+        "week": "Hebdomadaire"
       },
-      "empty": "Aucune donnée de bande passante pour cette période",
       "loadError": "Échec du chargement des statistiques de bande passante",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "title": "Bande passante (30 derniers jours)"
     },
     "copyLink": "Copier le lien",
     "copyLinkFailed": "Échec de la copie du lien",
@@ -1211,6 +1346,8 @@
     "plans": {
       "essential": "Essentiel",
       "free": "Gratuit",
+      "pro": "Pro",
+      "standard": "Standard",
       "unknown": "Inconnu"
     },
     "profile": {
@@ -1222,6 +1359,7 @@
       "lastLogin": "Dernière Mise à Jour",
       "plan": "Forfait",
       "planExpiry": "Expiration du Forfait",
+      "ratio": "Ratio",
       "referralCode": "Code de Parrainage",
       "status": "Statut",
       "title": "Profil Utilisateur",
@@ -1242,6 +1380,13 @@
       "free": "Gratuit"
     },
     "title": "Profil Utilisateur"
+  },
+  "VideoPlayer": {
+    "error": "Échec du chargement du flux",
+    "loading": "Chargement du flux...",
+    "playbackSpeed": "Vitesse de lecture",
+    "playbackSpeedNormal": "Normale",
+    "title": "Lecteur vidéo"
   },
   "ViewControls": {
     "cardView": "Vue en carte",

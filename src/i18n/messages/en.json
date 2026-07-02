@@ -1,9 +1,27 @@
 {
   "ActionButtons": {
+    "archive": "Archive",
+    "archiveConfirm": {
+      "archiving": "Archiving…",
+      "cancel": "Cancel",
+      "confirm": "Archive",
+      "message": "Archive {count} torrent(s)? They will appear in Archived Downloads and be removed from your active list.",
+      "title": "Confirm Archive"
+    },
+    "archiveTitle": "Archive selected torrents to TBM and remove from TorBox",
+    "assignTags": "Tag",
+    "assignTagsTitle": "Assign tags to selected downloads",
+    "bulkForceStartPartial": "Force started {success} torrents, {failed} failed",
+    "bulkForceStarted": "Force started {count} torrents",
+    "bulkRetryPartial": "Re-queued {success} downloads, {failed} failed",
+    "bulkRetryStarted": "Re-queued {count} downloads",
+    "bulkSeedingPartial": "Stopped seeding for {success} torrents, {failed} failed",
+    "bulkSeedingStopped": "Stopped seeding for {count} torrents",
     "bulkUploadFailed": "Failed to upload items",
     "bulkUploadPartial": "Uploaded {success} items, {failed} failed",
     "bulkUploadSuccess": "Successfully uploaded {count} items to {provider}",
     "clear": "Clear",
+    "clearTitle": "Clear selection",
     "delete": "Delete",
     "deleteConfirm": {
       "cancel": "Cancel",
@@ -14,26 +32,13 @@
       "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
       "title": "Confirm Delete"
     },
-    "archive": "Archive",
-    "archiveTitle": "Archive selected torrents to TBM and remove from TorBox",
-    "archiveConfirm": {
-      "archiving": "Archiving…",
-      "cancel": "Cancel",
-      "confirm": "Archive",
-      "message": "Archive {count} torrent(s)? They will appear in Archived Downloads and be removed from your active list.",
-      "title": "Confirm Archive"
-    },
-    "assignTags": "Tag",
-    "assignTagsTitle": "Assign tags to selected downloads",
     "downloadLinks": "Download",
     "downloadLinksMobile": "Download",
     "downloadLinksTitle": "Get download links for selection",
-    "bulkForceStartPartial": "Force started {success} torrents, {failed} failed",
-    "bulkForceStarted": "Force started {count} torrents",
-    "bulkRetryPartial": "Re-queued {success} downloads, {failed} failed",
-    "bulkRetryStarted": "Re-queued {count} downloads",
-    "bulkSeedingPartial": "Stopped seeding for {success} torrents, {failed} failed",
-    "bulkSeedingStopped": "Stopped seeding for {count} torrents",
+    "exportSelected": "Export",
+    "exportSelectedTitle": "Export selected torrents",
+    "exporting": "Exporting…",
+    "fetchingLinks": "Loading…",
     "forceStart": "Start",
     "forceStartTitle": "Force start queued torrents",
     "forceStarting": "Starting…",
@@ -42,17 +47,56 @@
       "title": "Retry selected downloads"
     },
     "retrying": "Retrying…",
-    "exporting": "Exporting…",
-    "exportSelected": "Export",
-    "exportSelectedTitle": "Export selected torrents",
-    "fetchingLinks": "Loading…",
     "stopSeeding": "Stop seed",
     "stopSeedingTitle": "Stop seeding selected torrents",
     "stoppingSeeding": "Stopping…",
-    "clearTitle": "Clear selection",
     "toolbarLabel": "Selection actions",
-    "uploading": "Uploading...",
-    "uploadToCloud": "Upload to Cloud"
+    "uploadToCloud": "Upload to Cloud",
+    "uploading": "Uploading..."
+  },
+  "Admin": {
+    "automation": {
+      "loading": "Loading automation data...",
+      "title": "Automation Monitoring"
+    },
+    "dashboard": {
+      "autoRefresh": "Auto-refresh (30s)",
+      "failedToLoad": "Failed to load metrics",
+      "loadingMetrics": "Loading metrics...",
+      "title": "Dashboard"
+    },
+    "databases": {
+      "loading": "Loading databases...",
+      "title": "Database Management"
+    },
+    "login": {
+      "authenticating": "Authenticating...",
+      "placeholder": "Admin API Key",
+      "signIn": "Sign in",
+      "subtitle": "Enter your admin API key to access the admin panel",
+      "title": "Admin Login"
+    },
+    "logs": {
+      "notImplemented": "Log retrieval is not implemented. Logs are output to console/stdout.",
+      "note": "For production, consider using a log aggregation service or file-based logging.",
+      "title": "Logs"
+    },
+    "settings": {
+      "loading": "Loading configuration...",
+      "note": "Configuration updates require environment variable changes and server restart.",
+      "title": "System Configuration"
+    },
+    "system": {
+      "loading": "Loading system metrics...",
+      "title": "System Health"
+    },
+    "users": {
+      "back": "Back",
+      "loading": "Loading users...",
+      "noUsers": "No users found",
+      "title": "User Management",
+      "userDetails": "User Details"
+    }
   },
   "ApiKeyInput": {
     "hide": "Hide API key",
@@ -115,6 +159,8 @@
   },
   "AutomationRules": {
     "action": "Action",
+    "actionFailed": "action failed",
+    "actionPerformed": "action performed",
     "actions": {
       "addAirlock": "Add Airlock",
       "addAirlockDescription": "Lock the download in TorBox Airlock",
@@ -126,14 +172,16 @@
       "deleteDescription": "Permanently delete the download and its files",
       "forceStart": "Force Start Download",
       "forceStartDescription": "Force the download to start",
-      "removeTag": "Remove Tag",
-      "removeTagDescription": "Remove one or more tags from the download",
       "removeAirlock": "Remove Airlock",
       "removeAirlockDescription": "Unlock the download from TorBox Airlock",
+      "removeTag": "Remove Tag",
+      "removeTagDescription": "Remove one or more tags from the download",
       "selectTags": "Select Tags",
       "stopSeeding": "Stop Seeding",
       "stopSeedingDescription": "Stop seeding the torrent but keep it in the download list"
     },
+    "actionsFailed": "actions failed",
+    "actionsPerformed": "actions performed",
     "add": "Add Rule",
     "addCondition": "Add condition",
     "addConditionToGroup": "Add condition to group",
@@ -205,6 +253,9 @@
       "name": "Name",
       "nameDescription": "Torrent name (supports text search)",
       "namePlaceholder": "Enter text to search...",
+      "originalUrl": "Source URL",
+      "originalUrlDescription": "Original URL that was used to create the download (supports text search)",
+      "originalUrlPlaceholder": "Enter URL to search...",
       "peers": "Peers",
       "peersDescription": "Number of peers currently connected",
       "private": "Private",
@@ -233,13 +284,21 @@
       "uploadSpeed": "Current Upload Speed",
       "uploadSpeedDescription": "Current upload speed (MB/s)",
       "uploadStalledTime": "Upload Stalled Time",
-      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)",
-      "originalUrl": "Source URL",
-      "originalUrlDescription": "Original URL that was used to create the download (supports text search)",
-      "originalUrlPlaceholder": "Enter URL to search..."
+      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)"
     },
     "delete": "Delete",
     "details": "Details",
+    "emptyState": {
+      "backendRequired": "Backend required for 24/7 automation",
+      "backendRequiredDescription": "Connect the TorBox Manager backend so rules are saved and evaluated automatically. Without it, rules cannot run in the background.",
+      "createFirstRule": "Create your first rule",
+      "description": "Create rules to automatically stop seeding, archive, delete, tag, or force-start downloads when conditions match.",
+      "howItWorks": "How it works:",
+      "step1": "Define conditions (ratio, status, tags, and more) and choose an action",
+      "step2": "With the backend connected, rules run on a schedule around the clock",
+      "step3": "View execution logs or run a rule manually from its card",
+      "title": "No automation rules yet"
+    },
     "enabledAt": "enabled",
     "error": "Error",
     "executions": "executions",
@@ -261,29 +320,8 @@
     "neverExecuted": "never executed",
     "neverTriggered": "never triggered",
     "noConditionsInGroup": "No conditions in this group. Click '+ Condition' to add one.",
-    "ruleExecuted": "Rule Executed",
-    "ruleRateLimited": "Rule Rate Limited",
-    "ruleRateLimitedDescription": "Rule execution was rate limited.",
-    "torrentMatched": "torrent matched",
-    "torrentsMatched": "torrents matched",
-    "actionPerformed": "action performed",
-    "actionsPerformed": "actions performed",
-    "actionFailed": "action failed",
-    "actionsFailed": "actions failed",
-    "ruleEvaluatedNoActions": "Rule was evaluated but no actions were performed.",
     "noLogs": "No logs available",
     "noRules": "No automation rules",
-    "emptyState": {
-      "title": "No automation rules yet",
-      "description": "Create rules to automatically stop seeding, archive, delete, tag, or force-start downloads when conditions match.",
-      "howItWorks": "How it works:",
-      "step1": "Define conditions (ratio, status, tags, and more) and choose an action",
-      "step2": "With the backend connected, rules run on a schedule around the clock",
-      "step3": "View execution logs or run a rule manually from its card",
-      "createFirstRule": "Create your first rule",
-      "backendRequired": "Backend required for 24/7 automation",
-      "backendRequiredDescription": "Connect the TorBox Manager backend so rules are saved and evaluated automatically. Without it, rules cannot run in the background."
-    },
     "operators": {
       "eq": "is equal to",
       "gt": "is greater than",
@@ -302,13 +340,17 @@
     },
     "removeCondition": "Remove condition",
     "removeGroup": "Remove group",
-    "searchConditionOptionsPlaceholder": "Search…",
-    "searchConditionOptionsNoMatches": "No matching options",
+    "ruleEvaluatedNoActions": "Rule was evaluated but no actions were performed.",
+    "ruleExecuted": "Rule Executed",
     "ruleLogs": "Rule Logs",
     "ruleName": "Rule Name",
     "ruleNamePlaceholder": "Enter rule name",
-    "running": "Running...",
+    "ruleRateLimited": "Rule Rate Limited",
+    "ruleRateLimitedDescription": "Rule execution was rate limited.",
     "runRule": "Run rule",
+    "running": "Running...",
+    "searchConditionOptionsNoMatches": "No matching options",
+    "searchConditionOptionsPlaceholder": "Search…",
     "section": {
       "hide": "Hide rules",
       "show": "Show rules"
@@ -326,8 +368,8 @@
       "isAllOf": "Is all of",
       "isAnyOf": "Is any of",
       "isNoneOf": "Is none of",
-      "isSet": "Is set",
-      "isNotSet": "Is not set"
+      "isNotSet": "Is not set",
+      "isSet": "Is set"
     },
     "timeOperators": {
       "eq": "is",
@@ -344,6 +386,8 @@
       "lte": "at most"
     },
     "title": "Automation Rules",
+    "torrentMatched": "torrent matched",
+    "torrentsMatched": "torrents matched",
     "triggers": "triggers",
     "update": "Update Rule",
     "viewLogs": "View Logs"
@@ -412,34 +456,34 @@
   },
   "Common": {
     "airlocked": "Airlocked",
-    "notAirlocked": "Not airlocked",
-    "selectRow": "Select {name}",
     "hours": "hours",
     "itemTypes": {
-      "all": "all",
       "All": "All",
-      "file": "file",
       "File": "File",
-      "files": "files",
       "Files": "Files",
-      "torrent": "torrent",
       "Torrent": "Torrent",
-      "torrents": "torrents",
       "Torrents": "Torrents",
-      "usenet": "usenet",
       "Usenet": "Usenet",
-      "usenets": "usenets",
       "Usenets": "Usenets",
-      "web": "web",
       "Web": "Web",
-      "webdl": "webdl",
-      "Webdl": "Webdl"
+      "Webdl": "Webdl",
+      "all": "all",
+      "file": "file",
+      "files": "files",
+      "torrent": "torrent",
+      "torrents": "torrents",
+      "usenet": "usenet",
+      "usenets": "usenets",
+      "web": "web",
+      "webdl": "webdl"
     },
     "loading": "Loading...",
     "minutes": "minutes",
     "next": "Next",
+    "notAirlocked": "Not airlocked",
     "of": "of",
     "previous": "Previous",
+    "selectRow": "Select {name}",
     "showing": "Showing",
     "time": {
       "ago": " ago",
@@ -467,6 +511,8 @@
       "seeding": "Seeding",
       "timestamps": "Time"
     },
+    "createView": "Create view",
+    "creating": "Creating...",
     "enterValuePlaceholder": "Enter value...",
     "includeColumns": "Include columns",
     "includeSearch": "Include search",
@@ -474,121 +520,37 @@
     "includeSort": "Include sort",
     "noFilters": "No filters. Click '+ Filter' in a group to create one.",
     "noFiltersInGroup": "No filters in this group. Click '+ Filter' to add one.",
-    "removeGroup": "Remove group",
-    "save": "Save",
-    "saveAsNew": "Save as new",
-    "saving": "Saving...",
-    "selectPlaceholder": "Select...",
-    "searchFilterOptionsPlaceholder": "Search…",
-    "searchFilterOptionsNoMatches": "No matching options",
-    "selectTagsPlaceholder": "Select tags...",
-    "updateView": "Update view",
-    "updating": "Updating...",
-    "viewNamePlaceholder": "View name...",
-    "createView": "Create view",
-    "creating": "Creating...",
+    "previewApplied": "Preview applied to the list below. Save when ready, or keep adjusting filters.",
     "previewFilters": "Preview",
     "previewHint": "Apply filters to the downloads list without saving.",
     "previewMatchCount": "{count, plural, =0 {No downloads match} one {# download matches} other {# downloads match}}",
     "previewMatchCountOfTotal": "{matched} of {total} on this tab",
-    "previewApplied": "Preview applied to the list below. Save when ready, or keep adjusting filters.",
+    "removeGroup": "Remove group",
+    "save": "Save",
+    "saveAsNew": "Save as new",
+    "saving": "Saving...",
+    "searchFilterOptionsNoMatches": "No matching options",
+    "searchFilterOptionsPlaceholder": "Search…",
+    "selectPlaceholder": "Select...",
+    "selectTagsPlaceholder": "Select tags...",
+    "updateView": "Update view",
+    "updating": "Updating...",
     "viewEditorDescriptionCreate": "Name your view and set filters to quickly switch download lists.",
     "viewEditorDescriptionEdit": "Update filters and optionally include sort, columns, or search with this view.",
     "viewEditorDescriptionFilter": "Build filters to apply to your list, or save them as a reusable view.",
-    "viewEditorSaveOptions": "Also include with view",
     "viewEditorFiltersSection": "Filter rules",
-    "viewEditorNameLabel": "View name"
-  },
-  "FetchStatus": {
-    "autoRefreshInactive": "Auto-refresh resumes when you return to this tab.",
-    "autoRefreshSlowHint": "Slower refresh while this tab is in the background.",
-    "autoRefreshWatchHint": "Checking for new queued torrents periodically (auto-start on).",
-    "dismiss": "Dismiss",
-    "lastUpdated": "Last updated {ago}.",
-    "nextRefreshIn": "Next refresh in {seconds}s",
-    "nextRefreshSlow": "Background refresh in {seconds}s",
-    "nextRefreshWatch": "Queue check in {seconds}s",
-    "refreshDelayedRateLimit": "Refresh delayed — too many requests.",
-    "refreshingSoon": "Refreshing soon…",
-    "refreshNow": "Refresh now",
-    "refreshPaused": "Auto-refresh paused while media is playing.",
-    "refreshing": "Refreshing…",
-    "retry": "Retry",
-    "updatedHoursAgo": "{hours}h ago",
-    "updatedJustNow": "just now",
-    "updatedMinutesAgo": "{minutes}m ago"
-  },
-  "DownloadsFilters": {
-    "sidebarLabel": "Filters",
-    "collapseSidebar": "Collapse filters sidebar",
-    "expandSidebar": "Expand filters sidebar",
-    "viewsSection": "Views",
-    "tagsSection": "Tags",
-    "noViews": "No saved views yet.",
-    "noTags": "No tags yet.",
-    "newFilter": "New filter",
-    "newView": "New view",
-    "newTag": "New tag",
-    "newTagPrompt": "Tag name",
-    "createTagFailed": "Failed to create tag: {error}",
-    "manageTags": "Manage tags",
-    "tagManagerDescription": "Create, rename, or remove tags used to filter and organize downloads.",
-    "tagManagerSearchPlaceholder": "Search tags…",
-    "tagManagerEmptyHint": "Add a tag above to start grouping downloads.",
-    "tagUsageCount": "{count, plural, one {# download} other {# downloads}}",
-    "tagCountBadge": "{count, plural, one {# tag} other {# tags}}",
-    "tagManagerNoResults": "No tags match \"{query}\"",
-    "tagAssignmentTitle": "Manage tags on downloads",
-    "tagAssignmentDownloadCount": "{count, plural, one {# download} other {# downloads}}",
-    "tagAssignmentDescriptionAddSingle": "Select tags below to add them. Tags already on this download are unchanged.",
-    "tagAssignmentDescriptionAddMulti": "Select tags below to add them to all {count} downloads. Existing tags are kept.",
-    "tagAssignmentDescriptionRemoveSingle": "Select tags below to remove from this download.",
-    "tagAssignmentDescriptionRemoveMulti": "Select tags below to remove from the selected downloads.",
-    "tagAssignmentModeLabel": "Add or remove tags",
-    "tagAssignmentModeAdd": "Add",
-    "tagAssignmentModeRemove": "Remove",
-    "tagAssignmentSelectLabel": "Choose tags",
-    "tagAssignmentSelectedCount": "{count, plural, one {# tag selected} other {# tags selected}}",
-    "tagAssignmentNoAssignedTags": "No tags on this selection",
-    "tagAssignmentNoAssignedTagsHint": "Switch to Add to create or assign tags.",
-    "tagAssignmentSubmitAdd": "Add tags",
-    "tagAssignmentSubmitRemove": "Remove tags",
-    "tagAssignmentSubmittingAdd": "Adding…",
-    "tagAssignmentSubmittingRemove": "Removing…",
-    "modalTitle": "Edit filters",
-    "modalTitleCreate": "Create view",
-    "modalTitleEdit": "Edit view",
-    "modalTitleEditNamed": "Edit \"{name}\"",
-    "viewCreated": "View \"{name}\" created",
-    "viewUpdated": "View \"{name}\" updated",
-    "applyFilters": "Apply filters",
-    "clearAll": "Clear all",
-    "close": "Close",
-    "editFilters": "Edit",
-    "activeView": "View: {name}",
-    "activeSearch": "search \"{query}\"",
-    "activeTag": "Tag: {name}",
-    "activeConditions": "{count, plural, one {# filter} other {# filters}} active",
-    "menuApply": "Apply",
-    "menuClear": "Clear",
-    "toggleFilterOn": "Click to apply",
-    "toggleFilterOff": "Click to clear",
-    "menuEdit": "Edit",
-    "menuRename": "Rename",
-    "menuDelete": "Delete",
-    "confirmDeleteView": "Delete view \"{name}\"?",
-    "confirmDeleteTag": "Delete tag \"{name}\"? It will be removed from all downloads.",
-    "deleteViewFailed": "Failed to delete view: {error}",
-    "deleteTagFailed": "Failed to delete tag: {error}"
+    "viewEditorNameLabel": "View name",
+    "viewEditorSaveOptions": "Also include with view",
+    "viewNamePlaceholder": "View name..."
   },
   "DownloadPanel": {
     "actions": {
       "clearAll": "Clear All",
+      "copied": "Copied",
       "copy": "Copy",
       "copyAll": "Copy All Links",
       "copyLink": "Copy Link",
       "copyLinkWithIndex": "Copy link {index} of {total}",
-      "copied": "Copied",
       "downloadFile": "Download File",
       "downloadFileWithIndex": "Open download {index} of {total}",
       "open": "Open"
@@ -622,6 +584,94 @@
       "linksCopied": "Links copied to clipboard!"
     }
   },
+  "DownloadsFilters": {
+    "activeConditions": "{count, plural, one {# filter} other {# filters}} active",
+    "activeSearch": "search \"{query}\"",
+    "activeTag": "Tag: {name}",
+    "activeView": "View: {name}",
+    "applyFilters": "Apply filters",
+    "clearAll": "Clear all",
+    "close": "Close",
+    "collapseSidebar": "Collapse filters sidebar",
+    "confirmDeleteTag": "Delete tag \"{name}\"? It will be removed from all downloads.",
+    "confirmDeleteView": "Delete view \"{name}\"?",
+    "createTagFailed": "Failed to create tag: {error}",
+    "deleteTagFailed": "Failed to delete tag: {error}",
+    "deleteViewFailed": "Failed to delete view: {error}",
+    "editFilters": "Edit",
+    "expandSidebar": "Expand filters sidebar",
+    "manageTags": "Manage tags",
+    "menuApply": "Apply",
+    "menuClear": "Clear",
+    "menuDelete": "Delete",
+    "menuEdit": "Edit",
+    "menuRename": "Rename",
+    "modalTitle": "Edit filters",
+    "modalTitleCreate": "Create view",
+    "modalTitleEdit": "Edit view",
+    "modalTitleEditNamed": "Edit \"{name}\"",
+    "newFilter": "New filter",
+    "newTag": "New tag",
+    "newTagPrompt": "Tag name",
+    "newView": "New view",
+    "noTags": "No tags yet.",
+    "noViews": "No saved views yet.",
+    "sidebarLabel": "Filters",
+    "tagAssignmentDescriptionAddMulti": "Select tags below to add them to all {count} downloads. Existing tags are kept.",
+    "tagAssignmentDescriptionAddSingle": "Select tags below to add them. Tags already on this download are unchanged.",
+    "tagAssignmentDescriptionRemoveMulti": "Select tags below to remove from the selected downloads.",
+    "tagAssignmentDescriptionRemoveSingle": "Select tags below to remove from this download.",
+    "tagAssignmentDownloadCount": "{count, plural, one {# download} other {# downloads}}",
+    "tagAssignmentModeAdd": "Add",
+    "tagAssignmentModeLabel": "Add or remove tags",
+    "tagAssignmentModeRemove": "Remove",
+    "tagAssignmentNoAssignedTags": "No tags on this selection",
+    "tagAssignmentNoAssignedTagsHint": "Switch to Add to create or assign tags.",
+    "tagAssignmentSelectLabel": "Choose tags",
+    "tagAssignmentSelectedCount": "{count, plural, one {# tag selected} other {# tags selected}}",
+    "tagAssignmentSubmitAdd": "Add tags",
+    "tagAssignmentSubmitRemove": "Remove tags",
+    "tagAssignmentSubmittingAdd": "Adding…",
+    "tagAssignmentSubmittingRemove": "Removing…",
+    "tagAssignmentTitle": "Manage tags on downloads",
+    "tagCountBadge": "{count, plural, one {# tag} other {# tags}}",
+    "tagManagerDescription": "Create, rename, or remove tags used to filter and organize downloads.",
+    "tagManagerEmptyHint": "Add a tag above to start grouping downloads.",
+    "tagManagerNoResults": "No tags match \"{query}\"",
+    "tagManagerSearchPlaceholder": "Search tags…",
+    "tagUsageCount": "{count, plural, one {# download} other {# downloads}}",
+    "tagsSection": "Tags",
+    "toggleFilterOff": "Click to clear",
+    "toggleFilterOn": "Click to apply",
+    "viewCreated": "View \"{name}\" created",
+    "viewUpdated": "View \"{name}\" updated",
+    "viewsSection": "Views"
+  },
+  "ErrorBoundary": {
+    "reloadPage": "Reload page",
+    "sectionMessage": "This section ran into a problem. Try again, or use the menu to open another page.",
+    "title": "Something went wrong",
+    "tryAgain": "Try again"
+  },
+  "FetchStatus": {
+    "autoRefreshInactive": "Auto-refresh resumes when you return to this tab.",
+    "autoRefreshSlowHint": "Slower refresh while this tab is in the background.",
+    "autoRefreshWatchHint": "Checking for new queued torrents periodically (auto-start on).",
+    "dismiss": "Dismiss",
+    "lastUpdated": "Last updated {ago}.",
+    "nextRefreshIn": "Next refresh in {seconds}s",
+    "nextRefreshSlow": "Background refresh in {seconds}s",
+    "nextRefreshWatch": "Queue check in {seconds}s",
+    "refreshDelayedRateLimit": "Refresh delayed — too many requests.",
+    "refreshNow": "Refresh now",
+    "refreshPaused": "Auto-refresh paused while media is playing.",
+    "refreshing": "Refreshing…",
+    "refreshingSoon": "Refreshing soon…",
+    "retry": "Retry",
+    "updatedHoursAgo": "{hours}h ago",
+    "updatedJustNow": "just now",
+    "updatedMinutesAgo": "{minutes}m ago"
+  },
   "FileActions": {
     "copyLink": "Copy Link",
     "download": "Download File",
@@ -633,21 +683,21 @@
     "menu": {
       "archived": "Archived",
       "automation": "Automation Rules",
+      "collapseSidebar": "Collapse sidebar",
       "downloads": "Downloads",
+      "expandSidebar": "Expand sidebar",
       "language": "Language",
       "linkHistory": "Link History",
       "more": "More",
       "notifications": "Notifications",
-      "referrals": "Referrals",
       "preferences": "Preferences",
-      "sectionManager": "Manager",
-      "tools": "Tools",
+      "referrals": "Referrals",
       "rss": "RSS Feeds",
       "search": "Search",
+      "sectionManager": "Manager",
       "systemStatus": "System Status",
       "toggle": "Toggle menu",
-      "collapseSidebar": "Collapse sidebar",
-      "expandSidebar": "Expand sidebar",
+      "tools": "Tools",
       "uploads": "Uploads",
       "user": "User"
     },
@@ -681,6 +731,10 @@
       "label": "Files",
       "show": "Show Files"
     },
+    "retry": {
+      "label": "Retry",
+      "title": "Retry download"
+    },
     "start": {
       "label": "Start",
       "title": "Force Start"
@@ -688,38 +742,34 @@
     "stop": {
       "label": "Stop",
       "title": "Stop seeding"
-    },
-    "retry": {
-      "label": "Retry",
-      "title": "Retry download"
     }
   },
   "ItemActions": {
     "toast": {
-      "deleteAllFailed": "Failed to delete items",
-      "deleteAllSuccess": "All items successfully deleted",
-      "deleteError": "Error deleting: {error}",
-      "deletePartialSuccess": "Deleted {count} of {total} items",
-      "deleteSuccess": "Successfully deleted",
+      "airlockFailed": "Failed to update Airlock: {error}",
+      "airlockLocked": "Download locked",
+      "airlockUnlocked": "Download unlocked",
       "archiveAllFailed": "Failed to archive items",
       "archiveAllSuccess": "All items archived successfully",
       "archiveError": "Error archiving: {error}",
       "archiveNoHash": "Cannot archive: torrent hash is not available",
       "archivePartialSuccess": "Archived {count} of {total} items",
       "archiveSuccess": "Successfully archived",
+      "deleteAllFailed": "Failed to delete items",
+      "deleteAllSuccess": "All items successfully deleted",
+      "deleteError": "Error deleting: {error}",
+      "deletePartialSuccess": "Deleted {count} of {total} items",
+      "deleteSuccess": "Successfully deleted",
       "downloadFailed": "Download start failed",
       "downloadStarted": "Download started successfully",
       "exportTorrentFailed": "Failed to export torrent file",
       "exportTorrentSuccess": "Torrent file exported successfully",
       "noFiles": "No files available to download",
-      "airlockFailed": "Failed to update Airlock: {error}",
-      "airlockLocked": "Download locked",
-      "airlockUnlocked": "Download unlocked",
-      "seedingStopFailed": "Torrent stop seeding failed",
-      "seedingStopped": "Torrent stopped seeding successfully",
       "retryFailed": "Failed to retry download",
       "retrySourceUnavailable": "Cannot retry: source link is not available",
-      "retrySuccess": "Re-queued for download"
+      "retrySuccess": "Re-queued for download",
+      "seedingStopFailed": "Torrent stop seeding failed",
+      "seedingStopped": "Torrent stopped seeding successfully"
     }
   },
   "ItemUploader": {
@@ -793,13 +843,13 @@
       "title": "Connect Your TorBox Account"
     },
     "features": {
-      "batchUpload": {
-        "description": "Add multiple torrents, NZB files, magnets, and hoster links in one go.",
-        "title": "Batch Upload"
-      },
       "automation": {
         "description": "Create smart rules to automatically manage your downloads.",
         "title": "Automation Rules"
+      },
+      "batchUpload": {
+        "description": "Add multiple torrents, NZB files, magnets, and hoster links in one go.",
+        "title": "Batch Upload"
       },
       "search": {
         "description": "Search across multiple torrent and usenet sites from one place.",
@@ -863,7 +913,6 @@
     "reannounce": "Reannounce",
     "retry": "Retry",
     "title": "More Options",
-    "unlockDownload": "Unlock download",
     "toast": {
       "clipboardError": "Failed to copy to clipboard",
       "exportMagnetFailed": "Failed to export magnet link",
@@ -883,6 +932,7 @@
       "uploadFailed": "Failed to start upload",
       "uploadStarted": "Upload started successfully"
     },
+    "unlockDownload": "Unlock download",
     "uploadToCloud": "Upload to Cloud"
   },
   "Navigation": {
@@ -901,74 +951,74 @@
     "testNotification": "Test notification"
   },
   "Referral": {
+    "apply": {
+      "alreadyHasReferrer": "Your account already has a referral code.",
+      "applying": "Applying…",
+      "button": "Apply to my account",
+      "cancel": "Cancel",
+      "confirm": "Apply code",
+      "confirmBody": "This attaches the TorBox Manager referral code to your TorBox account before you subscribe.",
+      "confirmBullet1": "Bonus applies on your first paid subscription only.",
+      "confirmBullet2": "You get 7 extra days per month purchased (e.g. 12 months = 84 days).",
+      "confirmBullet3": "If you already have a referral on your account, it cannot be changed here.",
+      "confirmTitle": "Apply referral code?",
+      "error": "Could not apply referral code. Try the subscription link instead.",
+      "needApiKey": "Add your TorBox API key first.",
+      "success": "Referral code applied to your TorBox account."
+    },
+    "callout": {
+      "apply": "Apply code",
+      "compactMessage": "Bonus days on your first subscription — apply our referral code, then subscribe on TorBox.",
+      "dismiss": "Dismiss for 30 days",
+      "rssHint": "Upgrade to Pro on TorBox and get bonus days on your first subscription with our referral.",
+      "slimMessage": "Get 7 extra days per month on your first TorBox subscription when you use our referral before you pay.",
+      "subscribe": "Subscribe"
+    },
     "copied": "Copied!",
     "copyAll": "Copy All",
     "copyCode": "Copy code",
     "copyLink": "Copy link",
     "description": "Get 7 extra days for each month on your first paid TorBox subscription.",
     "developerNote": "This is the developer's referral code.",
+    "disclaimer": {
+      "firstPurchase": "Referral bonus applies to your first paid purchase only.",
+      "giftCards": "Gift cards and vouchers do not qualify.",
+      "supportsDevelopment": "Using this code also supports TorBox Manager development."
+    },
     "error": "Error copying to clipboard",
-    "landingDescription": "New to TorBox? Use our referral link when you subscribe and get bonus days on your first purchase.",
-    "referral": "Referral",
-    "referralCode": "Referral Code",
-    "referralLink": "Referral Link",
-    "signUp": "Sign Up for TorBox",
-    "title": "Get Free Premium Time",
-    "visitLink": "Visit Link",
     "examples": {
       "oneMonth": "1 mo → +7 days",
       "threeMonths": "3 mo → +21 days",
       "twelveMonths": "12 mo → +84 days"
     },
+    "landingDescription": "New to TorBox? Use our referral link when you subscribe and get bonus days on your first purchase.",
     "panel": {
-      "heroTitle": "Extra days on your first subscription",
+      "helpLink": "How referrals work",
       "heroSubtitle": "7 bonus days for each month you purchase (you and the referrer).",
-      "openSubscription": "Open TorBox subscription",
-      "helpLink": "How referrals work"
+      "heroTitle": "Extra days on your first subscription",
+      "openSubscription": "Open TorBox subscription"
     },
-    "apply": {
-      "button": "Apply to my account",
-      "confirmTitle": "Apply referral code?",
-      "confirmBody": "This attaches the TorBox Manager referral code to your TorBox account before you subscribe.",
-      "confirmBullet1": "Bonus applies on your first paid subscription only.",
-      "confirmBullet2": "You get 7 extra days per month purchased (e.g. 12 months = 84 days).",
-      "confirmBullet3": "If you already have a referral on your account, it cannot be changed here.",
-      "cancel": "Cancel",
-      "confirm": "Apply code",
-      "applying": "Applying…",
-      "success": "Referral code applied to your TorBox account.",
-      "error": "Could not apply referral code. Try the subscription link instead.",
-      "alreadyHasReferrer": "Your account already has a referral code.",
-      "needApiKey": "Add your TorBox API key first."
+    "referral": "Referral",
+    "referralCode": "Referral Code",
+    "referralLink": "Referral Link",
+    "settings": {
+      "resetSnooze": "Show reminders again",
+      "snoozeReminders": "Snooze reminders for 30 days"
     },
-    "callout": {
-      "slimMessage": "Get 7 extra days per month on your first TorBox subscription when you use our referral before you pay.",
-      "compactMessage": "Bonus days on your first subscription — apply our referral code, then subscribe on TorBox.",
-      "rssHint": "Upgrade to Pro on TorBox and get bonus days on your first subscription with our referral.",
-      "apply": "Apply code",
-      "subscribe": "Subscribe",
-      "dismiss": "Dismiss for 30 days"
-    },
-    "upgradeCard": {
-      "title": "Upgrade with bonus days",
-      "description": "Apply our referral code, then complete your first paid subscription on TorBox to receive 7 extra days per month purchased."
-    },
+    "signUp": "Sign Up for TorBox",
     "steps": {
-      "title": "How it works",
+      "popupNote": "If you use the link instead of Apply, confirm the popup on TorBox before purchasing.",
       "step1": "Apply the code to your TorBox account (button above or paste on the subscription page).",
       "step2": "Sign in at torbox.app if prompted, then confirm the referral popup on the subscription page.",
       "step3": "Complete your first paid purchase; bonus days are added automatically.",
-      "popupNote": "If you use the link instead of Apply, confirm the popup on TorBox before purchasing."
+      "title": "How it works"
     },
-    "disclaimer": {
-      "supportsDevelopment": "Using this code also supports TorBox Manager development.",
-      "firstPurchase": "Referral bonus applies to your first paid purchase only.",
-      "giftCards": "Gift cards and vouchers do not qualify."
+    "title": "Get Free Premium Time",
+    "upgradeCard": {
+      "description": "Apply our referral code, then complete your first paid subscription on TorBox to receive 7 extra days per month purchased.",
+      "title": "Upgrade with bonus days"
     },
-    "settings": {
-      "snoozeReminders": "Snooze reminders for 30 days",
-      "resetSnooze": "Show reminders again"
-    }
+    "visitLink": "Visit Link"
   },
   "RssFeeds": {
     "actions": "Actions",
@@ -988,24 +1038,24 @@
     "deleteError": "Failed to delete RSS feed",
     "deleteSuccess": "RSS feed deleted successfully",
     "disable": "Disable",
-    "disabled": "Disabled",
     "disableError": "Failed to disable RSS feed",
     "disableSuccess": "RSS feed disabled successfully",
+    "disabled": "Disabled",
+    "doRegex": "Download Regex (Optional)",
+    "doRegexPlaceholder": "Download items matching this regex",
     "dontOlderThan": "Ignore Older Than (days)",
     "dontOlderThanPlaceholder": "Ignore items older than X days",
     "dontRegex": "Ignore Regex (Optional)",
     "dontRegexPlaceholder": "Ignore items matching this regex",
-    "doRegex": "Download Regex (Optional)",
-    "doRegexPlaceholder": "Download items matching this regex",
     "downloadType": "Download Type",
     "downloadTypePlaceholder": "Select download type",
     "editError": "Failed to update RSS feed",
     "editFeed": "Edit RSS Feed",
     "editSuccess": "RSS feed updated successfully",
     "enable": "Enable",
-    "enabled": "Enabled",
     "enableError": "Failed to enable RSS feed",
     "enableSuccess": "RSS feed enabled successfully",
+    "enabled": "Enabled",
     "error": "Error loading RSS feeds",
     "feedName": "Feed Name",
     "feedNamePlaceholder": "Enter feed name",
@@ -1096,19 +1146,19 @@
     "minSize": "Min Size (GB)",
     "placeholderDownloads": "Search {itemType}…",
     "placeholderDownloadsShort": "Search…",
-    "searchDownloadsAria": "Search {itemType} or file names",
-    "searchDownloadsHelpAria": "How search works",
-    "searchDownloadsHelpIntro": "Matches download titles and file names.",
-    "searchDownloadsHelpOr": "Several words — matches if any word appears (e.g. 1080p bluray)",
-    "searchDownloadsHelpAnd": "Plus — matches only when every word appears (e.g. matrix+1999)",
-    "searchDownloadsHelpPhrase": "Quotes — matches the exact phrase (e.g. \"season 1\")",
-    "searchDownloadsHelpExclude": "Minus — hides matches containing that text (e.g. -sample)",
-    "searchDownloadsHelpCombine": "Combine terms — all parts must match (e.g. \"The Matrix\" 1080p -sample)",
     "placeholderSearch": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
     "quality": "Quality",
     "qualityAll": "All Qualities",
     "recentSearches": "Recent Searches",
     "search": "Search",
+    "searchDownloadsAria": "Search {itemType} or file names",
+    "searchDownloadsHelpAnd": "Plus — matches only when every word appears (e.g. matrix+1999)",
+    "searchDownloadsHelpAria": "How search works",
+    "searchDownloadsHelpCombine": "Combine terms — all parts must match (e.g. \"The Matrix\" 1080p -sample)",
+    "searchDownloadsHelpExclude": "Minus — hides matches containing that text (e.g. -sample)",
+    "searchDownloadsHelpIntro": "Matches download titles and file names.",
+    "searchDownloadsHelpOr": "Several words — matches if any word appears (e.g. 1080p bluray)",
+    "searchDownloadsHelpPhrase": "Quotes — matches the exact phrase (e.g. \"season 1\")",
     "searchExamples": "Search Examples",
     "season": "Season",
     "seasonPlaceholder": "S01",
@@ -1119,9 +1169,9 @@
   },
   "SearchResults": {
     "actions": {
+      "addToTorBox": "Add to TorBox",
       "added": "Added",
       "adding": "Adding...",
-      "addToTorBox": "Add to TorBox",
       "copyLink": "Copy Link",
       "copyMagnet": "Copy Magnet"
     },
@@ -1141,11 +1191,11 @@
     },
     "toast": {
       "magnetCopied": "Magnet link copied to clipboard",
-      "nzbAdded": "NZB added to TorBox successfully",
       "nzbAddFailed": "Failed to add NZB: {error}",
+      "nzbAdded": "NZB added to TorBox successfully",
       "nzbCopied": "NZB link copied to clipboard",
-      "torrentAdded": "Torrent added to TorBox successfully",
       "torrentAddFailed": "Failed to add torrent: {error}",
+      "torrentAdded": "Torrent added to TorBox successfully",
       "uploadSuccess": "Successfully uploaded {count} {type}",
       "uploadSuccessPlural": "Successfully uploaded {count} {type}s"
     }
@@ -1176,6 +1226,12 @@
       "full": "Network Activity"
     }
   },
+  "StatusSection": {
+    "selectedFiles": "{fileCount} files selected ({size})",
+    "selectedItems": "{itemCount} {type} selected ({size})",
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
+    "total": "{count} {type}"
+  },
   "Statuses": {
     "checking_resume_data": "Checking",
     "completed": "Completed",
@@ -1189,12 +1245,6 @@
     "unknown": "Unknown",
     "uploading": "Uploading"
   },
-  "StatusSection": {
-    "selectedFiles": "{fileCount} files selected ({size})",
-    "selectedItems": "{itemCount} {type} selected ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} selected ({size})",
-    "total": "{count} {type}"
-  },
   "SystemStatus": {
     "error": "Error",
     "fullStatusPage": "Full status",
@@ -1205,21 +1255,6 @@
     "never": "Never",
     "refreshStatus": "Click to refresh",
     "responseTime": "{ms} ms",
-    "uptime": {
-      "barLabel": "{label} uptime history, {percent}% operational",
-      "collecting": "Collecting data…",
-      "daysAgo": "{days}d ago",
-      "historyNote": "Platform bar: checks from this browser (~1 min). Official TorBox history is on the status page.",
-      "percent": "{percent}% uptime",
-      "segment": {
-        "degraded": "Slow response",
-        "down": "Down",
-        "empty": "No data yet",
-        "nodata": "Not checked",
-        "unknown": "Unknown",
-        "up": "Operational"
-      }
-    },
     "rows": {
       "app": {
         "label": "This app"
@@ -1257,11 +1292,26 @@
       "platformUnhealthyDescription": "TorBox services may be down. See status page for details",
       "unknown": "Status Unknown",
       "unknownDescription": "Unable to determine system status"
+    },
+    "uptime": {
+      "barLabel": "{label} uptime history, {percent}% operational",
+      "collecting": "Collecting data…",
+      "daysAgo": "{days}d ago",
+      "historyNote": "Platform bar: checks from this browser (~1 min). Official TorBox history is on the status page.",
+      "percent": "{percent}% uptime",
+      "segment": {
+        "degraded": "Slow response",
+        "down": "Down",
+        "empty": "No data yet",
+        "nodata": "Not checked",
+        "unknown": "Unknown",
+        "up": "Operational"
+      }
     }
   },
   "TableBody": {
-    "noDownloads": "No downloads",
     "downloadsTable": "Downloads list",
+    "noDownloads": "No downloads",
     "showMoreFiles": "Show {count} more files",
     "toast": {
       "copyLink": "Link copied to clipboard",
@@ -1291,18 +1341,6 @@
     },
     "title": "Global Upload Options"
   },
-  "Usage": {
-    "danger": {
-      "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Reduce usage soon to avoid warnings or restrictions.",
-      "title": "Very high bandwidth usage"
-    },
-    "learnMore": "How TorBox usage limits work",
-    "viewUsage": "View usage graph",
-    "warning": {
-      "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Staying near this range may attract TorBox abuse monitoring.",
-      "title": "High bandwidth usage"
-    }
-  },
   "UploadProgress": {
     "approachingRateLimit": "Approaching rate limit:",
     "approachingRateLimitDetails": "{perMinute}/10 per minute, {perHour}/60 per hour",
@@ -1315,19 +1353,31 @@
     "uploading": "Uploading {current} of {total}",
     "waitingBeforeNext": "Waiting {time} before next upload"
   },
+  "Usage": {
+    "danger": {
+      "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Reduce usage soon to avoid warnings or restrictions.",
+      "title": "Very high bandwidth usage"
+    },
+    "learnMore": "How TorBox usage limits work",
+    "viewUsage": "View usage graph",
+    "warning": {
+      "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Staying near this range may attract TorBox abuse monitoring.",
+      "title": "High bandwidth usage"
+    }
+  },
   "User": {
     "bandwidth": {
-      "title": "Bandwidth (last 30 days)",
+      "empty": "No bandwidth data for this period",
       "grouping": "Grouping",
       "groupingOptions": {
-        "hour": "Hourly",
         "day": "Daily",
-        "week": "Weekly",
-        "month": "Monthly"
+        "hour": "Hourly",
+        "month": "Monthly",
+        "week": "Weekly"
       },
-      "empty": "No bandwidth data for this period",
       "loadError": "Failed to load bandwidth stats",
-      "retry": "Retry"
+      "retry": "Retry",
+      "title": "Bandwidth (last 30 days)"
     },
     "copyLink": "Copy Link",
     "copyLinkFailed": "Failed to copy link",
@@ -1376,11 +1426,11 @@
     "title": "User Profile"
   },
   "VideoPlayer": {
-    "title": "Video Player",
-    "loading": "Loading stream...",
     "error": "Failed to load stream",
+    "loading": "Loading stream...",
     "playbackSpeed": "Playback Speed",
-    "playbackSpeedNormal": "Normal"
+    "playbackSpeedNormal": "Normal",
+    "title": "Video Player"
   },
   "ViewControls": {
     "cardView": "Card View",
@@ -1393,55 +1443,5 @@
     "tableView": "Table View",
     "toolbarLabel": "Downloads view options",
     "viewModeGroup": "View mode"
-  },
-  "Admin": {
-    "login": {
-      "title": "Admin Login",
-      "subtitle": "Enter your admin API key to access the admin panel",
-      "placeholder": "Admin API Key",
-      "authenticating": "Authenticating...",
-      "signIn": "Sign in"
-    },
-    "dashboard": {
-      "title": "Dashboard",
-      "autoRefresh": "Auto-refresh (30s)",
-      "loadingMetrics": "Loading metrics...",
-      "failedToLoad": "Failed to load metrics"
-    },
-    "users": {
-      "title": "User Management",
-      "loading": "Loading users...",
-      "noUsers": "No users found",
-      "back": "Back",
-      "userDetails": "User Details"
-    },
-    "system": {
-      "title": "System Health",
-      "loading": "Loading system metrics..."
-    },
-    "databases": {
-      "title": "Database Management",
-      "loading": "Loading databases..."
-    },
-    "automation": {
-      "title": "Automation Monitoring",
-      "loading": "Loading automation data..."
-    },
-    "logs": {
-      "title": "Logs",
-      "notImplemented": "Log retrieval is not implemented. Logs are output to console/stdout.",
-      "note": "For production, consider using a log aggregation service or file-based logging."
-    },
-    "settings": {
-      "title": "System Configuration",
-      "loading": "Loading configuration...",
-      "note": "Configuration updates require environment variable changes and server restart."
-    }
-  },
-  "ErrorBoundary": {
-    "title": "Something went wrong",
-    "sectionMessage": "This section ran into a problem. Try again, or use the menu to open another page.",
-    "tryAgain": "Try again",
-    "reloadPage": "Reload page"
   }
 }
