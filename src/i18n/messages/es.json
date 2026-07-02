@@ -156,8 +156,6 @@
     "assetTypes": {
       "hint": "Las condiciones y acciones están limitadas a lo que cada tipo seleccionado soporta.",
       "label": "Tipo",
-      "torrent": "Torrents",
-      "usenet": "Usenet",
       "webdl": "Descargas web"
     },
     "booleanOperators": {
@@ -267,7 +265,6 @@
       "title": "Aún no hay reglas de automatización"
     },
     "enabledAt": "habilitado a",
-    "error": "Error",
     "executions": "ejecuciones",
     "failed": "Falló",
     "itemsAffected": "Elementos Afectados",
@@ -404,8 +401,6 @@
     "eta": "Tiempo restante",
     "expires_at": "Caduca a",
     "file_count": "Recuento de archivos",
-    "hash": "Hash",
-    "id": "ID",
     "is_downloaded": "Descargado",
     "name": "Nombre",
     "original_url": "URL de origen",
@@ -428,21 +423,9 @@
       "All": "Todos",
       "File": "Archivo",
       "Files": "Archivos",
-      "Torrent": "Torrent",
-      "Torrents": "Torrents",
-      "Usenet": "Usenet",
-      "Usenets": "Usenets",
-      "Web": "Web",
-      "Webdl": "Webdl",
       "all": "todos",
       "file": "archivo",
-      "files": "archivos",
-      "torrent": "torrent",
-      "torrents": "torrents",
-      "usenet": "usenet",
-      "usenets": "usenets",
-      "web": "web",
-      "webdl": "webdl"
+      "files": "archivos"
     },
     "loading": "Cargando...",
     "minutes": "minutos",
@@ -455,12 +438,8 @@
     "time": {
       "ago": " atrás",
       "complete": "Completado",
-      "d": "d",
-      "h": "h",
       "in": "en ",
-      "m": "m",
       "mo": "m",
-      "s": "s",
       "unknown": "Desconocido",
       "y": "a"
     }
@@ -670,14 +649,12 @@
     },
     "theme": {
       "toggle": "Cambiar tema"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Gestor de torrents y desfragmentación",
     "search": "Buscar",
-    "searchPlaceholder": "Buscar torrents...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Buscar torrents..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -807,7 +784,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Encuentra tu clave API en",
-      "link": "torbox.app/settings",
       "title": "Introducir clave API de TorBox"
     },
     "features": {
@@ -825,11 +801,9 @@
       }
     },
     "footer": {
-      "description": "Esta aplicación es completamente de código abierto en",
-      "github": "GitHub"
+      "description": "Esta aplicación es completamente de código abierto en"
     },
-    "subtitle": "La alternativa del usuario avanzado a la interfaz de usuario de TorBox. Creado para la velocidad y la eficiencia.",
-    "title": "TorBox Manager"
+    "subtitle": "La alternativa del usuario avanzado a la interfaz de usuario de TorBox. Creado para la velocidad y la eficiencia."
   },
   "LinkHistory": {
     "actions": {
@@ -1037,11 +1011,8 @@
     "never": "Nunca",
     "noFeeds": "No hay feeds RSS configurados",
     "options": {
-      "auto": "Auto",
       "dontSeed": "No Seed",
       "seed": "Sembrar",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Descarga Web"
     },
     "pageDescription": "Gestionar feeds RSS y explorar elementos",
@@ -1096,10 +1067,8 @@
       "downloadStarted": "Descarga iniciada exitosamente",
       "noLink": "No hay enlace de descarga disponible"
     },
-    "torrent": "Torrent",
     "type": "Tipo",
     "unknown": "Desconocido",
-    "usenet": "Usenet",
     "webdl": "Descarga Web"
   },
   "SearchBar": {
@@ -1108,7 +1077,6 @@
     "clearSearch": "Borrar búsqueda",
     "customEngines": "Motores personalizados",
     "episode": "Episodio",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Ocultar avanzado",
     "minSeeders": "Seeders min.",
     "minSize": "Tamaño min. (GB)",
@@ -1129,11 +1097,9 @@
     "searchDownloadsHelpPhrase": "Comillas — coincide con la frase exacta (p. ej. \"season 1\")",
     "searchExamples": "Ejemplos de búsqueda",
     "season": "Temporada",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Mostrar avanzado",
     "torrentSearchWarning": "La búsqueda de torrents de TorBox actualmente no es confiable y puede devolver resultados incompletos o incorrectos. Se recomienda la búsqueda en Usenet cuando esté disponible.",
-    "year": "Año",
-    "yearPlaceholder": "2024"
+    "year": "Año"
   },
   "SearchResults": {
     "actions": {
@@ -1197,8 +1163,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} archivos seleccionados ({size})",
     "selectedItems": "{itemCount} {type} seleccionados ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} seleccionados ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} seleccionados ({size})"
   },
   "Statuses": {
     "checking_resume_data": "Comprobando",
@@ -1214,7 +1179,6 @@
     "uploading": "Subiendo"
   },
   "SystemStatus": {
-    "error": "Error",
     "fullStatusPage": "Estado completo",
     "hoursAgo": "hace {hours} horas",
     "justNow": "Ahora mismo",
@@ -1222,7 +1186,6 @@
     "minutesAgo": "hace {minutes} minutos",
     "never": "Nunca",
     "refreshStatus": "Clic para actualizar",
-    "responseTime": "{ms} ms",
     "rows": {
       "app": {
         "label": "Esta app"
@@ -1334,6 +1297,15 @@
     }
   },
   "User": {
+    "airlock": {
+      "helpLink": "Aprende más sobre TorBox Airlock",
+      "helpTooltip": "Almacenamiento permanente para tu cuenta de TorBox. Los torrents Airlocked no se eliminan después de 30 días de inactividad.",
+      "loadError": "Error al cargar los datos de uso de Airlock",
+      "of": "de",
+      "percentUsed": "{percent}% usado",
+      "retry": "Reintentar",
+      "title": "Datos AirLocked"
+    },
     "bandwidth": {
       "empty": "No hay datos de ancho de banda para este período",
       "grouping": "Agrupación",
@@ -1351,6 +1323,7 @@
     "copyLinkFailed": "Error al copiar el enlace",
     "description": "Gestiona tu cuenta y ve tus estadísticas",
     "errors": {
+      "loadError": "Error al cargar el perfil",
       "reloadPage": "Recargar Página",
       "renderError": "Ocurrió un error al renderizar el perfil"
     },
@@ -1358,7 +1331,6 @@
     "plans": {
       "essential": "Esencial",
       "free": "Gratis",
-      "pro": "Pro",
       "standard": "Estándar",
       "unknown": "Desconocido"
     },
@@ -1369,7 +1341,6 @@
       "downloadBreakdown": "Desglose de Descargas",
       "email": "Correo Electrónico",
       "lastLogin": "Última Actualización",
-      "plan": "Plan",
       "planExpiry": "Vencimiento del Plan",
       "ratio": "Proporción",
       "referralCode": "Código de Referencia",
@@ -1397,7 +1368,6 @@
     "error": "Error al cargar la transmisión",
     "loading": "Cargando transmisión...",
     "playbackSpeed": "Velocidad de reproducción",
-    "playbackSpeedNormal": "Normal",
     "title": "Reproductor de video"
   },
   "ViewControls": {

@@ -1378,6 +1378,15 @@
     }
   },
   "User": {
+    "airlock": {
+      "helpLink": "Learn more about TorBox Airlock",
+      "helpTooltip": "Permanent storage for your TorBox account. Airlocked files are not removed after 30 days of inactivity.",
+      "loadError": "Failed to load Airlock usage",
+      "of": "of",
+      "percentUsed": "{percent}% used",
+      "retry": "Retry",
+      "title": "AirLocked Data"
+    },
     "bandwidth": {
       "empty": "No bandwidth data for this period",
       "grouping": "Grouping",
@@ -1395,6 +1404,7 @@
     "copyLinkFailed": "Failed to copy link",
     "description": "Manage your account and view your statistics",
     "errors": {
+      "loadError": "Error loading profile",
       "reloadPage": "Reload Page",
       "renderError": "An error occurred while rendering the profile"
     },

@@ -156,8 +156,6 @@
     "assetTypes": {
       "hint": "Bedingungen und Aktionen sind auf das beschränkt, was jeder ausgewählte Typ unterstützt.",
       "label": "Typ",
-      "torrent": "Torrents",
-      "usenet": "Usenet",
       "webdl": "Web-Downloads"
     },
     "booleanOperators": {
@@ -217,13 +215,11 @@
       "lastUploadActivityDescription": "Minuten seit der letzten Upload-Aktivität; der eingegebene Wert wird in Minuten verglichen",
       "longTermSeeding": "Langfristiges Seeding",
       "longTermSeedingDescription": "Ob der Torrent länger als 24 Stunden seedet",
-      "name": "Name",
       "nameDescription": "Torrent-Name (unterstützt Textsuche)",
       "namePlaceholder": "Geben Sie Text ein, um zu suchen...",
       "originalUrl": "Quell-URL",
       "originalUrlDescription": "Ursprüngliche URL, die zum Erstellen des Downloads verwendet wurde (unterstützt Textsuche)",
       "originalUrlPlaceholder": "URL zum Suchen eingeben...",
-      "peers": "Peers",
       "peersDescription": "Anzahl der Peers, die aktuell verbunden sind",
       "private": "Privater",
       "privateDescription": "Ob der Torrent von einem privaten Tracker ist",
@@ -238,14 +234,12 @@
       "seeds": "Seeders",
       "seedsDescription": "Anzahl der Seeders, die aktuell verfügbar sind",
       "stalledTime": "Blockiert-Zeit",
-      "status": "Status",
       "statusDescription": "Aktueller Status des Torrents (wartend, herunterladen, seeden, etc.)",
       "statusPlaceholder": "wartend, herunterladen, seeden, etc.",
       "tags": "Schlagwörter",
       "tagsPlaceholder": "Schlagwörter auswählen...",
       "totalUploaded": "Gesamtanzahl hochgeladener Dateien",
       "totalUploadedDescription": "Gesamtgröße aller hochgeladenen Dateien (in GB)",
-      "tracker": "Tracker",
       "trackerDescription": "Tracker-URL oder Name (unterstützt Textsuche)",
       "trackerPlaceholder": "Tracker-URL oder -Namen eingeben...",
       "uploadSpeed": "Upload-Geschwindigkeit",
@@ -254,7 +248,6 @@
       "uploadStalledTimeDescription": "Zeit seit der Upload-Aktivität gestoppt wurde (in Minuten)"
     },
     "delete": "Löschen",
-    "details": "Details",
     "emptyState": {
       "backendRequired": "Backend für 24/7-Automatisierung erforderlich",
       "backendRequiredDescription": "Verbinden Sie das TorBox Manager Backend, damit Regeln gespeichert und automatisch ausgewertet werden. Ohne Backend können Regeln nicht im Hintergrund laufen.",
@@ -404,12 +397,10 @@
     "eta": "Vorauss. Ende",
     "expires_at": "Ablaufdatum",
     "file_count": "Dateianzahl ",
-    "hash": "Hash",
     "id": "ID ",
     "is_downloaded": "Heruntergeladen",
     "name": "Name ",
     "original_url": "Quell-URL ",
-    "peers": "Peers",
     "private": "Privater Tracker",
     "progress": "Fortschritt",
     "ratio": "Verhältnis ",
@@ -430,10 +421,6 @@
       "Files": "Files ",
       "Torrent": "Torrent ",
       "Torrents": "Torrents ",
-      "Usenet": "Usenet",
-      "Usenets": "Usenets",
-      "Web": "Web",
-      "Webdl": "Webdl",
       "all": "alle",
       "file": "Datei",
       "files": "Dateien",
@@ -642,16 +629,13 @@
   "FileActions": {
     "copyLink": "Link kopieren",
     "download": "Datei herunterladen",
-    "play": "Abspielen",
-    "streaming": "Streaming..."
+    "play": "Abspielen"
   },
   "Header": {
-    "logo": "TorBox Manager Logo",
     "menu": {
       "archived": "Archiviert",
       "automation": "Automatisierungsregeln",
       "collapseSidebar": "Seitenleiste einklappen",
-      "downloads": "Downloads",
       "expandSidebar": "Seitenleiste ausklappen",
       "language": "Sprache",
       "linkHistory": "Link-Verlauf",
@@ -661,11 +645,9 @@
       "referrals": "Empfehlungen",
       "rss": "RSS-Feeds",
       "search": "Suchen ",
-      "sectionManager": "Manager",
       "systemStatus": "Systemstatus",
       "toggle": "Menü umschalten",
       "tools": "Werkzeuge",
-      "uploads": "Uploads",
       "user": "Benutzer"
     },
     "theme": {
@@ -676,8 +658,7 @@
   "Index": {
     "description": "Torrent und Debrid-Manager ",
     "search": "Suchen",
-    "searchPlaceholder": "Torrents suchen...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Torrents suchen..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -807,7 +788,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Finden Sie Ihren API-Schlüssel unter ",
-      "link": "torbox.app/settings",
       "title": "TorBox API-Schlüssel eingeben"
     },
     "features": {
@@ -825,11 +805,9 @@
       }
     },
     "footer": {
-      "description": "Diese App ist vollständig Open Source auf",
-      "github": "GitHub"
+      "description": "Diese App ist vollständig Open Source auf"
     },
-    "subtitle": "Die Alternative zur TorBox-Benutzeroberfläche für Power-User. Auf Geschwindigkeit und Effizienz ausgelegt. ",
-    "title": "TorBox Manager"
+    "subtitle": "Die Alternative zur TorBox-Benutzeroberfläche für Power-User. Auf Geschwindigkeit und Effizienz ausgelegt. "
   },
   "LinkHistory": {
     "actions": {
@@ -1037,11 +1015,8 @@
     "never": "Nie",
     "noFeeds": "Keine RSS-Feeds konfiguriert",
     "options": {
-      "auto": "Auto",
       "dontSeed": "Nicht seeden",
       "seed": "Seeden",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Web-Download"
     },
     "pageDescription": "RSS-Feeds verwalten und Elemente durchsuchen",
@@ -1055,7 +1030,6 @@
     "save": "Speichern",
     "scanInterval": "Scan-Intervall (Minuten)",
     "scanIntervalPlaceholder": "Wie oft dieser Feed gescannt werden soll",
-    "status": "Status",
     "tabs": {
       "feeds": "Feed-Verwaltung",
       "items": "Elemente-Verwaltung"
@@ -1096,10 +1070,8 @@
       "downloadStarted": "Download erfolgreich gestartet",
       "noLink": "Kein Download-Link verfügbar"
     },
-    "torrent": "Torrent",
     "type": "Typ",
     "unknown": "Unbekannt",
-    "usenet": "Usenet",
     "webdl": "Web-Download"
   },
   "SearchBar": {
@@ -1107,8 +1079,6 @@
     "clearHistory": "Löschen",
     "clearSearch": "Suche löschen ",
     "customEngines": "Benutzerdefinierte Suchmaschinen",
-    "episode": "Episode",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Erweitert ausblenden",
     "minSeeders": "Min. Seeder",
     "minSize": "Min. Größe (GB)",
@@ -1129,11 +1099,9 @@
     "searchDownloadsHelpPhrase": "Anführungszeichen — trifft die exakte Phrase zu (z. B. \"season 1\")",
     "searchExamples": "Suchbeispiele",
     "season": "Staffel",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Erweitert anzeigen",
     "torrentSearchWarning": "Die TorBox-Torrent-Suche ist derzeit unzuverlässig und kann unvollständige oder falsche Ergebnisse liefern. Usenet-Suche wird empfohlen, wenn verfügbar.",
-    "year": "Jahr",
-    "yearPlaceholder": "2024"
+    "year": "Jahr"
   },
   "SearchResults": {
     "actions": {
@@ -1173,12 +1141,7 @@
       "hide": "Diagramm ausblenden",
       "show": "Diagramm anzeigen"
     },
-    "labels": {
-      "download": "Download",
-      "upload": "Upload"
-    },
     "scale": {
-      "linear": "Linear",
       "logarithmic": "Logarithmisch"
     },
     "timeRanges": {
@@ -1197,8 +1160,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} Dateien ausgewählt ({size})",
     "selectedItems": "{itemCount} {type} ausgewählt ({size}) ",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} ausgewählt ({size}) ",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} ausgewählt ({size}) "
   },
   "Statuses": {
     "checking_resume_data": "Prüfe…",
@@ -1222,7 +1184,6 @@
     "minutesAgo": "vor {minutes} Minuten",
     "never": "Nie",
     "refreshStatus": "Zum Aktualisieren klicken",
-    "responseTime": "{ms} ms",
     "rows": {
       "app": {
         "label": "Diese App"
@@ -1334,6 +1295,15 @@
     }
   },
   "User": {
+    "airlock": {
+      "helpLink": "Mehr über TorBox Airlock erfahren",
+      "helpTooltip": "Permanentes Speichervermögen für Ihr TorBox-Konto. Airlocked Downloads werden nicht nach 30 Tagen Inaktivität entfernt.",
+      "loadError": "Airlock-Nutzungsdaten konnten nicht geladen werden",
+      "of": "von",
+      "percentUsed": "{percent}% verwendet",
+      "retry": "Wiederholen",
+      "title": "AirLocked-Daten"
+    },
     "bandwidth": {
       "empty": "Keine Bandbreitendaten für diesen Zeitraum",
       "grouping": "Gruppierung",
@@ -1351,15 +1321,13 @@
     "copyLinkFailed": "Link konnte nicht kopiert werden",
     "description": "Verwalten Sie Ihr Konto und sehen Sie Ihre Statistiken",
     "errors": {
+      "loadError": "Fehler beim Laden des Profils",
       "reloadPage": "Seite neu laden",
       "renderError": "Beim Rendern des Profils ist ein Fehler aufgetreten"
     },
     "noData": "Keine Daten verfügbar",
     "plans": {
-      "essential": "Essential",
       "free": "Kostenlos",
-      "pro": "Pro",
-      "standard": "Standard",
       "unknown": "Unbekannt"
     },
     "profile": {
@@ -1369,11 +1337,9 @@
       "downloadBreakdown": "Download-Aufschlüsselung",
       "email": "E-Mail",
       "lastLogin": "Letzte Aktualisierung",
-      "plan": "Plan",
       "planExpiry": "Plan-Ablauf",
       "ratio": "Verhältnis",
       "referralCode": "Empfehlungscode",
-      "status": "Status",
       "title": "Benutzerprofil",
       "torrentDownloads": "Torrent-Downloads",
       "totalDownloads": "Gesamte Downloads",
@@ -1397,7 +1363,6 @@
     "error": "Stream konnte nicht geladen werden",
     "loading": "Stream wird geladen...",
     "playbackSpeed": "Wiedergabegeschwindigkeit",
-    "playbackSpeedNormal": "Normal",
     "title": "Videoplayer"
   },
   "ViewControls": {
