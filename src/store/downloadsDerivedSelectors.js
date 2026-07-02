@@ -203,9 +203,12 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
     isDownloaded = lookup.itemDownloads.has(`${assetType}:${String(downloadId || entity.id)}`);
   }
 
-  const entityTags = entity.tags || [];
+  const entityTags = Array.isArray(entity.tags) ? entity.tags : [];
+  const hasUpstreamStringTags = entityTags.some((tag) => typeof tag === 'string');
   const tagsUnchanged =
-    tags.length === entityTags.length && tags.every((t, i) => t === entityTags[i]);
+    !hasUpstreamStringTags &&
+    tags.length === entityTags.length &&
+    tags.every((tag, index) => tag?.id === entityTags[index]?.id);
   const downloadedUnchanged =
     isDownloaded === undefined ||
     entity.is_downloaded === isDownloaded ||

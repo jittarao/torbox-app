@@ -107,6 +107,24 @@ function getAirlockEditConfig(assetType) {
   }
 }
 
+function getAirlockListEndpoint(assetType) {
+  switch (assetType) {
+    case 'torrent':
+      return '/api/torrents/mylist';
+    case 'usenet':
+      return '/api/usenet/mylist';
+    case 'webdl':
+      return '/api/webdl/mylist';
+    default:
+      throw new Error(`Unsupported asset type for airlock list fetch: ${assetType}`);
+  }
+}
+
+function findDownloadInListData(data, id) {
+  const items = Array.isArray(data?.data) ? data.data : data?.data ? [data.data] : [];
+  return items.find((item) => String(item.id) === String(id)) || null;
+}
+
 function normalizeEditableArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -705,11 +723,27 @@ class ApiClient {
 
   async setAirlock(download, airlocked) {
     const assetType = normalizeAssetTypeForEdit(download);
+    const listEndpoint = getAirlockListEndpoint(assetType);
     const { endpoint } = getAirlockEditConfig(assetType);
-    const payload = buildAirlockEditPayload(download, airlocked);
+    const downloadId = download.id;
 
     return this.handleApiCall(
       async () => {
+        const listResponse = await this.client.get(listEndpoint, {
+          params: { id: downloadId, bypass_cache: true },
+          timeout: DEFAULT_FETCH_TIMEOUT,
+        });
+        const currentItem = findDownloadInListData(listResponse.data, downloadId);
+        if (!currentItem) {
+          const notFoundError = new Error('Download not found');
+          notFoundError.response = { status: 404, data: { error: 'Download not found' } };
+          throw notFoundError;
+        }
+
+        const payload = buildAirlockEditPayload(
+          { ...download, ...currentItem, id: currentItem.id ?? downloadId },
+          airlocked
+        );
         const response = await this.client.put(endpoint, payload, {
           timeout: DEFAULT_ACTION_TIMEOUT,
         });
@@ -728,6 +762,7 @@ class ApiClient {
           downloadId: download.id,
           assetType,
           airlocked,
+          listEndpoint,
         },
       }
     );
