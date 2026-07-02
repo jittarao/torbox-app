@@ -43,7 +43,7 @@
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
-    "shaka-player": "^4.16.15",
+    "shaka-player": "^5.1.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.12"
   },
