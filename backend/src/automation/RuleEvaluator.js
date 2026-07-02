@@ -1027,7 +1027,14 @@ class RuleEvaluator {
     return this.evaluateBooleanCondition(isActive, condition);
   }
 
-  handleIsAirlocked(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap) {
+  handleIsAirlocked(
+    condition,
+    torrent,
+    telemetry,
+    telemetryMap,
+    tagsByDownloadId,
+    speedHistoryMap
+  ) {
     const isAirlocked = this.normalizeBooleanValue(torrent.airlocked);
     return this.evaluateBooleanCondition(isAirlocked, condition);
   }
