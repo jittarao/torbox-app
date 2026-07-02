@@ -21,6 +21,7 @@ import {
   Lock,
   Percent,
   Private,
+  Tag,
   Unlock,
   UpArrow,
 } from '@/components/icons';
@@ -44,6 +45,8 @@ import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 function normalizeBooleanValue(value) {
   return value === true || value === 1 || value === 'true';
 }
+
+const COLUMNS_WITH_INLINE_ICON = new Set(['airlocked', 'private', 'tags']);
 
 function ItemCard({
   item,
@@ -123,6 +126,8 @@ function ItemCard({
         return columnT('private');
       case 'airlocked':
         return columnT('airlocked');
+      case 'tags':
+        return columnT('tags');
     }
   };
 
@@ -163,6 +168,8 @@ function ItemCard({
         return <Private />;
       case 'airlocked':
         return <Lock />;
+      case 'tags':
+        return <Tag />;
     }
   };
 
@@ -310,6 +317,8 @@ function ItemCard({
             <span>{commonT('notAirlocked')}</span>
           </div>
         );
+      case 'tags':
+        return item.tags && item.tags.length > 0 ? <TagDisplay tags={item.tags} /> : null;
     }
   };
 
@@ -470,25 +479,34 @@ function ItemCard({
             {isMobile && renderSpeedIndicators()}
             {!isMobile ? (
               <>
-                {filteredColumns.map((column) => (
-                  <div
-                    className="flex items-center gap-1 font-medium md:font-normal shrink-0"
-                    key={column}
-                  >
-                    <div className="flex items-center gap-0.5 md:gap-1 [&_svg]:md:h-3.5 [&_svg]:md:w-3.5">
-                      <Tooltip content={getTooltipContent(column)}>
-                        {getColumnIcon(column)}{' '}
-                      </Tooltip>
-                      {['created_at', 'cached_at', 'updated_at', 'expires_at'].includes(column) ? (
-                        <Tooltip content={formatDate(item[column])}>
-                          <span>{getColumnValue(column, item)}</span>
-                        </Tooltip>
-                      ) : (
-                        <span>{getColumnValue(column, item)}</span>
-                      )}
+                {filteredColumns.map((column) => {
+                  const value = getColumnValue(column, item);
+                  if (value == null || value === '') return null;
+
+                  return (
+                    <div
+                      className="flex items-center gap-1 font-medium md:font-normal shrink-0"
+                      key={column}
+                    >
+                      <div className="flex items-center gap-0.5 md:gap-1 [&_svg]:md:h-3.5 [&_svg]:md:w-3.5">
+                        {!COLUMNS_WITH_INLINE_ICON.has(column) && (
+                          <Tooltip content={getTooltipContent(column)}>
+                            {getColumnIcon(column)}{' '}
+                          </Tooltip>
+                        )}
+                        {['created_at', 'cached_at', 'updated_at', 'expires_at'].includes(
+                          column
+                        ) ? (
+                          <Tooltip content={formatDate(item[column])}>
+                            <span>{value}</span>
+                          </Tooltip>
+                        ) : (
+                          <span>{value}</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </>
             ) : (
               <>
@@ -496,9 +514,6 @@ function ItemCard({
                 <span>{timeAgo(item.created_at, commonT)}</span>
               </>
             )}
-
-            {/* Tags display */}
-            {item.tags && item.tags.length > 0 && <TagDisplay tags={item.tags} />}
           </div>
 
           {isMobile && (
