@@ -157,7 +157,6 @@
       "hint": "条件とアクションは、選択された各タイプがサポートするものに制限されます。",
       "label": "タイプ",
       "torrent": "トレント",
-      "usenet": "Usenet",
       "webdl": "Webダウンロード"
     },
     "booleanOperators": {
@@ -405,7 +404,6 @@
     "expires_at": "有効期限",
     "file_count": "ファイル数",
     "hash": "ハッシュ",
-    "id": "ID",
     "is_downloaded": "ダウンロード済み",
     "name": "名前",
     "original_url": "ソースURL",
@@ -430,19 +428,11 @@
       "Files": "ファイル",
       "Torrent": "トレント",
       "Torrents": "トレント",
-      "Usenet": "Usenet",
-      "Usenets": "Usenets",
-      "Web": "Web",
-      "Webdl": "Webdl",
       "all": "すべて",
       "file": "ファイル",
       "files": "ファイル",
       "torrent": "トレント",
-      "torrents": "トレント",
-      "usenet": "usenet",
-      "usenets": "usenets",
-      "web": "web",
-      "webdl": "webdl"
+      "torrents": "トレント"
     },
     "loading": "読み込み中...",
     "minutes": "分",
@@ -670,14 +660,12 @@
     },
     "theme": {
       "toggle": "テーマを切り替え"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Torrent および Debrid マネージャー",
     "search": "検索",
-    "searchPlaceholder": "Torrentsを検索...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Torrentsを検索..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -807,7 +795,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "APIキーは次の場所で確認できます",
-      "link": "torbox.app/settings",
       "title": "TorBox APIキーを入力"
     },
     "features": {
@@ -825,11 +812,9 @@
       }
     },
     "footer": {
-      "description": "このアプリは完全にオープンソースで",
-      "github": "GitHub"
+      "description": "このアプリは完全にオープンソースで"
     },
-    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
-    "title": "TorBox Manager"
+    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。"
   },
   "LinkHistory": {
     "actions": {
@@ -1108,7 +1093,6 @@
     "clearSearch": "検索をクリア",
     "customEngines": "カスタムエンジン",
     "episode": "エピソード",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "詳細を隠す",
     "minSeeders": "最小シーダー",
     "minSize": "最小サイズ (GB)",
@@ -1129,11 +1113,9 @@
     "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
     "searchExamples": "検索例",
     "season": "シーズン",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "詳細を表示",
     "torrentSearchWarning": "TorBoxのトレント検索は現在信頼性が低く、不完全または誤った結果を返す可能性があります。利用可能な場合はUsenet検索をお勧めします。",
-    "year": "年",
-    "yearPlaceholder": "2024"
+    "year": "年"
   },
   "SearchResults": {
     "actions": {
@@ -1197,8 +1179,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} ファイル選択中 ({size})",
     "selectedItems": "{itemCount} {type}が選択されています ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} 選択中 ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} 選択中 ({size})"
   },
   "Statuses": {
     "checking_resume_data": "チェック中",
@@ -1334,6 +1315,15 @@
     }
   },
   "User": {
+    "airlock": {
+      "helpLink": "TorBox Airlockについて",
+      "helpTooltip": "TorBoxのアカウントに永続的なストレージを提供します。Airlockedダウンロードは30日間の非アクティビティ後も削除されません。",
+      "loadError": "Airlockの使用データの読み込みに失敗しました",
+      "of": "の",
+      "percentUsed": "{percent}%使用中",
+      "retry": "再試行",
+      "title": "AirLockedデータ"
+    },
     "bandwidth": {
       "empty": "この期間の帯域幅データはありません",
       "grouping": "グループ化",
@@ -1351,6 +1341,7 @@
     "copyLinkFailed": "リンクのコピーに失敗しました",
     "description": "アカウントを管理し、統計を確認",
     "errors": {
+      "loadError": "プロフィールの読み込みエラー",
       "reloadPage": "ページを再読み込み",
       "renderError": "プロフィールの表示中にエラーが発生しました"
     },

@@ -100,7 +100,6 @@
       "selectItem": "Sélectionner le téléchargement archivé"
     },
     "columns": {
-      "actions": "Actions",
       "archivedAt": "Archivé le",
       "itemId": "ID de l'élément",
       "itemName": "Nom de l'élément",
@@ -125,7 +124,6 @@
     }
   },
   "AutomationRules": {
-    "action": "Action",
     "actionFailed": "action échouée",
     "actionPerformed": "action effectuée",
     "actions": {
@@ -155,9 +153,6 @@
     "addRule": "Ajouter une règle",
     "assetTypes": {
       "hint": "Les conditions et actions sont limitées à ce que chaque type sélectionné prend en charge.",
-      "label": "Type",
-      "torrent": "Torrents",
-      "usenet": "Usenet",
       "webdl": "Téléchargements web"
     },
     "booleanOperators": {
@@ -172,7 +167,6 @@
     "checkEvery": "Vérifier chaque",
     "clearLogs": "Effacer les Journaux",
     "close": "Fermer",
-    "condition": "Condition",
     "conditionGroups": {
       "downloading": "Téléchargement",
       "lifecycle": "Cycle de vie",
@@ -245,7 +239,6 @@
       "tagsPlaceholder": "Sélectionner des étiquettes...",
       "totalUploaded": "Total envoyé",
       "totalUploadedDescription": "Quantité totale de données envoyées (en Go)",
-      "tracker": "Tracker",
       "trackerDescription": "URL ou nom du tracker (recherche par texte)",
       "trackerPlaceholder": "Entrez l'URL ou le nom du tracker...",
       "uploadSpeed": "Vitesse d'envoi actuelle",
@@ -392,10 +385,8 @@
     "reorderColumns": "Réorganiser les colonnes"
   },
   "Columns": {
-    "actions": "Actions",
     "airlocked": "Verrouillé",
     "airlocked_filter": "Est verrouillé",
-    "asset_type": "Type",
     "cached_at": "Date de cache",
     "created_at": "Date d'ajout",
     "download_progress": "Progression",
@@ -404,15 +395,12 @@
     "eta": "Temps restant",
     "expires_at": "Expire à",
     "file_count": "Nombre de fichiers",
-    "hash": "Hash",
-    "id": "ID",
     "is_downloaded": "Téléchargé",
     "name": "Nom",
     "original_url": "URL source",
     "peers": "Pairs",
     "private": "Tracker Privé",
     "progress": "Progression",
-    "ratio": "Ratio",
     "seeds": "Graines",
     "size": "Taille",
     "tags": "Étiquettes",
@@ -428,24 +416,11 @@
       "All": "Tous",
       "File": "Fichier",
       "Files": "Fichiers",
-      "Torrent": "Torrent",
-      "Torrents": "Torrents",
-      "Usenet": "Usenet",
-      "Usenets": "Usenets",
-      "Web": "Web",
-      "Webdl": "Webdl",
       "all": "tous",
       "file": "fichier",
-      "files": "fichiers",
-      "torrent": "torrent",
-      "torrents": "torrents",
-      "usenet": "usenet",
-      "usenets": "usenets",
-      "web": "web",
-      "webdl": "webdl"
+      "files": "fichiers"
     },
     "loading": "Chargement...",
-    "minutes": "minutes",
     "next": "Suivant",
     "notAirlocked": "Non verrouillé",
     "of": "sur",
@@ -456,11 +431,9 @@
       "ago": " il y a",
       "complete": "Terminé",
       "d": "j",
-      "h": "h",
       "in": "dans ",
       "m": "min",
       "mo": "m",
-      "s": "s",
       "unknown": "Inconnu",
       "y": "a"
     }
@@ -642,8 +615,7 @@
   "FileActions": {
     "copyLink": "Copier le lien",
     "download": "Télécharger le fichier",
-    "play": "Lire",
-    "streaming": "Streaming..."
+    "play": "Lire"
   },
   "Header": {
     "logo": "Logo TorBox Manager",
@@ -656,7 +628,6 @@
       "language": "Langue",
       "linkHistory": "Historique des liens",
       "more": "Plus",
-      "notifications": "Notifications",
       "preferences": "Préférences",
       "referrals": "Parrainage",
       "rss": "Flux RSS",
@@ -670,14 +641,12 @@
     },
     "theme": {
       "toggle": "Changer de thème"
-    },
-    "title": "TorBox Manager"
+    }
   },
   "Index": {
     "description": "Gestionnaire de torrents et de débrideurs",
     "search": "Rechercher",
-    "searchPlaceholder": "Rechercher des torrents...",
-    "title": "TorBox Manager"
+    "searchPlaceholder": "Rechercher des torrents..."
   },
   "ItemActionButtons": {
     "delete": {
@@ -807,7 +776,6 @@
   "LandingPage": {
     "apiKeyInput": {
       "description": "Trouvez votre clé API sur",
-      "link": "torbox.app/settings",
       "title": "Entrer la clé API TorBox"
     },
     "features": {
@@ -825,11 +793,9 @@
       }
     },
     "footer": {
-      "description": "Cette application est entièrement open source sur",
-      "github": "GitHub"
+      "description": "Cette application est entièrement open source sur"
     },
-    "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité.",
-    "title": "TorBox Manager"
+    "subtitle": "L'alternative de l'utilisateur expérimenté à l'interface utilisateur de TorBox. Conçu pour la vitesse et l'efficacité."
   },
   "LinkHistory": {
     "actions": {
@@ -844,7 +810,6 @@
       "selectItem": "Sélectionner le lien"
     },
     "columns": {
-      "actions": "Actions",
       "expiresAt": "Date d'expiration",
       "fileName": "Nom du fichier",
       "itemId": "ID de l'élément",
@@ -915,7 +880,6 @@
     "markAllAsRead": "Tout marquer comme lu",
     "markAsRead": "Marquer comme lu",
     "noNotifications": "Aucune notification",
-    "notifications": "Notifications",
     "testNotification": "Notification de test"
   },
   "Referral": {
@@ -989,7 +953,6 @@
     "visitLink": "Visiter le lien"
   },
   "RssFeeds": {
-    "actions": "Actions",
     "active": "Actif",
     "addError": "Échec de l'ajout du flux RSS",
     "addFeed": "Ajouter un Flux RSS",
@@ -1037,11 +1000,8 @@
     "never": "Jamais",
     "noFeeds": "Aucun flux RSS configuré",
     "options": {
-      "auto": "Auto",
       "dontSeed": "Ne pas Seeder",
       "seed": "Partager",
-      "torrent": "Torrent",
-      "usenet": "Usenet",
       "webdl": "Téléchargement Web"
     },
     "pageDescription": "Gérer les flux RSS et parcourir les éléments",
@@ -1072,7 +1032,6 @@
   "RssItems": {
     "allTypes": "Tous les Types",
     "category": "Catégorie",
-    "date": "Date",
     "download": "Télécharger",
     "error": "Erreur lors du chargement des éléments",
     "loading": "Chargement des éléments...",
@@ -1096,10 +1055,7 @@
       "downloadStarted": "Téléchargement démarré avec succès",
       "noLink": "Aucun lien de téléchargement disponible"
     },
-    "torrent": "Torrent",
-    "type": "Type",
     "unknown": "Inconnu",
-    "usenet": "Usenet",
     "webdl": "Téléchargement Web"
   },
   "SearchBar": {
@@ -1108,7 +1064,6 @@
     "clearSearch": "Effacer la recherche",
     "customEngines": "Moteurs personnalisés",
     "episode": "Épisode",
-    "episodePlaceholder": "E01",
     "hideAdvanced": "Masquer avancé",
     "minSeeders": "Seeders min.",
     "minSize": "Taille min. (GB)",
@@ -1129,11 +1084,9 @@
     "searchDownloadsHelpPhrase": "Guillemets — correspond à la phrase exacte (ex. \"season 1\")",
     "searchExamples": "Exemples de recherche",
     "season": "Saison",
-    "seasonPlaceholder": "S01",
     "showAdvanced": "Afficher avancé",
     "torrentSearchWarning": "La recherche de torrents TorBox n'est actuellement pas fiable et peut retourner des résultats incomplets ou incorrects. La recherche Usenet est recommandée lorsqu'elle est disponible.",
-    "year": "Année",
-    "yearPlaceholder": "2024"
+    "year": "Année"
   },
   "SearchResults": {
     "actions": {
@@ -1197,8 +1150,7 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} fichiers sélectionnés ({size})",
     "selectedItems": "{itemCount} {type} sélectionnés ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} sélectionnés ({size})",
-    "total": "{count} {type}"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} sélectionnés ({size})"
   },
   "Statuses": {
     "checking_resume_data": "Vérification",
@@ -1222,7 +1174,6 @@
     "minutesAgo": "il y a {minutes} minutes",
     "never": "Jamais",
     "refreshStatus": "Cliquer pour actualiser",
-    "responseTime": "{ms} ms",
     "rows": {
       "app": {
         "label": "Cette application"
@@ -1334,6 +1285,15 @@
     }
   },
   "User": {
+    "airlock": {
+      "helpLink": "En savoir plus sur TorBox Airlock",
+      "helpTooltip": "Stockage permanent pour votre compte TorBox. Les téléchargements Airlocked ne sont pas supprimés après 30 jours d'inactivité.",
+      "loadError": "Échec du chargement des données d'utilisation Airlock",
+      "of": "de",
+      "percentUsed": "{percent}% utilisé",
+      "retry": "Réessayer",
+      "title": "Données AirLocked"
+    },
     "bandwidth": {
       "empty": "Aucune donnée de bande passante pour cette période",
       "grouping": "Regroupement",
@@ -1351,6 +1311,7 @@
     "copyLinkFailed": "Échec de la copie du lien",
     "description": "Gérez votre compte et consultez vos statistiques",
     "errors": {
+      "loadError": "Erreur lors du chargement du profil",
       "reloadPage": "Recharger la page",
       "renderError": "Une erreur s'est produite lors du rendu du profil"
     },
@@ -1358,8 +1319,6 @@
     "plans": {
       "essential": "Essentiel",
       "free": "Gratuit",
-      "pro": "Pro",
-      "standard": "Standard",
       "unknown": "Inconnu"
     },
     "profile": {
@@ -1371,7 +1330,6 @@
       "lastLogin": "Dernière Mise à Jour",
       "plan": "Forfait",
       "planExpiry": "Expiration du Forfait",
-      "ratio": "Ratio",
       "referralCode": "Code de Parrainage",
       "status": "Statut",
       "title": "Profil Utilisateur",
