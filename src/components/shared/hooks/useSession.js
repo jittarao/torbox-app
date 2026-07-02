@@ -8,6 +8,7 @@ export function useSession() {
   const {
     apiKey,
     hydrated,
+    userData,
     permissions,
     permissionsLoading,
     hydrateFromStorage,
@@ -17,6 +18,7 @@ export function useSession() {
     useShallow((s) => ({
       apiKey: s.apiKey,
       hydrated: s.hydrated,
+      userData: s.userData,
       permissions: s.permissions,
       permissionsLoading: s.permissionsLoading,
       hydrateFromStorage: s.hydrateFromStorage,
@@ -32,6 +34,7 @@ export function useSession() {
   return {
     apiKey,
     hydrated,
+    userData,
     permissions,
     permissionsLoading,
     setApiKey,
