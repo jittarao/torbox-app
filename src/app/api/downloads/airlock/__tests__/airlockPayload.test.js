@@ -3,7 +3,10 @@ import {
   EDIT_CONFIG,
   buildEditPayload,
   findDownloadById,
+  getAlternativeHashes,
+  isIdInQueuedList,
   normalizeAssetType,
+  normalizeEditableArray,
 } from '../airlockPayload';
 
 describe('airlockPayload', () => {
@@ -53,5 +56,36 @@ describe('airlockPayload', () => {
       alternative_hashes: ['abc'],
       airlocked: true,
     });
+  });
+
+  test('normalizeEditableArray coerces non-arrays to empty arrays', () => {
+    expect(normalizeEditableArray(null)).toEqual([]);
+    expect(normalizeEditableArray('tag')).toEqual([]);
+    expect(normalizeEditableArray(['a'])).toEqual(['a']);
+  });
+
+  test('getAlternativeHashes prefers snake_case and falls back to camelCase', () => {
+    expect(getAlternativeHashes({ alternative_hashes: ['a'] })).toEqual(['a']);
+    expect(getAlternativeHashes({ alternativeHashes: ['b'] })).toEqual(['b']);
+    expect(getAlternativeHashes({ alternative_hashes: ['a'], alternativeHashes: ['b'] })).toEqual([
+      'a',
+    ]);
+  });
+
+  test('buildEditPayload preserves camelCase alternative hashes', () => {
+    expect(
+      buildEditPayload({ id: 1, name: 'x', alternativeHashes: ['hash'] }, 'torrent_id', false)
+    ).toEqual({
+      torrent_id: 1,
+      name: 'x',
+      tags: [],
+      alternative_hashes: ['hash'],
+      airlocked: false,
+    });
+  });
+
+  test('isIdInQueuedList matches ids with string coercion', () => {
+    expect(isIdInQueuedList({ data: [{ id: 7 }] }, '7')).toBe(true);
+    expect(isIdInQueuedList({ data: [{ id: 7 }] }, 99)).toBe(false);
   });
 });

@@ -31,12 +31,27 @@ export function findDownloadById(data, id) {
   return items.find((item) => String(item.id) === String(id)) || null;
 }
 
+export function getAlternativeHashes(item) {
+  return item?.alternative_hashes ?? item?.alternativeHashes;
+}
+
 export function buildEditPayload(item, idField, airlocked) {
   return {
     [idField]: item.id,
     name: item.name || '',
     tags: normalizeEditableArray(item.tags),
-    alternative_hashes: normalizeEditableArray(item.alternative_hashes),
+    alternative_hashes: normalizeEditableArray(getAlternativeHashes(item)),
     airlocked,
   };
+}
+
+export const QUEUED_TYPE_BY_ASSET = {
+  torrent: 'torrent',
+  usenet: 'usenet',
+  webdl: 'webdl',
+};
+
+export function isIdInQueuedList(queuedData, id) {
+  const items = Array.isArray(queuedData?.data) ? queuedData.data : [];
+  return items.some((item) => String(item.id) === String(id));
 }
