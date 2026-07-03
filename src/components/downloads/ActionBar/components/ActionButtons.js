@@ -80,7 +80,8 @@ export default function ActionButtons({
   const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
   const [isForceStarting, setIsForceStarting] = useState(false);
   const [isBulkRetrying, setIsBulkRetrying] = useState(false);
-  const [isBulkAirlockUpdating, setIsBulkAirlockUpdating] = useState(false);
+  /** 'lock' | 'unlock' while bulk airlock requests are in flight (keeps the right button visible). */
+  const [bulkAirlockPendingAction, setBulkAirlockPendingAction] = useState(null);
   const [deleteParentDownloads, setDeleteParentDownloads] = useState(false);
   const [showTagAssignment, setShowTagAssignment] = useState(false);
   const connectedProviders = useRef({});
@@ -167,11 +168,15 @@ export default function ActionButtons({
 
   const showBulkAirlock = selectedAirlockableItems.length > 0;
   const showBulkAirlockLock =
-    showBulkAirlock &&
-    selectedAirlockableItems.every((item) => !normalizeBooleanValue(item.airlocked));
+    bulkAirlockPendingAction === 'lock' ||
+    (bulkAirlockPendingAction === null &&
+      showBulkAirlock &&
+      selectedAirlockableItems.every((item) => !normalizeBooleanValue(item.airlocked)));
   const showBulkAirlockUnlock =
-    showBulkAirlock &&
-    selectedAirlockableItems.every((item) => normalizeBooleanValue(item.airlocked));
+    bulkAirlockPendingAction === 'unlock' ||
+    (bulkAirlockPendingAction === null &&
+      showBulkAirlock &&
+      selectedAirlockableItems.every((item) => normalizeBooleanValue(item.airlocked)));
 
   const selectedArchivableTorrents = useMemo(() => {
     if (hasSelectedFiles || selectedItemCount === 0) return [];
@@ -352,9 +357,10 @@ export default function ActionButtons({
   };
 
   const handleBulkAirlock = async (nextAirlocked) => {
-    if (isBulkAirlockUpdating || !apiKey || selectedAirlockableItems.length === 0) return;
+    if (bulkAirlockPendingAction !== null || !apiKey || selectedAirlockableItems.length === 0)
+      return;
 
-    setIsBulkAirlockUpdating(true);
+    setBulkAirlockPendingAction(nextAirlocked ? 'lock' : 'unlock');
 
     const items = selectedAirlockableItems.map((item) => ({
       item,
@@ -483,7 +489,7 @@ export default function ActionButtons({
       )
     );
 
-    setIsBulkAirlockUpdating(false);
+    setBulkAirlockPendingAction(null);
   };
 
   const handleBulkForceStart = async () => {
@@ -724,10 +730,12 @@ export default function ActionButtons({
         <BulkActionButton
           variant="secondary"
           onClick={() => handleBulkAirlock(true)}
-          disabled={isBulkAirlockUpdating}
-          loading={isBulkAirlockUpdating}
+          disabled={bulkAirlockPendingAction !== null}
+          loading={bulkAirlockPendingAction === 'lock'}
           icon={<Lock />}
-          label={isBulkAirlockUpdating ? t('bulkAirlockLocking') : t('bulkAirlockLock')}
+          label={
+            bulkAirlockPendingAction === 'lock' ? t('bulkAirlockLocking') : t('bulkAirlockLock')
+          }
           title={t('bulkAirlockLockTitle')}
         />
       )}
@@ -736,10 +744,14 @@ export default function ActionButtons({
         <BulkActionButton
           variant="secondary"
           onClick={() => handleBulkAirlock(false)}
-          disabled={isBulkAirlockUpdating}
-          loading={isBulkAirlockUpdating}
+          disabled={bulkAirlockPendingAction !== null}
+          loading={bulkAirlockPendingAction === 'unlock'}
           icon={<Unlock />}
-          label={isBulkAirlockUpdating ? t('bulkAirlockUnlocking') : t('bulkAirlockUnlock')}
+          label={
+            bulkAirlockPendingAction === 'unlock'
+              ? t('bulkAirlockUnlocking')
+              : t('bulkAirlockUnlock')
+          }
           title={t('bulkAirlockUnlockTitle')}
         />
       )}

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
-import React from 'react';
+import React, { useState } from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 
 const mockSelectionState = {
@@ -34,12 +34,18 @@ mock.module('@/store/downloadsSelectionStore', () => {
   };
 });
 
-mock.module('@/store/torboxDownloadsStore', () => ({
-  useTorboxDownloadsStore: (selector) =>
-    selector({
-      patchItem: () => {},
-    }),
-}));
+mock.module('@/store/torboxDownloadsStore', () => {
+  let patchItemImpl = () => {};
+  return {
+    useTorboxDownloadsStore: (selector) =>
+      selector({
+        patchItem: (...args) => patchItemImpl(...args),
+      }),
+    __setPatchItemImpl: (fn) => {
+      patchItemImpl = fn;
+    },
+  };
+});
 
 mock.module('@/store/torboxDownloadsSelectors', () => ({
   resolveItemAssetType: (item, activeType) => (activeType === 'all' ? item.assetType : activeType),
@@ -106,6 +112,7 @@ const mockFetch = mock(() =>
 globalThis.fetch = mockFetch;
 
 const { default: ActionButtons } = await import('../ActionBar/components/ActionButtons');
+const { __setPatchItemImpl } = await import('@/store/torboxDownloadsStore');
 
 function renderButtons({ allItems, activeType = 'torrents' } = {}) {
   return render(
@@ -135,6 +142,7 @@ describe('ActionButtons bulk Airlock', () => {
   beforeEach(() => {
     mockSelectionState.selectedItems = { items: new Set(), files: new Map() };
     mockUiContext.isBackendAvailable = false;
+    __setPatchItemImpl(() => {});
     mockFetch.mockReset();
     mockFetch.mockImplementation(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) })
@@ -213,6 +221,63 @@ describe('ActionButtons bulk Airlock', () => {
     const body = JSON.parse(opts.body);
     expect(body.airlocked).toBe(true);
     expect(body.id).toBe(1);
+  });
+
+  it('keeps Locking label during bulk lock despite optimistic airlocked patch', async () => {
+    const initialItems = [{ id: 1, airlocked: false, download_state: 'completed' }];
+    mockSelectionState.selectedItems.items = new Set(['1']);
+
+    let resolveFetch;
+    mockFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () =>
+            resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+        })
+    );
+
+    function OptimisticList() {
+      const [items, setItems] = useState(initialItems);
+      __setPatchItemImpl((_uiAssetType, id, patch) => {
+        setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+      });
+
+      return (
+        <ActionButtons
+          setSelectedItems={() => {}}
+          hasSelectedFiles={false}
+          isDownloading={false}
+          isDeleting={false}
+          isExporting={false}
+          onBulkDownload={() => {}}
+          onBulkDelete={() => {}}
+          onBulkArchive={() => {}}
+          onBulkExport={() => {}}
+          itemTypeName="item"
+          itemTypePlural="items"
+          isDownloadPanelOpen={false}
+          setIsDownloadPanelOpen={() => {}}
+          activeType="torrents"
+          apiKey="test-key"
+          setToast={() => {}}
+          allItems={items}
+        />
+      );
+    }
+
+    render(<OptimisticList />);
+
+    fireEvent.click(screen.getByText('ActionButtons.bulkAirlockLock'));
+
+    await waitFor(() => {
+      expect(screen.getByText('ActionButtons.bulkAirlockLocking')).toBeTruthy();
+    });
+    expect(screen.queryByText('ActionButtons.bulkAirlockUnlocking')).toBeNull();
+
+    resolveFetch();
+    await waitFor(() => {
+      expect(screen.queryByText('ActionButtons.bulkAirlockLocking')).toBeNull();
+    });
   });
 
   it('runs bulk Lock with a bounded rolling pool (max 3 in flight)', async () => {
