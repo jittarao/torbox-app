@@ -1262,15 +1262,8 @@ class UploadProcessor {
       // Wait for rate limit if needed
       await this.waitForRateLimit(userDb, type);
 
-      if (type === 'torrent' && upload._torboxTorrentList === null) {
-        return await this.handleConnectionDeferral(
-          upload,
-          userDb,
-          type,
-          new Error('TorBox torrent list unavailable')
-        );
-      }
-
+      // _torboxTorrentList is an array when mylist prefetch succeeded (duplicate pre-check).
+      // null means prefetch failed — skip pre-check but still attempt createtorrent.
       if (type === 'torrent' && Array.isArray(upload._torboxTorrentList)) {
         const completedFromList = await this.tryCompleteTorrentFromExistingList(
           upload,
@@ -1907,10 +1900,13 @@ class UploadProcessor {
               const apiClient = await this.getApiClient(auth_id);
               torboxTorrentListCache = await apiClient.getTorrents(true);
             } catch (listError) {
-              logger.warn('Failed to prefetch TorBox torrent list for upload pre-check', {
-                authId: auth_id,
-                error: listError.message,
-              });
+              logger.warn(
+                'Failed to prefetch TorBox torrent list; skipping duplicate pre-check for this cycle',
+                {
+                  authId: auth_id,
+                  error: listError.message,
+                }
+              );
               torboxTorrentListCache = null;
             }
           }
