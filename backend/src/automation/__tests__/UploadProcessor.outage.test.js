@@ -47,6 +47,56 @@ describe('UploadProcessor outage handling', () => {
     expect(updateCall.sql).toContain('TorBox API unavailable. Will retry automatically.');
   });
 
+  test('processUpload still calls createtorrent when torrent list prefetch failed', async () => {
+    const userDb = createRecordingDb();
+    const processor = new UploadProcessor(null, {
+      updateUploadCounters: async () => {},
+    });
+
+    let connectionDeferCalled = false;
+    let apiRequestCalled = false;
+
+    processor.handleConnectionDeferral = async () => {
+      connectionDeferCalled = true;
+      return false;
+    };
+    processor.isAtRateLimit = () => false;
+    processor.getApiClient = async () => ({});
+    processor.waitForRateLimit = async () => {};
+    processor.buildFormData = async () => ({ getHeaders: () => ({}) });
+    processor.makeApiRequest = async () => {
+      apiRequestCalled = true;
+      return {
+        status: 200,
+        data: {
+          success: true,
+          error: null,
+          detail: 'OK',
+          data: { hash: 'abc', torrent_id: 1, auth_id: 'torbox-auth' },
+        },
+      };
+    };
+    processor.handleSuccessfulUpload = () => {};
+
+    const result = await processor.processUpload(
+      {
+        id: 10,
+        authId: 'auth-1',
+        type: 'torrent',
+        upload_type: 'magnet',
+        url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
+        name: 'Test',
+        _torboxTorrentList: null,
+      },
+      userDb,
+      'queued'
+    );
+
+    expect(connectionDeferCalled).toBe(false);
+    expect(apiRequestCalled).toBe(true);
+    expect(result).toBe(true);
+  });
+
   test('tryCompleteTorrentFromExistingList skips createtorrent when hash exists', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
