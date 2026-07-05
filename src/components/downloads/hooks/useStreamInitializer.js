@@ -1,7 +1,23 @@
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useStream } from '@/components/shared/hooks/useStream';
+import { useFileInteractionStore } from '@/store/fileInteractionStore';
+import { EXTERNAL_APP_NOT_INSTALLED, launchExternalUrl } from '@/utils/launchExternalUrl';
+import { buildExternalPlayerUrl, extractHlsUrl, parseStreamMetadata } from '@/utils/streamUrl';
 
 export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) {
+  const t = useTranslations('OpenIn');
+  const [openInModal, setOpenInModal] = useState({
+    isOpen: false,
+    itemId: null,
+    file: null,
+    fileName: null,
+    itemName: null,
+  });
+  const [isCreatingStream, setIsCreatingStream] = useState(false);
+  const [loadingChoice, setLoadingChoice] = useState(null);
+  const [openInError, setOpenInError] = useState(null);
+
   const [trackSelectionModal, setTrackSelectionModal] = useState({
     isOpen: false,
     metadata: null,
@@ -25,32 +41,107 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
     }
   }, [activeType]);
 
-  const handleFileStreamInit = useCallback(
-    async (itemId, file) => {
+  const getFileStreamKey = useCallback(
+    (itemId, fileId) => `${String(itemId)}-${String(fileId)}`,
+    []
+  );
+
+  const resolveStreamUrl = useCallback(
+    async (itemId, fileId, streamType, subtitleIndex, audioIndex) => {
+      const streamMetadata = await createStream(
+        itemId,
+        fileId,
+        streamType,
+        subtitleIndex,
+        audioIndex
+      );
+
+      let streamUrl = extractHlsUrl(streamMetadata);
+
+      if (!streamUrl) {
+        const retryData = await createStream(itemId, fileId, streamType, subtitleIndex, audioIndex);
+        streamUrl = extractHlsUrl(retryData);
+      }
+
+      return { streamUrl, streamMetadata };
+    },
+    [createStream]
+  );
+
+  const handleFileStreamInit = useCallback((itemId, file, itemName = null) => {
+    setOpenInError(null);
+    setOpenInModal({
+      isOpen: true,
+      itemId,
+      file,
+      fileName: file.name || file.short_name || 'Video',
+      itemName,
+    });
+  }, []);
+
+  const closeOpenInModal = useCallback(() => {
+    if (isCreatingStream) return;
+    setOpenInModal((prev) => ({ ...prev, isOpen: false }));
+    setOpenInError(null);
+  }, [isCreatingStream]);
+
+  const handleOpenInChoice = useCallback(
+    async (choice) => {
+      const { itemId, file } = openInModal;
+      if (!itemId || !file) return;
+
+      const streamType = getStreamType();
+      const fileKey = getFileStreamKey(itemId, file.id);
+
+      setLoadingChoice(choice);
+      setIsCreatingStream(true);
+      setOpenInError(null);
+      useFileInteractionStore.getState().setStreaming(fileKey, true);
+
       try {
-        const streamType = getStreamType();
-        const streamData = await createStream(itemId, file.id, streamType);
-        const data = streamData.data || streamData;
-        const metadata = data.metadata || streamData.metadata || {};
-        const introInformation = data.intro_information || streamData.intro_information || null;
-        const fullMetadata = {
-          ...metadata,
-          search_metadata: data.search_metadata || streamData.search_metadata || null,
-        };
-        setTrackSelectionModal({
-          isOpen: true,
-          metadata: fullMetadata,
-          introInformation,
-          fileName: file.name || file.short_name || 'Video',
-          itemId,
-          fileId: file.id,
-          file,
-        });
+        if (choice === 'web') {
+          const streamData = await createStream(itemId, file.id, streamType);
+          const { metadata: fullMetadata, introInformation } = parseStreamMetadata(streamData);
+
+          setOpenInModal((prev) => ({ ...prev, isOpen: false }));
+          setTrackSelectionModal({
+            isOpen: true,
+            metadata: fullMetadata,
+            introInformation,
+            fileName: file.name || file.short_name || 'Video',
+            itemId,
+            fileId: file.id,
+            file,
+          });
+          return;
+        }
+
+        const { streamUrl } = await resolveStreamUrl(itemId, file.id, streamType, null, 0);
+
+        if (!streamUrl) {
+          throw new Error('Failed to get stream URL');
+        }
+
+        const externalUrl = buildExternalPlayerUrl(choice, streamUrl);
+        await launchExternalUrl(externalUrl);
+        setOpenInModal((prev) => ({ ...prev, isOpen: false }));
       } catch (error) {
-        console.error('Error getting stream metadata:', error);
+        console.error('Error preparing stream:', error);
+        if (
+          error?.code === EXTERNAL_APP_NOT_INSTALLED ||
+          error?.message === EXTERNAL_APP_NOT_INSTALLED
+        ) {
+          setOpenInError(t('errors.playerNotInstalled', { player: t(`players.${choice}`) }));
+        } else {
+          setOpenInError(error.message || t('errors.streamFailed'));
+        }
+      } finally {
+        setLoadingChoice(null);
+        setIsCreatingStream(false);
+        useFileInteractionStore.getState().setStreaming(fileKey, false);
       }
     },
-    [getStreamType, createStream]
+    [openInModal, getStreamType, getFileStreamKey, createStream, resolveStreamUrl, t]
   );
 
   const closeTrackSelectionModal = useCallback(() => {
@@ -67,11 +158,13 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
         introInformation,
       } = trackSelectionModal;
       const streamType = getStreamType();
+      const fileKey = getFileStreamKey(itemId, fileId);
 
       setTrackSelectionModal((prev) => ({ ...prev, isOpen: false }));
+      useFileInteractionStore.getState().setStreaming(fileKey, true);
 
       try {
-        const streamMetadata = await createStream(
+        const { streamUrl, streamMetadata } = await resolveStreamUrl(
           itemId,
           fileId,
           streamType,
@@ -79,28 +172,11 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
           selectedStreamData.audio_track_idx ?? 0
         );
 
-        const data = streamMetadata.data || streamMetadata;
-        const presignedToken = data.presigned_token || streamMetadata.presigned_token;
-        const userToken =
-          data.user_token || data.token || streamMetadata.user_token || streamMetadata.token;
-
-        let streamUrl = data.hls_url || streamMetadata.hls_url;
-
-        if (!streamUrl && presignedToken && userToken) {
-          const streamData = await createStream(
-            itemId,
-            fileId,
-            streamType,
-            selectedStreamData.subtitle_track_idx ?? 0,
-            selectedStreamData.audio_track_idx ?? 0
-          );
-          streamUrl = streamData.data?.hls_url;
-        }
-
         if (!streamUrl) {
           throw new Error('Failed to get stream URL');
         }
 
+        const data = streamMetadata.data || streamMetadata;
         const updatedMetadata = data.metadata || streamMetadata.metadata || fullMetadata;
         const subtitles = updatedMetadata.subtitles || [];
         const audios = updatedMetadata.audios || [];
@@ -131,12 +207,20 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
         }
       } catch (error) {
         console.error('Error creating stream with selected tracks:', error);
+      } finally {
+        useFileInteractionStore.getState().setStreaming(fileKey, false);
       }
     },
-    [trackSelectionModal, getStreamType, createStream, onOpenVideoPlayer]
+    [trackSelectionModal, getStreamType, getFileStreamKey, resolveStreamUrl, onOpenVideoPlayer]
   );
 
   return {
+    openInModal,
+    closeOpenInModal,
+    handleOpenInChoice,
+    isCreatingStream,
+    loadingChoice,
+    openInError,
     trackSelectionModal,
     closeTrackSelectionModal,
     handleFileStreamInit,

@@ -33,6 +33,7 @@ function FileListFile({
   fileIndex,
   selectionId,
   itemId,
+  itemName,
   isBlurred,
   onFileSelect,
   onFileDownload,
@@ -62,7 +63,7 @@ function FileListFile({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onFileStream(itemId, file);
+                onFileStream(itemId, file, itemName);
               }}
               disabled={isFileStreaming}
               className={FILE_ACTION_BUTTON_CLASS}
@@ -227,6 +228,7 @@ function FileListFile({
 function FileList({
   files,
   itemId,
+  itemName,
   isBlurred,
   onFileSelect,
   onFileDownload,
@@ -246,6 +248,7 @@ function FileList({
             fileIndex={fileIndex}
             selectionId={itemId}
             itemId={itemId}
+            itemName={itemName}
             isBlurred={isBlurred}
             onFileSelect={onFileSelect}
             onFileDownload={onFileDownload}

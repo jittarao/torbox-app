@@ -689,6 +689,33 @@
     "play": "Play",
     "streaming": "Streaming..."
   },
+  "OpenIn": {
+    "close": "Close",
+    "choosePlayer": "Choose a player",
+    "preparingStream": "Preparing stream…",
+    "title": "Open In",
+    "errors": {
+      "playerNotInstalled": "Could not open {player}. It may not be installed, or your browser cannot launch it.",
+      "streamFailed": "Failed to prepare stream"
+    },
+    "fileMeta": {
+      "audio": "Audio",
+      "from": "From",
+      "video": "Video"
+    },
+    "players": {
+      "web": "Web Player",
+      "webHint": "In-browser playback with track selection",
+      "infuse": "Infuse Player",
+      "iina": "IINA",
+      "stremio": "Stremio"
+    },
+    "platforms": {
+      "infuse": "iOS / iPadOS / macOS",
+      "iina": "macOS",
+      "stremio": "Windows / macOS / Linux"
+    }
+  },
   "Header": {
     "logo": "TorBox Manager Logo",
     "menu": {
