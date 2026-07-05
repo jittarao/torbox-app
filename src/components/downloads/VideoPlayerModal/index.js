@@ -87,6 +87,7 @@ export default function VideoPlayerModal({
   const subtitleMenuRef = useRef(null);
   const playbackSpeedMenuRef = useRef(null);
   const controlsBarRef = useRef(null);
+  const playerAreaRef = useRef(null);
   const lastClickTimeRef = useRef(0);
   const volumeSliderTimeoutRef = useRef(null);
   const isSeekingRef = useRef(false);
@@ -156,8 +157,10 @@ export default function VideoPlayerModal({
   useControlsVisibility({
     isOpen,
     isPlaying,
+    isSeeking,
     showControls,
     setShowControls,
+    playerRef: playerAreaRef,
     controlsBarRef,
     showVolumeSlider,
     showAudioMenu,
@@ -583,17 +586,14 @@ export default function VideoPlayerModal({
     currentTime >= introInfo.start_time &&
     currentTime <= introInfo.end_time;
 
+  const controlsVisible = showControls && !isLoading && !error;
+
   return (
     <div className="fixed inset-0 z-50 bg-neutral-950" ref={containerRef}>
       {/* Video Container */}
       <div
+        ref={playerAreaRef}
         className="relative w-full h-full flex items-center justify-center"
-        onMouseMove={() => setShowControls(true)}
-        onMouseLeave={() => {
-          if (isPlaying) {
-            setTimeout(() => setShowControls(false), 2000);
-          }
-        }}
         onWheel={(e) => {
           e.preventDefault();
           if (videoRef.current) {
@@ -637,22 +637,24 @@ export default function VideoPlayerModal({
         {error && <ErrorOverlay error={error} onRetry={handleErrorRetry} />}
 
         {/* Close Button */}
-        {showControls && (
+        {!isLoading && !error && (
           <button
             type="button"
             onClick={onClose}
-            className="group absolute top-4 right-4 z-30 
+            className={`group absolute top-4 right-4 z-30
               size-10 flex items-center justify-center
-              rounded-full 
-              bg-black/40 hover:bg-black/70 
+              rounded-full
+              bg-black/40 hover:bg-black/70
               backdrop-blur-sm hover:backdrop-blur-md
               text-white/90 hover:text-white
               transition-all duration-300 ease-out
               hover:scale-110 active:scale-95
               border border-white/10 hover:border-white/30
               shadow-lg hover:shadow-xl
-              focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent"
+              focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
+              ${controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             aria-label="Close"
+            tabIndex={controlsVisible ? 0 : -1}
           >
             <X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
           </button>
@@ -669,8 +671,9 @@ export default function VideoPlayerModal({
         />
 
         {/* Controls Overlay */}
-        {showControls && !isLoading && !error && (
+        {!isLoading && !error && (
           <VideoControls
+            isVisible={controlsVisible}
             currentTime={displayTime}
             duration={duration}
             progress={progress}
@@ -719,11 +722,12 @@ export default function VideoPlayerModal({
         )}
 
         {/* Video Title Overlay */}
-        {showControls && fileName && (
+        {!isLoading && !error && fileName && (
           <div
-            className="absolute top-4 left-4 z-20 px-4 py-2 mr-2 rounded-lg
+            className={`absolute top-4 left-4 z-20 px-4 py-2 mr-2 rounded-lg
             bg-black/60 backdrop-blur-md text-white
-            border border-white/20"
+            border border-white/20 transition-opacity duration-300
+            ${controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             <p className="text-sm font-medium">{fileName}</p>
           </div>
