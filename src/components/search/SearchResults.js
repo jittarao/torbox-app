@@ -249,21 +249,21 @@ export default function SearchResults({ apiKey }) {
           </div>
 
           {/* Search results list */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             {displayResults.map((item) => (
               <div
                 key={item.hash}
-                className="p-4 rounded-lg border border-border dark:border-border-dark 
+                className="min-w-0 overflow-hidden p-4 rounded-lg border border-border dark:border-border-dark 
                          bg-surface dark:bg-surface-dark
                          hover:bg-surface-hover dark:hover:bg-surface-hover-dark space-y-3"
               >
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-medium dark:text-white">
+                <div className="flex min-w-0 flex-col gap-2">
+                  <div className="flex min-w-0 flex-col gap-2">
+                    <h3 className="min-w-0 break-words text-sm font-medium md:text-lg dark:text-white">
                       {item.raw_title || item.title}
                     </h3>
                     {item.title_parsed_data && (
-                      <div className="flex items-center gap-2 text-xs">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span
                           className="bg-surface-alt dark:bg-surface-alt-dark 
                                        text-primary-text dark:text-primary-text-dark 
@@ -286,8 +286,8 @@ export default function SearchResults({ apiKey }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex min-w-0 flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1.5">
                       <Layers />
                       {formatSize(item.size)}
@@ -317,7 +317,7 @@ export default function SearchResults({ apiKey }) {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 md:gap-4">
                     {/* Show copy button if search type is torrents or usenet and not a native tracker */}
                     {(searchType === 'torrents' ||
                       (searchType === 'usenet' &&
