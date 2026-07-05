@@ -715,7 +715,6 @@ export default function VideoPlayerModal({
             subtitleMenuRef={subtitleMenuRef}
             playbackSpeedMenuRef={playbackSpeedMenuRef}
             controlsBarRef={controlsBarRef}
-            onOverlayClick={handleVideoClick}
           />
         )}
 
