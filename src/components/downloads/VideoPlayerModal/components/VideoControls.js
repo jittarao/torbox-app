@@ -48,6 +48,7 @@ const EMPTY_ARRAY = [];
  * @param {Function} props.onPlaybackSpeedMenuToggle - Callback to toggle playback speed menu
  * @param {Object} props.playbackSpeedMenuRef - Ref for playback speed menu
  * @param {Object} props.controlsBarRef - Ref for the controls bar (bottom section with buttons)
+ * @param {boolean} props.isVisible - Whether controls chrome should be visible (opacity transition)
  */
 export default function VideoControls({
   currentTime,
@@ -88,11 +89,17 @@ export default function VideoControls({
   subtitleMenuRef,
   playbackSpeedMenuRef,
   controlsBarRef,
+  isVisible = true,
 }) {
   const displayTime = isSeeking && currentTime !== null ? currentTime : currentTime;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 pointer-events-none" role="presentation">
+    <div
+      className={`absolute inset-x-0 bottom-0 z-20 pointer-events-none transition-opacity duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+      role="presentation"
+    >
       {/* Gradient scoped to the bottom controls area only — not the full video */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-36
@@ -100,7 +107,10 @@ export default function VideoControls({
         aria-hidden="true"
       />
       {/* Progress Bar and Controls Bar Container - for hover detection */}
-      <div ref={controlsBarRef} className="relative pointer-events-auto">
+      <div
+        ref={controlsBarRef}
+        className={`relative ${isVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      >
         {/* Progress Bar */}
         <ProgressBar
           progress={progress}

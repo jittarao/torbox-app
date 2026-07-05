@@ -1,27 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+
+const IDLE_HIDE_MS = 2500;
 
 /**
- * useControlsVisibility - Manages auto-hide behavior for video controls
- * @param {Object} options
- * @param {boolean} options.isOpen - Whether modal is open
- * @param {boolean} options.isPlaying - Whether video is playing
- * @param {boolean} options.showControls - Whether controls should be visible
- * @param {Function} options.setShowControls - Function to set controls visibility
- * @param {Object} options.controlsBarRef - Ref to the controls bar element (bottom section with buttons)
- * @param {boolean} options.showVolumeSlider - Whether volume slider is visible
- * @param {boolean} options.showAudioMenu - Whether audio menu is open
- * @param {boolean} options.showSubtitleMenu - Whether subtitle menu is open
- * @param {boolean} options.showPlaybackSpeedMenu - Whether playback speed menu is open
- * @param {Object} options.volumeRef - Ref to the volume control element
- * @param {Object} options.audioMenuRef - Ref to the audio menu element
- * @param {Object} options.subtitleMenuRef - Ref to the subtitle menu element
- * @param {Object} options.playbackSpeedMenuRef - Ref to the playback speed menu element
+ * useControlsVisibility - Auto-hide video controls like mainstream players.
+ * Shows on pointer activity inside the player, hides after idle while playing,
+ * and hides immediately when the pointer leaves the player or browser window.
  */
 export function useControlsVisibility({
   isOpen,
   isPlaying,
+  isSeeking = false,
   showControls,
   setShowControls,
+  playerRef,
   controlsBarRef,
   showVolumeSlider = false,
   showAudioMenu = false,
@@ -32,118 +24,196 @@ export function useControlsVisibility({
   subtitleMenuRef = null,
   playbackSpeedMenuRef = null,
 }) {
-  const controlsTimeoutRef = useRef(null);
+  const hideTimeoutRef = useRef(null);
   const isHoveringControlsRef = useRef(false);
+  const stateRef = useRef({ isPlaying, hasOpenMenu: false, isSeeking: false });
 
-  // Helper function to check if point is within an element's bounds
-  const isPointInElement = (element, x, y) => {
+  const hasOpenMenu =
+    showVolumeSlider || showAudioMenu || showSubtitleMenu || showPlaybackSpeedMenu;
+
+  stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
+
+  const clearHideTimeout = useCallback(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const isPointInElement = useCallback((element, x, y) => {
     if (!element) return false;
     const rect = element.getBoundingClientRect();
     return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-  };
+  }, []);
 
+  const isPointerOverInteractiveControls = useCallback(
+    (clientX, clientY) => {
+      if (controlsBarRef?.current && isPointInElement(controlsBarRef.current, clientX, clientY)) {
+        return true;
+      }
+      if (showVolumeSlider && volumeRef?.current) {
+        if (isPointInElement(volumeRef.current, clientX, clientY)) return true;
+      }
+      if (showAudioMenu && audioMenuRef?.current) {
+        if (isPointInElement(audioMenuRef.current, clientX, clientY)) return true;
+      }
+      if (showSubtitleMenu && subtitleMenuRef?.current) {
+        if (isPointInElement(subtitleMenuRef.current, clientX, clientY)) return true;
+      }
+      if (showPlaybackSpeedMenu && playbackSpeedMenuRef?.current) {
+        if (isPointInElement(playbackSpeedMenuRef.current, clientX, clientY)) return true;
+      }
+      return false;
+    },
+    [
+      controlsBarRef,
+      volumeRef,
+      audioMenuRef,
+      subtitleMenuRef,
+      playbackSpeedMenuRef,
+      showVolumeSlider,
+      showAudioMenu,
+      showSubtitleMenu,
+      showPlaybackSpeedMenu,
+      isPointInElement,
+    ]
+  );
+
+  const scheduleHide = useCallback(
+    (delay = IDLE_HIDE_MS) => {
+      const { isPlaying: playing, hasOpenMenu: menuOpen, isSeeking: seeking } = stateRef.current;
+      if (!playing || menuOpen || seeking || isHoveringControlsRef.current) return;
+
+      clearHideTimeout();
+      hideTimeoutRef.current = setTimeout(() => {
+        const latest = stateRef.current;
+        if (
+          !latest.isPlaying ||
+          latest.hasOpenMenu ||
+          latest.isSeeking ||
+          isHoveringControlsRef.current
+        ) {
+          return;
+        }
+        setShowControls(false);
+      }, delay);
+    },
+    [clearHideTimeout, setShowControls]
+  );
+
+  const revealControls = useCallback(() => {
+    setShowControls(true);
+    scheduleHide();
+  }, [setShowControls, scheduleHide]);
+
+  const hideControlsNow = useCallback(() => {
+    const { isPlaying: playing, hasOpenMenu: menuOpen, isSeeking: seeking } = stateRef.current;
+    if (!playing || menuOpen || seeking || isHoveringControlsRef.current) return;
+    clearHideTimeout();
+    setShowControls(false);
+  }, [clearHideTimeout, setShowControls]);
+
+  // Keep controls visible while paused or seeking.
   useEffect(() => {
     if (!isOpen) return;
 
-    // Check if any menu is open
-    const hasOpenMenu =
-      showVolumeSlider || showAudioMenu || showSubtitleMenu || showPlaybackSpeedMenu;
-
-    const resetControlsTimeout = () => {
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
-      }
+    if (!isPlaying || isSeeking) {
+      clearHideTimeout();
       setShowControls(true);
-      // Only auto-hide if playing AND not hovering over controls bar AND no menus are open
-      if (isPlaying && !isHoveringControlsRef.current && !hasOpenMenu) {
-        controlsTimeoutRef.current = setTimeout(() => {
-          if (!isHoveringControlsRef.current && !hasOpenMenu) {
-            setShowControls(false);
-          }
-        }, 3000);
-      }
-    };
+      return;
+    }
 
-    const handleMouseMove = (e) => {
-      const { clientX, clientY } = e;
+    if (!hasOpenMenu) {
+      scheduleHide();
+    }
 
-      // Check if mouse is over the controls bar (bottom section with buttons) or any open menu
-      let isOverControls = false;
+    return clearHideTimeout;
+  }, [isOpen, isPlaying, isSeeking, hasOpenMenu, clearHideTimeout, scheduleHide, setShowControls]);
 
-      // First check if mouse is over the controls bar itself
-      if (controlsBarRef?.current) {
-        isOverControls = isPointInElement(controlsBarRef.current, clientX, clientY);
-      }
+  // Keep controls visible while a menu is open; resume idle hide when menus close.
+  useEffect(() => {
+    if (!isOpen) return;
 
-      // Also check if mouse is over any open menu (menus may extend outside controls bar)
-      if (!isOverControls) {
-        if (showVolumeSlider && volumeRef?.current) {
-          isOverControls = isPointInElement(volumeRef.current, clientX, clientY);
-        }
-        if (!isOverControls && showAudioMenu && audioMenuRef?.current) {
-          isOverControls = isPointInElement(audioMenuRef.current, clientX, clientY);
-        }
-        if (!isOverControls && showSubtitleMenu && subtitleMenuRef?.current) {
-          isOverControls = isPointInElement(subtitleMenuRef.current, clientX, clientY);
-        }
-        if (!isOverControls && showPlaybackSpeedMenu && playbackSpeedMenuRef?.current) {
-          isOverControls = isPointInElement(playbackSpeedMenuRef.current, clientX, clientY);
-        }
-      }
+    if (hasOpenMenu) {
+      clearHideTimeout();
+      setShowControls(true);
+      return;
+    }
 
-      isHoveringControlsRef.current = isOverControls;
+    if (isPlaying && showControls) {
+      scheduleHide();
+    }
+  }, [
+    isOpen,
+    hasOpenMenu,
+    isPlaying,
+    showControls,
+    clearHideTimeout,
+    scheduleHide,
+    setShowControls,
+  ]);
 
-      // If hovering over controls bar or menus, don't auto-hide
-      if (isOverControls) {
-        if (controlsTimeoutRef.current) {
-          clearTimeout(controlsTimeoutRef.current);
-        }
+  // Pointer + window leave listeners on the player surface.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const player = playerRef?.current;
+    if (!player) return undefined;
+
+    const handlePointerMove = (e) => {
+      const overControls = isPointerOverInteractiveControls(e.clientX, e.clientY);
+      isHoveringControlsRef.current = overControls;
+
+      if (overControls) {
+        clearHideTimeout();
         setShowControls(true);
         return;
       }
 
-      // Only reset timeout if not hovering over controls bar
-      if (!isHoveringControlsRef.current) {
-        resetControlsTimeout();
-      }
+      revealControls();
     };
 
-    const handleMouseLeave = () => {
+    const handlePointerLeave = () => {
       isHoveringControlsRef.current = false;
-      // Only hide if playing and no menus are open
-      if (isPlaying && !hasOpenMenu) {
-        controlsTimeoutRef.current = setTimeout(() => {
-          if (!hasOpenMenu) {
-            setShowControls(false);
-          }
-        }, 2000);
+      hideControlsNow();
+    };
+
+    const handleDocumentMouseOut = (e) => {
+      // Fires when the pointer leaves the browser window (relatedTarget is null).
+      if (e.relatedTarget === null) {
+        isHoveringControlsRef.current = false;
+        hideControlsNow();
       }
     };
 
-    if (showControls) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseleave', handleMouseLeave);
-    }
+    const handleWindowBlur = () => {
+      isHoveringControlsRef.current = false;
+      hideControlsNow();
+    };
 
-    const controlsTimeout = controlsTimeoutRef.current;
+    player.addEventListener('pointermove', handlePointerMove);
+    player.addEventListener('pointerleave', handlePointerLeave);
+    document.documentElement.addEventListener('mouseleave', hideControlsNow);
+    document.addEventListener('mouseout', handleDocumentMouseOut);
+    window.addEventListener('blur', handleWindowBlur);
+
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      if (controlsTimeout) clearTimeout(controlsTimeout);
+      player.removeEventListener('pointermove', handlePointerMove);
+      player.removeEventListener('pointerleave', handlePointerLeave);
+      document.documentElement.removeEventListener('mouseleave', hideControlsNow);
+      document.removeEventListener('mouseout', handleDocumentMouseOut);
+      window.removeEventListener('blur', handleWindowBlur);
+      clearHideTimeout();
     };
   }, [
     isOpen,
-    isPlaying,
-    showControls,
+    playerRef,
+    isPointerOverInteractiveControls,
+    revealControls,
+    hideControlsNow,
+    clearHideTimeout,
     setShowControls,
-    controlsBarRef,
-    showVolumeSlider,
-    showAudioMenu,
-    showSubtitleMenu,
-    showPlaybackSpeedMenu,
-    volumeRef,
-    audioMenuRef,
-    subtitleMenuRef,
-    playbackSpeedMenuRef,
   ]);
+
+  return { revealControls, hideControlsNow };
 }
