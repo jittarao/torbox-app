@@ -17,7 +17,13 @@ describe('streamUrl utils', () => {
   test('buildExternalPlayerUrl builds player-specific deep links', () => {
     const streamUrl = 'https://example.com/video.m3u8?token=abc';
     expect(buildExternalPlayerUrl('infuse', streamUrl)).toBe(
-      'infuse://x-callback-url/play?url=' + streamUrl
+      'infuse://x-callback-url/play?url=' + encodeURIComponent(streamUrl)
+    );
+    expect(buildExternalPlayerUrl('infuse', streamUrl, { filename: 'Movie.mkv' })).toBe(
+      'infuse://x-callback-url/play?url=' +
+        encodeURIComponent(streamUrl) +
+        '&filename=' +
+        encodeURIComponent('Movie.mkv')
     );
     expect(buildExternalPlayerUrl('iina', streamUrl)).toBe('iina://weblink?url=' + streamUrl);
     expect(buildExternalPlayerUrl('stremio', streamUrl)).toBe(
