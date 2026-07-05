@@ -48,7 +48,6 @@ const EMPTY_ARRAY = [];
  * @param {Function} props.onPlaybackSpeedMenuToggle - Callback to toggle playback speed menu
  * @param {Object} props.playbackSpeedMenuRef - Ref for playback speed menu
  * @param {Object} props.controlsBarRef - Ref for the controls bar (bottom section with buttons)
- * @param {Function} props.onOverlayClick - Callback when overlay is clicked
  */
 export default function VideoControls({
   currentTime,
@@ -89,34 +88,19 @@ export default function VideoControls({
   subtitleMenuRef,
   playbackSpeedMenuRef,
   controlsBarRef,
-  onOverlayClick,
 }) {
   const displayTime = isSeeking && currentTime !== null ? currentTime : currentTime;
 
   return (
-    <div
-      className="absolute inset-0 z-20 flex flex-col justify-end
-        bg-gradient-to-t from-black/80 via-black/40 to-transparent
-        transition-opacity duration-300 pointer-events-none"
-      role="presentation"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && onOverlayClick) {
-          onOverlayClick(e);
-        }
-      }}
-      onKeyDown={(e) => {
-        if (
-          (e.key === 'Enter' || e.key === ' ') &&
-          onOverlayClick &&
-          e.target === e.currentTarget
-        ) {
-          e.preventDefault();
-          onOverlayClick(e);
-        }
-      }}
-    >
+    <div className="absolute inset-x-0 bottom-0 z-20 pointer-events-none" role="presentation">
+      {/* Gradient scoped to the bottom controls area only — not the full video */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-36
+          bg-gradient-to-t from-black/80 via-black/40 to-transparent"
+        aria-hidden="true"
+      />
       {/* Progress Bar and Controls Bar Container - for hover detection */}
-      <div ref={controlsBarRef} className="pointer-events-auto">
+      <div ref={controlsBarRef} className="relative pointer-events-auto">
         {/* Progress Bar */}
         <ProgressBar
           progress={progress}
