@@ -13,6 +13,7 @@ import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
 import useIsMobile from '@/hooks/useIsMobile';
 import TrackSelectionModal from './TrackSelectionModal';
+import OpenInModal from './OpenInModal';
 import { useStreamInitializer } from './hooks/useStreamInitializer';
 import { tableContainerClass } from './utils/responsiveLayout';
 import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
@@ -41,6 +42,12 @@ export default function ItemsTable() {
   } = useDownloadsContext();
 
   const {
+    openInModal,
+    closeOpenInModal,
+    handleOpenInChoice,
+    isCreatingStream,
+    loadingChoice,
+    openInError,
     trackSelectionModal,
     closeTrackSelectionModal,
     handleFileStreamInit,
@@ -123,6 +130,17 @@ export default function ItemsTable() {
           />
         </table>
       </div>
+      <OpenInModal
+        isOpen={openInModal.isOpen}
+        onClose={closeOpenInModal}
+        onSelect={handleOpenInChoice}
+        file={openInModal.file}
+        fileName={openInModal.fileName}
+        itemName={openInModal.itemName}
+        isLoading={isCreatingStream}
+        loadingChoice={loadingChoice}
+        error={openInError}
+      />
       <TrackSelectionModal
         isOpen={trackSelectionModal.isOpen}
         onClose={closeTrackSelectionModal}

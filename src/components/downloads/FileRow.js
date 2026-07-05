@@ -223,7 +223,7 @@ function FileRowInner({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFileStream(item.id, file);
+                  handleFileStream(item.id, file, item.name);
                 }}
                 disabled={isFileStreaming}
                 className={FILE_ACTION_BUTTON_CLASS}

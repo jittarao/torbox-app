@@ -555,6 +555,7 @@ function ItemCard({
         <FileList
           files={visibleFiles}
           itemId={selectionId}
+          itemName={item.name}
           isBlurred={isBlurred}
           onFileSelect={handleFileSelection}
           onFileDownload={onFileDownload}
