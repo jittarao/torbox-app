@@ -171,24 +171,12 @@ function useTableBodyState(props) {
   });
 
   const handleFileStream = useCallback(
-    async (itemId, file) => {
-      const key = interactions.assetKey(itemId, file.id);
-      useFileInteractionStore.getState().setStreaming(key, true);
-      try {
-        if (onFileStreamInit) {
-          await onFileStreamInit(itemId, file);
-        }
-      } catch (error) {
-        console.error('Error initiating stream:', error);
-        setToast({
-          message: error.message || 'Failed to initiate stream',
-          type: 'error',
-        });
-      } finally {
-        useFileInteractionStore.getState().setStreaming(key, false);
+    (itemId, file, itemName) => {
+      if (onFileStreamInit) {
+        onFileStreamInit(itemId, file, itemName);
       }
     },
-    [interactions.assetKey, onFileStreamInit, setToast]
+    [onFileStreamInit]
   );
 
   const handleAudioPlay = useCallback(

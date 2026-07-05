@@ -13,6 +13,7 @@ import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useTranslations } from 'next-intl';
 import TrackSelectionModal from './TrackSelectionModal';
+import OpenInModal from './OpenInModal';
 import { getCardListItemGapPx } from './utils/responsiveLayout';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
@@ -266,6 +267,12 @@ export default function CardList() {
   } = useDownloadsContext();
 
   const {
+    openInModal,
+    closeOpenInModal,
+    handleOpenInChoice,
+    isCreatingStream,
+    loadingChoice,
+    openInError,
     trackSelectionModal,
     closeTrackSelectionModal,
     handleFileStreamInit: onFileStreamInit,
@@ -349,22 +356,10 @@ export default function CardList() {
   });
 
   const handleFileStream = useCallback(
-    async (itemId, file) => {
-      const key = interactions.assetKey(itemId, file.id);
-      useFileInteractionStore.getState().setStreaming(key, true);
-      try {
-        await onFileStreamInit(itemId, file);
-      } catch (error) {
-        console.error('Error initiating stream:', error);
-        setToast({
-          message: error.message || 'Failed to initiate stream',
-          type: 'error',
-        });
-      } finally {
-        useFileInteractionStore.getState().setStreaming(key, false);
-      }
+    (itemId, file, itemName) => {
+      onFileStreamInit(itemId, file, itemName);
     },
-    [interactions.assetKey, onFileStreamInit, setToast]
+    [onFileStreamInit]
   );
 
   const handleAudioPlay = useCallback(
@@ -464,6 +459,17 @@ export default function CardList() {
           emptyState={emptyState}
         />
       )}
+      <OpenInModal
+        isOpen={openInModal.isOpen}
+        onClose={closeOpenInModal}
+        onSelect={handleOpenInChoice}
+        file={openInModal.file}
+        fileName={openInModal.fileName}
+        itemName={openInModal.itemName}
+        isLoading={isCreatingStream}
+        loadingChoice={loadingChoice}
+        error={openInError}
+      />
       <TrackSelectionModal
         isOpen={trackSelectionModal.isOpen}
         onClose={closeTrackSelectionModal}
