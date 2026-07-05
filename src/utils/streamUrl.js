@@ -10,11 +10,20 @@ export function extractHlsUrl(streamResponse) {
  * Build deep-link URL for an external media player.
  * @param {'infuse' | 'iina' | 'stremio'} player
  * @param {string} streamUrl
+ * @param {{ filename?: string }} [options]
  */
-export function buildExternalPlayerUrl(player, streamUrl) {
+export function buildExternalPlayerUrl(player, streamUrl, options = {}) {
   switch (player) {
-    case 'infuse':
-      return `infuse://x-callback-url/play?url=${streamUrl}`;
+    case 'infuse': {
+      // Infuse requires encoded query values; optional filename helps format detection.
+      const params = new URLSearchParams();
+      params.set('url', streamUrl);
+      const filename = options.filename?.trim();
+      if (filename) {
+        params.set('filename', filename);
+      }
+      return `infuse://x-callback-url/play?${params.toString()}`;
+    }
     case 'iina':
       return `iina://weblink?url=${streamUrl}`;
     case 'stremio': {

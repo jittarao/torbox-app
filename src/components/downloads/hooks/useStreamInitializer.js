@@ -1,9 +1,26 @@
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import { useDownloadsActions } from '@/components/downloads/DownloadsActionsContext';
 import { useStream } from '@/components/shared/hooks/useStream';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
+import { getIdFieldForItem, resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { entityKey } from '@/utils/downloadListMerge';
 import { EXTERNAL_APP_NOT_INSTALLED, launchExternalUrl } from '@/utils/launchExternalUrl';
 import { buildExternalPlayerUrl, extractHlsUrl, parseStreamMetadata } from '@/utils/streamUrl';
+
+function findItemById(itemId, activeType) {
+  const entities = useTorboxDownloadsStore.getState().entities;
+  if (activeType === 'all') {
+    for (const type of ['torrents', 'usenet', 'webdl']) {
+      const row = entities[entityKey(type, itemId)];
+      if (row) return row;
+    }
+    return undefined;
+  }
+  const assetType = resolveItemAssetType(null, activeType);
+  return entities[entityKey(assetType, itemId)];
+}
 
 export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) {
   const t = useTranslations('OpenIn');
@@ -29,6 +46,7 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
   });
 
   const { createStream } = useStream(apiKey);
+  const { requestDownloadLink } = useDownloadsActions();
 
   const getStreamType = useCallback(() => {
     switch (activeType) {
@@ -116,13 +134,37 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
           return;
         }
 
-        const { streamUrl } = await resolveStreamUrl(itemId, file.id, streamType, null, 0);
+        const displayName = file.name || file.short_name || 'Video';
+        let streamUrl = null;
+
+        // Infuse plays direct CDN file URLs reliably; TorBox HLS transcoder links often fail.
+        if (choice === 'infuse') {
+          const item = findItemById(itemId, activeType);
+          const resolvedAssetType = resolveItemAssetType(item, activeType);
+          const idField = getIdFieldForItem(item, activeType);
+          const dlResult = await requestDownloadLink(itemId, { fileId: file.id }, idField, {
+            assetType: resolvedAssetType,
+            item,
+          });
+          if (dlResult.success && dlResult.data?.url) {
+            streamUrl = dlResult.data.url;
+          }
+        }
+
+        if (!streamUrl) {
+          const resolved = await resolveStreamUrl(itemId, file.id, streamType, null, 0);
+          streamUrl = resolved.streamUrl;
+        }
 
         if (!streamUrl) {
           throw new Error('Failed to get stream URL');
         }
 
-        const externalUrl = buildExternalPlayerUrl(choice, streamUrl);
+        const externalUrl = buildExternalPlayerUrl(
+          choice,
+          streamUrl,
+          choice === 'infuse' ? { filename: displayName } : undefined
+        );
         await launchExternalUrl(externalUrl);
         setOpenInModal((prev) => ({ ...prev, isOpen: false }));
       } catch (error) {
@@ -141,7 +183,16 @@ export function useStreamInitializer({ apiKey, activeType, onOpenVideoPlayer }) 
         useFileInteractionStore.getState().setStreaming(fileKey, false);
       }
     },
-    [openInModal, getStreamType, getFileStreamKey, createStream, resolveStreamUrl, t]
+    [
+      openInModal,
+      activeType,
+      getStreamType,
+      getFileStreamKey,
+      createStream,
+      resolveStreamUrl,
+      requestDownloadLink,
+      t,
+    ]
   );
 
   const closeTrackSelectionModal = useCallback(() => {
