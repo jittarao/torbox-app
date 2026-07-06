@@ -13,18 +13,9 @@ import FiltersSidebarSearch from './FiltersSidebarSearch';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 
-function SidebarSection({
-  title,
-  children,
-  emptyMessage,
-  emptyAction,
-  onAdd,
-  addLabel,
-  tall,
-  sheet,
-}) {
+function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
   return (
-    <div className={`flex min-h-0 flex-col ${sheet ? 'min-h-0 flex-1' : ''}`}>
+    <div className="flex flex-col">
       <div className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'p-1'}`}>
         <h3 className="px-1 text-[10px] font-semibold uppercase tracking-wider text-primary-text/50 dark:text-primary-text-dark/50">
           {title}
@@ -54,11 +45,7 @@ function SidebarSection({
           </button>
         )}
       </div>
-      <div
-        className={`min-h-[60px] flex-1 overflow-y-auto overscroll-contain pb-2 ${
-          tall ? 'space-y-1 px-0' : 'max-h-[200px] space-y-0.5 px-1'
-        }`}
-      >
+      <div className={`pb-2 ${tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1'}`}>
         {children}
         {emptyMessage && (
           <p className="p-2 text-[11px] text-primary-text/50 dark:text-primary-text-dark/50 italic">
@@ -302,18 +289,13 @@ export default function FiltersSidebar({
         <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
       )}
       <FiltersSidebarSearch value={searchQuery} onChange={setSearchQuery} />
-      <div
-        className={`min-h-0 flex-1 divide-y divide-border/60 dark:divide-border-dark/60 ${
-          isSheet ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
-        }`}
-      >
+      <div className="min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
         <SidebarSection
           title={t('viewsSection')}
           emptyMessage={viewsEmptyMessage}
           onAdd={onNewView}
           addLabel={t('newView')}
           tall={sectionTall}
-          sheet={isSheet}
         >
           <ViewSidebarSection
             views={views}
@@ -368,7 +350,6 @@ export default function FiltersSidebar({
           onAdd={onOpenTagManager}
           addLabel={t('manageTags')}
           tall={sectionTall}
-          sheet={isSheet}
         >
           <TagSidebarSection
             tags={tags}
@@ -414,7 +395,7 @@ export default function FiltersSidebar({
         </SidebarSection>
 
         {showTrackerSection && (
-          <SidebarSection title={t('trackersSection')} tall={sectionTall} sheet={isSheet}>
+          <SidebarSection title={t('trackersSection')} tall={sectionTall}>
             <TrackerSidebarSection
               searchQuery={searchQuery}
               activeTrackers={activeTrackers}
@@ -427,7 +408,7 @@ export default function FiltersSidebar({
         )}
 
         {showSourceSection && (
-          <SidebarSection title={t('sourcesSection')} tall={sectionTall} sheet={isSheet}>
+          <SidebarSection title={t('sourcesSection')} tall={sectionTall}>
             <SourceSidebarSection
               searchQuery={searchQuery}
               activeSources={activeSources}
