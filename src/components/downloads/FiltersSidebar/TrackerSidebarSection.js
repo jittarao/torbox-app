@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
+import { useSidebarShiftSelect } from './sidebarRangeSelect';
 import { useTrackerSidebarData } from './useTrackerSidebarData';
 
 function GlobeIcon({ className = 'size-3.5' }) {
@@ -29,11 +30,13 @@ export default function TrackerSidebarSection({
   searchQuery = '',
   activeTrackers = [],
   onApplyTracker,
+  onApplyTrackerRange,
   onClearTrackers,
   disabled = false,
 }) {
   const t = useTranslations('DownloadsFilters');
   const { entries } = useTrackerSidebarData();
+  const { lastIndexRef } = useSidebarShiftSelect(searchQuery);
 
   const activeTrackerSet = useMemo(
     () => new Set((activeTrackers || []).map((url) => String(url))),
@@ -47,6 +50,26 @@ export default function TrackerSidebarSection({
 
   const selectedCount = activeTrackerSet.size;
   const hasSearchQuery = searchQuery.trim().length > 0;
+
+  const handleItemClick = useCallback(
+    (index, entry, event) => {
+      if (disabled) return;
+
+      const isActive = activeTrackerSet.has(entry.url);
+
+      if (event.shiftKey && lastIndexRef.current !== null && onApplyTrackerRange) {
+        const start = Math.min(lastIndexRef.current, index);
+        const end = Math.max(lastIndexRef.current, index);
+        const rangeUrls = filteredEntries.slice(start, end + 1).map((item) => item.url);
+        onApplyTrackerRange(rangeUrls, !isActive);
+      } else {
+        onApplyTracker?.(entry.url);
+      }
+
+      lastIndexRef.current = index;
+    },
+    [disabled, activeTrackerSet, filteredEntries, onApplyTracker, onApplyTrackerRange, lastIndexRef]
+  );
 
   if (entries.length === 0) {
     return (
@@ -78,7 +101,7 @@ export default function TrackerSidebarSection({
           {hasSearchQuery ? t('noTrackerMatches', { query: searchQuery.trim() }) : t('noTrackers')}
         </p>
       ) : (
-        filteredEntries.map((entry) => {
+        filteredEntries.map((entry, index) => {
           const isActive = activeTrackerSet.has(entry.url);
           return (
             <SidebarListItem
@@ -100,7 +123,7 @@ export default function TrackerSidebarSection({
                 </span>
               }
               title={entry.url}
-              onClick={() => !disabled && onApplyTracker?.(entry.url)}
+              onClick={(e) => handleItemClick(index, entry, e)}
             />
           );
         })

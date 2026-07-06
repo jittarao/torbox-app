@@ -41,6 +41,9 @@ export default function SidebarListItem({
     >
       <button
         type="button"
+        onMouseDown={(e) => {
+          if (e.shiftKey) e.preventDefault();
+        }}
         onClick={onClick}
         disabled={disabled}
         aria-label={ariaLabel || label}
