@@ -33,11 +33,15 @@ import {
 const EXTRA_COLUMN_PADDING = 10;
 
 const FILE_ACTION_BUTTON_CLASS =
-  'p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors';
+  'p-1.5 rounded-full text-accent dark:text-accent-dark hover:bg-accent/5 dark:hover:bg-accent-dark/5 transition-colors touch-manipulation';
 
 /** Fixed slot so copy/download stay column-aligned when play is absent */
 const FILE_ACTION_SLOT_CLASS =
-  'inline-flex size-7 md:size-6 lg:size-7 shrink-0 items-center justify-center';
+  'inline-flex size-9 sm:size-7 md:size-6 lg:size-7 shrink-0 items-center justify-center';
+
+function stopRowActivation(e) {
+  e.stopPropagation();
+}
 
 function FileRow({
   item,
@@ -151,8 +155,7 @@ function FileRowInner({
         }
       }}
       onClick={(e) => {
-        // Ignore clicks on buttons or if disabled
-        if (e.target.closest('button') || isDisabled) return;
+        if (e.target.closest('button, [data-file-actions]') || isDisabled) return;
         handleFileSelection(selectionId, actualIndex, file, !isChecked, e.shiftKey);
       }}
     >
@@ -215,19 +218,28 @@ function FileRowInner({
       </td>
 
       {/* File Actions — fixed slots: [play] [copy] [download] */}
-      <td className={`${tableActionsCell} ${actionsSurfaceClass} [&_button]:md:p-1`}>
-        <div className={tableActionsCellInner}>
+      <td
+        className={`${tableActionsCell} ${actionsSurfaceClass} relative z-[2] [transform:translateZ(0)] [&_button]:md:p-1`}
+      >
+        <div
+          className={tableActionsCellInner}
+          data-file-actions
+          onClick={stopRowActivation}
+          onPointerDown={stopRowActivation}
+        >
           <span className={FILE_ACTION_SLOT_CLASS}>
             {isVideoFile(file) && handleFileStream ? (
               <button
                 type="button"
                 onClick={(e) => {
-                  e.stopPropagation();
+                  stopRowActivation(e);
                   handleFileStream(item.id, file, item.name);
                 }}
+                onPointerDown={stopRowActivation}
                 disabled={isFileStreaming}
                 className={FILE_ACTION_BUTTON_CLASS}
                 title={t('play')}
+                aria-label={t('play')}
               >
                 {isFileStreaming ? <Spinner size="sm" /> : <Play />}
               </button>
@@ -235,12 +247,14 @@ function FileRowInner({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.stopPropagation();
+                  stopRowActivation(e);
                   handleAudioPlay(item.id, file);
                 }}
+                onPointerDown={stopRowActivation}
                 disabled={isFileStreaming}
                 className={FILE_ACTION_BUTTON_CLASS}
                 title={t('play')}
+                aria-label={t('play')}
               >
                 {isFileStreaming ? <Spinner size="sm" /> : <Play />}
               </button>
@@ -250,12 +264,14 @@ function FileRowInner({
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation();
+                stopRowActivation(e);
                 handleFileDownload(item.id, file, true);
               }}
+              onPointerDown={stopRowActivation}
               disabled={isFileCopying}
               className={FILE_ACTION_BUTTON_CLASS}
               title={t('copyLink')}
+              aria-label={t('copyLink')}
             >
               {isFileCopying ? <Spinner size="sm" /> : <Copy />}
             </button>
@@ -264,12 +280,14 @@ function FileRowInner({
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation();
+                stopRowActivation(e);
                 handleFileDownload(item.id, file);
               }}
+              onPointerDown={stopRowActivation}
               disabled={isFileDownloading}
               className={FILE_ACTION_BUTTON_CLASS}
               title={t('download')}
+              aria-label={t('download')}
             >
               {isFileDownloading ? <Spinner size="sm" /> : <Download />}
             </button>
