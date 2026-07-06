@@ -428,6 +428,7 @@
       "Files": "ファイル",
       "Torrent": "トレント",
       "Torrents": "トレント",
+      "Webdl": "WebDL",
       "all": "すべて",
       "file": "ファイル",
       "files": "ファイル",
@@ -544,11 +545,22 @@
   "DownloadsFilters": {
     "activeConditions": "{count}件のフィルターが有効",
     "activeSearch": "検索「{query}」",
+    "activeSource": "ソース: {name}",
+    "activeSources": "{count, plural, other {# ソース}}",
     "activeTag": "タグ: {name}",
+    "activeTags": "{count, plural, other {# タグ}}",
+    "activeTracker": "トラッカー: {name}",
+    "activeTrackers": "{count, plural, other {# トラッカー}}",
     "activeView": "ビュー: {name}",
+    "activeViews": "{count, plural, other {# ビュー}}",
     "applyFilters": "フィルターを適用",
     "clearAll": "すべてクリア",
+    "clearSources": "クリア",
+    "clearTags": "クリア",
+    "clearTrackers": "クリア",
+    "clearViews": "クリア",
     "close": "閉じる",
+    "collapseSection": "{section}を折りたたむ",
     "collapseSidebar": "フィルターサイドバーを折りたたむ",
     "confirmDeleteTag": "タグ「{name}」を削除しますか？すべてのダウンロードから削除されます。",
     "confirmDeleteView": "ビュー「{name}」を削除しますか？",
@@ -556,6 +568,7 @@
     "deleteTagFailed": "タグの削除に失敗しました: {error}",
     "deleteViewFailed": "ビューの削除に失敗しました: {error}",
     "editFilters": "編集",
+    "expandSection": "{section}を展開する",
     "expandSidebar": "フィルターサイドバーを展開",
     "manageTags": "タグを管理",
     "menuApply": "適用",
@@ -571,9 +584,18 @@
     "newTag": "新しいタグ",
     "newTagPrompt": "タグ名",
     "newView": "新しいビュー",
+    "noSourceMatches": "「{query}」に一致するソースはありません",
+    "noSources": "リストにソースはまだありません",
+    "noTagMatches": "「{query}」に一致するタグはありません",
     "noTags": "タグはありません。",
+    "noTrackerMatches": "「{query}」に一致するトラッカーはありません",
+    "noTrackers": "リストにトラッカーはまだありません",
+    "noViewMatches": "「{query}」に一致するビューはありません",
     "noViews": "保存されたビューはありません。",
     "sidebarLabel": "フィルター",
+    "sidebarSearchPlaceholder": "検索…",
+    "sourcesSection": "ソース",
+    "sourcesSelected": "{count, plural, other {# 選択中}}",
     "tagAssignmentDescriptionAddMulti": "下からタグを選び、{count} 件のダウンロードすべてに追加します。既存のタグは保持されます。",
     "tagAssignmentDescriptionAddSingle": "下からタグを選んで追加します。このダウンロードに既にあるタグはそのままです。",
     "tagAssignmentDescriptionRemoveMulti": "下からタグを選び、選択したダウンロードから外します。",
@@ -598,11 +620,15 @@
     "tagManagerSearchPlaceholder": "タグを検索…",
     "tagUsageCount": "{count, plural, other {# 件のダウンロード}}",
     "tagsSection": "タグ",
+    "tagsSelected": "{count, plural, other {# 選択中}}",
     "toggleFilterOff": "クリックで解除",
     "toggleFilterOn": "クリックで適用",
+    "trackersSection": "トラッカー",
+    "trackersSelected": "{count, plural, other {# 選択中}}",
     "viewCreated": "ビュー「{name}」を作成しました",
     "viewUpdated": "ビュー「{name}」を更新しました",
-    "viewsSection": "ビュー"
+    "viewsSection": "ビュー",
+    "viewsSelected": "{count, plural, other {# 選択中}}"
   },
   "ErrorBoundary": {
     "reloadPage": "ページを再読み込み",
@@ -660,12 +686,14 @@
     },
     "theme": {
       "toggle": "テーマを切り替え"
-    }
+    },
+    "title": "TorBox マネージャー"
   },
   "Index": {
     "description": "Torrent および Debrid マネージャー",
     "search": "検索",
-    "searchPlaceholder": "Torrentsを検索..."
+    "searchPlaceholder": "Torrentsを検索...",
+    "title": "TorBox マネージャー"
   },
   "ItemActionButtons": {
     "delete": {
@@ -814,7 +842,8 @@
     "footer": {
       "description": "このアプリは完全にオープンソースで"
     },
-    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。"
+    "subtitle": "TorBox UIのパワーユーザー向け代替品。スピードと効率性を追求して開発されました。",
+    "title": "TorBox マネージャー"
   },
   "LinkHistory": {
     "actions": {
@@ -902,6 +931,25 @@
     "noNotifications": "通知がありません",
     "notifications": "通知",
     "testNotification": "テスト通知"
+  },
+  "OpenIn": {
+    "choosePlayer": "プレイヤーを選択",
+    "close": "閉じる",
+    "errors": {
+      "playerNotInstalled": "{player}を開けませんでした。インストールされていないか、ブラウザが起動できません。",
+      "streamFailed": "ストリームの準備に失敗しました"
+    },
+    "fileMeta": {
+      "audio": "音声",
+      "from": "元",
+      "video": "映像"
+    },
+    "players": {
+      "web": "ウェブプレイヤー",
+      "webHint": "トラック選択可能なブラウザ再生"
+    },
+    "preparingStream": "ストリームを準備中…",
+    "title": "開く"
   },
   "Referral": {
     "apply": {
@@ -1093,6 +1141,7 @@
     "clearSearch": "検索をクリア",
     "customEngines": "カスタムエンジン",
     "episode": "エピソード",
+    "episodePlaceholder": "例: E01",
     "hideAdvanced": "詳細を隠す",
     "minSeeders": "最小シーダー",
     "minSize": "最小サイズ (GB)",
@@ -1113,9 +1162,11 @@
     "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
     "searchExamples": "検索例",
     "season": "シーズン",
+    "seasonPlaceholder": "例: S01",
     "showAdvanced": "詳細を表示",
     "torrentSearchWarning": "TorBoxのトレント検索は現在信頼性が低く、不完全または誤った結果を返す可能性があります。利用可能な場合はUsenet検索をお勧めします。",
-    "year": "年"
+    "year": "年",
+    "yearPlaceholder": "例: 2024"
   },
   "SearchResults": {
     "actions": {
@@ -1179,7 +1230,8 @@
   "StatusSection": {
     "selectedFiles": "{fileCount} ファイル選択中 ({size})",
     "selectedItems": "{itemCount} {type}が選択されています ({size})",
-    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} 選択中 ({size})"
+    "selectedItemsFiles": "{itemCount} {type} & {fileCount} {fileType} 選択中 ({size})",
+    "total": "{count}{type}"
   },
   "Statuses": {
     "checking_resume_data": "チェック中",

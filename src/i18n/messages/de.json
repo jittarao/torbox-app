@@ -421,6 +421,7 @@
       "Files": "Files ",
       "Torrent": "Torrent ",
       "Torrents": "Torrents ",
+      "Webdl": "WebDL",
       "all": "alle",
       "file": "Datei",
       "files": "Dateien",
@@ -541,11 +542,21 @@
   "DownloadsFilters": {
     "activeConditions": "{count, plural, one {# Filter} other {# Filter}} aktiv",
     "activeSearch": "Suche „{query}“",
+    "activeSource": "Quelle: {name}",
+    "activeSources": "{count, plural, one {# Quelle} other {# Quellen}}",
     "activeTag": "Schlagwort: {name}",
+    "activeTags": "{count, plural, one {# Schlagwort} other {# Schlagwörter}}",
+    "activeTrackers": "{count, plural, one {# Tracker} other {# Tracker}}",
     "activeView": "Ansicht: {name}",
+    "activeViews": "{count, plural, one {# Ansicht} other {# Ansichten}}",
     "applyFilters": "Filter anwenden",
     "clearAll": "Alle löschen",
+    "clearSources": "Löschen",
+    "clearTags": "Löschen",
+    "clearTrackers": "Löschen",
+    "clearViews": "Löschen",
     "close": "Schließen",
+    "collapseSection": "{section} einklappen",
     "collapseSidebar": "Filterleiste einklappen",
     "confirmDeleteTag": "Schlagwort \"{name}\" löschen? Es wird von allen Downloads entfernt.",
     "confirmDeleteView": "Ansicht \"{name}\" löschen?",
@@ -553,6 +564,7 @@
     "deleteTagFailed": "Schlagwort konnte nicht gelöscht werden: {error}",
     "deleteViewFailed": "Ansicht konnte nicht gelöscht werden: {error}",
     "editFilters": "Bearbeiten",
+    "expandSection": "{section} ausklappen",
     "expandSidebar": "Filterleiste ausklappen",
     "manageTags": "Schlagwörter verwalten",
     "menuApply": "Anwenden",
@@ -568,9 +580,18 @@
     "newTag": "Neues Schlagwort",
     "newTagPrompt": "Schlagwortname",
     "newView": "Neue Ansicht",
+    "noSourceMatches": "Keine Quellen entsprechen „{query}“.",
+    "noSources": "Noch keine Quellen in Ihrer Liste.",
+    "noTagMatches": "Keine Schlagwörter entsprechen „{query}“.",
     "noTags": "Noch keine Schlagwörter.",
+    "noTrackerMatches": "Keine Tracker entsprechen „{query}“.",
+    "noTrackers": "Noch keine Tracker in Ihrer Liste.",
+    "noViewMatches": "Keine Ansichten entsprechen „{query}“.",
     "noViews": "Noch keine gespeicherten Ansichten.",
     "sidebarLabel": "Filter",
+    "sidebarSearchPlaceholder": "Suchen…",
+    "sourcesSection": "Quelle",
+    "sourcesSelected": "{count, plural, one {# ausgewählt} other {# ausgewählt}}",
     "tagAssignmentDescriptionAddMulti": "Wählen Sie unten Schlagwörter, um sie allen {count} Downloads hinzuzufügen. Bestehende Schlagwörter bleiben erhalten.",
     "tagAssignmentDescriptionAddSingle": "Wählen Sie unten Schlagwörter zum Hinzufügen. Bereits gesetzte Schlagwörter bleiben erhalten.",
     "tagAssignmentDescriptionRemoveMulti": "Wählen Sie unten Schlagwörter zum Entfernen von den ausgewählten Downloads.",
@@ -595,11 +616,15 @@
     "tagManagerSearchPlaceholder": "Schlagwörter suchen…",
     "tagUsageCount": "{count, plural, one {# Download} other {# Downloads}}",
     "tagsSection": "Schlagwörter",
+    "tagsSelected": "{count, plural, one {# ausgewählt} other {# ausgewählt}}",
     "toggleFilterOff": "Zum Entfernen klicken",
     "toggleFilterOn": "Zum Anwenden klicken",
+    "trackersSection": "Tracker",
+    "trackersSelected": "{count, plural, one {# ausgewählt} other {# ausgewählt}}",
     "viewCreated": "Ansicht „{name}“ erstellt",
     "viewUpdated": "Ansicht „{name}“ aktualisiert",
-    "viewsSection": "Ansichten"
+    "viewsSection": "Ansichten",
+    "viewsSelected": "{count, plural, one {# ausgewählt} other {# ausgewählt}}"
   },
   "ErrorBoundary": {
     "reloadPage": "Seite neu laden",
@@ -629,7 +654,8 @@
   "FileActions": {
     "copyLink": "Link kopieren",
     "download": "Datei herunterladen",
-    "play": "Abspielen"
+    "play": "Abspielen",
+    "streaming": "Streaming…"
   },
   "Header": {
     "menu": {
@@ -896,6 +922,23 @@
     "notifications": "Benachrichtigungen",
     "testNotification": "Test-Benachrichtigung"
   },
+  "OpenIn": {
+    "choosePlayer": "Player auswählen",
+    "close": "Schließen",
+    "errors": {
+      "playerNotInstalled": "{player} konnte nicht geöffnet werden. Möglicherweise ist es nicht installiert oder Ihr Browser kann es nicht starten.",
+      "streamFailed": "Stream konnte nicht vorbereitet werden"
+    },
+    "fileMeta": {
+      "from": "Von"
+    },
+    "players": {
+      "web": "Web-Player",
+      "webHint": "Browser-Wiedergabe mit Titelauswahl"
+    },
+    "preparingStream": "Stream wird vorbereitet…",
+    "title": "Öffnen in"
+  },
   "Referral": {
     "apply": {
       "alreadyHasReferrer": "Ihr Konto hat bereits einen Empfehlungscode.",
@@ -1079,6 +1122,7 @@
     "clearHistory": "Löschen",
     "clearSearch": "Suche löschen ",
     "customEngines": "Benutzerdefinierte Suchmaschinen",
+    "episodePlaceholder": "z. B. E01",
     "hideAdvanced": "Erweitert ausblenden",
     "minSeeders": "Min. Seeder",
     "minSize": "Min. Größe (GB)",
@@ -1099,9 +1143,11 @@
     "searchDownloadsHelpPhrase": "Anführungszeichen — trifft die exakte Phrase zu (z. B. \"season 1\")",
     "searchExamples": "Suchbeispiele",
     "season": "Staffel",
+    "seasonPlaceholder": "z. B. S01",
     "showAdvanced": "Erweitert anzeigen",
     "torrentSearchWarning": "Die TorBox-Torrent-Suche ist derzeit unzuverlässig und kann unvollständige oder falsche Ergebnisse liefern. Usenet-Suche wird empfohlen, wenn verfügbar.",
-    "year": "Jahr"
+    "year": "Jahr",
+    "yearPlaceholder": "z. B. 2024"
   },
   "SearchResults": {
     "actions": {
