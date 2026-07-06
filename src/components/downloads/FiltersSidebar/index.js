@@ -180,11 +180,14 @@ export default function FiltersSidebar({
   activeTagIds,
   activeTrackers = [],
   onApplyView,
+  onApplyViewRange,
   onClearViews,
   onClearView,
   onApplyTag,
+  onApplyTagRange,
   onClearTags,
   onApplyTracker,
+  onApplyTrackerRange,
   onClearTrackers,
   onEditView,
   onRenameView,
@@ -312,6 +315,7 @@ export default function FiltersSidebar({
             searchQuery={searchQuery}
             activeViewIds={activeViewIds}
             onApplyView={onApplyView}
+            onApplyViewRange={onApplyViewRange}
             onClearViews={onClearViews}
             renderItemMenu={(view, viewIsActive) => {
               const menuKey = `view-${view.id}`;
@@ -366,6 +370,7 @@ export default function FiltersSidebar({
             searchQuery={searchQuery}
             activeTagIds={activeTagIds}
             onApplyTag={onApplyTag}
+            onApplyTagRange={onApplyTagRange}
             onClearTags={onClearTags}
             disabled={trackerFilterLocked}
             renderItemMenu={(tag, tagIsActive) => {
@@ -408,6 +413,7 @@ export default function FiltersSidebar({
               searchQuery={searchQuery}
               activeTrackers={activeTrackers}
               onApplyTracker={onApplyTracker}
+              onApplyTrackerRange={onApplyTrackerRange}
               onClearTrackers={onClearTrackers}
               disabled={trackerFilterLocked}
             />

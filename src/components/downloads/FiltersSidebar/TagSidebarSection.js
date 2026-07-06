@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
+import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
 export default function TagSidebarSection({
   tags = [],
@@ -11,11 +12,13 @@ export default function TagSidebarSection({
   searchQuery = '',
   activeTagIds = [],
   onApplyTag,
+  onApplyTagRange,
   onClearTags,
   disabled = false,
   renderItemMenu,
 }) {
   const t = useTranslations('DownloadsFilters');
+  const { lastIndexRef } = useSidebarShiftSelect(searchQuery);
 
   const activeTagSet = useMemo(
     () => new Set((activeTagIds || []).map((id) => Number(id))),
@@ -29,6 +32,26 @@ export default function TagSidebarSection({
 
   const selectedCount = activeTagSet.size;
   const hasSearchQuery = searchQuery.trim().length > 0;
+
+  const handleItemClick = useCallback(
+    (index, tag, event) => {
+      if (disabled) return;
+
+      const tagIsActive = activeTagSet.has(Number(tag.id));
+
+      if (event.shiftKey && lastIndexRef.current !== null && onApplyTagRange) {
+        const start = Math.min(lastIndexRef.current, index);
+        const end = Math.max(lastIndexRef.current, index);
+        const rangeIds = filteredTags.slice(start, end + 1).map((item) => item.id);
+        onApplyTagRange(rangeIds, !tagIsActive);
+      } else {
+        onApplyTag?.(tag.id);
+      }
+
+      lastIndexRef.current = index;
+    },
+    [disabled, activeTagSet, filteredTags, onApplyTag, onApplyTagRange, lastIndexRef]
+  );
 
   if (tags.length === 0) {
     return (
@@ -60,7 +83,7 @@ export default function TagSidebarSection({
           {hasSearchQuery ? t('noTagMatches', { query: searchQuery.trim() }) : t('noTags')}
         </p>
       ) : (
-        filteredTags.map((tag) => {
+        filteredTags.map((tag, index) => {
           const tagIsActive = activeTagSet.has(Number(tag.id));
           return (
             <SidebarListItem
@@ -70,7 +93,7 @@ export default function TagSidebarSection({
               isActive={tagIsActive}
               disabled={disabled}
               title={tagIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-              onClick={() => !disabled && onApplyTag?.(tag.id)}
+              onClick={(e) => handleItemClick(index, tag, e)}
               {...(renderItemMenu ? renderItemMenu(tag, tagIsActive) : {})}
             />
           );
