@@ -2,9 +2,11 @@
 # Uses Docker BuildKit syntax for advanced features
 # syntax=docker/dockerfile:1.4
 
+ARG BUN_VERSION=1.3.14
+
 # Stage 1: Dependencies - Install production dependencies only
 # This stage is optimized for layer caching and smaller final image
-FROM oven/bun:1-alpine AS deps
+FROM oven/bun:${BUN_VERSION}-alpine AS deps
 WORKDIR /app
 
 # Install system dependencies required for native Node.js modules
@@ -18,13 +20,19 @@ COPY package.json bun.lock ./
 
 # Install only production dependencies to reduce image size
 # --frozen-lockfile: Use exact versions from lockfile (ensures reproducible builds)
-# --no-cache: Don't cache package metadata (reduces image size)
-RUN bun install --production --frozen-lockfile --no-cache
+# Cache mount + retries: large native tarballs occasionally fail to extract in CI
+RUN --mount=type=cache,target=/root/.bun/install/cache,id=bun-backend-deps \
+    sh -c 'for attempt in 1 2 3; do \
+      bun install --production --frozen-lockfile && exit 0; \
+      echo "bun install attempt ${attempt} failed, retrying..."; \
+      [ "${attempt}" -eq 3 ] && exit 1; \
+      sleep $((attempt * 5)); \
+    done'
 
 # Stage 2: Builder - Prepare build environment
 # This stage is used if any build-time processing is needed
 # Currently minimal as backend doesn't require compilation step
-FROM oven/bun:1-alpine AS builder
+FROM oven/bun:${BUN_VERSION}-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies required for compiling native modules
@@ -35,14 +43,20 @@ COPY package.json bun.lock ./
 
 # Install all dependencies including dev dependencies
 # Dev dependencies may be needed for type checking, linting, or other build tools
-RUN bun install --frozen-lockfile --no-cache
+RUN --mount=type=cache,target=/root/.bun/install/cache,id=bun-backend-builder \
+    sh -c 'for attempt in 1 2 3; do \
+      bun install --frozen-lockfile && exit 0; \
+      echo "bun install attempt ${attempt} failed, retrying..."; \
+      [ "${attempt}" -eq 3 ] && exit 1; \
+      sleep $((attempt * 5)); \
+    done'
 
 # Copy entire source code into builder stage
 COPY . .
 
 # Stage 3: Runner - Production runtime image
 # Minimal image containing only what's needed to run the backend service
-FROM oven/bun:1-alpine AS runner
+FROM oven/bun:${BUN_VERSION}-alpine AS runner
 WORKDIR /app
 
 # Install runtime dependencies
