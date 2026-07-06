@@ -372,7 +372,12 @@ function ItemCard({
         }
       }}
       onClick={(e) => {
-        if (e.target.closest('button, input, a, select, textarea') || hasSelectedFiles) return;
+        if (
+          e.target.closest('button, input, a, select, textarea, [data-file-actions]') ||
+          hasSelectedFiles
+        ) {
+          return;
+        }
         handleCardSelect(e.shiftKey);
         e.currentTarget.blur();
       }}
@@ -383,7 +388,7 @@ function ItemCard({
         }
         if (
           (e.key === 'Enter' || e.key === ' ') &&
-          !e.target.closest('button, input, a, select, textarea') &&
+          !e.target.closest('button, input, a, select, textarea, [data-file-actions]') &&
           !hasSelectedFiles
         ) {
           e.preventDefault();
