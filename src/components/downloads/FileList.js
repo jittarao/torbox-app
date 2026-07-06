@@ -137,7 +137,7 @@ function FileListFile({
 
   const handleSelectRow = (e) => {
     if (isDisabled) return;
-    onFileSelect(itemId, fileIndex, file, !isChecked, e.shiftKey);
+    onFileSelect(selectionId, fileIndex, file, !isChecked, e.shiftKey);
   };
 
   const rowSurfaceClass = `${
@@ -145,15 +145,15 @@ function FileListFile({
       ? 'bg-accent/15 hover:bg-accent/20 dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
       : isDisabled
         ? 'bg-surface-alt-selected dark:bg-surface-alt-selected-dark'
-        : isFileLinkFailed?.(itemId, file.id)
+        : isFileLinkFailed?.(selectionId, file.id)
           ? 'bg-link-failed dark:bg-link-failed-dark hover:bg-link-failed-hover dark:hover:bg-link-failed-hover-dark'
-          : isFileDownloaded(itemId, file.id)
+          : isFileDownloaded(selectionId, file.id)
             ? 'bg-downloaded dark:bg-downloaded-dark hover:bg-downloaded-hover dark:hover:bg-downloaded-hover-dark'
             : 'bg-accent/5 hover:bg-accent/10 dark:bg-surface-alt-dark/70 dark:hover:bg-surface-alt-selected-hover-dark/70'
   } rounded-md p-2 md:p-1.5 lg:p-2 w-full text-left${isMobile ? ' flex flex-col gap-2' : ''}`;
 
   return (
-    <div key={`${itemId}-${file.id}`} className={rowSurfaceClass}>
+    <div key={`${selectionId}-${file.id}`} className={rowSurfaceClass}>
       {isMobile ? (
         <>
           <div
@@ -173,7 +173,7 @@ function FileListFile({
               disabled={isDisabled}
               onChange={(e) => {
                 e.stopPropagation();
-                onFileSelect(itemId, fileIndex, file, e.target.checked, e.shiftKey);
+                onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
               }}
               onClick={(e) => e.stopPropagation()}
               className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
@@ -237,7 +237,7 @@ function FileListFile({
               disabled={isDisabled}
               onChange={(e) => {
                 e.stopPropagation();
-                onFileSelect(itemId, fileIndex, file, e.target.checked, e.shiftKey);
+                onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
               }}
               onClick={(e) => e.stopPropagation()}
               className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
@@ -273,6 +273,7 @@ function FileListFile({
 
 function FileList({
   files,
+  selectionId,
   itemId,
   itemName,
   isBlurred,
@@ -289,10 +290,10 @@ function FileList({
       <div className="space-y-1.5 md:space-y-1 lg:space-y-2">
         {files.map((file, fileIndex) => (
           <FileListFile
-            key={`${itemId}-${file.id}`}
+            key={`${selectionId}-${file.id}`}
             file={file}
             fileIndex={fileIndex}
-            selectionId={itemId}
+            selectionId={selectionId}
             itemId={itemId}
             itemName={itemName}
             isBlurred={isBlurred}
