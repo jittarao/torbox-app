@@ -103,6 +103,7 @@ export function useDownloadsPageState(apiKey) {
       search: filterData.search,
       statusFilter: filterData.statusFilter,
       appliedFilters: filterData.appliedFilters,
+      orViewFilters: filterData.orViewFilters,
       sortField: filterData.sortField,
       sortDirection: filterData.sortDirection,
     }),
@@ -111,6 +112,7 @@ export function useDownloadsPageState(apiKey) {
       filterData.search,
       filterData.statusFilter,
       filterData.appliedFilters,
+      filterData.orViewFilters,
       filterData.sortField,
       filterData.sortDirection,
     ]

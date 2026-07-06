@@ -14,10 +14,12 @@ import {
   mergeViewAssetTypeFilter,
   getActiveTagIds,
   getActiveTrackers,
+  isTagOnlyFilter,
   isTrackerOnlyFilter,
 } from '@/components/downloads/filters/filterHelpers';
 import {
   sameViewId,
+  sameViewIdList,
   sidebarUrlMatchesPending,
 } from '@/components/downloads/filters/sidebarFilterSync';
 
@@ -44,6 +46,7 @@ export function useDownloadsFilters({
     sortField,
     sortDirection,
     setSort,
+    viewIds: urlViewIds,
     viewId: urlViewId,
   } = filterParams;
 
@@ -67,14 +70,30 @@ export function useDownloadsFilters({
     hasLoaded: viewsHasLoaded,
   } = useCustomViews(apiKey);
 
+  const activeViewIds = useMemo(() => urlViewIds ?? [], [urlViewIds]);
+
+  const activeViews = useMemo(() => {
+    if (!activeViewIds.length || !views?.length) return [];
+    return activeViewIds.map((id) => views.find((v) => sameViewId(v.id, id))).filter(Boolean);
+  }, [activeViewIds, views]);
+
+  const orViewFilters = activeViews.length > 1 ? activeViews : null;
+
   const appliedFilters = useMemo(() => {
+    if (activeViews.length === 1) {
+      const view = activeViews[0];
+      return mergeViewAssetTypeFilter(view.filters, view.asset_type);
+    }
+    if (activeViews.length > 1) {
+      return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    }
     if (activeView) {
       return mergeViewAssetTypeFilter(activeView.filters, activeView.asset_type);
     }
     return urlAppliedFilters;
-  }, [activeView, urlAppliedFilters]);
+  }, [activeViews, activeView, urlAppliedFilters]);
 
-  const activeTagIds = getActiveTagIds(appliedFilters);
+  const activeTagIds = getActiveTagIds(appliedFilters) ?? [];
   const activeTrackers = getActiveTrackers(appliedFilters) ?? [];
 
   const filterDepsRef = useRef({
@@ -96,8 +115,8 @@ export function useDownloadsFilters({
 
   /** Prevents URL ?view= from re-applying after the user clears the active view. */
   const suppressUrlViewSyncRef = useRef(false);
-  const lastSyncedUrlViewIdRef = useRef(null);
-  /** @type {import('react').MutableRefObject<{ kind: string, viewId?: number|string, tagId?: number, trackers?: string[] }|null>} */
+  const lastSyncedUrlViewIdsRef = useRef([]);
+  /** @type {import('react').MutableRefObject<{ kind: string, viewIds?: (number|string)[], tagIds?: number[], trackers?: string[] }|null>} */
   const pendingSidebarFilterRef = useRef(null);
   const viewsRef = useRef(views);
   viewsRef.current = views;
@@ -111,39 +130,15 @@ export function useDownloadsFilters({
   const handleClearFilters = useCallback(() => {
     pendingSidebarFilterRef.current = { kind: 'clear' };
     suppressUrlViewSyncRef.current = true;
-    lastSyncedUrlViewIdRef.current = urlViewId ?? null;
+    lastSyncedUrlViewIdsRef.current = urlViewIds ?? [];
     clearView();
     const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
     setColumnFilters(empty);
     clearAllFilterCriteria();
-  }, [clearView, clearAllFilterCriteria, urlViewId]);
+  }, [clearView, clearAllFilterCriteria, urlViewIds]);
 
-  const applyViewFilters = useCallback(
-    (view, { fromUrlSync = false } = {}) => {
-      if (!fromUrlSync) {
-        pendingSidebarFilterRef.current = { kind: 'view', viewId: view.id };
-        suppressUrlViewSyncRef.current = true;
-      }
-
-      applyView(view);
-
-      const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
-      setColumnFilters(normalizedFilters);
-
-      const criteriaPatch = {
-        statusFilter: 'all',
-        viewId: view.id,
-        tagIds: null,
-        trackerUrls: null,
-        search: view.search_query || '',
-      };
-      if (view.sort_field) {
-        criteriaPatch.sortField = view.sort_field;
-        criteriaPatch.sortDirection = view.sort_direction || 'desc';
-      }
-      patchFilterCriteria(criteriaPatch);
-      lastSyncedUrlViewIdRef.current = view.id;
-
+  const applyViewPreset = useCallback(
+    (view) => {
       let visibleColumns = view.visible_columns;
       if (visibleColumns) {
         if (typeof visibleColumns === 'string') {
@@ -158,22 +153,94 @@ export function useDownloadsFilters({
           handleColumnChange?.(visibleColumns);
         }
       }
+    },
+    [handleColumnChange]
+  );
+
+  const applyViewFilters = useCallback(
+    (view, { fromUrlSync = false } = {}) => {
+      if (!fromUrlSync) {
+        pendingSidebarFilterRef.current = { kind: 'view', viewIds: [view.id] };
+        suppressUrlViewSyncRef.current = true;
+      }
+
+      applyView(view);
+
+      const normalizedFilters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
+      setColumnFilters(normalizedFilters);
+
+      const criteriaPatch = {
+        statusFilter: 'all',
+        viewIds: [view.id],
+        tagIds: null,
+        trackerUrls: null,
+        search: view.search_query || '',
+      };
+      if (view.sort_field) {
+        criteriaPatch.sortField = view.sort_field;
+        criteriaPatch.sortDirection = view.sort_direction || 'desc';
+      }
+      patchFilterCriteria(criteriaPatch);
+      lastSyncedUrlViewIdsRef.current = [view.id];
+
+      applyViewPreset(view);
+      setMobileFiltersOpen(false);
+    },
+    [applyView, patchFilterCriteria, applyViewPreset]
+  );
+
+  const applyMultiViewFilters = useCallback(
+    (viewIds, { fromUrlSync = false, reapplyPreset = false } = {}) => {
+      const resolved = viewIds
+        .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
+        .filter(Boolean);
+      if (resolved.length === 0) return;
+
+      const first = resolved[0];
+
+      if (!fromUrlSync) {
+        pendingSidebarFilterRef.current = { kind: 'view', viewIds };
+        suppressUrlViewSyncRef.current = true;
+      }
+
+      applyView(first);
+      setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+
+      const criteriaPatch = {
+        statusFilter: 'all',
+        viewIds,
+        tagIds: null,
+        trackerUrls: null,
+      };
+      if (reapplyPreset) {
+        criteriaPatch.search = first.search_query || '';
+        if (first.sort_field) {
+          criteriaPatch.sortField = first.sort_field;
+          criteriaPatch.sortDirection = first.sort_direction || 'desc';
+        }
+      }
+      patchFilterCriteria(criteriaPatch);
+      lastSyncedUrlViewIdsRef.current = viewIds;
+
+      if (reapplyPreset) {
+        applyViewPreset(first);
+      }
 
       setMobileFiltersOpen(false);
-
-      return visibleColumns;
     },
-    [applyView, patchFilterCriteria, handleColumnChange]
+    [applyView, patchFilterCriteria, applyViewPreset]
   );
 
   const applyViewFiltersRef = useRef(applyViewFilters);
   applyViewFiltersRef.current = applyViewFilters;
+  const applyMultiViewFiltersRef = useRef(applyMultiViewFilters);
+  applyMultiViewFiltersRef.current = applyMultiViewFilters;
 
-  // Sync store from URL when ?view= changes (e.g. shared link). Sidebar clicks set
-  // pendingSidebarFilterRef until replaceState catches up — do not re-apply a stale ?view=.
+  // Sync store from URL when ?view= / ?views= changes (e.g. shared link). Sidebar clicks set
+  // pendingSidebarFilterRef until replaceState catches up — do not re-apply a stale selection.
   useEffect(() => {
     const pending = pendingSidebarFilterRef.current;
-    if (pending && !sidebarUrlMatchesPending(urlViewId, urlAppliedFilters, pending)) {
+    if (pending && !sidebarUrlMatchesPending(urlViewIds, urlAppliedFilters, pending)) {
       return;
     }
     if (pending) {
@@ -181,70 +248,102 @@ export function useDownloadsFilters({
       suppressUrlViewSyncRef.current = false;
     }
 
-    if (urlViewId == null) {
-      lastSyncedUrlViewIdRef.current = null;
+    if (!urlViewIds?.length) {
+      lastSyncedUrlViewIdsRef.current = [];
       return;
     }
     if (!viewsHasLoaded || !viewsRef.current?.length) return;
     if (suppressUrlViewSyncRef.current) return;
-    if (
-      lastSyncedUrlViewIdRef.current != null &&
-      sameViewId(lastSyncedUrlViewIdRef.current, urlViewId)
-    ) {
+    if (sameViewIdList(lastSyncedUrlViewIdsRef.current, urlViewIds)) return;
+
+    const resolved = urlViewIds
+      .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
+      .filter(Boolean);
+    if (resolved.length === 0) return;
+
+    lastSyncedUrlViewIdsRef.current = urlViewIds;
+
+    if (resolved.length === 1) {
+      const storeActiveViewId = useCustomViewsStore.getState().activeView?.id;
+      if (sameViewId(storeActiveViewId, resolved[0].id)) return;
+      applyViewFiltersRef.current(resolved[0], { fromUrlSync: true });
       return;
     }
 
-    const view = viewsRef.current.find((v) => sameViewId(v.id, urlViewId));
-    if (!view) return;
-
-    lastSyncedUrlViewIdRef.current = urlViewId;
-    const storeActiveViewId = useCustomViewsStore.getState().activeView?.id;
-    if (sameViewId(storeActiveViewId, view.id)) return;
-
-    applyViewFiltersRef.current(view, { fromUrlSync: true });
-  }, [urlViewId, urlAppliedFilters, viewsHasLoaded]);
+    applyMultiViewFiltersRef.current(urlViewIds, { fromUrlSync: true, reapplyPreset: true });
+  }, [urlViewIds, urlAppliedFilters, viewsHasLoaded]);
 
   const handleApplyView = useCallback(
     (view) => {
-      if (sameViewId(activeView?.id, view.id)) {
+      const current = activeViewIds;
+      const isActive = current.some((id) => sameViewId(id, view.id));
+      const next = isActive
+        ? current.filter((id) => !sameViewId(id, view.id))
+        : [...current, view.id];
+
+      if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
         return;
       }
-      return applyViewFilters(view);
+
+      if (next.length === 1) {
+        const single = views.find((v) => sameViewId(v.id, next[0]));
+        if (single) applyViewFilters(single);
+        return;
+      }
+
+      const firstChanged = !sameViewId(next[0], current[0]);
+      applyMultiViewFilters(next, { reapplyPreset: firstChanged });
     },
-    [activeView?.id, handleClearFilters, applyViewFilters]
+    [activeViewIds, views, handleClearFilters, applyViewFilters, applyMultiViewFilters]
   );
+
+  const handleClearViews = useCallback(() => {
+    if (activeViewIds.length === 0) return;
+    handleClearFilters();
+    setMobileFiltersOpen(false);
+  }, [activeViewIds.length, handleClearFilters]);
 
   const handleApplyTag = useCallback(
     (tagId) => {
-      const id = Number(tagId);
-      const isActive = activeTagIds?.length === 1 && activeTagIds[0] === id && !activeView;
+      if (activeView) return;
 
-      if (isActive) {
+      const id = Number(tagId);
+      const current = getActiveTagIds(appliedFilters) ?? [];
+      const isActive = current.includes(id);
+      const next = isActive ? current.filter((t) => t !== id) : [...current, id];
+
+      if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
         return;
       }
 
-      pendingSidebarFilterRef.current = { kind: 'tag', tagId: id };
+      pendingSidebarFilterRef.current = { kind: 'tag', tagIds: next };
       suppressUrlViewSyncRef.current = true;
-      lastSyncedUrlViewIdRef.current = null;
+      lastSyncedUrlViewIdsRef.current = [];
 
       clearView();
-      const tagFilter = buildTagFilter(id);
+      const tagFilter = buildTagFilter(next);
       setColumnFilters(tagFilter);
       patchFilterCriteria({
         statusFilter: 'all',
         search: '',
-        viewId: null,
-        tagIds: [id],
+        viewIds: null,
+        tagIds: next,
         trackerUrls: null,
       });
       setMobileFiltersOpen(false);
     },
-    [activeTagIds, activeView, handleClearFilters, clearView, patchFilterCriteria]
+    [appliedFilters, activeView, handleClearFilters, clearView, patchFilterCriteria]
   );
+
+  const handleClearTags = useCallback(() => {
+    if (!isTagOnlyFilter(appliedFilters) && activeTagIds.length === 0) return;
+    handleClearFilters();
+    setMobileFiltersOpen(false);
+  }, [appliedFilters, activeTagIds.length, handleClearFilters]);
 
   const handleApplyTracker = useCallback(
     (trackerUrl) => {
@@ -261,7 +360,7 @@ export function useDownloadsFilters({
 
       pendingSidebarFilterRef.current = { kind: 'tracker', trackers: next };
       suppressUrlViewSyncRef.current = true;
-      lastSyncedUrlViewIdRef.current = null;
+      lastSyncedUrlViewIdsRef.current = [];
 
       clearView();
       const trackerFilter = buildTrackerFilter(next);
@@ -269,7 +368,7 @@ export function useDownloadsFilters({
       patchFilterCriteria({
         statusFilter: 'all',
         search: '',
-        viewId: null,
+        viewIds: null,
         tagIds: null,
         trackerUrls: next,
       });
@@ -296,7 +395,7 @@ export function useDownloadsFilters({
     patchFilterCriteria({
       trackerUrls: null,
       appliedFilters: empty,
-      viewId: null,
+      viewIds: null,
       tagIds: null,
     });
   }, [activeType, urlAppliedFilters, patchFilterCriteria]);
@@ -324,8 +423,12 @@ export function useDownloadsFilters({
   };
 
   const handleViewUpdated = (view) => {
-    if (activeView?.id === view.id) {
-      applyViewFilters(view);
+    if (activeViewIds.some((id) => sameViewId(id, view.id))) {
+      if (activeViewIds.length === 1) {
+        applyViewFilters(view);
+      } else if (sameViewId(activeViewIds[0], view.id)) {
+        applyMultiViewFilters(activeViewIds, { reapplyPreset: true });
+      }
     }
     setToast({
       message: downloadsFiltersT('viewUpdated', { name: view.name }),
@@ -354,8 +457,23 @@ export function useDownloadsFilters({
   };
 
   const handleTagDeleted = (tagId) => {
-    if (activeTagIds?.includes(Number(tagId))) {
-      handleClearFilters();
+    if (activeTagIds.includes(Number(tagId))) {
+      const next = activeTagIds.filter((id) => id !== Number(tagId));
+      if (next.length === 0) {
+        handleClearFilters();
+        return;
+      }
+      pendingSidebarFilterRef.current = { kind: 'tag', tagIds: next };
+      suppressUrlViewSyncRef.current = true;
+      const tagFilter = buildTagFilter(next);
+      setColumnFilters(tagFilter);
+      patchFilterCriteria({
+        statusFilter: 'all',
+        search: '',
+        viewIds: null,
+        tagIds: next,
+        trackerUrls: null,
+      });
     }
   };
 
@@ -408,7 +526,7 @@ export function useDownloadsFilters({
 
       const criteriaPatch = {
         statusFilter: 'all',
-        viewId: null,
+        viewIds: null,
         tagIds: null,
         trackerUrls: null,
         appliedFilters: normalized,
@@ -459,15 +577,20 @@ export function useDownloadsFilters({
     setSort,
     views,
     activeView,
+    activeViewIds,
+    activeViews,
+    orViewFilters,
     applyView,
     clearView,
     viewsLoading,
     activeTagIds,
     activeTrackers,
     handleApplyView,
+    handleClearViews,
     handleClearFilters,
     handleClearView: handleClearFilters,
     handleApplyTag,
+    handleClearTags,
     handleApplyTracker,
     handleClearTrackers,
     handleCloseFilterModal,

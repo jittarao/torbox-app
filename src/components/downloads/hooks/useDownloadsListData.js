@@ -25,12 +25,15 @@ function useStableShallow(value) {
 }
 
 function buildFilterCacheKey(criteria) {
+  const orViewIds =
+    criteria.orViewFilters?.map((view) => view?.id).filter((id) => id != null) ?? null;
   return JSON.stringify({
     search: criteria.search,
     statusFilter: criteria.statusFilter,
     sortField: criteria.sortField,
     sortDirection: criteria.sortDirection,
     appliedFilters: criteria.appliedFilters,
+    orViewIds,
   });
 }
 
@@ -81,17 +84,19 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     useShallow((s) => ({ entities: s.entities, order: s.order }))
   );
 
-  const { search, statusFilter, appliedFilters, sortField, sortDirection } = filterParams;
+  const { search, statusFilter, appliedFilters, orViewFilters, sortField, sortDirection } =
+    filterParams;
 
   const filterCriteria = useMemo(
     () => ({
       search,
       statusFilter,
       appliedFilters,
+      orViewFilters,
       sortField,
       sortDirection,
     }),
-    [search, statusFilter, appliedFilters, sortField, sortDirection]
+    [search, statusFilter, appliedFilters, orViewFilters, sortField, sortDirection]
   );
   const stableTagMappings = useStableShallow(tagMappings);
   const stableDownloadHistory = useStableShallow(downloadHistory);
