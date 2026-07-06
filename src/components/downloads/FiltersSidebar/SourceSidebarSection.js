@@ -7,25 +7,6 @@ import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 import { useSourceSidebarData } from './useSourceSidebarData';
 
-function LinkIcon({ className = 'size-3.5' }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      aria-hidden
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
-      />
-    </svg>
-  );
-}
-
 export default function SourceSidebarSection({
   searchQuery = '',
   activeSources = [],
@@ -110,18 +91,6 @@ export default function SourceSidebarSection({
               count={entry.count}
               isActive={isActive}
               disabled={disabled}
-              leading={
-                <span
-                  className={`flex size-3.5 shrink-0 items-center justify-center ${
-                    isActive
-                      ? 'text-accent dark:text-accent-dark'
-                      : 'text-primary-text/40 dark:text-primary-text-dark/40'
-                  }`}
-                  aria-hidden
-                >
-                  <LinkIcon />
-                </span>
-              }
               title={entry.host}
               onClick={(e) => handleItemClick(index, entry, e)}
             />
