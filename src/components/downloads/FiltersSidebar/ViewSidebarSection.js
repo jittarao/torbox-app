@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import SidebarListItem from './SidebarListItem';
+import SidebarOverflowMenu from './SidebarOverflowMenu';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
@@ -14,11 +15,14 @@ export default function ViewSidebarSection({
   onApplyView,
   onApplyViewRange,
   onClearViews,
+  onEditView,
+  onRenameView,
+  onDeleteView,
   disabled = false,
-  renderItemMenu,
 }) {
   const t = useTranslations('DownloadsFilters');
   const { lastIndexRef } = useSidebarShiftSelect(searchQuery);
+  const [overflowMenu, setOverflowMenu] = useState(null);
 
   const activeViewIdSet = useMemo(
     () => new Set((activeViewIds || []).map((id) => String(id))),
@@ -33,9 +37,69 @@ export default function ViewSidebarSection({
   const selectedCount = activeViewIds.length;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
-  const handleItemClick = useCallback(
-    (index, view, event) => {
-      if (disabled) return;
+  const closeOverflowMenu = useCallback(() => setOverflowMenu(null), []);
+
+  const handleListMouseDown = useCallback((event) => {
+    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
+      event.preventDefault();
+    }
+  }, []);
+
+  const handleListClick = useCallback(
+    (event) => {
+      const menuButton = event.target.closest('[data-sidebar-menu]');
+      if (menuButton) {
+        event.stopPropagation();
+        const row = menuButton.closest('[data-sidebar-item]');
+        if (!row) return;
+        const index = Number(row.dataset.index);
+        const view = filteredViews[index];
+        if (!view || String(view.id) !== row.dataset.id) return;
+        const viewId = String(view.id);
+        if (overflowMenu?.viewId === viewId) {
+          closeOverflowMenu();
+          return;
+        }
+        const viewIsActive = activeViewIdSet.has(viewId);
+        setOverflowMenu({
+          viewId,
+          anchorRef: { current: menuButton },
+          items: [
+            {
+              id: 'apply',
+              label: viewIsActive ? t('menuClear') : t('menuApply'),
+              onClick: () => onApplyView?.(view),
+            },
+            {
+              id: 'edit',
+              label: t('menuEdit'),
+              onClick: () => onEditView?.(view),
+            },
+            {
+              id: 'rename',
+              label: t('menuRename'),
+              onClick: () => onRenameView?.(view),
+            },
+            {
+              id: 'delete',
+              label: t('menuDelete'),
+              destructive: true,
+              onClick: () => onDeleteView?.(view.id, view.name),
+            },
+          ],
+        });
+        return;
+      }
+
+      const activateButton = event.target.closest('[data-sidebar-activate]');
+      if (!activateButton || disabled) return;
+
+      const row = activateButton.closest('[data-sidebar-item]');
+      if (!row) return;
+
+      const index = Number(row.dataset.index);
+      const view = filteredViews[index];
+      if (!view || String(view.id) !== row.dataset.id) return;
 
       const viewIsActive = activeViewIdSet.has(String(view.id));
 
@@ -50,7 +114,20 @@ export default function ViewSidebarSection({
 
       lastIndexRef.current = index;
     },
-    [disabled, activeViewIdSet, filteredViews, onApplyView, onApplyViewRange, lastIndexRef]
+    [
+      disabled,
+      filteredViews,
+      activeViewIdSet,
+      onApplyView,
+      onApplyViewRange,
+      onEditView,
+      onRenameView,
+      onDeleteView,
+      lastIndexRef,
+      overflowMenu,
+      closeOverflowMenu,
+      t,
+    ]
   );
 
   if (views.length === 0) {
@@ -83,21 +160,35 @@ export default function ViewSidebarSection({
           {hasSearchQuery ? t('noViewMatches', { query: searchQuery.trim() }) : t('noViews')}
         </p>
       ) : (
-        filteredViews.map((view, index) => {
-          const viewIsActive = activeViewIdSet.has(String(view.id));
-          return (
-            <SidebarListItem
-              key={view.id}
-              label={view.name}
-              count={viewCounts[view.id]}
-              isActive={viewIsActive}
-              disabled={disabled}
-              title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-              onClick={(e) => handleItemClick(index, view, e)}
-              {...(renderItemMenu ? renderItemMenu(view, viewIsActive) : {})}
-            />
-          );
-        })
+        <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+          {filteredViews.map((view, index) => {
+            const viewId = String(view.id);
+            const viewIsActive = activeViewIdSet.has(viewId);
+            return (
+              <SidebarListItem
+                key={view.id}
+                itemId={viewId}
+                itemIndex={index}
+                label={view.name}
+                count={viewCounts[view.id]}
+                isActive={viewIsActive}
+                disabled={disabled}
+                title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
+                showMenu
+                isMenuOpen={overflowMenu?.viewId === viewId}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {overflowMenu && (
+        <SidebarOverflowMenu
+          isOpen
+          onClose={closeOverflowMenu}
+          anchorRef={overflowMenu.anchorRef}
+          items={overflowMenu.items}
+        />
       )}
     </div>
   );

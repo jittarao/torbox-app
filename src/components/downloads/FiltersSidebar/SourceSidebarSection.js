@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl';
 import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
-import { useSourceSidebarData } from './useSourceSidebarData';
 
 export default function SourceSidebarSection({
+  entries = [],
   searchQuery = '',
   activeSources = [],
   onApplySource,
@@ -16,7 +16,6 @@ export default function SourceSidebarSection({
   disabled = false,
 }) {
   const t = useTranslations('DownloadsFilters');
-  const { entries } = useSourceSidebarData();
   const { lastIndexRef } = useSidebarShiftSelect(searchQuery);
 
   const activeSourceSet = useMemo(
@@ -32,9 +31,23 @@ export default function SourceSidebarSection({
   const selectedCount = activeSourceSet.size;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
-  const handleItemClick = useCallback(
-    (index, entry, event) => {
-      if (disabled) return;
+  const handleListMouseDown = useCallback((event) => {
+    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
+      event.preventDefault();
+    }
+  }, []);
+
+  const handleListClick = useCallback(
+    (event) => {
+      const activateButton = event.target.closest('[data-sidebar-activate]');
+      if (!activateButton || disabled) return;
+
+      const row = activateButton.closest('[data-sidebar-item]');
+      if (!row) return;
+
+      const index = Number(row.dataset.index);
+      const entry = filteredEntries[index];
+      if (!entry || entry.host !== row.dataset.id) return;
 
       const isActive = activeSourceSet.has(entry.host);
 
@@ -49,7 +62,7 @@ export default function SourceSidebarSection({
 
       lastIndexRef.current = index;
     },
-    [disabled, activeSourceSet, filteredEntries, onApplySource, onApplySourceRange, lastIndexRef]
+    [disabled, filteredEntries, activeSourceSet, onApplySource, onApplySourceRange, lastIndexRef]
   );
 
   if (entries.length === 0) {
@@ -82,20 +95,23 @@ export default function SourceSidebarSection({
           {hasSearchQuery ? t('noSourceMatches', { query: searchQuery.trim() }) : t('noSources')}
         </p>
       ) : (
-        filteredEntries.map((entry, index) => {
-          const isActive = activeSourceSet.has(entry.host);
-          return (
-            <SidebarListItem
-              key={entry.host}
-              label={entry.label}
-              count={entry.count}
-              isActive={isActive}
-              disabled={disabled}
-              title={entry.host}
-              onClick={(e) => handleItemClick(index, entry, e)}
-            />
-          );
-        })
+        <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+          {filteredEntries.map((entry, index) => {
+            const isActive = activeSourceSet.has(entry.host);
+            return (
+              <SidebarListItem
+                key={entry.host}
+                itemId={entry.host}
+                itemIndex={index}
+                label={entry.label}
+                count={entry.count}
+                isActive={isActive}
+                disabled={disabled}
+                title={entry.host}
+              />
+            );
+          })}
+        </div>
       )}
     </div>
   );

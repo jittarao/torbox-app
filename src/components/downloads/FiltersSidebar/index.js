@@ -1,16 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
-import { useTags } from '@/components/shared/hooks/useTags';
-import SidebarOverflowMenu from './SidebarOverflowMenu';
+import { useCustomViewsStore } from '@/store/customViewsStore';
+import { useTagsStore } from '@/store/tagsStore';
 import TrackerSidebarSection from './TrackerSidebarSection';
 import SourceSidebarSection from './SourceSidebarSection';
 import TagSidebarSection from './TagSidebarSection';
 import ViewSidebarSection from './ViewSidebarSection';
 import FiltersSidebarSearch from './FiltersSidebarSearch';
-import { matchesSidebarSearch } from './sidebarSearch';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 import useFiltersSidebarSectionsCollapsed from './useFiltersSidebarSectionsCollapsed';
 
@@ -35,8 +33,6 @@ function SectionChevron({ expanded, className = 'size-3' }) {
 function SidebarSection({
   title,
   children,
-  emptyMessage,
-  emptyAction,
   onAdd,
   addLabel,
   tall,
@@ -94,16 +90,8 @@ function SidebarSection({
         )}
       </div>
       {expanded && (
-        <div className={`pb-2 ${tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1'}`}>
-          {children}
-          {emptyMessage && (
-            <p className="p-2 text-[11px] text-primary-text/50 dark:text-primary-text-dark/50 italic">
-              {emptyMessage}
-            </p>
-          )}
-        </div>
+        <div className={`pb-2 ${tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1'}`}>{children}</div>
       )}
-      {expanded && emptyAction}
     </div>
   );
 }
@@ -211,7 +199,6 @@ function FiltersSidebarHeader({ collapsed, onToggle, compact = false }) {
 export default function FiltersSidebar({
   apiKey,
   views,
-  activeView,
   activeViewIds = [],
   tags,
   activeAssetType = 'all',
@@ -244,83 +231,62 @@ export default function FiltersSidebar({
   onToggleCollapsed,
 }) {
   const t = useTranslations('DownloadsFilters');
-  const { deleteView } = useCustomViews(apiKey);
-  const { deleteTag } = useTags(apiKey);
+  const deleteViewStore = useCustomViewsStore((s) => s.deleteView);
+  const deleteTagStore = useTagsStore((s) => s.deleteTag);
   const isFixed = variant === 'fixed';
   const isSheet = variant === 'sheet';
   const sectionTall = isFixed || isSheet;
-  const [overflowMenu, setOverflowMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { sectionsExpanded, toggleSection, expandAllSections } =
     useFiltersSidebarSectionsCollapsed();
 
-  const closeOverflowMenu = () => setOverflowMenu(null);
-
-  const openOverflowMenu = (key, anchorRef, items) => {
-    setOverflowMenu((current) => (current?.key === key ? null : { key, anchorRef, items }));
-  };
-
-  const { tagCounts, viewCounts } = useFiltersSidebarCounts(activeAssetType, views);
+  const { tagCounts, viewCounts, trackerEntries, sourceEntries } = useFiltersSidebarCounts(
+    activeAssetType,
+    views
+  );
 
   const showTrackerSection = activeAssetType === 'all' || activeAssetType === 'torrents';
   const showSourceSection = activeAssetType === 'all' || activeAssetType === 'webdl';
-  const viewFilterLocked = activeViewIds.length > 0;
-  const trackerFilterLocked = viewFilterLocked;
+  const trackerFilterLocked = activeViewIds.length > 0;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
   useEffect(() => {
     if (hasSearchQuery) expandAllSections();
   }, [hasSearchQuery, expandAllSections]);
 
-  const sectionToggleLabel = (sectionTitle, expanded) =>
-    expanded
-      ? t('collapseSection', { section: sectionTitle })
-      : t('expandSection', { section: sectionTitle });
-
-  const filteredViews = useMemo(
-    () => views.filter((view) => matchesSidebarSearch(searchQuery, view.name)),
-    [views, searchQuery]
+  const sectionToggleLabel = useCallback(
+    (sectionTitle, expanded) =>
+      expanded
+        ? t('collapseSection', { section: sectionTitle })
+        : t('expandSection', { section: sectionTitle }),
+    [t]
   );
 
-  const filteredTags = useMemo(
-    () => tags.filter((tag) => matchesSidebarSearch(searchQuery, tag.name)),
-    [tags, searchQuery]
+  const handleDeleteView = useCallback(
+    async (viewId, viewName) => {
+      if (!window.confirm(t('confirmDeleteView', { name: viewName }))) return;
+      try {
+        await deleteViewStore(apiKey, viewId);
+        if (activeViewIds.some((id) => String(id) === String(viewId))) onClearView();
+      } catch (error) {
+        alert(t('deleteViewFailed', { error: error.message }));
+      }
+    },
+    [apiKey, deleteViewStore, activeViewIds, onClearView, t]
   );
 
-  const viewsEmptyMessage = useMemo(() => {
-    if (views.length === 0) return t('noViews');
-    if (hasSearchQuery && filteredViews.length === 0) {
-      return t('noViewMatches', { query: searchQuery.trim() });
-    }
-    return null;
-  }, [views.length, filteredViews.length, hasSearchQuery, searchQuery, t]);
-
-  const tagsEmptyMessage =
-    tags.length === 0
-      ? null
-      : hasSearchQuery && filteredTags.length === 0
-        ? t('noTagMatches', { query: searchQuery.trim() })
-        : null;
-
-  const handleDeleteView = async (viewId, viewName) => {
-    if (!window.confirm(t('confirmDeleteView', { name: viewName }))) return;
-    try {
-      await deleteView(viewId);
-      if (activeViewIds.some((id) => String(id) === String(viewId))) onClearView();
-    } catch (error) {
-      alert(t('deleteViewFailed', { error: error.message }));
-    }
-  };
-
-  const handleDeleteTagItem = async (tagId, tagName) => {
-    if (!window.confirm(t('confirmDeleteTag', { name: tagName }))) return;
-    try {
-      await deleteTag(tagId);
-      onDeleteTag?.(tagId);
-    } catch (error) {
-      alert(t('deleteTagFailed', { error: error.message }));
-    }
-  };
+  const handleDeleteTagItem = useCallback(
+    async (tagId, tagName) => {
+      if (!window.confirm(t('confirmDeleteTag', { name: tagName }))) return;
+      try {
+        await deleteTagStore(apiKey, tagId);
+        onDeleteTag?.(tagId);
+      } catch (error) {
+        alert(t('deleteTagFailed', { error: error.message }));
+      }
+    },
+    [apiKey, deleteTagStore, onDeleteTag, t]
+  );
 
   if (isFixed && collapsed && onToggleCollapsed) {
     return (
@@ -353,7 +319,6 @@ export default function FiltersSidebar({
       <div className="min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
         <SidebarSection
           title={t('viewsSection')}
-          emptyMessage={viewsEmptyMessage}
           onAdd={onNewView}
           addLabel={t('newView')}
           tall={sectionTall}
@@ -370,48 +335,14 @@ export default function FiltersSidebar({
             onApplyView={onApplyView}
             onApplyViewRange={onApplyViewRange}
             onClearViews={onClearViews}
-            renderItemMenu={(view, viewIsActive) => {
-              const menuKey = `view-${view.id}`;
-              const viewMenuItems = [
-                {
-                  id: 'apply',
-                  label: viewIsActive ? t('menuClear') : t('menuApply'),
-                  onClick: () => onApplyView(view),
-                },
-                {
-                  id: 'edit',
-                  label: t('menuEdit'),
-                  onClick: () => onEditView(view),
-                },
-                {
-                  id: 'rename',
-                  label: t('menuRename'),
-                  onClick: () => onRenameView(view),
-                },
-                {
-                  id: 'delete',
-                  label: t('menuDelete'),
-                  destructive: true,
-                  onClick: () => handleDeleteView(view.id, view.name),
-                },
-              ];
-              return {
-                isMenuOpen: overflowMenu?.key === menuKey,
-                onMenuToggle: (open, anchorRef) => {
-                  if (!open) {
-                    closeOverflowMenu();
-                    return;
-                  }
-                  openOverflowMenu(menuKey, anchorRef, viewMenuItems);
-                },
-              };
-            }}
+            onEditView={onEditView}
+            onRenameView={onRenameView}
+            onDeleteView={handleDeleteView}
           />
         </SidebarSection>
 
         <SidebarSection
           title={t('tagsSection')}
-          emptyMessage={tagsEmptyMessage}
           onAdd={onOpenTagManager}
           addLabel={t('manageTags')}
           tall={sectionTall}
@@ -428,38 +359,9 @@ export default function FiltersSidebar({
             onApplyTag={onApplyTag}
             onApplyTagRange={onApplyTagRange}
             onClearTags={onClearTags}
+            onRenameTag={onRenameTag}
+            onDeleteTag={handleDeleteTagItem}
             disabled={trackerFilterLocked}
-            renderItemMenu={(tag, tagIsActive) => {
-              const menuKey = `tag-${tag.id}`;
-              const tagMenuItems = [
-                {
-                  id: 'apply',
-                  label: tagIsActive ? t('menuClear') : t('menuApply'),
-                  onClick: () => onApplyTag(tag.id),
-                },
-                {
-                  id: 'rename',
-                  label: t('menuRename'),
-                  onClick: () => onRenameTag(tag),
-                },
-                {
-                  id: 'delete',
-                  label: t('menuDelete'),
-                  destructive: true,
-                  onClick: () => handleDeleteTagItem(tag.id, tag.name),
-                },
-              ];
-              return {
-                isMenuOpen: overflowMenu?.key === menuKey,
-                onMenuToggle: (open, anchorRef) => {
-                  if (!open) {
-                    closeOverflowMenu();
-                    return;
-                  }
-                  openOverflowMenu(menuKey, anchorRef, tagMenuItems);
-                },
-              };
-            }}
           />
         </SidebarSection>
 
@@ -473,6 +375,7 @@ export default function FiltersSidebar({
             activeCount={activeTrackers.length}
           >
             <TrackerSidebarSection
+              entries={trackerEntries}
               searchQuery={searchQuery}
               activeTrackers={activeTrackers}
               onApplyTracker={onApplyTracker}
@@ -493,6 +396,7 @@ export default function FiltersSidebar({
             activeCount={activeSources.length}
           >
             <SourceSidebarSection
+              entries={sourceEntries}
               searchQuery={searchQuery}
               activeSources={activeSources}
               onApplySource={onApplySource}
@@ -521,15 +425,6 @@ export default function FiltersSidebar({
           {t('newView')}
         </button>
       </div>
-
-      {overflowMenu && (
-        <SidebarOverflowMenu
-          isOpen
-          onClose={closeOverflowMenu}
-          anchorRef={overflowMenu.anchorRef}
-          items={overflowMenu.items}
-        />
-      )}
     </aside>
   );
 }
