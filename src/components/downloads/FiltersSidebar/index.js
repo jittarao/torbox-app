@@ -6,6 +6,7 @@ import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
 import SidebarOverflowMenu from './SidebarOverflowMenu';
 import TrackerSidebarSection from './TrackerSidebarSection';
+import SourceSidebarSection from './SourceSidebarSection';
 import TagSidebarSection from './TagSidebarSection';
 import ViewSidebarSection from './ViewSidebarSection';
 import FiltersSidebarSearch from './FiltersSidebarSearch';
@@ -179,6 +180,7 @@ export default function FiltersSidebar({
   activeAssetType = 'all',
   activeTagIds,
   activeTrackers = [],
+  activeSources = [],
   onApplyView,
   onApplyViewRange,
   onClearViews,
@@ -189,6 +191,9 @@ export default function FiltersSidebar({
   onApplyTracker,
   onApplyTrackerRange,
   onClearTrackers,
+  onApplySource,
+  onApplySourceRange,
+  onClearSources,
   onEditView,
   onRenameView,
   onRenameTag,
@@ -219,6 +224,7 @@ export default function FiltersSidebar({
   const { tagCounts, viewCounts } = useFiltersSidebarCounts(activeAssetType, views);
 
   const showTrackerSection = activeAssetType === 'all' || activeAssetType === 'torrents';
+  const showSourceSection = activeAssetType === 'all' || activeAssetType === 'webdl';
   const viewFilterLocked = activeViewIds.length > 0;
   const trackerFilterLocked = viewFilterLocked;
   const hasSearchQuery = searchQuery.trim().length > 0;
@@ -415,6 +421,19 @@ export default function FiltersSidebar({
               onApplyTracker={onApplyTracker}
               onApplyTrackerRange={onApplyTrackerRange}
               onClearTrackers={onClearTrackers}
+              disabled={trackerFilterLocked}
+            />
+          </SidebarSection>
+        )}
+
+        {showSourceSection && (
+          <SidebarSection title={t('sourcesSection')} tall={sectionTall} sheet={isSheet}>
+            <SourceSidebarSection
+              searchQuery={searchQuery}
+              activeSources={activeSources}
+              onApplySource={onApplySource}
+              onApplySourceRange={onApplySourceRange}
+              onClearSources={onClearSources}
               disabled={trackerFilterLocked}
             />
           </SidebarSection>
