@@ -4,11 +4,25 @@ import {
   STRING_OPERATORS,
 } from '@/components/downloads/AutomationRules/constants';
 import {
+  buildTagFilter,
   buildTrackerFilter,
+  getActiveTagIds,
   getActiveTrackers,
+  isTagOnlyFilter,
   isTrackerOnlyFilter,
+  itemMatchesAnyViewFilters,
+  mergeViewAssetTypeFilter,
   EMPTY_FILTERS,
 } from '../filterHelpers';
+import { itemMatchesFilters } from '../filterEvaluation';
+
+describe('tag filter helpers', () => {
+  test('buildTagFilter and getActiveTagIds round-trip multiple ids', () => {
+    const filters = buildTagFilter([1, 2, 3]);
+    expect(isTagOnlyFilter(filters)).toBe(true);
+    expect(getActiveTagIds(filters)).toEqual([1, 2, 3]);
+  });
+});
 
 describe('tracker filter helpers', () => {
   const urlA = 'https://tracker.example.com/announce';
@@ -51,5 +65,48 @@ describe('tracker filter helpers', () => {
     };
     expect(isTrackerOnlyFilter(filters)).toBe(false);
     expect(getActiveTrackers(filters)).toBeNull();
+  });
+});
+
+describe('itemMatchesAnyViewFilters', () => {
+  const viewA = {
+    id: 1,
+    asset_type: 'torrents',
+    filters: {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'name', operator: STRING_OPERATORS.CONTAINS, value: 'alpha' }],
+        },
+      ],
+    },
+  };
+  const viewB = {
+    id: 2,
+    asset_type: 'torrents',
+    filters: {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'name', operator: STRING_OPERATORS.CONTAINS, value: 'beta' }],
+        },
+      ],
+    },
+  };
+
+  test('matches item when any view filter matches', () => {
+    const alphaItem = { name: 'alpha release', asset_type: 'torrents' };
+    const betaItem = { name: 'beta build', asset_type: 'torrents' };
+    const otherItem = { name: 'gamma', asset_type: 'torrents' };
+
+    expect(itemMatchesAnyViewFilters(alphaItem, [viewA, viewB])).toBe(true);
+    expect(itemMatchesAnyViewFilters(betaItem, [viewA, viewB])).toBe(true);
+    expect(itemMatchesAnyViewFilters(otherItem, [viewA, viewB])).toBe(false);
+  });
+
+  test('single-view semantics match itemMatchesFilters', () => {
+    const item = { name: 'alpha release', asset_type: 'torrents' };
+    const filters = mergeViewAssetTypeFilter(viewA.filters, viewA.asset_type);
+    expect(itemMatchesAnyViewFilters(item, [viewA])).toBe(itemMatchesFilters(item, filters));
   });
 });
