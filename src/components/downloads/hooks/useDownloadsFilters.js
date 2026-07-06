@@ -10,12 +10,15 @@ import {
   EMPTY_FILTERS,
   buildTagFilter,
   buildTrackerFilter,
+  buildSourceFilter,
   normalizeFilters,
   mergeViewAssetTypeFilter,
   getActiveTagIds,
   getActiveTrackers,
+  getActiveSources,
   isTagOnlyFilter,
   isTrackerOnlyFilter,
+  isSourceOnlyFilter,
 } from '@/components/downloads/filters/filterHelpers';
 import {
   sameViewId,
@@ -96,6 +99,7 @@ export function useDownloadsFilters({
 
   const activeTagIds = getActiveTagIds(appliedFilters) ?? [];
   const activeTrackers = getActiveTrackers(appliedFilters) ?? [];
+  const activeSources = getActiveSources(appliedFilters) ?? [];
 
   const filterDepsRef = useRef({
     filterModalMode,
@@ -175,6 +179,7 @@ export function useDownloadsFilters({
         viewIds: [view.id],
         tagIds: null,
         trackerUrls: null,
+        sourceHosts: null,
         search: view.search_query || '',
       };
       if (view.sort_field) {
@@ -212,6 +217,7 @@ export function useDownloadsFilters({
         viewIds,
         tagIds: null,
         trackerUrls: null,
+        sourceHosts: null,
       };
       if (reapplyPreset) {
         criteriaPatch.search = first.search_query || '';
@@ -344,6 +350,7 @@ export function useDownloadsFilters({
         viewIds: null,
         tagIds: next,
         trackerUrls: null,
+        sourceHosts: null,
       });
       setMobileFiltersOpen(false);
     },
@@ -401,6 +408,7 @@ export function useDownloadsFilters({
         viewIds: null,
         tagIds: null,
         trackerUrls: next,
+        sourceHosts: null,
       });
       setMobileFiltersOpen(false);
     },
@@ -433,6 +441,60 @@ export function useDownloadsFilters({
     setMobileFiltersOpen(false);
   }, [appliedFilters, activeTrackers.length, handleClearFilters]);
 
+  const commitSourceHosts = useCallback(
+    (next) => {
+      if (next.length === 0) {
+        handleClearFilters();
+        setMobileFiltersOpen(false);
+        return;
+      }
+
+      pendingSidebarFilterRef.current = { kind: 'source', sources: next };
+      suppressUrlViewSyncRef.current = true;
+      lastSyncedUrlViewIdsRef.current = [];
+
+      clearView();
+      const sourceFilter = buildSourceFilter(next);
+      setColumnFilters(sourceFilter);
+      patchFilterCriteria({
+        statusFilter: 'all',
+        search: '',
+        viewIds: null,
+        tagIds: null,
+        trackerUrls: null,
+        sourceHosts: next,
+      });
+      setMobileFiltersOpen(false);
+    },
+    [handleClearFilters, clearView, patchFilterCriteria]
+  );
+
+  const handleApplySource = useCallback(
+    (sourceHost) => {
+      const host = String(sourceHost);
+      const current = getActiveSources(appliedFilters) ?? [];
+      const isActive = current.includes(host);
+      const next = isActive ? current.filter((s) => s !== host) : [...current, host];
+      commitSourceHosts(next);
+    },
+    [appliedFilters, commitSourceHosts]
+  );
+
+  const handleApplySourceRange = useCallback(
+    (sourceHosts, activate) => {
+      const current = getActiveSources(appliedFilters) ?? [];
+      const next = computeRangeSelection(current, sourceHosts, activate, String);
+      commitSourceHosts(next);
+    },
+    [appliedFilters, commitSourceHosts]
+  );
+
+  const handleClearSources = useCallback(() => {
+    if (!isSourceOnlyFilter(appliedFilters) && activeSources.length === 0) return;
+    handleClearFilters();
+    setMobileFiltersOpen(false);
+  }, [appliedFilters, activeSources.length, handleClearFilters]);
+
   useEffect(() => {
     if (activeType === 'all' || activeType === 'torrents') return;
     const trackers = getActiveTrackers(urlAppliedFilters);
@@ -444,6 +506,24 @@ export function useDownloadsFilters({
     setColumnFilters(empty);
     patchFilterCriteria({
       trackerUrls: null,
+      sourceHosts: null,
+      appliedFilters: empty,
+      viewIds: null,
+      tagIds: null,
+    });
+  }, [activeType, urlAppliedFilters, patchFilterCriteria]);
+
+  useEffect(() => {
+    if (activeType === 'all' || activeType === 'webdl') return;
+    const sources = getActiveSources(urlAppliedFilters);
+    if (!sources) return;
+
+    pendingSidebarFilterRef.current = { kind: 'clear' };
+    suppressUrlViewSyncRef.current = true;
+    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    setColumnFilters(empty);
+    patchFilterCriteria({
+      sourceHosts: null,
       appliedFilters: empty,
       viewIds: null,
       tagIds: null,
@@ -523,6 +603,7 @@ export function useDownloadsFilters({
         viewIds: null,
         tagIds: next,
         trackerUrls: null,
+        sourceHosts: null,
       });
     }
   };
@@ -579,6 +660,7 @@ export function useDownloadsFilters({
         viewIds: null,
         tagIds: null,
         trackerUrls: null,
+        sourceHosts: null,
         appliedFilters: normalized,
         search: includeSearch && search?.trim() ? search.trim() : '',
       };
@@ -635,6 +717,7 @@ export function useDownloadsFilters({
     viewsLoading,
     activeTagIds,
     activeTrackers,
+    activeSources,
     handleApplyView,
     handleApplyViewRange,
     handleClearViews,
@@ -646,6 +729,9 @@ export function useDownloadsFilters({
     handleApplyTracker,
     handleApplyTrackerRange,
     handleClearTrackers,
+    handleApplySource,
+    handleApplySourceRange,
+    handleClearSources,
     handleCloseFilterModal,
     handleEditView,
     handleViewCreated,

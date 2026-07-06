@@ -11,6 +11,7 @@ import {
   itemMatchesAnyViewFilters,
 } from '@/components/downloads/filters/filterHelpers';
 import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
+import { extractSourceHost } from '@/components/downloads/filters/sourceDisplay';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { isQueuedItem } from '@/utils/utility';
@@ -463,6 +464,25 @@ export function countDownloadsPerTrackerFromStore(torboxState) {
     if (tracker == null || String(tracker).trim() === '') continue;
     const key = String(tracker);
     counts[key] = (counts[key] || 0) + 1;
+  }
+
+  return counts;
+}
+
+/**
+ * Source host counts for sidebar — webdl entities only (even on the All tab).
+ */
+export function countDownloadsPerSourceFromStore(torboxState) {
+  const entities = torboxState.entities || {};
+  const webdlIds = torboxState.order?.webdl || [];
+  const counts = {};
+
+  for (const id of webdlIds) {
+    const entity = entities[id];
+    if (!entity) continue;
+    const host = extractSourceHost(entity.original_url);
+    if (!host) continue;
+    counts[host] = (counts[host] || 0) + 1;
   }
 
   return counts;

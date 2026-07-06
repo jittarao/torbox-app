@@ -3,6 +3,7 @@ import {
   countDownloadsPerTagFromStore,
   countDownloadsPerViewFromStore,
   countDownloadsPerTrackerFromStore,
+  countDownloadsPerSourceFromStore,
 } from '../downloadsDerivedSelectors.js';
 import { entityKey } from '@/utils/downloadListMerge.js';
 import { EMPTY_FILTERS } from '@/components/downloads/filters/filterHelpers.js';
@@ -69,6 +70,49 @@ describe('sidebar count selectors', () => {
     expect(counts['https://tracker.example.com/announce']).toBe(2);
     expect(counts['https://other.example/announce']).toBe(1);
     expect(counts.ignored).toBeUndefined();
+  });
+
+  test('countDownloadsPerSourceFromStore counts webdl hosts only', () => {
+    const stateWithSources = {
+      entities: {
+        [entityKey('webdl', 1)]: {
+          id: 1,
+          assetType: 'webdl',
+          original_url: 'https://pixeldrain.com/api/file/a',
+        },
+        [entityKey('webdl', 2)]: {
+          id: 2,
+          assetType: 'webdl',
+          original_url: 'https://pixeldrain.com/api/file/b',
+        },
+        [entityKey('webdl', 3)]: {
+          id: 3,
+          assetType: 'webdl',
+          original_url: 'https://cdn.example.com/file.zip',
+        },
+        [entityKey('webdl', 4)]: { id: 4, assetType: 'webdl', original_url: '' },
+        [entityKey('torrents', 5)]: {
+          id: 5,
+          assetType: 'torrents',
+          original_url: 'https://pixeldrain.com/ignored',
+        },
+      },
+      order: {
+        torrents: [entityKey('torrents', 5)],
+        usenet: [],
+        webdl: [
+          entityKey('webdl', 1),
+          entityKey('webdl', 2),
+          entityKey('webdl', 3),
+          entityKey('webdl', 4),
+        ],
+      },
+    };
+
+    const counts = countDownloadsPerSourceFromStore(stateWithSources);
+    expect(counts['pixeldrain.com']).toBe(2);
+    expect(counts['cdn.example.com']).toBe(1);
+    expect(counts['pixeldrain.com/ignored']).toBeUndefined();
   });
 
   test('countDownloadsPerViewFromStore returns zero for empty filters on all tab', () => {
