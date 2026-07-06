@@ -559,7 +559,8 @@ function ItemCard({
       {isExpanded && visibleFiles.length > 0 && (
         <FileList
           files={visibleFiles}
-          itemId={selectionId}
+          selectionId={selectionId}
+          itemId={item.id}
           itemName={item.name}
           isBlurred={isBlurred}
           onFileSelect={handleFileSelection}
