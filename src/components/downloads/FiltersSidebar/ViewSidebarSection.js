@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
+import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
 export default function ViewSidebarSection({
   views = [],
@@ -11,11 +12,13 @@ export default function ViewSidebarSection({
   searchQuery = '',
   activeViewIds = [],
   onApplyView,
+  onApplyViewRange,
   onClearViews,
   disabled = false,
   renderItemMenu,
 }) {
   const t = useTranslations('DownloadsFilters');
+  const { lastIndexRef } = useSidebarShiftSelect(searchQuery);
 
   const activeViewIdSet = useMemo(
     () => new Set((activeViewIds || []).map((id) => String(id))),
@@ -29,6 +32,26 @@ export default function ViewSidebarSection({
 
   const selectedCount = activeViewIds.length;
   const hasSearchQuery = searchQuery.trim().length > 0;
+
+  const handleItemClick = useCallback(
+    (index, view, event) => {
+      if (disabled) return;
+
+      const viewIsActive = activeViewIdSet.has(String(view.id));
+
+      if (event.shiftKey && lastIndexRef.current !== null && onApplyViewRange) {
+        const start = Math.min(lastIndexRef.current, index);
+        const end = Math.max(lastIndexRef.current, index);
+        const rangeIds = filteredViews.slice(start, end + 1).map((v) => v.id);
+        onApplyViewRange(rangeIds, !viewIsActive);
+      } else {
+        onApplyView?.(view);
+      }
+
+      lastIndexRef.current = index;
+    },
+    [disabled, activeViewIdSet, filteredViews, onApplyView, onApplyViewRange, lastIndexRef]
+  );
 
   if (views.length === 0) {
     return (
@@ -60,7 +83,7 @@ export default function ViewSidebarSection({
           {hasSearchQuery ? t('noViewMatches', { query: searchQuery.trim() }) : t('noViews')}
         </p>
       ) : (
-        filteredViews.map((view) => {
+        filteredViews.map((view, index) => {
           const viewIsActive = activeViewIdSet.has(String(view.id));
           return (
             <SidebarListItem
@@ -70,7 +93,7 @@ export default function ViewSidebarSection({
               isActive={viewIsActive}
               disabled={disabled}
               title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-              onClick={() => !disabled && onApplyView?.(view)}
+              onClick={(e) => handleItemClick(index, view, e)}
               {...(renderItemMenu ? renderItemMenu(view, viewIsActive) : {})}
             />
           );

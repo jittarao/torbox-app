@@ -22,6 +22,7 @@ import {
   sameViewIdList,
   sidebarUrlMatchesPending,
 } from '@/components/downloads/filters/sidebarFilterSync';
+import { computeRangeSelection } from '@/components/downloads/FiltersSidebar/sidebarRangeSelect';
 
 export function useDownloadsFilters({
   apiKey,
@@ -273,14 +274,8 @@ export function useDownloadsFilters({
     applyMultiViewFiltersRef.current(urlViewIds, { fromUrlSync: true, reapplyPreset: true });
   }, [urlViewIds, urlAppliedFilters, viewsHasLoaded]);
 
-  const handleApplyView = useCallback(
-    (view) => {
-      const current = activeViewIds;
-      const isActive = current.some((id) => sameViewId(id, view.id));
-      const next = isActive
-        ? current.filter((id) => !sameViewId(id, view.id))
-        : [...current, view.id];
-
+  const commitViewIds = useCallback(
+    (next, previousIds) => {
       if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
@@ -293,10 +288,31 @@ export function useDownloadsFilters({
         return;
       }
 
-      const firstChanged = !sameViewId(next[0], current[0]);
+      const firstChanged = !sameViewId(next[0], previousIds[0]);
       applyMultiViewFilters(next, { reapplyPreset: firstChanged });
     },
-    [activeViewIds, views, handleClearFilters, applyViewFilters, applyMultiViewFilters]
+    [views, handleClearFilters, applyViewFilters, applyMultiViewFilters]
+  );
+
+  const handleApplyView = useCallback(
+    (view) => {
+      const current = activeViewIds;
+      const isActive = current.some((id) => sameViewId(id, view.id));
+      const next = isActive
+        ? current.filter((id) => !sameViewId(id, view.id))
+        : [...current, view.id];
+      commitViewIds(next, current);
+    },
+    [activeViewIds, commitViewIds]
+  );
+
+  const handleApplyViewRange = useCallback(
+    (viewIds, activate) => {
+      const current = activeViewIds;
+      const next = computeRangeSelection(current, viewIds, activate, String);
+      commitViewIds(next, current);
+    },
+    [activeViewIds, commitViewIds]
   );
 
   const handleClearViews = useCallback(() => {
@@ -305,14 +321,9 @@ export function useDownloadsFilters({
     setMobileFiltersOpen(false);
   }, [activeViewIds.length, handleClearFilters]);
 
-  const handleApplyTag = useCallback(
-    (tagId) => {
+  const commitTagIds = useCallback(
+    (next) => {
       if (activeView) return;
-
-      const id = Number(tagId);
-      const current = getActiveTagIds(appliedFilters) ?? [];
-      const isActive = current.includes(id);
-      const next = isActive ? current.filter((t) => t !== id) : [...current, id];
 
       if (next.length === 0) {
         handleClearFilters();
@@ -336,7 +347,31 @@ export function useDownloadsFilters({
       });
       setMobileFiltersOpen(false);
     },
-    [appliedFilters, activeView, handleClearFilters, clearView, patchFilterCriteria]
+    [activeView, handleClearFilters, clearView, patchFilterCriteria]
+  );
+
+  const handleApplyTag = useCallback(
+    (tagId) => {
+      if (activeView) return;
+
+      const id = Number(tagId);
+      const current = getActiveTagIds(appliedFilters) ?? [];
+      const isActive = current.includes(id);
+      const next = isActive ? current.filter((t) => t !== id) : [...current, id];
+      commitTagIds(next);
+    },
+    [appliedFilters, activeView, commitTagIds]
+  );
+
+  const handleApplyTagRange = useCallback(
+    (tagIds, activate) => {
+      if (activeView) return;
+
+      const current = getActiveTagIds(appliedFilters) ?? [];
+      const next = computeRangeSelection(current, tagIds, activate, Number);
+      commitTagIds(next);
+    },
+    [appliedFilters, activeView, commitTagIds]
   );
 
   const handleClearTags = useCallback(() => {
@@ -345,13 +380,8 @@ export function useDownloadsFilters({
     setMobileFiltersOpen(false);
   }, [appliedFilters, activeTagIds.length, handleClearFilters]);
 
-  const handleApplyTracker = useCallback(
-    (trackerUrl) => {
-      const url = String(trackerUrl);
-      const current = getActiveTrackers(appliedFilters) ?? [];
-      const isActive = current.includes(url);
-      const next = isActive ? current.filter((t) => t !== url) : [...current, url];
-
+  const commitTrackerUrls = useCallback(
+    (next) => {
       if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
@@ -374,7 +404,27 @@ export function useDownloadsFilters({
       });
       setMobileFiltersOpen(false);
     },
-    [appliedFilters, handleClearFilters, clearView, patchFilterCriteria]
+    [handleClearFilters, clearView, patchFilterCriteria]
+  );
+
+  const handleApplyTracker = useCallback(
+    (trackerUrl) => {
+      const url = String(trackerUrl);
+      const current = getActiveTrackers(appliedFilters) ?? [];
+      const isActive = current.includes(url);
+      const next = isActive ? current.filter((t) => t !== url) : [...current, url];
+      commitTrackerUrls(next);
+    },
+    [appliedFilters, commitTrackerUrls]
+  );
+
+  const handleApplyTrackerRange = useCallback(
+    (trackerUrls, activate) => {
+      const current = getActiveTrackers(appliedFilters) ?? [];
+      const next = computeRangeSelection(current, trackerUrls, activate, String);
+      commitTrackerUrls(next);
+    },
+    [appliedFilters, commitTrackerUrls]
   );
 
   const handleClearTrackers = useCallback(() => {
@@ -586,12 +636,15 @@ export function useDownloadsFilters({
     activeTagIds,
     activeTrackers,
     handleApplyView,
+    handleApplyViewRange,
     handleClearViews,
     handleClearFilters,
     handleClearView: handleClearFilters,
     handleApplyTag,
+    handleApplyTagRange,
     handleClearTags,
     handleApplyTracker,
+    handleApplyTrackerRange,
     handleClearTrackers,
     handleCloseFilterModal,
     handleEditView,
