@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildTagFilter,
   buildTrackerFilter,
+  buildSourceFilter,
   sameViewId,
   sameViewIdList,
   sidebarUrlMatchesPending,
@@ -61,6 +62,23 @@ describe('sidebarFilterSync', () => {
     const pending = { kind: 'clear' };
     const urlA = 'https://tracker.example.com/announce';
     expect(sidebarUrlMatchesPending([], buildTrackerFilter([urlA]), pending)).toBe(false);
+    expect(sidebarUrlMatchesPending([], EMPTY_FILTERS, pending)).toBe(true);
+  });
+
+  test('source pending waits until URL sources update', () => {
+    const hostA = 'pixeldrain.com';
+    const hostB = 'drive.google.com';
+    const pending = { kind: 'source', sources: [hostA, hostB] };
+
+    expect(sidebarUrlMatchesPending([], buildSourceFilter([hostA]), pending)).toBe(false);
+    expect(sidebarUrlMatchesPending([], buildSourceFilter([hostB, hostA]), pending)).toBe(true);
+  });
+
+  test('clear pending waits until source filters are cleared', () => {
+    const pending = { kind: 'clear' };
+    expect(sidebarUrlMatchesPending([], buildSourceFilter(['pixeldrain.com']), pending)).toBe(
+      false
+    );
     expect(sidebarUrlMatchesPending([], EMPTY_FILTERS, pending)).toBe(true);
   });
 });

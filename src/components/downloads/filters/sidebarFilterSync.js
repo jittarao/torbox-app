@@ -1,17 +1,19 @@
 import {
   buildTagFilter,
   buildTrackerFilter,
+  buildSourceFilter,
   getActiveTagIds,
   getActiveTrackers,
+  getActiveSources,
   hasActiveFilters,
 } from './filterHelpers';
 
 /** @param {string[]} a @param {string[]} b */
-function sameTrackerList(a, b) {
+function sameStringList(a, b) {
   if (!a || !b || a.length !== b.length) return false;
   const sortedA = [...a].sort();
   const sortedB = [...b].sort();
-  return sortedA.every((url, i) => url === sortedB[i]);
+  return sortedA.every((value, i) => value === sortedB[i]);
 }
 
 /** @param {number[]} a @param {number[]} b */
@@ -39,7 +41,7 @@ export function sameViewIdList(a, b) {
  * the pending sidebar selection so URL→store sync can resume.
  * @param {(number|string)[]|null|undefined} urlViewIds
  * @param {object} urlAppliedFilters
- * @param {{ kind: 'view', viewIds: (number|string)[] }|{ kind: 'tag', tagIds: number[] }|{ kind: 'tracker', trackers: string[] }|{ kind: 'clear' }|null} pending
+ * @param {{ kind: 'view', viewIds: (number|string)[] }|{ kind: 'tag', tagIds: number[] }|{ kind: 'tracker', trackers: string[] }|{ kind: 'source', sources: string[] }|{ kind: 'clear' }|null} pending
  */
 export function sidebarUrlMatchesPending(urlViewIds, urlAppliedFilters, pending) {
   if (!pending) return true;
@@ -52,17 +54,22 @@ export function sidebarUrlMatchesPending(urlViewIds, urlAppliedFilters, pending)
   }
   if (pending.kind === 'tracker') {
     const trackers = getActiveTrackers(urlAppliedFilters);
-    return (!urlViewIds || urlViewIds.length === 0) && sameTrackerList(trackers, pending.trackers);
+    return (!urlViewIds || urlViewIds.length === 0) && sameStringList(trackers, pending.trackers);
+  }
+  if (pending.kind === 'source') {
+    const sources = getActiveSources(urlAppliedFilters);
+    return (!urlViewIds || urlViewIds.length === 0) && sameStringList(sources, pending.sources);
   }
   if (pending.kind === 'clear') {
     return (
       (!urlViewIds || urlViewIds.length === 0) &&
       getActiveTagIds(urlAppliedFilters) == null &&
       getActiveTrackers(urlAppliedFilters) == null &&
+      getActiveSources(urlAppliedFilters) == null &&
       !hasActiveFilters(urlAppliedFilters)
     );
   }
   return false;
 }
 
-export { buildTagFilter, buildTrackerFilter };
+export { buildTagFilter, buildTrackerFilter, buildSourceFilter };
