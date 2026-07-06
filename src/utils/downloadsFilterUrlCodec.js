@@ -36,7 +36,15 @@ for (const opt of STATUS_OPTIONS) {
 
 export const STATUS_FILTER_SLUGS = [...slugToStatusJson.keys()];
 
-export const FILTER_SHORTCUT_PARAM_KEYS = ['tag', 'tags', 'tracker', 'trackers', 'view', 'filters'];
+export const FILTER_SHORTCUT_PARAM_KEYS = [
+  'tag',
+  'tags',
+  'tracker',
+  'trackers',
+  'view',
+  'views',
+  'filters',
+];
 
 const TRACKER_PARAM_DELIMITER = '|';
 
@@ -111,6 +119,7 @@ export function writeTagIdsToParams(params, tagIds) {
   params.delete('tracker');
   params.delete('trackers');
   params.delete('view');
+  params.delete('views');
   params.delete('filters');
 
   const ids = (tagIds || []).filter((id) => Number.isFinite(id));
@@ -130,17 +139,59 @@ export function parseViewIdParam(raw) {
 }
 
 /**
- * @param {URLSearchParams} params
- * @param {number|string|null|undefined} viewId
+ * @param {URLSearchParams} searchParams
+ * @returns {(number|string)[]|null}
  */
-export function writeViewIdToParams(params, viewId) {
+export function parseViewIdsFromParams(searchParams) {
+  const single = searchParams.get('view');
+  if (single != null && single !== '') {
+    const id = parseViewIdParam(single);
+    return id != null ? [id] : null;
+  }
+
+  const multi = searchParams.get('views');
+  if (!multi) return null;
+
+  const ids = multi
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => parseViewIdParam(s))
+    .filter((id) => id != null);
+
+  return ids.length > 0 ? ids : null;
+}
+
+/**
+ * @param {URLSearchParams} params
+ * @param {(number|string)[]} viewIds — order preserved (first view wins for presets)
+ */
+export function writeViewIdsToParams(params, viewIds) {
   params.delete('tag');
   params.delete('tags');
   params.delete('tracker');
   params.delete('trackers');
+  params.delete('view');
+  params.delete('views');
   params.delete('filters');
-  if (viewId == null || viewId === '') params.delete('view');
-  else params.set('view', String(viewId));
+
+  const ids = (viewIds || []).filter((id) => id != null && id !== '');
+  if (ids.length === 0) return;
+  if (ids.length === 1) params.set('view', String(ids[0]));
+  else params.set('views', ids.map(String).join(','));
+}
+
+/**
+ * @param {URLSearchParams} params
+ * @param {number|string|null|undefined} viewId
+ */
+export function writeViewIdToParams(params, viewId) {
+  if (viewId == null || viewId === '') {
+    params.delete('view');
+    params.delete('views');
+    return;
+  }
+  writeViewIdsToParams(params, [viewId]);
 }
 
 /**
@@ -180,6 +231,7 @@ export function writeTrackersToParams(params, trackerUrls) {
   params.delete('tracker');
   params.delete('trackers');
   params.delete('view');
+  params.delete('views');
   params.delete('filters');
 
   const urls = (trackerUrls || []).filter((url) => url != null && String(url).trim() !== '');
@@ -350,8 +402,8 @@ export function tryParseLegacyStatus(raw) {
 export function parseAppliedFiltersFromParams(searchParams, storage = {}) {
   const { getJSON, removeItem, overflowKey } = storage;
 
-  const viewId = parseViewIdParam(searchParams.get('view'));
-  if (viewId != null) {
+  const viewIds = parseViewIdsFromParams(searchParams);
+  if (viewIds) {
     if (removeItem && overflowKey) removeItem(overflowKey);
     return JSON.parse(EMPTY_FILTERS_JSON);
   }
@@ -393,6 +445,7 @@ export function writeAppliedFiltersToParams(params, filters, storage) {
   const normalized = normalizeFilters(filters);
 
   params.delete('view');
+  params.delete('views');
 
   if (!hasActiveFilters(normalized)) {
     clearFilterShortcutParams(params);

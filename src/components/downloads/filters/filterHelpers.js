@@ -328,3 +328,17 @@ export function mergeViewAssetTypeFilter(filters, assetType) {
     ],
   };
 }
+
+/**
+ * True when an item matches any of the given saved views' filter criteria (OR union).
+ * @param {object} item
+ * @param {object[]} views
+ */
+export function itemMatchesAnyViewFilters(item, views) {
+  if (!views?.length) return true;
+
+  return views.some((view) => {
+    const filters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
+    return hasActiveFilters(filters) && itemMatchesFilters(item, filters);
+  });
+}
