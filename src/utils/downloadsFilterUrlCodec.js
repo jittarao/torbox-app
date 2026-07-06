@@ -1,7 +1,7 @@
 /**
  * Downloads page URL filter codec.
  *
- * Params: status (slugs), tag, tags, tracker, trackers, view, filters (compact JSON), q, sort, dir.
+ * Params: status (slugs), tag, tags, tracker, trackers, source, sources, view, filters (compact JSON), q, sort, dir.
  * Never pre-encode with encodeURIComponent before URLSearchParams.set().
  */
 
@@ -13,9 +13,12 @@ import {
   hasActiveFilters,
   getActiveTagIds,
   getActiveTrackers,
+  getActiveSources,
   buildTagFilter,
   buildTrackerFilter,
+  buildSourceFilter,
   isTrackerOnlyFilter,
+  isSourceOnlyFilter,
 } from '@/components/downloads/filters/filterHelpers';
 
 const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
@@ -41,12 +44,20 @@ export const FILTER_SHORTCUT_PARAM_KEYS = [
   'tags',
   'tracker',
   'trackers',
+  'source',
+  'sources',
   'view',
   'views',
   'filters',
 ];
 
-const TRACKER_PARAM_DELIMITER = '|';
+const SHORTCUT_PARAM_DELIMITER = '|';
+
+function deleteFilterShortcutParams(params) {
+  for (const key of FILTER_SHORTCUT_PARAM_KEYS) {
+    params.delete(key);
+  }
+}
 
 /**
  * @param {string|null|undefined} raw
@@ -114,13 +125,7 @@ export function parseTagIdsFromParams(searchParams) {
  * @param {number[]} tagIds
  */
 export function writeTagIdsToParams(params, tagIds) {
-  params.delete('tag');
-  params.delete('tags');
-  params.delete('tracker');
-  params.delete('trackers');
-  params.delete('view');
-  params.delete('views');
-  params.delete('filters');
+  deleteFilterShortcutParams(params);
 
   const ids = (tagIds || []).filter((id) => Number.isFinite(id));
   if (ids.length === 0) return;
@@ -167,13 +172,7 @@ export function parseViewIdsFromParams(searchParams) {
  * @param {(number|string)[]} viewIds — order preserved (first view wins for presets)
  */
 export function writeViewIdsToParams(params, viewIds) {
-  params.delete('tag');
-  params.delete('tags');
-  params.delete('tracker');
-  params.delete('trackers');
-  params.delete('view');
-  params.delete('views');
-  params.delete('filters');
+  deleteFilterShortcutParams(params);
 
   const ids = (viewIds || []).filter((id) => id != null && id !== '');
   if (ids.length === 0) return;
@@ -208,7 +207,7 @@ export function parseTrackersFromParams(searchParams) {
   if (!multi) return null;
 
   const trackers = multi
-    .split(TRACKER_PARAM_DELIMITER)
+    .split(SHORTCUT_PARAM_DELIMITER)
     .map((segment) => {
       try {
         return decodeURIComponent(segment.trim());
@@ -226,13 +225,7 @@ export function parseTrackersFromParams(searchParams) {
  * @param {string[]} trackerUrls
  */
 export function writeTrackersToParams(params, trackerUrls) {
-  params.delete('tag');
-  params.delete('tags');
-  params.delete('tracker');
-  params.delete('trackers');
-  params.delete('view');
-  params.delete('views');
-  params.delete('filters');
+  deleteFilterShortcutParams(params);
 
   const urls = (trackerUrls || []).filter((url) => url != null && String(url).trim() !== '');
   if (urls.length === 0) return;
@@ -243,15 +236,60 @@ export function writeTrackersToParams(params, trackerUrls) {
 
   params.set(
     'trackers',
-    urls.map((url) => encodeURIComponent(String(url))).join(TRACKER_PARAM_DELIMITER)
+    urls.map((url) => encodeURIComponent(String(url))).join(SHORTCUT_PARAM_DELIMITER)
+  );
+}
+
+/**
+ * @param {URLSearchParams} searchParams
+ * @returns {string[]|null}
+ */
+export function parseSourcesFromParams(searchParams) {
+  const single = searchParams.get('source');
+  if (single != null && single !== '') {
+    return [single];
+  }
+
+  const multi = searchParams.get('sources');
+  if (!multi) return null;
+
+  const sources = multi
+    .split(SHORTCUT_PARAM_DELIMITER)
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment.trim());
+      } catch {
+        return segment.trim();
+      }
+    })
+    .filter((host) => host !== '');
+
+  return sources.length > 0 ? sources : null;
+}
+
+/**
+ * @param {URLSearchParams} params
+ * @param {string[]} sourceHosts
+ */
+export function writeSourcesToParams(params, sourceHosts) {
+  deleteFilterShortcutParams(params);
+
+  const hosts = (sourceHosts || []).filter((host) => host != null && String(host).trim() !== '');
+  if (hosts.length === 0) return;
+  if (hosts.length === 1) {
+    params.set('source', hosts[0]);
+    return;
+  }
+
+  params.set(
+    'sources',
+    hosts.map((host) => encodeURIComponent(String(host))).join(SHORTCUT_PARAM_DELIMITER)
   );
 }
 
 /** Clear tag/view/filters shortcut params. */
 export function clearFilterShortcutParams(params) {
-  for (const key of FILTER_SHORTCUT_PARAM_KEYS) {
-    params.delete(key);
-  }
+  deleteFilterShortcutParams(params);
 }
 
 /**
@@ -420,6 +458,12 @@ export function parseAppliedFiltersFromParams(searchParams, storage = {}) {
     return buildTrackerFilter(trackerUrls);
   }
 
+  const sourceHosts = parseSourcesFromParams(searchParams);
+  if (sourceHosts) {
+    if (removeItem && overflowKey) removeItem(overflowKey);
+    return buildSourceFilter(sourceHosts);
+  }
+
   const filtersParam = searchParams.get('filters');
   if (filtersParam) {
     if (removeItem && overflowKey) removeItem(overflowKey);
@@ -469,10 +513,21 @@ export function writeAppliedFiltersToParams(params, filters, storage) {
     }
   }
 
+  if (isSourceOnlyFilter(normalized)) {
+    const sources = getActiveSources(normalized);
+    if (sources) {
+      writeSourcesToParams(params, sources);
+      removeItem(overflowKey);
+      return true;
+    }
+  }
+
   params.delete('tag');
   params.delete('tags');
   params.delete('tracker');
   params.delete('trackers');
+  params.delete('source');
+  params.delete('sources');
 
   const compact = compactFiltersToUrl(normalized);
   if (compact.length > maxLength) {
