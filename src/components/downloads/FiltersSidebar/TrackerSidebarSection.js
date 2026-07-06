@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl';
 import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
-import { useTrackerSidebarData } from './useTrackerSidebarData';
 
 export default function TrackerSidebarSection({
+  entries = [],
   searchQuery = '',
   activeTrackers = [],
   onApplyTracker,
@@ -16,7 +16,6 @@ export default function TrackerSidebarSection({
   disabled = false,
 }) {
   const t = useTranslations('DownloadsFilters');
-  const { entries } = useTrackerSidebarData();
   const { lastIndexRef } = useSidebarShiftSelect(searchQuery);
 
   const activeTrackerSet = useMemo(
@@ -32,9 +31,23 @@ export default function TrackerSidebarSection({
   const selectedCount = activeTrackerSet.size;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
-  const handleItemClick = useCallback(
-    (index, entry, event) => {
-      if (disabled) return;
+  const handleListMouseDown = useCallback((event) => {
+    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
+      event.preventDefault();
+    }
+  }, []);
+
+  const handleListClick = useCallback(
+    (event) => {
+      const activateButton = event.target.closest('[data-sidebar-activate]');
+      if (!activateButton || disabled) return;
+
+      const row = activateButton.closest('[data-sidebar-item]');
+      if (!row) return;
+
+      const index = Number(row.dataset.index);
+      const entry = filteredEntries[index];
+      if (!entry || entry.url !== row.dataset.id) return;
 
       const isActive = activeTrackerSet.has(entry.url);
 
@@ -49,7 +62,7 @@ export default function TrackerSidebarSection({
 
       lastIndexRef.current = index;
     },
-    [disabled, activeTrackerSet, filteredEntries, onApplyTracker, onApplyTrackerRange, lastIndexRef]
+    [disabled, filteredEntries, activeTrackerSet, onApplyTracker, onApplyTrackerRange, lastIndexRef]
   );
 
   if (entries.length === 0) {
@@ -82,20 +95,23 @@ export default function TrackerSidebarSection({
           {hasSearchQuery ? t('noTrackerMatches', { query: searchQuery.trim() }) : t('noTrackers')}
         </p>
       ) : (
-        filteredEntries.map((entry, index) => {
-          const isActive = activeTrackerSet.has(entry.url);
-          return (
-            <SidebarListItem
-              key={entry.url}
-              label={entry.label}
-              count={entry.count}
-              isActive={isActive}
-              disabled={disabled}
-              title={entry.url}
-              onClick={(e) => handleItemClick(index, entry, e)}
-            />
-          );
-        })
+        <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+          {filteredEntries.map((entry, index) => {
+            const isActive = activeTrackerSet.has(entry.url);
+            return (
+              <SidebarListItem
+                key={entry.url}
+                itemId={entry.url}
+                itemIndex={index}
+                label={entry.label}
+                count={entry.count}
+                isActive={isActive}
+                disabled={disabled}
+                title={entry.url}
+              />
+            );
+          })}
+        </div>
       )}
     </div>
   );

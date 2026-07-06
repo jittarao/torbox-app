@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 
 function ActiveCheckIcon({ className = 'size-3.5' }) {
   return (
@@ -17,12 +17,15 @@ function ActiveCheckIcon({ className = 'size-3.5' }) {
   );
 }
 
-export default function SidebarListItem({
+function SidebarListItem({
+  itemId,
+  itemIndex,
   label,
   count,
   isActive,
   onClick,
   isMenuOpen = false,
+  showMenu = false,
   onMenuToggle,
   ariaLabel,
   title,
@@ -33,6 +36,9 @@ export default function SidebarListItem({
 
   return (
     <div
+      data-sidebar-item
+      data-id={itemId}
+      data-index={itemIndex}
       className={`group relative flex items-center gap-1 rounded-md transition-colors ${
         isActive
           ? 'bg-accent/12 dark:bg-accent-dark/12 border border-accent/50 dark:border-accent-dark/50 shadow-[inset_0_0_0_1px_rgba(217,119,6,0.06)]'
@@ -41,6 +47,7 @@ export default function SidebarListItem({
     >
       <button
         type="button"
+        data-sidebar-activate
         onMouseDown={(e) => {
           if (e.shiftKey) e.preventDefault();
         }}
@@ -82,15 +89,20 @@ export default function SidebarListItem({
         )}
       </button>
 
-      {onMenuToggle && (
+      {showMenu && (
         <div className="relative shrink-0 pr-0.5">
           <button
             ref={menuButtonRef}
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMenuToggle(!isMenuOpen, menuButtonRef);
-            }}
+            data-sidebar-menu
+            onClick={
+              onMenuToggle
+                ? (e) => {
+                    e.stopPropagation();
+                    onMenuToggle(!isMenuOpen, menuButtonRef);
+                  }
+                : undefined
+            }
             className="p-1 rounded opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 text-primary-text/60 hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:text-primary-text-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark transition-opacity"
             aria-label="Options"
             aria-expanded={isMenuOpen}
@@ -105,3 +117,5 @@ export default function SidebarListItem({
     </div>
   );
 }
+
+export default memo(SidebarListItem);
