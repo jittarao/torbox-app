@@ -1,19 +1,21 @@
 'use client';
 
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 function SeekFeedback({ side, seconds, onDone }) {
   const t = useTranslations('VideoPlayer');
   const [visible, setVisible] = useState(true);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(false);
-      onDone?.();
+      onDoneRef.current?.();
     }, 700);
     return () => clearTimeout(timer);
-  }, [onDone]);
+  }, [side, seconds]);
 
   if (!visible) return null;
 

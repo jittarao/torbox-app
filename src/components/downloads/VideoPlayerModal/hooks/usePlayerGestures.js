@@ -25,6 +25,14 @@ export function usePlayerGestures({
   const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
   const pointerStartRef = useRef(null);
   const suppressTapRef = useRef(false);
+  const toggleTimeoutRef = useRef(null);
+
+  const clearToggleTimeout = useCallback(() => {
+    if (toggleTimeoutRef.current) {
+      clearTimeout(toggleTimeoutRef.current);
+      toggleTimeoutRef.current = null;
+    }
+  }, []);
 
   const isInteractiveTarget = useCallback((target) => {
     if (!(target instanceof Element)) return false;
@@ -83,6 +91,7 @@ export function usePlayerGestures({
         Math.hypot(e.clientX - last.x, e.clientY - last.y) < 40;
 
       if (isDoubleTap && (inLeft || inRight)) {
+        clearToggleTimeout();
         suppressTapRef.current = true;
         lastTapRef.current = { time: 0, x: 0, y: 0 };
         onDoubleTapSeek(inLeft ? -10 : 10, inLeft ? 'left' : 'right');
@@ -94,7 +103,9 @@ export function usePlayerGestures({
 
       lastTapRef.current = { time: Date.now(), x: e.clientX, y: e.clientY };
 
-      setTimeout(() => {
+      clearToggleTimeout();
+      toggleTimeoutRef.current = setTimeout(() => {
+        toggleTimeoutRef.current = null;
         if (suppressTapRef.current) return;
         if (Date.now() - lastTapRef.current.time >= DOUBLE_TAP_MS - 20) {
           onToggleControls();
@@ -109,6 +120,7 @@ export function usePlayerGestures({
       onSwipeDown,
       onDoubleTapSeek,
       onToggleControls,
+      clearToggleTimeout,
     ]
   );
 
@@ -122,8 +134,9 @@ export function usePlayerGestures({
     return () => {
       el.removeEventListener('pointerdown', handlePointerDown);
       el.removeEventListener('pointerup', handlePointerUp);
+      clearToggleTimeout();
     };
-  }, [targetRef, enabled, handlePointerDown, handlePointerUp]);
+  }, [targetRef, enabled, handlePointerDown, handlePointerUp, clearToggleTimeout]);
 
   return { bindGestures };
 }
