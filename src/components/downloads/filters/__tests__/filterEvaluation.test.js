@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { TAG_OPERATORS, STRING_OPERATORS } from '@/components/downloads/AutomationRules/constants';
 import { tagOperatorNeedsTagSelection } from '../tagFilterHelpers';
 import { itemMatchesFilters } from '../filterEvaluation';
-import { buildTrackerFilter } from '../filterHelpers';
+import { buildTrackerFilter, buildSourceFilter } from '../filterHelpers';
 
 const filtersWithTagRule = (operator, value = []) => ({
   logicOperator: 'and',
@@ -68,6 +68,47 @@ describe('itemMatchesFilters tracker column', () => {
     expect(itemMatchesFilters({ tracker: urlA }, filters)).toBe(true);
     expect(itemMatchesFilters({ tracker: urlA.toUpperCase() }, filters)).toBe(true);
     expect(itemMatchesFilters({ tracker: 'https://other.example' }, filters)).toBe(false);
+  });
+});
+
+describe('itemMatchesFilters original_url source host', () => {
+  const hostA = 'pixeldrain.com';
+  const hostB = 'drive.google.com';
+
+  test('multi-source OR filter matches any selected host', () => {
+    const filters = buildSourceFilter([hostA, hostB]);
+    expect(
+      itemMatchesFilters({ original_url: 'https://pixeldrain.com/api/file/abc' }, filters)
+    ).toBe(true);
+    expect(
+      itemMatchesFilters({ original_url: 'https://drive.google.com/file/d/xyz' }, filters)
+    ).toBe(true);
+    expect(itemMatchesFilters({ original_url: 'https://mega.nz/file/abc' }, filters)).toBe(false);
+    expect(itemMatchesFilters({ asset_type: 'torrents' }, filters)).toBe(false);
+  });
+
+  test('hostname equals matches case-insensitively', () => {
+    const filters = buildSourceFilter([hostA]);
+    expect(
+      itemMatchesFilters({ original_url: 'https://PixelDrain.com/api/file/abc' }, filters)
+    ).toBe(true);
+  });
+
+  test('full URL equals still matches exact original_url for custom views', () => {
+    const fullUrl = 'https://pixeldrain.com/api/file/abc';
+    const filters = {
+      logicOperator: 'and',
+      groups: [
+        {
+          logicOperator: 'or',
+          filters: [{ column: 'original_url', operator: STRING_OPERATORS.EQUALS, value: fullUrl }],
+        },
+      ],
+    };
+    expect(itemMatchesFilters({ original_url: fullUrl }, filters)).toBe(true);
+    expect(
+      itemMatchesFilters({ original_url: 'https://pixeldrain.com/api/file/other' }, filters)
+    ).toBe(false);
   });
 });
 
