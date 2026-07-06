@@ -53,7 +53,13 @@ function MobilePlayerChrome({
 
   return (
     <>
-      <PlayerHeader fileName={fileName} isVisible={isVisible} onClose={onClose} />
+      <PlayerHeader
+        fileName={fileName}
+        isVisible={isVisible}
+        onClose={onClose}
+        onFullscreen={onFullscreen}
+        isFullscreen={isFullscreen}
+      />
 
       <div
         className={`absolute inset-x-0 bottom-0 z-20 pointer-events-none transition-opacity duration-300 motion-reduce:transition-none ${
@@ -90,6 +96,8 @@ function MobilePlayerChrome({
             onSeekBack={onSeekBack}
             onSeekForward={onSeekForward}
             onOpenSettings={onOpenSettings}
+            onFullscreen={onFullscreen}
+            isFullscreen={isFullscreen}
           />
         </div>
       </div>
