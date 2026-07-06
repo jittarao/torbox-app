@@ -115,6 +115,32 @@ describe('sidebar count selectors', () => {
     expect(counts['pixeldrain.com/ignored']).toBeUndefined();
   });
 
+  test('countDownloadsPerSourceFromStore groups www and non-www hosts together', () => {
+    const stateWithWww = {
+      entities: {
+        [entityKey('webdl', 1)]: {
+          id: 1,
+          assetType: 'webdl',
+          original_url: 'https://www.example.com/a',
+        },
+        [entityKey('webdl', 2)]: {
+          id: 2,
+          assetType: 'webdl',
+          original_url: 'https://example.com/b',
+        },
+      },
+      order: {
+        torrents: [],
+        usenet: [],
+        webdl: [entityKey('webdl', 1), entityKey('webdl', 2)],
+      },
+    };
+
+    const counts = countDownloadsPerSourceFromStore(stateWithWww);
+    expect(counts['example.com']).toBe(2);
+    expect(counts['www.example.com']).toBeUndefined();
+  });
+
   test('countDownloadsPerViewFromStore returns zero for empty filters on all tab', () => {
     const counts = countDownloadsPerViewFromStore(
       [{ id: 1, filters: EMPTY_FILTERS, asset_type: 'all' }],

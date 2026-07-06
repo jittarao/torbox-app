@@ -92,6 +92,9 @@ describe('itemMatchesFilters original_url source host', () => {
     expect(
       itemMatchesFilters({ original_url: 'https://PixelDrain.com/api/file/abc' }, filters)
     ).toBe(true);
+    expect(
+      itemMatchesFilters({ original_url: 'https://www.pixeldrain.com/api/file/abc' }, filters)
+    ).toBe(true);
   });
 
   test('full URL equals still matches exact original_url for custom views', () => {
