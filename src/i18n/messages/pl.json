@@ -50,6 +50,7 @@
     "exportSelectedTitle": "Eksportuj zaznaczone torrenty",
     "exporting": "Eksport…",
     "fetchingLinks": "Ładowanie…",
+    "forceStart": "Wymuś start",
     "forceStartTitle": "Wymuś start kolejkowanych torrentów",
     "forceStarting": "Uruchamianie…",
     "retry": {
@@ -423,6 +424,7 @@
       "Files": "Pliki",
       "Torrents": "Torrenty",
       "Usenets": "Usenety",
+      "Webdl": "WebDL",
       "all": "wszystkie",
       "file": "plik",
       "files": "pliki",
@@ -536,10 +538,20 @@
   "DownloadsFilters": {
     "activeConditions": "{count, plural, one {# filtr} few {# filtry} many {# filtrów} other {# filtra}} aktywnych",
     "activeSearch": "wyszukiwanie „{query}”",
+    "activeSource": "Źródło: {name}",
+    "activeSources": "{count, plural, one {# źródło} few {# źródła} many {# źródeł} other {# źródła}}",
+    "activeTags": "{count, plural, one {# tag} few {# tagi} many {# tagów} other {# taga}}",
+    "activeTrackers": "{count, plural, one {# tracker} few {# trackery} many {# trackerów} other {# trackera}}",
     "activeView": "Widok: {name}",
+    "activeViews": "{count, plural, one {# widok} few {# widoki} many {# widoków} other {# widoka}}",
     "applyFilters": "Zastosuj filtry",
     "clearAll": "Wyczyść wszystko",
+    "clearSources": "Wyczyść",
+    "clearTags": "Wyczyść",
+    "clearTrackers": "Wyczyść",
+    "clearViews": "Wyczyść",
     "close": "Zamknij",
+    "collapseSection": "Zwiń {section}",
     "collapseSidebar": "Zwiń panel filtrów",
     "confirmDeleteTag": "Usunąć tag „{name}”? Zostanie usunięty ze wszystkich pobrań.",
     "confirmDeleteView": "Usunąć widok „{name}”?",
@@ -547,6 +559,7 @@
     "deleteTagFailed": "Nie udało się usunąć tagu: {error}",
     "deleteViewFailed": "Nie udało się usunąć widoku: {error}",
     "editFilters": "Edytuj",
+    "expandSection": "Rozwiń {section}",
     "expandSidebar": "Rozwiń panel filtrów",
     "manageTags": "Zarządzaj tagami",
     "menuApply": "Zastosuj",
@@ -562,9 +575,18 @@
     "newTag": "Nowy tag",
     "newTagPrompt": "Nazwa tagu",
     "newView": "Nowy widok",
+    "noSourceMatches": "Brak źródeł pasujących do „{query}”.",
+    "noSources": "Brak źródeł na liście.",
+    "noTagMatches": "Brak tagów pasujących do „{query}”.",
     "noTags": "Brak tagów.",
+    "noTrackerMatches": "Brak trackerów pasujących do „{query}”.",
+    "noTrackers": "Brak trackerów na liście.",
+    "noViewMatches": "Brak widoków pasujących do „{query}”.",
     "noViews": "Brak zapisanych widoków.",
     "sidebarLabel": "Filtry",
+    "sidebarSearchPlaceholder": "Szukaj…",
+    "sourcesSection": "Źródła",
+    "sourcesSelected": "{count, plural, one {# wybrane} few {# wybrane} many {# wybranych} other {# wybranego}}",
     "tagAssignmentDescriptionAddMulti": "Wybierz tagi poniżej, aby dodać je do wszystkich {count} pobrań. Istniejące tagi są zachowane.",
     "tagAssignmentDescriptionAddSingle": "Wybierz tagi poniżej, aby je dodać. Tagi już przypisane do tego pobrania pozostają bez zmian.",
     "tagAssignmentDescriptionRemoveMulti": "Wybierz tagi poniżej, aby usunąć je z wybranych pobrań.",
@@ -589,11 +611,15 @@
     "tagManagerSearchPlaceholder": "Szukaj tagów…",
     "tagUsageCount": "{count, plural, one {# pobranie} few {# pobrania} many {# pobrań} other {# pobrania}}",
     "tagsSection": "Tagi",
+    "tagsSelected": "{count, plural, one {# wybrany} few {# wybrane} many {# wybranych} other {# wybranego}}",
     "toggleFilterOff": "Kliknij, aby wyczyścić",
     "toggleFilterOn": "Kliknij, aby zastosować",
+    "trackersSection": "Trackery",
+    "trackersSelected": "{count, plural, one {# wybrany} few {# wybrane} many {# wybranych} other {# wybranego}}",
     "viewCreated": "Utworzono widok „{name}”",
     "viewUpdated": "Zaktualizowano widok „{name}”",
-    "viewsSection": "Widoki"
+    "viewsSection": "Widoki",
+    "viewsSelected": "{count, plural, one {# wybrany} few {# wybrane} many {# wybranych} other {# wybranego}}"
   },
   "ErrorBoundary": {
     "reloadPage": "Odśwież stronę",
@@ -894,6 +920,24 @@
     "notifications": "Powiadomienia",
     "testNotification": "Powiadomienie testowe"
   },
+  "OpenIn": {
+    "choosePlayer": "Wybierz odtwarzacz",
+    "close": "Zamknij",
+    "errors": {
+      "playerNotInstalled": "Nie można otworzyć {player}. Może nie być zainstalowany lub przeglądarka nie może go uruchomić.",
+      "streamFailed": "Nie udało się przygotować strumienia"
+    },
+    "fileMeta": {
+      "from": "Z",
+      "video": "Wideo"
+    },
+    "players": {
+      "web": "Odtwarzacz webowy",
+      "webHint": "Odtwarzanie w przeglądarce z wyborem ścieżki"
+    },
+    "preparingStream": "Przygotowywanie strumienia…",
+    "title": "Otwórz w"
+  },
   "Referral": {
     "apply": {
       "alreadyHasReferrer": "Twoje konto ma już kod polecenia.",
@@ -1078,6 +1122,7 @@
     "clearSearch": "Wyczyść wyszukiwanie",
     "customEngines": "Niestandardowe silniki",
     "episode": "Odcinek",
+    "episodePlaceholder": "np. E01",
     "hideAdvanced": "Ukryj zaawansowane",
     "minSeeders": "Min. seedery",
     "minSize": "Min. rozmiar (GB)",
@@ -1098,9 +1143,11 @@
     "searchDownloadsHelpPhrase": "Cudzysłowy — dopasowuje dokładną frazę (np. \"season 1\")",
     "searchExamples": "Przykłady wyszukiwania",
     "season": "Sezon",
+    "seasonPlaceholder": "np. S01",
     "showAdvanced": "Pokaż zaawansowane",
     "torrentSearchWarning": "Wyszukiwanie torrentów TorBox jest obecnie zawodne i może zwracać niekompletne lub nieprawidłowe wyniki. Gdy dostępne, zalecane jest wyszukiwanie Usenet.",
-    "year": "Rok"
+    "year": "Rok",
+    "yearPlaceholder": "np. 2024"
   },
   "SearchResults": {
     "actions": {
@@ -1338,6 +1385,7 @@
       "basicInfo": "Podstawowe informacje",
       "createdAt": "Utworzono",
       "downloadBreakdown": "Podział pobierań",
+      "email": "E-mail",
       "lastLogin": "Ostatnia aktualizacja",
       "planExpiry": "Wygasanie planu",
       "ratio": "Współczynnik",

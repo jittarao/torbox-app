@@ -646,7 +646,9 @@
     "noViewMatches": "No views match \"{query}\".",
     "noViews": "No saved views yet.",
     "sidebarLabel": "Filters",
-    "sidebarSearchPlaceholder": "Search views, tags, trackers, sources…",
+    "sidebarSearchPlaceholder": "Search…",
+    "sourcesSection": "Source",
+    "sourcesSelected": "{count, plural, one {# selected} other {# selected}}",
     "tagAssignmentDescriptionAddMulti": "Select tags below to add them to all {count} downloads. Existing tags are kept.",
     "tagAssignmentDescriptionAddSingle": "Select tags below to add them. Tags already on this download are unchanged.",
     "tagAssignmentDescriptionRemoveMulti": "Select tags below to remove from the selected downloads.",
@@ -670,14 +672,12 @@
     "tagManagerNoResults": "No tags match \"{query}\"",
     "tagManagerSearchPlaceholder": "Search tags…",
     "tagUsageCount": "{count, plural, one {# download} other {# downloads}}",
-    "sourcesSection": "Source",
-    "sourcesSelected": "{count, plural, one {# selected} other {# selected}}",
     "tagsSection": "Tags",
     "tagsSelected": "{count, plural, one {# selected} other {# selected}}",
-    "trackersSection": "Trackers",
-    "trackersSelected": "{count, plural, one {# selected} other {# selected}}",
     "toggleFilterOff": "Click to clear",
     "toggleFilterOn": "Click to apply",
+    "trackersSection": "Trackers",
+    "trackersSelected": "{count, plural, one {# selected} other {# selected}}",
     "viewCreated": "View \"{name}\" created",
     "viewUpdated": "View \"{name}\" updated",
     "viewsSection": "Views",
@@ -713,33 +713,6 @@
     "download": "Download File",
     "play": "Play",
     "streaming": "Streaming..."
-  },
-  "OpenIn": {
-    "close": "Close",
-    "choosePlayer": "Choose a player",
-    "preparingStream": "Preparing stream…",
-    "title": "Open In",
-    "errors": {
-      "playerNotInstalled": "Could not open {player}. It may not be installed, or your browser cannot launch it.",
-      "streamFailed": "Failed to prepare stream"
-    },
-    "fileMeta": {
-      "audio": "Audio",
-      "from": "From",
-      "video": "Video"
-    },
-    "players": {
-      "web": "Web Player",
-      "webHint": "In-browser playback with track selection",
-      "infuse": "Infuse Player",
-      "iina": "IINA",
-      "stremio": "Stremio"
-    },
-    "platforms": {
-      "infuse": "iOS / iPadOS / macOS",
-      "iina": "macOS",
-      "stremio": "Windows / macOS / Linux"
-    }
   },
   "Header": {
     "logo": "TorBox Manager Logo",
@@ -1013,6 +986,33 @@
     "noNotifications": "No notifications",
     "notifications": "Notifications",
     "testNotification": "Test notification"
+  },
+  "OpenIn": {
+    "choosePlayer": "Choose a player",
+    "close": "Close",
+    "errors": {
+      "playerNotInstalled": "Could not open {player}. It may not be installed, or your browser cannot launch it.",
+      "streamFailed": "Failed to prepare stream"
+    },
+    "fileMeta": {
+      "audio": "Audio",
+      "from": "From",
+      "video": "Video"
+    },
+    "platforms": {
+      "iina": "macOS",
+      "infuse": "iOS / iPadOS / macOS",
+      "stremio": "Windows / macOS / Linux"
+    },
+    "players": {
+      "iina": "IINA",
+      "infuse": "Infuse Player",
+      "stremio": "Stremio",
+      "web": "Web Player",
+      "webHint": "In-browser playback with track selection"
+    },
+    "preparingStream": "Preparing stream…",
+    "title": "Open In"
   },
   "Referral": {
     "apply": {

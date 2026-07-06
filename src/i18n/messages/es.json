@@ -423,6 +423,7 @@
       "All": "Todos",
       "File": "Archivo",
       "Files": "Archivos",
+      "Webdl": "WebDL",
       "all": "todos",
       "file": "archivo",
       "files": "archivos"
@@ -533,11 +534,20 @@
   "DownloadsFilters": {
     "activeConditions": "{count, plural, one {# filtro} other {# filtros}} activos",
     "activeSearch": "búsqueda \"{query}\"",
+    "activeSource": "Fuente: {name}",
+    "activeSources": "{count, plural, one {# fuente} other {# fuentes}}",
     "activeTag": "Etiqueta: {name}",
+    "activeTags": "{count, plural, one {# etiqueta} other {# etiquetas}}",
     "activeView": "Vista: {name}",
+    "activeViews": "{count, plural, one {# vista} other {# vistas}}",
     "applyFilters": "Aplicar filtros",
     "clearAll": "Borrar todo",
+    "clearSources": "Limpiar",
+    "clearTags": "Limpiar",
+    "clearTrackers": "Limpiar",
+    "clearViews": "Limpiar",
     "close": "Cerrar",
+    "collapseSection": "Contraer {section}",
     "collapseSidebar": "Contraer barra de filtros",
     "confirmDeleteTag": "¿Eliminar la etiqueta \"{name}\"? Se quitará de todas las descargas.",
     "confirmDeleteView": "¿Eliminar la vista \"{name}\"?",
@@ -545,6 +555,7 @@
     "deleteTagFailed": "No se pudo eliminar la etiqueta: {error}",
     "deleteViewFailed": "No se pudo eliminar la vista: {error}",
     "editFilters": "Editar",
+    "expandSection": "Expandir {section}",
     "expandSidebar": "Expandir barra de filtros",
     "manageTags": "Gestionar etiquetas",
     "menuApply": "Aplicar",
@@ -560,9 +571,18 @@
     "newTag": "Nueva etiqueta",
     "newTagPrompt": "Nombre de la etiqueta",
     "newView": "Nueva vista",
+    "noSourceMatches": "No hay fuentes que coincidan con \"{query}\".",
+    "noSources": "Aún no hay fuentes en tu lista.",
+    "noTagMatches": "No hay etiquetas que coincidan con \"{query}\".",
     "noTags": "Aún no hay etiquetas.",
+    "noTrackerMatches": "No hay trackers que coincidan con \"{query}\".",
+    "noTrackers": "Aún no hay trackers en tu lista.",
+    "noViewMatches": "No hay vistas que coincidan con \"{query}\".",
     "noViews": "Aún no hay vistas guardadas.",
     "sidebarLabel": "Filtros",
+    "sidebarSearchPlaceholder": "Buscar…",
+    "sourcesSection": "Fuente",
+    "sourcesSelected": "{count, plural, one {# seleccionado} other {# seleccionados}}",
     "tagAssignmentDescriptionAddMulti": "Seleccione etiquetas abajo para añadirlas a las {count} descargas. Se conservan las etiquetas existentes.",
     "tagAssignmentDescriptionAddSingle": "Seleccione etiquetas abajo para añadirlas. Las etiquetas ya en esta descarga no cambian.",
     "tagAssignmentDescriptionRemoveMulti": "Seleccione etiquetas abajo para quitarlas de las descargas seleccionadas.",
@@ -587,11 +607,14 @@
     "tagManagerSearchPlaceholder": "Buscar etiquetas…",
     "tagUsageCount": "{count, plural, one {# descarga} other {# descargas}}",
     "tagsSection": "Etiquetas",
+    "tagsSelected": "{count, plural, one {# seleccionada} other {# seleccionadas}}",
     "toggleFilterOff": "Haga clic para limpiar",
     "toggleFilterOn": "Haga clic para aplicar",
+    "trackersSelected": "{count, plural, one {# seleccionado} other {# seleccionados}}",
     "viewCreated": "Vista \"{name}\" creada",
     "viewUpdated": "Vista \"{name}\" actualizada",
-    "viewsSection": "Vistas"
+    "viewsSection": "Vistas",
+    "viewsSelected": "{count, plural, one {# seleccionada} other {# seleccionadas}}"
   },
   "ErrorBoundary": {
     "reloadPage": "Recargar página",
@@ -892,6 +915,23 @@
     "notifications": "Notificaciones",
     "testNotification": "Notificación de prueba"
   },
+  "OpenIn": {
+    "choosePlayer": "Elige un reproductor",
+    "close": "Cerrar",
+    "errors": {
+      "playerNotInstalled": "No se pudo abrir {player}. Puede que no esté instalado o que tu navegador no pueda iniciarlo.",
+      "streamFailed": "Error al preparar el stream"
+    },
+    "fileMeta": {
+      "from": "De"
+    },
+    "players": {
+      "web": "Reproductor web",
+      "webHint": "Reproducción en el navegador con selección de pista"
+    },
+    "preparingStream": "Preparando stream…",
+    "title": "Abrir en"
+  },
   "Referral": {
     "apply": {
       "alreadyHasReferrer": "Tu cuenta ya tiene un código de referencia.",
@@ -1077,6 +1117,7 @@
     "clearSearch": "Borrar búsqueda",
     "customEngines": "Motores personalizados",
     "episode": "Episodio",
+    "episodePlaceholder": "p. ej. E01",
     "hideAdvanced": "Ocultar avanzado",
     "minSeeders": "Seeders min.",
     "minSize": "Tamaño min. (GB)",
@@ -1097,9 +1138,11 @@
     "searchDownloadsHelpPhrase": "Comillas — coincide con la frase exacta (p. ej. \"season 1\")",
     "searchExamples": "Ejemplos de búsqueda",
     "season": "Temporada",
+    "seasonPlaceholder": "p. ej. S01",
     "showAdvanced": "Mostrar avanzado",
     "torrentSearchWarning": "La búsqueda de torrents de TorBox actualmente no es confiable y puede devolver resultados incompletos o incorrectos. Se recomienda la búsqueda en Usenet cuando esté disponible.",
-    "year": "Año"
+    "year": "Año",
+    "yearPlaceholder": "p. ej. 2024"
   },
   "SearchResults": {
     "actions": {

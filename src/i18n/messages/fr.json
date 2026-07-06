@@ -416,6 +416,7 @@
       "All": "Tous",
       "File": "Fichier",
       "Files": "Fichiers",
+      "Webdl": "WebDL",
       "all": "tous",
       "file": "fichier",
       "files": "fichiers"
@@ -527,11 +528,20 @@
   "DownloadsFilters": {
     "activeConditions": "{count, plural, one {# filtre} other {# filtres}} actifs",
     "activeSearch": "recherche « {query} »",
+    "activeSource": "Source : {name}",
     "activeTag": "Étiquette : {name}",
+    "activeTags": "{count, plural, one {# étiquette} other {# étiquettes}}",
+    "activeTracker": "Tracker : {name}",
     "activeView": "Vue : {name}",
+    "activeViews": "{count, plural, one {# vue} other {# vues}}",
     "applyFilters": "Appliquer les filtres",
     "clearAll": "Tout effacer",
+    "clearSources": "Effacer",
+    "clearTags": "Effacer",
+    "clearTrackers": "Effacer",
+    "clearViews": "Effacer",
     "close": "Fermer",
+    "collapseSection": "Réduire {section}",
     "collapseSidebar": "Réduire le panneau de filtres",
     "confirmDeleteTag": "Supprimer l'étiquette « {name} » ? Elle sera retirée de tous les téléchargements.",
     "confirmDeleteView": "Supprimer la vue « {name} » ?",
@@ -539,6 +549,7 @@
     "deleteTagFailed": "Impossible de supprimer l'étiquette : {error}",
     "deleteViewFailed": "Impossible de supprimer la vue : {error}",
     "editFilters": "Modifier",
+    "expandSection": "Développer {section}",
     "expandSidebar": "Développer le panneau de filtres",
     "manageTags": "Gérer les étiquettes",
     "menuApply": "Appliquer",
@@ -554,9 +565,17 @@
     "newTag": "Nouvelle étiquette",
     "newTagPrompt": "Nom de l'étiquette",
     "newView": "Nouvelle vue",
+    "noSourceMatches": "Aucune source ne correspond à « {query} ».",
+    "noSources": "Aucune source dans votre liste pour le moment.",
+    "noTagMatches": "Aucune étiquette ne correspond à « {query} ».",
     "noTags": "Aucune étiquette.",
+    "noTrackerMatches": "Aucun tracker ne correspond à « {query} ».",
+    "noTrackers": "Aucun tracker dans votre liste pour le moment.",
+    "noViewMatches": "Aucune vue ne correspond à « {query} ».",
     "noViews": "Aucune vue enregistrée.",
     "sidebarLabel": "Filtres",
+    "sidebarSearchPlaceholder": "Rechercher…",
+    "sourcesSelected": "{count, plural, one {# sélectionnée} other {# sélectionnées}}",
     "tagAssignmentDescriptionAddMulti": "Sélectionnez les étiquettes ci-dessous pour les ajouter aux {count} téléchargements. Les étiquettes existantes sont conservées.",
     "tagAssignmentDescriptionAddSingle": "Sélectionnez les étiquettes ci-dessous pour les ajouter. Les étiquettes déjà présentes sur ce téléchargement restent inchangées.",
     "tagAssignmentDescriptionRemoveMulti": "Sélectionnez les étiquettes ci-dessous pour les retirer des téléchargements sélectionnés.",
@@ -581,11 +600,14 @@
     "tagManagerSearchPlaceholder": "Rechercher des étiquettes…",
     "tagUsageCount": "{count, plural, one {# téléchargement} other {# téléchargements}}",
     "tagsSection": "Étiquettes",
+    "tagsSelected": "{count, plural, one {# sélectionnée} other {# sélectionnées}}",
     "toggleFilterOff": "Cliquez pour effacer",
     "toggleFilterOn": "Cliquez pour appliquer",
+    "trackersSelected": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
     "viewCreated": "Vue « {name} » créée",
     "viewUpdated": "Vue « {name} » mise à jour",
-    "viewsSection": "Vues"
+    "viewsSection": "Vues",
+    "viewsSelected": "{count, plural, one {# sélectionnée} other {# sélectionnées}}"
   },
   "ErrorBoundary": {
     "reloadPage": "Recharger la page",
@@ -615,7 +637,8 @@
   "FileActions": {
     "copyLink": "Copier le lien",
     "download": "Télécharger le fichier",
-    "play": "Lire"
+    "play": "Lire",
+    "streaming": "Streaming…"
   },
   "Header": {
     "logo": "Logo TorBox Manager",
@@ -694,7 +717,7 @@
       "archiveSuccess": "Archivage réussi",
       "deleteAllFailed": "Échec de la suppression des éléments",
       "deleteAllSuccess": "Tous les éléments ont été supprimés avec succès",
-      "deleteError": "Erreur de suppression : {erreur}",
+      "deleteError": "Erreur de suppression : {error}",
       "deletePartialSuccess": "{count} éléments sur {total} ont été supprimés",
       "deleteSuccess": "Suppression réussie",
       "downloadFailed": "Échec du téléchargement",
@@ -882,6 +905,24 @@
     "noNotifications": "Aucune notification",
     "testNotification": "Notification de test"
   },
+  "OpenIn": {
+    "choosePlayer": "Choisir un lecteur",
+    "close": "Fermer",
+    "errors": {
+      "playerNotInstalled": "Impossible d'ouvrir {player}. Il n'est peut-être pas installé ou votre navigateur ne peut pas le lancer.",
+      "streamFailed": "Échec de la préparation du stream"
+    },
+    "fileMeta": {
+      "from": "De",
+      "video": "Vidéo"
+    },
+    "players": {
+      "web": "Lecteur web",
+      "webHint": "Lecture dans le navigateur avec sélection de piste"
+    },
+    "preparingStream": "Préparation du stream…",
+    "title": "Ouvrir dans"
+  },
   "Referral": {
     "apply": {
       "alreadyHasReferrer": "Votre compte a déjà un code de parrainage.",
@@ -1064,6 +1105,7 @@
     "clearSearch": "Effacer la recherche",
     "customEngines": "Moteurs personnalisés",
     "episode": "Épisode",
+    "episodePlaceholder": "ex. E01",
     "hideAdvanced": "Masquer avancé",
     "minSeeders": "Seeders min.",
     "minSize": "Taille min. (GB)",
@@ -1084,9 +1126,11 @@
     "searchDownloadsHelpPhrase": "Guillemets — correspond à la phrase exacte (ex. \"season 1\")",
     "searchExamples": "Exemples de recherche",
     "season": "Saison",
+    "seasonPlaceholder": "ex. S01",
     "showAdvanced": "Afficher avancé",
     "torrentSearchWarning": "La recherche de torrents TorBox n'est actuellement pas fiable et peut retourner des résultats incomplets ou incorrects. La recherche Usenet est recommandée lorsqu'elle est disponible.",
-    "year": "Année"
+    "year": "Année",
+    "yearPlaceholder": "ex. 2024"
   },
   "SearchResults": {
     "actions": {
@@ -1112,10 +1156,10 @@
     },
     "toast": {
       "magnetCopied": "Lien magnétique copié dans le presse-papiers",
-      "nzbAddFailed": "Échec de l'ajout du NZB : {erreur}",
+      "nzbAddFailed": "Échec de l'ajout du NZB : {error}",
       "nzbAdded": "NZB ajouté à TorBox avec succès",
       "nzbCopied": "Lien NZB copié dans le presse-papiers",
-      "torrentAddFailed": "Échec de l'ajout du torrent : {erreur}",
+      "torrentAddFailed": "Échec de l'ajout du torrent : {error}",
       "torrentAdded": "Torrent ajouté à TorBox avec succès",
       "uploadSuccess": "Téléchargement {count} {type} réussi",
       "uploadSuccessPlural": "Téléchargement {count} {type}s réussi"
