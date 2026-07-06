@@ -597,6 +597,16 @@ select option {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Mobile Safari: size to visible viewport so browser chrome does not eat video area */
+  .player-visual-viewport {
+    position: fixed;
+    top: var(--player-vv-offset-top, 0px);
+    left: var(--player-vv-offset-left, 0px);
+    width: var(--player-vv-width, 100vw);
+    height: var(--player-vv-height, 100dvh);
+    max-height: -webkit-fill-available;
+  }
+
   /* Subtle scrollbars for narrow panels (filters sidebar, modals, etc.) */
   .ui-scrollbar {
     scrollbar-width: thin;
