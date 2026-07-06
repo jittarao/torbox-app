@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
@@ -12,14 +12,62 @@ import ViewSidebarSection from './ViewSidebarSection';
 import FiltersSidebarSearch from './FiltersSidebarSearch';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
+import useFiltersSidebarSectionsCollapsed from './useFiltersSidebarSectionsCollapsed';
 
-function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, addLabel, tall }) {
+function SectionChevron({ expanded, className = 'size-3' }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2.25}
+      stroke="currentColor"
+      className={`${className} shrink-0 transition-transform duration-200 ease-out ${
+        expanded ? '' : '-rotate-90'
+      }`}
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function SidebarSection({
+  title,
+  children,
+  emptyMessage,
+  emptyAction,
+  onAdd,
+  addLabel,
+  tall,
+  expanded,
+  onToggle,
+  toggleLabel,
+  activeCount = 0,
+}) {
   return (
     <div className="flex flex-col">
-      <div className={`flex items-center justify-between gap-1 ${tall ? 'px-0 py-1.5' : 'p-1'}`}>
-        <h3 className="px-1 text-[10px] font-semibold uppercase tracking-wider text-primary-text/50 dark:text-primary-text-dark/50">
-          {title}
-        </h3>
+      <div className={`flex items-center gap-0.5 ${tall ? 'px-0 py-1.5' : 'p-1'}`}>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={toggleLabel}
+          className="group flex min-w-0 flex-1 items-center gap-1 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-surface-alt/70 dark:hover:bg-surface-alt-dark/50"
+        >
+          <SectionChevron
+            expanded={expanded}
+            className="text-primary-text/35 group-hover:text-primary-text/55 dark:text-primary-text-dark/35 dark:group-hover:text-primary-text-dark/55"
+          />
+          <h3 className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-wider text-primary-text/50 group-hover:text-primary-text/70 dark:text-primary-text-dark/50 dark:group-hover:text-primary-text-dark/70">
+            {title}
+          </h3>
+          {!expanded && activeCount > 0 && (
+            <span className="shrink-0 rounded-full bg-accent/15 px-1.5 py-px text-[10px] font-semibold tabular-nums text-accent dark:bg-accent-dark/20 dark:text-accent-dark">
+              {activeCount}
+            </span>
+          )}
+        </button>
         {onAdd && (
           <button
             type="button"
@@ -45,15 +93,17 @@ function SidebarSection({ title, children, emptyMessage, emptyAction, onAdd, add
           </button>
         )}
       </div>
-      <div className={`pb-2 ${tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1'}`}>
-        {children}
-        {emptyMessage && (
-          <p className="p-2 text-[11px] text-primary-text/50 dark:text-primary-text-dark/50 italic">
-            {emptyMessage}
-          </p>
-        )}
-      </div>
-      {emptyAction}
+      {expanded && (
+        <div className={`pb-2 ${tall ? 'space-y-1 px-0' : 'space-y-0.5 px-1'}`}>
+          {children}
+          {emptyMessage && (
+            <p className="p-2 text-[11px] text-primary-text/50 dark:text-primary-text-dark/50 italic">
+              {emptyMessage}
+            </p>
+          )}
+        </div>
+      )}
+      {expanded && emptyAction}
     </div>
   );
 }
@@ -201,6 +251,8 @@ export default function FiltersSidebar({
   const sectionTall = isFixed || isSheet;
   const [overflowMenu, setOverflowMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const { sectionsExpanded, toggleSection, expandAllSections } =
+    useFiltersSidebarSectionsCollapsed();
 
   const closeOverflowMenu = () => setOverflowMenu(null);
 
@@ -215,6 +267,15 @@ export default function FiltersSidebar({
   const viewFilterLocked = activeViewIds.length > 0;
   const trackerFilterLocked = viewFilterLocked;
   const hasSearchQuery = searchQuery.trim().length > 0;
+
+  useEffect(() => {
+    if (hasSearchQuery) expandAllSections();
+  }, [hasSearchQuery, expandAllSections]);
+
+  const sectionToggleLabel = (sectionTitle, expanded) =>
+    expanded
+      ? t('collapseSection', { section: sectionTitle })
+      : t('expandSection', { section: sectionTitle });
 
   const filteredViews = useMemo(
     () => views.filter((view) => matchesSidebarSearch(searchQuery, view.name)),
@@ -296,6 +357,10 @@ export default function FiltersSidebar({
           onAdd={onNewView}
           addLabel={t('newView')}
           tall={sectionTall}
+          expanded={sectionsExpanded.views}
+          onToggle={() => toggleSection('views')}
+          toggleLabel={sectionToggleLabel(t('viewsSection'), sectionsExpanded.views)}
+          activeCount={activeViewIds.length}
         >
           <ViewSidebarSection
             views={views}
@@ -350,6 +415,10 @@ export default function FiltersSidebar({
           onAdd={onOpenTagManager}
           addLabel={t('manageTags')}
           tall={sectionTall}
+          expanded={sectionsExpanded.tags}
+          onToggle={() => toggleSection('tags')}
+          toggleLabel={sectionToggleLabel(t('tagsSection'), sectionsExpanded.tags)}
+          activeCount={activeTagIds?.length ?? 0}
         >
           <TagSidebarSection
             tags={tags}
@@ -395,7 +464,14 @@ export default function FiltersSidebar({
         </SidebarSection>
 
         {showTrackerSection && (
-          <SidebarSection title={t('trackersSection')} tall={sectionTall}>
+          <SidebarSection
+            title={t('trackersSection')}
+            tall={sectionTall}
+            expanded={sectionsExpanded.trackers}
+            onToggle={() => toggleSection('trackers')}
+            toggleLabel={sectionToggleLabel(t('trackersSection'), sectionsExpanded.trackers)}
+            activeCount={activeTrackers.length}
+          >
             <TrackerSidebarSection
               searchQuery={searchQuery}
               activeTrackers={activeTrackers}
@@ -408,7 +484,14 @@ export default function FiltersSidebar({
         )}
 
         {showSourceSection && (
-          <SidebarSection title={t('sourcesSection')} tall={sectionTall}>
+          <SidebarSection
+            title={t('sourcesSection')}
+            tall={sectionTall}
+            expanded={sectionsExpanded.sources}
+            onToggle={() => toggleSection('sources')}
+            toggleLabel={sectionToggleLabel(t('sourcesSection'), sectionsExpanded.sources)}
+            activeCount={activeSources.length}
+          >
             <SourceSidebarSection
               searchQuery={searchQuery}
               activeSources={activeSources}
