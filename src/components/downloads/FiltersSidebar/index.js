@@ -6,6 +6,9 @@ import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
 import SidebarListItem from './SidebarListItem';
 import SidebarOverflowMenu from './SidebarOverflowMenu';
+import TrackerSidebarSection from './TrackerSidebarSection';
+import FiltersSidebarSearch from './FiltersSidebarSearch';
+import { matchesSidebarSearch } from './sidebarSearch';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 
 function SidebarSection({
@@ -173,9 +176,12 @@ export default function FiltersSidebar({
   tags,
   activeAssetType = 'all',
   activeTagIds,
+  activeTrackers = [],
   onApplyView,
   onClearView,
   onApplyTag,
+  onApplyTracker,
+  onClearTrackers,
   onEditView,
   onRenameView,
   onRenameTag,
@@ -195,6 +201,7 @@ export default function FiltersSidebar({
   const isSheet = variant === 'sheet';
   const sectionTall = isFixed || isSheet;
   const [overflowMenu, setOverflowMenu] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const closeOverflowMenu = () => setOverflowMenu(null);
 
@@ -208,6 +215,36 @@ export default function FiltersSidebar({
     () => new Set((activeTagIds || []).map((id) => Number(id))),
     [activeTagIds]
   );
+
+  const showTrackerSection = activeAssetType === 'all' || activeAssetType === 'torrents';
+  const trackerFilterLocked = Boolean(activeView);
+  const hasSearchQuery = searchQuery.trim().length > 0;
+
+  const filteredViews = useMemo(
+    () => views.filter((view) => matchesSidebarSearch(searchQuery, view.name)),
+    [views, searchQuery]
+  );
+
+  const filteredTags = useMemo(
+    () => tags.filter((tag) => matchesSidebarSearch(searchQuery, tag.name)),
+    [tags, searchQuery]
+  );
+
+  const viewsEmptyMessage = useMemo(() => {
+    if (views.length === 0) return t('noViews');
+    if (hasSearchQuery && filteredViews.length === 0) {
+      return t('noViewMatches', { query: searchQuery.trim() });
+    }
+    return null;
+  }, [views.length, filteredViews.length, hasSearchQuery, searchQuery, t]);
+
+  const tagsEmptyMessage = useMemo(() => {
+    if (tags.length === 0) return t('noTags');
+    if (hasSearchQuery && filteredTags.length === 0) {
+      return t('noTagMatches', { query: searchQuery.trim() });
+    }
+    return null;
+  }, [tags.length, filteredTags.length, hasSearchQuery, searchQuery, t]);
 
   const handleDeleteView = async (viewId, viewName) => {
     if (!window.confirm(t('confirmDeleteView', { name: viewName }))) return;
@@ -256,6 +293,7 @@ export default function FiltersSidebar({
       {isFixed && onToggleCollapsed && (
         <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
       )}
+      <FiltersSidebarSearch value={searchQuery} onChange={setSearchQuery} />
       <div
         className={`min-h-0 flex-1 divide-y divide-border/60 dark:divide-border-dark/60 ${
           isSheet ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
@@ -263,13 +301,13 @@ export default function FiltersSidebar({
       >
         <SidebarSection
           title={t('viewsSection')}
-          emptyMessage={views.length === 0 ? t('noViews') : null}
+          emptyMessage={viewsEmptyMessage}
           onAdd={onNewView}
           addLabel={t('newView')}
           tall={sectionTall}
           sheet={isSheet}
         >
-          {views.map((view) => {
+          {filteredViews.map((view) => {
             const menuKey = `view-${view.id}`;
             const viewIsActive =
               activeView?.id != null && String(activeView.id) === String(view.id);
@@ -320,13 +358,13 @@ export default function FiltersSidebar({
 
         <SidebarSection
           title={t('tagsSection')}
-          emptyMessage={tags.length === 0 ? t('noTags') : null}
+          emptyMessage={tagsEmptyMessage}
           onAdd={onOpenTagManager}
           addLabel={t('manageTags')}
           tall={sectionTall}
           sheet={isSheet}
         >
-          {tags.map((tag) => {
+          {filteredTags.map((tag) => {
             const menuKey = `tag-${tag.id}`;
             const tagIsActive = activeTagSet.has(Number(tag.id)) && !activeView;
             const tagMenuItems = [
@@ -368,6 +406,18 @@ export default function FiltersSidebar({
             );
           })}
         </SidebarSection>
+
+        {showTrackerSection && (
+          <SidebarSection title={t('trackersSection')} tall={sectionTall} sheet={isSheet}>
+            <TrackerSidebarSection
+              searchQuery={searchQuery}
+              activeTrackers={activeTrackers}
+              onApplyTracker={onApplyTracker}
+              onClearTrackers={onClearTrackers}
+              disabled={trackerFilterLocked}
+            />
+          </SidebarSection>
+        )}
       </div>
 
       <div
