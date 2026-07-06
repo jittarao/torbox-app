@@ -4,20 +4,20 @@ Utility scripts for the TorBox Manager codebase.
 
 ## i18n
 
-| Script                        | Purpose                                                                                                                           |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `i18n-check-keys.js`          | Compare locale deltas against `en.json` and report missing/extra keys.                                                            |
-| `i18n-prune-locale-deltas.js` | Strip keys from locale files that match `en.json` (keep only true deltas).                                                        |
-| `i18n-merge-locale-patch.js`  | Deep-merge a patch JSON into a locale delta file. Useful when adding batches of translated keys without editing the file by hand. |
-| `i18n-sort-locale-files.js`   | Recursively sort all keys in every locale JSON file for consistent ordering. Supports `--check` for CI.                           |
+Single CLI at [`i18n.js`](i18n.js) with three commands. See [`src/i18n/README.md`](../src/i18n/README.md) for the agent workflow.
 
-### Workflow for adding translations
+| Command     | npm script           | Purpose                                                   |
+| ----------- | -------------------- | --------------------------------------------------------- |
+| `translate` | `bun i18n:translate` | Plan pending keys (JSON) or `--apply` merged translations |
+| `sync`      | `bun i18n:sync`      | Mechanical normalize: prune, sort, drop orphans           |
+| `verify`    | `bun i18n:verify`    | CI gate: JSON, ICU, delta purity, sort order              |
 
-1. Run `bun scripts/i18n-check-keys.js` to find missing keys per locale.
-2. Create a patch JSON containing just the missing keys with their translations.
-3. Merge it: `bun scripts/i18n-merge-locale-patch.js <locale> <patch.json>`
-4. Optionally run `bun scripts/i18n-prune-locale-deltas.js` to clean redundant keys.
-5. Re-run `bun scripts/i18n-check-keys.js` to verify.
+```bash
+bun i18n:translate --json > /tmp/i18n-work.json
+# agent translates in-context
+bun i18n:translate --apply /tmp/i18n-work.json
+bun i18n:verify
+```
 
 ## Version
 
