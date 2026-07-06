@@ -60,6 +60,15 @@ describe('shouldWriteAppliedFiltersInCriteriaPatch', () => {
     ).toBe(false);
   });
 
+  test('skips filters when selecting tracker shortcut', () => {
+    expect(
+      shouldWriteAppliedFiltersInCriteriaPatch({
+        trackerUrls: ['https://tracker.example.com/announce'],
+        appliedFilters: sampleFilters,
+      })
+    ).toBe(false);
+  });
+
   test('writes filters when only appliedFilters is present', () => {
     expect(shouldWriteAppliedFiltersInCriteriaPatch({ appliedFilters: sampleFilters })).toBe(true);
   });

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   buildTagFilter,
+  buildTrackerFilter,
   sameViewId,
   sidebarUrlMatchesPending,
 } from '@/components/downloads/filters/sidebarFilterSync';
@@ -31,6 +32,22 @@ describe('sidebarFilterSync', () => {
     const pending = { kind: 'clear' };
     expect(sidebarUrlMatchesPending(1, EMPTY_FILTERS, pending)).toBe(false);
     expect(sidebarUrlMatchesPending(null, buildTagFilter(3), pending)).toBe(false);
+    expect(sidebarUrlMatchesPending(null, EMPTY_FILTERS, pending)).toBe(true);
+  });
+
+  test('tracker pending waits until URL trackers update', () => {
+    const urlA = 'https://tracker.example.com/announce';
+    const urlB = 'https://tracker.other.org/announce';
+    const pending = { kind: 'tracker', trackers: [urlA, urlB] };
+
+    expect(sidebarUrlMatchesPending(null, buildTrackerFilter([urlA]), pending)).toBe(false);
+    expect(sidebarUrlMatchesPending(null, buildTrackerFilter([urlB, urlA]), pending)).toBe(true);
+  });
+
+  test('clear pending waits until tracker filters are cleared', () => {
+    const pending = { kind: 'clear' };
+    const urlA = 'https://tracker.example.com/announce';
+    expect(sidebarUrlMatchesPending(null, buildTrackerFilter([urlA]), pending)).toBe(false);
     expect(sidebarUrlMatchesPending(null, EMPTY_FILTERS, pending)).toBe(true);
   });
 });

@@ -9,9 +9,12 @@ import { filtersFromView } from '@/components/downloads/FiltersSidebar';
 import {
   EMPTY_FILTERS,
   buildTagFilter,
+  buildTrackerFilter,
   normalizeFilters,
   mergeViewAssetTypeFilter,
   getActiveTagIds,
+  getActiveTrackers,
+  isTrackerOnlyFilter,
 } from '@/components/downloads/filters/filterHelpers';
 import {
   sameViewId,
@@ -72,6 +75,7 @@ export function useDownloadsFilters({
   }, [activeView, urlAppliedFilters]);
 
   const activeTagIds = getActiveTagIds(appliedFilters);
+  const activeTrackers = getActiveTrackers(appliedFilters) ?? [];
 
   const filterDepsRef = useRef({
     filterModalMode,
@@ -93,7 +97,7 @@ export function useDownloadsFilters({
   /** Prevents URL ?view= from re-applying after the user clears the active view. */
   const suppressUrlViewSyncRef = useRef(false);
   const lastSyncedUrlViewIdRef = useRef(null);
-  /** @type {import('react').MutableRefObject<{ kind: string, viewId?: number|string, tagId?: number }|null>} */
+  /** @type {import('react').MutableRefObject<{ kind: string, viewId?: number|string, tagId?: number, trackers?: string[] }|null>} */
   const pendingSidebarFilterRef = useRef(null);
   const viewsRef = useRef(views);
   viewsRef.current = views;
@@ -130,6 +134,7 @@ export function useDownloadsFilters({
         statusFilter: 'all',
         viewId: view.id,
         tagIds: null,
+        trackerUrls: null,
         search: view.search_query || '',
       };
       if (view.sort_field) {
@@ -234,11 +239,67 @@ export function useDownloadsFilters({
         search: '',
         viewId: null,
         tagIds: [id],
+        trackerUrls: null,
       });
       setMobileFiltersOpen(false);
     },
     [activeTagIds, activeView, handleClearFilters, clearView, patchFilterCriteria]
   );
+
+  const handleApplyTracker = useCallback(
+    (trackerUrl) => {
+      const url = String(trackerUrl);
+      const current = getActiveTrackers(appliedFilters) ?? [];
+      const isActive = current.includes(url);
+      const next = isActive ? current.filter((t) => t !== url) : [...current, url];
+
+      if (next.length === 0) {
+        handleClearFilters();
+        setMobileFiltersOpen(false);
+        return;
+      }
+
+      pendingSidebarFilterRef.current = { kind: 'tracker', trackers: next };
+      suppressUrlViewSyncRef.current = true;
+      lastSyncedUrlViewIdRef.current = null;
+
+      clearView();
+      const trackerFilter = buildTrackerFilter(next);
+      setColumnFilters(trackerFilter);
+      patchFilterCriteria({
+        statusFilter: 'all',
+        search: '',
+        viewId: null,
+        tagIds: null,
+        trackerUrls: next,
+      });
+      setMobileFiltersOpen(false);
+    },
+    [appliedFilters, handleClearFilters, clearView, patchFilterCriteria]
+  );
+
+  const handleClearTrackers = useCallback(() => {
+    if (!isTrackerOnlyFilter(appliedFilters) && activeTrackers.length === 0) return;
+    handleClearFilters();
+    setMobileFiltersOpen(false);
+  }, [appliedFilters, activeTrackers.length, handleClearFilters]);
+
+  useEffect(() => {
+    if (activeType === 'all' || activeType === 'torrents') return;
+    const trackers = getActiveTrackers(urlAppliedFilters);
+    if (!trackers) return;
+
+    pendingSidebarFilterRef.current = { kind: 'clear' };
+    suppressUrlViewSyncRef.current = true;
+    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    setColumnFilters(empty);
+    patchFilterCriteria({
+      trackerUrls: null,
+      appliedFilters: empty,
+      viewId: null,
+      tagIds: null,
+    });
+  }, [activeType, urlAppliedFilters, patchFilterCriteria]);
 
   const handleCloseFilterModal = useCallback(() => {
     setFilterModalOpen(false);
@@ -349,6 +410,7 @@ export function useDownloadsFilters({
         statusFilter: 'all',
         viewId: null,
         tagIds: null,
+        trackerUrls: null,
         appliedFilters: normalized,
         search: includeSearch && search?.trim() ? search.trim() : '',
       };
@@ -401,10 +463,13 @@ export function useDownloadsFilters({
     clearView,
     viewsLoading,
     activeTagIds,
+    activeTrackers,
     handleApplyView,
     handleClearFilters,
     handleClearView: handleClearFilters,
     handleApplyTag,
+    handleApplyTracker,
+    handleClearTrackers,
     handleCloseFilterModal,
     handleEditView,
     handleViewCreated,

@@ -1,4 +1,18 @@
-import { buildTagFilter, getActiveTagIds, hasActiveFilters } from './filterHelpers';
+import {
+  buildTagFilter,
+  buildTrackerFilter,
+  getActiveTagIds,
+  getActiveTrackers,
+  hasActiveFilters,
+} from './filterHelpers';
+
+/** @param {string[]} a @param {string[]} b */
+function sameTrackerList(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((url, i) => url === sortedB[i]);
+}
 
 /** Loose id match (API may return number or string). */
 export function sameViewId(a, b) {
@@ -11,7 +25,7 @@ export function sameViewId(a, b) {
  * the pending sidebar selection so URL→store sync can resume.
  * @param {number|string|null} urlViewId
  * @param {object} urlAppliedFilters
- * @param {{ kind: 'view', viewId: number|string }|{ kind: 'tag', tagId: number }|{ kind: 'clear' }|null} pending
+ * @param {{ kind: 'view', viewId: number|string }|{ kind: 'tag', tagId: number }|{ kind: 'tracker', trackers: string[] }|{ kind: 'clear' }|null} pending
  */
 export function sidebarUrlMatchesPending(urlViewId, urlAppliedFilters, pending) {
   if (!pending) return true;
@@ -22,14 +36,19 @@ export function sidebarUrlMatchesPending(urlViewId, urlAppliedFilters, pending) 
     const tagIds = getActiveTagIds(urlAppliedFilters);
     return urlViewId == null && tagIds?.length === 1 && tagIds[0] === pending.tagId;
   }
+  if (pending.kind === 'tracker') {
+    const trackers = getActiveTrackers(urlAppliedFilters);
+    return urlViewId == null && sameTrackerList(trackers, pending.trackers);
+  }
   if (pending.kind === 'clear') {
     return (
       urlViewId == null &&
       getActiveTagIds(urlAppliedFilters) == null &&
+      getActiveTrackers(urlAppliedFilters) == null &&
       !hasActiveFilters(urlAppliedFilters)
     );
   }
   return false;
 }
 
-export { buildTagFilter };
+export { buildTagFilter, buildTrackerFilter };

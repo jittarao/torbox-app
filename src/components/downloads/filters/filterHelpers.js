@@ -1,4 +1,8 @@
-import { LOGIC_OPERATORS, MULTI_SELECT_OPERATORS } from '../AutomationRules/constants';
+import {
+  LOGIC_OPERATORS,
+  MULTI_SELECT_OPERATORS,
+  STRING_OPERATORS,
+} from '../AutomationRules/constants';
 import { isTagsColumn } from '../CustomViews/utils';
 import { itemMatchesFilters } from './filterEvaluation';
 import { itemMatchesDownloadSearch } from '../utils/downloadSearch';
@@ -129,6 +133,72 @@ export function getActiveTagIds(filters) {
     }
   }
   return tagIds.length > 0 ? tagIds : null;
+}
+
+/**
+ * Build a filter structure that matches downloads with any of the given tracker URLs.
+ */
+export function buildTrackerFilter(trackerUrls) {
+  const urls = (Array.isArray(trackerUrls) ? trackerUrls : [trackerUrls]).filter(
+    (url) => url != null && String(url).trim() !== ''
+  );
+  if (urls.length === 0) {
+    return JSON.parse(EMPTY_FILTERS_JSON);
+  }
+
+  return {
+    logicOperator: LOGIC_OPERATORS.AND,
+    groups: [
+      {
+        logicOperator: LOGIC_OPERATORS.OR,
+        filters: urls.map((url) => ({
+          column: 'tracker',
+          operator: STRING_OPERATORS.EQUALS,
+          value: String(url),
+        })),
+      },
+    ],
+  };
+}
+
+/**
+ * True when filters are exclusively tracker equals rules in a single OR group.
+ */
+export function isTrackerOnlyFilter(filters) {
+  const normalized = normalizeFilters(filters);
+  const groups = normalized.groups || [];
+  if (groups.length !== 1) return false;
+
+  const group = groups[0];
+  if (group.logicOperator !== LOGIC_OPERATORS.OR) return false;
+
+  const activeFilters = (group.filters || []).filter((f) => f.column);
+  if (activeFilters.length === 0) return false;
+
+  for (const f of activeFilters) {
+    if (f.column !== 'tracker') return false;
+    if (f.operator !== STRING_OPERATORS.EQUALS) return false;
+    if (f.value == null || String(f.value).trim() === '') return false;
+  }
+
+  return true;
+}
+
+/**
+ * Extract active tracker URLs when filters are tracker-only; otherwise null.
+ */
+export function getActiveTrackers(filters) {
+  if (!isTrackerOnlyFilter(filters)) return null;
+
+  const trackers = [];
+  for (const group of filters.groups || []) {
+    for (const f of group.filters || []) {
+      if (f.column === 'tracker' && f.value != null && String(f.value).trim() !== '') {
+        trackers.push(String(f.value));
+      }
+    }
+  }
+  return trackers.length > 0 ? trackers : null;
 }
 
 /**
