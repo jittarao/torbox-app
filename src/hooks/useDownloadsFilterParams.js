@@ -7,7 +7,8 @@ import { getJSON, setJSON, removeItem } from '@/utils/storage';
 import {
   parseStatusFilterParam,
   serializeStatusFilterParam,
-  parseViewIdParam,
+  parseViewIdsFromParams,
+  writeViewIdsToParams,
   writeViewIdToParams,
   writeTagIdsToParams,
   writeTrackersToParams,
@@ -39,6 +40,7 @@ export const DOWNLOADS_FILTER_PARAM_KEYS = [
   'tracker',
   'trackers',
   'view',
+  'views',
 ];
 
 const DEFAULT_SORT = { sortField: 'created_at', sortDirection: 'desc' };
@@ -54,13 +56,15 @@ const filterStorage = {
 function filtersFromSearchParams(searchParams) {
   const sortField = searchParams.get('sort') || DEFAULT_SORT.sortField;
   const sortDirection = searchParams.get('dir') || DEFAULT_SORT.sortDirection;
+  const viewIds = parseViewIdsFromParams(searchParams);
 
   return {
     search: searchParams.get('q') ?? '',
     statusFilter: parseStatusFilterParam(searchParams.get('status')),
     sortField,
     sortDirection,
-    viewId: parseViewIdParam(searchParams.get('view')),
+    viewIds,
+    viewId: viewIds?.[0] ?? null,
     appliedFilters: parseAppliedFiltersFromParams(searchParams, filterStorage),
   };
 }
@@ -93,10 +97,11 @@ function writeStatusFilterToParams(params, value) {
  * Skip only when the same patch selects a saved view or tag shortcut (those encode
  * filters via `view` / `tag` params). Clearing view/tag with explicit null/empty must
  * still write filters (e.g. custom view preview).
- * @param {{ appliedFilters?: object, viewId?: number|string|null, tagIds?: number[]|null, trackerUrls?: string[]|null }} patch
+ * @param {{ appliedFilters?: object, viewId?: number|string|null, viewIds?: (number|string)[]|null, tagIds?: number[]|null, trackerUrls?: string[]|null }} patch
  */
 export function shouldWriteAppliedFiltersInCriteriaPatch(patch) {
   if (patch.appliedFilters === undefined) return false;
+  if (patch.viewIds != null && patch.viewIds.length > 0) return false;
   if (patch.viewId != null) return false;
   if (patch.tagIds != null && patch.tagIds.length > 0) return false;
   if (patch.trackerUrls != null && patch.trackerUrls.length > 0) return false;
@@ -212,6 +217,7 @@ export function useDownloadsFilterParams() {
    *   sortDirection?: string,
    *   appliedFilters?: object,
    *   viewId?: number|string|null,
+   *   viewIds?: (number|string)[]|null,
    *   tagIds?: number[]|null,
    *   trackerUrls?: string[]|null,
    * }} patch
@@ -233,11 +239,19 @@ export function useDownloadsFilterParams() {
             patch.sortDirection ?? DEFAULT_SORT.sortDirection
           );
         }
-        if (patch.viewId !== undefined) {
+        if (patch.viewIds !== undefined) {
+          if (patch.viewIds != null && patch.viewIds.length > 0) {
+            writeViewIdsToParams(params, patch.viewIds);
+          } else {
+            params.delete('view');
+            params.delete('views');
+          }
+        } else if (patch.viewId !== undefined) {
           if (patch.viewId != null) {
             writeViewIdToParams(params, patch.viewId);
           } else {
             params.delete('view');
+            params.delete('views');
           }
         }
         if (patch.tagIds !== undefined) {

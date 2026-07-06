@@ -8,6 +8,7 @@ import { itemMatchesFilters } from '@/components/downloads/filters/filterEvaluat
 import {
   mergeViewAssetTypeFilter,
   hasActiveFilters,
+  itemMatchesAnyViewFilters,
 } from '@/components/downloads/filters/filterHelpers';
 import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
@@ -16,7 +17,7 @@ import { isQueuedItem } from '@/utils/utility';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
 /** @typedef {{ entities?: Record<string, object>, order?: { torrents?: string[], usenet?: string[], webdl?: string[] } }} TorboxDownloadsState */
-/** @typedef {{ search?: string, statusFilter?: string, appliedFilters?: object, sortField?: string, sortDirection?: 'asc'|'desc' }} FilterCriteria */
+/** @typedef {{ search?: string, statusFilter?: string, appliedFilters?: object, orViewFilters?: object[], sortField?: string, sortDirection?: 'asc'|'desc' }} FilterCriteria */
 
 const STATUS_PRIORITY_MAP = {
   Completed: 6,
@@ -225,6 +226,14 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
   return row;
 }
 
+function rowMatchesColumnFilters(row, criteria) {
+  const { appliedFilters, orViewFilters } = criteria;
+  if (orViewFilters?.length > 1) {
+    return itemMatchesAnyViewFilters(row, orViewFilters);
+  }
+  return itemMatchesFilters(row, appliedFilters);
+}
+
 /**
  * @param {string[]} ids
  * @param {Record<string, object>} entities
@@ -236,7 +245,7 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
 export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHistoryLookup = null) {
   if (!ids?.length) return [];
 
-  const { search = '', statusFilter = 'all', appliedFilters } = criteria;
+  const { search = '', statusFilter = 'all' } = criteria;
   const lookup =
     downloadHistoryLookup?.itemDownloads != null
       ? downloadHistoryLookup
@@ -251,7 +260,7 @@ export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHis
 
     if (!itemMatchesDownloadSearch(row, search)) return false;
     if (!matchesStatusFilter(row, statusFilter)) return false;
-    if (!itemMatchesFilters(row, appliedFilters)) return false;
+    if (!rowMatchesColumnFilters(row, criteria)) return false;
 
     return true;
   });
@@ -268,7 +277,7 @@ export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHis
 export function filterEnrichedIds(ids, enrichedMap, criteria) {
   if (!ids?.length) return [];
 
-  const { search = '', statusFilter = 'all', appliedFilters } = criteria;
+  const { search = '', statusFilter = 'all' } = criteria;
 
   return ids.filter((id) => {
     const row = enrichedMap.get(id);
@@ -276,7 +285,7 @@ export function filterEnrichedIds(ids, enrichedMap, criteria) {
 
     if (!itemMatchesDownloadSearch(row, search)) return false;
     if (!matchesStatusFilter(row, statusFilter)) return false;
-    if (!itemMatchesFilters(row, appliedFilters)) return false;
+    if (!rowMatchesColumnFilters(row, criteria)) return false;
 
     return true;
   });
