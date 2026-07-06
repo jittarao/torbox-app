@@ -12,10 +12,25 @@ import {
 } from './filters/filterHelpers';
 import { formatTrackerLabel } from './filters/trackerDisplay';
 
-export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onClear, onEdit }) {
+export default function ActiveFiltersBar({
+  appliedFilters,
+  activeView,
+  activeViewIds = [],
+  tags,
+  onClear,
+  onEdit,
+}) {
   const t = useTranslations('DownloadsFilters');
 
   const summary = useMemo(() => {
+    if (activeViewIds.length > 1) {
+      const base = t('activeViews', { count: activeViewIds.length });
+      if (activeView?.search_query?.trim()) {
+        return `${base} · ${t('activeSearch', { query: activeView.search_query.trim() })}`;
+      }
+      return base;
+    }
+
     if (activeView?.name) {
       const base = t('activeView', { name: activeView.name });
       if (activeView.search_query?.trim()) {
@@ -29,6 +44,9 @@ export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onC
       const tag = tags.find((tg) => Number(tg.id) === tagIds[0]);
       if (tag) return t('activeTag', { name: tag.name });
     }
+    if (tagIds && tagIds.length > 1) {
+      return t('activeTags', { count: tagIds.length });
+    }
 
     const trackers = getActiveTrackers(appliedFilters);
     if (trackers?.length === 1) {
@@ -41,7 +59,7 @@ export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onC
     const count = countActiveConditions(appliedFilters);
     if (count > 0) return t('activeConditions', { count });
     return null;
-  }, [appliedFilters, activeView, tags, t]);
+  }, [appliedFilters, activeView, activeViewIds.length, tags, t]);
 
   if (!hasActiveFilters(appliedFilters) && !activeView) return null;
   if (!summary) return null;
