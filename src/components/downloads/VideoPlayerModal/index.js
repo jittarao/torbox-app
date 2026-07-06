@@ -19,6 +19,7 @@ import { usePlayerFormFactor } from './hooks/usePlayerLayout';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useSeek } from './hooks/useSeek';
 import { usePlayerGestures } from './hooks/usePlayerGestures';
+import { useVisualViewport } from './hooks/useVisualViewport';
 
 const EMPTY_ARRAY = [];
 const EMPTY_OBJECT = {};
@@ -93,6 +94,11 @@ export default function VideoPlayerModal({
     enabled: isOpen,
     containerRef,
     videoRef,
+  });
+
+  useVisualViewport({
+    enabled: isOpen && isTouchPlayer,
+    targetRef: containerRef,
   });
 
   const handleTimeCommit = useCallback((time) => {
@@ -561,7 +567,12 @@ export default function VideoPlayerModal({
   const controlsVisible = showControls && !isLoading && !error;
 
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-950 player-safe-chrome" ref={containerRef}>
+    <div
+      className={`z-50 bg-neutral-950 ${
+        isTouchPlayer ? 'player-visual-viewport' : 'fixed inset-0 player-safe-chrome'
+      }`}
+      ref={containerRef}
+    >
       <div
         ref={playerAreaRef}
         className="relative w-full h-full flex items-center justify-center"
