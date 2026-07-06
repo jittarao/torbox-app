@@ -6,10 +6,13 @@ import {
 import {
   buildTagFilter,
   buildTrackerFilter,
+  buildSourceFilter,
   getActiveTagIds,
   getActiveTrackers,
+  getActiveSources,
   isTagOnlyFilter,
   isTrackerOnlyFilter,
+  isSourceOnlyFilter,
   itemMatchesAnyViewFilters,
   mergeViewAssetTypeFilter,
   EMPTY_FILTERS,
@@ -65,6 +68,50 @@ describe('tracker filter helpers', () => {
     };
     expect(isTrackerOnlyFilter(filters)).toBe(false);
     expect(getActiveTrackers(filters)).toBeNull();
+  });
+});
+
+describe('source filter helpers', () => {
+  const hostA = 'pixeldrain.com';
+  const hostB = 'drive.google.com';
+
+  test('buildSourceFilter creates OR group of original_url equals rules', () => {
+    const filters = buildSourceFilter([hostA, hostB]);
+    expect(filters.logicOperator).toBe(LOGIC_OPERATORS.AND);
+    expect(filters.groups).toHaveLength(1);
+    expect(filters.groups[0].logicOperator).toBe(LOGIC_OPERATORS.OR);
+    expect(filters.groups[0].filters).toEqual([
+      { column: 'original_url', operator: STRING_OPERATORS.EQUALS, value: hostA },
+      { column: 'original_url', operator: STRING_OPERATORS.EQUALS, value: hostB },
+    ]);
+  });
+
+  test('buildSourceFilter returns empty filters for no hosts', () => {
+    expect(buildSourceFilter([])).toEqual(EMPTY_FILTERS);
+    expect(buildSourceFilter(['', '  '])).toEqual(EMPTY_FILTERS);
+  });
+
+  test('isSourceOnlyFilter and getActiveSources round-trip', () => {
+    const filters = buildSourceFilter([hostA, hostB]);
+    expect(isSourceOnlyFilter(filters)).toBe(true);
+    expect(getActiveSources(filters)).toEqual([hostA, hostB]);
+  });
+
+  test('getActiveSources returns null for mixed filters', () => {
+    const filters = {
+      logicOperator: LOGIC_OPERATORS.AND,
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [
+            { column: 'original_url', operator: STRING_OPERATORS.EQUALS, value: hostA },
+            { column: 'name', operator: STRING_OPERATORS.CONTAINS, value: 'test' },
+          ],
+        },
+      ],
+    };
+    expect(isSourceOnlyFilter(filters)).toBe(false);
+    expect(getActiveSources(filters)).toBeNull();
   });
 });
 

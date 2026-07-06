@@ -15,6 +15,21 @@ import {
   isStatusColumn,
   isTagsColumn,
 } from '@/components/downloads/CustomViews/utils';
+import { extractSourceHost } from '@/components/downloads/filters/sourceDisplay';
+
+function matchesOriginalUrlEquals(columnValue, filterValue) {
+  const strFilter = String(filterValue || '').toLowerCase();
+  if (!strFilter) return false;
+
+  const strValue = String(columnValue || '');
+  if (!strValue) return false;
+
+  if (strFilter.includes('://')) {
+    return strValue.toLowerCase() === strFilter;
+  }
+
+  return extractSourceHost(strValue).toLowerCase() === strFilter;
+}
 /** Evaluate a single filter condition against an item. */
 function evaluateFilter(filter, item) {
   if (!filter.column || filter.operator === undefined) return true;
@@ -72,6 +87,9 @@ function evaluateFilter(filter, item) {
 
     switch (operator) {
       case STRING_OPERATORS.EQUALS:
+        if (filter.column === 'original_url') {
+          return matchesOriginalUrlEquals(columnValue, filterValue);
+        }
         return strValue === strFilter;
       case STRING_OPERATORS.CONTAINS:
         return strValue.includes(strFilter);
