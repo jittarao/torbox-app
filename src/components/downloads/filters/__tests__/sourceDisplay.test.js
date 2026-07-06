@@ -15,6 +15,12 @@ describe('extractSourceHost', () => {
     expect(extractSourceHost('https://example.com/file.zip')).toBe('example.com');
   });
 
+  test('strips www prefix from hostname', () => {
+    expect(extractSourceHost('https://www.pixeldrain.com/api/file/abc')).toBe('pixeldrain.com');
+    expect(extractSourceHost('https://WWW.example.com/file.zip')).toBe('example.com');
+    expect(extractSourceHost('http://www.example.com:8080/path')).toBe('example.com:8080');
+  });
+
   test('returns empty for invalid or missing input', () => {
     expect(extractSourceHost('')).toBe('');
     expect(extractSourceHost(null)).toBe('');
