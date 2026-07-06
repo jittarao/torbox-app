@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { TAG_OPERATORS } from '@/components/downloads/AutomationRules/constants';
+import { TAG_OPERATORS, STRING_OPERATORS } from '@/components/downloads/AutomationRules/constants';
 import { tagOperatorNeedsTagSelection } from '../tagFilterHelpers';
 import { itemMatchesFilters } from '../filterEvaluation';
+import { buildTrackerFilter } from '../filterHelpers';
 
 const filtersWithTagRule = (operator, value = []) => ({
   logicOperator: 'and',
@@ -39,6 +40,34 @@ describe('tagFilterHelpers', () => {
   test('tagOperatorNeedsTagSelection identifies tag-picking operators', () => {
     expect(tagOperatorNeedsTagSelection(TAG_OPERATORS.IS_ANY_OF)).toBe(true);
     expect(tagOperatorNeedsTagSelection(TAG_OPERATORS.IS_SET)).toBe(false);
+  });
+});
+
+describe('itemMatchesFilters tracker column', () => {
+  const urlA = 'https://tracker.example.com/announce';
+  const urlB = 'https://tracker.other.org/announce';
+
+  test('multi-tracker OR filter matches any selected tracker', () => {
+    const filters = buildTrackerFilter([urlA, urlB]);
+    expect(itemMatchesFilters({ tracker: urlA }, filters)).toBe(true);
+    expect(itemMatchesFilters({ tracker: urlB }, filters)).toBe(true);
+    expect(itemMatchesFilters({ tracker: 'https://unknown.example' }, filters)).toBe(false);
+    expect(itemMatchesFilters({ asset_type: 'usenet' }, filters)).toBe(false);
+  });
+
+  test('single tracker equals matches case-insensitively', () => {
+    const filters = {
+      logicOperator: 'and',
+      groups: [
+        {
+          logicOperator: 'or',
+          filters: [{ column: 'tracker', operator: STRING_OPERATORS.EQUALS, value: urlA }],
+        },
+      ],
+    };
+    expect(itemMatchesFilters({ tracker: urlA }, filters)).toBe(true);
+    expect(itemMatchesFilters({ tracker: urlA.toUpperCase() }, filters)).toBe(true);
+    expect(itemMatchesFilters({ tracker: 'https://other.example' }, filters)).toBe(false);
   });
 });
 

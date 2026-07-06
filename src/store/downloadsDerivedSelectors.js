@@ -439,6 +439,26 @@ export function countDownloadsPerViewFromStore(
   return counts;
 }
 
+/**
+ * Tracker counts for sidebar — torrent entities only (even on the All tab).
+ */
+export function countDownloadsPerTrackerFromStore(torboxState) {
+  const entities = torboxState.entities || {};
+  const torrentIds = torboxState.order?.torrents || [];
+  const counts = {};
+
+  for (const id of torrentIds) {
+    const entity = entities[id];
+    if (!entity) continue;
+    const tracker = entity.tracker;
+    if (tracker == null || String(tracker).trim() === '') continue;
+    const key = String(tracker);
+    counts[key] = (counts[key] || 0) + 1;
+  }
+
+  return counts;
+}
+
 export function findEntityBySelectionId(entities, ids, selectionId) {
   for (const id of ids) {
     const item = entities[id];
