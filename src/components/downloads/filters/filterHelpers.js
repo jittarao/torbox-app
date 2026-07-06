@@ -202,6 +202,72 @@ export function getActiveTrackers(filters) {
 }
 
 /**
+ * Build a filter structure that matches downloads with any of the given source hosts.
+ */
+export function buildSourceFilter(sourceHosts) {
+  const hosts = (Array.isArray(sourceHosts) ? sourceHosts : [sourceHosts]).filter(
+    (host) => host != null && String(host).trim() !== ''
+  );
+  if (hosts.length === 0) {
+    return JSON.parse(EMPTY_FILTERS_JSON);
+  }
+
+  return {
+    logicOperator: LOGIC_OPERATORS.AND,
+    groups: [
+      {
+        logicOperator: LOGIC_OPERATORS.OR,
+        filters: hosts.map((host) => ({
+          column: 'original_url',
+          operator: STRING_OPERATORS.EQUALS,
+          value: String(host),
+        })),
+      },
+    ],
+  };
+}
+
+/**
+ * True when filters are exclusively original_url equals rules in a single OR group.
+ */
+export function isSourceOnlyFilter(filters) {
+  const normalized = normalizeFilters(filters);
+  const groups = normalized.groups || [];
+  if (groups.length !== 1) return false;
+
+  const group = groups[0];
+  if (group.logicOperator !== LOGIC_OPERATORS.OR) return false;
+
+  const activeFilters = (group.filters || []).filter((f) => f.column);
+  if (activeFilters.length === 0) return false;
+
+  for (const f of activeFilters) {
+    if (f.column !== 'original_url') return false;
+    if (f.operator !== STRING_OPERATORS.EQUALS) return false;
+    if (f.value == null || String(f.value).trim() === '') return false;
+  }
+
+  return true;
+}
+
+/**
+ * Extract active source hosts when filters are source-only; otherwise null.
+ */
+export function getActiveSources(filters) {
+  if (!isSourceOnlyFilter(filters)) return null;
+
+  const sources = [];
+  for (const group of filters.groups || []) {
+    for (const f of group.filters || []) {
+      if (f.column === 'original_url' && f.value != null && String(f.value).trim() !== '') {
+        sources.push(String(f.value));
+      }
+    }
+  }
+  return sources.length > 0 ? sources : null;
+}
+
+/**
  * Count downloads per tag ID from TBM-enriched download items.
  */
 export function countDownloadsPerTag(enrichedDownloads) {
