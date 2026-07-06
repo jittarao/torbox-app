@@ -51,6 +51,15 @@ describe('shouldWriteAppliedFiltersInCriteriaPatch', () => {
     ).toBe(false);
   });
 
+  test('skips filters when selecting multiple views', () => {
+    expect(
+      shouldWriteAppliedFiltersInCriteriaPatch({
+        viewIds: [1, 2],
+        appliedFilters: sampleFilters,
+      })
+    ).toBe(false);
+  });
+
   test('skips filters when selecting a tag shortcut', () => {
     expect(
       shouldWriteAppliedFiltersInCriteriaPatch({
