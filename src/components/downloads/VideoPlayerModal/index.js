@@ -1,39 +1,28 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { X } from '@/components/icons';
 import { useStream } from '../../shared/hooks/useStream';
 import VideoPlayer from '../VideoPlayer';
 import LoadingOverlay from './components/LoadingOverlay';
 import ErrorOverlay from './components/ErrorOverlay';
 import SkipIntroButton from './components/SkipIntroButton';
-import VideoControls from './components/VideoControls';
+import DesktopVideoControls from './components/desktop/DesktopVideoControls';
+import MobilePlayerChrome from './components/mobile/MobilePlayerChrome';
+import SeekFeedback from './components/mobile/SeekFeedback';
 import VideoInfoOverlay from './components/VideoInfoOverlay';
 import { useVideoPlayerKeyboard } from './hooks/useVideoPlayerKeyboard';
 import { useControlsVisibility } from './hooks/useControlsVisibility';
+import { useTouchPlayer } from './hooks/useTouchPlayer';
+import { usePlayerFormFactor } from './hooks/usePlayerLayout';
+import { useFullscreen } from './hooks/useFullscreen';
+import { useSeek } from './hooks/useSeek';
+import { usePlayerGestures } from './hooks/usePlayerGestures';
 
 const EMPTY_ARRAY = [];
 const EMPTY_OBJECT = {};
 
-/**
- * VideoPlayerModal - Full-screen edge-to-edge video player with themed UI
- * @param {Object} props
- * @param {boolean} props.isOpen - Whether modal is open
- * @param {Function} props.onClose - Callback to close modal
- * @param {string} props.streamUrl - URL of the video stream (HLS)
- * @param {string} props.fileName - Name of the file being played
- * @param {Array} props.subtitles - Array of available subtitle tracks from metadata
- * @param {Array} props.audios - Array of available audio tracks from metadata
- * @param {Object} props.metadata - Full metadata object from stream response
- * @param {string} props.apiKey - TorBox API key
- * @param {number} props.itemId - Download ID
- * @param {number} props.fileId - File ID
- * @param {string} props.streamType - Stream type: 'torrent', 'usenet', or 'webdownload'
- * @param {Function} props.onStreamUrlChange - Callback when stream URL changes
- * @param {Object} props.introInformation - Intro information with start_time, end_time, title
- * @param {number} props.initialAudioIndex - Initial audio track index that was selected
- * @param {number|null} props.initialSubtitleIndex - Initial subtitle track index that was selected (null for none)
- */
 export default function VideoPlayerModal({
   isOpen,
   onClose,
@@ -51,16 +40,21 @@ export default function VideoPlayerModal({
   initialAudioIndex = 0,
   initialSubtitleIndex = null,
 }) {
+  const t = useTranslations('VideoPlayer');
+  const isTouchPlayer = useTouchPlayer();
+  const formFactor = usePlayerFormFactor();
+
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const seekBarRef = useRef(null);
   const { createStream } = useStream(apiKey);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [streamUrl, setStreamUrl] = useState(initialStreamUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [seekTime, setSeekTime] = useState(null);
   const [showControls, setShowControls] = useState(true);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
@@ -70,8 +64,8 @@ export default function VideoPlayerModal({
   const [selectedAudioIndex, setSelectedAudioIndex] = useState(0);
   const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isSeeking, setIsSeeking] = useState(false);
+  const [showSettingsSheet, setShowSettingsSheet] = useState(false);
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [showPlaybackSpeedMenu, setShowPlaybackSpeedMenu] = useState(false);
   const [selectedStreamData, setSelectedStreamData] = useState({
@@ -82,6 +76,8 @@ export default function VideoPlayerModal({
   });
   const [capturedSeekTime, setCapturedSeekTime] = useState(null);
   const [wasPlayingBeforeTrackChange, setWasPlayingBeforeTrackChange] = useState(false);
+  const [seekFeedback, setSeekFeedback] = useState(null);
+
   const volumeRef = useRef(null);
   const audioMenuRef = useRef(null);
   const subtitleMenuRef = useRef(null);
@@ -90,11 +86,89 @@ export default function VideoPlayerModal({
   const playerAreaRef = useRef(null);
   const lastClickTimeRef = useRef(0);
   const volumeSliderTimeoutRef = useRef(null);
-  const isSeekingRef = useRef(false);
   const isManualStreamUpdateRef = useRef(false);
   const hasInitializedTracksRef = useRef(false);
 
-  // Handle body scroll lock when modal is open
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen({
+    enabled: isOpen,
+    containerRef,
+    videoRef,
+  });
+
+  const handleTimeCommit = useCallback((time) => {
+    setCurrentTime(time);
+  }, []);
+
+  const {
+    isSeeking,
+    seekTime,
+    handleSeekPointerDown,
+    handleSeekPointerMove,
+    handleSeekPointerUp,
+    handleSeekClick,
+  } = useSeek({
+    duration,
+    videoRef,
+    seekBarRef,
+    onTimeCommit: handleTimeCommit,
+  });
+
+  const { toggleControls } = useControlsVisibility({
+    isOpen,
+    isPlaying,
+    isSeeking,
+    showControls,
+    setShowControls,
+    playerRef: playerAreaRef,
+    controlsBarRef,
+    showVolumeSlider,
+    showAudioMenu,
+    showSubtitleMenu,
+    showPlaybackSpeedMenu,
+    showSettingsSheet,
+    showInfoSheet: showInfoSheet || (showInfo && !isTouchPlayer),
+    volumeRef,
+    audioMenuRef,
+    subtitleMenuRef,
+    playbackSpeedMenuRef,
+    isTouchPlayer,
+  });
+
+  const handleDoubleTapSeek = useCallback((deltaSeconds, side) => {
+    if (videoRef.current) {
+      const next = Math.max(
+        0,
+        Math.min(videoRef.current.duration || 0, videoRef.current.currentTime + deltaSeconds)
+      );
+      videoRef.current.currentTime = next;
+      setCurrentTime(next);
+    }
+    setSeekFeedback({ side, seconds: deltaSeconds });
+  }, []);
+
+  const handleSwipeDown = useCallback(() => {
+    if (isFullscreen) {
+      exitFullscreen();
+      return;
+    }
+    onClose();
+  }, [isFullscreen, exitFullscreen, onClose]);
+
+  const { bindGestures } = usePlayerGestures({
+    enabled: isOpen && isTouchPlayer && !isLoading && !error,
+    targetRef: playerAreaRef,
+    onToggleControls: toggleControls,
+    onDoubleTapSeek: handleDoubleTapSeek,
+    onSwipeDown: handleSwipeDown,
+    isBlocked: () =>
+      isSeeking || showSettingsSheet || showInfoSheet || showInfo || Boolean(seekFeedback),
+  });
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    return bindGestures();
+  }, [isOpen, bindGestures]);
+
   useEffect(() => {
     if (isOpen) {
       document.documentElement.style.overflow = 'hidden';
@@ -103,14 +177,12 @@ export default function VideoPlayerModal({
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
     }
-
     return () => {
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
     };
   }, [isOpen]);
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen && !hasInitializedTracksRef.current) {
       hasInitializedTracksRef.current = true;
@@ -125,15 +197,15 @@ export default function VideoPlayerModal({
       setShowSubtitleMenu(false);
       setShowPlaybackSpeedMenu(false);
       setShowInfo(false);
+      setShowSettingsSheet(false);
+      setShowInfoSheet(false);
       setPlaybackSpeed(1.0);
-
       setSelectedStreamData({
         video_track_idx: 0,
         audio_track_idx: initialAudioIndex,
         subtitle_track_idx: initialSubtitleIndex,
         intro_info: introInformation,
       });
-
       setSelectedSubtitleIndex(initialSubtitleIndex);
       setSelectedAudioIndex(initialAudioIndex);
     } else if (!isOpen) {
@@ -141,46 +213,12 @@ export default function VideoPlayerModal({
     }
   }, [isOpen, introInformation, initialAudioIndex, initialSubtitleIndex]);
 
-  // Handle fullscreen changes
   useEffect(() => {
-    if (!isOpen) return;
-
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [isOpen]);
-
-  // Use controls visibility hook
-  useControlsVisibility({
-    isOpen,
-    isPlaying,
-    isSeeking,
-    showControls,
-    setShowControls,
-    playerRef: playerAreaRef,
-    controlsBarRef,
-    showVolumeSlider,
-    showAudioMenu,
-    showSubtitleMenu,
-    showPlaybackSpeedMenu,
-    volumeRef,
-    audioMenuRef,
-    subtitleMenuRef,
-    playbackSpeedMenuRef,
-  });
-
-  // Close menus when clicking outside
-  useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isTouchPlayer) return;
 
     const handleClickOutside = (e) => {
       if (volumeRef.current && !volumeRef.current.contains(e.target)) {
-        if (volumeSliderTimeoutRef.current) {
-          clearTimeout(volumeSliderTimeoutRef.current);
-        }
+        if (volumeSliderTimeoutRef.current) clearTimeout(volumeSliderTimeoutRef.current);
         setShowVolumeSlider(false);
       }
       if (audioMenuRef.current && !audioMenuRef.current.contains(e.target)) {
@@ -194,370 +232,299 @@ export default function VideoPlayerModal({
       }
     };
 
-    const sliderTimeout = volumeSliderTimeoutRef.current;
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      if (sliderTimeout) clearTimeout(sliderTimeout);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [
-    isOpen,
-    setShowVolumeSlider,
-    setShowAudioMenu,
-    setShowSubtitleMenu,
-    setShowPlaybackSpeedMenu,
-  ]);
+  }, [isOpen, isTouchPlayer]);
 
-  // Update streamUrl when initialStreamUrl changes
   useEffect(() => {
     if (initialStreamUrl && !isManualStreamUpdateRef.current) {
       setStreamUrl(initialStreamUrl);
     }
   }, [initialStreamUrl]);
 
-  // Get video ref from VideoPlayer component
-  const handleVideoRef = (videoElement) => {
-    videoRef.current = videoElement;
-    if (videoElement) {
-      setVolume(videoElement.volume);
-      setIsMuted(videoElement.muted);
-      // Set initial playback speed
-      if (videoElement.playbackRate !== playbackSpeed) {
-        videoElement.playbackRate = playbackSpeed;
+  const handleVideoRef = useCallback(
+    (videoElement) => {
+      videoRef.current = videoElement;
+      if (videoElement) {
+        setVolume(videoElement.volume);
+        setIsMuted(videoElement.muted);
+        if (videoElement.playbackRate !== playbackSpeed) {
+          videoElement.playbackRate = playbackSpeed;
+        }
       }
-    }
-  };
+    },
+    [playbackSpeed]
+  );
 
-  // Apply playback speed when video ref changes
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = playbackSpeed;
     }
   }, [playbackSpeed]);
 
-  // Update seeking ref when isSeeking changes
-  useEffect(() => {
-    isSeekingRef.current = isSeeking;
-  }, [isSeeking]);
+  const handlePlayPause = useCallback(() => {
+    if (!videoRef.current) return;
+    if (isPlaying) videoRef.current.pause();
+    else videoRef.current.play();
+  }, [isPlaying]);
 
-  // Handle play/pause
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-    }
-  };
-
-  // Handle rewind 30 seconds
-  const handleRewind = () => {
+  const handleRewind = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 30);
     }
-  };
+  }, []);
 
-  // Handle forward 30 seconds
-  const handleForward = () => {
+  const handleForward = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.min(
         videoRef.current.duration || 0,
         videoRef.current.currentTime + 30
       );
     }
-  };
+  }, []);
 
-  // Handle video click (single click = play/pause, double click = fullscreen)
-  const handleVideoClick = (e) => {
-    if (e.target.closest('[data-seekbar]') || e.target.closest('.pointer-events-auto')) {
-      return;
+  const handleSeekBack10 = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
     }
+  }, []);
 
-    e.preventDefault();
-    e.stopPropagation();
-
-    const now = Date.now();
-    const timeSinceLastClick = now - lastClickTimeRef.current;
-
-    if (timeSinceLastClick < 300) {
-      handleFullscreen();
-      lastClickTimeRef.current = 0;
-    } else {
-      lastClickTimeRef.current = now;
-      handlePlayPause();
+  const handleSeekForward10 = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.min(
+        videoRef.current.duration || 0,
+        videoRef.current.currentTime + 10
+      );
     }
-  };
+  }, []);
 
-  // Handle seek
-  const handleSeek = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (videoRef.current && duration) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pos = (e.clientX - rect.left) / rect.width;
-      videoRef.current.currentTime = pos * duration;
-    }
-  };
-
-  // Handle seekbar drag
-  const handleSeekbarMouseDown = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsSeeking(true);
-    if (duration && containerRef.current) {
-      const progressBar = containerRef.current.querySelector('[data-seekbar]');
-      if (progressBar) {
-        const rect = progressBar.getBoundingClientRect();
-        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        const newTime = pos * duration;
-        setSeekTime(newTime);
+  const handleVideoClick = useCallback(
+    (e) => {
+      if (isTouchPlayer) return;
+      if (e.target.closest('[data-seekbar]') || e.target.closest('[data-player-control]')) {
+        return;
       }
-    }
-  };
 
-  // Handle seekbar drag move
-  useEffect(() => {
-    if (!isSeeking) return;
+      e.preventDefault();
+      e.stopPropagation();
 
-    const handleMouseMove = (e) => {
-      if (duration && containerRef.current) {
-        const progressBar = containerRef.current.querySelector('[data-seekbar]');
-        if (progressBar) {
-          const rect = progressBar.getBoundingClientRect();
-          const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-          const newTime = pos * duration;
-          setSeekTime(newTime);
-        }
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTimeRef.current;
+
+      if (timeSinceLastClick < 300) {
+        toggleFullscreen();
+        lastClickTimeRef.current = 0;
+      } else {
+        lastClickTimeRef.current = now;
+        handlePlayPause();
       }
-    };
+    },
+    [isTouchPlayer, toggleFullscreen, handlePlayPause]
+  );
 
-    const handleMouseUp = () => {
-      if (videoRef.current && seekTime !== null) {
-        videoRef.current.currentTime = seekTime;
-        setCurrentTime(seekTime);
+  const handleSeek = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (videoRef.current && duration) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        videoRef.current.currentTime = pos * duration;
       }
-      setIsSeeking(false);
-      setSeekTime(null);
-    };
+    },
+    [duration]
+  );
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+  const handleSeekbarMouseDown = useCallback(
+    (e) => {
+      if (isTouchPlayer) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handleSeekPointerDown(e);
+    },
+    [isTouchPlayer, handleSeekPointerDown]
+  );
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isSeeking, duration, seekTime]);
-
-  // Handle volume change
-  const handleVolumeChange = (newVolume) => {
+  const handleVolumeChange = useCallback((newVolume) => {
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
       setVolume(newVolume);
       setIsMuted(newVolume === 0);
     }
-  };
+  }, []);
 
-  // Handle mute toggle
-  const handleMuteToggle = () => {
+  const handleMuteToggle = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted;
       setIsMuted(videoRef.current.muted);
     }
-  };
+  }, []);
 
-  // Handle playback speed change
-  const handlePlaybackSpeedChange = (speed) => {
+  const handlePlaybackSpeedChange = useCallback((speed) => {
     if (videoRef.current) {
       videoRef.current.playbackRate = speed;
       setPlaybackSpeed(speed);
       setShowPlaybackSpeedMenu(false);
     }
-  };
+  }, []);
 
-  // Handle fullscreen
-  const handleFullscreen = () => {
-    if (!containerRef.current) return;
-
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      containerRef.current.requestFullscreen();
-    }
-  };
-
-  // Handle keyboard shortcuts (must be after all handlers are defined)
   useVideoPlayerKeyboard({
     isOpen,
     isPlaying,
     isFullscreen,
-    showInfo,
+    showInfo: showInfo || showInfoSheet,
     videoRef,
     onPlayPause: handlePlayPause,
-    onFullscreen: handleFullscreen,
+    onFullscreen: toggleFullscreen,
     onMuteToggle: handleMuteToggle,
-    onInfoClose: () => setShowInfo(false),
+    onInfoClose: () => {
+      setShowInfo(false);
+      setShowInfoSheet(false);
+    },
     onVolumeChange: handleVolumeChange,
   });
 
-  // Handle audio track selection
-  const handleAudioTrackSelect = async (index) => {
-    if (!audios || audios.length <= index || !apiKey || !itemId || fileId === undefined) {
-      console.error('Missing required data for audio track selection');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const capturedTime = videoRef.current?.currentTime || 0;
-      const wasPlaying = isPlaying;
-      setCapturedSeekTime(capturedTime);
-      setWasPlayingBeforeTrackChange(wasPlaying);
-
-      if (videoRef.current && wasPlaying) {
-        videoRef.current.pause();
+  const handleAudioTrackSelect = useCallback(
+    async (index) => {
+      if (!audios || audios.length <= index || !apiKey || !itemId || fileId === undefined) {
+        console.error('Missing required data for audio track selection');
+        return;
       }
 
-      const audioRelativeIndex = index;
-      const currentSubtitleRelativeIndex =
-        selectedSubtitleIndex !== null && selectedSubtitleIndex !== undefined
-          ? selectedSubtitleIndex
-          : selectedStreamData.subtitle_track_idx;
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const streamMetadata = await createStream(
-        itemId,
-        fileId,
-        streamType,
-        currentSubtitleRelativeIndex,
-        audioRelativeIndex
-      );
+        const capturedTime = videoRef.current?.currentTime || 0;
+        const wasPlaying = isPlaying;
+        setCapturedSeekTime(capturedTime);
+        setWasPlayingBeforeTrackChange(wasPlaying);
 
-      const data = streamMetadata.data || streamMetadata;
-      const newStreamUrl = data.hls_url || streamMetadata.hls_url;
+        if (videoRef.current && wasPlaying) videoRef.current.pause();
 
-      if (!newStreamUrl) {
-        throw new Error('No stream URL in response');
+        const streamMetadata = await createStream(
+          itemId,
+          fileId,
+          streamType,
+          selectedSubtitleIndex !== null && selectedSubtitleIndex !== undefined
+            ? selectedSubtitleIndex
+            : selectedStreamData.subtitle_track_idx,
+          index
+        );
+
+        const data = streamMetadata.data || streamMetadata;
+        const newStreamUrl = data.hls_url || streamMetadata.hls_url;
+        if (!newStreamUrl) throw new Error('No stream URL in response');
+
+        setSelectedStreamData((prev) => ({ ...prev, audio_track_idx: index }));
+        isManualStreamUpdateRef.current = true;
+        setStreamUrl(newStreamUrl);
+        onStreamUrlChange?.(newStreamUrl);
+        setTimeout(() => {
+          isManualStreamUpdateRef.current = false;
+        }, 500);
+
+        setSelectedAudioIndex(index);
+        setShowAudioMenu(false);
+        setShowSettingsSheet(false);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error selecting audio track:', err);
+        setIsLoading(false);
+        setError(err?.message || err?.toString() || 'Failed to change audio track');
+      }
+    },
+    [
+      audios,
+      apiKey,
+      itemId,
+      fileId,
+      streamType,
+      isPlaying,
+      selectedSubtitleIndex,
+      selectedStreamData.subtitle_track_idx,
+      createStream,
+      onStreamUrlChange,
+    ]
+  );
+
+  const handleSubtitleTrackSelect = useCallback(
+    async (index) => {
+      if (!apiKey || !itemId || fileId === undefined) {
+        console.error('Missing required data for subtitle track selection');
+        return;
       }
 
-      setSelectedStreamData((prev) => ({
-        ...prev,
-        audio_track_idx: index,
-      }));
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      setCapturedSeekTime(capturedTime);
-      setWasPlayingBeforeTrackChange(wasPlaying);
+        const capturedTime = videoRef.current?.currentTime || 0;
+        const wasPlaying = isPlaying;
+        setCapturedSeekTime(capturedTime);
+        setWasPlayingBeforeTrackChange(wasPlaying);
 
-      isManualStreamUpdateRef.current = true;
+        if (videoRef.current && wasPlaying) videoRef.current.pause();
 
-      setStreamUrl(newStreamUrl);
-      if (onStreamUrlChange) {
-        onStreamUrlChange(newStreamUrl);
+        const streamMetadata = await createStream(
+          itemId,
+          fileId,
+          streamType,
+          index,
+          selectedAudioIndex
+        );
+
+        const data = streamMetadata.data || streamMetadata;
+        const newStreamUrl = data.hls_url || streamMetadata.hls_url;
+        if (!newStreamUrl) throw new Error('No stream URL in response');
+
+        setSelectedStreamData((prev) => ({ ...prev, subtitle_track_idx: index }));
+        setSelectedSubtitleIndex(index);
+        isManualStreamUpdateRef.current = true;
+        setStreamUrl(newStreamUrl);
+        onStreamUrlChange?.(newStreamUrl);
+        setTimeout(() => {
+          isManualStreamUpdateRef.current = false;
+        }, 500);
+
+        setShowSubtitleMenu(false);
+        setShowSettingsSheet(false);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error selecting subtitle track:', err);
+        setIsLoading(false);
+        setError(err?.message || err?.toString() || 'Failed to change subtitle track');
       }
+    },
+    [
+      apiKey,
+      itemId,
+      fileId,
+      streamType,
+      isPlaying,
+      selectedAudioIndex,
+      createStream,
+      onStreamUrlChange,
+    ]
+  );
 
-      setTimeout(() => {
-        isManualStreamUpdateRef.current = false;
-      }, 500);
-
-      setSelectedAudioIndex(index);
-      setShowAudioMenu(false);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error selecting audio track:', error);
-      setIsLoading(false);
-      const errorMessage = error?.message || error?.toString() || 'Failed to change audio track';
-      setError(errorMessage);
-    }
-  };
-
-  // Handle subtitle track selection
-  const handleSubtitleTrackSelect = async (index) => {
-    if (!apiKey || !itemId || fileId === undefined) {
-      console.error('Missing required data for subtitle track selection');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const capturedTime = videoRef.current?.currentTime || 0;
-      const wasPlaying = isPlaying;
-      setCapturedSeekTime(capturedTime);
-      setWasPlayingBeforeTrackChange(wasPlaying);
-
-      if (videoRef.current && wasPlaying) {
-        videoRef.current.pause();
-      }
-
-      const audioRelativeIndex = selectedAudioIndex;
-      const subtitleRelativeIndex = index;
-
-      const streamMetadata = await createStream(
-        itemId,
-        fileId,
-        streamType,
-        subtitleRelativeIndex,
-        audioRelativeIndex
-      );
-
-      const data = streamMetadata.data || streamMetadata;
-      const newStreamUrl = data.hls_url || streamMetadata.hls_url;
-
-      if (!newStreamUrl) {
-        throw new Error('No stream URL in response');
-      }
-
-      setSelectedStreamData((prev) => ({
-        ...prev,
-        subtitle_track_idx: index,
-      }));
-      setSelectedSubtitleIndex(index);
-
-      setCapturedSeekTime(capturedTime);
-      setWasPlayingBeforeTrackChange(wasPlaying);
-
-      isManualStreamUpdateRef.current = true;
-
-      setStreamUrl(newStreamUrl);
-      if (onStreamUrlChange) {
-        onStreamUrlChange(newStreamUrl);
-      }
-
-      setTimeout(() => {
-        isManualStreamUpdateRef.current = false;
-      }, 500);
-
-      setShowSubtitleMenu(false);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error selecting subtitle track:', error);
-      setIsLoading(false);
-      const errorMessage = error?.message || error?.toString() || 'Failed to change subtitle track';
-      setError(errorMessage);
-    }
-  };
-
-  // Handle Skip Intro button click
-  const handleSkipIntro = () => {
+  const handleSkipIntro = useCallback(() => {
     const introInfo = introInformation || selectedStreamData.intro_info;
     if (videoRef.current && introInfo && introInfo.end_time !== undefined) {
       videoRef.current.currentTime = introInfo.end_time;
       setCurrentTime(introInfo.end_time);
     }
-  };
+  }, [introInformation, selectedStreamData.intro_info]);
 
-  // Handle error retry
-  const handleErrorRetry = async () => {
+  const handleErrorRetry = useCallback(async () => {
     setError(null);
     setIsLoading(true);
-
     try {
-      // Try to reload the current stream URL
       if (streamUrl) {
-        // Force VideoPlayer to reload by updating the key
         setStreamUrl(streamUrl);
         setIsLoading(false);
       } else {
@@ -568,15 +535,13 @@ export default function VideoPlayerModal({
       setIsLoading(false);
       setError(retryError.message || 'Failed to retry stream. Please close and reopen the player.');
     }
-  };
+  }, [streamUrl]);
 
   if (!isOpen) return null;
 
-  // Use seekTime for smooth dragging, otherwise use currentTime
   const displayTime = isSeeking && seekTime !== null ? seekTime : currentTime;
   const progress = duration > 0 ? (displayTime / duration) * 100 : 0;
 
-  // Check if we're in intro time range
   const introInfo = introInformation || selectedStreamData.intro_info;
   const isInIntroRange =
     introInfo &&
@@ -589,24 +554,26 @@ export default function VideoPlayerModal({
   const controlsVisible = showControls && !isLoading && !error;
 
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-950" ref={containerRef}>
-      {/* Video Container */}
+    <div className="fixed inset-0 z-50 bg-neutral-950 player-safe-chrome" ref={containerRef}>
       <div
         ref={playerAreaRef}
         className="relative w-full h-full flex items-center justify-center"
-        onWheel={(e) => {
-          e.preventDefault();
-          if (videoRef.current) {
-            const delta = e.deltaY > 0 ? -0.05 : 0.05;
-            const newVolume = Math.max(0, Math.min(1, videoRef.current.volume + delta));
-            videoRef.current.volume = newVolume;
-            setVolume(newVolume);
-            setIsMuted(newVolume === 0);
-          }
-        }}
+        onWheel={
+          isTouchPlayer
+            ? undefined
+            : (e) => {
+                e.preventDefault();
+                if (videoRef.current) {
+                  const delta = e.deltaY > 0 ? -0.05 : 0.05;
+                  const newVolume = Math.max(0, Math.min(1, videoRef.current.volume + delta));
+                  videoRef.current.volume = newVolume;
+                  setVolume(newVolume);
+                  setIsMuted(newVolume === 0);
+                }
+              }
+        }
       >
-        {/* Video Player Component */}
-        {streamUrl && isOpen && (
+        {streamUrl && (
           <VideoPlayer
             key={streamUrl}
             streamUrl={streamUrl}
@@ -619,117 +586,172 @@ export default function VideoPlayerModal({
             initialSeekTime={capturedSeekTime}
             shouldAutoPlay={capturedSeekTime !== null ? wasPlayingBeforeTrackChange : true}
             onClick={handleVideoClick}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleFullscreen();
-            }}
+            onDoubleClick={
+              isTouchPlayer
+                ? undefined
+                : (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFullscreen();
+                  }
+            }
           />
         )}
 
-        {/* Skip Intro Button */}
-        {isInIntroRange && !isLoading && !error && <SkipIntroButton onSkip={handleSkipIntro} />}
-
-        {/* Loading Overlay */}
-        {isLoading && !error && <LoadingOverlay />}
-
-        {/* Error Overlay */}
-        {error && <ErrorOverlay error={error} onRetry={handleErrorRetry} />}
-
-        {/* Close Button */}
-        {!isLoading && !error && (
-          <button
-            type="button"
-            onClick={onClose}
-            className={`group absolute top-4 right-4 z-30
-              size-10 flex items-center justify-center
-              rounded-full
-              bg-black/40 hover:bg-black/70
-              backdrop-blur-sm hover:backdrop-blur-md
-              text-white/90 hover:text-white
-              transition-all duration-300 ease-out
-              hover:scale-110 active:scale-95
-              border border-white/10 hover:border-white/30
-              shadow-lg hover:shadow-xl
-              focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
-              ${controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-            aria-label="Close"
-            tabIndex={controlsVisible ? 0 : -1}
-          >
-            <X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
-          </button>
+        {seekFeedback && (
+          <SeekFeedback
+            side={seekFeedback.side}
+            seconds={seekFeedback.seconds}
+            onDone={() => setSeekFeedback(null)}
+          />
         )}
 
-        {/* Info Overlay */}
-        <VideoInfoOverlay
-          isOpen={showInfo}
-          onClose={() => setShowInfo(false)}
-          metadata={metadata}
-          fileName={fileName}
-          audios={audios}
-          subtitles={subtitles}
-        />
+        {isInIntroRange && !isLoading && !error && <SkipIntroButton onSkip={handleSkipIntro} />}
 
-        {/* Controls Overlay */}
-        {!isLoading && !error && (
-          <VideoControls
+        {isLoading && !error && <LoadingOverlay />}
+        {error && <ErrorOverlay error={error} onRetry={handleErrorRetry} />}
+
+        {!isTouchPlayer && (
+          <VideoInfoOverlay
+            isOpen={showInfo}
+            onClose={() => setShowInfo(false)}
+            metadata={metadata}
+            fileName={fileName}
+            audios={audios}
+            subtitles={subtitles}
+          />
+        )}
+
+        {!isLoading && !error && !isTouchPlayer && (
+          <>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`group absolute top-4 right-4 z-30
+                size-10 flex items-center justify-center
+                rounded-full
+                bg-black/40 hover:bg-black/70
+                backdrop-blur-sm hover:backdrop-blur-md
+                text-white/90 hover:text-white
+                transition-all duration-300 ease-out
+                hover:scale-110 active:scale-95
+                border border-white/10 hover:border-white/30
+                shadow-lg hover:shadow-xl
+                focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
+                ${controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+              aria-label={t('close')}
+              tabIndex={controlsVisible ? 0 : -1}
+            >
+              <X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
+            </button>
+            <DesktopVideoControls
+              isVisible={controlsVisible}
+              currentTime={displayTime}
+              duration={duration}
+              progress={progress}
+              isPlaying={isPlaying}
+              isSeeking={isSeeking}
+              volume={volume}
+              isMuted={isMuted}
+              showVolumeSlider={showVolumeSlider}
+              audios={audios}
+              subtitles={subtitles}
+              selectedAudioIndex={selectedAudioIndex}
+              selectedSubtitleIndex={selectedSubtitleIndex}
+              showAudioMenu={showAudioMenu}
+              showSubtitleMenu={showSubtitleMenu}
+              playbackSpeed={playbackSpeed}
+              showPlaybackSpeedMenu={showPlaybackSpeedMenu}
+              onPlayPause={handlePlayPause}
+              onRewind={handleRewind}
+              onForward={handleForward}
+              onSeek={handleSeek}
+              onSeekStart={handleSeekbarMouseDown}
+              onVolumeChange={handleVolumeChange}
+              onMuteToggle={handleMuteToggle}
+              onVolumeSliderShow={() => setShowVolumeSlider(true)}
+              onVolumeSliderHide={() => setShowVolumeSlider(false)}
+              onAudioSelect={handleAudioTrackSelect}
+              onSubtitleSelect={handleSubtitleTrackSelect}
+              onAudioMenuToggle={(open) =>
+                setShowAudioMenu(open !== undefined ? open : !showAudioMenu)
+              }
+              onSubtitleMenuToggle={(open) =>
+                setShowSubtitleMenu(open !== undefined ? open : !showSubtitleMenu)
+              }
+              onPlaybackSpeedChange={handlePlaybackSpeedChange}
+              onPlaybackSpeedMenuToggle={(open) =>
+                setShowPlaybackSpeedMenu(open !== undefined ? open : !showPlaybackSpeedMenu)
+              }
+              onInfoToggle={() => setShowInfo(!showInfo)}
+              onFullscreen={toggleFullscreen}
+              isFullscreen={isFullscreen}
+              audioMenuRef={audioMenuRef}
+              subtitleMenuRef={subtitleMenuRef}
+              playbackSpeedMenuRef={playbackSpeedMenuRef}
+              volumeRef={volumeRef}
+              seekBarRef={seekBarRef}
+              controlsBarRef={controlsBarRef}
+            />
+          </>
+        )}
+
+        {!isLoading && !error && isTouchPlayer && (
+          <MobilePlayerChrome
+            formFactor={formFactor}
+            fileName={fileName}
             isVisible={controlsVisible}
+            onClose={onClose}
             currentTime={displayTime}
             duration={duration}
             progress={progress}
             isPlaying={isPlaying}
             isSeeking={isSeeking}
-            volume={volume}
-            isMuted={isMuted}
-            showVolumeSlider={showVolumeSlider}
+            previewTime={seekTime}
+            seekBarRef={seekBarRef}
+            controlsBarRef={controlsBarRef}
+            onSeekPointerDown={handleSeekPointerDown}
+            onSeekPointerMove={handleSeekPointerMove}
+            onSeekPointerUp={handleSeekPointerUp}
+            onSeekClick={handleSeekClick}
+            onPlayPause={handlePlayPause}
+            onSeekBack={handleSeekBack10}
+            onSeekForward={handleSeekForward10}
+            showSettingsSheet={showSettingsSheet}
+            onOpenSettings={() => setShowSettingsSheet(true)}
+            onCloseSettings={() => setShowSettingsSheet(false)}
+            playbackSpeed={playbackSpeed}
+            onPlaybackSpeedChange={handlePlaybackSpeedChange}
             audios={audios}
             subtitles={subtitles}
             selectedAudioIndex={selectedAudioIndex}
             selectedSubtitleIndex={selectedSubtitleIndex}
-            showAudioMenu={showAudioMenu}
-            showSubtitleMenu={showSubtitleMenu}
-            playbackSpeed={playbackSpeed}
-            showPlaybackSpeedMenu={showPlaybackSpeedMenu}
-            onPlayPause={handlePlayPause}
-            onRewind={handleRewind}
-            onForward={handleForward}
-            onSeek={handleSeek}
-            onSeekStart={handleSeekbarMouseDown}
-            onVolumeChange={handleVolumeChange}
-            onMuteToggle={handleMuteToggle}
-            onVolumeSliderShow={() => setShowVolumeSlider(true)}
-            onVolumeSliderHide={() => setShowVolumeSlider(false)}
             onAudioSelect={handleAudioTrackSelect}
             onSubtitleSelect={handleSubtitleTrackSelect}
-            onAudioMenuToggle={(open) =>
-              setShowAudioMenu(open !== undefined ? open : !showAudioMenu)
-            }
-            onSubtitleMenuToggle={(open) =>
-              setShowSubtitleMenu(open !== undefined ? open : !showSubtitleMenu)
-            }
-            onPlaybackSpeedChange={handlePlaybackSpeedChange}
-            onPlaybackSpeedMenuToggle={(open) =>
-              setShowPlaybackSpeedMenu(open !== undefined ? open : !showPlaybackSpeedMenu)
-            }
-            onInfoToggle={() => setShowInfo(!showInfo)}
-            onFullscreen={handleFullscreen}
+            volume={volume}
+            isMuted={isMuted}
+            onVolumeChange={handleVolumeChange}
+            onMuteToggle={handleMuteToggle}
+            showInfoSheet={showInfoSheet}
+            onOpenInfo={() => {
+              setShowSettingsSheet(false);
+              setShowInfoSheet(true);
+            }}
+            onCloseInfo={() => setShowInfoSheet(false)}
+            metadata={metadata}
+            onFullscreen={toggleFullscreen}
             isFullscreen={isFullscreen}
-            audioMenuRef={audioMenuRef}
-            subtitleMenuRef={subtitleMenuRef}
-            playbackSpeedMenuRef={playbackSpeedMenuRef}
-            controlsBarRef={controlsBarRef}
           />
         )}
 
-        {/* Video Title Overlay */}
-        {!isLoading && !error && fileName && (
+        {!isLoading && !error && !isTouchPlayer && fileName && (
           <div
             className={`absolute top-4 left-4 z-20 px-4 py-2 mr-2 rounded-lg
             bg-black/60 backdrop-blur-md text-white
             border border-white/20 transition-opacity duration-300
             ${controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
-            <p className="text-sm font-medium">{fileName}</p>
+            <p className="text-sm font-medium truncate max-w-[50vw]">{fileName}</p>
           </div>
         )}
       </div>
