@@ -12,7 +12,7 @@ import FiltersSidebarSearch from './FiltersSidebarSearch';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 import useFiltersSidebarSectionsCollapsed from './useFiltersSidebarSectionsCollapsed';
 
-function SectionChevron({ expanded, className = 'size-3' }) {
+function SectionChevron({ expanded, className = '' }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -20,9 +20,9 @@ function SectionChevron({ expanded, className = 'size-3' }) {
       viewBox="0 0 24 24"
       strokeWidth={2.25}
       stroke="currentColor"
-      className={`${className} shrink-0 transition-transform duration-200 ease-out ${
+      className={`size-3 shrink-0 transition-transform duration-200 ease-out ${
         expanded ? '' : '-rotate-90'
-      }`}
+      } ${className}`}
       aria-hidden
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
