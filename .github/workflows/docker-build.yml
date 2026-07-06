@@ -177,7 +177,7 @@ jobs:
           cache-from: type=gha,scope=frontend-${{ matrix.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-            BUN_VERSION=latest
+            BUN_VERSION=1.3.14
           # OCI image labels for metadata (visible in container registries)
           labels: |
             org.opencontainers.image.title=TorBox Frontend
@@ -211,7 +211,7 @@ jobs:
           cache-from: type=gha,scope=backend-${{ matrix.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-            BUN_VERSION=latest
+            BUN_VERSION=1.3.14
           # OCI image labels for metadata
           labels: |
             org.opencontainers.image.title=TorBox Backend
