@@ -12,6 +12,7 @@ import {
   writeViewIdToParams,
   writeTagIdsToParams,
   writeTrackersToParams,
+  writeSourcesToParams,
   parseAppliedFiltersFromParams,
   writeAppliedFiltersToParams,
 } from '@/utils/downloadsFilterUrlCodec';
@@ -39,6 +40,8 @@ export const DOWNLOADS_FILTER_PARAM_KEYS = [
   'tags',
   'tracker',
   'trackers',
+  'source',
+  'sources',
   'view',
   'views',
 ];
@@ -97,7 +100,7 @@ function writeStatusFilterToParams(params, value) {
  * Skip only when the same patch selects a saved view or tag shortcut (those encode
  * filters via `view` / `tag` params). Clearing view/tag with explicit null/empty must
  * still write filters (e.g. custom view preview).
- * @param {{ appliedFilters?: object, viewId?: number|string|null, viewIds?: (number|string)[]|null, tagIds?: number[]|null, trackerUrls?: string[]|null }} patch
+ * @param {{ appliedFilters?: object, viewId?: number|string|null, viewIds?: (number|string)[]|null, tagIds?: number[]|null, trackerUrls?: string[]|null, sourceHosts?: string[]|null }} patch
  */
 export function shouldWriteAppliedFiltersInCriteriaPatch(patch) {
   if (patch.appliedFilters === undefined) return false;
@@ -105,6 +108,7 @@ export function shouldWriteAppliedFiltersInCriteriaPatch(patch) {
   if (patch.viewId != null) return false;
   if (patch.tagIds != null && patch.tagIds.length > 0) return false;
   if (patch.trackerUrls != null && patch.trackerUrls.length > 0) return false;
+  if (patch.sourceHosts != null && patch.sourceHosts.length > 0) return false;
   return true;
 }
 
@@ -220,6 +224,7 @@ export function useDownloadsFilterParams() {
    *   viewIds?: (number|string)[]|null,
    *   tagIds?: number[]|null,
    *   trackerUrls?: string[]|null,
+   *   sourceHosts?: string[]|null,
    * }} patch
    */
   const patchFilterCriteria = useCallback(
@@ -268,6 +273,14 @@ export function useDownloadsFilterParams() {
           } else {
             params.delete('tracker');
             params.delete('trackers');
+          }
+        }
+        if (patch.sourceHosts !== undefined) {
+          if (patch.sourceHosts != null && patch.sourceHosts.length > 0) {
+            writeSourcesToParams(params, patch.sourceHosts);
+          } else {
+            params.delete('source');
+            params.delete('sources');
           }
         }
         if (shouldWriteAppliedFiltersInCriteriaPatch(patch)) {

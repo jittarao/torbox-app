@@ -6,14 +6,18 @@ import {
   writeViewIdsToParams,
   parseTrackersFromParams,
   writeTrackersToParams,
+  parseSourcesFromParams,
+  writeSourcesToParams,
   parseAppliedFiltersFromParams,
   writeAppliedFiltersToParams,
 } from '@/utils/downloadsFilterUrlCodec';
 import {
   buildTagFilter,
   buildTrackerFilter,
+  buildSourceFilter,
   getActiveTagIds,
   getActiveTrackers,
+  getActiveSources,
 } from '@/components/downloads/filters/filterHelpers';
 
 describe('downloadsFilterUrlCodec tag params', () => {
@@ -108,5 +112,54 @@ describe('downloadsFilterUrlCodec tracker params', () => {
     const ok = writeAppliedFiltersToParams(params, filters, storage);
     expect(ok).toBe(true);
     expect(parseTrackersFromParams(params)).toEqual([urlA, urlB]);
+  });
+});
+
+describe('downloadsFilterUrlCodec source params', () => {
+  const hostA = 'pixeldrain.com';
+  const hostB = 'drive.google.com';
+
+  test('parseSourcesFromParams reads single source param', () => {
+    const params = new URLSearchParams({ source: hostA });
+    expect(parseSourcesFromParams(params)).toEqual([hostA]);
+  });
+
+  test('parseSourcesFromParams reads pipe-delimited sources param', () => {
+    const params = new URLSearchParams({
+      sources: `${encodeURIComponent(hostA)}|${encodeURIComponent(hostB)}`,
+    });
+    expect(parseSourcesFromParams(params)).toEqual([hostA, hostB]);
+  });
+
+  test('writeSourcesToParams round-trips single and multi sources', () => {
+    const single = new URLSearchParams();
+    writeSourcesToParams(single, [hostA]);
+    expect(single.get('source')).toBe(hostA);
+    expect(single.get('sources')).toBeNull();
+
+    const multi = new URLSearchParams();
+    writeSourcesToParams(multi, [hostA, hostB]);
+    expect(multi.get('sources')).toBe(`${encodeURIComponent(hostA)}|${encodeURIComponent(hostB)}`);
+    expect(multi.get('source')).toBeNull();
+  });
+
+  test('parseAppliedFiltersFromParams prefers source shortcut after tracker', () => {
+    const params = new URLSearchParams({ source: hostA });
+    const filters = parseAppliedFiltersFromParams(params);
+    expect(getActiveSources(filters)).toEqual([hostA]);
+  });
+
+  test('writeAppliedFiltersToParams uses source shortcut for source-only filters', () => {
+    const params = new URLSearchParams();
+    const storage = {
+      maxLength: 1800,
+      overflowKey: 'test-overflow',
+      setJSON: () => {},
+      removeItem: () => {},
+    };
+    const filters = buildSourceFilter([hostA, hostB]);
+    const ok = writeAppliedFiltersToParams(params, filters, storage);
+    expect(ok).toBe(true);
+    expect(parseSourcesFromParams(params)).toEqual([hostA, hostB]);
   });
 });

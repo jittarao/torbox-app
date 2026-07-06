@@ -78,6 +78,15 @@ describe('shouldWriteAppliedFiltersInCriteriaPatch', () => {
     ).toBe(false);
   });
 
+  test('skips filters when selecting source shortcut', () => {
+    expect(
+      shouldWriteAppliedFiltersInCriteriaPatch({
+        sourceHosts: ['pixeldrain.com'],
+        appliedFilters: sampleFilters,
+      })
+    ).toBe(false);
+  });
+
   test('writes filters when only appliedFilters is present', () => {
     expect(shouldWriteAppliedFiltersInCriteriaPatch({ appliedFilters: sampleFilters })).toBe(true);
   });
