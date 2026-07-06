@@ -590,6 +590,13 @@ select option {
     z-index: calc(var(--z-overlay-popover) - 1);
   }
 
+  .player-safe-chrome {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   /* Subtle scrollbars for narrow panels (filters sidebar, modals, etc.) */
   .ui-scrollbar {
     scrollbar-width: thin;

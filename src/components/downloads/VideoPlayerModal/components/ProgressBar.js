@@ -1,24 +1,25 @@
 'use client';
 
+import { forwardRef } from 'react';
+
 /**
  * ProgressBar - Video progress bar with seeking capability
- * @param {Object} props
- * @param {number} props.progress - Progress percentage (0-100)
- * @param {boolean} props.isSeeking - Whether user is currently seeking
- * @param {Function} props.onSeek - Callback when user clicks on progress bar
- * @param {Function} props.onSeekStart - Callback when user starts dragging
  */
-export default function ProgressBar({ progress, isSeeking, onSeek, onSeekStart }) {
+const ProgressBar = forwardRef(function ProgressBar(
+  { progress, isSeeking, onSeek, onSeekStart },
+  ref
+) {
   return (
     <button
       type="button"
+      ref={ref}
       data-seekbar
-      className="w-full h-1.5 bg-white/20 cursor-pointer group pointer-events-auto"
+      className="w-full h-1.5 bg-white/20 cursor-pointer group pointer-events-auto touch-manipulation"
       onClick={(e) => {
         e.stopPropagation();
         onSeek(e);
       }}
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
         e.stopPropagation();
         onSeekStart(e);
       }}
@@ -44,4 +45,6 @@ export default function ProgressBar({ progress, isSeeking, onSeek, onSeekStart }
       </div>
     </button>
   );
-}
+});
+
+export default ProgressBar;

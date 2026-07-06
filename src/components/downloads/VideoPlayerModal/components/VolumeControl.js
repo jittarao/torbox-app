@@ -12,6 +12,7 @@ import { useRef, useEffect } from 'react';
  * @param {Function} props.onMuteToggle - Callback when mute button is clicked
  * @param {Function} props.onSliderShow - Callback to show slider
  * @param {Function} props.onSliderHide - Callback to hide slider
+ * @param {React.RefObject<HTMLElement | null>} [props.containerRef] - Optional external ref for hover detection
  */
 export default function VolumeControl({
   volume,
@@ -21,8 +22,10 @@ export default function VolumeControl({
   onMuteToggle,
   onSliderShow,
   onSliderHide,
+  containerRef,
 }) {
-  const volumeRef = useRef(null);
+  const internalRef = useRef(null);
+  const volumeRef = containerRef || internalRef;
   const timeoutRef = useRef(null);
 
   useEffect(() => {

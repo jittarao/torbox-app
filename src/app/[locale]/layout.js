@@ -50,6 +50,7 @@ export const viewport = {
   maximumScale: 5,
   userScalable: true,
   themeColor: '#000000',
+  viewportFit: 'cover',
 };
 
 export function generateStaticParams() {
