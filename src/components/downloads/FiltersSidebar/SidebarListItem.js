@@ -26,6 +26,8 @@ export default function SidebarListItem({
   onMenuToggle,
   ariaLabel,
   title,
+  leading = null,
+  disabled = false,
 }) {
   const menuButtonRef = useRef(null);
 
@@ -40,10 +42,13 @@ export default function SidebarListItem({
       <button
         type="button"
         onClick={onClick}
+        disabled={disabled}
         aria-label={ariaLabel || label}
         aria-pressed={isActive}
         title={title}
         className={`flex-1 min-w-0 flex items-center gap-2 py-1.5 pl-2 pr-1 text-left text-xs transition-colors ${
+          disabled ? 'cursor-not-allowed opacity-50' : ''
+        } ${
           isActive
             ? 'text-accent dark:text-accent-dark'
             : 'text-primary-text dark:text-primary-text-dark'
@@ -59,6 +64,7 @@ export default function SidebarListItem({
         >
           {isActive && <ActiveCheckIcon className="size-2.5" />}
         </span>
+        {leading}
         <span className="truncate font-medium">{label}</span>
         {count != null && count > 0 && (
           <span
