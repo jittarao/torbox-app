@@ -4,9 +4,10 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useTags } from '@/components/shared/hooks/useTags';
-import SidebarListItem from './SidebarListItem';
 import SidebarOverflowMenu from './SidebarOverflowMenu';
 import TrackerSidebarSection from './TrackerSidebarSection';
+import TagSidebarSection from './TagSidebarSection';
+import ViewSidebarSection from './ViewSidebarSection';
 import FiltersSidebarSearch from './FiltersSidebarSearch';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
@@ -173,13 +174,16 @@ export default function FiltersSidebar({
   apiKey,
   views,
   activeView,
+  activeViewIds = [],
   tags,
   activeAssetType = 'all',
   activeTagIds,
   activeTrackers = [],
   onApplyView,
+  onClearViews,
   onClearView,
   onApplyTag,
+  onClearTags,
   onApplyTracker,
   onClearTrackers,
   onEditView,
@@ -211,13 +215,9 @@ export default function FiltersSidebar({
 
   const { tagCounts, viewCounts } = useFiltersSidebarCounts(activeAssetType, views);
 
-  const activeTagSet = useMemo(
-    () => new Set((activeTagIds || []).map((id) => Number(id))),
-    [activeTagIds]
-  );
-
   const showTrackerSection = activeAssetType === 'all' || activeAssetType === 'torrents';
-  const trackerFilterLocked = Boolean(activeView);
+  const viewFilterLocked = activeViewIds.length > 0;
+  const trackerFilterLocked = viewFilterLocked;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
   const filteredViews = useMemo(
@@ -238,19 +238,18 @@ export default function FiltersSidebar({
     return null;
   }, [views.length, filteredViews.length, hasSearchQuery, searchQuery, t]);
 
-  const tagsEmptyMessage = useMemo(() => {
-    if (tags.length === 0) return t('noTags');
-    if (hasSearchQuery && filteredTags.length === 0) {
-      return t('noTagMatches', { query: searchQuery.trim() });
-    }
-    return null;
-  }, [tags.length, filteredTags.length, hasSearchQuery, searchQuery, t]);
+  const tagsEmptyMessage =
+    tags.length === 0
+      ? null
+      : hasSearchQuery && filteredTags.length === 0
+        ? t('noTagMatches', { query: searchQuery.trim() })
+        : null;
 
   const handleDeleteView = async (viewId, viewName) => {
     if (!window.confirm(t('confirmDeleteView', { name: viewName }))) return;
     try {
       await deleteView(viewId);
-      if (activeView?.id === viewId) onClearView();
+      if (activeViewIds.some((id) => String(id) === String(viewId))) onClearView();
     } catch (error) {
       alert(t('deleteViewFailed', { error: error.message }));
     }
@@ -307,53 +306,50 @@ export default function FiltersSidebar({
           tall={sectionTall}
           sheet={isSheet}
         >
-          {filteredViews.map((view) => {
-            const menuKey = `view-${view.id}`;
-            const viewIsActive =
-              activeView?.id != null && String(activeView.id) === String(view.id);
-            const viewMenuItems = [
-              {
-                id: 'apply',
-                label: viewIsActive ? t('menuClear') : t('menuApply'),
-                onClick: () => onApplyView(view),
-              },
-              {
-                id: 'edit',
-                label: t('menuEdit'),
-                onClick: () => onEditView(view),
-              },
-              {
-                id: 'rename',
-                label: t('menuRename'),
-                onClick: () => onRenameView(view),
-              },
-              {
-                id: 'delete',
-                label: t('menuDelete'),
-                destructive: true,
-                onClick: () => handleDeleteView(view.id, view.name),
-              },
-            ];
-
-            return (
-              <SidebarListItem
-                key={view.id}
-                label={view.name}
-                count={viewCounts[view.id]}
-                isActive={viewIsActive}
-                title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-                onClick={() => onApplyView(view)}
-                isMenuOpen={overflowMenu?.key === menuKey}
-                onMenuToggle={(open, anchorRef) => {
+          <ViewSidebarSection
+            views={views}
+            viewCounts={viewCounts}
+            searchQuery={searchQuery}
+            activeViewIds={activeViewIds}
+            onApplyView={onApplyView}
+            onClearViews={onClearViews}
+            renderItemMenu={(view, viewIsActive) => {
+              const menuKey = `view-${view.id}`;
+              const viewMenuItems = [
+                {
+                  id: 'apply',
+                  label: viewIsActive ? t('menuClear') : t('menuApply'),
+                  onClick: () => onApplyView(view),
+                },
+                {
+                  id: 'edit',
+                  label: t('menuEdit'),
+                  onClick: () => onEditView(view),
+                },
+                {
+                  id: 'rename',
+                  label: t('menuRename'),
+                  onClick: () => onRenameView(view),
+                },
+                {
+                  id: 'delete',
+                  label: t('menuDelete'),
+                  destructive: true,
+                  onClick: () => handleDeleteView(view.id, view.name),
+                },
+              ];
+              return {
+                isMenuOpen: overflowMenu?.key === menuKey,
+                onMenuToggle: (open, anchorRef) => {
                   if (!open) {
                     closeOverflowMenu();
                     return;
                   }
                   openOverflowMenu(menuKey, anchorRef, viewMenuItems);
-                }}
-              />
-            );
-          })}
+                },
+              };
+            }}
+          />
         </SidebarSection>
 
         <SidebarSection
@@ -364,47 +360,46 @@ export default function FiltersSidebar({
           tall={sectionTall}
           sheet={isSheet}
         >
-          {filteredTags.map((tag) => {
-            const menuKey = `tag-${tag.id}`;
-            const tagIsActive = activeTagSet.has(Number(tag.id)) && !activeView;
-            const tagMenuItems = [
-              {
-                id: 'apply',
-                label: tagIsActive ? t('menuClear') : t('menuApply'),
-                onClick: () => onApplyTag(tag.id),
-              },
-              {
-                id: 'rename',
-                label: t('menuRename'),
-                onClick: () => onRenameTag(tag),
-              },
-              {
-                id: 'delete',
-                label: t('menuDelete'),
-                destructive: true,
-                onClick: () => handleDeleteTagItem(tag.id, tag.name),
-              },
-            ];
-
-            return (
-              <SidebarListItem
-                key={tag.id}
-                label={tag.name}
-                count={tagCounts[tag.id]}
-                isActive={tagIsActive}
-                title={tagIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-                onClick={() => onApplyTag(tag.id)}
-                isMenuOpen={overflowMenu?.key === menuKey}
-                onMenuToggle={(open, anchorRef) => {
+          <TagSidebarSection
+            tags={tags}
+            tagCounts={tagCounts}
+            searchQuery={searchQuery}
+            activeTagIds={activeTagIds}
+            onApplyTag={onApplyTag}
+            onClearTags={onClearTags}
+            disabled={trackerFilterLocked}
+            renderItemMenu={(tag, tagIsActive) => {
+              const menuKey = `tag-${tag.id}`;
+              const tagMenuItems = [
+                {
+                  id: 'apply',
+                  label: tagIsActive ? t('menuClear') : t('menuApply'),
+                  onClick: () => onApplyTag(tag.id),
+                },
+                {
+                  id: 'rename',
+                  label: t('menuRename'),
+                  onClick: () => onRenameTag(tag),
+                },
+                {
+                  id: 'delete',
+                  label: t('menuDelete'),
+                  destructive: true,
+                  onClick: () => handleDeleteTagItem(tag.id, tag.name),
+                },
+              ];
+              return {
+                isMenuOpen: overflowMenu?.key === menuKey,
+                onMenuToggle: (open, anchorRef) => {
                   if (!open) {
                     closeOverflowMenu();
                     return;
                   }
                   openOverflowMenu(menuKey, anchorRef, tagMenuItems);
-                }}
-              />
-            );
-          })}
+                },
+              };
+            }}
+          />
         </SidebarSection>
 
         {showTrackerSection && (
