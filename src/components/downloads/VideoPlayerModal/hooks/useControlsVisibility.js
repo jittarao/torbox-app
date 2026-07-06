@@ -1,11 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 
 const IDLE_HIDE_MS = 2500;
+const POINTER_MOVE_THROTTLE_MS = 100;
 
 /**
- * useControlsVisibility - Auto-hide video controls like mainstream players.
- * Shows on pointer activity inside the player, hides after idle while playing,
- * and hides immediately when the pointer leaves the player or browser window.
+ * Auto-hide video controls. Touch-aware on mobile; pointer-hover on desktop.
  */
 export function useControlsVisibility({
   isOpen,
@@ -19,17 +18,26 @@ export function useControlsVisibility({
   showAudioMenu = false,
   showSubtitleMenu = false,
   showPlaybackSpeedMenu = false,
+  showSettingsSheet = false,
+  showInfoSheet = false,
   volumeRef = null,
   audioMenuRef = null,
   subtitleMenuRef = null,
   playbackSpeedMenuRef = null,
+  isTouchPlayer = false,
 }) {
   const hideTimeoutRef = useRef(null);
   const isHoveringControlsRef = useRef(false);
+  const lastPointerMoveRef = useRef(0);
   const stateRef = useRef({ isPlaying, hasOpenMenu: false, isSeeking: false });
 
   const hasOpenMenu =
-    showVolumeSlider || showAudioMenu || showSubtitleMenu || showPlaybackSpeedMenu;
+    showVolumeSlider ||
+    showAudioMenu ||
+    showSubtitleMenu ||
+    showPlaybackSpeedMenu ||
+    showSettingsSheet ||
+    showInfoSheet;
 
   stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
 
@@ -113,7 +121,15 @@ export function useControlsVisibility({
     setShowControls(false);
   }, [clearHideTimeout, setShowControls]);
 
-  // Keep controls visible while paused or seeking.
+  const toggleControls = useCallback(() => {
+    setShowControls((prev) => {
+      const next = !prev;
+      if (next) scheduleHide();
+      else clearHideTimeout();
+      return next;
+    });
+  }, [setShowControls, scheduleHide, clearHideTimeout]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -130,7 +146,6 @@ export function useControlsVisibility({
     return clearHideTimeout;
   }, [isOpen, isPlaying, isSeeking, hasOpenMenu, clearHideTimeout, scheduleHide, setShowControls]);
 
-  // Keep controls visible while a menu is open; resume idle hide when menus close.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -153,7 +168,6 @@ export function useControlsVisibility({
     setShowControls,
   ]);
 
-  // Pointer + window leave listeners on the player surface.
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -161,6 +175,12 @@ export function useControlsVisibility({
     if (!player) return undefined;
 
     const handlePointerMove = (e) => {
+      if (isTouchPlayer) {
+        const now = Date.now();
+        if (now - lastPointerMoveRef.current < POINTER_MOVE_THROTTLE_MS) return;
+        lastPointerMoveRef.current = now;
+      }
+
       const overControls = isPointerOverInteractiveControls(e.clientX, e.clientY);
       isHoveringControlsRef.current = overControls;
 
@@ -170,25 +190,28 @@ export function useControlsVisibility({
         return;
       }
 
-      revealControls();
+      if (!isTouchPlayer) {
+        revealControls();
+      }
     };
 
     const handlePointerLeave = () => {
       isHoveringControlsRef.current = false;
-      hideControlsNow();
+      if (!isTouchPlayer) {
+        hideControlsNow();
+      }
     };
 
     const handleDocumentMouseOut = (e) => {
-      // Fires when the pointer leaves the browser window (relatedTarget is null).
       if (e.relatedTarget === null) {
         isHoveringControlsRef.current = false;
-        hideControlsNow();
+        if (!isTouchPlayer) hideControlsNow();
       }
     };
 
     const handleWindowBlur = () => {
       isHoveringControlsRef.current = false;
-      hideControlsNow();
+      if (!isTouchPlayer) hideControlsNow();
     };
 
     player.addEventListener('pointermove', handlePointerMove);
@@ -213,7 +236,8 @@ export function useControlsVisibility({
     hideControlsNow,
     clearHideTimeout,
     setShowControls,
+    isTouchPlayer,
   ]);
 
-  return { revealControls, hideControlsNow };
+  return { revealControls, hideControlsNow, toggleControls };
 }
