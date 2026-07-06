@@ -316,7 +316,7 @@ export default function FiltersSidebar({
         <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
       )}
       <FiltersSidebarSearch value={searchQuery} onChange={setSearchQuery} />
-      <div className="min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
+      <div className="ui-scrollbar min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
         <SidebarSection
           title={t('viewsSection')}
           onAdd={onNewView}
