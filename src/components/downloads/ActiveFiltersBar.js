@@ -5,9 +5,12 @@ import { useTranslations } from 'next-intl';
 import {
   countActiveConditions,
   getActiveTagIds,
+  getActiveTrackers,
   hasActiveFilters,
   isTagOnlyFilter,
+  isTrackerOnlyFilter,
 } from './filters/filterHelpers';
+import { formatTrackerLabel } from './filters/trackerDisplay';
 
 export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onClear, onEdit }) {
   const t = useTranslations('DownloadsFilters');
@@ -27,6 +30,14 @@ export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onC
       if (tag) return t('activeTag', { name: tag.name });
     }
 
+    const trackers = getActiveTrackers(appliedFilters);
+    if (trackers?.length === 1) {
+      return t('activeTracker', { name: formatTrackerLabel(trackers[0]) });
+    }
+    if (trackers && trackers.length > 1) {
+      return t('activeTrackers', { count: trackers.length });
+    }
+
     const count = countActiveConditions(appliedFilters);
     if (count > 0) return t('activeConditions', { count });
     return null;
@@ -35,7 +46,8 @@ export default function ActiveFiltersBar({ appliedFilters, activeView, tags, onC
   if (!hasActiveFilters(appliedFilters) && !activeView) return null;
   if (!summary) return null;
 
-  const showEdit = activeView || !isTagOnlyFilter(appliedFilters);
+  const showEdit =
+    activeView || (!isTagOnlyFilter(appliedFilters) && !isTrackerOnlyFilter(appliedFilters));
 
   return (
     <div className="flex items-center gap-2 px-2 py-1.5 mb-1 text-xs rounded-md border border-accent/30 dark:border-accent-dark/30 bg-accent/5 dark:bg-accent-dark/5">

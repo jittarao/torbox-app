@@ -10,6 +10,7 @@ import {
   parseViewIdParam,
   writeViewIdToParams,
   writeTagIdsToParams,
+  writeTrackersToParams,
   parseAppliedFiltersFromParams,
   writeAppliedFiltersToParams,
 } from '@/utils/downloadsFilterUrlCodec';
@@ -35,6 +36,8 @@ export const DOWNLOADS_FILTER_PARAM_KEYS = [
   'filters',
   'tag',
   'tags',
+  'tracker',
+  'trackers',
   'view',
 ];
 
@@ -90,12 +93,13 @@ function writeStatusFilterToParams(params, value) {
  * Skip only when the same patch selects a saved view or tag shortcut (those encode
  * filters via `view` / `tag` params). Clearing view/tag with explicit null/empty must
  * still write filters (e.g. custom view preview).
- * @param {{ appliedFilters?: object, viewId?: number|string|null, tagIds?: number[]|null }} patch
+ * @param {{ appliedFilters?: object, viewId?: number|string|null, tagIds?: number[]|null, trackerUrls?: string[]|null }} patch
  */
 export function shouldWriteAppliedFiltersInCriteriaPatch(patch) {
   if (patch.appliedFilters === undefined) return false;
   if (patch.viewId != null) return false;
   if (patch.tagIds != null && patch.tagIds.length > 0) return false;
+  if (patch.trackerUrls != null && patch.trackerUrls.length > 0) return false;
   return true;
 }
 
@@ -209,6 +213,7 @@ export function useDownloadsFilterParams() {
    *   appliedFilters?: object,
    *   viewId?: number|string|null,
    *   tagIds?: number[]|null,
+   *   trackerUrls?: string[]|null,
    * }} patch
    */
   const patchFilterCriteria = useCallback(
@@ -241,6 +246,14 @@ export function useDownloadsFilterParams() {
           } else {
             params.delete('tag');
             params.delete('tags');
+          }
+        }
+        if (patch.trackerUrls !== undefined) {
+          if (patch.trackerUrls != null && patch.trackerUrls.length > 0) {
+            writeTrackersToParams(params, patch.trackerUrls);
+          } else {
+            params.delete('tracker');
+            params.delete('trackers');
           }
         }
         if (shouldWriteAppliedFiltersInCriteriaPatch(patch)) {
