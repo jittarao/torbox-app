@@ -851,6 +851,7 @@
       "actions": "Aktionen",
       "expiresAt": "Ablaufdatum",
       "fileName": "Dateiname",
+      "generatedAt": "Generiert am",
       "itemId": "Artikel-ID",
       "itemName": "Artikelname"
     },

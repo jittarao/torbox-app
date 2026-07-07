@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Copy, Download, Times } from '@/components/icons';
+import TimeAgoWithTooltip from '@/components/shared/TimeAgoWithTooltip';
 import { getExpirationDate } from '../utils/formatters';
 
 const LinkHistoryRow = memo(
@@ -49,6 +50,9 @@ const LinkHistoryRow = memo(
         </td>
         <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
           {item.file_name || '-'}
+        </td>
+        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
+          <TimeAgoWithTooltip at={item.generated_at} t={t} />
         </td>
         <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
           {expirationDate}
