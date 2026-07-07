@@ -58,8 +58,8 @@ export function setupLinkHistoryRoutes(app, backend) {
 
         if (search) {
           const searchParam = `%${search}%`;
-          whereParts.push('(item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ?)');
-          params.push(searchParam, searchParam, searchParam);
+          whereParts.push('(item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ? OR url LIKE ?)');
+          params.push(searchParam, searchParam, searchParam, searchParam);
         }
         if (cursor) {
           whereParts.push('(generated_at < ? OR (generated_at = ? AND id < ?))');
@@ -99,16 +99,18 @@ export function setupLinkHistoryRoutes(app, backend) {
 
       if (search) {
         const searchParam = `%${search}%`;
-        countQuery += ' WHERE item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ?';
-        dataQuery += ' WHERE item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ?';
-        queryParams.push(searchParam, searchParam, searchParam);
+        countQuery += ' WHERE item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ? OR url LIKE ?';
+        dataQuery += ' WHERE item_id LIKE ? OR item_name LIKE ? OR file_name LIKE ? OR url LIKE ?';
+        queryParams.push(searchParam, searchParam, searchParam, searchParam);
       }
 
       dataQuery += ' ORDER BY generated_at DESC, id DESC LIMIT ? OFFSET ?';
 
-      // Get total count (search uses 3 params for item_id, item_name, file_name)
+      // Get total count (search uses 4 params for item_id, item_name, file_name, url)
       const totalCount = search
-        ? userDb.db.prepare(countQuery).get(queryParams[0], queryParams[1], queryParams[2])
+        ? userDb.db
+            .prepare(countQuery)
+            .get(queryParams[0], queryParams[1], queryParams[2], queryParams[3])
         : userDb.db.prepare(countQuery).get();
 
       // Get paginated results
