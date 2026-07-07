@@ -844,6 +844,7 @@
       "actions": "Acciones",
       "expiresAt": "Caduca a",
       "fileName": "Nombre del archivo",
+      "generatedAt": "Generado el",
       "itemId": "ID del elemento",
       "itemName": "Nombre del elemento"
     },

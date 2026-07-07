@@ -49,6 +49,9 @@ const LinkHistoryTable = memo(
                 {linkHistoryT('columns.fileName')}
               </th>
               <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[200px] min-w-[200px] max-w-[200px]">
+                {linkHistoryT('columns.generatedAt')}
+              </th>
+              <th className="relative group select-none px-2.5 md:px-3 py-2 text-left text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors w-[200px] min-w-[200px] max-w-[200px]">
                 {linkHistoryT('columns.expiresAt')}
               </th>
               <th className="px-2.5 md:px-3 py-2 text-right text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase sticky right-0 bg-surface-alt dark:bg-surface-alt-dark w-[100px] min-w-[100px] max-w-[150px]">
