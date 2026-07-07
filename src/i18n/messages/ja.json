@@ -861,6 +861,7 @@
       "actions": "アクション",
       "expiresAt": "有効期限",
       "fileName": "ファイル名",
+      "generatedAt": "生成日時",
       "itemId": "アイテムID",
       "itemName": "アイテム名"
     },

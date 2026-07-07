@@ -916,6 +916,7 @@
       "actions": "Actions",
       "expiresAt": "Expires At",
       "fileName": "File Name",
+      "generatedAt": "Generated At",
       "itemId": "Item ID",
       "itemName": "Item Name"
     },

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Archive, Copy, Restore, Times } from '@/components/icons';
 import { useArchive } from '@/hooks/useArchive';
-import { timeAgo } from '@/components/downloads/utils/formatters';
+import TimeAgoWithTooltip from '@/components/shared/TimeAgoWithTooltip';
 import useIsMobile from '@/hooks/useIsMobile';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
@@ -258,7 +258,7 @@ export default function ArchivedDownloads({ apiKey }) {
                     {item.name}
                   </td>
                   <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
-                    {timeAgo(item.archivedAt, t)}
+                    <TimeAgoWithTooltip at={item.archivedAt} t={t} />
                   </td>
                   <td
                     className={`sticky right-0 z-10 flex bg-inherit px-2.5 py-1.5 text-right text-xs font-medium dark:bg-inherit md:px-3 ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-1.5 whitespace-nowrap`}

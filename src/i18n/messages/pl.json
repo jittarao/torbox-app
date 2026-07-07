@@ -849,6 +849,7 @@
       "actions": "Akcje",
       "expiresAt": "Wygasa o",
       "fileName": "Nazwa pliku",
+      "generatedAt": "Wygenerowano",
       "itemId": "ID elementu",
       "itemName": "Nazwa elementu"
     },
