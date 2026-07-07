@@ -48,7 +48,6 @@ export default function UploadManager({ apiKey }) {
     uploads,
     setUploads,
     loading,
-    refreshing,
     error,
     statusCounts,
     uploadStatistics,
@@ -179,7 +178,7 @@ export default function UploadManager({ apiKey }) {
           <BulkActionButton
             variant="primary"
             onClick={() => {
-              fetchUploads();
+              fetchUploads({ silent: true });
               fetchStatusCounts();
             }}
             icon={<Refresh />}
@@ -230,15 +229,7 @@ export default function UploadManager({ apiKey }) {
                 : `No ${activeTab} uploads found`}
             </div>
           ) : (
-            <div
-              className={`relative ${refreshing ? 'opacity-60 pointer-events-none' : ''}`}
-              aria-busy={refreshing}
-            >
-              {refreshing && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center">
-                  <Spinner />
-                </div>
-              )}
+            <div className="relative">
               {activeTab === 'queued' ? (
                 <DndContext
                   sensors={sensors}

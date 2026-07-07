@@ -119,6 +119,8 @@ const LinkHistory = ({ apiKey }) => {
     [selectedLinks.size, history.length]
   );
 
+  const showInitialLoading = loading && history.length === 0;
+
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -157,13 +159,13 @@ const LinkHistory = ({ apiKey }) => {
         </div>
       )}
 
-      {loading && (
+      {showInitialLoading && (
         <div className="flex justify-center py-8">
           <Spinner />
         </div>
       )}
 
-      {!loading && (
+      {!showInitialLoading && (
         <>
           {!backendIsLoading && !isBackendAvailable ? (
             <div className="p-8 text-center text-primary-text/70 dark:text-primary-text-dark/70">
