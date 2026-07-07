@@ -1,10 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
+
+function mergePaginationTotals(prev, next) {
+  if (prev.total === next.total && prev.totalPages === next.totalPages) {
+    return prev;
+  }
+  return {
+    ...prev,
+    total: next.total,
+    totalPages: next.totalPages,
+  };
+}
 
 export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const historyLengthRef = useRef(0);
   const prevSearchRef = useRef(search);
   const abortControllerRef = useRef(null);
   // Use ref to track effective page (updated synchronously when search changes)
@@ -37,6 +50,10 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
       skipPageChangeFetchRef.current = false;
     }
   }, [search, pagination.page, setPagination]);
+
+  useEffect(() => {
+    historyLengthRef.current = history.length;
+  }, [history]);
 
   const fetchLinkHistory = useCallback(async () => {
     if (!apiKey) {
@@ -72,8 +89,12 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
+    const showFullPageLoader = historyLengthRef.current === 0;
+
     try {
-      setLoading(true);
+      if (showFullPageLoader) {
+        setLoading(true);
+      }
       setError(null);
 
       // Use effective page from ref (always correct, even during state updates)
@@ -106,12 +127,14 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
         return;
       }
 
-      setHistory(data.data || []);
-      setPagination((prev) => ({
-        ...prev,
-        total: data.pagination?.total || 0,
-        totalPages: data.pagination?.totalPages || 0,
-      }));
+      const nextRows = data.data || [];
+      setHistory((prev) => mergeListWithStructuralSharing(prev, nextRows, (row) => row.id));
+      setPagination((prev) =>
+        mergePaginationTotals(prev, {
+          total: data.pagination?.total || 0,
+          totalPages: data.pagination?.totalPages || 0,
+        })
+      );
     } catch (err) {
       // Ignore abort errors
       if (err.name === 'AbortError') {

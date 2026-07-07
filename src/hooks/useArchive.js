@@ -3,6 +3,7 @@ import { parseUtcDate } from '@/utils/parseUtcDate';
 import { uploadItem } from '@/utils/uploadActions';
 import { buildShortMagnetLink } from '@/utils/retryDownload';
 import fetch from '@/utils/fetch';
+import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
 
 function transformArchivedItem(item) {
   return {
@@ -37,6 +38,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   const prevSearchRef = useRef(search);
   const internalPaginationRef = useRef(null);
   const requestGenerationRef = useRef(0);
+  const archivedLengthRef = useRef(0);
 
   const apiKeyRef = useRef(apiKey);
   const searchRef = useRef(search);
@@ -63,9 +65,12 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
         (usesExternalPagination ? limit : (internalPaginationRef.current?.limit ?? 50));
       const currentSearch = searchRef.current;
       const generation = ++requestGenerationRef.current;
+      const showFullPageLoader = archivedLengthRef.current === 0;
 
       try {
-        setLoading(true);
+        if (showFullPageLoader) {
+          setLoading(true);
+        }
         setError(null);
 
         const params = new URLSearchParams({
@@ -95,7 +100,9 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
 
         if (data.success) {
           const transformed = data.data.map(transformArchivedItem);
-          setArchivedDownloads(transformed);
+          setArchivedDownloads((prev) =>
+            mergeListWithStructuralSharing(prev, transformed, (row) => row.archiveId)
+          );
           const nextPagination = data.pagination || {
             page: resolvedPage,
             limit: resolvedLimit,
@@ -132,6 +139,10 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
 
   const loadArchivedRef = useRef(loadArchivedDownloads);
   loadArchivedRef.current = loadArchivedDownloads;
+
+  useEffect(() => {
+    archivedLengthRef.current = archivedDownloads.length;
+  }, [archivedDownloads]);
 
   const prevPageRef = useRef(page);
   const prevSearchForEffectRef = useRef(search);
