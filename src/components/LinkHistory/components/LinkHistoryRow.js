@@ -22,23 +22,37 @@ const LinkHistoryRow = memo(
       ? linkHistoryT('status.failed')
       : getExpirationDate(item.generated_at, t, linkHistoryT);
 
+    const handleRowSelect = (shiftKey) => {
+      onSelect(item.id, !isSelected, rowIndex, shiftKey);
+    };
+
+    const rowClassName = isSelected
+      ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark cursor-pointer'
+      : isFailed
+        ? 'bg-link-failed hover:bg-link-failed-hover dark:bg-link-failed-dark dark:hover:bg-link-failed-hover-dark cursor-pointer'
+        : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark cursor-pointer';
+
     return (
       <tr
-        className={
-          isFailed
-            ? 'bg-link-failed hover:bg-link-failed-hover dark:bg-link-failed-dark dark:hover:bg-link-failed-hover-dark'
-            : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
-        }
+        role="row"
+        aria-selected={isSelected}
+        className={rowClassName}
+        onMouseDown={(e) => {
+          if (e.shiftKey) e.preventDefault();
+        }}
+        onClick={(e) => {
+          if (e.target.closest('button')) return;
+          handleRowSelect(e.shiftKey);
+        }}
       >
         <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap">
           <input
             type="checkbox"
             checked={isSelected}
-            onMouseDown={(e) => {
-              if (e.shiftKey) e.preventDefault();
-            }}
-            onChange={(e) => onSelect(item.id, e.target.checked, rowIndex, e.shiftKey)}
-            className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
+            readOnly
+            tabIndex={-1}
+            style={{ pointerEvents: 'none' }}
+            className="size-4 accent-accent dark:accent-accent-dark"
             aria-label={linkHistoryT('actions.selectItem')}
           />
         </td>
