@@ -1,5 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
+import { normalizeUploadId } from '../utils';
+
+function mergePaginationTotals(prev, next) {
+  if (prev.total === next.total && prev.totalPages === next.totalPages) {
+    return prev;
+  }
+  return {
+    ...prev,
+    total: next.total,
+    totalPages: next.totalPages,
+  };
+}
 
 export function useUploads(apiKey, activeTab, filters, pagination, setPagination) {
   const [uploads, setUploads] = useState([]);
@@ -15,103 +28,109 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   // Subscribe to backend mode store to react to changes
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
 
-  const fetchUploads = useCallback(async () => {
-    if (!apiKey) return;
+  const fetchUploads = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!apiKey) return;
 
-    // Wait for backend check to complete before deciding
-    if (backendIsLoading) {
-      return;
-    }
-
-    // Check if backend is available
-    if (backendMode !== 'backend') {
-      setUploads([]);
-      setLoading(false);
-      setError(null);
-      setPagination((prev) => ({
-        ...prev,
-        total: 0,
-        totalPages: 0,
-      }));
-      return;
-    }
-
-    const requestId = ++uploadsRequestIdRef.current;
-    const showFullPageLoader = uploadsLengthRef.current === 0;
-    try {
-      if (showFullPageLoader) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
-      }
-      setError(null);
-
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        status: activeTab,
-      });
-      if (filters.type) params.append('type', filters.type);
-      if (filters.search) params.append('search', filters.search);
-
-      const response = await fetch(`/api/uploads?${params.toString()}`, {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      });
-
-      if (requestId !== uploadsRequestIdRef.current) {
+      // Wait for backend check to complete before deciding
+      if (backendIsLoading) {
         return;
       }
 
-      const data = await response.json();
-
-      if (requestId !== uploadsRequestIdRef.current) {
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch uploads');
-      }
-
-      setUploads(data.data || []);
-      setPagination((prev) => ({
-        ...prev,
-        total: data.pagination?.total || 0,
-        totalPages: data.pagination?.totalPages || 0,
-      }));
-
-      // Update status counts if provided
-      if (data.statusCounts) {
-        setStatusCounts(data.statusCounts);
-      }
-
-      // Update upload statistics if provided
-      if (data.uploadStatistics) {
-        setUploadStatistics(data.uploadStatistics);
-      }
-    } catch (err) {
-      if (requestId === uploadsRequestIdRef.current) {
-        setError(err.message);
-        console.error('Error fetching uploads:', err);
-      }
-    } finally {
-      if (requestId === uploadsRequestIdRef.current) {
+      // Check if backend is available
+      if (backendMode !== 'backend') {
+        setUploads([]);
         setLoading(false);
-        setRefreshing(false);
+        setError(null);
+        setPagination((prev) => ({
+          ...prev,
+          total: 0,
+          totalPages: 0,
+        }));
+        return;
       }
-    }
-  }, [
-    apiKey,
-    pagination.page,
-    pagination.limit,
-    activeTab,
-    filters.type,
-    filters.search,
-    setPagination,
-    backendMode,
-    backendIsLoading,
-  ]);
+
+      const requestId = ++uploadsRequestIdRef.current;
+      const showFullPageLoader = uploadsLengthRef.current === 0;
+      try {
+        if (showFullPageLoader) {
+          setLoading(true);
+        } else if (!silent) {
+          setRefreshing(true);
+        }
+        setError(null);
+
+        const params = new URLSearchParams({
+          page: pagination.page.toString(),
+          limit: pagination.limit.toString(),
+          status: activeTab,
+        });
+        if (filters.type) params.append('type', filters.type);
+        if (filters.search) params.append('search', filters.search);
+
+        const response = await fetch(`/api/uploads?${params.toString()}`, {
+          headers: {
+            'x-api-key': apiKey,
+          },
+        });
+
+        if (requestId !== uploadsRequestIdRef.current) {
+          return;
+        }
+
+        const data = await response.json();
+
+        if (requestId !== uploadsRequestIdRef.current) {
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch uploads');
+        }
+
+        setUploads((prev) =>
+          mergeListWithStructuralSharing(prev, data.data || [], (row) => normalizeUploadId(row.id))
+        );
+        setPagination((prev) =>
+          mergePaginationTotals(prev, {
+            total: data.pagination?.total || 0,
+            totalPages: data.pagination?.totalPages || 0,
+          })
+        );
+
+        // Update status counts if provided
+        if (data.statusCounts) {
+          setStatusCounts(data.statusCounts);
+        }
+
+        // Update upload statistics if provided
+        if (data.uploadStatistics) {
+          setUploadStatistics(data.uploadStatistics);
+        }
+      } catch (err) {
+        if (requestId === uploadsRequestIdRef.current) {
+          setError(err.message);
+          console.error('Error fetching uploads:', err);
+        }
+      } finally {
+        if (requestId === uploadsRequestIdRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    },
+    [
+      apiKey,
+      pagination.page,
+      pagination.limit,
+      activeTab,
+      filters.type,
+      filters.search,
+      setPagination,
+      backendMode,
+      backendIsLoading,
+    ]
+  );
 
   // Fetch status counts separately when tab changes
   const fetchStatusCounts = useCallback(async () => {
@@ -174,9 +193,9 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
 
   useEffect(() => {
     fetchUploads();
-    // Auto-refresh every 1 minute
+    // Auto-refresh every 1 minute (silent — keep table mounted, no overlay)
     const interval = setInterval(() => {
-      fetchUploads();
+      fetchUploads({ silent: true });
     }, 60000);
     return () => clearInterval(interval);
   }, [fetchUploads]);
