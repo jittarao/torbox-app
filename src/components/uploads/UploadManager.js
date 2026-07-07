@@ -119,7 +119,8 @@ export default function UploadManager({ apiKey }) {
     setSelectedUploads(buildSelectionUpdater(uploadId, checked, rowIndex, isShiftKey));
   };
 
-  const showBulkActions = activeTab === 'failed' || activeTab === 'completed';
+  const showBulkActions =
+    activeTab === 'queued' || activeTab === 'failed' || activeTab === 'completed';
   const selectedCount = selectedUploads.size;
 
   const onDragEnd = (event) => {
