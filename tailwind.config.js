@@ -1,3 +1,5 @@
+const { DESKTOP_MD_MEDIA_QUERY } = require('./src/utils/responsiveBreakpoints.js');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -124,6 +126,9 @@ module.exports = {
       borderColor: {
         DEFAULT: '#cecece',
         dark: '#3c3c3c',
+      },
+      screens: {
+        md: { raw: DESKTOP_MD_MEDIA_QUERY },
       },
     },
   },

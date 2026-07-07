@@ -1,8 +1,9 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { MOBILE_MEDIA_QUERY } from '@/utils/responsiveBreakpoints';
 
-const QUERY = '(max-width: 767px)';
+const QUERY = MOBILE_MEDIA_QUERY;
 
 function getServerSnapshot() {
   return false;
