@@ -51,7 +51,11 @@ const LinkHistory = ({ apiKey }) => {
   } = useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks);
 
   const getLinkRowId = useCallback((item) => item.id, []);
-  const { buildSelectionUpdater } = useShiftRangeRowSelection(history, getLinkRowId);
+  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(history, getLinkRowId);
+
+  useEffect(() => {
+    resetAnchor();
+  }, [pagination.page, search, resetAnchor]);
 
   // Debounce search input - update search value after 500ms of no typing
   useEffect(() => {

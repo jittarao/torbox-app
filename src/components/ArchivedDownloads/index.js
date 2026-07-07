@@ -50,7 +50,10 @@ export default function ArchivedDownloads({ apiKey }) {
   const showInitialLoading = loading && archivedItems.length === 0;
 
   const getArchiveRowId = useCallback((item) => item.archiveId, []);
-  const { buildSelectionUpdater } = useShiftRangeRowSelection(archivedItems, getArchiveRowId);
+  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(
+    archivedItems,
+    getArchiveRowId
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,6 +61,10 @@ export default function ArchivedDownloads({ apiKey }) {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    resetAnchor();
+  }, [pagination.page, search, resetAnchor]);
 
   const handleSelectAll = useCallback(
     (checked) => {
@@ -232,84 +239,102 @@ export default function ArchivedDownloads({ apiKey }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-surface dark:divide-border-dark dark:bg-surface-dark">
-              {archivedItems.map((item, rowIndex) => (
-                <tr
-                  key={item.archiveId}
-                  className="bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark"
-                >
-                  <td className="px-2.5 py-1.5 md:px-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(item.archiveId)}
-                      onMouseDown={(e) => {
-                        if (e.shiftKey) e.preventDefault();
-                      }}
-                      onChange={(e) =>
-                        handleSelectItem(item.archiveId, e.target.checked, rowIndex, e.shiftKey)
-                      }
-                      className="size-4 cursor-pointer accent-accent dark:accent-accent-dark"
-                      aria-label={archivedT('actions.selectItem')}
-                    />
-                  </td>
-                  <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
-                    {item.id}
-                  </td>
-                  <td className="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
-                    {item.name}
-                  </td>
-                  <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
-                    <TimeAgoWithTooltip at={item.archivedAt} t={t} />
-                  </td>
-                  <td
-                    className={`sticky right-0 z-10 flex bg-inherit px-2.5 py-1.5 text-right text-xs font-medium dark:bg-inherit md:px-3 ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-1.5 whitespace-nowrap`}
+              {archivedItems.map((item, rowIndex) => {
+                const isSelected = selectedItems.has(item.archiveId);
+
+                const handleRowSelect = (shiftKey) => {
+                  handleSelectItem(item.archiveId, !isSelected, rowIndex, shiftKey);
+                };
+
+                return (
+                  <tr
+                    key={item.archiveId}
+                    role="row"
+                    aria-selected={isSelected}
+                    className={`cursor-pointer ${
+                      isSelected
+                        ? 'bg-surface-alt-selected hover:bg-surface-alt-selected-hover dark:bg-surface-alt-selected-dark dark:hover:bg-surface-alt-selected-hover-dark'
+                        : 'bg-surface hover:bg-surface-alt-hover dark:bg-surface-dark dark:hover:bg-surface-alt-hover-dark'
+                    }`}
+                    onMouseDown={(e) => {
+                      if (e.shiftKey) e.preventDefault();
+                    }}
+                    onClick={(e) => {
+                      if (e.target.closest('button')) return;
+                      handleRowSelect(e.shiftKey);
+                    }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleRestore(item)}
-                      className={`rounded-full p-1 text-green-500 transition-all duration-200 hover:bg-green-500/5 disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-400/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
-                      title={archivedT('actions.addToTorBox')}
+                    <td className="px-2.5 py-1.5 md:px-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        readOnly
+                        tabIndex={-1}
+                        style={{ pointerEvents: 'none' }}
+                        className="size-4 accent-accent dark:accent-accent-dark"
+                        aria-label={archivedT('actions.selectItem')}
+                      />
+                    </td>
+                    <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
+                      {item.id}
+                    </td>
+                    <td className="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
+                      {item.name}
+                    </td>
+                    <td className="whitespace-nowrap px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 md:px-3">
+                      <TimeAgoWithTooltip at={item.archivedAt} t={t} />
+                    </td>
+                    <td
+                      className={`sticky right-0 z-10 flex bg-inherit px-2.5 py-1.5 text-right text-xs font-medium dark:bg-inherit md:px-3 ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-end gap-1.5 whitespace-nowrap`}
                     >
-                      {isMobile ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Restore /> {archivedT('actions.addToTorBox')}
-                        </div>
-                      ) : (
-                        <Restore />
-                      )}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(item)}
+                        className={`rounded-full p-1 text-green-500 transition-all duration-200 hover:bg-green-500/5 disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-400/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
+                        title={archivedT('actions.addToTorBox')}
+                      >
+                        {isMobile ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Restore /> {archivedT('actions.addToTorBox')}
+                          </div>
+                        ) : (
+                          <Restore />
+                        )}
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCopyMagnet(item)}
-                      className={`rounded-full p-1 text-blue-500 transition-all duration-200 hover:bg-label-active-text/5 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-label-active-text-dark/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
-                      title={archivedT('actions.copyMagnet')}
-                    >
-                      {isMobile ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Copy /> {archivedT('actions.copyMagnet')}
-                        </div>
-                      ) : (
-                        <Copy className="size-4" />
-                      )}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyMagnet(item)}
+                        className={`rounded-full p-1 text-blue-500 transition-all duration-200 hover:bg-label-active-text/5 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-label-active-text-dark/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
+                        title={archivedT('actions.copyMagnet')}
+                      >
+                        {isMobile ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Copy /> {archivedT('actions.copyMagnet')}
+                          </div>
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => onRemove(item.id)}
-                      className={`rounded-full p-1 text-red-500 transition-all duration-200 hover:bg-red-500/5 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-400/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
-                      title={archivedT('actions.remove')}
-                    >
-                      {isMobile ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Times /> {archivedT('actions.remove')}
-                        </div>
-                      ) : (
-                        <Times />
-                      )}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      <button
+                        type="button"
+                        onClick={() => onRemove(item.id)}
+                        className={`rounded-full p-1 text-red-500 transition-all duration-200 hover:bg-red-500/5 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-400/5 ${isMobile ? 'flex w-full items-center justify-center rounded-md py-1' : ''}`}
+                        title={archivedT('actions.remove')}
+                      >
+                        {isMobile ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Times /> {archivedT('actions.remove')}
+                          </div>
+                        ) : (
+                          <Times />
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
