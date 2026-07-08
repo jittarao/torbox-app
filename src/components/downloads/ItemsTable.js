@@ -13,7 +13,7 @@ import { useColumnWidths } from '@/hooks/useColumnWidths';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useStreamInitializer } from './hooks/useStreamInitializer';
 import { tableContainerClass } from './utils/responsiveLayout';
-import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
+import { computeResolvedColumnWidths, getResolvedColumnStyle } from './utils/tableColumnLayout';
 
 const OpenInModal = dynamic(() => import('./OpenInModal'), { ssr: false });
 const TrackSelectionModal = dynamic(() => import('./TrackSelectionModal'), { ssr: false });
@@ -84,6 +84,15 @@ export default function ItemsTable() {
     [activeColumns, columnWidths, tableWidth, isMobile]
   );
 
+  const resolvedColumnStyles = useMemo(() => {
+    const styles = {};
+    for (let i = 0; i < activeColumns.length; i++) {
+      const col = activeColumns[i];
+      styles[col] = getResolvedColumnStyle(col, columnLayout.resolved, { isMobile });
+    }
+    return styles;
+  }, [activeColumns, columnLayout.resolved, isMobile]);
+
   useEffect(() => {
     updateTableWidth();
   }, [columnLayout]);
@@ -111,6 +120,7 @@ export default function ItemsTable() {
             items={sortedItems}
             activeColumns={activeColumns}
             resolvedColumnWidths={columnLayout.resolved}
+            resolvedColumnStyles={resolvedColumnStyles}
             onFileSelect={handleFileSelect}
             setSelectedItems={setSelectedItems}
             downloadHistoryLookup={downloadHistoryLookup}

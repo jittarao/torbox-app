@@ -7,7 +7,9 @@ import DownloadStateBadge from './DownloadStateBadge';
 import DownloadProgressDisplay from './DownloadProgressDisplay';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import { Lock, Private, Unlock } from '@/components/icons';
+import Lock from '@/components/icons/Lock';
+import Private from '@/components/icons/Private';
+import Unlock from '@/components/icons/Unlock';
 import TagDisplay from './Tags/TagDisplay';
 import {
   getTableRowSurfaceClasses,
@@ -18,7 +20,6 @@ import {
   tableDataCellPad,
   tableDataCellText,
 } from './utils/responsiveLayout';
-import { getResolvedColumnStyle } from './utils/tableColumnLayout';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import {
   useIsDownloadSelected,
@@ -361,7 +362,7 @@ const COLUMN_CELLS = {
 function ItemRow({
   item,
   activeColumns,
-  resolvedColumnWidths,
+  resolvedColumnStyles = {},
   handleItemSelection,
   downloadHistoryLookup,
   toggleFiles,
@@ -373,6 +374,7 @@ function ItemRow({
   isBlurred = false,
   viewMode = 'table',
   style,
+  rowContentVisibility,
   measureRef,
   dataIndex,
   commonT,
@@ -406,7 +408,7 @@ function ItemRow({
       aria-selected={isSelected}
       id={isExpanded ? filesRegionId : undefined}
       className={`${rowSurfaceClass} ${tableRowFocusClasses} ${!hasSelectedFiles && 'cursor-pointer'}`}
-      style={style}
+      style={rowContentVisibility ? { ...style, ...rowContentVisibility } : style}
       tabIndex={0}
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
@@ -445,7 +447,7 @@ function ItemRow({
       </td>
       {visibleColumns.map((columnId) => {
         const Cell = COLUMN_CELLS[columnId] || DefaultCellMemo;
-        const baseStyle = getResolvedColumnStyle(columnId, resolvedColumnWidths, { isMobile });
+        const baseStyle = resolvedColumnStyles[columnId] ?? {};
         return (
           <Cell
             key={columnId}

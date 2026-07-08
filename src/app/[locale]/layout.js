@@ -4,7 +4,7 @@ import { LocaleContentBoundary } from '@/components/shared/LocaleContentBoundary
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
-import { isSearchPageDisabled } from '@/utils/featureFlags';
+import { isOnboardingAuxActive, isSearchPageDisabled } from '@/utils/featureFlags';
 import { Suspense } from 'react';
 
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -73,10 +73,14 @@ export default async function LocaleLayout({ children, params }) {
   }
 
   const searchPageDisabled = isSearchPageDisabled();
+  const onboardingAuxActive = isOnboardingAuxActive();
 
   return (
     <ThemeProvider>
-      <FeatureFlagsProvider searchPageDisabled={searchPageDisabled}>
+      <FeatureFlagsProvider
+        searchPageDisabled={searchPageDisabled}
+        onboardingAuxActive={onboardingAuxActive}
+      >
         <Suspense
           fallback={
             <div className="animate-spin rounded-full size-8 border-b-2 border-accent mx-auto mt-16" />

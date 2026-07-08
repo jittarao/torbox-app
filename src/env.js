@@ -10,6 +10,7 @@ export const env = createEnv({
     BACKEND_URL: z.string().optional(),
     BACKEND_DISABLED: z.string().optional(),
     SEARCH_PAGE_DISABLED: z.string().optional(),
+    ONBOARDING_AUX: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_TORBOX_MANAGER_VERSION: z.string().optional(),
@@ -18,6 +19,7 @@ export const env = createEnv({
     BACKEND_URL: process.env.BACKEND_URL,
     BACKEND_DISABLED: process.env.BACKEND_DISABLED,
     SEARCH_PAGE_DISABLED: process.env.SEARCH_PAGE_DISABLED,
+    ONBOARDING_AUX: process.env.ONBOARDING_AUX,
     NEXT_PUBLIC_TORBOX_MANAGER_VERSION: process.env.NEXT_PUBLIC_TORBOX_MANAGER_VERSION,
   },
   skipValidation: process.env.SKIP_ENV_VALIDATION === 'true',

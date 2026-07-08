@@ -5,26 +5,24 @@ import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
-import {
-  All,
-  ArrowLeftRight,
-  Clock,
-  ClockArrowDown,
-  CloudDownload,
-  CloudUpload,
-  DownArrow,
-  Download,
-  Files,
-  Hash,
-  Layers,
-  Link,
-  Lock,
-  Percent,
-  Private,
-  Tag,
-  Unlock,
-  UpArrow,
-} from '@/components/icons';
+import All from '@/components/icons/All';
+import ArrowLeftRight from '@/components/icons/ArrowLeftRight';
+import Clock from '@/components/icons/Clock';
+import ClockArrowDown from '@/components/icons/ClockArrowDown';
+import CloudDownload from '@/components/icons/CloudDownload';
+import CloudUpload from '@/components/icons/CloudUpload';
+import DownArrow from '@/components/icons/DownArrow';
+import Download from '@/components/icons/Download';
+import Files from '@/components/icons/Files';
+import Hash from '@/components/icons/Hash';
+import Layers from '@/components/icons/Layers';
+import Link from '@/components/icons/Link';
+import Lock from '@/components/icons/Lock';
+import Percent from '@/components/icons/Percent';
+import Private from '@/components/icons/Private';
+import Tag from '@/components/icons/Tag';
+import Unlock from '@/components/icons/Unlock';
+import UpArrow from '@/components/icons/UpArrow';
 import useIsMobile from '@/hooks/useIsMobile';
 import FileList from './FileList';
 import { useTranslations } from 'next-intl';

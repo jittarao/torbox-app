@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { COLUMNS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -13,7 +14,7 @@ import {
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
-export default function TableHeader({
+function TableHeader({
   activeColumns,
   resolvedColumnWidths,
   updateColumnWidth,
@@ -27,8 +28,21 @@ export default function TableHeader({
   const columnT = useTranslations('Columns');
   const isMobile = useIsMobile();
 
-  // For mobile, we'll only show the name column and actions
   const visibleColumns = isMobile ? ['name'] : activeColumns;
+
+  const handleSortColumn = useCallback(
+    (columnId) => {
+      onSort(columnId);
+    },
+    [onSort]
+  );
+
+  const handleWidthChange = useCallback(
+    (columnId, width) => {
+      updateColumnWidth(columnId, width);
+    },
+    [updateColumnWidth]
+  );
 
   return (
     <thead className="bg-surface-alt dark:bg-surface-alt-dark">
@@ -51,9 +65,9 @@ export default function TableHeader({
               key={columnId}
               columnId={columnId}
               width={resolvedColumnWidths[columnId]}
-              onWidthChange={(width) => updateColumnWidth(columnId, width)}
+              onWidthChange={(width) => handleWidthChange(columnId, width)}
               sortable={column.sortable}
-              onClick={() => column.sortable && onSort(columnId)}
+              onClick={() => column.sortable && handleSortColumn(columnId)}
               className={`${tableHeaderCell} ${
                 column.sortable
                   ? 'cursor-pointer hover:bg-surface-hover dark:hover:bg-surface-hover-dark transition-colors'
@@ -74,3 +88,5 @@ export default function TableHeader({
     </thead>
   );
 }
+
+export default memo(TableHeader);

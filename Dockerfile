@@ -38,10 +38,6 @@ ENV NODE_ENV=production
 # Disable Next.js telemetry to prevent data collection during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Optional: bake developer referral code into the client bundle (NEXT_PUBLIC_* is build-time only)
-ARG NEXT_PUBLIC_TORBOX_REFERRAL_CODE
-ENV NEXT_PUBLIC_TORBOX_REFERRAL_CODE=$NEXT_PUBLIC_TORBOX_REFERRAL_CODE
-
 # Install build dependencies required for compiling native modules
 # Also install nodejs to ensure compatibility with Next.js standalone output
 RUN apk add --no-cache libc6-compat nodejs npm
