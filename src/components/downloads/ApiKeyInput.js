@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import ApiKeyManager from './ApiKeyManager';
 import { ensureUserDb } from '@/utils/ensureUserDb';
 import { isValidTorboxApiKey } from '@/utils/apiKeyValidation';
-import { REFERRAL_CODE } from '@/components/constants';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { REFERRAL_CODE } from '@/config/referral';
 import { applyReferralToAccount } from '@/utils/referralEligibility';
 import { markReferralAppliedForKey, isReferralAppliedForKey } from '@/utils/referralApplied';
 import { getItem, setItem } from '@/utils/storage';
@@ -20,6 +21,7 @@ export default function ApiKeyInput({
   const isLanding = variant === 'landing';
   const isCompact = variant === 'compact';
   const t = useTranslations('ApiKeyInput');
+  const { onboardingAuxActive } = useFeatureFlags();
   const [showKey, setShowKey] = useState(false);
   const lastAutoApplyKeyRef = useRef('');
   const cachedKeepManagerOpen = getItem('torboxKeepManagerOpen') === 'true';
@@ -36,6 +38,7 @@ export default function ApiKeyInput({
   }, [committedValue]);
 
   useEffect(() => {
+    if (!onboardingAuxActive) return;
     if (!committedValue || !isValidTorboxApiKey(committedValue)) {
       return;
     }
@@ -49,7 +52,7 @@ export default function ApiKeyInput({
         markReferralAppliedForKey(committedValue);
       }
     });
-  }, [committedValue]);
+  }, [committedValue, onboardingAuxActive]);
 
   // Save manager open state to localStorage
   const handleKeepManagerToggle = (keepOpen) => {

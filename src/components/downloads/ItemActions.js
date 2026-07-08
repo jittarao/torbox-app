@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import { useDownloadsContext } from './DownloadsContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
@@ -25,7 +25,7 @@ function normalizeUiAssetType(assetType) {
   return assetType === 'torrent' ? 'torrents' : assetType;
 }
 
-export default function ItemActions({
+function ItemActions({
   item,
   apiKey,
   onDelete,
@@ -315,3 +315,5 @@ export default function ItemActions({
     </>
   );
 }
+
+export default memo(ItemActions);

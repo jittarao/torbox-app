@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { MagnifyingGlass, Question, Times } from '@/components/icons';
+import MagnifyingGlass from '@/components/icons/MagnifyingGlass';
+import Question from '@/components/icons/Question';
+import Times from '@/components/icons/Times';
 import Tooltip from '@/components/shared/Tooltip';
 import useIsMobile from '@/hooks/useIsMobile';
 import { useTranslations } from 'next-intl';

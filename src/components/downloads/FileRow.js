@@ -2,7 +2,10 @@
 
 import { memo } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
-import { Copy, Download, Play } from '@/components/icons';
+import Copy from '@/components/icons/Copy';
+import Download from '@/components/icons/Download';
+import Play from '@/components/icons/Play';
+import { TABLE_FILE_ROW_CONTENT_VISIBILITY } from './utils/tableConstants';
 import { formatSize } from './utils/formatters';
 import { getDisplayMimetype } from './utils/mimetypeDisplay';
 import Spinner from '@/components/shared/Spinner';
@@ -57,8 +60,10 @@ function FileRow({
   fileIndex = null,
   measureRef,
   dataIndex,
+  style,
 }) {
   const t = useTranslations('FileActions');
+  const isMobile = useIsMobile();
   const selectionId = getDownloadSelectionId(item);
   const isItemSelected = useIsItemBlockingFileSelect(selectionId);
 
@@ -74,7 +79,7 @@ function FileRow({
       {filesToRender.map((file, index) => {
         const actualIndex = fileIndex !== null ? fileIndex : index;
         return (
-          <FileRowInner
+          <FileRowInnerMemo
             key={`${selectionId}-${file.id}`}
             file={file}
             actualIndex={actualIndex}
@@ -93,6 +98,8 @@ function FileRow({
             dataIndex={dataIndex}
             fileIndex={fileIndex}
             attachMeasureRef={fileIndex !== null}
+            isMobile={isMobile}
+            style={style}
             t={t}
           />
         );
@@ -120,8 +127,9 @@ function FileRowInner({
   t,
   fileIndex,
   attachMeasureRef,
+  isMobile,
+  style,
 }) {
-  const isMobile = useIsMobile();
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = isItemSelected;
   const itemKey = `${item.assetType}:${String(item.id)}`;
@@ -148,6 +156,11 @@ function FileRowInner({
       ref={attachMeasureRef ? measureRef : undefined}
       data-index={attachMeasureRef ? dataIndex : undefined}
       className={`${rowSurfaceClass} transition-colors ${!isDisabled && 'cursor-pointer'}`}
+      style={
+        style
+          ? { ...style, ...TABLE_FILE_ROW_CONTENT_VISIBILITY }
+          : TABLE_FILE_ROW_CONTENT_VISIBILITY
+      }
       onMouseDown={(e) => {
         // Prevent text selection on shift+click
         if (e.shiftKey) {
@@ -297,5 +310,7 @@ function FileRowInner({
     </tr>
   );
 }
+
+const FileRowInnerMemo = memo(FileRowInner);
 
 export default memo(FileRow);
