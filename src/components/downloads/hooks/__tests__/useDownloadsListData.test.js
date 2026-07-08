@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import { buildRowDataSignature, collectDirtyRowKeys } from '@/utils/downloadListSignatures';
 
+function buildViewIdIndexMap(viewIds) {
+  const map = new Map();
+  for (let i = 0; i < viewIds.length; i++) {
+    map.set(viewIds[i], i);
+  }
+  return map;
+}
+
 describe('useDownloadsListData dirty-key path', () => {
   test('incremental enrichment only revisits dirty row keys', () => {
     const entities = {
@@ -16,5 +24,12 @@ describe('useDownloadsListData dirty-key path', () => {
     entities['torrents:2'] = { ...entities['torrents:2'], progress: 55 };
     const dirty = collectDirtyRowKeys(viewIds, entities, prevSigs, viewIds);
     expect(dirty).toEqual(['torrents:2']);
+  });
+
+  test('viewIdIndexMap resolves row index in O(1)', () => {
+    const viewIds = ['torrents:1', 'torrents:2', 'torrents:3'];
+    const indexMap = buildViewIdIndexMap(viewIds);
+    expect(indexMap.get('torrents:2')).toBe(1);
+    expect(indexMap.get('torrents:missing')).toBeUndefined();
   });
 });

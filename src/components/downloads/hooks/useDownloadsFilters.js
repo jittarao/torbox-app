@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useTranslations } from 'next-intl';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useCustomViewsStore } from '@/store/customViewsStore';
@@ -39,8 +40,8 @@ export function useDownloadsFilters({
   const { updateTag: updateTagName } = useTags(apiKey);
 
   const {
-    search,
-    setSearch,
+    search: urlSearch,
+    setSearch: setUrlSearch,
     statusFilter,
     setStatusFilter,
     appliedFilters: urlAppliedFilters,
@@ -53,6 +54,23 @@ export function useDownloadsFilters({
     viewIds: urlViewIds,
     viewId: urlViewId,
   } = filterParams;
+
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebouncedValue(searchInput, 250);
+
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  useEffect(() => {
+    if (debouncedSearch !== urlSearch) {
+      setUrlSearch(debouncedSearch);
+    }
+  }, [debouncedSearch, urlSearch, setUrlSearch]);
+
+  const setSearch = useCallback((value) => {
+    setSearchInput(value);
+  }, []);
 
   const [columnFilters, setColumnFilters] = useState(() =>
     JSON.parse(JSON.stringify(EMPTY_FILTERS))
@@ -105,7 +123,7 @@ export function useDownloadsFilters({
     filterModalMode,
     editingView,
     activeType,
-    search,
+    search: searchInput,
     sortField,
     sortDirection,
   });
@@ -113,7 +131,7 @@ export function useDownloadsFilters({
     filterModalMode,
     editingView,
     activeType,
-    search,
+    search: searchInput,
     sortField,
     sortDirection,
   };
@@ -699,7 +717,8 @@ export function useDownloadsFilters({
     setTagManagerOpen,
     mobileFiltersOpen,
     setMobileFiltersOpen,
-    search,
+    search: searchInput,
+    debouncedSearch,
     setSearch,
     statusFilter,
     setStatusFilter,

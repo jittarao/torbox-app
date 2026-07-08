@@ -119,6 +119,14 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     [entities, order, activeType]
   );
 
+  const viewIdIndexMap = useMemo(() => {
+    const map = new Map();
+    for (let i = 0; i < viewIds.length; i++) {
+      map.set(viewIds[i], i);
+    }
+    return map;
+  }, [viewIds]);
+
   const filterKey = useMemo(() => buildFilterCacheKey(filterCriteria), [filterCriteria]);
 
   const { allRows, enrichedMap, visibleIds, sortedItems } = useMemo(() => {
@@ -155,8 +163,8 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
         if (!row) continue;
         const selectionId = getDownloadSelectionId(row);
         map.set(selectionId, row);
-        const idx = viewIds.indexOf(key);
-        if (idx >= 0) {
+        const idx = viewIdIndexMap.get(key);
+        if (idx !== undefined) {
           rows[idx] = row;
         }
         cache.rowSigs.set(key, buildRowDataSignature(key, entity));
@@ -204,6 +212,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     stableTagMappings,
     stableDownloadHistory,
     activeType,
+    viewIdIndexMap,
   ]);
 
   return {

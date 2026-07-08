@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useShallow } from 'zustand/react/shallow';
-import VideoPlayerModal from './VideoPlayerModal';
-import AudioPlayer from './AudioPlayer';
 import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
+import AudioPlayer from './AudioPlayer';
+
+const VideoPlayerModal = dynamic(() => import('./VideoPlayerModal'), { ssr: false });
 /**
  * Subscribes only to player store — keeps stream URL updates off Downloads.
  */
@@ -35,23 +37,25 @@ export default function DownloadsPlayersHost({ apiKey, activeType, requestDownlo
 
   return (
     <>
-      <VideoPlayerModal
-        isOpen={video.isOpen}
-        onClose={closeVideo}
-        streamUrl={video.streamUrl}
-        fileName={video.fileName}
-        subtitles={video.subtitles}
-        audios={video.audios}
-        metadata={video.metadata}
-        apiKey={apiKey}
-        itemId={video.itemId}
-        fileId={video.fileId}
-        streamType={video.streamType}
-        introInformation={video.introInformation}
-        initialAudioIndex={video.initialAudioIndex}
-        initialSubtitleIndex={video.initialSubtitleIndex}
-        onStreamUrlChange={setVideoStreamUrl}
-      />
+      {video.isOpen && (
+        <VideoPlayerModal
+          isOpen={video.isOpen}
+          onClose={closeVideo}
+          streamUrl={video.streamUrl}
+          fileName={video.fileName}
+          subtitles={video.subtitles}
+          audios={video.audios}
+          metadata={video.metadata}
+          apiKey={apiKey}
+          itemId={video.itemId}
+          fileId={video.fileId}
+          streamType={video.streamType}
+          introInformation={video.introInformation}
+          initialAudioIndex={video.initialAudioIndex}
+          initialSubtitleIndex={video.initialSubtitleIndex}
+          onStreamUrlChange={setVideoStreamUrl}
+        />
+      )}
       {audio.isOpen && (
         <AudioPlayer
           key={`${audio.fileId}-${audio.itemId}`}
