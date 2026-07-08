@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo, useDeferredValue, useCallback, useLayoutEffect } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import dynamic from 'next/dynamic';
 import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsFilterContext } from './DownloadsFilterContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
@@ -12,14 +12,16 @@ import DownloadCardContainer from './DownloadCardContainer';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { useTranslations } from 'next-intl';
-import TrackSelectionModal from './TrackSelectionModal';
-import OpenInModal from './OpenInModal';
 import { getCardListItemGapPx } from './utils/responsiveLayout';
+import { CARD_ROW_CONTENT_VISIBILITY } from './utils/tableConstants';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
+
+const OpenInModal = dynamic(() => import('./OpenInModal'), { ssr: false });
+const TrackSelectionModal = dynamic(() => import('./TrackSelectionModal'), { ssr: false });
 
 function parseEntityKey(entityKey) {
   const sep = entityKey.indexOf(':');
@@ -27,19 +29,7 @@ function parseEntityKey(entityKey) {
   return { assetType: entityKey.slice(0, sep), id: entityKey.slice(sep + 1) };
 }
 
-function useCardEstimateSize(deferredEntityKeys, fileSearch) {
-  const entities = useTorboxDownloadsStore(
-    useShallow((state) => {
-      const slice = {};
-      for (let i = 0; i < deferredEntityKeys.length; i++) {
-        const key = deferredEntityKeys[i];
-        const row = state.entities[key];
-        if (row) slice[key] = row;
-      }
-      return slice;
-    })
-  );
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+function useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey) {
   const isMobile = useIsMobile();
   const itemGap = getCardListItemGapPx();
   const lastIndex = deferredEntityKeys.length - 1;
@@ -49,8 +39,9 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch) {
       const entityKey = deferredEntityKeys[index];
       if (!entityKey) return 0;
       const { id } = parseEntityKey(entityKey);
+      const expandedById = useDownloadsUiStore.getState().expandedById;
       const filesExpanded = expandedById[id];
-      const entity = entities[entityKey];
+      const entity = useTorboxDownloadsStore.getState().entities[entityKey];
       const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
 
       let cardHeight = isMobile ? 152 : 100;
@@ -63,7 +54,7 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch) {
       }
       return cardHeight;
     },
-    [deferredEntityKeys, expandedById, entities, fileSearch, isMobile, itemGap, lastIndex]
+    [deferredEntityKeys, expandedItemsKey, fileSearch, isMobile, itemGap, lastIndex]
   );
 }
 
@@ -111,7 +102,11 @@ function VirtualizedCardList({
             data-index={virtualRow.index}
             ref={virtualizer.measureElement}
             className="w-full box-border"
-            style={virtualRow.index < lastIndex ? { paddingBottom: itemGap } : undefined}
+            style={
+              virtualRow.index < lastIndex
+                ? { paddingBottom: itemGap, ...CARD_ROW_CONTENT_VISIBILITY }
+                : CARD_ROW_CONTENT_VISIBILITY
+            }
           >
             {renderCard(entityKey, virtualRow.index)}
           </div>
@@ -133,6 +128,7 @@ function CardListWindowVirtualized({
   estimateSize,
   renderCard,
   emptyState,
+  expandedItemsKey,
 }) {
   const virtualizer = useWindowVirtualizer({
     count: deferredEntityKeys.length,
@@ -142,15 +138,13 @@ function CardListWindowVirtualized({
     scrollMargin: containerOffsetTop,
   });
 
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
-
-  const { virtualRows, remeasureAndSync } = useDownloadsVirtualRowSync({
+  const { virtualRows } = useDownloadsVirtualRowSync({
     virtualizer,
     viewMode,
     isFullscreen: false,
     fullscreenScrollEl: null,
     rowCount: deferredEntityKeys.length,
-    remeasureDeps: [containerOffsetTop, deferredEntityKeys, expandedById],
+    remeasureDeps: [containerOffsetTop, deferredEntityKeys, expandedItemsKey],
   });
 
   useLayoutEffect(() => {
@@ -158,10 +152,6 @@ function CardListWindowVirtualized({
       virtualizer.measure();
     }
   }, [entityKeys, deferredEntityKeys, virtualizer]);
-
-  useLayoutEffect(() => {
-    remeasureAndSync();
-  }, [expandedById, remeasureAndSync]);
 
   if (deferredEntityKeys.length === 0) {
     return emptyState;
@@ -190,6 +180,7 @@ function CardListContainerVirtualized({
   estimateSize,
   renderCard,
   emptyState,
+  expandedItemsKey,
 }) {
   const getScrollElement = useCallback(() => fullscreenScrollEl, [fullscreenScrollEl]);
 
@@ -201,15 +192,13 @@ function CardListContainerVirtualized({
     overscan: 4,
   });
 
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
-
-  const { virtualRows, remeasureAndSync } = useDownloadsVirtualRowSync({
+  const { virtualRows } = useDownloadsVirtualRowSync({
     virtualizer,
     viewMode,
     isFullscreen: true,
     fullscreenScrollEl,
     rowCount: deferredEntityKeys.length,
-    remeasureDeps: [deferredEntityKeys, fullscreenScrollEl, expandedById],
+    remeasureDeps: [deferredEntityKeys, fullscreenScrollEl, expandedItemsKey],
   });
 
   useLayoutEffect(() => {
@@ -217,10 +206,6 @@ function CardListContainerVirtualized({
       virtualizer.measure();
     }
   }, [entityKeys, deferredEntityKeys, virtualizer]);
-
-  useLayoutEffect(() => {
-    remeasureAndSync();
-  }, [expandedById, remeasureAndSync]);
 
   if (deferredEntityKeys.length === 0) {
     return emptyState;
@@ -334,7 +319,13 @@ export default function CardList() {
   }, [fileSearch]);
 
   const deferredEntityKeys = useDeferredValue(entityKeys);
-  const estimateSize = useCardEstimateSize(deferredEntityKeys, fileSearch);
+  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const deferredExpandedById = useDeferredValue(expandedById);
+  const expandedItemsKey = useMemo(
+    () => Object.keys(deferredExpandedById).sort().join(','),
+    [deferredExpandedById]
+  );
+  const estimateSize = useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey);
 
   const toastMessages = useMemo(
     () => ({
@@ -362,9 +353,11 @@ export default function CardList() {
     [onFileStreamInit]
   );
 
+  const { handleItemSelection, handleFileSelection, handleFileDownload, assetKey } = interactions;
+
   const handleAudioPlay = useCallback(
     async (itemId, file) => {
-      const key = interactions.assetKey(itemId, file.id);
+      const key = assetKey(itemId, file.id);
       useFileInteractionStore.getState().setStreaming(key, true);
       try {
         await onAudioPlay(itemId, file);
@@ -378,7 +371,7 @@ export default function CardList() {
         useFileInteractionStore.getState().setStreaming(key, false);
       }
     },
-    [interactions.assetKey, onAudioPlay, setToast, t]
+    [assetKey, onAudioPlay, setToast, t]
   );
 
   const renderCard = useCallback(
@@ -395,9 +388,9 @@ export default function CardList() {
         setToast={setToast}
         onDelete={onDelete}
         downloadHistoryLookup={downloadHistoryLookup}
-        handleItemSelection={interactions.handleItemSelection}
-        handleFileSelection={interactions.handleFileSelection}
-        handleFileDownload={interactions.handleFileDownload}
+        handleItemSelection={handleItemSelection}
+        handleFileSelection={handleFileSelection}
+        handleFileDownload={handleFileDownload}
         handleFileStream={handleFileStream}
         handleAudioPlay={handleAudioPlay}
         activeType={activeType}
@@ -415,7 +408,9 @@ export default function CardList() {
       setToast,
       onDelete,
       downloadHistoryLookup,
-      interactions,
+      handleItemSelection,
+      handleFileSelection,
+      handleFileDownload,
       handleFileStream,
       handleAudioPlay,
       activeType,
@@ -445,6 +440,7 @@ export default function CardList() {
           estimateSize={estimateSize}
           renderCard={renderCard}
           emptyState={emptyState}
+          expandedItemsKey={expandedItemsKey}
         />
       ) : (
         <CardListWindowVirtualized
@@ -457,27 +453,32 @@ export default function CardList() {
           estimateSize={estimateSize}
           renderCard={renderCard}
           emptyState={emptyState}
+          expandedItemsKey={expandedItemsKey}
         />
       )}
-      <OpenInModal
-        isOpen={openInModal.isOpen}
-        onClose={closeOpenInModal}
-        onSelect={handleOpenInChoice}
-        file={openInModal.file}
-        fileName={openInModal.fileName}
-        itemName={openInModal.itemName}
-        isLoading={isCreatingStream}
-        loadingChoice={loadingChoice}
-        error={openInError}
-      />
-      <TrackSelectionModal
-        isOpen={trackSelectionModal.isOpen}
-        onClose={closeTrackSelectionModal}
-        onPlay={handleTrackSelection}
-        metadata={trackSelectionModal.metadata}
-        introInformation={trackSelectionModal.introInformation}
-        fileName={trackSelectionModal.fileName}
-      />
+      {openInModal.isOpen && (
+        <OpenInModal
+          isOpen={openInModal.isOpen}
+          onClose={closeOpenInModal}
+          onSelect={handleOpenInChoice}
+          file={openInModal.file}
+          fileName={openInModal.fileName}
+          itemName={openInModal.itemName}
+          isLoading={isCreatingStream}
+          loadingChoice={loadingChoice}
+          error={openInError}
+        />
+      )}
+      {trackSelectionModal.isOpen && (
+        <TrackSelectionModal
+          isOpen={trackSelectionModal.isOpen}
+          onClose={closeTrackSelectionModal}
+          onPlay={handleTrackSelection}
+          metadata={trackSelectionModal.metadata}
+          introInformation={trackSelectionModal.introInformation}
+          fileName={trackSelectionModal.fileName}
+        />
+      )}
     </>
   );
 }

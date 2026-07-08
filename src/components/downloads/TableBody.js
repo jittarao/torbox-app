@@ -8,6 +8,7 @@ import {
   useEffect,
   useLayoutEffect,
   useState,
+  memo,
 } from 'react';
 import { useWindowVirtualizer, useVirtualizer } from '@tanstack/react-virtual';
 import DownloadRowContainer from './DownloadRowContainer';
@@ -24,12 +25,16 @@ import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
+import { TABLE_ROW_CONTENT_VISIBILITY } from './utils/tableConstants';
+
+const VIRTUAL_ROW_STYLE = { willChange: 'transform' };
 
 function useTableBodyState(props) {
   const {
     items,
     activeColumns,
     resolvedColumnWidths,
+    resolvedColumnStyles,
     onFileSelect,
     setSelectedItems,
     tagMappings,
@@ -213,6 +218,7 @@ function useTableBodyState(props) {
     handleAudioPlay,
     activeColumns,
     resolvedColumnWidths,
+    resolvedColumnStyles,
     tagMappings,
     downloadHistoryLookup,
     toggleFiles,
@@ -230,28 +236,52 @@ function useTableBodyState(props) {
   };
 }
 
-function VirtualizedTableBodyInner({ virtualizer, state, currentVirtualRows, scrollMargin }) {
+const VirtualizedTableBodyInner = memo(function VirtualizedTableBodyInner({
+  virtualizer,
+  currentVirtualRows,
+  scrollMargin,
+  flattenedRows,
+  activeColumns,
+  resolvedColumnWidths,
+  resolvedColumnStyles,
+  tagMappings,
+  downloadHistoryLookup,
+  toggleFiles,
+  apiKey,
+  onDelete,
+  setToast,
+  activeType,
+  isBlurred,
+  viewMode,
+  tableWidth,
+  handleItemSelection,
+  handleFileSelection,
+  handleFileDownload,
+  handleFileStream,
+  handleAudioPlay,
+  tbodyRef,
+  t,
+  commonT,
+}) {
   const totalVirtualSize = virtualizer.getTotalSize();
   const paddingTop =
     currentVirtualRows.length > 0 ? Math.max(0, currentVirtualRows[0].start - scrollMargin) : 0;
   const lastVirtualRow = currentVirtualRows[currentVirtualRows.length - 1];
   const paddingBottom = lastVirtualRow ? totalVirtualSize - lastVirtualRow.end : 0;
 
-  const rowStyle = { willChange: 'transform' };
-
-  if (state.flattenedRows.length === 0) {
+  if (flattenedRows.length === 0) {
     return (
       <tbody
-        ref={state.tbodyRef}
+        ref={tbodyRef}
         className="bg-surface dark:bg-surface-dark"
-        aria-label={state.t('downloadsTable')}
+        aria-label={t('downloadsTable')}
       >
         <tr>
           <td
-            colSpan={state.activeColumns.length + 2}
+            colSpan={activeColumns.length + 2}
             className="text-center py-8 text-text-secondary dark:text-text-secondary-dark"
           >
-            {state.t('noDownloads')}
+            {t('noDownloads')}
           </td>
         </tr>
       </tbody>
@@ -260,22 +290,22 @@ function VirtualizedTableBodyInner({ virtualizer, state, currentVirtualRows, scr
 
   return (
     <tbody
-      ref={state.tbodyRef}
+      ref={tbodyRef}
       className="bg-surface dark:bg-surface-dark"
-      aria-label={state.t('downloadsTable')}
+      aria-label={t('downloadsTable')}
     >
       {paddingTop > 0 && (
         <tr>
           <td
-            colSpan={state.activeColumns.length + 2}
+            colSpan={activeColumns.length + 2}
             style={{ height: paddingTop, padding: 0, border: 0 }}
           />
         </tr>
       )}
       {currentVirtualRows.flatMap((virtualRow) => {
-        if (virtualRow.index < 0 || virtualRow.index >= state.flattenedRows.length) return [];
+        if (virtualRow.index < 0 || virtualRow.index >= flattenedRows.length) return [];
 
-        const row = state.flattenedRows[virtualRow.index];
+        const row = flattenedRows[virtualRow.index];
 
         if (row.type === 'item') {
           const rowEntityKey = row.entityKey;
@@ -283,24 +313,26 @@ function VirtualizedTableBodyInner({ virtualizer, state, currentVirtualRows, scr
             <DownloadRowContainer
               key={`item-${rowEntityKey}`}
               entityKey={rowEntityKey}
-              tagMappings={state.tagMappings}
-              activeColumns={state.activeColumns}
-              resolvedColumnWidths={state.resolvedColumnWidths}
-              downloadHistoryLookup={state.downloadHistoryLookup}
-              toggleFiles={state.toggleFiles}
-              apiKey={state.apiKey}
-              onDelete={state.onDelete}
+              tagMappings={tagMappings}
+              activeColumns={activeColumns}
+              resolvedColumnWidths={resolvedColumnWidths}
+              resolvedColumnStyles={resolvedColumnStyles}
+              downloadHistoryLookup={downloadHistoryLookup}
+              toggleFiles={toggleFiles}
+              apiKey={apiKey}
+              onDelete={onDelete}
               rowIndex={row.itemIndex}
-              handleItemSelection={state.interactions.handleItemSelection}
-              setToast={state.setToast}
-              activeType={state.activeType}
-              isBlurred={state.isBlurred}
-              viewMode={state.viewMode}
-              tableWidth={state.tableWidth}
+              handleItemSelection={handleItemSelection}
+              setToast={setToast}
+              activeType={activeType}
+              isBlurred={isBlurred}
+              viewMode={viewMode}
+              tableWidth={tableWidth}
               measureRef={virtualizer.measureElement}
               dataIndex={virtualRow.index}
-              commonT={state.commonT}
-              style={rowStyle}
+              commonT={commonT}
+              style={VIRTUAL_ROW_STYLE}
+              rowContentVisibility={TABLE_ROW_CONTENT_VISIBILITY}
             />
           );
         }
@@ -311,8 +343,8 @@ function VirtualizedTableBodyInner({ virtualizer, state, currentVirtualRows, scr
               key={`overflow-${row.item.id}`}
               item={row.item}
               overflowCount={row.overflowCount}
-              activeColumns={state.activeColumns}
-              tableWidth={state.tableWidth}
+              activeColumns={activeColumns}
+              tableWidth={tableWidth}
             />
           );
         }
@@ -321,33 +353,33 @@ function VirtualizedTableBodyInner({ virtualizer, state, currentVirtualRows, scr
           <FileRow
             key={`file-${row.item.id}-${row.file.id}`}
             item={row.item}
-            handleFileSelection={state.interactions.handleFileSelection}
-            handleFileDownload={state.interactions.handleFileDownload}
-            handleFileStream={state.handleFileStream}
-            handleAudioPlay={state.handleAudioPlay}
-            activeColumns={state.activeColumns}
-            downloadHistoryLookup={state.downloadHistoryLookup}
-            isBlurred={state.isBlurred}
-            tableWidth={state.tableWidth}
+            handleFileSelection={handleFileSelection}
+            handleFileDownload={handleFileDownload}
+            handleFileStream={handleFileStream}
+            handleAudioPlay={handleAudioPlay}
+            activeColumns={activeColumns}
+            downloadHistoryLookup={downloadHistoryLookup}
+            isBlurred={isBlurred}
+            tableWidth={tableWidth}
             file={row.file}
             fileIndex={row.fileIndex}
             measureRef={virtualizer.measureElement}
             dataIndex={virtualRow.index}
-            style={rowStyle}
+            style={VIRTUAL_ROW_STYLE}
           />
         );
       })}
       {paddingBottom > 0 && (
         <tr>
           <td
-            colSpan={state.activeColumns.length + 2}
+            colSpan={activeColumns.length + 2}
             style={{ height: paddingBottom, padding: 0, border: 0 }}
           />
         </tr>
       )}
     </tbody>
   );
-}
+});
 
 function WindowVirtualizedBody(props) {
   const state = useTableBodyState(props);
@@ -380,9 +412,30 @@ function WindowVirtualizedBody(props) {
   return (
     <VirtualizedTableBodyInner
       virtualizer={windowVirtualizer}
-      state={state}
       currentVirtualRows={currentVirtualRows}
       scrollMargin={scrollMargin}
+      flattenedRows={state.flattenedRows}
+      activeColumns={state.activeColumns}
+      resolvedColumnWidths={state.resolvedColumnWidths}
+      resolvedColumnStyles={state.resolvedColumnStyles}
+      tagMappings={state.tagMappings}
+      downloadHistoryLookup={state.downloadHistoryLookup}
+      toggleFiles={state.toggleFiles}
+      apiKey={state.apiKey}
+      onDelete={state.onDelete}
+      setToast={state.setToast}
+      activeType={state.activeType}
+      isBlurred={state.isBlurred}
+      viewMode={state.viewMode}
+      tableWidth={state.tableWidth}
+      handleItemSelection={state.interactions.handleItemSelection}
+      handleFileSelection={state.interactions.handleFileSelection}
+      handleFileDownload={state.interactions.handleFileDownload}
+      handleFileStream={state.handleFileStream}
+      handleAudioPlay={state.handleAudioPlay}
+      tbodyRef={state.tbodyRef}
+      t={state.t}
+      commonT={state.commonT}
     />
   );
 }
@@ -418,9 +471,30 @@ function ContainerVirtualizedBody(props) {
   return (
     <VirtualizedTableBodyInner
       virtualizer={containerVirtualizer}
-      state={state}
       currentVirtualRows={currentVirtualRows}
       scrollMargin={0}
+      flattenedRows={state.flattenedRows}
+      activeColumns={state.activeColumns}
+      resolvedColumnWidths={state.resolvedColumnWidths}
+      resolvedColumnStyles={state.resolvedColumnStyles}
+      tagMappings={state.tagMappings}
+      downloadHistoryLookup={state.downloadHistoryLookup}
+      toggleFiles={state.toggleFiles}
+      apiKey={state.apiKey}
+      onDelete={state.onDelete}
+      setToast={state.setToast}
+      activeType={state.activeType}
+      isBlurred={state.isBlurred}
+      viewMode={state.viewMode}
+      tableWidth={state.tableWidth}
+      handleItemSelection={state.interactions.handleItemSelection}
+      handleFileSelection={state.interactions.handleFileSelection}
+      handleFileDownload={state.interactions.handleFileDownload}
+      handleFileStream={state.handleFileStream}
+      handleAudioPlay={state.handleAudioPlay}
+      tbodyRef={state.tbodyRef}
+      t={state.t}
+      commonT={state.commonT}
     />
   );
 }

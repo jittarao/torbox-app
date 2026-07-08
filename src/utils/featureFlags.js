@@ -13,6 +13,10 @@ export function isSearchPageDisabled() {
   return isTruthyEnv(process.env.SEARCH_PAGE_DISABLED);
 }
 
+export function isOnboardingAuxActive() {
+  return isTruthyEnv(process.env.ONBOARDING_AUX);
+}
+
 export function getSearchPageDisabledResponse(
   message = 'Search page is disabled on this instance'
 ) {

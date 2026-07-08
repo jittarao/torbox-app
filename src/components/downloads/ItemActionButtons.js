@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Delete,
-  Download,
-  Files,
-  Play,
-  Refresh,
-  Stop,
-} from '@/components/icons';
+import Check from '@/components/icons/Check';
+import ChevronDown from '@/components/icons/ChevronDown';
+import ChevronUp from '@/components/icons/ChevronUp';
+import Delete from '@/components/icons/Delete';
+import Download from '@/components/icons/Download';
+import Files from '@/components/icons/Files';
+import Play from '@/components/icons/Play';
+import Refresh from '@/components/icons/Refresh';
+import Stop from '@/components/icons/Stop';
 import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';

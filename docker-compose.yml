@@ -90,6 +90,7 @@ services:
       - BACKEND_DISABLED=false
       # Hide search page and nav link when true (self-host opt-out)
       - SEARCH_PAGE_DISABLED=${SEARCH_PAGE_DISABLED:-false}
+      - ONBOARDING_AUX=${ONBOARDING_AUX:-false}
       # Backend API URL (uses service name for internal Docker network communication)
       - BACKEND_URL=http://torbox-backend:3001
       - BACKEND_SERVICE_SECRET=${BACKEND_SERVICE_SECRET}
