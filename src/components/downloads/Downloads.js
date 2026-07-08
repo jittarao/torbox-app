@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   useDownloadsPageState,
@@ -67,6 +68,15 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
     showDesktopFiltersSidebar,
   } = useDownloadsPageState(apiKey);
 
+  const isTypeAvailable = useCallback(
+    (type) => {
+      if (type === 'all') return true;
+      if (type === 'usenet') return canUseUsenet;
+      return true;
+    },
+    [canUseUsenet]
+  );
+
   const filtersSidebarWidth = filtersSidebarCollapsed
     ? FILTERS_SIDEBAR_COLLAPSED
     : FILTERS_SIDEBAR_EXPANDED;
@@ -90,11 +100,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         onApiKeyChange={onApiKeyChange}
         activeType={activeType}
         setActiveType={setActiveType}
-        isTypeAvailable={(type) => {
-          if (type === 'all') return true;
-          if (type === 'usenet') return canUseUsenet;
-          return true;
-        }}
+        isTypeAvailable={isTypeAvailable}
         pollSchedule={pollSchedule}
         isRefreshing={isRefreshing}
         canManualRefresh={canManualRefresh}

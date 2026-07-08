@@ -1,5 +1,6 @@
 'use client';
 
+import { useShallow } from 'zustand/react/shallow';
 import { COLUMNS } from '@/components/constants';
 import useIsMobile from '@/hooks/useIsMobile';
 import ResizableColumn from './ResizableColumn';
@@ -10,18 +11,19 @@ import {
   tableHeaderCheckboxCell,
 } from './utils/responsiveLayout';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 
 export default function TableHeader({
   activeColumns,
   resolvedColumnWidths,
   updateColumnWidth,
-  selectedItems,
   onSelectAll,
   items,
   sortField,
   sortDirection,
   onSort,
 }) {
+  const selectedItems = useDownloadsSelectionStore(useShallow((s) => s.selectedItems));
   const columnT = useTranslations('Columns');
   const isMobile = useIsMobile();
 

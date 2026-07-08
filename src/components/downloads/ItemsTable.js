@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import dynamic from 'next/dynamic';
 import useIsClient from '@/hooks/useIsClient';
-import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useDownloadsDataContext } from './DownloadsDataContext';
 import { useDownloadsFilterContext } from './DownloadsFilterContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
@@ -12,19 +11,23 @@ import TableHeader from './TableHeader';
 import TableBody from './TableBody';
 import { useColumnWidths } from '@/hooks/useColumnWidths';
 import useIsMobile from '@/hooks/useIsMobile';
-import TrackSelectionModal from './TrackSelectionModal';
-import OpenInModal from './OpenInModal';
 import { useStreamInitializer } from './hooks/useStreamInitializer';
 import { tableContainerClass } from './utils/responsiveLayout';
 import { computeResolvedColumnWidths } from './utils/tableColumnLayout';
+
+const OpenInModal = dynamic(() => import('./OpenInModal'), { ssr: false });
+const TrackSelectionModal = dynamic(() => import('./TrackSelectionModal'), { ssr: false });
 
 export default function ItemsTable() {
   const { sortedItems, activeColumns, downloadHistoryLookup, tagMappings } =
     useDownloadsDataContext();
 
-  const selectedItems = useDownloadsSelectionStore(useShallow((s) => s.selectedItems));
-
-  const { sortField, sortDirection, handleSort, search: fileSearch } = useDownloadsFilterContext();
+  const {
+    sortField,
+    sortDirection,
+    handleSort,
+    debouncedSearch: fileSearch,
+  } = useDownloadsFilterContext();
 
   const { activeType, isBlurred, isFullscreen, displayViewMode, scrollContainerRef } =
     useDownloadsUIContext();
@@ -98,7 +101,6 @@ export default function ItemsTable() {
             activeColumns={activeColumns}
             resolvedColumnWidths={isClient ? columnLayout.resolved : {}}
             updateColumnWidth={updateColumnWidth}
-            selectedItems={selectedItems}
             onSelectAll={handleSelectAll}
             items={sortedItems}
             sortField={sortField}
@@ -109,7 +111,6 @@ export default function ItemsTable() {
             items={sortedItems}
             activeColumns={activeColumns}
             resolvedColumnWidths={columnLayout.resolved}
-            selectedItems={selectedItems}
             onFileSelect={handleFileSelect}
             setSelectedItems={setSelectedItems}
             downloadHistoryLookup={downloadHistoryLookup}
@@ -130,25 +131,29 @@ export default function ItemsTable() {
           />
         </table>
       </div>
-      <OpenInModal
-        isOpen={openInModal.isOpen}
-        onClose={closeOpenInModal}
-        onSelect={handleOpenInChoice}
-        file={openInModal.file}
-        fileName={openInModal.fileName}
-        itemName={openInModal.itemName}
-        isLoading={isCreatingStream}
-        loadingChoice={loadingChoice}
-        error={openInError}
-      />
-      <TrackSelectionModal
-        isOpen={trackSelectionModal.isOpen}
-        onClose={closeTrackSelectionModal}
-        onPlay={handleTrackSelection}
-        metadata={trackSelectionModal.metadata}
-        introInformation={trackSelectionModal.introInformation}
-        fileName={trackSelectionModal.fileName}
-      />
+      {openInModal.isOpen && (
+        <OpenInModal
+          isOpen={openInModal.isOpen}
+          onClose={closeOpenInModal}
+          onSelect={handleOpenInChoice}
+          file={openInModal.file}
+          fileName={openInModal.fileName}
+          itemName={openInModal.itemName}
+          isLoading={isCreatingStream}
+          loadingChoice={loadingChoice}
+          error={openInError}
+        />
+      )}
+      {trackSelectionModal.isOpen && (
+        <TrackSelectionModal
+          isOpen={trackSelectionModal.isOpen}
+          onClose={closeTrackSelectionModal}
+          onPlay={handleTrackSelection}
+          metadata={trackSelectionModal.metadata}
+          introInformation={trackSelectionModal.introInformation}
+          fileName={trackSelectionModal.fileName}
+        />
+      )}
     </>
   );
 }
