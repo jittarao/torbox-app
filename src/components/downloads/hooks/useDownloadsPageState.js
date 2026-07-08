@@ -42,16 +42,14 @@ export function useDownloadsPageState(apiKey) {
   const downloadPanelT = useTranslations('DownloadPanel');
   const pollingPaused = usePollingPauseStore(selectIsPaused);
   const permissions = useSessionStore((state) => state.permissions);
-  const { expandedById, expandIds, collapseAllExpanded, toggleExpanded, setExpanded } =
-    useDownloadsUiStore(
-      useShallow((s) => ({
-        expandedById: s.expandedById,
-        expandIds: s.expandIds,
-        collapseAllExpanded: s.collapseAll,
-        toggleExpanded: s.toggleExpanded,
-        setExpanded: s.setExpanded,
-      }))
-    );
+  const { expandIds, collapseAllExpanded, toggleExpanded, setExpanded } = useDownloadsUiStore(
+    useShallow((s) => ({
+      expandIds: s.expandIds,
+      collapseAllExpanded: s.collapseAll,
+      toggleExpanded: s.toggleExpanded,
+      setExpanded: s.setExpanded,
+    }))
+  );
 
   const { activeType, setActiveType } = useStoredAssetType();
   const { viewMode, setViewMode } = useDownloadsViewMode();
@@ -100,7 +98,7 @@ export function useDownloadsPageState(apiKey) {
   const listFilterParams = useMemo(
     () => ({
       ...filterParams,
-      search: filterData.search,
+      search: filterData.debouncedSearch,
       statusFilter: filterData.statusFilter,
       appliedFilters: filterData.appliedFilters,
       orViewFilters: filterData.orViewFilters,
@@ -109,7 +107,7 @@ export function useDownloadsPageState(apiKey) {
     }),
     [
       filterParams,
-      filterData.search,
+      filterData.debouncedSearch,
       filterData.statusFilter,
       filterData.appliedFilters,
       filterData.orViewFilters,
@@ -222,7 +220,7 @@ export function useDownloadsPageState(apiKey) {
 
   const { searchExpandedItemIdsRef, collapseAllFiles, notifySearchToggleFiles } =
     useDownloadsSearchExpand({
-      search: filterData.search,
+      search: filterData.debouncedSearch,
       sortedItems,
       selectedItems,
       setExpanded,
@@ -257,10 +255,11 @@ export function useDownloadsPageState(apiKey) {
 
   const toggleFiles = useCallback(
     (itemId) => {
+      const expandedById = useDownloadsUiStore.getState().expandedById;
       notifySearchToggleFiles(itemId, Boolean(expandedById[itemId]));
       toggleExpanded(itemId);
     },
-    [toggleExpanded, notifySearchToggleFiles, expandedById]
+    [toggleExpanded, notifySearchToggleFiles]
   );
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
@@ -11,6 +11,7 @@ import {
   countDownloadsPerTrackerFromStore,
   countDownloadsPerSourceFromStore,
 } from '@/store/downloadsDerivedSelectors';
+import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 import { formatTrackerLabel } from '@/components/downloads/filters/trackerDisplay';
 import { formatSourceLabel } from '@/components/downloads/filters/sourceDisplay';
 
@@ -45,6 +46,15 @@ function buildSourceEntries(torboxSlice) {
   }));
 }
 
+function rowRefsUnchanged(viewIds, entities, cachedIds, cachedRowRefs) {
+  if (cachedIds.length !== viewIds.length) return false;
+  for (let i = 0; i < viewIds.length; i++) {
+    if (cachedIds[i] !== viewIds[i]) return false;
+    if (cachedRowRefs[i] !== entities[viewIds[i]]) return false;
+  }
+  return true;
+}
+
 /**
  * Sidebar counts and tracker/source lists derived from entity store (single subscription).
  */
@@ -58,7 +68,45 @@ export function useFiltersSidebarCounts(activeAssetType, views) {
   const tagMappings = useDownloadTagsStore((s) => s.tagMappings);
   const downloadHistory = useDownloadHistoryStore((s) => s.downloadHistory);
 
+  const viewIds = useMemo(
+    () => selectViewOrderedIds(torboxSlice, activeAssetType),
+    [torboxSlice, activeAssetType]
+  );
+
+  const countsCacheRef = useRef({
+    viewIds: [],
+    rowRefs: [],
+    activeAssetType: null,
+    views,
+    tagMappings: null,
+    downloadHistory: null,
+    tagCounts: {},
+    viewCounts: {},
+    trackerEntries: [],
+    sourceEntries: [],
+  });
+
   return useMemo(() => {
+    const cache = countsCacheRef.current;
+    const metaUnchanged =
+      cache.activeAssetType === activeAssetType &&
+      cache.views === views &&
+      cache.tagMappings === tagMappings &&
+      cache.downloadHistory === downloadHistory;
+
+    const refsUnchanged =
+      metaUnchanged &&
+      rowRefsUnchanged(viewIds, torboxSlice.entities, cache.viewIds, cache.rowRefs);
+
+    if (refsUnchanged) {
+      return {
+        tagCounts: cache.tagCounts,
+        viewCounts: cache.viewCounts,
+        trackerEntries: cache.trackerEntries,
+        sourceEntries: cache.sourceEntries,
+      };
+    }
+
     const tagCounts = countDownloadsPerTagFromStore(torboxSlice, activeAssetType, tagMappings);
     const viewCounts = countDownloadsPerViewFromStore(
       views,
@@ -70,6 +118,19 @@ export function useFiltersSidebarCounts(activeAssetType, views) {
     const trackerEntries = buildTrackerEntries(torboxSlice);
     const sourceEntries = buildSourceEntries(torboxSlice);
 
+    countsCacheRef.current = {
+      viewIds: viewIds.slice(),
+      rowRefs: viewIds.map((id) => torboxSlice.entities[id]),
+      activeAssetType,
+      views,
+      tagMappings,
+      downloadHistory,
+      tagCounts,
+      viewCounts,
+      trackerEntries,
+      sourceEntries,
+    };
+
     return { tagCounts, viewCounts, trackerEntries, sourceEntries };
-  }, [torboxSlice, activeAssetType, views, tagMappings, downloadHistory]);
+  }, [torboxSlice, activeAssetType, views, tagMappings, downloadHistory, viewIds]);
 }

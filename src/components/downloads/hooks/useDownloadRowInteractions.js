@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
@@ -184,13 +184,16 @@ export function useDownloadRowInteractions({
     [assetKey, activeType, downloadSingle, setToast, toastMessages]
   );
 
-  return {
-    handleItemSelection,
-    handleFileSelection,
-    handleFileDownload,
-    isSelectionDisabled,
-    assetKey,
-    lastClickedItemIndexRef,
-    lastClickedFileIndexRef,
-  };
+  return useMemo(
+    () => ({
+      handleItemSelection,
+      handleFileSelection,
+      handleFileDownload,
+      isSelectionDisabled,
+      assetKey,
+      lastClickedItemIndexRef,
+      lastClickedFileIndexRef,
+    }),
+    [handleItemSelection, handleFileSelection, handleFileDownload, isSelectionDisabled, assetKey]
+  );
 }

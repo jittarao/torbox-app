@@ -246,7 +246,7 @@ export default function CardList() {
     activeColumns,
     downloadHistoryLookup,
   } = useDownloadsDataContext();
-  const { search: fileSearch = '' } = useDownloadsFilterContext();
+  const { debouncedSearch: fileSearch = '' } = useDownloadsFilterContext();
 
   const {
     activeType,
