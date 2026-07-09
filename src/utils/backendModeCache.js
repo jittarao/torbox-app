@@ -118,3 +118,13 @@ export function resetBackendModeCacheForTests() {
   loggedOnce = false;
   emit();
 }
+
+/** Force backend availability for tests (avoids mock.module cache issues). */
+export function setBackendAvailableForTests(available = true) {
+  setSnapshot({
+    mode: available ? 'backend' : 'local',
+    hasChecked: true,
+    isLoading: false,
+    isChecking: false,
+  });
+}

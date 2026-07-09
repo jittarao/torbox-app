@@ -5,6 +5,7 @@ import { fetchUserProfile, getUserPermissions } from '@/utils/userProfile';
 import { getItem, setItem } from '@/utils/storage';
 import { useTagsStore } from '@/store/tagsStore';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
+import { useProtectedDownloadsStore } from '@/store/protectedDownloadsStore';
 import { useCustomViewsStore } from '@/store/customViewsStore';
 import { useAutomationRulesStore } from '@/store/automationRulesStore';
 import { useNotificationsStore } from '@/store/notificationsStore';
@@ -55,6 +56,7 @@ function fanOutApiKey(apiKey, prevApiKey) {
 
     useTagsStore.getState().setApiKey(apiKey);
     useDownloadTagsStore.getState().setApiKey(apiKey);
+    useProtectedDownloadsStore.getState().setApiKey(apiKey);
     useCustomViewsStore.getState().setApiKey(apiKey);
     useAutomationRulesStore.getState().setApiKey(apiKey);
     useNotificationsStore.getState().setApiKey(apiKey);
