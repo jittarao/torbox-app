@@ -1,5 +1,10 @@
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
 import logger from '../utils/logger.js';
+import { DownloadProtectionService } from '../services/DownloadProtectionService.js';
+import {
+  isDestructiveOperation,
+  PROTECTION_SKIP_REASON,
+} from '../config/destructiveDownloadOperations.mjs';
 
 function resolveDownloadAssetType(download) {
   return download?.assetType || 'torrent';
@@ -29,6 +34,7 @@ class RuleEvaluator {
   constructor(userDb, apiClient) {
     this.db = userDb;
     this.apiClient = apiClient;
+    this.protectionService = new DownloadProtectionService(userDb);
 
     // Build the condition-handler lookup once so getConditionHandler() does a simple Map
     // lookup instead of allocating a new object with 25+ bound functions on every call.
@@ -1455,6 +1461,24 @@ class RuleEvaluator {
 
     const assetType = resolveDownloadAssetType(torrent);
     const queued = isQueuedDownload(torrent);
+
+    if (isDestructiveOperation(action.type)) {
+      const downloadId = this.extractDownloadId(torrent);
+      if (downloadId) {
+        const protectedSet = options.protectedSet;
+        const isProtected = protectedSet
+          ? protectedSet.has(String(downloadId))
+          : this.protectionService.isProtected(downloadId);
+        if (isProtected) {
+          return {
+            applied: false,
+            skipped: true,
+            reason: PROTECTION_SKIP_REASON,
+            message: 'Action skipped: download is protected',
+          };
+        }
+      }
+    }
 
     switch (action.type) {
       case 'stop_seeding':
