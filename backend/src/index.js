@@ -29,6 +29,7 @@ import { setupArchivedDownloadsRoutes } from './routes/archivedDownloads.js';
 import { setupCustomViewsRoutes } from './routes/customViews.js';
 import { setupTagsRoutes } from './routes/tags.js';
 import { setupDownloadTagsRoutes } from './routes/downloadTags.js';
+import { setupProtectedDownloadsRoutes } from './routes/protectedDownloads.js';
 import { setupUploadsRoutes } from './routes/uploads.js';
 import { setupLinkHistoryRoutes } from './routes/linkHistory.js';
 import UploadQuotaService from './services/UploadQuotaService.js';
@@ -231,6 +232,7 @@ class TorBoxBackend {
     setupCustomViewsRoutes(this.app, this);
     setupTagsRoutes(this.app, this);
     setupDownloadTagsRoutes(this.app, this);
+    setupProtectedDownloadsRoutes(this.app, this);
     setupUploadsRoutes(this.app, this);
     setupLinkHistoryRoutes(this.app, this);
     setupAdminRoutes(this.app, this);
