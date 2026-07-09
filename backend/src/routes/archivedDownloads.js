@@ -1,6 +1,12 @@
 import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
+import { DownloadProtectionService } from '../services/DownloadProtectionService.js';
+import {
+  handleDownloadProtectedError,
+  assertDownloadsDestructiveAllowed,
+} from '../middleware/downloadProtectionGuard.js';
+import { respondDownloadProtected } from '../utils/downloadProtectionResponse.js';
 
 export const BULK_ARCHIVE_MAX = 500;
 
@@ -143,6 +149,15 @@ export function setupArchivedDownloadsRoutes(app, backend) {
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
+        try {
+          assertDownloadsDestructiveAllowed(userDb.db, 'archive', [torrent_id]);
+        } catch (error) {
+          if (handleDownloadProtectedError(res, error)) {
+            return;
+          }
+          throw error;
+        }
+
         // Check if already archived
         const existing = userDb.db
           .prepare(
@@ -259,11 +274,25 @@ export function setupArchivedDownloadsRoutes(app, backend) {
         }
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-        const torrentIds = bulkArchiveDownloadsInDb(userDb.db, validated);
+        const protectionService = new DownloadProtectionService(userDb.db);
+        const torrentIdsToArchive = validated.map((entry) => entry.torrent_id);
+        const { allowed: allowedIds } =
+          protectionService.partitionByProtection(torrentIdsToArchive);
+        const allowedSet = new Set(allowedIds);
+        const archivable = validated.filter((entry) => allowedSet.has(entry.torrent_id));
+
+        if (archivable.length === 0) {
+          return respondDownloadProtected(res, torrentIdsToArchive);
+        }
+
+        const torrentIds = bulkArchiveDownloadsInDb(userDb.db, archivable);
 
         res.json({
           success: true,
-          data: { torrentIds },
+          data: {
+            torrentIds,
+            blocked_ids: torrentIdsToArchive.filter((id) => !allowedSet.has(id)),
+          },
         });
       } catch (error) {
         logger.error('Error bulk archiving downloads', error, {
