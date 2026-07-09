@@ -1,9 +1,16 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { EXTERNAL_APP_NOT_INSTALLED, launchExternalUrl } from '@/utils/launchExternalUrl';
 
 describe('launchExternalUrl', () => {
+  let originalCreateElement;
+
+  beforeEach(() => {
+    originalCreateElement = document.createElement.bind(document);
+  });
+
   afterEach(() => {
     document.body.innerHTML = '';
+    document.createElement = originalCreateElement;
   });
 
   test('resolves when window blurs before timeout', async () => {
@@ -35,7 +42,6 @@ describe('launchExternalUrl', () => {
 
   test('clicks a transient anchor with the target URL', () => {
     const clicked = [];
-    const originalCreateElement = document.createElement.bind(document);
 
     document.createElement = (tagName) => {
       const element = originalCreateElement(tagName);
@@ -49,7 +55,5 @@ describe('launchExternalUrl', () => {
     window.dispatchEvent(new Event('blur'));
 
     expect(clicked).toEqual(['stremio://search?search=test']);
-
-    document.createElement = originalCreateElement;
   });
 });

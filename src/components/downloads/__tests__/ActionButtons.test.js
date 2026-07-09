@@ -24,6 +24,16 @@ mock.module('../DownloadsUIContext', () => ({
   useDownloadsUIContext: () => mockUiContext,
 }));
 
+mock.module('../DownloadsContext', () => ({
+  useDownloadsContext: () => ({
+    stopSeedingItems: async () => ({ successCount: 0, skippedCount: 0 }),
+    isStoppingSeeding: false,
+    protectItems: async () => ({ success: true }),
+    unprotectItems: async () => ({ success: true }),
+    isUpdatingProtection: false,
+  }),
+}));
+
 mock.module('@/store/downloadsSelectionStore', () => {
   const store = (selector) => selector(mockSelectionState);
   store.getState = () => mockSelectionState;
@@ -34,16 +44,20 @@ mock.module('@/store/downloadsSelectionStore', () => {
   };
 });
 
+let __setPatchItemImpl = () => {};
+
 mock.module('@/store/torboxDownloadsStore', () => {
   let patchItemImpl = () => {};
+  const setPatchItemImpl = (fn) => {
+    patchItemImpl = fn;
+  };
+  __setPatchItemImpl = setPatchItemImpl;
   return {
     useTorboxDownloadsStore: (selector) =>
       selector({
         patchItem: (...args) => patchItemImpl(...args),
       }),
-    __setPatchItemImpl: (fn) => {
-      patchItemImpl = fn;
-    },
+    __setPatchItemImpl: setPatchItemImpl,
   };
 });
 
@@ -54,6 +68,11 @@ mock.module('@/store/torboxDownloadsSelectors', () => ({
 mock.module('@/utils/downloadSelectionId', () => ({
   findItemBySelectionId: (allItems, selectionId) =>
     allItems.find((item) => String(item.id) === selectionId),
+  getDownloadSelectionId: (item) => {
+    if (!item) return '';
+    const assetType = item.assetType || item.asset_type || 'torrents';
+    return `${assetType}:${item.id}`;
+  },
 }));
 
 mock.module('@/utils/utility', () => ({
@@ -109,10 +128,10 @@ mock.module('../../Tags/TagAssignmentModal', () => ({
 const mockFetch = mock(() =>
   Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) })
 );
+const originalFetch = globalThis.fetch;
 globalThis.fetch = mockFetch;
 
 const { default: ActionButtons } = await import('../ActionBar/components/ActionButtons');
-const { __setPatchItemImpl } = await import('@/store/torboxDownloadsStore');
 
 function renderButtons({ allItems, activeType = 'torrents' } = {}) {
   return render(
@@ -143,6 +162,7 @@ describe('ActionButtons bulk Airlock', () => {
     mockSelectionState.selectedItems = { items: new Set(), files: new Map() };
     mockUiContext.isBackendAvailable = false;
     __setPatchItemImpl(() => {});
+    globalThis.fetch = mockFetch;
     mockFetch.mockReset();
     mockFetch.mockImplementation(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) })
@@ -152,6 +172,7 @@ describe('ActionButtons bulk Airlock', () => {
   afterEach(() => {
     cleanup();
     document.body.innerHTML = '';
+    globalThis.fetch = originalFetch;
   });
 
   it('shows Lock when all selected rows are unlocked', () => {

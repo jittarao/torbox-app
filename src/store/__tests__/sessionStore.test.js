@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, mock } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test';
 
 function mockStoreWithSetApiKey(realStore) {
   const realGetState = realStore.getState.bind(realStore);
@@ -14,42 +14,53 @@ function mockStoreWithSetApiKey(realStore) {
 
 const { useNotificationsStore: realNotificationsStore } = await import('../notificationsStore.js');
 
-mock.module('@/store/tagsStore', () => ({
-  useTagsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
-}));
-mock.module('@/store/downloadTagsStore', () => ({
-  useDownloadTagsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
-}));
-mock.module('@/store/customViewsStore', () => ({
-  useCustomViewsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
-}));
-mock.module('@/store/automationRulesStore', () => ({
-  useAutomationRulesStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
-}));
-mock.module('@/store/notificationsStore', () => ({
-  useNotificationsStore: mockStoreWithSetApiKey(realNotificationsStore),
-}));
-mock.module('@/store/healthStore', () => ({
-  useHealthStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
-}));
-mock.module('@/store/rssStore', () => ({
-  useRssStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
-}));
-mock.module('@/utils/userProfile', () => ({
-  fetchUserProfile: mock(async () => ({ plan: 2 })),
-  getUserPermissions: mock(() => ({ planId: 2 })),
-}));
-
-const { useSessionStore } = await import('../sessionStore.js');
+function applySessionStoreMocks() {
+  mock.module('@/store/tagsStore', () => ({
+    useTagsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/store/downloadTagsStore', () => ({
+    useDownloadTagsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/store/protectedDownloadsStore', () => ({
+    useProtectedDownloadsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/store/customViewsStore', () => ({
+    useCustomViewsStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/store/automationRulesStore', () => ({
+    useAutomationRulesStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/store/notificationsStore', () => ({
+    useNotificationsStore: mockStoreWithSetApiKey(realNotificationsStore),
+  }));
+  mock.module('@/store/healthStore', () => ({
+    useHealthStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/store/rssStore', () => ({
+    useRssStore: { getState: () => ({ setApiKey: mock(() => {}) }) },
+  }));
+  mock.module('@/utils/userProfile', () => ({
+    fetchUserProfile: mock(async () => ({ plan: 2 })),
+    getUserPermissions: mock(() => ({ planId: 2 })),
+  }));
+}
 
 describe('sessionStore', () => {
-  beforeEach(() => {
+  let useSessionStore;
+
+  beforeEach(async () => {
+    applySessionStoreMocks();
+    ({ useSessionStore } = await import('../sessionStore.js'));
     useSessionStore.setState({
       apiKey: '',
       hydrated: false,
       permissions: null,
       permissionsLoading: false,
     });
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   test('setApiKey rejects invalid keys', () => {
