@@ -23,6 +23,10 @@ import {
   MANUAL_EXECUTION_RATE_LIMIT_MS,
 } from './helpers/constants.js';
 import { getRuleCompatibilityIssue } from './helpers/ruleCapabilities.js';
+import {
+  buildRuleExecutionMessage,
+  shouldRecordRuleExecution,
+} from './helpers/ruleExecutionLogging.js';
 import { fetchDownloadsForAssetTypes } from './helpers/downloadFetch.js';
 
 /**
@@ -1033,19 +1037,21 @@ class AutomationEngine {
       }
 
       // Execute actions
-      const { successCount, errorCount } = await this.ruleExecutor.executeActions(
-        rule,
-        torrentsToProcess
-      );
+      const {
+        successCount,
+        errorCount,
+        protectedSkippedCount = 0,
+      } = await this.ruleExecutor.executeActions(rule, torrentsToProcess);
 
-      // Only update execution status and log if actions were actually executed
-      if (successCount > 0) {
+      const batchResult = { successCount, errorCount, protectedSkippedCount };
+
+      if (shouldRecordRuleExecution(batchResult)) {
         await this.ruleRepository.recordExecution(
           rule.id,
           rule.name,
           successCount,
-          errorCount === 0,
-          errorCount > 0 ? `${errorCount} actions failed` : null
+          errorCount === 0 && protectedSkippedCount === 0,
+          buildRuleExecutionMessage(batchResult)
         );
         cache.invalidateRecentRuleExecutions(this.authId);
       } else {
@@ -1059,6 +1065,7 @@ class AutomationEngine {
           processedCount: torrentsToProcess.length,
           successCount,
           errorCount,
+          protectedSkippedCount,
         });
       }
 
@@ -1072,6 +1079,7 @@ class AutomationEngine {
         processedCount: torrentsToProcess.length,
         successCount,
         errorCount,
+        protectedSkippedCount,
         executionTime: `${executionTime}s`,
       });
 

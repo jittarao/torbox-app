@@ -9,6 +9,10 @@ import cache from '../utils/cache.js';
 import Semaphore from '../utils/semaphore.js';
 import Mutex from '../utils/mutex.js';
 import { isTagActionType, notifyTagsChanged } from '../utils/userEvents.js';
+import {
+  buildRuleExecutionMessage,
+  shouldRecordRuleExecution,
+} from './helpers/ruleExecutionLogging.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
@@ -929,6 +933,7 @@ class PollingScheduler {
       );
       let successCount = 0;
       let errorCount = 0;
+      let protectedSkippedCount = 0;
       for (let i = 0; i < torrentsToProcess.length; i += ACTION_BATCH_CHUNK_SIZE) {
         const chunk = torrentsToProcess.slice(i, i + ACTION_BATCH_CHUNK_SIZE);
         const chunkResult = await withTimeout(
@@ -938,14 +943,16 @@ class PollingScheduler {
         );
         successCount += chunkResult.successCount;
         errorCount += chunkResult.errorCount;
+        protectedSkippedCount += chunkResult.protectedSkippedCount ?? 0;
       }
-      if (successCount > 0) {
+      const batchResult = { successCount, errorCount, protectedSkippedCount };
+      if (shouldRecordRuleExecution(batchResult)) {
         await engine.ruleRepository.recordExecution(
           rule.id,
           rule.name,
           successCount,
-          errorCount === 0,
-          errorCount > 0 ? `${errorCount} actions failed` : null
+          errorCount === 0 && protectedSkippedCount === 0,
+          buildRuleExecutionMessage(batchResult)
         );
         await engine.ruleRepository.updateLastEvaluatedAt(rule.id);
         cache.invalidateRecentRuleExecutions(authId);
