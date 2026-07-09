@@ -3,6 +3,7 @@ import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/cons
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 export async function POST(request) {
   const auth = await requireTorboxApiKey();
   if (auth.response) return auth.response;
@@ -10,6 +11,11 @@ export async function POST(request) {
 
   try {
     const { torrent_id, operation } = await request.json();
+
+    if (operation === 'stop_seeding') {
+      const blocked = await guardDestructiveOrRespond(apiKey, [torrent_id], 'stop_seeding');
+      if (blocked) return blocked;
+    }
 
     const response = await torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/controltorrent`, {
       cache: 'no-store',

@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 const CACHE_TYPE = 'webdl';
 
 // Get all web downloads
@@ -173,6 +174,9 @@ export async function DELETE(request) {
   const { id } = await request.json();
 
   try {
+    const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
+    if (blocked) return blocked;
+
     // First, fetch the webdl data to determine if it's queued
     const [downloadsResponse, queuedResponse] = await Promise.all([
       torboxFetch(`${API_BASE}/${API_VERSION}/api/webdl/mylist?id=${id}`, {

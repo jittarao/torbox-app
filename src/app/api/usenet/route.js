@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 const CACHE_TYPE = 'usenet';
 
 // Get all usenet downloads
@@ -272,6 +273,9 @@ export async function DELETE(request) {
   const { id } = await request.json();
 
   try {
+    const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
+    if (blocked) return blocked;
+
     // First, fetch the usenet data to determine if it's queued
     const [downloadsResponse, queuedResponse] = await Promise.all([
       torboxFetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?id=${id}`, {
