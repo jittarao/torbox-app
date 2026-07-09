@@ -8,6 +8,7 @@ import {
   FileDown,
   Lock,
   Refresh,
+  Shield,
   Unlock,
   VerticalEllipsis,
 } from '@/components/icons';
@@ -79,10 +80,14 @@ function MenuItems({
   showDelete,
   showArchive,
   showAirlock,
+  showProtection,
+  isProtected,
   airlocked,
   onDownload,
   onDelete,
   onArchive,
+  onToggleProtection,
+  isProtectionUpdating,
   onToggleAirlock,
   isArchiving,
   isAirlockUpdating,
@@ -126,6 +131,21 @@ function MenuItems({
     );
   }
 
+  if (showProtection && onToggleProtection) {
+    items.push(
+      <MenuItemButton
+        key="protection"
+        menuVariant={menuVariant}
+        tone="accent"
+        onClick={onToggleProtection}
+        disabled={isProtectionUpdating}
+        icon={isProtectionUpdating ? <Spinner size="xs" /> : <Shield />}
+      >
+        {isProtected ? t('unprotectDownload') : t('protectDownload')}
+      </MenuItemButton>
+    );
+  }
+
   if (showDelete && onDelete) {
     items.push(
       <MenuItemButton
@@ -133,7 +153,7 @@ function MenuItems({
         menuVariant={menuVariant}
         tone="danger"
         onClick={onDelete}
-        disabled={isDeleting}
+        disabled={isDeleting || isProtected}
         icon={isDeleting ? <Spinner size="xs" /> : <Delete />}
       >
         {actionT('delete.label')}
@@ -147,7 +167,7 @@ function MenuItems({
         key="archive"
         menuVariant={menuVariant}
         onClick={onArchive}
-        disabled={isArchiving}
+        disabled={isArchiving || isProtected}
         icon={isArchiving ? <Spinner size="xs" /> : <Archive />}
       >
         {t('archive')}
@@ -277,6 +297,10 @@ export default function MoreOptionsDropdown({
   showArchive = false,
   onArchive,
   isArchiving = false,
+  showProtection = false,
+  isProtected = false,
+  onToggleProtection,
+  isProtectionUpdating = false,
   showRetry = false,
   onRetry,
   isRetrying = false,
@@ -706,7 +730,19 @@ export default function MoreOptionsDropdown({
       showDelete={showDelete}
       showArchive={showArchive}
       showAirlock={showAirlock}
+      showProtection={showProtection}
+      isProtected={isProtected}
       airlocked={airlocked}
+      onToggleProtection={
+        onToggleProtection
+          ? (e) => {
+              e.stopPropagation();
+              onToggleProtection();
+              setIsMenuOpen(false);
+            }
+          : undefined
+      }
+      isProtectionUpdating={isProtectionUpdating}
       onArchive={
         onArchive
           ? (e) => {

@@ -45,6 +45,7 @@ const CircularProgress = ({ duration }) => (
 export default function ConfirmButton({
   onClick,
   isLoading = false,
+  disabled = false,
   confirmIcon,
   defaultIcon,
   className = '',
@@ -76,6 +77,8 @@ export default function ConfirmButton({
   const handleConfirmClick = async (e) => {
     e.stopPropagation();
 
+    if (disabled) return;
+
     if (!isConfirming) {
       setIsConfirming(true);
       return;
@@ -90,8 +93,8 @@ export default function ConfirmButton({
     <button
       type="button"
       onClick={handleConfirmClick}
-      disabled={isLoading}
-      className={`${className} ${isConfirming ? 'scale-110' : ''}`}
+      disabled={isLoading || disabled}
+      className={`${className} ${isConfirming ? 'scale-110' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       title={isConfirming ? 'Click again to confirm' : title}
     >
       <div className="relative size-6 flex items-center justify-center">

@@ -228,6 +228,7 @@ export default function CardList() {
     visibleIds: entityKeys,
     sortedItems,
     tagMappings = {},
+    protectedMap = {},
     activeColumns,
     downloadHistoryLookup,
   } = useDownloadsDataContext();
@@ -380,6 +381,7 @@ export default function CardList() {
         entityKey={entityKey}
         index={index}
         tagMappings={tagMappings}
+        protectedMap={protectedMap}
         apiKey={apiKey}
         activeColumns={activeColumns}
         isBlurred={isBlurred}

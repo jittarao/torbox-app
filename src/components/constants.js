@@ -64,6 +64,7 @@ export const COLUMNS = {
   asset_type: { key: 'asset_type', sortable: true, assetTypes: ['all'] },
   private: { key: 'private', sortable: true, assetTypes: ['torrents', 'all'] },
   airlocked: { key: 'airlocked', sortable: true },
+  is_protected: { key: 'is_protected', sortable: true },
   tags: { key: 'tags', sortable: false },
 };
 

@@ -30,7 +30,9 @@ import useFiltersSidebarCollapsed from '@/components/downloads/FiltersSidebar/us
 import { useDownloadsPlayerActions } from '@/components/downloads/DownloadsPlayersHost';
 import { useDownloadsProviderValues } from './useDownloadsProviderValues';
 import { useAutomationEvents } from '@/components/shared/hooks/useAutomationEvents';
-import { useDownloadTagsStore } from '@/store/downloadTagsStore';
+import { useDownloadProtectionActions } from './useDownloadProtectionActions';
+import { useStopSeeding } from './useStopSeeding';
+import { useProtectedDownloadsStore } from '@/store/protectedDownloadsStore';
 
 export const FILTERS_SIDEBAR_EXPANDED = '14rem';
 export const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
@@ -124,6 +126,7 @@ export function useDownloadsPageState(apiKey) {
     downloadHistoryLookup,
     tags,
     tagMappings,
+    protectedMap,
     updateTagName,
   } = useDownloadsListData(activeType, apiKey, isBackendAvailable, listFilterParams);
 
@@ -133,10 +136,17 @@ export function useDownloadsPageState(apiKey) {
     }
   }, [apiKey]);
 
+  const handleSseProtectionChanged = useCallback(() => {
+    if (apiKey) {
+      useProtectedDownloadsStore.getState().fetchProtectedDownloads(apiKey, { force: true });
+    }
+  }, [apiKey]);
+
   useAutomationEvents({
     enabled: isBackendAvailable && !!apiKey,
     apiKey,
     onTagsChanged: handleSseTagsChanged,
+    onProtectionChanged: handleSseProtectionChanged,
   });
 
   const showFullPageSpinner = loading && viewItems.length === 0;
@@ -210,6 +220,15 @@ export function useDownloadsPageState(apiKey) {
     setToast,
     activeType
   );
+
+  const { stopSeedingItem, stopSeedingItems, isStoppingSeeding } = useStopSeeding({
+    apiKey,
+    assetType: activeType,
+    setToast,
+  });
+
+  const { protectItems, unprotectItems, toggleProtectionForItem, isUpdatingProtection } =
+    useDownloadProtectionActions(apiKey, setToast);
 
   const { handleAudioPlay, openVideoPlayer } = useDownloadsPlayerActions(
     apiKey,
@@ -332,6 +351,7 @@ export function useDownloadsPageState(apiKey) {
     activeColumns,
     downloadHistoryLookup,
     tagMappings,
+    protectedMap,
     isBackendAvailable,
     isBlurred,
     setIsBlurred,
@@ -360,6 +380,13 @@ export function useDownloadsPageState(apiKey) {
     handleSelectAll,
     deleteItem,
     archiveItem,
+    stopSeedingItem,
+    stopSeedingItems,
+    isStoppingSeeding,
+    protectItems,
+    unprotectItems,
+    toggleProtectionForItem,
+    isUpdatingProtection,
     toggleFiles,
     openVideoPlayer,
     handleAudioPlay,
