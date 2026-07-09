@@ -1,9 +1,9 @@
-import { describe, expect, test, mock, beforeEach } from 'bun:test';
+import { describe, expect, test, mock, beforeEach, afterEach } from 'bun:test';
 import { applyOptimisticTagMappings, useDownloadTagsStore } from '@/store/downloadTagsStore';
-
-mock.module('@/utils/backendModeCache', () => ({
-  isBackendAvailable: () => true,
-}));
+import {
+  resetBackendModeCacheForTests,
+  setBackendAvailableForTests,
+} from '@/utils/backendModeCache';
 
 function resetStore() {
   useDownloadTagsStore.setState({
@@ -70,10 +70,27 @@ describe('applyOptimisticTagMappings', () => {
 });
 
 describe('useDownloadTagsStore loading state', () => {
+  let originalFetch;
+  let originalLocation;
+
   beforeEach(() => {
+    resetBackendModeCacheForTests();
+    setBackendAvailableForTests(true);
     resetStore();
+    originalFetch = globalThis.fetch;
+    originalLocation = globalThis.window?.location;
     globalThis.fetch = undefined;
-    globalThis.window = { location: { origin: 'http://localhost' } };
+    if (globalThis.window) {
+      globalThis.window.location = { origin: 'http://localhost', href: 'http://localhost/' };
+    }
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    if (globalThis.window && originalLocation) {
+      globalThis.window.location = originalLocation;
+    }
+    resetBackendModeCacheForTests();
   });
 
   test('API key change resets loading to false', () => {
