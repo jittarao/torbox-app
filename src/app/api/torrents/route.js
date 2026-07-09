@@ -5,6 +5,7 @@ import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { queueTorrentUpload } from '@/app/api/lib/queueTorrentUpload';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 const CACHE_TYPE = 'torrents';
 
 // Get all torrents
@@ -130,6 +131,9 @@ export async function DELETE(request) {
   const { id } = await request.json();
 
   try {
+    const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
+    if (blocked) return blocked;
+
     // First, fetch the torrent data to determine if it's queued
     const [torrentsResponse, queuedResponse] = await Promise.all([
       torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?id=${id}`, {
