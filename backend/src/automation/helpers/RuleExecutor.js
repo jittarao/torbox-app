@@ -1,4 +1,8 @@
 import logger from '../../utils/logger.js';
+import {
+  isDestructiveOperation,
+  PROTECTION_SKIP_REASON,
+} from '../../config/destructiveDownloadOperations.mjs';
 
 /**
  * Executor for rule actions
@@ -24,6 +28,7 @@ class RuleExecutor {
   async executeActions(rule, torrents) {
     let successCount = 0;
     let errorCount = 0;
+    let protectedSkippedCount = 0;
 
     // Resolve the evaluator once outside the loop to avoid N async pool lookups per rule execution
     const ruleEvaluator = await this.getRuleEvaluator();
@@ -37,7 +42,16 @@ class RuleExecutor {
       ruleEvaluator.validateTagIds(rule.action.tagIds);
     }
 
-    // Cap concurrent outbound action calls per rule. Default 3 keeps pressure on the TorBox API
+    const actionType = rule.action?.type;
+    let protectedSet = null;
+    if (isDestructiveOperation(actionType)) {
+      const downloadIds = torrents
+        .map((torrent) => ruleEvaluator.extractDownloadId(torrent))
+        .filter(Boolean);
+      protectedSet = ruleEvaluator.protectionService.getProtectedSet(downloadIds);
+    }
+
+    // Cap concurrent outbound action calls per rule.
     // low while cutting worst-case wall-clock time from N×30s (serial) to ceil(N/3)×30s.
     // Configurable via RULE_ACTION_CONCURRENCY env var.
     const concurrency = Math.max(1, parseInt(process.env.RULE_ACTION_CONCURRENCY || '3', 10));
@@ -66,7 +80,21 @@ class RuleExecutor {
 
           const result = await ruleEvaluator.executeAction(action, torrent, {
             skipValidation: tagActionValidated,
+            protectedSet,
           });
+
+          if (result?.skipped === true && result?.reason === PROTECTION_SKIP_REASON) {
+            protectedSkippedCount++;
+            logger.info('Action skipped — download is protected', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              torrentId: torrent.id,
+              torrentName: torrent.name,
+              action: actionType,
+            });
+            continue;
+          }
 
           if (result?.applied === false) {
             logger.debug('Action skipped — no change (already applied)', {
@@ -115,7 +143,7 @@ class RuleExecutor {
     const workerCount = Math.min(concurrency, torrents.length);
     await Promise.all(Array.from({ length: workerCount }, worker));
 
-    return { successCount, errorCount };
+    return { successCount, errorCount, protectedSkippedCount };
   }
 }
 
