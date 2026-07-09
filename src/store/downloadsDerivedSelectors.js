@@ -63,6 +63,7 @@ const FIELD_TYPE_MAP = {
   download_state: 'status',
   file_count: 'file_count',
   airlocked: 'boolean',
+  is_protected: 'boolean',
 };
 
 function getStatusPriority(torrent) {
@@ -187,7 +188,7 @@ function matchesStatusFilter(item, statusFilter) {
  * @param {object} [downloadHistoryLookup]
  * @returns {object|null}
  */
-export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
+export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup, protectedMap = {}) {
   if (!entity) return null;
   const downloadId =
     entity.id?.toString() ||
@@ -195,6 +196,7 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
     entity.usenet_id?.toString() ||
     entity.web_id?.toString();
   const tags = tagMappings?.[downloadId] || [];
+  const isProtected = !!protectedMap?.[downloadId];
   const lookup =
     downloadHistoryLookup?.itemDownloads != null
       ? downloadHistoryLookup
@@ -216,11 +218,14 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup) {
     entity.is_downloaded === isDownloaded ||
     (entity.is_downloaded === undefined && !isDownloaded);
 
-  if (tagsUnchanged && downloadedUnchanged) {
+  const protectedUnchanged =
+    entity.is_protected === isProtected || (entity.is_protected === undefined && !isProtected);
+
+  if (tagsUnchanged && downloadedUnchanged && protectedUnchanged) {
     return entity;
   }
 
-  const row = { ...entity, tags };
+  const row = { ...entity, tags, is_protected: isProtected };
   if (isDownloaded !== undefined) {
     row.is_downloaded = isDownloaded;
   }
@@ -243,7 +248,14 @@ function rowMatchesColumnFilters(row, criteria) {
  * @param {object} [downloadHistoryLookup]
  * @returns {string[]}
  */
-export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHistoryLookup = null) {
+export function filterIds(
+  ids,
+  entities,
+  criteria,
+  tagMappings = {},
+  downloadHistoryLookup = null,
+  protectedMap = {}
+) {
   if (!ids?.length) return [];
 
   const { search = '', statusFilter = 'all' } = criteria;
@@ -256,7 +268,7 @@ export function filterIds(ids, entities, criteria, tagMappings = {}, downloadHis
     const entity = entities[id];
     if (!entity) return false;
 
-    const row = enrichRowForFilter(entity, tagMappings, lookup);
+    const row = enrichRowForFilter(entity, tagMappings, lookup, protectedMap);
     if (!row) return false;
 
     if (!itemMatchesDownloadSearch(row, search)) return false;
@@ -349,13 +361,19 @@ export function selectVisibleSortedFromMap(viewIds, enrichedMap, criteria, entit
  * @param {object[]} [downloadHistory]
  * @returns {object[]}
  */
-export function idsToRows(ids, entities, tagMappings = {}, downloadHistory = []) {
+export function idsToRows(
+  ids,
+  entities,
+  tagMappings = {},
+  downloadHistory = [],
+  protectedMap = {}
+) {
   if (!ids?.length) return [];
   const lookup = buildDownloadHistoryLookup(downloadHistory);
   return ids
     .map((id) => entities[id])
     .filter(Boolean)
-    .map((entity) => enrichRowForFilter(entity, tagMappings, lookup));
+    .map((entity) => enrichRowForFilter(entity, tagMappings, lookup, protectedMap));
 }
 
 /**

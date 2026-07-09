@@ -1,4 +1,5 @@
 import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
+import { DOWNLOAD_PROTECTED_CODE } from '@/config/downloadProtection';
 import { deleteItemHelper, BULK_DELETE_FETCH_OPTIONS } from '@/utils/deleteHelpers';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
 
@@ -49,6 +50,15 @@ export async function archiveToBackend(apiKey, items) {
         return { success: true, torrentIds: [String(item.id)] };
       }
 
+      if (response.status === 403 && data.code === DOWNLOAD_PROTECTED_CODE) {
+        return {
+          success: false,
+          error: data.error || 'Download is protected',
+          code: data.code,
+          blocked_ids: data.blocked_ids,
+        };
+      }
+
       return {
         success: false,
         error: data.error || 'Failed to archive download',
@@ -69,6 +79,15 @@ export async function archiveToBackend(apiKey, items) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.success) {
+      if (response.status === 403 && data.code === DOWNLOAD_PROTECTED_CODE) {
+        return {
+          success: false,
+          error: data.error || 'Download is protected',
+          code: data.code,
+          blocked_ids: data.blocked_ids,
+        };
+      }
+
       return {
         success: false,
         error: data.error || 'Failed to bulk archive downloads',
@@ -76,7 +95,8 @@ export async function archiveToBackend(apiKey, items) {
     }
 
     const torrentIds = (data.data?.torrentIds ?? []).map(String);
-    return { success: true, torrentIds };
+    const blockedIds = (data.data?.blocked_ids ?? []).map(String);
+    return { success: true, torrentIds, blockedIds };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -127,5 +147,5 @@ export async function batchArchiveAndRemove(items, apiKey) {
     }
   });
 
-  return { successfulIds, error: null };
+  return { successfulIds, error: null, blockedIds: archiveResult.blockedIds ?? [] };
 }
