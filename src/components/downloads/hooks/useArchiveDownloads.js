@@ -6,10 +6,13 @@ import { archiveAndRemoveItem, batchArchiveAndRemove } from '@/utils/archiveHelp
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
+import { useDestructiveActionGuard } from '@/components/downloads/hooks/useDestructiveActionGuard';
 
 export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetType = 'torrents') {
   const [isArchiving, setIsArchiving] = useState(false);
   const t = useTranslations('ItemActions.toast');
+  const { partition, toastAllBlocked, skipSuffix, mapProtectedError, guardSingle } =
+    useDestructiveActionGuard(setToast);
 
   const setIsArchivingRef = useRef(setIsArchiving);
   setIsArchivingRef.current = setIsArchiving;
@@ -49,6 +52,10 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
       return { success: false };
     }
 
+    if (!guardSingle(item)) {
+      return { success: false, protected: true };
+    }
+
     try {
       setIsArchivingRef.current(true);
       const result = await archiveAndRemoveItem(item, apiKey);
@@ -65,8 +72,9 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
       throw new Error(result.error);
     } catch (error) {
       console.error('Error archiving:', error);
+      const message = mapProtectedError(error) || t('archiveError', { error: error.message });
       setToast({
-        message: t('archiveError', { error: error.message }),
+        message,
         type: 'error',
       });
       return { success: false, error: error.message };
@@ -97,11 +105,24 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
         return [];
       }
 
-      const { successfulIds, error } = await batchArchiveAndRemove(torrentItems, apiKey);
+      const { allowed, blocked } = partition(torrentItems);
+      const skippedCount = blocked.length;
+
+      if (allowed.length === 0) {
+        toastAllBlocked();
+        return [];
+      }
+
+      const {
+        successfulIds,
+        error,
+        blockedIds = [],
+      } = await batchArchiveAndRemove(allowed, apiKey);
+      const totalSkipped = skippedCount + blockedIds.length;
 
       if (successfulIds.length > 0) {
         applyLocalRemovals(successfulIds);
-        clearSelectionForItems(torrentItems, successfulIds);
+        clearSelectionForItems(allowed, successfulIds);
       }
 
       if (successfulIds.length === torrentItems.length) {
@@ -111,15 +132,20 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
         });
       } else if (successfulIds.length > 0) {
         setToast({
-          message: t('archivePartialSuccess', {
+          message: `${t('archivePartialSuccess', {
             count: successfulIds.length,
             total: torrentItems.length,
-          }),
+          })}${skipSuffix(totalSkipped)}`,
           type: 'warning',
         });
       } else {
         setToast({
-          message: error ? t('archiveError', { error }) : t('archiveAllFailed'),
+          message:
+            totalSkipped > 0
+              ? t('protectedBlocked')
+              : error
+                ? t('archiveError', { error })
+                : t('archiveAllFailed'),
           type: 'error',
         });
       }

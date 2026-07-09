@@ -24,10 +24,14 @@
     "bulkAirlockUnlocking": "Unlocking…",
     "bulkForceStartPartial": "Force started {success} torrents, {failed} failed",
     "bulkForceStarted": "Force started {count} torrents",
+    "bulkProtect": "Protect",
+    "bulkProtectTitle": "Protect selected downloads from destructive actions",
     "bulkRetryPartial": "Re-queued {success} downloads, {failed} failed",
     "bulkRetryStarted": "Re-queued {count} downloads",
     "bulkSeedingPartial": "Stopped seeding for {success} torrents, {failed} failed",
     "bulkSeedingStopped": "Stopped seeding for {count} torrents",
+    "bulkUnprotect": "Unprotect",
+    "bulkUnprotectTitle": "Allow destructive actions on selected downloads",
     "bulkUploadFailed": "Failed to upload items",
     "bulkUploadPartial": "Uploaded {success} items, {failed} failed",
     "bulkUploadSuccess": "Successfully uploaded {count} items to {provider}",
@@ -43,6 +47,7 @@
       "message": "Are you sure you want to delete {count} {type}? This action cannot be undone.",
       "title": "Confirm Delete"
     },
+    "deleteProtectedTitle": "Protected downloads cannot be deleted",
     "downloadLinks": "Download",
     "downloadLinksMobile": "Download",
     "downloadLinksTitle": "Get download links for selection",
@@ -451,6 +456,8 @@
     "hash": "Hash",
     "id": "ID",
     "is_downloaded": "Downloaded",
+    "is_protected": "Protected",
+    "is_protected_filter": "Is protected",
     "name": "Name",
     "original_url": "Source URL",
     "peers": "Peers",
@@ -492,8 +499,10 @@
     "minutes": "minutes",
     "next": "Next",
     "notAirlocked": "Not airlocked",
+    "notProtected": "Not protected",
     "of": "of",
     "previous": "Previous",
+    "protected": "Protected",
     "selectRow": "Select {name}",
     "showing": "Showing",
     "time": {
@@ -802,11 +811,17 @@
       "exportTorrentFailed": "Failed to export torrent file",
       "exportTorrentSuccess": "Torrent file exported successfully",
       "noFiles": "No files available to download",
+      "protectError": "Failed to protect download: {error}",
+      "protectSuccess": "{count, plural, one {# download protected} other {# downloads protected}}",
+      "protectedBlocked": "Action blocked: download is protected",
+      "protectedSkipped": "{count, plural, one {# item skipped (protected)} other {# items skipped (protected)}}",
       "retryFailed": "Failed to retry download",
       "retrySourceUnavailable": "Cannot retry: source link is not available",
       "retrySuccess": "Re-queued for download",
       "seedingStopFailed": "Torrent stop seeding failed",
-      "seedingStopped": "Torrent stopped seeding successfully"
+      "seedingStopped": "Torrent stopped seeding successfully",
+      "unprotectError": "Failed to unprotect download: {error}",
+      "unprotectSuccess": "{count, plural, one {# download unprotected} other {# downloads unprotected}}"
     }
   },
   "ItemUploader": {
@@ -947,7 +962,8 @@
     "copySourceUrl": "Copy Source URL",
     "exportTorrent": "Export .torrent",
     "label": "More",
-    "lockDownload": "Lock download",
+    "lockDownload": "Lock",
+    "protectDownload": "Protect",
     "reannounce": "Reannounce",
     "retry": "Retry",
     "title": "More Options",
@@ -970,7 +986,8 @@
       "uploadFailed": "Failed to start upload",
       "uploadStarted": "Upload started successfully"
     },
-    "unlockDownload": "Unlock download",
+    "unlockDownload": "Unlock",
+    "unprotectDownload": "Unprotect",
     "uploadToCloud": "Upload to Cloud"
   },
   "Navigation": {

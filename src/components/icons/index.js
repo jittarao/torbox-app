@@ -86,6 +86,7 @@ import TagIcon from './Tag';
 import FileDownIcon from './FileDown';
 import LockIcon from './Lock';
 import UnlockIcon from './Unlock';
+import ShieldIcon from './Shield';
 
 const Icons = {
   Link: LinkIcon,
@@ -175,6 +176,7 @@ const Icons = {
   FileDown: FileDownIcon,
   Lock: LockIcon,
   Unlock: UnlockIcon,
+  Shield: ShieldIcon,
 };
 
 export default Icons;
@@ -265,3 +267,4 @@ export { default as Tag } from './Tag';
 export { default as FileDown } from './FileDown';
 export { default as Lock } from './Lock';
 export { default as Unlock } from './Unlock';
+export { default as Shield } from './Shield';

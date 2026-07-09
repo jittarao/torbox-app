@@ -4,7 +4,7 @@ import { POLLING_CONFIG } from './pollingConfig';
 /**
  * Parse SSE data line payload into a tag-change event.
  * @param {string} line
- * @returns {'tags_changed' | null}
+ * @returns {'tags_changed' | 'protection_changed' | null}
  */
 export function parseAutomationSseEvent(line) {
   if (!line.startsWith('data:')) return null;
@@ -13,6 +13,7 @@ export function parseAutomationSseEvent(line) {
   try {
     const payload = JSON.parse(raw);
     if (payload?.event === 'tags_changed') return 'tags_changed';
+    if (payload?.event === 'protection_changed') return 'protection_changed';
     return null;
   } catch {
     return null;
@@ -26,17 +27,24 @@ export function parseAutomationSseEvent(line) {
  * @param {boolean} options.enabled
  * @param {string|null} options.apiKey
  * @param {() => void | Promise<void>} [options.onTagsChanged]
+ * @param {() => void | Promise<void>} [options.onProtectionChanged]
  */
-export function useAutomationEvents({ enabled, apiKey, onTagsChanged }) {
+export function useAutomationEvents({ enabled, apiKey, onTagsChanged, onProtectionChanged }) {
   const onTagsChangedRef = useRef(onTagsChanged);
+  const onProtectionChangedRef = useRef(onProtectionChanged);
   const tagsDebounceRef = useRef(null);
+  const protectionDebounceRef = useRef(null);
 
   useEffect(() => {
     onTagsChangedRef.current = onTagsChanged;
   }, [onTagsChanged]);
 
   useEffect(() => {
-    if (!enabled || !apiKey || !onTagsChanged) return;
+    onProtectionChangedRef.current = onProtectionChanged;
+  }, [onProtectionChanged]);
+
+  useEffect(() => {
+    if (!enabled || !apiKey || (!onTagsChanged && !onProtectionChanged)) return;
 
     const ac = new AbortController();
     let buffer = '';
@@ -52,9 +60,22 @@ export function useAutomationEvents({ enabled, apiKey, onTagsChanged }) {
       }, POLLING_CONFIG.sseDebounceMs);
     };
 
+    const scheduleProtectionRefetch = () => {
+      if (!onProtectionChangedRef.current) return;
+      if (protectionDebounceRef.current) clearTimeout(protectionDebounceRef.current);
+      protectionDebounceRef.current = setTimeout(() => {
+        protectionDebounceRef.current = null;
+        onProtectionChangedRef.current();
+      }, POLLING_CONFIG.sseDebounceMs);
+    };
+
     const handleSseLine = (line) => {
-      if (parseAutomationSseEvent(line) === 'tags_changed') {
+      const event = parseAutomationSseEvent(line);
+      if (event === 'tags_changed') {
         scheduleTagsRefetch();
+      }
+      if (event === 'protection_changed') {
+        scheduleProtectionRefetch();
       }
     };
 
@@ -123,6 +144,10 @@ export function useAutomationEvents({ enabled, apiKey, onTagsChanged }) {
         clearTimeout(tagsDebounceRef.current);
         tagsDebounceRef.current = null;
       }
+      if (protectionDebounceRef.current) {
+        clearTimeout(protectionDebounceRef.current);
+        protectionDebounceRef.current = null;
+      }
     };
-  }, [enabled, apiKey, onTagsChanged]);
+  }, [enabled, apiKey, onTagsChanged, onProtectionChanged]);
 }

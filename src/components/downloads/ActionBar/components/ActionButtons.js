@@ -14,6 +14,7 @@ import {
   Tag,
   Times,
   Unlock,
+  Shield,
 } from '@/components/icons';
 import BulkActionButton from './BulkActionButton';
 import Tooltip from '@/components/shared/Tooltip';
@@ -26,13 +27,15 @@ import {
   useDownloadsSelectionStore,
   selectSelectedItemCount,
 } from '@/store/downloadsSelectionStore';
-import { controlQueuedItem, controlTorrent } from '@/utils/uploadActions';
+import { controlQueuedItem } from '@/utils/uploadActions';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { isTorrentQueued, isTorrentSeeding } from '../utils/statusHelpers';
 import { canRetryDownload, retryDownload } from '@/utils/retryDownload';
 import { removeQueuedAfterForceStartBulk } from '@/store/downloadListReconcile';
 import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
+import { useDownloadsContext } from '@/components/downloads/DownloadsContext';
+import { isItemProtected } from '@/utils/downloadProtectionUtils';
 import { isQueuedItem } from '@/utils/utility';
 import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
 import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
@@ -72,12 +75,18 @@ export default function ActionButtons({
   const t = useTranslations('ActionButtons');
   const tItemActions = useTranslations('ItemActions.toast');
   const { isBackendAvailable } = useDownloadsUIContext();
+  const {
+    stopSeedingItems,
+    isStoppingSeeding,
+    protectItems,
+    unprotectItems,
+    isUpdatingProtection,
+  } = useDownloadsContext();
   const selectedItemCount = useDownloadsSelectionStore(selectSelectedItemCount);
   const getSelectedItems = () => useDownloadsSelectionStore.getState().selectedItems;
   const patchItem = useTorboxDownloadsStore((state) => state.patchItem);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [isStoppingSeeding, setIsStoppingSeeding] = useState(false);
   const [isForceStarting, setIsForceStarting] = useState(false);
   const [isBulkRetrying, setIsBulkRetrying] = useState(false);
   /** 'lock' | 'unlock' while bulk airlock requests are in flight (keeps the right button visible). */
@@ -104,10 +113,34 @@ export default function ActionButtons({
     const allSeedingTorrents = resolved.every(
       (item) => resolveItemAssetType(item, activeType) === 'torrents' && isTorrentSeeding(item)
     );
-    return allSeedingTorrents ? resolved : [];
+    return allSeedingTorrents ? resolved.filter((item) => !isItemProtected(item)) : [];
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
 
   const showBulkStopSeeding = selectedSeedingTorrents.length > 0;
+
+  const selectedResolvedItems = useMemo(() => {
+    if (hasSelectedFiles || selectedItemCount === 0) return [];
+    const selectionIds = Array.from(getSelectedItems().items || []);
+    return selectionIds
+      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
+      .filter(Boolean);
+  }, [allItems, hasSelectedFiles, selectedItemCount]);
+
+  const selectedUnprotectedItems = useMemo(
+    () => selectedResolvedItems.filter((item) => !isItemProtected(item)),
+    [selectedResolvedItems]
+  );
+  const selectedProtectedItems = useMemo(
+    () => selectedResolvedItems.filter((item) => isItemProtected(item)),
+    [selectedResolvedItems]
+  );
+  const hasProtectedInSelection = selectedProtectedItems.length > 0;
+  const showBulkProtect =
+    isBackendAvailable && selectedUnprotectedItems.length > 0 && !hasSelectedFiles;
+  const showBulkUnprotect =
+    isBackendAvailable && selectedProtectedItems.length > 0 && !hasSelectedFiles;
+  const deleteSelectionBlocked =
+    selectedResolvedItems.length > 0 && selectedUnprotectedItems.length === 0;
 
   const selectedQueuedTorrents = useMemo(() => {
     if (hasSelectedFiles || selectedItemCount === 0) return [];
@@ -192,7 +225,7 @@ export default function ActionButtons({
     const allArchivable = resolved.every(
       (item) => resolveItemAssetType(item, activeType) === 'torrents' && Boolean(item.hash)
     );
-    return allArchivable ? resolved : [];
+    return allArchivable ? resolved.filter((item) => !isItemProtected(item)) : [];
   }, [activeType, allItems, hasSelectedFiles, selectedItemCount]);
 
   const showBulkArchive = isBackendAvailable && selectedArchivableTorrents.length > 0;
@@ -261,53 +294,18 @@ export default function ActionButtons({
 
   const handleBulkStopSeeding = async () => {
     if (isStoppingSeeding || !apiKey || selectedSeedingTorrents.length === 0) return;
+    await stopSeedingItems(selectedSeedingTorrents);
+    phEvent('bulk_stop_seeding', { count: selectedSeedingTorrents.length });
+  };
 
-    setIsStoppingSeeding(true);
-    let successCount = 0;
-    let failCount = 0;
+  const handleBulkProtect = async () => {
+    if (isUpdatingProtection || selectedUnprotectedItems.length === 0) return;
+    await protectItems(selectedUnprotectedItems);
+  };
 
-    try {
-      for (const item of selectedSeedingTorrents) {
-        const result = await controlTorrent(apiKey, item.id, 'stop_seeding');
-        if (result?.success) {
-          successCount++;
-          patchItem(resolveItemAssetType(item, activeType), item.id, {
-            active: false,
-            download_state: 'completed',
-            download_present: true,
-          });
-        } else {
-          failCount++;
-        }
-      }
-
-      if (successCount > 0 && failCount === 0) {
-        setToast({
-          message: t('bulkSeedingStopped', { count: successCount }),
-          type: 'success',
-        });
-        phEvent('bulk_stop_seeding', { count: successCount });
-      } else if (successCount > 0) {
-        setToast({
-          message: t('bulkSeedingPartial', { success: successCount, failed: failCount }),
-          type: 'warning',
-        });
-        phEvent('bulk_stop_seeding', { count: successCount, failed: failCount });
-      } else {
-        setToast({
-          message: tItemActions('seedingStopFailed'),
-          type: 'error',
-        });
-      }
-    } catch (error) {
-      console.error('Error in bulk stop seeding:', error);
-      setToast({
-        message: tItemActions('seedingStopFailed'),
-        type: 'error',
-      });
-    } finally {
-      setIsStoppingSeeding(false);
-    }
+  const handleBulkUnprotect = async () => {
+    if (isUpdatingProtection || selectedProtectedItems.length === 0) return;
+    await unprotectItems(selectedProtectedItems);
   };
 
   const handleBulkRetry = async () => {
@@ -756,6 +754,30 @@ export default function ActionButtons({
         />
       )}
 
+      {showBulkProtect && (
+        <BulkActionButton
+          variant="secondary"
+          onClick={handleBulkProtect}
+          disabled={isUpdatingProtection}
+          loading={isUpdatingProtection}
+          icon={<Shield />}
+          label={t('bulkProtect')}
+          title={t('bulkProtectTitle')}
+        />
+      )}
+
+      {showBulkUnprotect && (
+        <BulkActionButton
+          variant="secondary"
+          onClick={handleBulkUnprotect}
+          disabled={isUpdatingProtection}
+          loading={isUpdatingProtection}
+          icon={<Shield />}
+          label={t('bulkUnprotect')}
+          title={t('bulkUnprotectTitle')}
+        />
+      )}
+
       {showBulkStopSeeding && (
         <BulkActionButton
           variant="stop"
@@ -841,11 +863,11 @@ export default function ActionButtons({
           <BulkActionButton
             variant="danger"
             onClick={() => setShowDeleteConfirm(true)}
-            disabled={isDeleting}
+            disabled={isDeleting || deleteSelectionBlocked}
             loading={isDeleting}
             icon={<Delete />}
             label={isDeleting ? t('deleteConfirm.deleting') : t('deleteConfirm.confirm')}
-            title={t('deleteConfirm.title')}
+            title={deleteSelectionBlocked ? t('deleteProtectedTitle') : t('deleteConfirm.title')}
           />
 
           {showDeleteConfirm && (

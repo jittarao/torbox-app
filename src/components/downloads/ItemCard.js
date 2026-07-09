@@ -20,6 +20,7 @@ import Link from '@/components/icons/Link';
 import Lock from '@/components/icons/Lock';
 import Percent from '@/components/icons/Percent';
 import Private from '@/components/icons/Private';
+import Shield from '@/components/icons/Shield';
 import Tag from '@/components/icons/Tag';
 import Unlock from '@/components/icons/Unlock';
 import UpArrow from '@/components/icons/UpArrow';
@@ -71,6 +72,7 @@ function ItemCard({
   const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
   const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
   const isAirlocked = normalizeBooleanValue(item.airlocked);
+  const isProtected = item.is_protected === true;
 
   const filteredColumns = activeColumns.filter(
     (column) =>
@@ -445,12 +447,17 @@ function ItemCard({
                   </Tooltip>
                   {item.private && (
                     <Tooltip content="Private Tracker">
-                      <Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400 mt-0.5" />
+                      <Private className="size-4 shrink-0 text-accent dark:text-accent-dark mt-0.5" />
                     </Tooltip>
                   )}
                   {isAirlocked && (
                     <Tooltip content={commonT('airlocked')}>
                       <Lock className="size-4 shrink-0 text-accent dark:text-accent-dark mt-0.5" />
+                    </Tooltip>
+                  )}
+                  {isProtected && (
+                    <Tooltip content={commonT('protected')}>
+                      <Shield className="size-4 shrink-0 text-accent dark:text-accent-dark mt-0.5" />
                     </Tooltip>
                   )}
                 </div>

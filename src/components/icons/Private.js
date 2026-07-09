@@ -10,9 +10,12 @@ const PrivateIcon = ({ className = 'h-4 w-4' }) => (
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={2}
-      d="M12 3l7 3v5c0 4.5-2.9 8.7-7 10-4.1-1.3-7-5.5-7-10V6l7-3z"
+      d="m19 11-2.11-6.657a2 2 0 0 0-2.752-1.148l-1.276.61A2 2 0 0 1 12 4H8.5a2 2 0 0 0-1.925 1.456L5 11"
     />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 11h20" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 18a2 2 0 0 0-4 0" />
+    <circle cx="7" cy="18" r="3" strokeWidth={2} />
+    <circle cx="17" cy="18" r="3" strokeWidth={2} />
   </svg>
 );
 
