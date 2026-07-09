@@ -15,6 +15,7 @@ import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { buildRowDataSignature, collectDirtyRowKeys } from '@/utils/downloadListSignatures';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
+import { useProtectedDownloads } from '@/components/shared/hooks/useProtectedDownloads';
 
 function useStableShallow(value) {
   const ref = useRef(value);
@@ -68,6 +69,13 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     hasLoaded: downloadTagsHasLoaded,
   } = useDownloadTags(apiKey);
 
+  const {
+    fetchProtectedDownloads,
+    protectedMap,
+    loading: protectedLoading,
+    hasLoaded: protectedHasLoaded,
+  } = useProtectedDownloads(apiKey);
+
   useEffect(() => {
     if (isBackendAvailable && apiKey && !tagsHasLoaded && !tagsLoading) {
       loadTags();
@@ -79,6 +87,12 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
       fetchDownloadTags();
     }
   }, [apiKey, isBackendAvailable, downloadTagsHasLoaded, downloadTagsLoading, fetchDownloadTags]);
+
+  useEffect(() => {
+    if (isBackendAvailable && apiKey && !protectedHasLoaded && !protectedLoading) {
+      fetchProtectedDownloads();
+    }
+  }, [apiKey, isBackendAvailable, protectedHasLoaded, protectedLoading, fetchProtectedDownloads]);
 
   const { entities, order } = useTorboxDownloadsStore(
     useShallow((s) => ({ entities: s.entities, order: s.order }))
@@ -99,11 +113,13 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     [search, statusFilter, appliedFilters, orViewFilters, sortField, sortDirection]
   );
   const stableTagMappings = useStableShallow(tagMappings);
+  const stableProtectedMap = useStableShallow(protectedMap);
   const stableDownloadHistory = useStableShallow(downloadHistory);
 
   const deriveCacheRef = useRef({
     filterKey: '',
     tagMappings: null,
+    protectedMap: null,
     downloadHistory: null,
     activeType: null,
     viewIds: [],
@@ -133,6 +149,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     const cache = deriveCacheRef.current;
     const metaUnchanged =
       cache.tagMappings === stableTagMappings &&
+      cache.protectedMap === stableProtectedMap &&
       cache.downloadHistory === stableDownloadHistory &&
       cache.activeType === activeType;
 
@@ -148,7 +165,13 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
       !metaUnchanged || dirtyKeys === null || dirtyKeys.length === viewIds.length;
 
     if (needsFullListRebuild) {
-      rows = idsToRows(viewIds, entities, stableTagMappings, stableDownloadHistory);
+      rows = idsToRows(
+        viewIds,
+        entities,
+        stableTagMappings,
+        stableDownloadHistory,
+        stableProtectedMap
+      );
       map = new Map();
       for (let i = 0; i < rows.length; i++) {
         map.set(getDownloadSelectionId(rows[i]), rows[i]);
@@ -159,7 +182,12 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
       for (let d = 0; d < dirtyKeys.length; d++) {
         const key = dirtyKeys[d];
         const entity = entities[key];
-        const row = enrichRowForFilter(entity, stableTagMappings, stableDownloadHistory);
+        const row = enrichRowForFilter(
+          entity,
+          stableTagMappings,
+          stableDownloadHistory,
+          stableProtectedMap
+        );
         if (!row) continue;
         const selectionId = getDownloadSelectionId(row);
         map.set(selectionId, row);
@@ -186,13 +214,20 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
         if (items[i] === undefined) needsFallback = true;
       }
       if (needsFallback) {
-        items = idsToRows(ids, entities, stableTagMappings, stableDownloadHistory);
+        items = idsToRows(
+          ids,
+          entities,
+          stableTagMappings,
+          stableDownloadHistory,
+          stableProtectedMap
+        );
       }
     }
 
     deriveCacheRef.current = {
       filterKey,
       tagMappings: stableTagMappings,
+      protectedMap: stableProtectedMap,
       downloadHistory: stableDownloadHistory,
       activeType,
       viewIds,
@@ -210,6 +245,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     filterKey,
     filterCriteria,
     stableTagMappings,
+    stableProtectedMap,
     stableDownloadHistory,
     activeType,
     viewIdIndexMap,
@@ -225,5 +261,6 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     tagsLoading,
     updateTagName,
     tagMappings,
+    protectedMap,
   };
 }

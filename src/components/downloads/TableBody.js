@@ -38,6 +38,7 @@ function useTableBodyState(props) {
     onFileSelect,
     setSelectedItems,
     tagMappings,
+    protectedMap,
     downloadHistoryLookup,
     toggleFiles,
     apiKey,
@@ -220,6 +221,7 @@ function useTableBodyState(props) {
     resolvedColumnWidths,
     resolvedColumnStyles,
     tagMappings,
+    protectedMap,
     downloadHistoryLookup,
     toggleFiles,
     apiKey,
@@ -245,6 +247,7 @@ const VirtualizedTableBodyInner = memo(function VirtualizedTableBodyInner({
   resolvedColumnWidths,
   resolvedColumnStyles,
   tagMappings,
+  protectedMap,
   downloadHistoryLookup,
   toggleFiles,
   apiKey,
@@ -314,6 +317,7 @@ const VirtualizedTableBodyInner = memo(function VirtualizedTableBodyInner({
               key={`item-${rowEntityKey}`}
               entityKey={rowEntityKey}
               tagMappings={tagMappings}
+              protectedMap={protectedMap}
               activeColumns={activeColumns}
               resolvedColumnWidths={resolvedColumnWidths}
               resolvedColumnStyles={resolvedColumnStyles}
@@ -419,6 +423,7 @@ function WindowVirtualizedBody(props) {
       resolvedColumnWidths={state.resolvedColumnWidths}
       resolvedColumnStyles={state.resolvedColumnStyles}
       tagMappings={state.tagMappings}
+      protectedMap={state.protectedMap}
       downloadHistoryLookup={state.downloadHistoryLookup}
       toggleFiles={state.toggleFiles}
       apiKey={state.apiKey}
@@ -478,6 +483,7 @@ function ContainerVirtualizedBody(props) {
       resolvedColumnWidths={state.resolvedColumnWidths}
       resolvedColumnStyles={state.resolvedColumnStyles}
       tagMappings={state.tagMappings}
+      protectedMap={state.protectedMap}
       downloadHistoryLookup={state.downloadHistoryLookup}
       toggleFiles={state.toggleFiles}
       apiKey={state.apiKey}

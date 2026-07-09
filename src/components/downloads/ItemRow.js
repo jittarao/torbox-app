@@ -8,6 +8,7 @@ import DownloadProgressDisplay from './DownloadProgressDisplay';
 import ItemActions from './ItemActions';
 import Tooltip from '@/components/shared/Tooltip';
 import Lock from '@/components/icons/Lock';
+import Shield from '@/components/icons/Shield';
 import Private from '@/components/icons/Private';
 import Unlock from '@/components/icons/Unlock';
 import TagDisplay from './Tags/TagDisplay';
@@ -33,6 +34,7 @@ function normalizeBooleanValue(value) {
 
 function NameCell({ item, isBlurred, isMobile, style, commonT }) {
   const isAirlocked = normalizeBooleanValue(item.airlocked);
+  const isProtected = item.is_protected === true;
   return (
     <td className={`${tableDataCellPad} relative overflow-hidden`} style={style}>
       <div
@@ -52,12 +54,17 @@ function NameCell({ item, isBlurred, isMobile, style, commonT }) {
           </Tooltip>
           {item.private && (
             <Tooltip content="Private Tracker">
-              <Private className="size-4 shrink-0 text-orange-500 dark:text-orange-400" />
+              <Private className="size-4 shrink-0 text-accent dark:text-accent-dark" />
             </Tooltip>
           )}
           {isAirlocked && (
             <Tooltip content={commonT('airlocked')}>
               <Lock className="size-4 shrink-0 text-accent dark:text-accent-dark" />
+            </Tooltip>
+          )}
+          {isProtected && (
+            <Tooltip content={commonT('protected')}>
+              <Shield className="size-4 shrink-0 text-accent dark:text-accent-dark" />
             </Tooltip>
           )}
           {item.name && (

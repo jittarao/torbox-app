@@ -19,7 +19,7 @@ const OpenInModal = dynamic(() => import('./OpenInModal'), { ssr: false });
 const TrackSelectionModal = dynamic(() => import('./TrackSelectionModal'), { ssr: false });
 
 export default function ItemsTable() {
-  const { sortedItems, activeColumns, downloadHistoryLookup, tagMappings } =
+  const { sortedItems, activeColumns, downloadHistoryLookup, tagMappings, protectedMap } =
     useDownloadsDataContext();
 
   const {
@@ -125,6 +125,7 @@ export default function ItemsTable() {
             setSelectedItems={setSelectedItems}
             downloadHistoryLookup={downloadHistoryLookup}
             tagMappings={tagMappings}
+            protectedMap={protectedMap}
             apiKey={apiKey}
             onDelete={deleteItem}
             setToast={setToast}

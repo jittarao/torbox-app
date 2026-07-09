@@ -38,6 +38,7 @@ export default function ItemActionButtons({
   onDownload,
   compact = false,
   mobileBar = false,
+  isProtected = false,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -115,6 +116,7 @@ export default function ItemActionButtons({
           <ConfirmButton
             onClick={handleStopSeeding}
             isLoading={isStopping}
+            disabled={isProtected}
             confirmIcon={<Check />}
             defaultIcon={<Stop />}
             className={`${tableIconButtonClass} text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500
@@ -212,6 +214,7 @@ export default function ItemActionButtons({
         <ConfirmButton
           onClick={handleDelete}
           isLoading={isDeleting}
+          disabled={isProtected}
           confirmIcon={<Check />}
           defaultIcon={<Delete />}
           className={`${tableIconButtonClass} text-red-500 dark:text-red-400 

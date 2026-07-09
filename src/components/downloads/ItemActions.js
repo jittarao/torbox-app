@@ -4,7 +4,7 @@ import { useState, useCallback, memo } from 'react';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import { useDownloadsContext } from './DownloadsContext';
 import { useDownloadsUIContext } from './DownloadsUIContext';
-import { controlTorrent, controlQueuedItem } from '@/utils/uploadActions';
+import { controlQueuedItem } from '@/utils/uploadActions';
 import { canRetryDownload, retryDownload } from '@/utils/retryDownload';
 import { phEvent } from '@/utils/sa';
 import ItemActionButtons from './ItemActionButtons';
@@ -16,6 +16,7 @@ import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
 import { isQueuedItem } from '@/utils/utility';
 import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
+import { isItemProtected } from '@/utils/downloadProtectionUtils';
 
 function normalizeBooleanValue(value) {
   return value === true || value === 1 || value === 'true';
@@ -41,13 +42,21 @@ function ItemActions({
   const [isRetrying, setIsRetrying] = useState(false);
   const [isAirlockUpdating, setIsAirlockUpdating] = useState(false);
   const { downloadSingle } = useDownloadsActions();
-  const { archiveItem, isArchiving } = useDownloadsContext();
+  const {
+    archiveItem,
+    isArchiving,
+    stopSeedingItem,
+    toggleProtectionForItem,
+    isUpdatingProtection,
+  } = useDownloadsContext();
   const { isBackendAvailable } = useDownloadsUIContext();
   const t = useTranslations('ItemActions');
 
   const itemAssetType = resolveItemAssetType(item, activeType);
   const showArchive =
     isBackendAvailable && item.hash && (activeType === 'torrents' || itemAssetType === 'torrents');
+  const showProtection = isBackendAvailable;
+  const itemProtected = isItemProtected(item);
 
   // Downloads a torrent or a webdl/usenet item
   const handleDownload = async () => {
@@ -98,35 +107,19 @@ function ItemActions({
   // Stops seeding a torrent
   const handleStopSeeding = async () => {
     if (activeType !== 'torrents') return;
-    const result = await controlTorrent(apiKey, item.id, 'stop_seeding');
-    if (!result) {
-      setToast({ message: t('toast.seedingStopFailed'), type: 'error' });
-      return;
-    }
-    setToast({
-      message: result.success
-        ? t('toast.seedingStopped')
-        : result.userMessage || result.error || t('toast.seedingStopFailed'),
-      type: result.success ? 'success' : 'error',
-    });
-    if (result.success) {
-      patchItem(resolveItemAssetType(item, activeType), item.id, {
-        active: false,
-        download_state: 'completed',
-        download_present: true,
-      });
-    }
+    await stopSeedingItem(item);
+    phEvent('stop_seeding_item');
   };
 
   // Deletes a torrent or a webdl/usenet item
   const handleDelete = async (e) => {
-    if (isDeleting) return;
+    if (isDeleting || itemProtected) return;
     setIsDeleting(true);
 
     try {
       // For 'all' type, pass the item's assetType to the delete function
       const itemAssetType = activeType === 'all' ? item.assetType : null;
-      await onDelete(item.id, false, itemAssetType);
+      await onDelete(item.id, false, itemAssetType, item);
       phEvent('delete_item');
     } catch (error) {
       console.error('Error deleting:', error);
@@ -140,9 +133,14 @@ function ItemActions({
   };
 
   const handleArchive = async () => {
-    if (isArchiving) return;
+    if (isArchiving || itemProtected) return;
     await archiveItem(item);
     phEvent('archive_item');
+  };
+
+  const handleToggleProtection = async () => {
+    if (isUpdatingProtection) return;
+    await toggleProtectionForItem(item);
   };
 
   const showRetry = canRetryDownload(item, activeType);
@@ -264,6 +262,7 @@ function ItemActions({
       showRetry={showRetry}
       isRetrying={isRetrying}
       onDownload={handleDownload}
+      isProtected={itemProtected}
       compact={compact || mobileBar}
       mobileBar={mobileBar}
     />
@@ -285,6 +284,10 @@ function ItemActions({
       showArchive={showArchive}
       onArchive={handleArchive}
       isArchiving={isArchiving}
+      showProtection={showProtection}
+      isProtected={itemProtected}
+      onToggleProtection={handleToggleProtection}
+      isProtectionUpdating={isUpdatingProtection}
       showRetry={showRetry}
       onRetry={handleRetry}
       isRetrying={isRetrying}

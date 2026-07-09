@@ -8,12 +8,18 @@ import ItemRow from './ItemRow';
 /**
  * Subscribes to a single download entity by composite key — limits re-renders on poll.
  */
-function DownloadRowContainer({ entityKey, tagMappings, downloadHistoryLookup, ...rowProps }) {
+function DownloadRowContainer({
+  entityKey,
+  tagMappings,
+  protectedMap,
+  downloadHistoryLookup,
+  ...rowProps
+}) {
   const entity = useTorboxDownloadsStore((state) => state.entities[entityKey]);
   const item = useMemo(() => {
     if (!entity) return null;
-    return enrichRowForFilter(entity, tagMappings, downloadHistoryLookup);
-  }, [entity, tagMappings, downloadHistoryLookup]);
+    return enrichRowForFilter(entity, tagMappings, downloadHistoryLookup, protectedMap);
+  }, [entity, tagMappings, protectedMap, downloadHistoryLookup]);
 
   if (!item) return null;
   return (

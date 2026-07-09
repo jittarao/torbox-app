@@ -5,10 +5,13 @@ import { useTranslations } from 'next-intl';
 import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { useDestructiveActionGuard } from '@/components/downloads/hooks/useDestructiveActionGuard';
 
 export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, assetType = 'torrents') {
   const [isDeleting, setIsDeleting] = useState(false);
   const t = useTranslations('ItemActions.toast');
+  const { partition, toastAllBlocked, skipSuffix, mapProtectedError, guardSingle } =
+    useDestructiveActionGuard(setToast);
 
   const setIsDeletingRef = useRef(setIsDeleting);
   setIsDeletingRef.current = setIsDeleting;
@@ -35,8 +38,12 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
     }
   };
 
-  const deleteItem = async (id, bulk = false, itemAssetType = null) => {
+  const deleteItem = async (id, bulk = false, itemAssetType = null, item = null) => {
     if (!apiKey) return;
+
+    if (item && !guardSingle(item)) {
+      return { success: false, protected: true };
+    }
 
     try {
       setIsDeletingRef.current(true);
@@ -63,8 +70,9 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
       throw new Error(result.error);
     } catch (error) {
       console.error('Error deleting:', error);
+      const message = mapProtectedError(error) || t('deleteError', { error: error.message });
       setToast({
-        message: t('deleteError', { error: error.message }),
+        message,
         type: 'error',
       });
       return { success: false, error: error.message };
@@ -75,16 +83,25 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
 
   const batchDelete = async (ids, items = []) => {
     try {
+      const { allowed, blocked } = partition(items);
+      const allowedIds = allowed.map((item) => item.id);
+      const skippedCount = blocked.length;
+
+      if (allowedIds.length === 0) {
+        toastAllBlocked();
+        return [];
+      }
+
       let successfulIds = [];
 
-      if (assetType === 'all' && items.length > 0) {
+      if (assetType === 'all' && allowed.length > 0) {
         const groupedItems = {
           torrents: [],
           usenet: [],
           webdl: [],
         };
 
-        items.forEach((item) => {
+        allowed.forEach((item) => {
           const itemAssetType = item.assetType || 'torrents';
           if (groupedItems[itemAssetType]) {
             groupedItems[itemAssetType].push(item.id);
@@ -100,14 +117,14 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
           successfulIds.push(...batchIds);
         }
       } else {
-        successfulIds = await batchDeleteHelper(ids, apiKey, assetType);
+        successfulIds = await batchDeleteHelper(allowedIds, apiKey, assetType);
       }
 
       if (successfulIds.length > 0) {
-        applyLocalRemovals(successfulIds, items);
+        applyLocalRemovals(successfulIds, allowed);
 
         const removedSelectionIds = new Set(
-          items
+          allowed
             .filter((item) => successfulIds.includes(item.id))
             .map((item) => getDownloadSelectionId(item))
         );
@@ -120,22 +137,23 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
         }));
       }
 
-      if (successfulIds.length === ids.length) {
+      const totalRequested = ids.length;
+      if (successfulIds.length === totalRequested) {
         setToast({
           message: t('deleteAllSuccess'),
           type: 'success',
         });
       } else if (successfulIds.length > 0) {
         setToast({
-          message: t('deletePartialSuccess', {
+          message: `${t('deletePartialSuccess', {
             count: successfulIds.length,
-            total: ids.length,
-          }),
+            total: totalRequested,
+          })}${skipSuffix(skippedCount)}`,
           type: 'warning',
         });
       } else {
         setToast({
-          message: t('deleteAllFailed'),
+          message: skippedCount > 0 ? t('protectedBlocked') : t('deleteAllFailed'),
           type: 'error',
         });
       }
