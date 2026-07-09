@@ -93,7 +93,9 @@ export const useDownloadTagsStore = create((set, get) => ({
     const requestId = get().activeRequestId + 1;
     set({ loading: true, error: null, activeRequestId: requestId });
     try {
-      const url = new URL('/api/downloads/tags', window.location.origin);
+      const rawOrigin = typeof window !== 'undefined' ? window.location?.origin : null;
+      const baseOrigin = rawOrigin && rawOrigin !== 'null' ? rawOrigin : 'http://localhost';
+      const url = new URL('/api/downloads/tags', baseOrigin);
 
       const response = await fetch(url.toString(), {
         headers: {

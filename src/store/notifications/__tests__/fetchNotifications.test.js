@@ -1,25 +1,18 @@
-import { describe, expect, test, mock, beforeEach, afterEach } from 'bun:test';
-import { fetchNotificationsRequest } from '../fetchNotifications.js';
+import { describe, expect, test, mock, afterEach } from 'bun:test';
 
 describe('fetchNotificationsRequest', () => {
-  let originalFetch;
-
-  beforeEach(() => {
-    originalFetch = globalThis.fetch;
-  });
-
   afterEach(() => {
-    globalThis.fetch = originalFetch;
+    mock.restore();
   });
 
   test('304 notModified does not clear notifications', async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve(
-        new Response(null, {
-          status: 304,
-        })
-      )
-    );
+    mock.module('@/utils/apiClient', () => ({
+      createApiClient: () => ({
+        getNotifications: () => Promise.resolve({ success: true, notModified: true }),
+      }),
+    }));
+
+    const { fetchNotificationsRequest } = await import('../fetchNotifications.js');
 
     const apiKey = '7908ea44-023c-45f5-86ce-564bc6edaf34';
     const state = {
