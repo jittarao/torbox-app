@@ -122,25 +122,26 @@ bun run dev
 
 ### Environment Variables
 
-| Variable                      | Description                                                                      | Default                  | Required |
-| ----------------------------- | -------------------------------------------------------------------------------- | ------------------------ | -------- |
-| `FRONTEND_URL`                | Frontend URL for CORS                                                            | `http://localhost:3000`  | Yes      |
-| `ENCRYPTION_KEY`              | Base64-encoded key for API key encryption                                        | -                        | Yes      |
-| `PORT`                        | Port for backend server                                                          | `3001`                   | No       |
-| `NODE_ENV`                    | Node environment                                                                 | `production`             | No       |
-| `TORBOX_API_BASE`             | TorBox API base URL                                                              | `https://api.torbox.app` | No       |
-| `TORBOX_API_VERSION`          | TorBox API version                                                               | `v1`                     | No       |
-| `MASTER_DB_PATH`              | Directory for master database                                                    | `/app/data/master.db`    | No       |
-| `USER_DB_DIR`                 | Directory for user database files                                                | `/app/data/users`        | No       |
-| `MAX_DB_CONNECTIONS`          | Maximum pooled database connections                                              | `200`                    | No       |
-| `SQLITE_CACHE_SIZE_KB`        | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)       | `-1000`                  | No       |
-| `IP_RATE_LIMIT_MAX`           | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped) | `1000`                   | No       |
-| `USER_RATE_LIMIT_MAX`         | Max API requests per authenticated user per 15 minutes                           | `500`                    | No       |
-| `TRUST_PROXY`                 | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)           | unset                    | No       |
-| `BACKEND_REQUIRE_API_KEY`     | Require `x-api-key` on all user routes (disables legacy `authId`-only access)    | unset (`false`)          | No       |
-| `BACKEND_SERVICE_SECRET`      | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE)  | unset                    | No       |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max staged upload storage (MB) per **LIMITED** tier user                         | `100`                    | No       |
-| `UPLOAD_LIMIT_MAX_FILES`      | Max retained staged files per **LIMITED** tier user                              | `500`                    | No       |
+| Variable                        | Description                                                                          | Default                  | Required |
+| ------------------------------- | ------------------------------------------------------------------------------------ | ------------------------ | -------- |
+| `FRONTEND_URL`                  | Frontend URL for CORS                                                                | `http://localhost:3000`  | Yes      |
+| `ENCRYPTION_KEY`                | Base64-encoded key for API key encryption                                            | -                        | Yes      |
+| `PORT`                          | Port for backend server                                                              | `3001`                   | No       |
+| `NODE_ENV`                      | Node environment                                                                     | `production`             | No       |
+| `TORBOX_API_BASE`               | TorBox API base URL                                                                  | `https://api.torbox.app` | No       |
+| `TORBOX_API_VERSION`            | TorBox API version                                                                   | `v1`                     | No       |
+| `MASTER_DB_PATH`                | Directory for master database                                                        | `/app/data/master.db`    | No       |
+| `USER_DB_DIR`                   | Directory for user database files                                                    | `/app/data/users`        | No       |
+| `MAX_DB_CONNECTIONS`            | Maximum pooled database connections                                                  | `200`                    | No       |
+| `SQLITE_CACHE_SIZE_KB`          | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)           | `-1000`                  | No       |
+| `IP_RATE_LIMIT_MAX`             | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped)     | `1000`                   | No       |
+| `USER_RATE_LIMIT_MAX`           | Max API requests per authenticated user per 15 minutes                               | `500`                    | No       |
+| `TRUST_PROXY`                   | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)               | unset                    | No       |
+| `BACKEND_REQUIRE_API_KEY`       | Require `x-api-key` on all user routes (disables legacy `authId`-only access)        | unset (`false`)          | No       |
+| `BACKEND_SERVICE_SECRET`        | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE)      | unset                    | No       |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB`   | Max staged upload storage (MB) per **LIMITED** tier user                             | `100`                    | No       |
+| `UPLOAD_LIMIT_MAX_FILES`        | Max retained staged files per **LIMITED** tier user                                  | `500`                    | No       |
+| `AUTOMATION_INACTIVE_USER_DAYS` | Skip automation for users inactive longer than N days (`last_seen_at`; `0` disables) | `30`                     | No       |
 
 Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
 
@@ -456,13 +457,14 @@ docker network create torbox-network
 
 #### Optional stack environment variables
 
-| Variable                      | Description                                                                 |
-| ----------------------------- | --------------------------------------------------------------------------- |
-| `SENTRY_DSN`                  | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set) |
-| `BACKEND_SERVICE_SECRET`      | Same value on both services; optional hardening                             |
-| `SEARCH_PAGE_DISABLED`        | `true` to hide the search page                                              |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Staged upload storage cap (MB) per LIMITED user (default `100`)             |
-| `UPLOAD_LIMIT_MAX_FILES`      | Staged file count cap per LIMITED user (default `500`)                      |
+| Variable                        | Description                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `SENTRY_DSN`                    | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set)            |
+| `BACKEND_SERVICE_SECRET`        | Same value on both services; optional hardening                                        |
+| `SEARCH_PAGE_DISABLED`          | `true` to hide the search page                                                         |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB`   | Staged upload storage cap (MB) per LIMITED user (default `100`)                        |
+| `UPLOAD_LIMIT_MAX_FILES`        | Staged file count cap per LIMITED user (default `500`)                                 |
+| `AUTOMATION_INACTIVE_USER_DAYS` | Skip automation for users inactive N days (`last_seen_at`; `0` disables; default `30`) |
 
 #### Deploy
 

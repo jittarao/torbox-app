@@ -171,10 +171,11 @@ Override via environment variables (see `.env.example` in the repo root or `back
 
 LIMITED tier users (default for all new users) have staged upload files capped by **both** limits below. UNLIMITED users bypass enforcement. Tier is stored in `user_registry.upload_tier` and managed via admin API/UI (`PUT /api/admin/users/:authId/upload-tier`).
 
-| Variable                      | Description                                      | Default |
-| ----------------------------- | ------------------------------------------------ | ------- |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB` | Max total staged upload storage per LIMITED user | `100`   |
-| `UPLOAD_LIMIT_MAX_FILES`      | Max retained staged files per LIMITED user       | `500`   |
+| Variable                        | Description                                                                      | Default |
+| ------------------------------- | -------------------------------------------------------------------------------- | ------- |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB`   | Max total staged upload storage per LIMITED user                                 | `100`   |
+| `UPLOAD_LIMIT_MAX_FILES`        | Max retained staged files per LIMITED user                                       | `500`   |
+| `AUTOMATION_INACTIVE_USER_DAYS` | Skip automation polling for users inactive N days (`last_seen_at`; `0` disables) | `30`    |
 
 Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uploadQuota.js`. Counters are cached in the master DB; startup backfill reconciles usage from per-user SQLite + disk.
 
@@ -210,6 +211,14 @@ Engagement is recorded via a **frontend beacon** (`ActivityBeacon` → `POST /ap
 ### Extensibility
 
 Add metrics by extending `queryActivityMetrics()` or incrementing counters in `ActivityTracker.touch()` before flush. Request-count / active-days power-user stats would need middleware counters or a daily rollup table (not beacon-based).
+
+### Automation inactivity gating
+
+`PollingScheduler` excludes users from scheduled polling when `last_seen_at` is set and older than `AUTOMATION_INACTIVE_USER_DAYS` (default `30`). Users with `NULL last_seen_at` remain eligible. Set the env var to `0` to disable.
+
+Manual rule runs and admin trigger polls (`POST /api/admin/users/:authId/trigger-poll`) fast-persist `last_seen_at` when the user issues an authenticated request but the stored value is stale, so returning users are not blocked by the activity beacon's 5-minute debounce. Pending action drains defer inactive users for one hour between re-evaluations.
+
+Stats appear in `GET /api/admin/metrics/polling` (`polling.inactivityFilter`), including per-cycle eligible/skipped counts and cumulative counters (`totalSkippedScheduled`, `totalSkippedManual`, `totalSkippedQueue`).
 
 ## Performance
 

@@ -1,16 +1,11 @@
+import { formatSqliteUtc } from '../../utils/sqliteDatetime.js';
+
+export { formatSqliteUtc };
+
 /**
  * SQL helpers for admin user-activity metrics.
  * Uses indexed comparisons on user_registry.last_seen_at and created_at.
  */
-
-/**
- * Format a Date as SQLite datetime (YYYY-MM-DD HH:MM:SS) in UTC.
- * @param {Date} d
- * @returns {string}
- */
-export function formatSqliteUtc(d) {
-  return d.toISOString().slice(0, 19).replace('T', ' ');
-}
 
 /**
  * Start of UTC calendar day for the given date.
