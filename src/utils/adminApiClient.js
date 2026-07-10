@@ -114,6 +114,7 @@ class AdminApiClient {
     if (params.search) queryParams.append('search', params.search);
     if (params.sort) queryParams.append('sort', params.sort);
     if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+    if (params.activity) queryParams.append('activity', params.activity);
 
     const query = queryParams.toString();
     return this.request(`/users${query ? `?${query}` : ''}`);
@@ -168,6 +169,10 @@ class AdminApiClient {
 
   async getOverviewMetrics() {
     return this.request('/metrics/overview');
+  }
+
+  async getActivityMetrics() {
+    return this.request('/metrics/activity');
   }
 
   async getDatabaseMetrics() {

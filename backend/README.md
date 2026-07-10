@@ -178,6 +178,39 @@ LIMITED tier users (default for all new users) have staged upload files capped b
 
 Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uploadQuota.js`. Counters are cached in the master DB; startup backfill reconciles usage from per-user SQLite + disk.
 
+## User activity tracking
+
+Engagement is recorded via a **frontend beacon** (`ActivityBeacon` → `POST /api/backend/activity` → `ActivityTracker`).
+
+### Update strategy
+
+1. Browser posts activity every ~2 minutes while the tab is visible and an API key is present.
+2. `ActivityTracker.touch(authId)` updates an in-memory `touchedAt` on every accepted beacon.
+3. SQLite `user_registry.last_seen_at` is written only when:
+   - first activity for the user, or
+   - last persist was ≥ **5 minutes** ago.
+4. Pending writes are batched every **30 seconds** and flushed on graceful shutdown.
+
+### Online detection
+
+- **Online** = in-memory touch within the last **2 minutes** (no WebSockets).
+- Accurate for a single backend instance; multi-instance deployments would need shared memory or accept DB-only online status.
+
+### Schema
+
+- `last_seen_at` — durable last engagement (indexed).
+- `prev_last_seen_at` — previous value before last persist (enables returning-user metrics).
+- Indexes: `idx_user_registry_last_seen`, `idx_user_registry_created_at`.
+
+### Admin APIs
+
+- `GET /api/admin/metrics/activity` — aggregated counts (online, active windows, inactive buckets, growth, distribution).
+- User list supports `?activity=` filter and `sort=last_seen_at` (server-side SQL only).
+
+### Extensibility
+
+Add metrics by extending `queryActivityMetrics()` or incrementing counters in `ActivityTracker.touch()` before flush. Request-count / active-days power-user stats would need middleware counters or a daily rollup table (not beacon-based).
+
 ## Performance
 
 - **Connection Pooling**: LRU cache prevents connection exhaustion
