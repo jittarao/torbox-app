@@ -1,6 +1,7 @@
 import { sendSuccess, sendError } from './helpers.js';
 import { getMasterDbPath, getUserDbDir } from '../../utils/dataPaths.js';
 import { getUploadQuotaLimits } from '../../config/uploadQuota.js';
+import { getAutomationInactivityDays } from '../../config/automationInactivity.js';
 
 /**
  * System Configuration Routes
@@ -18,6 +19,7 @@ export function setupConfigRoutes(router, backend) {
             process.env.POLLER_CLEANUP_INTERVAL_HOURS || '24',
             10
           ),
+          inactive_user_days: getAutomationInactivityDays(),
         },
         rate_limiting: {
           ip_rate_limit_max: parseInt(process.env.IP_RATE_LIMIT_MAX || '1000', 10),

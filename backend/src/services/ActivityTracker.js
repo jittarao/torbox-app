@@ -60,8 +60,9 @@ export default class ActivityTracker {
    * Record user activity from a beacon or authenticated request.
    * @param {string} authId
    * @param {Date} [at]
+   * @param {{ forcePersist?: boolean }} [options]
    */
-  touch(authId, at = new Date()) {
+  touch(authId, at = new Date(), options = {}) {
     if (!authId) return;
 
     const touchedAt = at.getTime();
@@ -70,8 +71,11 @@ export default class ActivityTracker {
 
     this._memory.set(authId, { touchedAt, lastPersistedAt });
 
+    const forcePersist = options.forcePersist === true;
     const shouldPersist =
-      lastPersistedAt == null || touchedAt - lastPersistedAt >= this.persistIntervalMs;
+      forcePersist ||
+      lastPersistedAt == null ||
+      touchedAt - lastPersistedAt >= this.persistIntervalMs;
 
     if (shouldPersist) {
       this._pending.set(authId, touchedAt);

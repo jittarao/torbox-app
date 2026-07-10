@@ -1,19 +1,35 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import GlobalActionQueue from '../GlobalActionQueue.js';
+import { INACTIVITY_RECHECK_INTERVAL_MS } from '../../config/automationInactivity.js';
+
+const ENV_KEY = 'AUTOMATION_INACTIVE_USER_DAYS';
 
 describe('GlobalActionQueue', () => {
   let scheduler;
   let queue;
+  let savedEnv;
 
   beforeEach(() => {
+    savedEnv = process.env[ENV_KEY];
+    process.env[ENV_KEY] = '30';
+
     scheduler = {
       masterDb: {
         batchInsertPendingActions: (batch) => batch.map((_, i) => i + 1),
         deletePendingAction: () => {},
       },
       runActionBatch: async () => {},
+      recordInactivitySkip: () => {},
     };
     queue = new GlobalActionQueue(scheduler);
+  });
+
+  afterEach(() => {
+    if (savedEnv === undefined) {
+      delete process.env[ENV_KEY];
+    } else {
+      process.env[ENV_KEY] = savedEnv;
+    }
   });
 
   it('persists pending actions and assigns pendingId', async () => {
@@ -64,5 +80,68 @@ describe('GlobalActionQueue', () => {
     await queue.loadFromPersistence();
     await new Promise((r) => setTimeout(r, 50));
     expect(batchRan).toBe(true);
+  });
+
+  it('re-pushes inactive user items with deferral and does not run action batch', async () => {
+    const authId = 'd'.repeat(64);
+    let batchRan = false;
+    let deleteCalled = false;
+
+    scheduler.masterDb.getUserRegistryInfo = () => ({
+      auth_id: authId,
+      last_seen_at: '2026-06-01 00:00:00',
+    });
+    scheduler.masterDb.deletePendingAction = () => {
+      deleteCalled = true;
+    };
+    scheduler.runActionBatch = async () => {
+      batchRan = true;
+    };
+    scheduler.recordInactivitySkip = (kind) => {
+      expect(kind).toBe('queue');
+    };
+
+    const descriptor = {
+      authId,
+      rule: { id: 4, name: 'r4' },
+      torrentsToProcess: [{ id: 't4' }],
+      pendingId: 10,
+    };
+
+    queue.pending = [descriptor];
+    await queue.drain();
+
+    expect(batchRan).toBe(false);
+    expect(deleteCalled).toBe(false);
+    expect(queue.pending).toHaveLength(1);
+    expect(queue.pending[0]._deferDrainUntil).toBeGreaterThan(Date.now());
+    expect(queue.pending[0]._deferDrainUntil).toBeLessThanOrEqual(
+      Date.now() + INACTIVITY_RECHECK_INTERVAL_MS + 50
+    );
+  });
+
+  it('does not re-evaluate deferred inactive items on immediate next drain', async () => {
+    const authId = 'e'.repeat(64);
+    let lookupCount = 0;
+
+    scheduler.masterDb.getUserRegistryInfo = () => {
+      lookupCount += 1;
+      return { auth_id: authId, last_seen_at: '2026-06-01 00:00:00' };
+    };
+    scheduler.runActionBatch = async () => {};
+
+    const descriptor = {
+      authId,
+      rule: { id: 5, name: 'r5' },
+      torrentsToProcess: [{ id: 't5' }],
+      pendingId: 11,
+      _deferDrainUntil: Date.now() + INACTIVITY_RECHECK_INTERVAL_MS,
+    };
+
+    queue.pending = [descriptor];
+    await queue.drain();
+
+    expect(lookupCount).toBe(0);
+    expect(queue.pending).toHaveLength(1);
   });
 });

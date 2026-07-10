@@ -4,6 +4,7 @@ import { serverErrorPayload } from '../utils/httpErrors.js';
 import RuleRepository from '../automation/helpers/RuleRepository.js';
 import AutomationEngine from '../automation/AutomationEngine.js';
 import { isTagActionType, notifyTagsChanged } from '../utils/userEvents.js';
+import { reactivateUserForManualAutomation } from '../config/automationInactivity.js';
 
 /**
  * Create an automation engine for a single request (not cached).
@@ -275,6 +276,11 @@ export function setupAutomationRoutes(app, backend) {
       const authId = req.validatedAuthId;
       const ruleId = req.validatedIds.id;
       try {
+        if (!reactivateUserForManualAutomation(backend, authId)) {
+          backend.pollingScheduler?.recordInactivitySkip?.('manual');
+          return res.json({ success: false, skipped: true, reason: 'user_inactive' });
+        }
+
         const engine = await getEngineForRequest(backend, authId);
         if (!engine) {
           return sendEngineUnavailableResponse(res, backend, authId);

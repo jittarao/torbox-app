@@ -45,6 +45,17 @@ describe('ActivityTracker', () => {
     expect(master.batches).toHaveLength(1);
   });
 
+  test('forcePersist bypasses debounce interval', () => {
+    const t0 = new Date('2026-01-01T12:00:00Z');
+    tracker.touch('user-a', t0);
+    tracker.flush();
+    expect(master.batches).toHaveLength(1);
+
+    tracker.touch('user-a', new Date(t0.getTime() + 60_000), { forcePersist: true });
+    tracker.flush();
+    expect(master.batches).toHaveLength(2);
+  });
+
   test('queues persist after 5 minute interval', () => {
     const t0 = new Date('2026-01-01T12:00:00Z');
     tracker.touch('user-a', t0);
