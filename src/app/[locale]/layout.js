@@ -5,6 +5,7 @@ import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { isOnboardingAuxActive, isSearchPageDisabled } from '@/utils/featureFlags';
+import ActivityBeacon from '@/components/shared/ActivityBeacon';
 import { Suspense } from 'react';
 
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -91,6 +92,7 @@ export default async function LocaleLayout({ children, params }) {
               <LocaleContentBoundary>
                 <ErrorHandlerInitializer />
                 <FileHandler />
+                <ActivityBeacon />
                 <Suspense
                   fallback={
                     <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />

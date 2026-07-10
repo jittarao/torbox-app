@@ -25,10 +25,14 @@ const useAdminStore = create((set, get) => ({
   overviewMetrics: null,
   overviewLoading: false,
   overviewError: null,
+  activityMetrics: null,
+  activityLoading: false,
+  activityError: null,
 
   // Filters and search
   userFilters: {
     status: null,
+    activity: null,
     search: '',
     page: 1,
     limit: 50,
@@ -74,6 +78,7 @@ const useAdminStore = create((set, get) => ({
       selectedUserData: null,
       users: [],
       overviewMetrics: null,
+      activityMetrics: null,
     });
   },
 
@@ -169,6 +174,24 @@ const useAdminStore = create((set, get) => ({
     }
   },
 
+  async fetchActivityMetrics() {
+    set({ activityLoading: true, activityError: null });
+    try {
+      const response = await adminApiClient.getActivityMetrics();
+      set({
+        activityMetrics: response.activity || response,
+        activityLoading: false,
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      set({
+        activityError: error.message,
+        activityLoading: false,
+      });
+      return { success: false, error: error.message };
+    }
+  },
+
   // ===== Filters =====
 
   setUserFilter(key, value) {
@@ -189,6 +212,7 @@ const useAdminStore = create((set, get) => ({
       upload_retained_file_count: 'desc',
       upload_retained_storage_bytes: 'desc',
       created_at: 'desc',
+      last_seen_at: 'desc',
     };
     const filters = get().userFilters;
     const currentSort = filters.sort || 'created_at';
@@ -208,6 +232,7 @@ const useAdminStore = create((set, get) => ({
     set({
       userFilters: {
         status: null,
+        activity: null,
         search: '',
         page: 1,
         limit: 50,

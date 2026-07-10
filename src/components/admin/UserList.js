@@ -18,6 +18,7 @@ import {
   adminTableClass,
   adminTheadClass,
 } from './AdminUi';
+import { formatLastSeen } from '@/utils/formatLastSeen';
 
 const userThClass =
   'whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted dark:text-muted-dark lg:px-4';
@@ -39,6 +40,7 @@ const SORT_COLUMN_LABELS = {
   upload_retained_file_count: 'Files',
   upload_retained_storage_bytes: 'Storage',
   created_at: 'Created',
+  last_seen_at: 'Last seen',
 };
 
 function formatSortLabel(sort, sortDirection) {
@@ -55,6 +57,7 @@ export default function UserList({
   onUserClick,
   onPageChange,
   onStatusFilter,
+  onActivityFilter,
   onSearch,
   onSort,
   sort = 'created_at',
@@ -175,6 +178,50 @@ export default function UserList({
             </button>
           </div>
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/40 pt-3 dark:border-border-dark/40">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted dark:text-muted-dark">
+            Activity
+          </span>
+          <AdminFilterChip active={!filters?.activity} onClick={() => onActivityFilter?.('all')}>
+            All
+          </AdminFilterChip>
+          <AdminFilterChip
+            active={filters?.activity === 'online'}
+            onClick={() => onActivityFilter?.('online')}
+          >
+            Online
+          </AdminFilterChip>
+          <AdminFilterChip
+            active={filters?.activity === 'today'}
+            onClick={() => onActivityFilter?.('today')}
+          >
+            Active today
+          </AdminFilterChip>
+          <AdminFilterChip
+            active={filters?.activity === 'week'}
+            onClick={() => onActivityFilter?.('week')}
+          >
+            Active this week
+          </AdminFilterChip>
+          <AdminFilterChip
+            active={filters?.activity === 'month'}
+            onClick={() => onActivityFilter?.('month')}
+          >
+            Active this month
+          </AdminFilterChip>
+          <AdminFilterChip
+            active={filters?.activity === 'inactive30d'}
+            onClick={() => onActivityFilter?.('inactive30d')}
+          >
+            Inactive &gt;30d
+          </AdminFilterChip>
+          <AdminFilterChip
+            active={filters?.activity === 'dormant'}
+            onClick={() => onActivityFilter?.('dormant')}
+          >
+            Dormant &gt;90d
+          </AdminFilterChip>
+        </div>
       </AdminCard>
 
       <div className={`${adminCardClass} overflow-hidden`}>
@@ -200,17 +247,18 @@ export default function UserList({
             <div className={`overflow-x-auto ${loading ? 'opacity-60' : ''}`}>
               <table className={`${adminTableClass} w-full table-fixed`}>
                 <colgroup>
-                  <col className="w-[13%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[7%]" />
-                  <col className="w-[5%]" />
-                  <col className="w-[7%]" />
-                  <col className="w-[8%]" />
                   <col className="w-[12%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[6%]" />
+                  <col className="w-[5%]" />
                   <col className="w-[6%]" />
                   <col className="w-[7%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[5%]" />
+                  <col className="w-[6%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[12%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[10%]" />
                 </colgroup>
                 <thead className={adminTheadClass}>
                   <tr>
@@ -289,6 +337,14 @@ export default function UserList({
                       activeDirection={sortDirection}
                       onSort={onSort}
                     />
+                    <AdminSortableTh
+                      className={userThClass}
+                      label="Last seen"
+                      sortKey="last_seen_at"
+                      activeSort={sort}
+                      activeDirection={sortDirection}
+                      onSort={onSort}
+                    />
                     <th className={`${userThClass} text-right`}>Actions</th>
                   </tr>
                 </thead>
@@ -354,6 +410,17 @@ export default function UserList({
                           month: 'short',
                           day: 'numeric',
                         })}
+                      </td>
+                      <td className={userTdClass}>
+                        <span
+                          className={
+                            user.is_online
+                              ? 'font-medium text-label-success-text dark:text-label-success-text-dark'
+                              : undefined
+                          }
+                        >
+                          {formatLastSeen(user.last_seen_at, { isOnline: user.is_online })}
+                        </span>
                       </td>
                       <td
                         className={`${userTdClass} text-right`}
