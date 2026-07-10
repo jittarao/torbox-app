@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import useSessionStore from '@/store/sessionStore';
+import { useSessionStore } from '@/store/sessionStore';
 import { useBackendMode } from '@/hooks/useBackendMode';
 
 const BEACON_INTERVAL_MS = 120 * 1000;
