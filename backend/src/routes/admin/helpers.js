@@ -92,6 +92,7 @@ export const USER_LIST_SORT_COLUMNS = {
   upload_retained_file_count: 'ur.upload_retained_file_count',
   upload_retained_storage_bytes: 'ur.upload_retained_storage_bytes',
   created_at: 'ur.created_at',
+  last_seen_at: 'ur.last_seen_at',
 };
 
 /**

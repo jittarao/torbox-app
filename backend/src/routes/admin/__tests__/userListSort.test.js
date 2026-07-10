@@ -35,4 +35,10 @@ describe('parseUserListSort', () => {
     const result = parseUserListSort(mockReq({ sort: 'auth_id', sortDirection: 'sideways' }));
     expect(result.sortDirection).toBe('desc');
   });
+
+  test('supports last_seen_at sort', () => {
+    const result = parseUserListSort(mockReq({ sort: 'last_seen_at', sortDirection: 'desc' }));
+    expect(result.sort).toBe('last_seen_at');
+    expect(result.orderByClause).toBe('ORDER BY ur.last_seen_at DESC');
+  });
 });

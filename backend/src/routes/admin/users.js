@@ -10,6 +10,7 @@ import {
   asyncHandler,
   getUserDatabaseSafe,
 } from './helpers.js';
+import { buildActivityFilterClause, USER_ACTIVITY_FILTERS } from './activityMetrics.js';
 import { decrypt } from '../../utils/crypto.js';
 import logger from '../../utils/logger.js';
 import { isValidUploadTier } from '../../config/uploadQuota.js';
@@ -42,6 +43,26 @@ export function setupUserRoutes(router, backend) {
       const { sort, sortDirection, orderByClause } = parseUserListSort(req);
       const status = req.query.status; // 'active', 'inactive', or undefined for all
       const search = req.query.search; // Search in key_name or auth_id
+      const activity = req.query.activity;
+
+      if (activity && activity !== 'all' && !USER_ACTIVITY_FILTERS.has(activity)) {
+        return sendError(res, `Invalid activity filter: ${activity}`, 400);
+      }
+
+      const activityFilter = buildActivityFilterClause(activity, backend.activityTracker);
+      if (activityFilter.emptyResult) {
+        return sendSuccess(res, {
+          users: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+          sort,
+          sortDirection,
+        });
+      }
 
       let query = `
       SELECT 
@@ -53,6 +74,7 @@ export function setupUserRoutes(router, backend) {
         ur.next_poll_at,
         ur.created_at,
         ur.updated_at,
+        ur.last_seen_at,
         ur.upload_tier,
         ur.upload_retained_file_count,
         ur.upload_retained_storage_bytes,
@@ -74,6 +96,11 @@ export function setupUserRoutes(router, backend) {
         conditions.push('(ur.auth_id LIKE ? OR ak.key_name LIKE ?)');
         const searchPattern = `%${search}%`;
         params.push(searchPattern, searchPattern);
+      }
+
+      if (activityFilter.clause) {
+        conditions.push(activityFilter.clause);
+        params.push(...activityFilter.params);
       }
 
       if (conditions.length > 0) {
@@ -99,6 +126,7 @@ export function setupUserRoutes(router, backend) {
           return attachUploadQuotaFields(
             {
               ...user,
+              is_online: backend.activityTracker?.isOnline(user.auth_id) ?? false,
               db_size: dbStats?.size || null,
               db_exists: dbStats?.exists || false,
               db_size_formatted: dbStats?.size_formatted || null,
