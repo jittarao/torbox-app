@@ -8,6 +8,10 @@ import logger from '../utils/logger.js';
 import cache from '../utils/cache.js';
 import Semaphore from '../utils/semaphore.js';
 import { getMasterDbPath, getUserDbPath } from '../utils/dataPaths.js';
+import {
+  INACTIVITY_ELIGIBILITY_SQL,
+  INACTIVITY_INELIGIBILITY_SQL,
+} from '../config/automationInactivity.js';
 
 /**
  * Simple LRU cache with max size. Evicts least-recently-used entry on set() when full.
@@ -1240,32 +1244,66 @@ class Database {
   }
 
   /**
+   * Base WHERE clause shared by due-for-polling queries.
+   * @private
+   */
+  _dueForPollingWhereSql() {
+    return `
+      ur.status = 'active'
+        AND ur.has_active_rules = 1
+        AND (ur.next_poll_at IS NULL OR ur.next_poll_at = '' OR ur.next_poll_at <= datetime('now'))
+    `;
+  }
+
+  /**
    * Get users due for polling (cron-like query)
    * Only returns users with has_active_rules = 1.
    * Limited to MAX_USERS_DUE_FOR_POLLING per call to avoid thundering herd after outages.
+   * @param {{ inactivityCutoff?: string|null }} [options]
    * @returns {Array} - Array of users where has_active_rules = 1 AND (next_poll_at <= NOW() OR next_poll_at IS NULL/empty/0) AND status = 'active'
    */
-  getUsersDueForPolling() {
+  getUsersDueForPolling({ inactivityCutoff = null } = {}) {
     const limit = Math.max(1, parseInt(process.env.MAX_USERS_DUE_FOR_POLLING || '100', 10));
+    const inactivityClause = inactivityCutoff ? `AND ${INACTIVITY_ELIGIBILITY_SQL}` : '';
+    const params = inactivityCutoff ? [inactivityCutoff, limit] : [limit];
     // next_poll_at is stored as SQLite datetime (YYYY-MM-DD HH:MM:SS) so index is used
     const result = this.allQuery(
       `
       SELECT ur.*, ak.encrypted_key, ak.key_name
       FROM user_registry ur
       INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id AND ak.is_active = 1
-      WHERE ur.status = 'active'
-        AND ur.has_active_rules = 1
-        AND (ur.next_poll_at IS NULL OR ur.next_poll_at = '' OR ur.next_poll_at <= datetime('now'))
+      WHERE ${this._dueForPollingWhereSql()}
+        ${inactivityClause}
       ORDER BY ur.next_poll_at ASC
       LIMIT ?
     `,
-      [limit]
+      params
     );
 
     // Log at debug level since this runs frequently (every 30 seconds); log count only to avoid large payloads
     logger.debug('Users due for polling', { foundCount: result.length });
 
     return result;
+  }
+
+  /**
+   * Count due users excluded by inactivity filter (for scheduler metrics).
+   * @param {string} inactivityCutoff - SQLite UTC datetime cutoff
+   * @returns {number}
+   */
+  countDueUsersSkippedForInactivity(inactivityCutoff) {
+    if (!inactivityCutoff) return 0;
+    const row = this.getQuery(
+      `
+      SELECT COUNT(*) as count
+      FROM user_registry ur
+      INNER JOIN api_keys ak ON ur.auth_id = ak.auth_id AND ak.is_active = 1
+      WHERE ${this._dueForPollingWhereSql()}
+        AND ${INACTIVITY_INELIGIBILITY_SQL}
+    `,
+      [inactivityCutoff]
+    );
+    return row?.count ?? 0;
   }
 
   /**

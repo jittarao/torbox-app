@@ -82,6 +82,33 @@ describe('admin users routes', () => {
     expect(res.body.quota.tier).toBe('limited');
   });
 
+  test('POST /api/admin/users/:authId/trigger-poll delegates to polling scheduler', async () => {
+    let triggerAuthId = null;
+    const pollingScheduler = {
+      triggerPoll: async (authId) => {
+        triggerAuthId = authId;
+        return { success: true, polled: true };
+      },
+    };
+
+    const triggerApp = buildBackendApp({
+      ...env,
+      routeSetupFn: setupAdminRoutes,
+      uploadQuotaService: createFakeUploadQuotaService(),
+      pollingScheduler,
+    });
+
+    const res = await request(triggerApp)
+      .post(`/api/admin/users/${env.authId}/trigger-poll`)
+      .set('x-admin-key', adminKey)
+      .send();
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.polled).toBe(true);
+    expect(triggerAuthId).toBe(env.authId);
+  });
+
   test('GET /api/admin/users rejects invalid activity filter', async () => {
     const res = await request(app)
       .get('/api/admin/users')

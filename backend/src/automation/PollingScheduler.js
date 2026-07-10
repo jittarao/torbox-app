@@ -13,6 +13,13 @@ import {
   buildRuleExecutionMessage,
   shouldRecordRuleExecution,
 } from './helpers/ruleExecutionLogging.js';
+import {
+  computeAutomationInactivityCutoff,
+  getAutomationInactivityDays,
+  INACTIVITY_RECHECK_INTERVAL_MS,
+  isAutomationInactivityFilterEnabled,
+  reactivateUserForManualAutomation,
+} from '../config/automationInactivity.js';
 
 // Constants
 const DEFAULT_POLL_CHECK_INTERVAL_MS = 30000; // 30 seconds
@@ -194,6 +201,18 @@ class PollingScheduler {
       timeoutPolls: 0,
       lastPollAt: null,
     };
+    this._lastInactivityCycleStats = { eligible: 0, skippedInactive: 0 };
+    this._inactivitySkipCounters = { scheduled: 0, manual: 0, queue: 0 };
+  }
+
+  /**
+   * @param {'scheduled'|'manual'|'queue'} kind
+   * @param {number} [count=1]
+   */
+  recordInactivitySkip(kind, count = 1) {
+    if (kind === 'scheduled') this._inactivitySkipCounters.scheduled += count;
+    else if (kind === 'manual') this._inactivitySkipCounters.manual += count;
+    else if (kind === 'queue') this._inactivitySkipCounters.queue += count;
   }
 
   /**
@@ -629,6 +648,12 @@ class PollingScheduler {
     this.processSemaphore = new Semaphore(this.maxConcurrentProcess);
     this.globalActionQueue = new GlobalActionQueue(this);
 
+    if (isAutomationInactivityFilterEnabled()) {
+      logger.info(`Automation inactivity filter enabled (${getAutomationInactivityDays()} days)`);
+    } else {
+      logger.info('Automation inactivity filter disabled');
+    }
+
     torboxApiOutageCoordinator.setDependencies(this.masterDb, decrypt);
     torboxApiOutageCoordinator.onRecovery(async () => {
       await this.pollDueUsers().catch((err) => {
@@ -758,7 +783,8 @@ class PollingScheduler {
    * to avoid thundering herd (all users polled in the first tick).
    */
   async spreadOverdueUsersOnStartup() {
-    const dueUsers = this.masterDb.getUsersDueForPolling();
+    const inactivityCutoff = computeAutomationInactivityCutoff();
+    const dueUsers = this.masterDb.getUsersDueForPolling({ inactivityCutoff });
     if (dueUsers.length === 0) return;
 
     const now = Date.now();
@@ -1171,7 +1197,18 @@ class PollingScheduler {
       });
 
       try {
-        const dueUsers = this.masterDb.getUsersDueForPolling();
+        const inactivityCutoff = computeAutomationInactivityCutoff();
+        const dueUsers = this.masterDb.getUsersDueForPolling({ inactivityCutoff });
+        if (inactivityCutoff) {
+          const skippedInactive = this.masterDb.countDueUsersSkippedForInactivity(inactivityCutoff);
+          this._lastInactivityCycleStats = {
+            eligible: dueUsers.length,
+            skippedInactive,
+          };
+          this.recordInactivitySkip('scheduled', skippedInactive);
+        } else {
+          this._lastInactivityCycleStats = { eligible: dueUsers.length, skippedInactive: 0 };
+        }
 
         // Only fetch for users with active rules; skip API call for others and reschedule
         const usersToFetch = dueUsers.filter((u) => u.has_active_rules === 1);
@@ -1431,6 +1468,15 @@ class PollingScheduler {
         maxConcurrentProcess: this.maxConcurrentProcess,
         pollerCleanupIntervalHours: this.pollerCleanupIntervalHours,
       },
+      inactivityFilter: {
+        enabled: isAutomationInactivityFilterEnabled(),
+        inactiveUserDays: getAutomationInactivityDays(),
+        lastCycleEligible: this._lastInactivityCycleStats.eligible,
+        lastCycleSkippedInactive: this._lastInactivityCycleStats.skippedInactive,
+        totalSkippedScheduled: this._inactivitySkipCounters.scheduled,
+        totalSkippedManual: this._inactivitySkipCounters.manual,
+        totalSkippedQueue: this._inactivitySkipCounters.queue,
+      },
     };
   }
 
@@ -1454,15 +1500,30 @@ class PollingScheduler {
       };
     }
 
-    logger.info('Manually triggering poll for user', {
-      authId,
-      timestamp: new Date().toISOString(),
-    });
-
     const userInfo = this.masterDb.getUserRegistryInfo(authId);
     if (!userInfo?.encrypted_key) {
       throw new Error(`No user or API key found for ${authId}`);
     }
+
+    const inactivityCutoff = computeAutomationInactivityCutoff();
+    if (
+      !reactivateUserForManualAutomation(
+        { masterDatabase: this.masterDb, activityTracker: null },
+        authId
+      )
+    ) {
+      this.recordInactivitySkip('manual');
+      return {
+        success: false,
+        skipped: true,
+        reason: 'user_inactive',
+      };
+    }
+
+    logger.info('Manually triggering poll for user', {
+      authId,
+      timestamp: new Date().toISOString(),
+    });
 
     const poller = await this.getOrCreatePoller(authId, userInfo.encrypted_key);
     const pipelineMutex = this.getPipelineMutex(authId);

@@ -14,6 +14,7 @@
 #   SEARCH_PAGE_DISABLED      — "true" to hide search page
 #   UPLOAD_LIMIT_MAX_STORAGE_MB — staged upload storage cap per LIMITED user (default 100)
 #   UPLOAD_LIMIT_MAX_FILES      — staged file count cap per LIMITED user (default 500)
+#   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
 #
 # Before first deploy:
 #   1. Create external volume:  docker volume create torbox-backend-data
@@ -45,6 +46,7 @@ services:
       SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.2}
       UPLOAD_LIMIT_MAX_STORAGE_MB: ${UPLOAD_LIMIT_MAX_STORAGE_MB:-100}
       UPLOAD_LIMIT_MAX_FILES: ${UPLOAD_LIMIT_MAX_FILES:-500}
+      AUTOMATION_INACTIVE_USER_DAYS: ${AUTOMATION_INACTIVE_USER_DAYS:-30}
 
     volumes:
       # Persist SQLite DBs and uploads only — never mount over /app/src or /app/config

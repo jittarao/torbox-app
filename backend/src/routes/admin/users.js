@@ -221,6 +221,27 @@ export function setupUserRoutes(router, backend) {
     })
   );
 
+  // Manually trigger a poll for a specific user (admin override)
+  router.post(
+    '/users/:authId/trigger-poll',
+    asyncHandler(async (req, res) => {
+      const authId = validateAuthIdParam(req, res);
+      if (!authId) return;
+
+      if (!backend.pollingScheduler) {
+        return sendError(res, 'Polling scheduler not available', 503);
+      }
+
+      const user = backend.masterDatabase.getUserRegistryInfo(authId);
+      if (!user) {
+        return sendError(res, 'User not found', 404);
+      }
+
+      const result = await backend.pollingScheduler.triggerPoll(authId);
+      sendSuccess(res, result);
+    })
+  );
+
   // Get upload quota details for a user
   router.get(
     '/users/:authId/upload-quota',

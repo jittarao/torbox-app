@@ -1,5 +1,10 @@
 import logger from '../utils/logger.js';
 import torboxApiOutageCoordinator from '../api/TorboxApiOutageCoordinator.js';
+import {
+  computeAutomationInactivityCutoff,
+  INACTIVITY_RECHECK_INTERVAL_MS,
+  isUserEligibleForAutomation,
+} from '../config/automationInactivity.js';
 
 /** Max action batches run in parallel (each batch uses RULE_ACTION_CONCURRENCY API calls) */
 const GLOBAL_ACTION_QUEUE_CONCURRENCY = Math.min(
@@ -173,6 +178,7 @@ class GlobalActionQueue {
 
     this.draining = true;
     const masterDb = this.scheduler.masterDb;
+    const inactivityCutoff = computeAutomationInactivityCutoff();
 
     // Partition by (authId, ruleId) so all same-rule items are merged regardless of order
     const groups = new Map();
@@ -198,6 +204,19 @@ class GlobalActionQueue {
                 } catch (_) {}
             }
             continue;
+          }
+
+          if (inactivityCutoff) {
+            const userInfo = masterDb?.getUserRegistryInfo?.(merged.authId);
+            if (!isUserEligibleForAutomation(userInfo?.last_seen_at, inactivityCutoff)) {
+              const deferUntil = Date.now() + INACTIVITY_RECHECK_INTERVAL_MS;
+              for (const item of sameRule) {
+                item._deferDrainUntil = deferUntil;
+              }
+              this.pending.push(...sameRule);
+              this.scheduler.recordInactivitySkip?.('queue');
+              continue;
+            }
           }
 
           // At-most-once: delete DB rows before execution so a crash does not replay the action
