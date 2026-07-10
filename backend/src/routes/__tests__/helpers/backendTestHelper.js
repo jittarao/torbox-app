@@ -89,6 +89,7 @@ export function buildBackendApp({
   uploadQuotaService = null,
   pollingScheduler = null,
   eventNotifier = null,
+  activityTracker = null,
 }) {
   const app = express();
   app.use(express.json({ limit: '10mb' }));
@@ -103,6 +104,7 @@ export function buildBackendApp({
     uploadQuotaService,
     pollingScheduler,
     eventNotifier,
+    activityTracker,
   };
 
   routeSetupFn(app, backend);

@@ -33,6 +33,8 @@ import { setupProtectedDownloadsRoutes } from './routes/protectedDownloads.js';
 import { setupUploadsRoutes } from './routes/uploads.js';
 import { setupLinkHistoryRoutes } from './routes/linkHistory.js';
 import UploadQuotaService from './services/UploadQuotaService.js';
+import ActivityTracker from './services/ActivityTracker.js';
+import { setupActivityRoutes } from './routes/activity.js';
 
 class TorBoxBackend {
   constructor() {
@@ -43,6 +45,7 @@ class TorBoxBackend {
     this.pollingScheduler = null;
     this.uploadProcessor = null;
     this.uploadQuotaService = null;
+    this.activityTracker = null;
     this.eventNotifier = new EventNotifier();
     this.automationEngines = new Map(); // Map of authId -> AutomationEngine
     this.memoryLogIntervalId = null;
@@ -235,6 +238,7 @@ class TorBoxBackend {
     setupProtectedDownloadsRoutes(this.app, this);
     setupUploadsRoutes(this.app, this);
     setupLinkHistoryRoutes(this.app, this);
+    setupActivityRoutes(this.app, this);
     setupAdminRoutes(this.app, this);
 
     // Sentry error handler must be before other error handlers
@@ -298,6 +302,10 @@ class TorBoxBackend {
 
       // Upload quota service (tier-based retention for LIMITED users)
       this.uploadQuotaService = new UploadQuotaService(this.masterDatabase);
+
+      this.activityTracker = new ActivityTracker(this.masterDatabase);
+      this.activityTracker.start();
+      logger.info('Activity tracker started');
 
       // Initialize upload processor
       this.uploadProcessor = new UploadProcessor(this.userDatabaseManager, this.masterDatabase);
@@ -569,6 +577,15 @@ class TorBoxBackend {
     if (this.memoryLogIntervalId) {
       clearInterval(this.memoryLogIntervalId);
       this.memoryLogIntervalId = null;
+    }
+
+    if (this.activityTracker) {
+      try {
+        this.activityTracker.flush();
+      } catch (error) {
+        logger.warn('Activity flush failed during shutdown', { error: error.message });
+      }
+      this.activityTracker.stop();
     }
 
     if (this.uploadProcessor) {
