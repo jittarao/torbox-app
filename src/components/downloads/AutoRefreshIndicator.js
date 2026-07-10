@@ -97,6 +97,9 @@ export default function AutoRefreshIndicator({
         ? t('nextRefreshWatch', { seconds: secondsLeft })
         : t('autoRefreshWatchHint');
     }
+    if (mode === 'autoStartWorker') {
+      return t('autoStartWorkerHint');
+    }
     if (secondsLeft != null && secondsLeft > 0) {
       return t('nextRefreshIn', { seconds: secondsLeft });
     }
@@ -105,7 +108,7 @@ export default function AutoRefreshIndicator({
 
   const showCountdown =
     mode === 'active' || mode === 'autoStartQueued' || mode === 'autoStartWatch';
-  const ringMuted = mode === 'paused' || mode === 'inactive';
+  const ringMuted = mode === 'paused' || mode === 'inactive' || mode === 'autoStartWorker';
 
   return (
     <div className={className}>

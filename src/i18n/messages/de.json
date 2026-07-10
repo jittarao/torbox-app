@@ -636,6 +636,7 @@
     "autoRefreshInactive": "Auto-Aktualisierung setzt fort, wenn Sie zu diesem Tab zurückkehren.",
     "autoRefreshSlowHint": "Langsamere Aktualisierung, während dieser Tab im Hintergrund ist.",
     "autoRefreshWatchHint": "Überprüft regelmäßig auf neue eingereihte Torrents (Auto-Start aktiv).",
+    "autoStartWorkerHint": "Der automatische Start verarbeitet eingereihte Torrents im Hintergrund, solange dieser Tab geöffnet bleibt.",
     "dismiss": "Schließen",
     "lastUpdated": "Zuletzt aktualisiert {ago}.",
     "nextRefreshIn": "Nächste Aktualisierung in {seconds}s",
@@ -1303,7 +1304,7 @@
       "label": "Automatischen Start aktivieren",
       "limit": "Grenzwert für aktive Torrents:",
       "title": "Warteschlange mit Torrents verarbeiten",
-      "tooltip": "Automatischer Start des Downloads von Torrents bis zum angegebenen Grenzwert "
+      "tooltip": "Startet eingereihte Torrents automatisch bis zum Grenzwert für aktive Torrents, solange dieser Tab geöffnet bleibt (auch bei Inaktivität oder im Hintergrund). Beim Schließen oder Verwerfen des Tabs wird der automatische Start beendet."
     },
     "instantQueue": {
       "description": "Warteschlange überspringen",

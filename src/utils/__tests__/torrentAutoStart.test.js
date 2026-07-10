@@ -12,23 +12,13 @@ const controlQueuedItemMock = mock(async (apiKey, queuedId) => {
 
 mock.module('@/utils/utility', () => ({
   getAutoStartOptions: () => uploadOptions,
-  isActiveDownload: (item) =>
-    item?.active === true || item?.active === 1 || item?.active === 'true',
-  isQueuedItem: (item) => {
-    if (!item) return false;
-    if (item.status && String(item.status).toLowerCase() === 'queued') return true;
-    if (item.download_state && String(item.download_state).toLowerCase().includes('queued')) {
-      return true;
-    }
-    return !item.download_state && !item.download_finished && !item.active;
-  },
 }));
-
-const removeByIdsMock = mock(() => {});
 
 mock.module('@/utils/uploadActions', () => ({
   controlQueuedItem: (...args) => controlQueuedItemMock(...args),
 }));
+
+const removeByIdsMock = mock(() => {});
 
 mock.module('@/store/torboxDownloadsStore', () => ({
   useTorboxDownloadsStore: {
@@ -41,6 +31,10 @@ import {
   pruneProcessedQueueIds,
   coerceAutoStartLimit,
 } from '../torrentAutoStart';
+
+function queued(id) {
+  return { id, status: 'queued', active: false };
+}
 
 describe('coerceAutoStartLimit', () => {
   test('parses valid limits and caps high values', () => {
@@ -68,10 +62,10 @@ describe('fillAutoStartSlots', () => {
     const items = [
       { id: 1, active: true },
       { id: 2, active: true },
-      { id: 10, active: false },
-      { id: 11, active: false },
-      { id: 12, active: false },
-      { id: 13, active: false },
+      queued(10),
+      queued(11),
+      queued(12),
+      queued(13),
     ];
 
     const result = await fillAutoStartSlots(items, 'key', { viewType: 'torrents' });
@@ -86,10 +80,7 @@ describe('fillAutoStartSlots', () => {
   test('skips recently processed ids and tries the next queued item', async () => {
     processedQueueIdsRef.current.set(10, Date.now());
 
-    const items = [
-      { id: 10, active: false },
-      { id: 11, active: false },
-    ];
+    const items = [queued(10), queued(11)];
 
     const result = await fillAutoStartSlots(items, 'key', { viewType: 'torrents' });
 
@@ -101,11 +92,7 @@ describe('fillAutoStartSlots', () => {
   test('does not block later items when the first queued id is processed', async () => {
     processedQueueIdsRef.current.set(10, Date.now());
 
-    const items = [
-      { id: 10, active: false },
-      { id: 11, active: false },
-      { id: 12, active: false },
-    ];
+    const items = [queued(10), queued(11), queued(12)];
 
     const result = await fillAutoStartSlots(items, 'key', { viewType: 'torrents' });
 
@@ -114,7 +101,7 @@ describe('fillAutoStartSlots', () => {
   });
 
   test('removes processed marker when start fails so the next poll can retry', async () => {
-    const items = [{ id: 99, active: false }];
+    const items = [queued(99)];
 
     await fillAutoStartSlots(items, 'fail', { viewType: 'torrents' });
 
@@ -128,7 +115,7 @@ describe('pruneProcessedQueueIds', () => {
     processedQueueIdsRef.current.set(1, Date.now());
     processedQueueIdsRef.current.set(2, Date.now());
 
-    pruneProcessedQueueIds([{ id: 2, active: false }]);
+    pruneProcessedQueueIds([queued(2)]);
 
     expect(processedQueueIdsRef.current.has(1)).toBe(false);
     expect(processedQueueIdsRef.current.has(2)).toBe(true);
