@@ -1,5 +1,6 @@
 import { sendSuccess, sendError, asyncHandler, getDatabaseStats, formatBytes } from './helpers.js';
 import { mapUserDatabaseWork, runWithConcurrency } from './concurrency.js';
+import { queryActivityMetrics } from './activityMetrics.js';
 import logger from '../../utils/logger.js';
 
 /**
@@ -225,4 +226,13 @@ export function setupMetricsRoutes(router, backend) {
       sendError(res, error, 500, { endpoint: '/metrics/performance' });
     }
   });
+
+  router.get(
+    '/metrics/activity',
+    asyncHandler(async (req, res) => {
+      const onlineCount = backend.activityTracker?.getOnlineCount() ?? 0;
+      const activity = queryActivityMetrics(backend.masterDatabase, onlineCount);
+      sendSuccess(res, { activity });
+    })
+  );
 }

@@ -507,11 +507,11 @@ class Database {
    */
   getApiKeyUnavailableReason(authId) {
     const keyRow = this.getQuery('SELECT is_active FROM api_keys WHERE auth_id = ?', [authId]);
-    if (keyRow !== undefined) {
+    if (keyRow) {
       return keyRow.is_active === 1 ? null : 'inactive';
     }
     const userRow = this.getQuery('SELECT auth_id FROM user_registry WHERE auth_id = ?', [authId]);
-    return userRow !== undefined ? 'missing' : null;
+    return userRow ? 'missing' : null;
   }
 
   /**
@@ -875,6 +875,60 @@ class Database {
     );
     for (const authId of authIds) {
       cache.invalidateUserRegistry(authId);
+    }
+  }
+
+  /**
+   * Batch-update last_seen_at for user activity tracking.
+   * Advances prev_last_seen_at from the previous last_seen_at when present.
+   * @param {{ authId: string, at: Date }[]} entries
+   */
+  touchUserActivityBatch(entries) {
+    if (!entries || entries.length === 0) return;
+    if (!this.db) {
+      throw new Error('Database not initialized. Call initialize() first.');
+    }
+
+    const sql = `
+      UPDATE user_registry
+      SET
+        prev_last_seen_at = CASE
+          WHEN last_seen_at IS NOT NULL THEN last_seen_at
+          ELSE prev_last_seen_at
+        END,
+        last_seen_at = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE auth_id = ?
+    `;
+
+    const runBatch = () => {
+      const updateStmt = this.db.prepare(sql);
+      const transaction = this.db.transaction((rows) => {
+        for (const { authId, at } of rows) {
+          const formatted = this._formatNextPollAt(at);
+          updateStmt.run(formatted, authId);
+        }
+      });
+      transaction(entries);
+      for (const { authId } of entries) {
+        cache.invalidateUserRegistry(authId);
+      }
+    };
+
+    try {
+      runBatch();
+    } catch (error) {
+      if (this.isClosedDatabaseError(error)) {
+        logger.warn('Database connection closed during touchUserActivityBatch, refreshing', {
+          errorMessage: error.message,
+          count: entries.length,
+        });
+        this._reopenConnection();
+        runBatch();
+      } else {
+        logger.error('touchUserActivityBatch failed', error, { count: entries.length });
+        throw error;
+      }
     }
   }
 

@@ -81,4 +81,16 @@ describe('admin users routes', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.quota.tier).toBe('limited');
   });
+
+  test('GET /api/admin/users rejects invalid activity filter', async () => {
+    const res = await request(app)
+      .get('/api/admin/users')
+      .query({ activity: 'onlne' })
+      .set('x-admin-key', adminKey)
+      .send();
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Invalid activity filter');
+  });
 });
