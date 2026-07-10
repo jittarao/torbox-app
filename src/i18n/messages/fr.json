@@ -619,6 +619,7 @@
     "autoRefreshInactive": "L'actualisation automatique reprend lorsque vous revenez sur cet onglet.",
     "autoRefreshSlowHint": "Actualisation plus lente tant que cet onglet est en arrière-plan.",
     "autoRefreshWatchHint": "Vérification périodique des nouveaux torrents en file d'attente (démarrage auto activé).",
+    "autoStartWorkerHint": "Le démarrage automatique traite les torrents en file d'attente en arrière-plan tant que cet onglet reste ouvert.",
     "dismiss": "Fermer",
     "lastUpdated": "Dernière mise à jour {ago}.",
     "nextRefreshIn": "Prochaine actualisation dans {seconds}s",
@@ -1291,7 +1292,7 @@
       "label": "Activer le démarrage automatique",
       "limit": "Limite de torrents actifs :",
       "title": "Traiter les torrents en file d'attente",
-      "tooltip": "Démarrer automatiquement le téléchargement des torrents jusqu'à la limite spécifiée"
+      "tooltip": "Démarre automatiquement les torrents en file d'attente jusqu'à la limite d'actifs tant que cet onglet reste ouvert (y compris en veille ou en arrière-plan). Fermer ou supprimer l'onglet arrête le démarrage automatique."
     },
     "instantQueue": {
       "description": "Passer la file d'attente",

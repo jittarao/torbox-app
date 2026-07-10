@@ -17,6 +17,7 @@ const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 export function usePollTimer({
   type,
   pollingPaused,
+  workerBackedAutoStart = false,
   onPoll,
   isRateLimited,
   onPollSkipped,
@@ -94,14 +95,23 @@ export function usePollTimer({
       return selectHasQueuedTorrents(useTorboxDownloadsStore.getState());
     };
 
-    const getPollState = () =>
-      resolvePollInterval({
+    const getPollState = () => {
+      if (workerBackedAutoStart && isDisengaged() && !isWithinEngagementGrace()) {
+        return {
+          intervalMs: POLLING_CONFIG.autoStartQueuedIntervalMs,
+          mode: 'autoStartWorker',
+          shouldPoll: false,
+        };
+      }
+
+      return resolvePollInterval({
         pollingPaused,
         isDisengaged: isDisengaged(),
         isWithinEngagementGrace: isWithinEngagementGrace(),
         autoStartEnabled: autoStartApplies && getAutoStartOptions()?.autoStart === true,
         hasQueuedTorrents: readHasQueuedTorrents(),
       });
+    };
 
     const useTorrentOnlyPoll = () =>
       shouldPollTorrentsOnly({
@@ -249,7 +259,7 @@ export function usePollTimer({
       emitSchedule(delayMs, pollState);
 
       if (workerPort) {
-        workerPort.postMessage({ type: 'start', intervalMs: delayMs });
+        workerPort.postMessage({ type: 'poll:start', intervalMs: delayMs });
         // Safety net: fall back to setTimeout if SharedWorker silently fails
         // Uses its own timer (safetyTimeoutId) so resetPollTimer→stopPolling doesn't clear it
         clearSafetyTimeout();
@@ -269,7 +279,7 @@ export function usePollTimer({
     const stopPolling = () => {
       clearSafetyTimeout();
       if (workerPort) {
-        workerPort.postMessage({ type: 'stop' });
+        workerPort.postMessage({ type: 'poll:stop' });
       }
       if (pollTimeoutId) {
         clearTimeout(pollTimeoutId);
@@ -376,5 +386,13 @@ export function usePollTimer({
       onDisengagedRef.current = () => {};
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
     };
-  }, [type, pollingPaused, autoStartApplies, hasQueuedTorrents, onReEngagedRef, onDisengagedRef]);
+  }, [
+    type,
+    pollingPaused,
+    autoStartApplies,
+    hasQueuedTorrents,
+    workerBackedAutoStart,
+    onReEngagedRef,
+    onDisengagedRef,
+  ]);
 }

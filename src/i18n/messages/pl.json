@@ -631,6 +631,7 @@
     "autoRefreshInactive": "Automatyczne odświeżanie wznowi się po powrocie do tej karty.",
     "autoRefreshSlowHint": "Wolniejsze odświeżanie, gdy ta karta jest w tle.",
     "autoRefreshWatchHint": "Okresowe sprawdzanie nowych torrentów w kolejce (autostart włączony).",
+    "autoStartWorkerHint": "Autostart przetwarza torrenty w kolejce w tle, dopóki ta karta pozostaje otwarta.",
     "dismiss": "Zamknij",
     "lastUpdated": "Ostatnia aktualizacja {ago}.",
     "nextRefreshIn": "Następne odświeżenie za {seconds}s",
@@ -1307,7 +1308,7 @@
       "label": "Włącz automatyczne uruchamianie",
       "limit": "Limit aktywnych torrentów:",
       "title": "Przetwarzaj torrenty w kolejce",
-      "tooltip": "Automatycznie rozpocznij pobieranie torrentów do określonego limitu"
+      "tooltip": "Automatycznie uruchamia torrenty z kolejki do limitu aktywnych, dopóki ta karta pozostaje otwarta (również przy bezczynności lub w tle). Zamknięcie lub odrzucenie karty zatrzymuje autostart."
     },
     "instantQueue": {
       "description": "Pomiń kolejkę oczekiwania",

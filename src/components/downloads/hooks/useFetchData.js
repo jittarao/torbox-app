@@ -17,6 +17,8 @@ import {
   prevApiKeyRef,
   resetDownloadSyncRefs,
 } from '@/store/torboxDownloadsRefs';
+import { useAutoStartWakeLock } from '@/components/shared/hooks/useAutoStartWakeLock';
+import { useAutoStartWorker } from '@/components/shared/hooks/useAutoStartWorker';
 import { useDownloadListPolling } from '@/components/shared/hooks/useDownloadListPolling';
 import {
   registerDownloadsSyncContext,
@@ -26,7 +28,7 @@ import { resetPollTimer } from '@/store/pollTimerReset';
 
 // Polling rules (intervals in pollingConfig.js + pollInterval.js):
 // 1. 15s when the tab is visible/active, or during engagement grace after hide/idle
-// 2. Disengaged + auto-start + queued torrents → 30s (torrents-only fetch on All tab)
+// 2. Disengaged + auto-start + queued torrents → 60s page poll, or worker-owned when SharedWorker active
 // 3. Disengaged + auto-start + empty queue → 15min watch poll for new queue items
 // 4. Disengaged without auto-start → polling stops
 // 5. On the All tab while engaged, each tick fetches torrents, usenet, and webdl
@@ -168,9 +170,21 @@ export function useFetchData(apiKey, type = 'torrents') {
     [setPollSchedule]
   );
 
+  const { workerActive, autoStartApplies, hasWork } = useAutoStartWorker({
+    apiKey,
+    viewType: type,
+    pollingPaused,
+  });
+
+  useAutoStartWakeLock({
+    enabled: autoStartApplies,
+    hasWork,
+  });
+
   useDownloadListPolling({
     type,
     pollingPaused,
+    workerBackedAutoStart: workerActive,
     onPoll: handlePoll,
     isRateLimited,
     onPollSkipped: markRateLimited,

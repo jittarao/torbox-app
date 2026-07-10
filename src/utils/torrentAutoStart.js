@@ -1,5 +1,10 @@
 import { controlQueuedItem } from '@/utils/uploadActions';
-import { getAutoStartOptions, isActiveDownload, isQueuedItem } from '@/utils/utility';
+import { getAutoStartOptions } from '@/utils/utility';
+import {
+  coerceAutoStartLimit,
+  computeAutoStartPlan,
+  pruneProcessedIdsMap,
+} from '@/utils/autoStartLogic';
 import { processedQueueIdsRef } from '@/store/torboxDownloadsRefs';
 import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
@@ -11,26 +16,11 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function coerceAutoStartLimit(raw) {
-  const limit = Number(raw);
-  return Number.isFinite(limit) && limit > 0 ? Math.min(limit, 999) : 3;
-}
+export { coerceAutoStartLimit };
 
 /** Drop processed markers for torrents that left the queue. */
 export function pruneProcessedQueueIds(items) {
-  const queuedIds = new Set();
-  for (const item of items) {
-    if (isQueuedItem(item) && item.id != null) {
-      queuedIds.add(item.id);
-    }
-  }
-
-  const processed = processedQueueIdsRef.current;
-  for (const id of processed.keys()) {
-    if (!queuedIds.has(id)) {
-      processed.delete(id);
-    }
-  }
+  pruneProcessedIdsMap(processedQueueIdsRef.current, items);
 }
 
 function isRecentlyProcessed(id) {
@@ -70,23 +60,23 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
   pruneProcessedQueueIds(items);
 
   const limit = coerceAutoStartLimit(uploadOptions.autoStartLimit);
-  const activeCount = items.filter(isActiveDownload).length;
-  const slotsAvailable = limit - activeCount;
+  const plan = computeAutoStartPlan(
+    items,
+    limit,
+    processedQueueIdsRef.current,
+    Date.now(),
+    PROCESSED_TTL_MS
+  );
 
-  if (slotsAvailable <= 0) {
-    return { started: 0, slotsAvailable: 0 };
+  if (plan.slotsAvailable <= 0 || plan.toStart.length === 0) {
+    return { started: 0, slotsAvailable: plan.slotsAvailable };
   }
 
-  const candidates = items
-    .filter(isQueuedItem)
-    .filter((item) => item.id != null && !isRecentlyProcessed(item.id));
-
-  const toStart = candidates.slice(0, slotsAvailable);
   let started = 0;
   const startedIds = [];
 
-  for (let i = 0; i < toStart.length; i += 1) {
-    const { id } = toStart[i];
+  for (let i = 0; i < plan.toStart.length; i += 1) {
+    const id = plan.toStart[i];
     markProcessed(id);
 
     const result = await controlQueuedItem(apiKey, id, 'start', 'torrents');
@@ -98,7 +88,7 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
       processedQueueIdsRef.current.delete(id);
     }
 
-    if (i < toStart.length - 1) {
+    if (i < plan.toStart.length - 1) {
       await sleep(BETWEEN_STARTS_MS);
     }
   }
@@ -107,5 +97,5 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
     removeQueuedAfterForceStart('torrents', startedIds);
   }
 
-  return { started, slotsAvailable };
+  return { started, slotsAvailable: plan.slotsAvailable };
 }
