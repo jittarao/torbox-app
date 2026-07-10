@@ -51,6 +51,11 @@ export default function AdminUsersPageClient() {
     fetchUsers({ status: status === 'all' ? null : status, page: 1 });
   };
 
+  const handleActivityFilter = (activity) => {
+    setUserFilter('activity', activity === 'all' ? null : activity);
+    fetchUsers({ activity: activity === 'all' ? null : activity, page: 1 });
+  };
+
   const handleSearch = (search) => {
     setUserFilter('search', search);
     fetchUsers({ search, page: 1 });
@@ -82,6 +87,7 @@ export default function AdminUsersPageClient() {
           onUserClick={handleUserClick}
           onPageChange={handlePageChange}
           onStatusFilter={handleStatusFilter}
+          onActivityFilter={handleActivityFilter}
           onSearch={handleSearch}
           onSort={handleSort}
           sort={userFilters.sort}

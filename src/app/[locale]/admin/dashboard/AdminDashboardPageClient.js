@@ -5,17 +5,28 @@ import { useShallow } from 'zustand/react/shallow';
 import AdminLayout from '@/components/admin/AdminLayout';
 import MetricCard from '@/components/admin/MetricCard';
 import SystemOverview from '@/components/admin/SystemOverview';
+import ActivityOverview from '@/components/admin/ActivityOverview';
 import useAdminStore from '@/store/adminStore';
 import Toast from '@/components/shared/Toast';
 import { AdminPageHeader, AdminLoading, AdminEmpty } from '@/components/admin/AdminUi';
 import { BarChart3, Bolt, HardDrive, User } from '@/components/icons';
 
 export default function AdminDashboardClient() {
-  const { overviewMetrics, overviewLoading, fetchOverviewMetrics } = useAdminStore(
+  const {
+    overviewMetrics,
+    overviewLoading,
+    activityMetrics,
+    activityLoading,
+    fetchOverviewMetrics,
+    fetchActivityMetrics,
+  } = useAdminStore(
     useShallow((s) => ({
       overviewMetrics: s.overviewMetrics,
       overviewLoading: s.overviewLoading,
+      activityMetrics: s.activityMetrics,
+      activityLoading: s.activityLoading,
       fetchOverviewMetrics: s.fetchOverviewMetrics,
+      fetchActivityMetrics: s.fetchActivityMetrics,
     }))
   );
   const [toast, setToast] = useState(null);
@@ -23,17 +34,19 @@ export default function AdminDashboardClient() {
 
   useEffect(() => {
     fetchOverviewMetrics();
-  }, [fetchOverviewMetrics]);
+    fetchActivityMetrics();
+  }, [fetchOverviewMetrics, fetchActivityMetrics]);
 
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       fetchOverviewMetrics();
+      fetchActivityMetrics();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchOverviewMetrics]);
+  }, [autoRefresh, fetchOverviewMetrics, fetchActivityMetrics]);
 
   return (
     <AdminLayout>
@@ -87,6 +100,8 @@ export default function AdminDashboardClient() {
             </div>
 
             <SystemOverview metrics={overviewMetrics} />
+
+            <ActivityOverview activity={activityMetrics} loading={activityLoading} />
           </>
         ) : (
           <AdminEmpty message="Failed to load metrics. Check backend connectivity and try again." />
