@@ -626,6 +626,7 @@
     "autoRefreshInactive": "La actualización automática se reanuda al volver a esta pestaña.",
     "autoRefreshSlowHint": "Actualización más lenta mientras esta pestaña está en segundo plano.",
     "autoRefreshWatchHint": "Buscando nuevos torrents en cola periódicamente (auto-inicio activado).",
+    "autoStartWorkerHint": "El inicio automático está procesando torrents en cola en segundo plano mientras esta pestaña permanece abierta.",
     "dismiss": "Descartar",
     "lastUpdated": "Última actualización {ago}.",
     "nextRefreshIn": "Próxima actualización en {seconds}s",
@@ -1302,7 +1303,7 @@
       "label": "Habilitar inicio automático",
       "limit": "Límite de torrents activos:",
       "title": "Procesar torrents en cola",
-      "tooltip": "Iniciar automáticamente la descarga de torrents hasta el límite especificado"
+      "tooltip": "Inicia automáticamente torrents en cola hasta el límite de activos mientras esta pestaña permanece abierta (también en inactividad o en segundo plano). Al cerrar o descartar la pestaña, el inicio automático se detiene."
     },
     "instantQueue": {
       "description": "Saltar la cola de espera",

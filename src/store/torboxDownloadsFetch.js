@@ -2,6 +2,7 @@ import { mergeDownloadEntities } from '@/utils/downloadListMerge';
 import { retryFetch } from '@/utils/retryFetch';
 import { validateUserData } from '@/utils/monitoring';
 import { perfMonitor } from '@/utils/performance';
+import { isAutoStartWorkerActive } from '@/utils/autoStartWorkerClient';
 import { fillAutoStartSlots } from '@/utils/torrentAutoStart';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getListKeyForAssetType } from '@/store/torboxDownloadsSelectors';
@@ -292,7 +293,7 @@ export async function fetchDownloadType(
 
       store.setListFromMerge(assetType, entities, orderKeys);
 
-      if (listKey === 'torrents') {
+      if (listKey === 'torrents' && !isAutoStartWorkerActive()) {
         try {
           await fillAutoStartSlots(sortedItems, apiKey, { viewType });
         } catch (autoStartError) {

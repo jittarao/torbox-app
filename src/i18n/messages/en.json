@@ -702,6 +702,7 @@
     "autoRefreshInactive": "Auto-refresh resumes when you return to this tab.",
     "autoRefreshSlowHint": "Slower refresh while this tab is in the background.",
     "autoRefreshWatchHint": "Checking for new queued torrents periodically (auto-start on).",
+    "autoStartWorkerHint": "Auto-start is processing queued torrents in the background while this tab stays open.",
     "dismiss": "Dismiss",
     "lastUpdated": "Last updated {ago}.",
     "nextRefreshIn": "Next refresh in {seconds}s",
@@ -1409,7 +1410,7 @@
       "label": "Enable Auto Start",
       "limit": "Active torrents limit:",
       "title": "Process Queued Torrents",
-      "tooltip": "Automatically start downloading torrents up to the specified limit"
+      "tooltip": "Automatically start queued torrents up to the active limit while this tab stays open (including when idle or in the background). Closing or discarding the tab stops auto-start."
     },
     "instantQueue": {
       "description": "Skip waiting queue",

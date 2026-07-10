@@ -4,7 +4,7 @@ import { POLLING_CONFIG } from './pollingConfig';
  * Resolve poll interval and UI mode from presence + auto-start + queue state.
  *
  * Active tab (visible, not idle) or engagement grace → 15s always.
- * Hidden/idle with auto-start: 30s when filling queue, 15min when watching for new queue items.
+ * Hidden/idle with auto-start: 60s when filling queue, 15min when watching for new queue items.
  *
  * @param {Object} input
  * @param {boolean} input.pollingPaused

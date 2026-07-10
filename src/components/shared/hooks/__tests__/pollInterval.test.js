@@ -41,7 +41,7 @@ describe('resolvePollInterval', () => {
     expect(result.mode).toBe('active');
   });
 
-  it('uses 120s when disengaged, auto-start on, and queue has items', () => {
+  it('uses 60s when disengaged, auto-start on, and queue has items', () => {
     const result = resolvePollInterval({
       pollingPaused: false,
       isDisengaged: true,
@@ -49,7 +49,7 @@ describe('resolvePollInterval', () => {
       autoStartEnabled: true,
       hasQueuedTorrents: true,
     });
-    expect(result.intervalMs).toBe(120_000);
+    expect(result.intervalMs).toBe(60_000);
     expect(result.mode).toBe('autoStartQueued');
     expect(result.shouldPoll).toBe(true);
   });
