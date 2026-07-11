@@ -45,17 +45,14 @@ export function useAutomationRules(apiKey) {
     }
     lastBackendModeRef.current = backendMode;
 
-    if (
-      apiKey &&
-      rules.length === 0 &&
-      !loading &&
-      backendMode === 'backend' &&
-      !loadAttemptedRef.current
-    ) {
+    // Always sync from backend when it becomes available — not only when the store is empty.
+    // Otherwise a toggle while the backend was down can leave local "disabled" state while
+    // SQLite still has enabled=1, and we would never refetch to surface the mismatch.
+    if (apiKey && !loading && backendMode === 'backend' && !loadAttemptedRef.current) {
       loadAttemptedRef.current = true;
       loadRules(apiKey);
     }
-  }, [apiKey, rules.length, loading, backendMode, backendIsLoading, loadRules]);
+  }, [apiKey, loading, backendMode, backendIsLoading, loadRules]);
 
   const saveRulesWithKey = async (newRules) => {
     if (!apiKey) {

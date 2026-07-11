@@ -28,6 +28,27 @@ class GlobalActionQueue {
     this.draining = false;
   }
 
+  /**
+   * Drop in-memory pending batches for a disabled or deleted rule.
+   * @param {string} authId
+   * @param {number|null} ruleId
+   */
+  removePendingForRule(authId, ruleId) {
+    const ruleKey = String(ruleId ?? 'null');
+    const before = this.pending.length;
+    this.pending = this.pending.filter(
+      (item) => !(item.authId === authId && String(item.rule?.id ?? 'null') === ruleKey)
+    );
+    const removed = before - this.pending.length;
+    if (removed > 0) {
+      logger.info('Removed in-memory pending actions for rule', {
+        authId,
+        ruleId,
+        removed,
+      });
+    }
+  }
+
   enqueue(descriptors) {
     if (!Array.isArray(descriptors) || descriptors.length === 0) return;
     const masterDb = this.scheduler.masterDb;
@@ -215,6 +236,29 @@ class GlobalActionQueue {
               }
               this.pending.push(...sameRule);
               this.scheduler.recordInactivitySkip?.('queue');
+              continue;
+            }
+          }
+
+          const ruleId = merged.rule?.id ?? null;
+          if (ruleId != null) {
+            const stillEnabled = await this.scheduler.isAutomationRuleEnabled(
+              merged.authId,
+              ruleId
+            );
+            if (!stillEnabled) {
+              logger.info('Skipping pending action batch — rule is disabled', {
+                authId: merged.authId,
+                ruleId,
+                ruleName: merged.rule?.name,
+                torrentCount: merged.torrentsToProcess.length,
+              });
+              for (const id of pendingIds) {
+                if (masterDb?.deletePendingAction)
+                  try {
+                    masterDb.deletePendingAction(id);
+                  } catch (_) {}
+              }
               continue;
             }
           }

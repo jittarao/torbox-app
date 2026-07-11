@@ -714,6 +714,20 @@ class Database {
   }
 
   /**
+   * Remove queued automation actions for a rule (e.g. when the rule is disabled).
+   * @param {string} authId
+   * @param {number} ruleId
+   * @returns {number} Rows deleted
+   */
+  deletePendingActionsForRule(authId, ruleId) {
+    const result = this.runQuery('DELETE FROM pending_actions WHERE auth_id = ? AND rule_id = ?', [
+      authId,
+      ruleId,
+    ]);
+    return result?.changes ?? 0;
+  }
+
+  /**
    * Load all pending actions (used on startup to resume after crash).
    * @returns {Array<{ id: number, auth_id: string, payload: string, rule_id: number|null }>}
    */
