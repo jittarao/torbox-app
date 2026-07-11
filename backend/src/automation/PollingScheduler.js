@@ -848,6 +848,55 @@ class PollingScheduler {
     this._teardownEngineForAuth(authId);
   }
 
+  /**
+   * Cancel persisted and in-memory pending actions for a rule (disable/delete).
+   * @param {string} authId
+   * @param {number} ruleId
+   */
+  cancelPendingActionsForRule(authId, ruleId) {
+    if (!authId || ruleId == null) return;
+    const deleted = this.masterDb?.deletePendingActionsForRule?.(authId, ruleId) ?? 0;
+    this.globalActionQueue?.removePendingForRule?.(authId, ruleId);
+    if (deleted > 0) {
+      logger.info('Cancelled persisted pending actions for rule', {
+        authId,
+        ruleId,
+        deleted,
+      });
+    }
+  }
+
+  /**
+   * Whether an automation rule is still enabled in the user's database.
+   * @param {string} authId
+   * @param {number} ruleId
+   * @returns {Promise<boolean>}
+   */
+  async isAutomationRuleEnabled(authId, ruleId) {
+    if (!authId || ruleId == null || !this.userDatabaseManager) {
+      return false;
+    }
+    let connection;
+    try {
+      connection = await this.userDatabaseManager.getUserDatabase(authId);
+      const row = connection.db
+        .prepare('SELECT enabled FROM automation_rules WHERE id = ?')
+        .get(ruleId);
+      return row?.enabled === 1;
+    } catch (error) {
+      logger.warn('Failed to check automation rule enabled state', {
+        authId,
+        ruleId,
+        errorMessage: error.message,
+      });
+      return false;
+    } finally {
+      if (authId && this.userDatabaseManager) {
+        this.userDatabaseManager.releaseConnection(authId);
+      }
+    }
+  }
+
   _teardownEngineForAuth(authId) {
     const engine = this.cachedEngines.get(authId);
     if (engine) {
@@ -941,6 +990,19 @@ class PollingScheduler {
     const { authId, rule, torrentsToProcess } = descriptor;
     if (!authId || !rule || !Array.isArray(torrentsToProcess) || torrentsToProcess.length === 0) {
       return;
+    }
+
+    if (rule.id != null) {
+      const stillEnabled = await this.isAutomationRuleEnabled(authId, rule.id);
+      if (!stillEnabled) {
+        logger.info('runActionBatch: rule is disabled, skipping queued actions', {
+          authId,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          torrentCount: torrentsToProcess.length,
+        });
+        return;
+      }
     }
 
     const userInfo = this.masterDb.getUserRegistryInfo(authId);

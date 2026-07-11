@@ -20,6 +20,7 @@ describe('GlobalActionQueue', () => {
       },
       runActionBatch: async () => {},
       recordInactivitySkip: () => {},
+      isAutomationRuleEnabled: async () => true,
     };
     queue = new GlobalActionQueue(scheduler);
   });
@@ -143,5 +144,54 @@ describe('GlobalActionQueue', () => {
 
     expect(lookupCount).toBe(0);
     expect(queue.pending).toHaveLength(1);
+  });
+
+  it('skips pending action batch when rule is disabled', async () => {
+    const authId = 'f'.repeat(64);
+    let batchRan = false;
+    let deleteCalled = false;
+
+    scheduler.isAutomationRuleEnabled = async () => false;
+    scheduler.masterDb.deletePendingAction = () => {
+      deleteCalled = true;
+    };
+    scheduler.runActionBatch = async () => {
+      batchRan = true;
+    };
+
+    queue.pending = [
+      {
+        authId,
+        rule: { id: 6, name: 'disabled-rule' },
+        torrentsToProcess: [{ id: 't6' }],
+        pendingId: 12,
+      },
+    ];
+
+    await queue.drain();
+
+    expect(batchRan).toBe(false);
+    expect(deleteCalled).toBe(true);
+    expect(queue.pending).toHaveLength(0);
+  });
+
+  it('removePendingForRule drops in-memory queued batches', () => {
+    const authId = 'g'.repeat(64);
+    queue.pending = [
+      {
+        authId,
+        rule: { id: 7, name: 'r7' },
+        torrentsToProcess: [{ id: 't7' }],
+      },
+      {
+        authId,
+        rule: { id: 8, name: 'r8' },
+        torrentsToProcess: [{ id: 't8' }],
+      },
+    ];
+
+    queue.removePendingForRule(authId, 7);
+    expect(queue.pending).toHaveLength(1);
+    expect(queue.pending[0].rule.id).toBe(8);
   });
 });
