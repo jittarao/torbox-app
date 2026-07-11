@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAutomationRules } from '@/components/shared/hooks/useAutomationRules';
 import { useBackendMode } from '@/hooks/useBackendMode';
+import { isBackendAvailable } from '@/utils/backendModeCache';
 import Spinner from '@/components/shared/Spinner';
 import { getItem } from '@/utils/storage';
 import {
@@ -310,7 +311,7 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
 
       const newEnabled = !rule.enabled;
 
-      if (isBackendMode) {
+      if (isBackendAvailable()) {
         // Validate and convert ruleId to a positive integer
         // Backend expects a positive integer ID
         const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;

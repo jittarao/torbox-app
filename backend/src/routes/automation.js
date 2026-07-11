@@ -30,6 +30,10 @@ function invalidateSchedulerEngine(pollingScheduler, authId) {
   pollingScheduler?.invalidateCachedEngine?.(authId);
 }
 
+function cancelPendingActionsForRule(pollingScheduler, authId, ruleId) {
+  pollingScheduler?.cancelPendingActionsForRule?.(authId, ruleId);
+}
+
 function sendEngineUnavailableResponse(res, backend, authId) {
   const reason = backend.masterDatabase.getApiKeyUnavailableReason(authId);
   if (reason === 'inactive') {
@@ -128,6 +132,11 @@ export function setupAutomationRoutes(app, backend) {
         await engine.reloadRules();
         invalidateSchedulerEngine(pollingScheduler, authId);
         if (pollingScheduler) {
+          for (const rule of savedRules) {
+            if (!rule.enabled && rule.id != null) {
+              cancelPendingActionsForRule(pollingScheduler, authId, rule.id);
+            }
+          }
           await pollingScheduler.refreshPollers();
         }
         res.json({ success: true, message: 'Rules saved successfully', rules: savedRules });
@@ -159,6 +168,9 @@ export function setupAutomationRoutes(app, backend) {
         const { enabled } = req.body;
         await engine.updateRuleStatus(ruleId, enabled);
         invalidateSchedulerEngine(pollingScheduler, authId);
+        if (!enabled) {
+          cancelPendingActionsForRule(pollingScheduler, authId, ruleId);
+        }
         if (pollingScheduler) {
           await pollingScheduler.refreshPollers();
         }
@@ -191,6 +203,7 @@ export function setupAutomationRoutes(app, backend) {
         }
         await engine.deleteRule(ruleId);
         invalidateSchedulerEngine(pollingScheduler, authId);
+        cancelPendingActionsForRule(pollingScheduler, authId, ruleId);
         if (pollingScheduler) {
           await pollingScheduler.refreshPollers();
         }
