@@ -5,33 +5,10 @@ import { FETCH_TIMEOUT_MS, NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
+import { parseUtcDate } from '@/utils/parseUtcDate';
 
 // Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
-
-/**
- * Parse SQLite datetime string as UTC
- * Backend stores UTC datetime strings in SQLite format "YYYY-MM-DD HH:MM:SS" without timezone info.
- * JavaScript's Date constructor interprets strings without timezone as local time.
- * This function converts SQLite format to ISO format with 'Z' suffix to ensure UTC parsing.
- * @param {string|null|undefined} dateString - UTC datetime string in SQLite or ISO format
- * @returns {Date} Date object parsed as UTC
- */
-const parseUtcDate = (dateString) => {
-  if (!dateString) {
-    return new Date();
-  }
-
-  // If already in ISO format, ensure it has 'Z' for UTC
-  if (dateString.includes('T')) {
-    const utcDateString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
-    return new Date(utcDateString);
-  }
-
-  // SQLite format "YYYY-MM-DD HH:MM:SS" - convert to ISO "YYYY-MM-DDTHH:MM:SSZ"
-  const utcDateString = `${dateString.replace(' ', 'T')}Z`;
-  return new Date(utcDateString);
-};
 
 const saveLinkHistoryToBackend = async (apiKey) => {
   const { ensureUserDb } = await import('@/utils/ensureUserDb');

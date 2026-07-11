@@ -1,4 +1,5 @@
 import { timeAgo } from '@/components/downloads/utils/formatters';
+import { parseUtcDate } from '@/utils/parseUtcDate';
 
 const EXPIRATION_TIME = 3 * 60 * 60 * 1000; // 3 hours
 
@@ -16,19 +17,7 @@ export const getExpirationDate = (generatedAt, t, linkHistoryT) => {
     return linkHistoryT('expired') || 'Expired';
   }
 
-  // Backend returns UTC datetime strings in SQLite format "YYYY-MM-DD HH:MM:SS"
-  // JavaScript's Date constructor interprets strings without timezone as local time
-  // We need to explicitly parse it as UTC by converting to ISO format with 'Z' suffix
-  let utcDateString;
-  if (generatedAt.includes('T')) {
-    // Already in ISO format, ensure it has 'Z' for UTC
-    utcDateString = generatedAt.endsWith('Z') ? generatedAt : `${generatedAt}Z`;
-  } else {
-    // SQLite format "YYYY-MM-DD HH:MM:SS" - convert to ISO "YYYY-MM-DDTHH:MM:SSZ"
-    utcDateString = `${generatedAt.replace(' ', 'T')}Z`;
-  }
-
-  const generatedDate = new Date(utcDateString);
+  const generatedDate = parseUtcDate(generatedAt);
   const expirationDate = new Date(generatedDate.getTime() + EXPIRATION_TIME);
   const now = new Date();
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { parseUtcDate } from '@/utils/parseUtcDate';
 import { ACTION_TYPES } from '../constants';
 import LastEvaluatedAtValue from './LastEvaluatedAtValue';
 
@@ -103,11 +104,9 @@ export default function RuleLogsModal({
                     <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
                       {(() => {
                         try {
-                          // Handle SQLite datetime format: "YYYY-MM-DD HH:MM:SS"
                           const dateStr = log.timestamp;
                           if (!dateStr) return 'Invalid Date';
-                          // Replace space with 'T' to make it ISO-like, or parse directly
-                          const date = new Date(dateStr.replace(' ', 'T'));
+                          const date = parseUtcDate(dateStr);
                           return isNaN(date.getTime()) ? dateStr : date.toLocaleString();
                         } catch (e) {
                           return log.timestamp || 'Invalid Date';

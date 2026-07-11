@@ -14,6 +14,7 @@ import {
 } from '@/components/icons';
 import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
+import { parseUtcDate } from '@/utils/parseUtcDate';
 
 export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' }) {
   const isDesktop = variant === 'desktop';
@@ -234,7 +235,7 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
                           </p>
                           <p className="text-[10px] text-zinc-500 mt-1.5">
                             {created_at
-                              ? formatDistanceToNow(new Date(created_at), { addSuffix: true })
+                              ? formatDistanceToNow(parseUtcDate(created_at), { addSuffix: true })
                               : 'Unknown time'}
                           </p>
                         </div>

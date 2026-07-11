@@ -1,3 +1,5 @@
+import { parseUtcDate } from '@/utils/parseUtcDate';
+
 const sizeFormatters = new Map();
 const speedFormatters = new Map();
 
@@ -99,11 +101,18 @@ export const formatSpeed = (bytesPerSecond, locale = 'en') => {
 };
 
 export const formatDate = (dateString, locale = 'en') => {
-  return new Date(dateString).toLocaleString(locale);
+  if (dateString == null || dateString === '') {
+    return '';
+  }
+  const date = parseUtcDate(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toLocaleString(locale);
 };
 
-export const timeAgo = (dateString, t) => {
-  const date = new Date(dateString);
+export const timeAgo = (dateInput, t) => {
+  const date = parseUtcDate(dateInput);
   const now = new Date();
   const diffMs = now - date;
   const isFuture = diffMs < 0;
