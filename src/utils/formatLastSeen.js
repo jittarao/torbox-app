@@ -1,3 +1,5 @@
+import { parseUtcDate } from './parseUtcDate';
+
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -20,9 +22,7 @@ export function formatLastSeen(lastSeenAt, options = {}) {
     return 'Never';
   }
 
-  const seen = new Date(
-    String(lastSeenAt).replace(' ', 'T') + (String(lastSeenAt).includes('Z') ? '' : 'Z')
-  );
+  const seen = parseUtcDate(lastSeenAt);
   if (Number.isNaN(seen.getTime())) {
     return '—';
   }

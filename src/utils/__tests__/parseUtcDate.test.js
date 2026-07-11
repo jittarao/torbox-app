@@ -15,4 +15,15 @@ describe('parseUtcDate', () => {
     const ms = Date.UTC(2024, 5, 15, 12, 0, 0);
     expect(parseUtcDate(ms).getTime()).toBe(ms);
   });
+
+  test('passes through Date instances', () => {
+    const date = new Date(Date.UTC(2024, 5, 15, 12, 0, 0));
+    expect(parseUtcDate(date)).toBe(date);
+  });
+
+  test('parses ISO with timezone offset as-is', () => {
+    expect(parseUtcDate('2024-06-15T12:00:00+05:30').toISOString()).toBe(
+      '2024-06-15T06:30:00.000Z'
+    );
+  });
 });

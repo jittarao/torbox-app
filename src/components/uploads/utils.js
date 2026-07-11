@@ -66,7 +66,7 @@ export const formatTimeAgo = (dateString, t) => {
   try {
     const date = parseUtcDate(dateString);
     if (isNaN(date.getTime())) return 'N/A';
-    return timeAgo(date.toISOString(), t);
+    return timeAgo(date, t);
   } catch {
     return 'N/A';
   }
