@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Copy, Download, File } from '@/components/icons';
+import { Check, ChevronDown, ChevronUp, Copy, Download, File, X } from '@/components/icons';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import Tooltip from '@/components/shared/Tooltip';
@@ -144,6 +144,7 @@ function PanelHeader({
   downloadProgress,
   isOpen,
   onToggle,
+  onDismiss,
   titleId,
   t,
 }) {
@@ -169,58 +170,71 @@ function PanelHeader({
       : t('status.generating');
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-surface-alt dark:hover:bg-surface-alt-dark"
-      aria-expanded={isOpen}
-      aria-label={isOpen ? t('aria.collapse') : t('aria.expand')}
-    >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark">
-        <Download className="size-5" aria-hidden />
-      </span>
+    <div className="flex w-full items-stretch">
+      <div className="flex min-w-0 flex-1 items-center gap-3 p-3 pr-1 text-left">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:bg-accent-dark/10 dark:text-accent-dark">
+          <Download className="size-5" aria-hidden />
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3
-            id={titleId}
-            className="text-sm font-semibold text-primary-text dark:text-primary-text-dark"
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3
+              id={titleId}
+              className="text-sm font-semibold text-primary-text dark:text-primary-text-dark"
+            >
+              {count > 1 ? t('title.multiple') : t('title.single')}
+            </h3>
+            {count > 0 && (
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-medium tabular-nums text-accent dark:bg-accent-dark/15 dark:text-accent-dark">
+                {t('badge.ready', { count })}
+              </span>
+            )}
+          </div>
+
+          <p
+            className={`mt-0.5 text-xs text-muted dark:text-muted-dark ${!isDownloading && count === 0 ? 'animate-pulse' : ''}`}
+            aria-live="polite"
           >
-            {count > 1 ? t('title.multiple') : t('title.single')}
-          </h3>
-          {count > 0 && (
-            <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-medium tabular-nums text-accent dark:bg-accent-dark/15 dark:text-accent-dark">
-              {t('badge.ready', { count })}
-            </span>
+            {statusText}
+          </p>
+
+          {isDownloading && downloadProgress.total > 0 && (
+            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-progress-track dark:bg-progress-track-dark">
+              <progress
+                className="block h-full w-full appearance-none border-none [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-accent dark:[&::-webkit-progress-value]:bg-accent-dark [&::-moz-progress-bar]:bg-accent dark:[&::-moz-progress-bar]:bg-accent-dark"
+                value={downloadProgress.current}
+                max={downloadProgress.total}
+              />
+            </div>
           )}
         </div>
-
-        <p
-          className={`mt-0.5 text-xs text-muted dark:text-muted-dark ${!isDownloading && count === 0 ? 'animate-pulse' : ''}`}
-          aria-live="polite"
-        >
-          {statusText}
-        </p>
-
-        {isDownloading && downloadProgress.total > 0 && (
-          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-progress-track dark:bg-progress-track-dark">
-            <progress
-              className="block h-full w-full appearance-none border-none [&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-accent dark:[&::-webkit-progress-value]:bg-accent-dark [&::-moz-progress-bar]:bg-accent dark:[&::-moz-progress-bar]:bg-accent-dark"
-              value={downloadProgress.current}
-              max={downloadProgress.total}
-            />
-          </div>
-        )}
       </div>
 
-      <span className="shrink-0 text-primary-text/60 dark:text-primary-text-dark/60">
-        {isOpen ? (
-          <ChevronDown className="size-5" aria-hidden />
-        ) : (
-          <ChevronUp className="size-5" aria-hidden />
-        )}
-      </span>
-    </button>
+      <div className="flex shrink-0 items-center gap-0.5 self-center pr-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? t('aria.collapse') : t('aria.expand')}
+          className="inline-flex size-8 items-center justify-center rounded-lg text-primary-text/60 transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/60 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
+        >
+          {isOpen ? (
+            <ChevronDown className="size-5" aria-hidden />
+          ) : (
+            <ChevronUp className="size-5" aria-hidden />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="inline-flex size-8 items-center justify-center rounded-lg text-primary-text/50 transition-colors hover:bg-surface-alt hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-primary-text-dark/50 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
+          aria-label={t('aria.dismiss')}
+          title={t('actions.done')}
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -432,6 +446,7 @@ export default function DownloadPanel({
           downloadProgress={downloadProgress}
           isOpen={isDownloadPanelOpen}
           onToggle={() => setIsDownloadPanelOpen(!isDownloadPanelOpen)}
+          onDismiss={handleDismiss}
           titleId={titleId}
           t={t}
         />
@@ -477,9 +492,9 @@ export default function DownloadPanel({
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-muted-dark dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-alt hover:text-primary-text dark:text-muted-dark dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
               >
-                {t('actions.clearAll')}
+                {t('actions.done')}
               </button>
               <button
                 type="button"

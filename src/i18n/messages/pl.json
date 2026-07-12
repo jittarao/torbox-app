@@ -496,18 +496,19 @@
   },
   "DownloadPanel": {
     "actions": {
-      "clearAll": "Wyczyść wszystkie",
       "copied": "Skopiowano",
       "copy": "Kopiuj",
       "copyAll": "Skopiuj wszystkie linki",
       "copyLink": "Skopiuj link",
       "copyLinkWithIndex": "Kopiuj link {index} z {total}",
+      "done": "Gotowe",
       "downloadFile": "Pobierz plik",
       "downloadFileWithIndex": "Otwórz pobieranie {index} z {total}",
       "open": "Otwórz"
     },
     "aria": {
       "collapse": "Zwiń panel pobierania",
+      "dismiss": "Zamknij panel pobierania",
       "expand": "Rozwiń panel pobierania"
     },
     "badge": {

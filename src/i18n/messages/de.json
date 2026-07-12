@@ -500,18 +500,19 @@
   },
   "DownloadPanel": {
     "actions": {
-      "clearAll": "Alles löschen",
       "copied": "Kopiert",
       "copy": "Kopieren",
       "copyAll": "Alle Links kopieren",
       "copyLink": "Link kopieren",
       "copyLinkWithIndex": "Link {index} von {total} kopieren",
+      "done": "Fertig",
       "downloadFile": "Datei herunterladen",
       "downloadFileWithIndex": "Download {index} von {total} öffnen",
       "open": "Öffnen"
     },
     "aria": {
       "collapse": "Download-Panel einklappen",
+      "dismiss": "Download-Panel schließen",
       "expand": "Download-Panel ausklappen"
     },
     "badge": {
