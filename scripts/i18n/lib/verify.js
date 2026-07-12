@@ -1,4 +1,10 @@
-import { ALL_LOCALES, DEFAULT_LOCALE, TARGET_LOCALES, isAdminKey } from './constants.js';
+import {
+  ALL_LOCALES,
+  DEFAULT_LOCALE,
+  TARGET_LOCALES,
+  isAdminKey,
+  isCustomViewsPresetKey,
+} from './constants.js';
 import { findOrphanKeys, findRedundantKeys } from './delta.js';
 import { validateStringLeaf } from './icu.js';
 import { isSorted, loadAllLocales, readLocale } from './io.js';
@@ -40,6 +46,13 @@ export function verifyLocales({ locales = TARGET_LOCALES } = {}) {
         continue;
       }
 
+      if (isCustomViewsPresetKey(keyPath)) {
+        errors.push(
+          `${locale}.json: CustomViews.presets key "${keyPath}" must not appear in locale deltas`
+        );
+        continue;
+      }
+
       const english = getValueAtPath(en, keyPath);
       if (english === undefined) continue;
 
@@ -57,7 +70,7 @@ export function verifyLocales({ locales = TARGET_LOCALES } = {}) {
     const localeKeys = new Set([...walkLeaves(data)].map(([key]) => key));
     const missing = [];
     for (const [keyPath, english] of walkLeaves(en)) {
-      if (isAdminKey(keyPath)) continue;
+      if (isAdminKey(keyPath) || isCustomViewsPresetKey(keyPath)) continue;
       if (localeKeys.has(keyPath)) continue;
       missing.push(keyPath);
     }

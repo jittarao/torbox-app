@@ -87,4 +87,11 @@ describe('i18n translate', () => {
     const keys = Object.keys(plan.pending.de || {});
     expect(keys.some((key) => key.startsWith('Admin.'))).toBe(false);
   });
+
+  test('plan excludes CustomViews.presets keys', () => {
+    const plan = planTranslations({ locales: ['de'] });
+    const keys = Object.keys(plan.pending.de || {});
+    expect(keys.some((key) => key.startsWith('CustomViews.presets.'))).toBe(false);
+    expect(plan.excluded).toContain('CustomViews.presets.*');
+  });
 });
