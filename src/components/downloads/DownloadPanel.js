@@ -18,12 +18,64 @@ function getHostname(url) {
   }
 }
 
-function getFileExtension(name) {
+const COMPOUND_EXTENSIONS = ['tar.gz', 'tar.bz2', 'tar.xz', 'tar.zst', 'nzb.gz'];
+
+function getExtensionFromFilename(name) {
   if (!name || typeof name !== 'string') return null;
-  const base = name.split('/').pop() || name;
+  const base = (name.split('/').pop() || name).trim();
+  if (!base) return null;
+
+  const lower = base.toLowerCase();
+  for (const compound of COMPOUND_EXTENSIONS) {
+    if (lower.endsWith(`.${compound}`)) return compound;
+  }
+
   const dot = base.lastIndexOf('.');
   if (dot <= 0 || dot === base.length - 1) return null;
-  return base.slice(dot + 1).toLowerCase();
+  const ext = base.slice(dot + 1).toLowerCase();
+  if (!/^[a-z0-9]{1,12}$/i.test(ext)) return null;
+  return ext;
+}
+
+function getFilenameFromUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const filename = parsed.searchParams.get('filename');
+    if (filename) return decodeURIComponent(filename);
+
+    const segment = parsed.pathname.split('/').pop();
+    if (segment && segment.includes('.')) return decodeURIComponent(segment);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function resolveLinkExtension(link) {
+  const candidates = [link.name, getFilenameFromUrl(link.url)];
+  for (const candidate of candidates) {
+    const ext = getExtensionFromFilename(candidate);
+    if (ext) return ext;
+  }
+  return null;
+}
+
+function formatExtensionLabel(extension) {
+  const lower = extension.toLowerCase();
+  if (lower.includes('.')) {
+    if (lower.startsWith('tar.')) {
+      return lower.split('.').pop().toUpperCase().slice(0, 4);
+    }
+    return lower.replace(/\./g, '').toUpperCase().slice(0, 4);
+  }
+  const upper = lower.toUpperCase();
+  return upper.length <= 4 ? upper : upper.slice(0, 4);
+}
+
+function getExtensionStyle(extension) {
+  if (EXTENSION_STYLES[extension]) return EXTENSION_STYLES[extension];
+  const tail = extension.includes('.') ? extension.split('.').pop() : extension;
+  return EXTENSION_STYLES[tail] || 'bg-accent/10 text-accent dark:text-accent-dark';
 }
 
 function getDisplayName(link) {
@@ -43,6 +95,10 @@ const EXTENSION_STYLES = {
   zip: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
   rar: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
   '7z': 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  gz: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  bz2: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  xz: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  zst: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
   mkv: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
   mp4: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
   avi: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
@@ -57,7 +113,7 @@ function ExtensionBadge({ extension }) {
   if (!extension) {
     return (
       <span
-        className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt dark:bg-surface-alt-dark text-muted dark:text-muted-dark"
+        className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt text-muted dark:bg-surface-alt-dark dark:text-muted-dark"
         aria-hidden
       >
         <File className="size-4" />
@@ -65,14 +121,19 @@ function ExtensionBadge({ extension }) {
     );
   }
 
-  const style = EXTENSION_STYLES[extension] || 'bg-accent/10 text-accent dark:text-accent-dark';
+  const label = formatExtensionLabel(extension);
+  const style = getExtensionStyle(extension);
+  const isCompactLabel = label.length <= 3;
 
   return (
     <span
-      className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold uppercase tracking-wide ${style}`}
+      title={extension}
+      className={`flex h-9 shrink-0 items-center justify-center rounded-lg px-1 font-semibold uppercase tracking-wide ${style} ${
+        isCompactLabel ? 'min-w-9 text-[11px]' : 'min-w-[2.35rem] text-[9px] leading-none'
+      }`}
       aria-hidden
     >
-      {extension.length > 4 ? extension.slice(0, 3) : extension}
+      {label}
     </span>
   );
 }
@@ -165,7 +226,7 @@ function PanelHeader({
 
 function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
   const displayName = getDisplayName(link);
-  const extension = getFileExtension(displayName);
+  const extension = resolveLinkExtension(link);
   const hostname = getHostname(link.url);
   const isCopied = copiedId === link.id;
 
