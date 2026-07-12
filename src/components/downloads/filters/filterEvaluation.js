@@ -11,14 +11,23 @@ import {
   isNumberColumn,
   isTextColumn,
   isTimestampColumn,
+  isTimeColumn,
   isBooleanColumn,
   isStatusColumn,
   isTagsColumn,
 } from '@/components/downloads/CustomViews/utils';
 import {
+  getItemFieldForColumn,
+  getValueConversion,
+} from '@/components/downloads/filters/filterFieldRegistry';
+import {
   extractSourceHost,
   normalizeSourceHostKey,
 } from '@/components/downloads/filters/sourceDisplay';
+
+const BYTES_PER_GB = 1024 * 1024 * 1024;
+const BYTES_PER_MB = 1024 * 1024;
+const BYTES_PER_SECOND_TO_MBPS = 1 / (1024 * 1024);
 
 function matchesOriginalUrlEquals(columnValue, filterValue) {
   const strFilter = String(filterValue || '').toLowerCase();
@@ -35,65 +44,141 @@ function matchesOriginalUrlEquals(columnValue, filterValue) {
     extractSourceHost(strValue).toLowerCase() === normalizeSourceHostKey(filterValue).toLowerCase()
   );
 }
+
+function compareNumeric(operator, itemValue, filterValue) {
+  switch (operator) {
+    case COMPARISON_OPERATORS.GT:
+      return itemValue > filterValue;
+    case COMPARISON_OPERATORS.LT:
+      return itemValue < filterValue;
+    case COMPARISON_OPERATORS.GTE:
+      return itemValue >= filterValue;
+    case COMPARISON_OPERATORS.LTE:
+      return itemValue <= filterValue;
+    case COMPARISON_OPERATORS.EQ:
+      return itemValue === filterValue;
+    default:
+      return true;
+  }
+}
+
+function getNumericItemValue(columnKey, rawValue) {
+  const conversion = getValueConversion(columnKey);
+
+  if (rawValue === null || rawValue === undefined) {
+    return null;
+  }
+
+  let numValue = typeof rawValue === 'number' ? rawValue : parseFloat(rawValue);
+  if (Number.isNaN(numValue)) numValue = 0;
+
+  switch (conversion) {
+    case 'bytesToGb':
+      return numValue / BYTES_PER_GB;
+    case 'bytesToMb':
+      return numValue / BYTES_PER_MB;
+    case 'mbps':
+      return numValue * BYTES_PER_SECOND_TO_MBPS;
+    case 'secondsToMinutes':
+      return numValue / 60;
+    case 'percent':
+      return numValue * 100;
+    default:
+      return numValue;
+  }
+}
+
+function getNumericFilterValue(columnKey, filterValue) {
+  const conversion = getValueConversion(columnKey);
+  let numFilter = typeof filterValue === 'number' ? filterValue : parseFloat(filterValue);
+  if (Number.isNaN(numFilter)) numFilter = 0;
+
+  if (conversion === 'percent') {
+    return numFilter;
+  }
+
+  return numFilter;
+}
+
+function getTimeItemValue(columnKey, rawValue) {
+  if (!rawValue) return null;
+
+  const itemTime = new Date(rawValue).getTime();
+  if (Number.isNaN(itemTime)) return null;
+
+  const now = Date.now();
+  const conversion = getValueConversion(columnKey);
+
+  if (conversion === 'hoursSinceCreated' || conversion === 'hoursSinceCached') {
+    return (now - itemTime) / (1000 * 60 * 60);
+  }
+
+  return null;
+}
+
+function getTimestampItemValue(columnKey, rawValue) {
+  if (!rawValue) return null;
+
+  const itemTime = new Date(rawValue).getTime();
+  if (Number.isNaN(itemTime)) return null;
+
+  const now = Date.now();
+  const conversion = getValueConversion(columnKey);
+
+  if (conversion === 'hoursUntil') {
+    return (itemTime - now) / (1000 * 60 * 60);
+  }
+
+  return null;
+}
+
 /** Evaluate a single filter condition against an item. */
 function evaluateFilter(filter, item) {
   if (!filter.column || filter.operator === undefined) return true;
 
-  const columnValue = item[filter.column];
+  const columnKey = filter.column;
+  const itemField = getItemFieldForColumn(columnKey);
+  const columnValue = item[itemField] ?? item[columnKey];
   const operator = filter.operator;
   const filterValue = filter.value;
 
   if (
-    filter.column !== 'download_state' &&
-    filter.column !== 'asset_type' &&
-    filter.column !== 'is_downloaded' &&
-    filter.column !== 'airlocked' &&
-    filter.column !== 'is_protected' &&
-    filter.column !== 'tags' &&
+    columnKey !== 'download_state' &&
+    columnKey !== 'asset_type' &&
+    columnKey !== 'is_downloaded' &&
+    columnKey !== 'airlocked' &&
+    columnKey !== 'is_protected' &&
+    columnKey !== 'tags' &&
+    columnKey !== 'active' &&
+    columnKey !== 'long_term_seeding' &&
     (columnValue === null || columnValue === undefined)
   ) {
     return false;
   }
 
-  if (isNumberColumn(filter.column)) {
-    let numValue = typeof columnValue === 'number' ? columnValue : parseFloat(columnValue) || 0;
-    let numFilter = typeof filterValue === 'number' ? filterValue : parseFloat(filterValue) || 0;
+  if (isNumberColumn(columnKey)) {
+    const itemValue = getNumericItemValue(columnKey, columnValue);
+    if (itemValue === null) return false;
 
-    if (filter.column === 'progress') {
-      numFilter = numFilter / 100;
-    }
-
-    if (
-      filter.column === 'size' ||
-      filter.column === 'total_uploaded' ||
-      filter.column === 'total_downloaded'
-    ) {
-      numFilter = numFilter * 1024 * 1024;
-    }
-
-    switch (operator) {
-      case COMPARISON_OPERATORS.GT:
-        return numValue > numFilter;
-      case COMPARISON_OPERATORS.LT:
-        return numValue < numFilter;
-      case COMPARISON_OPERATORS.GTE:
-        return numValue >= numFilter;
-      case COMPARISON_OPERATORS.LTE:
-        return numValue <= numFilter;
-      case COMPARISON_OPERATORS.EQ:
-        return numValue === numFilter;
-      default:
-        return true;
-    }
+    const numFilter = getNumericFilterValue(columnKey, filterValue);
+    return compareNumeric(operator, itemValue, numFilter);
   }
 
-  if (isTextColumn(filter.column)) {
+  if (isTimeColumn(columnKey)) {
+    const itemValue = getTimeItemValue(columnKey, columnValue);
+    if (itemValue === null) return false;
+
+    const numFilter = getNumericFilterValue(columnKey, filterValue);
+    return compareNumeric(operator, itemValue, numFilter);
+  }
+
+  if (isTextColumn(columnKey)) {
     const strValue = String(columnValue || '').toLowerCase();
     const strFilter = String(filterValue || '').toLowerCase();
 
     switch (operator) {
       case STRING_OPERATORS.EQUALS:
-        if (filter.column === 'original_url') {
+        if (columnKey === 'original_url') {
           return matchesOriginalUrlEquals(columnValue, filterValue);
         }
         return strValue === strFilter;
@@ -112,21 +197,12 @@ function evaluateFilter(filter, item) {
     }
   }
 
-  if (isTimestampColumn(filter.column)) {
-    if (!columnValue) return false;
+  if (isTimestampColumn(columnKey)) {
+    const compareValue = getTimestampItemValue(columnKey, columnValue);
+    if (compareValue === null) return false;
 
-    const itemTime = new Date(columnValue).getTime();
-    if (isNaN(itemTime)) return false;
-
-    const now = Date.now();
     const filterAmount =
       typeof filterValue === 'number' ? filterValue : parseFloat(filterValue) || 0;
-
-    // expires_at uses hours-until-expiration; other timestamps use days since the date.
-    const compareValue =
-      filter.column === 'expires_at'
-        ? (itemTime - now) / (1000 * 60 * 60)
-        : (now - itemTime) / (1000 * 60 * 24 * 60);
 
     switch (operator) {
       case COMPARISON_OPERATORS.GT:
@@ -138,18 +214,14 @@ function evaluateFilter(filter, item) {
       case COMPARISON_OPERATORS.LTE:
         return compareValue <= filterAmount;
       case COMPARISON_OPERATORS.EQ:
-        if (filter.column === 'expires_at') {
-          return Math.abs(compareValue - filterAmount) < 1;
-        }
         return Math.abs(compareValue - filterAmount) < 1;
       default:
         return true;
     }
   }
 
-  if (isBooleanColumn(filter.column)) {
+  if (isBooleanColumn(columnKey)) {
     const boolValue = columnValue === true || columnValue === 1 || columnValue === 'true';
-    const boolFilter = filterValue === true || filterValue === 1 || filterValue === 'true';
 
     switch (operator) {
       case BOOLEAN_OPERATORS.IS_TRUE:
@@ -161,8 +233,8 @@ function evaluateFilter(filter, item) {
     }
   }
 
-  if (isStatusColumn(filter.column)) {
-    if (filter.column === 'download_state') {
+  if (isStatusColumn(columnKey)) {
+    if (columnKey === 'download_state') {
       const itemStatus = getMatchingStatus(item);
       const itemStatusLabel = itemStatus?.label?.toLowerCase() || '';
 
@@ -180,7 +252,7 @@ function evaluateFilter(filter, item) {
         default:
           return true;
       }
-    } else if (filter.column === 'asset_type') {
+    } else if (columnKey === 'asset_type') {
       const itemValue = String(item.assetType || item.asset_type || '').toLowerCase();
       const filterValues = Array.isArray(filterValue)
         ? filterValue.map((v) => String(v).toLowerCase())
@@ -199,7 +271,7 @@ function evaluateFilter(filter, item) {
     }
   }
 
-  if (isTagsColumn(filter.column)) {
+  if (isTagsColumn(columnKey)) {
     const itemTags = item.tags || [];
     const itemTagIds = itemTags.map((tag) => tag.id);
     const filterTagIds = Array.isArray(filterValue)

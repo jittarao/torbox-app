@@ -6,101 +6,44 @@ import {
   STRING_OPERATORS,
   TAG_OPERATORS,
 } from '../AutomationRules/constants';
+import {
+  getGroupedFilterFields,
+  getColumnUnit as getRegistryColumnUnit,
+  getColumnValueKind,
+  getFieldByColumnKey,
+} from '../filters/filterFieldRegistry';
 
-/** Tag operators shown in custom view filters (excludes automation-only is_all_of). */
+/** Tag operators shown in custom view filters (aligned with automation). */
 export const VIEW_TAG_FILTER_OPERATORS = [
   TAG_OPERATORS.IS_ANY_OF,
+  TAG_OPERATORS.IS_ALL_OF,
   TAG_OPERATORS.IS_NONE_OF,
   TAG_OPERATORS.IS_SET,
   TAG_OPERATORS.IS_NOT_SET,
 ];
 
-// Map column keys to filter types
-const COLUMN_FILTER_TYPES = {
-  // Number columns
-  size: 'number',
-  progress: 'number',
-  download_progress: 'number',
-  ratio: 'number',
-  file_count: 'number',
-  download_speed: 'number',
-  upload_speed: 'number',
-  seeds: 'number',
-  peers: 'number',
-  total_uploaded: 'number',
-  total_downloaded: 'number',
-  availability: 'number',
+const getColumnFilterType = (columnKey) => getColumnValueKind(columnKey);
 
-  // Text columns
-  name: 'text',
-  hash: 'text',
-  original_url: 'text',
-  tracker: 'text',
+export const isNumberColumn = (columnKey) => getColumnFilterType(columnKey) === 'number';
 
-  // Time/Timestamp columns
-  created_at: 'timestamp',
-  cached_at: 'timestamp',
-  updated_at: 'timestamp',
-  expires_at: 'timestamp',
+export const isTextColumn = (columnKey) => getColumnFilterType(columnKey) === 'text';
 
-  // Boolean columns
-  cached: 'boolean',
-  allow_zip: 'boolean',
-  private: 'boolean',
-  airlocked: 'boolean',
-  is_protected: 'boolean',
-  seed_torrent: 'boolean',
-  is_downloaded: 'boolean',
+export const isTimestampColumn = (columnKey) => getColumnFilterType(columnKey) === 'timestamp';
 
-  // Status/Multi-select columns
-  download_state: 'status',
-  asset_type: 'status',
+export const isTimeColumn = (columnKey) => getColumnFilterType(columnKey) === 'time';
 
-  // Tag columns
-  tags: 'tags',
-};
+export const isBooleanColumn = (columnKey) => getColumnFilterType(columnKey) === 'boolean';
 
-// Get filter type for a column
-const getColumnFilterType = (columnKey) => {
-  return COLUMN_FILTER_TYPES[columnKey] || 'number';
-};
+export const isStatusColumn = (columnKey) => getColumnFilterType(columnKey) === 'status';
 
-// Check if column is number type
-export const isNumberColumn = (columnKey) => {
-  return getColumnFilterType(columnKey) === 'number';
-};
+export const isTagsColumn = (columnKey) => getColumnFilterType(columnKey) === 'tags';
 
-// Check if column is text type
-export const isTextColumn = (columnKey) => {
-  return getColumnFilterType(columnKey) === 'text';
-};
-
-// Check if column is timestamp type
-export const isTimestampColumn = (columnKey) => {
-  return getColumnFilterType(columnKey) === 'timestamp';
-};
-
-// Check if column is boolean type
-export const isBooleanColumn = (columnKey) => {
-  return getColumnFilterType(columnKey) === 'boolean';
-};
-
-// Check if column is status type
-export const isStatusColumn = (columnKey) => {
-  return getColumnFilterType(columnKey) === 'status';
-};
-
-// Check if column is tags type
-export const isTagsColumn = (columnKey) => {
-  return getColumnFilterType(columnKey) === 'tags';
-};
-
-// Get available operators for a column type
 export const getOperatorsForColumn = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
 
   switch (filterType) {
     case 'number':
+    case 'time':
       return Object.values(COMPARISON_OPERATORS);
     case 'text':
       return Object.values(STRING_OPERATORS);
@@ -117,12 +60,12 @@ export const getOperatorsForColumn = (columnKey) => {
   }
 };
 
-// Get default operator for a column type
 export const getDefaultOperator = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
 
   switch (filterType) {
     case 'number':
+    case 'time':
       return COMPARISON_OPERATORS.GT;
     case 'text':
       return STRING_OPERATORS.CONTAINS;
@@ -139,17 +82,17 @@ export const getDefaultOperator = (columnKey) => {
   }
 };
 
-// Get default value for a column type
 export const getDefaultValue = (columnKey) => {
   const filterType = getColumnFilterType(columnKey);
 
   switch (filterType) {
     case 'number':
+    case 'time':
       return 0;
     case 'text':
       return '';
     case 'timestamp':
-      return 0; // minutes/hours
+      return 0;
     case 'boolean':
       return true;
     case 'status':
@@ -161,14 +104,12 @@ export const getDefaultValue = (columnKey) => {
   }
 };
 
-// Get available columns for filtering (excluding id)
 export const getFilterableColumns = (columnT, activeType = 'all') => {
-  // Columns to exclude from filtering
   const columnKeysToExclude = ['id', 'hash', 'download_progress'];
 
-  // Build base columns from COLUMNS
   const baseColumns = Object.entries(COLUMNS).reduce((acc, [key, column]) => {
     if (columnKeysToExclude.includes(key)) return acc;
+    if (!getFieldByColumnKey(key)) return acc;
     acc.push({
       key,
       label:
@@ -184,168 +125,29 @@ export const getFilterableColumns = (columnT, activeType = 'all') => {
     return acc;
   }, []);
 
-  // Add tags column
-  baseColumns.push({
-    key: 'tags',
-    label: 'Tags',
-    sortable: false,
-  });
+  if (getFieldByColumnKey('tags')) {
+    baseColumns.push({
+      key: 'tags',
+      label: 'Tags',
+      sortable: false,
+    });
+  }
 
   return baseColumns;
 };
 
-// Get grouped column options for filtering
-// Accepts translation functions as parameters (similar to getConditionTypeOptions)
-export const getGroupedFilterableColumns = (activeType = 'all', columnT, customViewsT) => {
-  // Columns to exclude from filtering
-  const columnKeysToExclude = ['id', 'hash', 'download_progress'];
-
-  // Helper to get column label
-  const getColumnLabel = (key, column) => {
-    if (key === 'tags') return 'Tags';
-    if (key === 'airlocked') return columnT ? columnT('airlocked_filter') : 'Is Airlocked';
-    if (key === 'is_protected') return columnT ? columnT('is_protected_filter') : 'Is Protected';
-    return column.displayName ? column.displayName : columnT ? columnT(key) : key;
-  };
-
-  // Build base columns from COLUMNS
-  const allColumns = Object.entries(COLUMNS).reduce((acc, [key, column]) => {
-    if (columnKeysToExclude.includes(key)) return acc;
-    acc.push({
-      key,
-      label: getColumnLabel(key, column),
-      ...column,
-    });
-    return acc;
-  }, []);
-
-  // Add additional filters not in the COLUMNS object
-  allColumns.push({
-    key: 'availability',
-    label: 'Availability',
+export const getGroupedFilterableColumns = (
+  activeType = 'all',
+  columnT,
+  customViewsT,
+  automationT
+) => {
+  return getGroupedFilterFields('customView', {
+    activeType,
+    columnT,
+    customViewsT,
+    automationT,
   });
-  allColumns.push({
-    key: 'cached',
-    label: 'Cached',
-  });
-  allColumns.push({
-    key: 'allow_zip',
-    label: 'Allow Zip',
-  });
-  allColumns.push({
-    key: 'seed_torrent',
-    label: 'Seeding Enabled',
-  });
-  allColumns.push({
-    key: 'is_downloaded',
-    label: columnT ? columnT('is_downloaded') : 'Downloaded',
-  });
-
-  // Create a map for quick column lookup
-  const columnMap = new Map(allColumns.map((col) => [col.key, col]));
-
-  // Helper to get column option by key
-  const getColumnOption = (key) => {
-    const col = columnMap.get(key);
-    if (!col) return null;
-    return { value: col.key, label: col.label };
-  };
-
-  // Helper to get ordered options for a group
-  const getOrderedOptions = (orderedKeys) => {
-    return orderedKeys.map((key) => getColumnOption(key)).filter((opt) => opt !== null); // Filter out any keys that don't exist
-  };
-
-  // Helper to get group label with fallback
-  const getGroupLabel = (key) => {
-    if (customViewsT) {
-      try {
-        return customViewsT(`columnGroups.${key}`);
-      } catch (e) {
-        // Translation key doesn't exist, use fallback
-      }
-    }
-    // Fallback labels
-    const fallbacks = {
-      lifecycle: 'Lifecycle',
-      seeding: 'Seeding',
-      downloading: 'Downloading',
-      timestamps: 'Timestamps',
-      metadata: 'Metadata',
-    };
-    return fallbacks[key] || key;
-  };
-
-  // Group columns by category with explicit ordering
-  const groups = [
-    {
-      label: getGroupLabel('lifecycle'),
-      // Order: download_state, asset_type, is_downloaded
-      options: getOrderedOptions(['download_state', 'asset_type', 'is_downloaded']),
-    },
-    {
-      label: getGroupLabel('seeding'),
-      // Order: ratio, seeds, peers, upload_speed, total_uploaded, seeding_enabled
-      options: getOrderedOptions([
-        'ratio',
-        'seed_torrent',
-        'seeds',
-        'peers',
-        'upload_speed',
-        'total_uploaded',
-      ]),
-    },
-    {
-      label: getGroupLabel('downloading'),
-      // Order: progress, download_speed, eta, total_downloaded
-      options: getOrderedOptions(['eta', 'progress', 'download_speed', 'total_downloaded']),
-    },
-    {
-      label: getGroupLabel('metadata'),
-      // Order: name, size, file_count, tags, tracker, original_url, availability, private, cached, allow_zip
-      options: getOrderedOptions([
-        'tracker',
-        'original_url',
-        'availability',
-        'size',
-        'file_count',
-        'name',
-        'private',
-        'airlocked',
-        'is_protected',
-        'cached',
-        'allow_zip',
-        'tags',
-      ]),
-    },
-    {
-      label: getGroupLabel('timestamps'),
-      // Order: created_at, updated_at, cached_at, expires_at
-      options: getOrderedOptions(['created_at', 'updated_at', 'cached_at', 'expires_at']),
-    },
-  ];
-
-  // Filter out empty groups
-  return groups.filter((group) => group.options.length > 0);
 };
 
-// Get unit for a column (for display)
-export const getColumnUnit = (columnKey) => {
-  const units = {
-    size: 'MB',
-    progress: '%',
-    ratio: '',
-    file_count: '',
-    download_speed: 'MB/s',
-    upload_speed: 'MB/s',
-    seeds: '',
-    peers: '',
-    total_uploaded: 'MB',
-    total_downloaded: 'MB',
-    created_at: 'days ago',
-    cached_at: 'days ago',
-    updated_at: 'days ago',
-    expires_at: 'hours until expiration',
-  };
-  return units[columnKey] || '';
-};
+export const getColumnUnit = (columnKey) => getRegistryColumnUnit(columnKey);

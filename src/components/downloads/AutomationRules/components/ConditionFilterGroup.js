@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import ConditionFilterInput from './ConditionFilterInput';
 import { LOGIC_OPERATORS } from '../constants';
 import Select from '@/components/shared/Select';
@@ -31,12 +31,13 @@ export default function ConditionFilterGroup({
   };
 
   const hasConditions = group.conditions && group.conditions.length > 0;
+  const hasMultipleConditions = hasConditions && group.conditions.length > 1;
 
   return (
     <div className="border border-border dark:border-border-dark rounded-md bg-surface-alt dark:bg-surface-alt-dark">
       {/* Group Header */}
-      <div className="flex items-center justify-between p-2 border-b border-border dark:border-border-dark">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 p-2 border-b border-border dark:border-border-dark sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
@@ -71,12 +72,12 @@ export default function ConditionFilterGroup({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:justify-start">
           {isExpanded && (
             <button
               type="button"
               onClick={handleAddCondition}
-              className="px-2 py-1 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface dark:hover:bg-surface-dark rounded transition-colors"
+              className="whitespace-nowrap px-2 py-1 text-xs text-primary-text dark:text-primary-text-dark hover:bg-surface dark:hover:bg-surface-dark rounded transition-colors"
               title={automationRulesT('addConditionToGroup')}
             >
               + {automationRulesT('addCondition')}
@@ -98,7 +99,7 @@ export default function ConditionFilterGroup({
 
       {/* Group Content */}
       {isExpanded && (
-        <div className="p-2 space-y-2">
+        <div className={`p-2 space-y-2 ${hasMultipleConditions ? 'pl-3' : ''}`}>
           {!hasConditions ? (
             <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 italic py-2">
               {automationRulesT('noConditionsInGroup')}
@@ -106,15 +107,16 @@ export default function ConditionFilterGroup({
           ) : (
             <>
               {group.conditions.map((condition, conditionIndex) => (
-                <div key={condition._key || conditionIndex} className="relative">
+                <Fragment key={condition._key || conditionIndex}>
                   {conditionIndex > 0 && (
-                    <div className="absolute left-4 top-0 bottom-0 w-px bg-border dark:bg-border-dark -translate-y-2" />
-                  )}
-                  {conditionIndex > 0 && (
-                    <div className="absolute left-4 -top-2 text-xs text-primary-text/50 dark:text-primary-text-dark/50 bg-surface-alt dark:bg-surface-alt-dark px-1">
-                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
-                        ? automationRulesT('logicOperators.and')
-                        : automationRulesT('logicOperators.or')}
+                    <div className="relative h-4" aria-hidden>
+                      <div className="absolute inset-y-0 left-0 z-10 flex -translate-x-1/2 items-center">
+                        <span className="inline-flex h-5 items-center whitespace-nowrap rounded-full border border-border/60 bg-surface-alt px-2 text-[10px] font-semibold uppercase leading-none tracking-wide text-primary-text/55 shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/55">
+                          {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
+                            ? automationRulesT('logicOperators.and')
+                            : automationRulesT('logicOperators.or')}
+                        </span>
+                      </div>
                     </div>
                   )}
                   <ConditionFilterInput
@@ -127,7 +129,7 @@ export default function ConditionFilterGroup({
                     apiKey={apiKey}
                     assetTypes={assetTypes}
                   />
-                </div>
+                </Fragment>
               ))}
             </>
           )}
