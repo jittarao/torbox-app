@@ -90,6 +90,7 @@ export function useDownloadsFilters({
     updateView,
     loading: viewsLoading,
     hasLoaded: viewsHasLoaded,
+    reorderViews,
   } = useCustomViews(apiKey);
 
   const activeViewIds = useMemo(() => urlViewIds ?? [], [urlViewIds]);
@@ -702,6 +703,21 @@ export function useDownloadsFilters({
     [sortField, sortDirection, setSort]
   );
 
+  const handleReorderViews = useCallback(
+    async (orderedIds) => {
+      try {
+        await reorderViews(orderedIds);
+      } catch (error) {
+        setToast({
+          message: downloadsFiltersT('reorderViewsFailed', { error: error.message }),
+          type: 'error',
+        });
+        throw error;
+      }
+    },
+    [reorderViews, setToast, downloadsFiltersT]
+  );
+
   return {
     columnFilters,
     setColumnFilters,
@@ -764,5 +780,6 @@ export function useDownloadsFilters({
     handleOpenTagManager,
     handleApplyFiltersFromModal,
     handlePreviewFiltersFromModal,
+    handleReorderViews,
   };
 }

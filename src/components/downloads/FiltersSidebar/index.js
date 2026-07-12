@@ -35,6 +35,7 @@ function SidebarSection({
   children,
   onAdd,
   addLabel,
+  headerActions = null,
   tall,
   expanded,
   onToggle,
@@ -64,6 +65,7 @@ function SidebarSection({
             </span>
           )}
         </button>
+        {headerActions}
         {onAdd && (
           <button
             type="button"
@@ -104,6 +106,19 @@ function FilterIcon({ className = 'size-4' }) {
         strokeLinejoin="round"
         strokeWidth={1.75}
         d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+      />
+    </svg>
+  );
+}
+
+function ReorderViewsIcon({ className = 'size-3.5' }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"
       />
     </svg>
   );
@@ -225,6 +240,7 @@ export default function FiltersSidebar({
   onNewFilter,
   onNewView,
   onOpenTagManager,
+  onReorderViews,
   variant = 'inline',
   className = '',
   collapsed = false,
@@ -237,6 +253,7 @@ export default function FiltersSidebar({
   const isSheet = variant === 'sheet';
   const sectionTall = isFixed || isSheet;
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewsSortMode, setViewsSortMode] = useState(false);
   const { sectionsExpanded, toggleSection, expandAllSections } =
     useFiltersSidebarSectionsCollapsed();
 
@@ -249,6 +266,14 @@ export default function FiltersSidebar({
   const showSourceSection = activeAssetType === 'all' || activeAssetType === 'webdl';
   const trackerFilterLocked = activeViewIds.length > 0;
   const hasSearchQuery = searchQuery.trim().length > 0;
+  const canReorderViews = views.length >= 2 && Boolean(onReorderViews);
+  const reorderDisabledBySearch = hasSearchQuery;
+
+  useEffect(() => {
+    if (hasSearchQuery && viewsSortMode) {
+      setViewsSortMode(false);
+    }
+  }, [hasSearchQuery, viewsSortMode]);
 
   useEffect(() => {
     if (hasSearchQuery) expandAllSections();
@@ -274,6 +299,15 @@ export default function FiltersSidebar({
     },
     [apiKey, deleteViewStore, activeViewIds, onClearView, t]
   );
+
+  const handleToggleViewsSortMode = useCallback(() => {
+    if (reorderDisabledBySearch) return;
+    setViewsSortMode((current) => !current);
+  }, [reorderDisabledBySearch]);
+
+  const handleExitViewsSortMode = useCallback(() => {
+    setViewsSortMode(false);
+  }, []);
 
   const handleDeleteTagItem = useCallback(
     async (tagId, tagName) => {
@@ -321,6 +355,31 @@ export default function FiltersSidebar({
           title={t('viewsSection')}
           onAdd={onNewView}
           addLabel={t('newView')}
+          headerActions={
+            canReorderViews ? (
+              <button
+                type="button"
+                onClick={handleToggleViewsSortMode}
+                disabled={reorderDisabledBySearch}
+                className={`p-1 rounded transition-colors ${
+                  viewsSortMode
+                    ? 'bg-accent/15 text-accent dark:bg-accent-dark/20 dark:text-accent-dark'
+                    : 'text-primary-text/50 hover:text-accent dark:text-primary-text-dark/50 dark:hover:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
+                } disabled:cursor-not-allowed disabled:opacity-40`}
+                aria-label={viewsSortMode ? t('reorderViewsActive') : t('reorderViews')}
+                aria-pressed={viewsSortMode}
+                title={
+                  reorderDisabledBySearch
+                    ? t('reorderViewsDisabledSearch')
+                    : viewsSortMode
+                      ? t('reorderViewsActive')
+                      : t('reorderViews')
+                }
+              >
+                <ReorderViewsIcon />
+              </button>
+            ) : null
+          }
           tall={sectionTall}
           expanded={sectionsExpanded.views}
           onToggle={() => toggleSection('views')}
@@ -338,6 +397,9 @@ export default function FiltersSidebar({
             onEditView={onEditView}
             onRenameView={onRenameView}
             onDeleteView={handleDeleteView}
+            sortMode={viewsSortMode}
+            onExitSortMode={handleExitViewsSortMode}
+            onReorderViews={onReorderViews}
           />
         </SidebarSection>
 
