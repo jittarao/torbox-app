@@ -186,4 +186,55 @@ describe('DownloadPanel', () => {
       '0px'
     );
   });
+
+  it('shows extension badge from URL filename when item name has no extension', () => {
+    render(
+      <DownloadPanelHarness
+        initialOpen
+        downloadLinks={[
+          {
+            id: '1',
+            url: 'https://cdn.example.com/dl/abc?token=xyz&filename=My%20Movie.zip',
+            name: 'My Movie',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByTitle('zip').textContent).toBe('ZIP');
+  });
+
+  it('shows extension badge from nested file path in name', () => {
+    render(
+      <DownloadPanelHarness
+        initialOpen
+        downloadLinks={[
+          {
+            id: '1',
+            url: 'https://example.com/dl?id=1&filename=Season%201%2FEpisode.mkv',
+            name: 'Season 1/Episode.mkv',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByTitle('mkv').textContent).toBe('MKV');
+  });
+
+  it('shows abbreviated compound extension badge for tar.gz files', () => {
+    render(
+      <DownloadPanelHarness
+        initialOpen
+        downloadLinks={[
+          {
+            id: '1',
+            url: 'https://example.com/archive.tar.gz',
+            name: 'archive.tar.gz',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByTitle('tar.gz').textContent).toBe('GZ');
+  });
 });
