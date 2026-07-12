@@ -79,17 +79,20 @@ describe('DownloadPanel', () => {
     expect(screen.queryByRole('button', { name: 'DownloadPanel.aria.expand' })).toBeNull();
   });
 
-  it('expands and collapses on header click', () => {
+  it('expands and collapses on chevron click only', () => {
     render(
       <DownloadPanelHarness
         downloadLinks={[{ id: '1', url: 'https://example.com/file.mkv', name: 'file.mkv' }]}
       />
     );
 
-    const header = screen.getByRole('button', { name: 'DownloadPanel.aria.expand' });
-    expect(header.getAttribute('aria-expanded')).toBe('false');
+    const toggle = screen.getByRole('button', { name: 'DownloadPanel.aria.expand' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
 
-    fireEvent.click(header);
+    fireEvent.click(screen.getByText('DownloadPanel.title.single'));
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(toggle);
     expect(screen.getByRole('button', { expanded: true }).getAttribute('aria-expanded')).toBe(
       'true'
     );
@@ -185,6 +188,29 @@ describe('DownloadPanel', () => {
     expect(document.documentElement.style.getPropertyValue('--download-panel-peek-height')).toBe(
       '0px'
     );
+  });
+
+  it('dismisses the panel from header close and footer done actions', () => {
+    const onDismiss = mock(() => {});
+
+    render(
+      <DownloadPanel
+        downloadLinks={[{ id: '1', url: 'https://example.com/file.mkv', name: 'file.mkv' }]}
+        isDownloading={false}
+        downloadProgress={{ current: 1, total: 1 }}
+        onDismiss={onDismiss}
+        setToast={() => {}}
+        isDownloadPanelOpen
+        setIsDownloadPanelOpen={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'DownloadPanel.aria.dismiss' }));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+
+    onDismiss.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'DownloadPanel.actions.done' }));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it('shows extension badge from URL filename when item name has no extension', () => {

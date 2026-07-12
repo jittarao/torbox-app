@@ -565,18 +565,19 @@
   },
   "DownloadPanel": {
     "actions": {
-      "clearAll": "Clear All",
       "copied": "Copied",
       "copy": "Copy",
       "copyAll": "Copy All Links",
       "copyLink": "Copy Link",
       "copyLinkWithIndex": "Copy link {index} of {total}",
+      "done": "Done",
       "downloadFile": "Download File",
       "downloadFileWithIndex": "Open download {index} of {total}",
       "open": "Open"
     },
     "aria": {
       "collapse": "Collapse download panel",
+      "dismiss": "Close download panel",
       "expand": "Expand download panel"
     },
     "badge": {
