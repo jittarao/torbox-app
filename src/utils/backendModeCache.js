@@ -31,14 +31,16 @@ export function getBackendModeSnapshot() {
   return snapshot;
 }
 
+const serverSnapshot = {
+  mode: 'local',
+  isLoading: true,
+  error: null,
+  hasChecked: false,
+  isChecking: false,
+};
+
 export function getServerBackendModeSnapshot() {
-  return {
-    mode: 'local',
-    isLoading: true,
-    error: null,
-    hasChecked: false,
-    isChecking: false,
-  };
+  return serverSnapshot;
 }
 
 export function subscribeBackendMode(listener) {
