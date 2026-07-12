@@ -192,6 +192,7 @@ describe('DownloadPanel', () => {
 
   it('dismisses the panel from header close and footer done actions', () => {
     const onDismiss = mock(() => {});
+    const setIsOpen = mock(() => {});
 
     render(
       <DownloadPanel
@@ -201,16 +202,46 @@ describe('DownloadPanel', () => {
         onDismiss={onDismiss}
         setToast={() => {}}
         isDownloadPanelOpen
-        setIsDownloadPanelOpen={() => {}}
+        setIsDownloadPanelOpen={setIsOpen}
       />
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'DownloadPanel.aria.dismiss' }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(setIsOpen).toHaveBeenCalledWith(false);
 
     onDismiss.mockClear();
+    setIsOpen.mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'DownloadPanel.actions.done' }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(setIsOpen).toHaveBeenCalledWith(false);
+  });
+
+  it('restores document scroll when dismissed while expanded', () => {
+    function DismissHarness() {
+      const [isOpen, setIsOpen] = useState(true);
+      const [panelLinks, setPanelLinks] = useState([
+        { id: '1', url: 'https://example.com/file.mkv', name: 'file.mkv' },
+      ]);
+
+      return (
+        <DownloadPanel
+          downloadLinks={panelLinks}
+          isDownloading={false}
+          downloadProgress={{ current: 1, total: 1 }}
+          onDismiss={() => setPanelLinks([])}
+          setToast={() => {}}
+          isDownloadPanelOpen={isOpen}
+          setIsDownloadPanelOpen={setIsOpen}
+        />
+      );
+    }
+
+    render(<DismissHarness />);
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    fireEvent.click(screen.getByRole('button', { name: 'DownloadPanel.aria.dismiss' }));
+    expect(document.documentElement.style.overflow).toBe('');
   });
 
   it('shows extension badge from URL filename when item name has no extension', () => {
