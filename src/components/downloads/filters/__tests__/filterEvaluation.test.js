@@ -140,3 +140,54 @@ describe('itemMatchesFilters airlocked column', () => {
     expect(itemMatchesFilters({ airlocked: true }, filters)).toBe(false);
   });
 });
+
+describe('itemMatchesFilters unit conversions', () => {
+  const numericFilter = (column, operator, value) => ({
+    logicOperator: 'and',
+    groups: [{ logicOperator: 'and', filters: [{ column, operator, value }] }],
+  });
+
+  test('file size compares in GB', () => {
+    const filters = numericFilter('size', 'gt', 10);
+    const elevenGb = 11 * 1024 * 1024 * 1024;
+    const nineGb = 9 * 1024 * 1024 * 1024;
+    expect(itemMatchesFilters({ size: elevenGb }, filters)).toBe(true);
+    expect(itemMatchesFilters({ size: nineGb }, filters)).toBe(false);
+  });
+
+  test('download speed compares in MB/s', () => {
+    const filters = numericFilter('download_speed', 'gt', 1);
+    const twoMbpsBytes = 2 * 1024 * 1024;
+    const halfMbpsBytes = 0.5 * 1024 * 1024;
+    expect(itemMatchesFilters({ download_speed: twoMbpsBytes }, filters)).toBe(true);
+    expect(itemMatchesFilters({ download_speed: halfMbpsBytes }, filters)).toBe(false);
+  });
+
+  test('age compares hours since created_at', () => {
+    const filters = numericFilter('age', 'lt', 48);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    expect(itemMatchesFilters({ created_at: oneDayAgo }, filters)).toBe(true);
+    expect(itemMatchesFilters({ created_at: threeDaysAgo }, filters)).toBe(false);
+  });
+
+  test('eta compares minutes', () => {
+    const filters = numericFilter('eta', 'lt', 30);
+    expect(itemMatchesFilters({ eta: 15 * 60 }, filters)).toBe(true);
+    expect(itemMatchesFilters({ eta: 45 * 60 }, filters)).toBe(false);
+  });
+
+  test('active boolean matches entity.active', () => {
+    const filters = {
+      logicOperator: 'and',
+      groups: [
+        {
+          logicOperator: 'and',
+          filters: [{ column: 'active', operator: 'is_true', value: true }],
+        },
+      ],
+    };
+    expect(itemMatchesFilters({ active: true }, filters)).toBe(true);
+    expect(itemMatchesFilters({ active: false }, filters)).toBe(false);
+  });
+});

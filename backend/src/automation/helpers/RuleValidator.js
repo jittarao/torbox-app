@@ -4,6 +4,7 @@ import {
   isActionSupported,
   isConditionSupported,
   normalizeAssetTypes,
+  AUTOMATION_RULE_CAPABILITIES_REGISTRY,
 } from './ruleCapabilities.js';
 
 /**
@@ -252,40 +253,7 @@ class RuleValidator {
     if (!condition.type || typeof condition.type !== 'string') {
       errors.push(`Group ${groupIndex}, condition ${condIndex} must have a type string`);
     } else {
-      const validConditionTypes = [
-        'SEEDING_TIME',
-        'AGE',
-        'LAST_DOWNLOAD_ACTIVITY_AT',
-        'LAST_UPLOAD_ACTIVITY_AT',
-        'PROGRESS',
-        'DOWNLOAD_SPEED',
-        'UPLOAD_SPEED',
-        'AVG_DOWNLOAD_SPEED',
-        'AVG_UPLOAD_SPEED',
-        'ETA',
-        'DOWNLOAD_STALLED_TIME',
-        'UPLOAD_STALLED_TIME',
-        'SEEDS',
-        'PEERS',
-        'RATIO',
-        'TOTAL_UPLOADED',
-        'TOTAL_DOWNLOADED',
-        'FILE_SIZE',
-        'FILE_COUNT',
-        'NAME',
-        'TRACKER',
-        'PRIVATE',
-        'CACHED',
-        'AVAILABILITY',
-        'ALLOW_ZIP',
-        'IS_ACTIVE',
-        'IS_AIRLOCKED',
-        'SEEDING_ENABLED',
-        'LONG_TERM_SEEDING',
-        'STATUS',
-        'EXPIRES_AT',
-        'TAGS',
-      ];
+      const validConditionTypes = AUTOMATION_RULE_CAPABILITIES_REGISTRY.allConditions;
       if (!validConditionTypes.includes(condition.type)) {
         errors.push(
           `Group ${groupIndex}, condition ${condIndex} has invalid type: ${condition.type}`

@@ -132,6 +132,17 @@ describe('createViewPresets', () => {
     expect(itemMatchesFilters({ size: tenGbBytes + 1 }, largeFiles.filters)).toBe(true);
     expect(itemMatchesFilters({ size: tenGbBytes }, largeFiles.filters)).toBe(false);
   });
+
+  test('recentAdds preset matches items added within 7 days', () => {
+    const recentAdds = createViewPresets(t).find((preset) => preset.id === 'recentAdds');
+    expect(recentAdds).toBeTruthy();
+
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+
+    expect(itemMatchesFilters({ created_at: twoDaysAgo }, recentAdds.filters)).toBe(true);
+    expect(itemMatchesFilters({ created_at: tenDaysAgo }, recentAdds.filters)).toBe(false);
+  });
 });
 
 describe('clonePresetFilters', () => {

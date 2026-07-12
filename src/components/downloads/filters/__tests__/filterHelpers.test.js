@@ -15,6 +15,9 @@ import {
   isSourceOnlyFilter,
   itemMatchesAnyViewFilters,
   mergeViewAssetTypeFilter,
+  migrateCustomViewFilters,
+  normalizeFilters,
+  FILTER_SCHEMA_VERSION,
   EMPTY_FILTERS,
 } from '../filterHelpers';
 import { itemMatchesFilters } from '../filterEvaluation';
@@ -155,5 +158,65 @@ describe('itemMatchesAnyViewFilters', () => {
     const item = { name: 'alpha release', asset_type: 'torrents' };
     const filters = mergeViewAssetTypeFilter(viewA.filters, viewA.asset_type);
     expect(itemMatchesAnyViewFilters(item, [viewA])).toBe(itemMatchesFilters(item, filters));
+  });
+});
+
+describe('migrateCustomViewFilters', () => {
+  test('migrates legacy created_at days to age hours', () => {
+    const legacy = {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'created_at', operator: 'lt', value: 7 }],
+        },
+      ],
+    };
+    const migrated = migrateCustomViewFilters(legacy);
+    expect(migrated.groups[0].filters[0]).toEqual({
+      column: 'age',
+      operator: 'lt',
+      value: 168,
+    });
+    expect(migrated._filterSchemaVersion).toBe(FILTER_SCHEMA_VERSION);
+  });
+
+  test('migrates legacy size MB to GB', () => {
+    const legacy = {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'size', operator: 'gt', value: 10240 }],
+        },
+      ],
+    };
+    const migrated = migrateCustomViewFilters(legacy);
+    expect(migrated.groups[0].filters[0].value).toBe(10);
+  });
+
+  test('normalizeFilters applies migration automatically', () => {
+    const normalized = normalizeFilters({
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'cached_at', operator: 'gt', value: 1 }],
+        },
+      ],
+    });
+    expect(normalized.groups[0].filters[0].column).toBe('seeding_time');
+    expect(normalized.groups[0].filters[0].value).toBe(24);
+  });
+
+  test('does not re-migrate already versioned filters', () => {
+    const current = {
+      _filterSchemaVersion: FILTER_SCHEMA_VERSION,
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'size', operator: 'gt', value: 10 }],
+        },
+      ],
+    };
+    const migrated = migrateCustomViewFilters(current);
+    expect(migrated.groups[0].filters[0].value).toBe(10);
   });
 });

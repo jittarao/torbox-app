@@ -4,6 +4,7 @@ import {
   STRING_OPERATORS,
 } from '../AutomationRules/constants';
 import { isTagsColumn } from '../CustomViews/utils';
+import { LEGACY_COLUMN_MIGRATIONS } from './filterFieldRegistry';
 import { itemMatchesFilters } from './filterEvaluation';
 import { itemMatchesDownloadSearch } from '../utils/downloadSearch';
 
@@ -18,6 +19,70 @@ export const EMPTY_FILTERS = {
 };
 
 const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
+
+export const FILTER_SCHEMA_VERSION = 2;
+
+let migrationWarningLogged = false;
+
+/**
+ * Migrate legacy custom view filter columns/units to automation-aligned format.
+ * @param {object} filter - Single filter rule
+ * @returns {object} Migrated filter
+ */
+function migrateFilterRule(filter) {
+  if (!filter?.column) return filter;
+
+  const migrated = { ...filter };
+
+  const legacyTarget = LEGACY_COLUMN_MIGRATIONS[filter.column];
+  if (legacyTarget) {
+    migrated.column = legacyTarget;
+
+    if (filter.column === 'created_at' || filter.column === 'cached_at') {
+      const days = typeof filter.value === 'number' ? filter.value : parseFloat(filter.value) || 0;
+      migrated.value = days * 24;
+    }
+  }
+
+  if (filter.column === 'size' || filter.column === 'total_uploaded') {
+    const mb = typeof filter.value === 'number' ? filter.value : parseFloat(filter.value) || 0;
+    migrated.value = mb / 1024;
+  }
+
+  if (filter.column === 'eta' && typeof filter.value === 'number' && filter.value > 180) {
+    migrated.value = filter.value / 60;
+  }
+
+  return migrated;
+}
+
+/**
+ * Migrate all filters in a normalized filter structure.
+ * @param {object} filters
+ * @returns {object}
+ */
+export function migrateCustomViewFilters(filters) {
+  if (!filters?.groups) return filters;
+  if (filters._filterSchemaVersion >= FILTER_SCHEMA_VERSION) return filters;
+
+  const migrated = {
+    ...filters,
+    _filterSchemaVersion: FILTER_SCHEMA_VERSION,
+    groups: filters.groups.map((group) => ({
+      ...group,
+      filters: (group.filters || []).map(migrateFilterRule),
+    })),
+  };
+
+  if (!migrationWarningLogged && typeof console !== 'undefined') {
+    migrationWarningLogged = true;
+    console.info(
+      '[CustomViews] Migrated saved filter rules to automation-aligned columns and units.'
+    );
+  }
+
+  return migrated;
+}
 
 /**
  * Normalize raw filters (string JSON, flat array, or group structure) to standard group format.
@@ -38,11 +103,11 @@ export function normalizeFilters(raw) {
   }
 
   if (filters.groups && Array.isArray(filters.groups)) {
-    return JSON.parse(JSON.stringify(filters));
+    return migrateCustomViewFilters(JSON.parse(JSON.stringify(filters)));
   }
 
   if (Array.isArray(filters)) {
-    return {
+    return migrateCustomViewFilters({
       logicOperator: LOGIC_OPERATORS.AND,
       groups: [
         {
@@ -50,7 +115,7 @@ export function normalizeFilters(raw) {
           filters,
         },
       ],
-    };
+    });
   }
 
   return JSON.parse(JSON.stringify(EMPTY_FILTERS));
