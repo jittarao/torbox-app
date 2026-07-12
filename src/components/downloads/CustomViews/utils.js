@@ -203,8 +203,8 @@ export const getGroupedFilterableColumns = (activeType = 'all', columnT, customV
   // Helper to get column label
   const getColumnLabel = (key, column) => {
     if (key === 'tags') return 'Tags';
-    if (key === 'airlocked') return columnT ? columnT('airlocked_filter') : 'Is airlocked';
-    if (key === 'is_protected') return columnT ? columnT('is_protected_filter') : 'Is protected';
+    if (key === 'airlocked') return columnT ? columnT('airlocked_filter') : 'Is Airlocked';
+    if (key === 'is_protected') return columnT ? columnT('is_protected_filter') : 'Is Protected';
     return column.displayName ? column.displayName : columnT ? columnT(key) : key;
   };
 

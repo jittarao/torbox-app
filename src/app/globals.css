@@ -206,7 +206,7 @@ select option {
 
     .ui-modal-sheet--wide {
       @apply w-[min(92vw,48rem)] max-w-3xl;
-      max-height: min(90dvh, 52rem);
+      max-height: min(92dvh, calc(100dvh - 2rem));
     }
 
     /* Stays a bottom sheet at all breakpoints (mobile-only portaled panels) */
@@ -362,7 +362,7 @@ select option {
 
   /* Flat accent CTA — matches downloads UI (modals, forms) */
   .ui-btn-accent {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold
       border-0 bg-accent text-white shadow-none
       transition-colors duration-200
       hover:bg-accent/90

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import FilterInput from './FilterInput';
 import { LOGIC_OPERATORS } from '../../AutomationRules/constants';
 import Select from '@/components/shared/Select';
@@ -32,6 +32,7 @@ export default function FilterGroup({
   };
 
   const hasFilters = group.filters && group.filters.length > 0;
+  const hasMultipleFilters = hasFilters && group.filters.length > 1;
 
   return (
     <div className="border border-border dark:border-border-dark rounded-md bg-surface-alt dark:bg-surface-alt-dark">
@@ -99,7 +100,7 @@ export default function FilterGroup({
 
       {/* Group Content */}
       {isExpanded && (
-        <div className="p-2 space-y-2">
+        <div className={`p-2 space-y-2 ${hasMultipleFilters ? 'pl-3' : ''}`}>
           {!hasFilters ? (
             <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 italic py-2">
               {customViewsT('noFiltersInGroup')}
@@ -107,15 +108,16 @@ export default function FilterGroup({
           ) : (
             <>
               {group.filters.map((filter, filterIndex) => (
-                <div key={filter._key || filterIndex} className="relative">
+                <Fragment key={filter._key || filterIndex}>
                   {filterIndex > 0 && (
-                    <div className="absolute left-4 top-0 bottom-0 w-px bg-border dark:bg-border-dark -translate-y-2" />
-                  )}
-                  {filterIndex > 0 && (
-                    <div className="absolute left-4 -top-2 text-xs text-primary-text/50 dark:text-primary-text-dark/50 bg-surface-alt dark:bg-surface-alt-dark px-1">
-                      {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
-                        ? automationRulesT('logicOperators.and')
-                        : automationRulesT('logicOperators.or')}
+                    <div className="relative h-4" aria-hidden>
+                      <div className="absolute inset-y-0 left-0 z-10 flex -translate-x-1/2 items-center">
+                        <span className="inline-flex h-5 items-center whitespace-nowrap rounded-full border border-border/60 bg-surface-alt px-2 text-[10px] font-semibold uppercase leading-none tracking-wide text-primary-text/55 shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/55">
+                          {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
+                            ? automationRulesT('logicOperators.and')
+                            : automationRulesT('logicOperators.or')}
+                        </span>
+                      </div>
                     </div>
                   )}
                   <FilterInput
@@ -128,7 +130,7 @@ export default function FilterGroup({
                     apiKey={apiKey}
                     activeType={activeType}
                   />
-                </div>
+                </Fragment>
               ))}
             </>
           )}
