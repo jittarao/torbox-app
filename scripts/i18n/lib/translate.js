@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, TARGET_LOCALES, isAdminKey } from './constants.js';
+import { DEFAULT_LOCALE, TARGET_LOCALES, isExcludedTranslationKey } from './constants.js';
 import { findPendingKeys, normalizeDelta } from './delta.js';
 import { validateStringLeaf } from './icu.js';
 import { readLocale, writeLocale } from './io.js';
@@ -19,7 +19,7 @@ export function planTranslations({ locales = TARGET_LOCALES } = {}) {
 
   for (const locale of locales) {
     const { data } = readLocale(locale);
-    const keys = findPendingKeys(en, data, { exclude: isAdminKey });
+    const keys = findPendingKeys(en, data, { exclude: isExcludedTranslationKey });
     if (keys.length === 0) continue;
 
     pending[locale] = {};
@@ -34,7 +34,7 @@ export function planTranslations({ locales = TARGET_LOCALES } = {}) {
   return {
     version: 1,
     pending,
-    excluded: ['Admin.*'],
+    excluded: ['Admin.*', 'CustomViews.presets.*'],
     rules: GLOBAL_RULES,
     styles,
     instructions:
@@ -66,8 +66,8 @@ export function applyTranslations(input, { locales = TARGET_LOCALES } = {}) {
     let skippedIdentical = 0;
 
     for (const [keyPath, translated] of Object.entries(byLocale[locale])) {
-      if (isAdminKey(keyPath)) {
-        validationErrors.push(`${locale}.${keyPath}: Admin keys cannot be translated`);
+      if (isExcludedTranslationKey(keyPath)) {
+        validationErrors.push(`${locale}.${keyPath}: excluded key cannot be translated`);
         continue;
       }
 

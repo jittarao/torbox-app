@@ -118,7 +118,7 @@ Implemented in [`request.ts`](request.ts). Missing delta keys are not errors —
 ## Do not
 
 - Create `i18n-patches/` files or use removed scripts (`i18n:check-keys`, `i18n:prune-deltas`, etc.)
-- Add `Admin.*` keys to non-English deltas
+- Add `Admin.*` or `CustomViews.presets.*` keys to non-English deltas
 - Copy English values into locale deltas
 - Rename placeholders (`{error}` must stay `{error}` in every locale)
 - Manually sort or prune — `translate --apply` and `sync` handle this

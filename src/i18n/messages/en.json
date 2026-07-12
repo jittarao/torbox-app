@@ -291,7 +291,10 @@
       "statusDescription": "Current status of the torrent (downloading, seeding, completed, etc.)",
       "statusPlaceholder": "Select statuses...",
       "tags": "Tags",
+      "tagsDescription": "Filter by tags assigned to downloads",
       "tagsPlaceholder": "Select tags...",
+      "totalDownloaded": "Total Downloaded",
+      "totalDownloadedDescription": "Total amount of data downloaded (in MB)",
       "totalUploaded": "Total Uploaded",
       "totalUploadedDescription": "Total amount of data uploaded (in GB)",
       "tracker": "Tracker",
@@ -522,6 +525,7 @@
     "addFilter": "Add filter",
     "addFilterToGroup": "Add filter to group",
     "addGroup": "Add group",
+    "assetTypeDescription": "Filter by download type (torrent, usenet, or web download)",
     "betweenGroups": "Between groups:",
     "cancel": "Cancel",
     "columnGroups": {
@@ -538,6 +542,8 @@
     "includeSearch": "Include search",
     "includeSearchHint": "Search: \"{query}\" (matches titles and file names)",
     "includeSort": "Include sort",
+    "isDownloadedDescription": "Whether files from this download were already saved to your device",
+    "isProtectedDescription": "Whether the download is protected from automatic expiration",
     "noFilters": "No filters. Click '+ Filter' in a group to create one.",
     "noFiltersInGroup": "No filters in this group. Click '+ Filter' to add one.",
     "presets": {
