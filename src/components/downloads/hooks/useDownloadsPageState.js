@@ -125,6 +125,7 @@ export function useDownloadsPageState(apiKey) {
     downloadHistory,
     downloadHistoryLookup,
     tags,
+    tagsLoading,
     tagMappings,
     protectedMap,
     updateTagName,
@@ -151,6 +152,7 @@ export function useDownloadsPageState(apiKey) {
 
   const showFullPageSpinner = loading && viewItems.length === 0;
   const isRefreshing = refreshing || (loading && viewItems.length > 0);
+  const sidebarCountsLoading = loading && viewItems.length === 0;
 
   const { fetchDownloadHistory } = useDownloadsHistoryMigration(
     apiKey,
@@ -343,6 +345,8 @@ export function useDownloadsPageState(apiKey) {
     apiKey,
     filterData,
     tags,
+    tagsLoading,
+    sidebarCountsLoading,
     activeType,
     handleColumnChange,
     viewItems,
