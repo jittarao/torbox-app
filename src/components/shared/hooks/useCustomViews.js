@@ -17,6 +17,7 @@ export function useCustomViews(apiKey) {
     deleteView: deleteViewStore,
     applyView: applyViewStore,
     clearView: clearViewStore,
+    reorderViews: reorderViewsStore,
     setApiKey,
   } = useCustomViewsStore(
     useShallow((s) => ({
@@ -31,6 +32,7 @@ export function useCustomViews(apiKey) {
       deleteView: s.deleteView,
       applyView: s.applyView,
       clearView: s.clearView,
+      reorderViews: s.reorderViews,
       setApiKey: s.setApiKey,
     }))
   );
@@ -80,6 +82,16 @@ export function useCustomViews(apiKey) {
     [apiKey, deleteViewStore]
   );
 
+  const reorderViews = useCallback(
+    async (orderedIds) => {
+      if (!apiKey) {
+        throw new Error('API key is required');
+      }
+      return await reorderViewsStore(apiKey, orderedIds);
+    },
+    [apiKey, reorderViewsStore]
+  );
+
   return {
     views,
     activeView,
@@ -90,6 +102,7 @@ export function useCustomViews(apiKey) {
     saveView,
     updateView,
     deleteView,
+    reorderViews,
     applyView: applyViewStore,
     clearView: clearViewStore,
   };

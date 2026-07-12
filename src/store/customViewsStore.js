@@ -11,6 +11,11 @@ async function readApiError(response, fallback) {
   }
 }
 
+export function reorderViewsByIds(views, orderedIds) {
+  const viewById = new Map(views.map((view) => [String(view.id), view]));
+  return orderedIds.map((id) => viewById.get(String(id))).filter(Boolean);
+}
+
 export const useCustomViewsStore = create((set, get) => ({
   views: [],
   activeView: null,
@@ -184,6 +189,54 @@ export const useCustomViewsStore = create((set, get) => ({
     } catch (err) {
       console.error('Error updating view:', err);
       set({ error: err.message, loading: false });
+      throw err;
+    }
+  },
+
+  // Reorder views (optimistic)
+  reorderViews: async (apiKey, orderedIds) => {
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+
+    if (!isBackendAvailable()) {
+      throw new Error('Custom views feature is disabled when backend is disabled');
+    }
+
+    const { views } = get();
+    const previousViews = views;
+    const reorderedViews = reorderViewsByIds(views, orderedIds);
+
+    if (reorderedViews.length !== views.length) {
+      throw new Error('Invalid view order');
+    }
+
+    set({ views: reorderedViews, error: null });
+
+    try {
+      const response = await fetch('/api/custom-views/reorder', {
+        method: 'PATCH',
+        headers: {
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ids: orderedIds.map((id) => Number(id)),
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await readApiError(response, 'Failed to reorder views');
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to reorder views');
+      }
+    } catch (err) {
+      set({ views: previousViews });
+      console.error('Error reordering views:', err);
       throw err;
     }
   },

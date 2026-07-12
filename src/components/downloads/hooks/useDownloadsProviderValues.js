@@ -88,6 +88,7 @@ export function useDownloadsProviderValues({
       onNewFilter: filterData.handleOpenNewFilter,
       onNewView: filterData.handleOpenNewView,
       onOpenTagManager: filterData.handleOpenTagManager,
+      onReorderViews: filterData.handleReorderViews,
     }),
     [
       apiKey,
@@ -119,6 +120,7 @@ export function useDownloadsProviderValues({
       filterData.handleOpenNewFilter,
       filterData.handleOpenNewView,
       filterData.handleOpenTagManager,
+      filterData.handleReorderViews,
     ]
   );
 
