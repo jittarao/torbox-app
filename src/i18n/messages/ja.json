@@ -503,18 +503,19 @@
   },
   "DownloadPanel": {
     "actions": {
-      "clearAll": "すべてクリア",
       "copied": "コピー済み",
       "copy": "コピー",
       "copyAll": "すべてのリンクをコピー",
       "copyLink": "リンクをコピー",
       "copyLinkWithIndex": "リンク {index}/{total} をコピー",
+      "done": "完了",
       "downloadFile": "ファイルをダウンロード",
       "downloadFileWithIndex": "ダウンロード {index}/{total} を開く",
       "open": "開く"
     },
     "aria": {
       "collapse": "ダウンロードパネルを閉じる",
+      "dismiss": "ダウンロードパネルを閉じる",
       "expand": "ダウンロードパネルを開く"
     },
     "badge": {

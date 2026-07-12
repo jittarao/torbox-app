@@ -492,18 +492,19 @@
   },
   "DownloadPanel": {
     "actions": {
-      "clearAll": "Borrar todo",
       "copied": "Copiado",
       "copy": "Copiar",
       "copyAll": "Copiar todos los enlaces",
       "copyLink": "Copiar enlace",
       "copyLinkWithIndex": "Copiar enlace {index} de {total}",
+      "done": "Listo",
       "downloadFile": "Descargar archivo",
       "downloadFileWithIndex": "Abrir descarga {index} de {total}",
       "open": "Abrir"
     },
     "aria": {
       "collapse": "Contraer panel de descargas",
+      "dismiss": "Cerrar panel de descargas",
       "expand": "Expandir panel de descargas"
     },
     "badge": {
