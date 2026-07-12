@@ -30,6 +30,9 @@ function parseViewJsonFields(view) {
   return parsed;
 }
 
+const VIEW_SELECT_COLUMNS =
+  'id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, sort_order, created_at, updated_at';
+
 /**
  * Custom views routes
  */
@@ -52,9 +55,9 @@ export function setupCustomViewsRoutes(app, backend) {
       const views = userDb.db
         .prepare(
           `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
+          SELECT ${VIEW_SELECT_COLUMNS}
           FROM custom_views
-          ORDER BY created_at DESC
+          ORDER BY sort_order ASC, id ASC
         `
         )
         .all();
@@ -112,11 +115,16 @@ export function setupCustomViewsRoutes(app, backend) {
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
 
+        const maxOrderResult = userDb.db
+          .prepare('SELECT MAX(sort_order) as max_order FROM custom_views')
+          .get();
+        const sortOrder = (maxOrderResult?.max_order ?? -1) + 1;
+
         const result = userDb.db
           .prepare(
             `
-          INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO custom_views (name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `
           )
           .run(
@@ -126,13 +134,14 @@ export function setupCustomViewsRoutes(app, backend) {
             sort_direction || null,
             visible_columns ? JSON.stringify(visible_columns) : null,
             asset_type || null,
-            search_query?.trim() || null
+            search_query?.trim() || null,
+            sortOrder
           );
 
         const view = userDb.db
           .prepare(
             `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
+          SELECT ${VIEW_SELECT_COLUMNS}
           FROM custom_views
           WHERE id = ?
         `
@@ -179,7 +188,7 @@ export function setupCustomViewsRoutes(app, backend) {
         const view = userDb.db
           .prepare(
             `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
+          SELECT ${VIEW_SELECT_COLUMNS}
           FROM custom_views
           WHERE id = ?
         `
@@ -314,7 +323,7 @@ export function setupCustomViewsRoutes(app, backend) {
         const view = userDb.db
           .prepare(
             `
-          SELECT id, name, filters, sort_field, sort_direction, visible_columns, asset_type, search_query, created_at, updated_at
+          SELECT ${VIEW_SELECT_COLUMNS}
           FROM custom_views
           WHERE id = ?
         `
@@ -328,6 +337,103 @@ export function setupCustomViewsRoutes(app, backend) {
           endpoint: `/api/custom-views/${req.params.id}`,
           method: 'PUT',
           viewId: req.validatedIds?.id,
+          authId: req.validatedAuthId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        if (req.validatedAuthId && backend.userDatabaseManager) {
+          backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+        }
+      }
+    }
+  );
+
+  // PATCH /api/custom-views/reorder - Batch update view sort order
+  app.patch(
+    '/api/custom-views/reorder',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      try {
+        const authId = req.validatedAuthId;
+        const { ids } = req.body;
+
+        if (!backend.userDatabaseManager) {
+          return res.status(503).json({
+            success: false,
+            error: 'Service is initializing, please try again in a moment',
+          });
+        }
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids must be a non-empty array',
+          });
+        }
+
+        const normalizedIds = ids.map((id) => {
+          const numericId = Number(id);
+          if (!Number.isInteger(numericId) || numericId <= 0) {
+            return null;
+          }
+          return numericId;
+        });
+
+        if (normalizedIds.some((id) => id === null)) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids must contain positive integers',
+          });
+        }
+
+        if (new Set(normalizedIds).size !== normalizedIds.length) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids must not contain duplicates',
+          });
+        }
+
+        const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        const existingIds = userDb.db
+          .prepare('SELECT id FROM custom_views ORDER BY id ASC')
+          .all()
+          .map((row) => row.id);
+
+        if (normalizedIds.length !== existingIds.length) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids must include every custom view',
+          });
+        }
+
+        const existingIdSet = new Set(existingIds);
+        if (!normalizedIds.every((id) => existingIdSet.has(id))) {
+          return res.status(400).json({
+            success: false,
+            error: 'ids contain unknown custom view ids',
+          });
+        }
+
+        const update = userDb.db.prepare(
+          `
+          UPDATE custom_views
+          SET sort_order = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `
+        );
+
+        userDb.db.transaction(() => {
+          normalizedIds.forEach((id, index) => {
+            update.run(index, id);
+          });
+        })();
+
+        res.json({ success: true });
+      } catch (error) {
+        logger.error('Error reordering custom views', error, {
+          endpoint: '/api/custom-views/reorder',
+          method: 'PATCH',
           authId: req.validatedAuthId,
         });
         res.status(500).json(serverErrorPayload(error));
