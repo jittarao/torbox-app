@@ -11,6 +11,7 @@ import {
   isNumberColumn,
   isTextColumn,
   isTimestampColumn,
+  isTimeColumn,
   isBooleanColumn,
   isStatusColumn,
   isTagsColumn,
@@ -133,12 +134,21 @@ export default function FilterInput({
     }));
   };
 
-  const columnGroups = getGroupedFilterableColumns(activeType, columnT, customViewsT);
+  const columnGroups = getGroupedFilterableColumns(
+    activeType,
+    columnT,
+    customViewsT,
+    automationRulesT
+  );
 
   const operators = filter.column ? getOperatorsForColumn(filter.column) : [];
   const operatorOptions = operators.map((op) => {
     let label = op;
-    if (isNumberColumn(filter.column) || isTimestampColumn(filter.column)) {
+    if (
+      isNumberColumn(filter.column) ||
+      isTimestampColumn(filter.column) ||
+      isTimeColumn(filter.column)
+    ) {
       const labels = {
         [COMPARISON_OPERATORS.GT]: automationRulesT('operators.gt'),
         [COMPARISON_OPERATORS.LT]: automationRulesT('operators.lt'),
@@ -172,6 +182,7 @@ export default function FilterInput({
     } else if (isTagsColumn(filter.column)) {
       const labels = {
         [TAG_OPERATORS.IS_ANY_OF]: automationRulesT('tagOperators.isAnyOf'),
+        [TAG_OPERATORS.IS_ALL_OF]: automationRulesT('tagOperators.isAllOf'),
         [TAG_OPERATORS.IS_NONE_OF]: automationRulesT('tagOperators.isNoneOf'),
         [TAG_OPERATORS.IS_SET]: automationRulesT('tagOperators.isSet'),
         [TAG_OPERATORS.IS_NOT_SET]: automationRulesT('tagOperators.isNotSet'),
@@ -206,7 +217,11 @@ export default function FilterInput({
         {columnGroups.map((group, groupIdx) => (
           <optgroup key={`group-${groupIdx}-${group.label}`} label={group.label}>
             {group.options.map((opt, optIdx) => (
-              <option key={`col-${groupIdx}-${optIdx}-${opt.value}`} value={String(opt.value)}>
+              <option
+                key={`col-${groupIdx}-${optIdx}-${opt.value}`}
+                value={String(opt.value)}
+                title={opt.description}
+              >
                 {opt.label}
               </option>
             ))}
@@ -280,7 +295,9 @@ export default function FilterInput({
               placeholder={customViewsT('enterValuePlaceholder')}
               className="w-full sm:flex-1 sm:min-w-[120px] px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
             />
-          ) : (
+          ) : isNumberColumn(filter.column) ||
+            isTimeColumn(filter.column) ||
+            isTimestampColumn(filter.column) ? (
             <div className="flex items-center gap-1 w-full sm:flex-1 sm:min-w-[120px]">
               <input
                 type="number"
@@ -296,7 +313,7 @@ export default function FilterInput({
                 </span>
               )}
             </div>
-          )}
+          ) : null}
         </>
       )}
 

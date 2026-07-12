@@ -6,9 +6,9 @@ import {
   TAG_OPERATORS,
 } from '../AutomationRules/constants';
 
-const TEN_GB_MB = 10 * 1024;
-const RECENT_DAYS = 7;
-const EXPIRING_HOURS = RECENT_DAYS * 24;
+const RECENT_HOURS = 7 * 24;
+const TEN_GB = 10;
+const EXPIRING_HOURS = RECENT_HOURS;
 
 function andFilter(filters) {
   return {
@@ -71,9 +71,9 @@ export function createViewPresets(t) {
       description: t('presets.recentAddsDesc'),
       filters: andFilter([
         {
-          column: 'created_at',
+          column: 'age',
           operator: COMPARISON_OPERATORS.LT,
-          value: RECENT_DAYS,
+          value: RECENT_HOURS,
         },
       ]),
       sort: { field: 'created_at', direction: 'desc' },
@@ -86,7 +86,7 @@ export function createViewPresets(t) {
         {
           column: 'size',
           operator: COMPARISON_OPERATORS.GT,
-          value: TEN_GB_MB,
+          value: TEN_GB,
         },
       ]),
       sort: { field: 'size', direction: 'desc' },
