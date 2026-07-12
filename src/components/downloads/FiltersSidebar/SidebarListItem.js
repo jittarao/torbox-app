@@ -30,6 +30,7 @@ function SidebarListItem({
   ariaLabel,
   title,
   leading = null,
+  hideCheckbox = false,
   disabled = false,
 }) {
   const menuButtonRef = useRef(null);
@@ -45,6 +46,7 @@ function SidebarListItem({
           : 'border border-transparent hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
       }`}
     >
+      {leading ? <div className="flex shrink-0 items-center pl-1.5">{leading}</div> : null}
       <button
         type="button"
         data-sidebar-activate
@@ -64,17 +66,18 @@ function SidebarListItem({
             : 'text-primary-text dark:text-primary-text-dark'
         }`}
       >
-        <span
-          className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
-            isActive
-              ? 'border-accent bg-accent text-white dark:border-accent-dark dark:bg-accent-dark'
-              : 'border-border/80 bg-transparent dark:border-border-dark/80'
-          }`}
-          aria-hidden
-        >
-          {isActive && <ActiveCheckIcon className="size-2.5" />}
-        </span>
-        {leading}
+        {!hideCheckbox && (
+          <span
+            className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
+              isActive
+                ? 'border-accent bg-accent text-white dark:border-accent-dark dark:bg-accent-dark'
+                : 'border-border/80 bg-transparent dark:border-border-dark/80'
+            }`}
+            aria-hidden
+          >
+            {isActive && <ActiveCheckIcon className="size-2.5" />}
+          </span>
+        )}
         <span className="truncate font-medium">{label}</span>
         {count != null && count > 0 && (
           <span
