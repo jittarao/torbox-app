@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createViewPresets, clonePresetFilters } from '../presets';
-import { hasActiveFilters } from '../../filters/filterHelpers';
+import { hasActiveFilters, normalizeFilters } from '../../filters/filterHelpers';
 import { itemMatchesFilters } from '../../filters/filterEvaluation';
 
 const t = (key) => key;
@@ -152,5 +152,13 @@ describe('clonePresetFilters', () => {
 
     cloned.groups[0].filters[0].value = ['mutated'];
     expect(preset.filters.groups[0].filters[0].value).not.toEqual(['mutated']);
+  });
+
+  test('stamps current schema version so GB presets are not legacy-migrated', () => {
+    const largeFiles = createViewPresets(t).find((preset) => preset.id === 'largeFiles');
+    const cloned = clonePresetFilters(largeFiles);
+    const normalized = normalizeFilters(cloned);
+
+    expect(normalized.groups[0].filters[0].value).toBe(10);
   });
 });
