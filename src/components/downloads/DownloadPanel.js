@@ -1,11 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { Check, ChevronDown, ChevronUp, Copy, Download, File } from '@/components/icons';
+import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
+import OverlayPortal from '@/components/shared/OverlayPortal';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
 const COPIED_FEEDBACK_MS = 2000;
+const PEEK_HEIGHT = '4.5rem';
 
 function getHostname(url) {
   try {
@@ -74,12 +77,35 @@ function ExtensionBadge({ extension }) {
   );
 }
 
-function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, onToggle, t }) {
+function PanelHeader({
+  downloadLinks,
+  isDownloading,
+  downloadProgress,
+  isOpen,
+  onToggle,
+  titleId,
+  t,
+}) {
   const count = downloadLinks.length;
   const progressPercent =
     downloadProgress.total > 0
       ? Math.round((downloadProgress.current / downloadProgress.total) * 100)
       : 0;
+
+  const statusText = isDownloading
+    ? downloadProgress.total > 0
+      ? t('status.fetchingWithPercent', {
+          current: downloadProgress.current,
+          total: downloadProgress.total,
+          percent: progressPercent,
+        })
+      : t('status.fetching', {
+          current: downloadProgress.current,
+          total: downloadProgress.total,
+        })
+    : count > 0
+      ? t('status.generated')
+      : t('status.generating');
 
   return (
     <button
@@ -95,7 +121,10 @@ function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, o
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark">
+          <h3
+            id={titleId}
+            className="text-sm font-semibold text-primary-text dark:text-primary-text-dark"
+          >
             {count > 1 ? t('title.multiple') : t('title.single')}
           </h3>
           {count > 0 && (
@@ -105,20 +134,12 @@ function PanelHeader({ downloadLinks, isDownloading, downloadProgress, isOpen, o
           )}
         </div>
 
-        {isDownloading ? (
-          <p className="mt-0.5 text-xs text-muted dark:text-muted-dark">
-            {t('status.fetching', {
-              current: downloadProgress.current,
-              total: downloadProgress.total,
-            })}
-          </p>
-        ) : count > 0 ? (
-          <p className="mt-0.5 text-xs text-muted dark:text-muted-dark">{t('status.generated')}</p>
-        ) : (
-          <p className="mt-0.5 text-xs text-muted dark:text-muted-dark animate-pulse">
-            {t('status.generating')}
-          </p>
-        )}
+        <p
+          className={`mt-0.5 text-xs text-muted dark:text-muted-dark ${!isDownloading && count === 0 ? 'animate-pulse' : ''}`}
+          aria-live="polite"
+        >
+          {statusText}
+        </p>
 
         {isDownloading && downloadProgress.total > 0 && (
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-progress-track dark:bg-progress-track-dark">
@@ -148,37 +169,46 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
   const hostname = getHostname(link.url);
   const isCopied = copiedId === link.id;
 
+  const actionButtonClass = (accent = false) =>
+    `inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
+      accent
+        ? 'text-accent hover:bg-accent/10 dark:text-accent-dark dark:hover:bg-accent-dark/10'
+        : ''
+    }`;
+
   return (
-    <li className="group flex items-center gap-3 rounded-xl border border-border/80 bg-surface-alt/80 p-2.5 transition-colors hover:border-accent/30 hover:bg-surface-alt dark:border-border-dark/80 dark:bg-surface-alt-dark/80 dark:hover:border-accent-dark/30 dark:hover:bg-surface-alt-dark">
-      <span className="hidden w-6 shrink-0 text-center text-[11px] tabular-nums text-muted dark:text-muted-dark sm:block">
-        {index}
-      </span>
+    <li className="group flex flex-col gap-2 rounded-xl border border-border/80 bg-surface-alt/80 p-2.5 transition-colors hover:border-accent/30 hover:bg-surface-alt dark:border-border-dark/80 dark:bg-surface-alt-dark/80 dark:hover:border-accent-dark/30 dark:hover:bg-surface-alt-dark sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="hidden w-6 shrink-0 text-center text-[11px] tabular-nums text-muted dark:text-muted-dark sm:block">
+          {index}
+        </span>
 
-      <ExtensionBadge extension={extension} />
+        <ExtensionBadge extension={extension} />
 
-      <div className="min-w-0 flex-1">
-        <Tooltip content={displayName}>
-          <p className="truncate text-sm font-medium text-primary-text dark:text-primary-text-dark">
-            {displayName}
-          </p>
-        </Tooltip>
-        {hostname && (
-          <Tooltip content={link.url}>
-            <p className="mt-0.5 truncate text-[11px] text-muted dark:text-muted-dark">
-              {hostname}
+        <div className="min-w-0 flex-1">
+          <Tooltip content={displayName}>
+            <p className="truncate text-sm font-medium text-primary-text dark:text-primary-text-dark">
+              {displayName}
             </p>
           </Tooltip>
-        )}
+          {hostname && (
+            <Tooltip content={link.url}>
+              <p className="mt-0.5 truncate text-[11px] text-muted dark:text-muted-dark">
+                {hostname}
+              </p>
+            </Tooltip>
+          )}
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center justify-end gap-0.5">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onCopy(link);
           }}
-          className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+          className={`${actionButtonClass()} ${
             isCopied
               ? 'bg-label-success-bg text-label-success-text dark:bg-label-success-bg-dark dark:text-label-success-text-dark'
               : 'text-accent hover:bg-accent/10 dark:text-accent-dark dark:hover:bg-accent-dark/10'
@@ -203,7 +233,7 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
             e.stopPropagation();
             onDownload(link.url);
           }}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10 dark:text-accent-dark dark:hover:bg-accent-dark/10"
+          className={actionButtonClass(true)}
           title={t('actions.downloadFile')}
           aria-label={t('actions.downloadFileWithIndex', { index, total })}
         >
@@ -225,8 +255,40 @@ export default function DownloadPanel({
   setIsDownloadPanelOpen,
 }) {
   const t = useTranslations('DownloadPanel');
+  const titleId = useId();
   const [copiedId, setCopiedId] = useState(null);
   const [copiedAll, setCopiedAll] = useState(false);
+
+  const isVisible = downloadLinks.length > 0 || isDownloading;
+
+  useEffect(() => {
+    if (!isVisible) return undefined;
+    document.documentElement.style.setProperty('--download-panel-peek-height', PEEK_HEIGHT);
+    return () => {
+      document.documentElement.style.setProperty('--download-panel-peek-height', '0px');
+    };
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isDownloadPanelOpen) return undefined;
+
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prev;
+    };
+  }, [isDownloadPanelOpen]);
+
+  useEffect(() => {
+    if (!isDownloadPanelOpen) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setIsDownloadPanelOpen(false);
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isDownloadPanelOpen, setIsDownloadPanelOpen]);
 
   useEffect(() => {
     if (copiedId == null) return undefined;
@@ -269,10 +331,6 @@ export default function DownloadPanel({
         .writeText(link.url)
         .then(() => {
           setCopiedId(link.id);
-          setToast({
-            message: t('toast.linkCopied'),
-            type: 'success',
-          });
         })
         .catch(() => {
           setToast({
@@ -284,7 +342,7 @@ export default function DownloadPanel({
     [setToast, t]
   );
 
-  if (!downloadLinks.length && !isDownloading) return null;
+  if (!isVisible) return null;
 
   const handleDismiss = () => {
     setCopiedId(null);
@@ -292,8 +350,20 @@ export default function DownloadPanel({
     onDismiss();
   };
 
+  const handleCollapse = () => setIsDownloadPanelOpen(false);
+
+  const panelPositionClass =
+    'fixed inset-x-0 bottom-[calc(var(--mobile-bottom-nav-height,0px)+env(safe-area-inset-bottom,0px))] md:bottom-0';
+
   const panelShell = (
-    <div className="overflow-hidden rounded-t-2xl border border-border bg-surface shadow-2xl shadow-black/20 dark:border-border-dark dark:bg-surface-dark dark:shadow-black/50">
+    <div
+      className="overflow-hidden rounded-t-2xl border border-border bg-surface shadow-2xl shadow-black/20 dark:border-border-dark dark:bg-surface-dark dark:shadow-black/50"
+      role={isDownloadPanelOpen ? 'dialog' : undefined}
+      aria-modal={isDownloadPanelOpen ? 'true' : undefined}
+      aria-labelledby={isDownloadPanelOpen ? titleId : undefined}
+    >
+      {isDownloadPanelOpen && <ModalSheetHandle />}
+
       <div className="border-b border-border dark:border-border-dark">
         <PanelHeader
           downloadLinks={downloadLinks}
@@ -301,6 +371,7 @@ export default function DownloadPanel({
           downloadProgress={downloadProgress}
           isOpen={isDownloadPanelOpen}
           onToggle={() => setIsDownloadPanelOpen(!isDownloadPanelOpen)}
+          titleId={titleId}
           t={t}
         />
       </div>
@@ -369,20 +440,27 @@ export default function DownloadPanel({
     </div>
   );
 
-  return (
-    <>
-      {isDownloadPanelOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] md:bg-black/40"
-          aria-label={t('aria.collapse')}
-          onClick={() => setIsDownloadPanelOpen(false)}
-        />
-      )}
+  const panelContent = (
+    <div className={`${panelPositionClass} ${isDownloadPanelOpen ? 'z-[1]' : 'z-overlay-dialog'}`}>
+      <div className="relative mx-auto max-w-2xl px-3 sm:px-4">{panelShell}</div>
+    </div>
+  );
 
-      <div className="fixed inset-x-0 bottom-[calc(var(--mobile-bottom-nav-height,0px)+env(safe-area-inset-bottom,0px))] z-50 md:bottom-0">
-        <div className="relative mx-auto max-w-2xl px-3 sm:px-4">{panelShell}</div>
-      </div>
-    </>
+  return (
+    <OverlayPortal open={isVisible}>
+      {isDownloadPanelOpen ? (
+        <div className="ui-modal-overlay">
+          <button
+            type="button"
+            className="ui-modal-overlay__backdrop"
+            aria-label={t('aria.collapse')}
+            onClick={handleCollapse}
+          />
+          {panelContent}
+        </div>
+      ) : (
+        panelContent
+      )}
+    </OverlayPortal>
   );
 }

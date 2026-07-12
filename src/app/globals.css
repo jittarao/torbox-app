@@ -17,6 +17,7 @@
   --z-overlay-dialog: 310;
   /* Portaled selects/multiselects inside modals */
   --z-overlay-popover: 320;
+  --download-panel-peek-height: 0px;
   --downloads-sidebar-width: 14rem;
   /* Left edge of main downloads column when fixed filters sidebar is shown (desktop) */
   --downloads-content-left: calc(var(--sidebar-width, 0px) + var(--downloads-sidebar-width, 0px));

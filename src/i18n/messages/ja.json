@@ -525,6 +525,7 @@
     },
     "status": {
       "fetching": "{total}件中{current}件の取得中",
+      "fetchingWithPercent": "{total}件中{current}件の取得中 · {percent}%",
       "generated": "生成済み",
       "generating": "リンクを生成中...",
       "generatingMore": "さらにリンクを生成中..."

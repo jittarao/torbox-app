@@ -514,6 +514,7 @@
     },
     "status": {
       "fetching": "Obteniendo {current} de {total}",
+      "fetchingWithPercent": "Obteniendo {current} de {total} · {percent}%",
       "generated": "Generado",
       "generating": "Generando enlaces...",
       "generatingMore": "Generando más enlaces..."
