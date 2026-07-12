@@ -344,15 +344,17 @@ export default function DownloadPanel({
     };
   }, [isVisible]);
 
+  const shouldLockScroll = isVisible && isDownloadPanelOpen;
+
   useEffect(() => {
-    if (!isDownloadPanelOpen) return undefined;
+    if (!shouldLockScroll) return undefined;
 
     const prev = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
     return () => {
       document.documentElement.style.overflow = prev;
     };
-  }, [isDownloadPanelOpen]);
+  }, [shouldLockScroll]);
 
   useEffect(() => {
     if (!isDownloadPanelOpen) return undefined;
@@ -422,6 +424,7 @@ export default function DownloadPanel({
   const handleDismiss = () => {
     setCopiedId(null);
     setCopiedAll(false);
+    setIsDownloadPanelOpen(false);
     onDismiss();
   };
 
