@@ -113,6 +113,16 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
         fetchStatusT={fetchStatusT}
       />
 
+      {showDesktopFiltersSidebar && (
+        <FiltersSidebar
+          {...sidebarProps}
+          variant="fixed"
+          className="hidden md:flex"
+          collapsed={filtersSidebarCollapsed}
+          onToggleCollapsed={toggleFiltersSidebar}
+        />
+      )}
+
       {showFullPageSpinner ? (
         <div className="flex justify-center items-center py-12">
           <Spinner size="sm" className="text-primary-text dark:text-primary-text-dark" />
@@ -155,16 +165,6 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
               </svg>
               {downloadsFiltersT('sidebarLabel')}
             </button>
-          )}
-
-          {showDesktopFiltersSidebar && (
-            <FiltersSidebar
-              {...sidebarProps}
-              variant="fixed"
-              className="hidden md:flex"
-              collapsed={filtersSidebarCollapsed}
-              onToggleCollapsed={toggleFiltersSidebar}
-            />
           )}
 
           <div

@@ -9,6 +9,8 @@ export function useDownloadsProviderValues({
   apiKey,
   filterData,
   tags,
+  tagsLoading,
+  sidebarCountsLoading,
   activeType,
   handleColumnChange,
   viewItems,
@@ -89,6 +91,9 @@ export function useDownloadsProviderValues({
       onNewView: filterData.handleOpenNewView,
       onOpenTagManager: filterData.handleOpenTagManager,
       onReorderViews: filterData.handleReorderViews,
+      viewsLoading: filterData.viewsLoading,
+      tagsLoading,
+      countsLoading: sidebarCountsLoading,
     }),
     [
       apiKey,
@@ -121,6 +126,9 @@ export function useDownloadsProviderValues({
       filterData.handleOpenNewView,
       filterData.handleOpenTagManager,
       filterData.handleReorderViews,
+      filterData.viewsLoading,
+      tagsLoading,
+      sidebarCountsLoading,
     ]
   );
 
