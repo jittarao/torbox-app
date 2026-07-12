@@ -666,11 +666,8 @@ export function useDownloadsFilters({
 
   const handlePreviewFiltersFromModal = useCallback(
     (filters, { includeSort = false, includeSearch = false } = {}) => {
-      const { filterModalMode, editingView, activeType, search, sortField, sortDirection } =
-        filterDepsRef.current;
-      const assetType =
-        filterModalMode === 'edit' && editingView?.asset_type ? editingView.asset_type : activeType;
-      const normalized = mergeViewAssetTypeFilter(normalizeFilters(filters), assetType);
+      const { search, sortField, sortDirection } = filterDepsRef.current;
+      const normalized = normalizeFilters(filters);
       setColumnFilters(normalized);
       clearView();
 

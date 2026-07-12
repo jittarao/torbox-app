@@ -384,7 +384,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
             <button
               type="submit"
               disabled={!newTagName.trim() || loading}
-              className="ui-btn-accent w-full shrink-0 justify-center !rounded-xl !px-4 sm:w-auto"
+              className="ui-btn-accent w-full shrink-0 justify-center !px-4 sm:w-auto"
             >
               {loading ? (
                 <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

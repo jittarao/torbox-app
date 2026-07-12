@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useModalFocusTrap } from '@/components/shared/hooks/useModalFocusTrap';
 import FilterGroup from './CustomViews/components/FilterGroup';
+import PresetViewsSection from './CustomViews/components/PresetViewsSection';
 import ViewFilterPreview from './CustomViews/components/ViewFilterPreview';
+import { clonePresetFilters } from './CustomViews/presets';
 import { getFilterableColumns } from './CustomViews/utils';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
@@ -327,6 +329,35 @@ export default function FilterEditorModal({
 
   const filtersToSave = () => ensureStructure(columnFilters);
 
+  const handleApplyPreset = (preset) => {
+    const filters = clonePresetFilters(preset);
+    setColumnFilters(filters);
+    setSaveViewName(preset.name);
+    onPreview?.(filters, { includeSort: !!preset.sort });
+  };
+
+  const handleSavePreset = async (preset) => {
+    if (!apiKey) return;
+    setIsSaving(true);
+    try {
+      const view = await saveView(
+        preset.name,
+        clonePresetFilters(preset),
+        preset.sort ?? null,
+        null,
+        preset.asset_type ?? activeType,
+        null
+      );
+      onViewCreated?.(view);
+      onClose();
+    } catch (error) {
+      console.error('Error saving preset view:', error);
+      alert(`Failed to save view: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveAsView = async () => {
     if (!apiKey || !saveViewName.trim()) return;
     setIsSaving(true);
@@ -410,6 +441,85 @@ export default function FilterEditorModal({
     onClose();
   };
 
+  const addGroupLink = (
+    <button
+      type="button"
+      onClick={handleAddGroup}
+      className="inline-flex items-center gap-1 text-xs font-medium text-accent transition-colors hover:text-accent/80 dark:text-accent-dark dark:hover:text-accent-dark/80"
+    >
+      <Plus className="size-3.5" aria-hidden />
+      {customViewsT('addGroup')}
+    </button>
+  );
+
+  const filterGroupsSection = (
+    <div>
+      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-primary-text/45 dark:text-primary-text-dark/45">
+          {customViewsT('viewEditorFiltersSection')}
+        </h3>
+        {filterGroups.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] text-primary-text/50 dark:text-primary-text-dark/50">
+              {customViewsT('betweenGroups')}
+            </span>
+            <Select
+              value={groupLogicOperator}
+              onChange={(e) => handleGroupLogicChange(e.target.value)}
+              className="min-w-[5.5rem] !rounded-lg text-xs"
+            >
+              <option value={LOGIC_OPERATORS.AND}>{automationRulesT('logicOperators.and')}</option>
+              <option value={LOGIC_OPERATORS.OR}>{automationRulesT('logicOperators.or')}</option>
+            </Select>
+          </div>
+        )}
+      </div>
+
+      {filterGroups.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-10 text-center dark:border-border-dark/60">
+          <Filter
+            className="mb-2 size-8 text-primary-text/25 dark:text-primary-text-dark/25"
+            aria-hidden
+          />
+          <p className="text-sm text-primary-text/60 dark:text-primary-text-dark/60">
+            {customViewsT('noFilters')}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {filterGroups.map((group, groupIndex) => (
+            <div key={group._key || groupIndex} className="relative">
+              {groupIndex > 0 && (
+                <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                  <span className="inline-flex rounded-full border border-border/60 bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-text/55 shadow-sm dark:border-border-dark/60 dark:bg-surface-dark dark:text-primary-text-dark/55">
+                    {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
+                      ? automationRulesT('logicOperators.and')
+                      : automationRulesT('logicOperators.or')}
+                  </span>
+                </div>
+              )}
+              <FilterGroup
+                group={group}
+                groupIndex={groupIndex}
+                totalGroups={filterGroups.length}
+                onUpdateGroup={handleUpdateGroup}
+                onRemoveGroup={handleRemoveGroup}
+                onAddFilter={handleAddFilter}
+                onUpdateFilter={handleUpdateFilter}
+                onRemoveFilter={handleRemoveFilter}
+                availableColumns={availableColumns}
+                apiKey={apiKey}
+                activeType={activeType}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 flex justify-end">{addGroupLink}</div>
+    </div>
+  );
+
   return (
     <ModalSheet
       ref={dialogRef}
@@ -461,55 +571,29 @@ export default function FilterEditorModal({
           </div>
         </div>
 
-        {/* Create view: name + primary action */}
+        {/* Create view: example presets */}
         {isCreateMode && (
-          <div className="shrink-0 border-b border-border/40 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/40">
-            <form
-              className="flex flex-col gap-2 sm:flex-row sm:items-start"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (filtersActive && saveViewName.trim()) handleCreateView();
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <label
-                  htmlFor="view-name-input"
-                  className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-primary-text/45 dark:text-primary-text-dark/45"
-                >
-                  {customViewsT('viewEditorNameLabel')}
-                </label>
-                <input
-                  id="view-name-input"
-                  ref={viewNameInputRef}
-                  type="text"
-                  value={saveViewName}
-                  onChange={(e) => setSaveViewName(e.target.value)}
-                  placeholder={customViewsT('viewNamePlaceholder')}
-                  className="w-full rounded-xl border border-border/80 bg-surface-alt/50 px-3 py-2.5 text-sm text-primary-text placeholder:text-primary-text/40 focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isSaving || !saveViewName.trim() || !filtersActive}
-                className="ui-btn-accent w-full shrink-0 !rounded-xl !px-5 sm:mt-6 sm:w-auto sm:min-w-[8.5rem]"
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-4 sm:px-5 sm:py-4">
+            <div>
+              <label
+                htmlFor="view-name-input"
+                className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-primary-text/45 dark:text-primary-text-dark/45"
               >
-                {isSaving ? (
-                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                ) : (
-                  customViewsT('createView')
-                )}
-              </button>
-            </form>
-            {!filtersActive && (
-              <p className="mt-2 text-xs text-primary-text/55 dark:text-primary-text-dark/55">
-                {customViewsT('noFilters')}
-              </p>
-            )}
-          </div>
-        )}
+                {customViewsT('viewEditorNameLabel')}
+              </label>
+              <input
+                id="view-name-input"
+                ref={viewNameInputRef}
+                type="text"
+                value={saveViewName}
+                onChange={(e) => setSaveViewName(e.target.value)}
+                placeholder={customViewsT('viewNamePlaceholder')}
+                className="w-full rounded-xl border border-border/80 bg-surface-alt/50 px-3 py-2.5 text-sm text-primary-text placeholder:text-primary-text/40 focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
+              />
+            </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-4 sm:px-5 sm:py-4">
-          {isViewMode && (
+            {filterGroupsSection}
+
             <SaveOptionsPanel
               saveSort={saveSort}
               setSaveSort={setSaveSort}
@@ -520,91 +604,30 @@ export default function FilterEditorModal({
               trimmedSearch={trimmedSearch}
               t={customViewsT}
             />
-          )}
 
-          {isViewMode && previewItems && (filtersActive || previewSearchQuery) && (
-            <ViewFilterPreview
-              filters={columnFilters}
-              previewItems={previewItems}
-              assetType={previewAssetType}
-              searchQuery={previewSearchQuery}
-              onPreview={onPreview ? handlePreview : undefined}
-              showPreviewButton={!!onPreview}
-            />
-          )}
-
-          <div>
-            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-primary-text/45 dark:text-primary-text-dark/45">
-                {customViewsT('viewEditorFiltersSection')}
-              </h3>
-              {filterGroups.length > 1 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] text-primary-text/50 dark:text-primary-text-dark/50">
-                    {customViewsT('betweenGroups')}
-                  </span>
-                  <Select
-                    value={groupLogicOperator}
-                    onChange={(e) => handleGroupLogicChange(e.target.value)}
-                    className="min-w-[5.5rem] !rounded-lg text-xs"
-                  >
-                    <option value={LOGIC_OPERATORS.AND}>
-                      {automationRulesT('logicOperators.and')}
-                    </option>
-                    <option value={LOGIC_OPERATORS.OR}>
-                      {automationRulesT('logicOperators.or')}
-                    </option>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            {filterGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-10 text-center dark:border-border-dark/60">
-                <Filter
-                  className="mb-2 size-8 text-primary-text/25 dark:text-primary-text-dark/25"
-                  aria-hidden
-                />
-                <p className="text-sm text-primary-text/60 dark:text-primary-text-dark/60">
-                  {customViewsT('noFilters')}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {filterGroups.map((group, groupIndex) => (
-                  <div key={group._key || groupIndex} className="relative">
-                    {groupIndex > 0 && (
-                      <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-                        <span className="inline-flex rounded-full border border-border/60 bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-text/55 shadow-sm dark:border-border-dark/60 dark:bg-surface-dark dark:text-primary-text-dark/55">
-                          {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
-                            ? automationRulesT('logicOperators.and')
-                            : automationRulesT('logicOperators.or')}
-                        </span>
-                      </div>
-                    )}
-                    <div className="rounded-xl ring-1 ring-border/50 dark:ring-border-dark/50">
-                      <FilterGroup
-                        group={group}
-                        groupIndex={groupIndex}
-                        totalGroups={filterGroups.length}
-                        onUpdateGroup={handleUpdateGroup}
-                        onRemoveGroup={handleRemoveGroup}
-                        onAddFilter={handleAddFilter}
-                        onUpdateFilter={handleUpdateFilter}
-                        onRemoveFilter={handleRemoveFilter}
-                        availableColumns={availableColumns}
-                        apiKey={apiKey}
-                        activeType={activeType}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {previewItems && (filtersActive || previewSearchQuery) && (
+              <ViewFilterPreview
+                filters={columnFilters}
+                previewItems={previewItems}
+                assetType={previewAssetType}
+                searchQuery={previewSearchQuery}
+                onPreview={onPreview ? handlePreview : undefined}
+                showPreviewButton={!!onPreview}
+              />
             )}
-          </div>
 
-          {apiKey && filtersActive && !isCreateMode && showSaveInput && (
-            <div className="rounded-xl border border-accent/25 bg-accent/5 p-4 dark:border-accent-dark/25 dark:bg-accent-dark/5">
+            <PresetViewsSection
+              onApplyPreset={handleApplyPreset}
+              onSavePreset={handleSavePreset}
+              isSaving={isSaving}
+              t={customViewsT}
+            />
+          </div>
+        )}
+
+        {!isCreateMode && (
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-4 sm:px-5 sm:py-4">
+            {isViewMode && (
               <SaveOptionsPanel
                 saveSort={saveSort}
                 setSaveSort={setSaveSort}
@@ -615,66 +638,111 @@ export default function FilterEditorModal({
                 trimmedSearch={trimmedSearch}
                 t={customViewsT}
               />
-              <form
-                className="mt-3 flex flex-col gap-2 sm:flex-row"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSaveAsView();
-                }}
-              >
-                <input
-                  type="text"
-                  value={saveViewName}
-                  onChange={(e) => setSaveViewName(e.target.value)}
-                  placeholder={customViewsT('viewNamePlaceholder')}
-                  className="min-w-0 flex-1 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-dark dark:focus:ring-accent-dark/15"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setShowSaveInput(false);
-                      setSaveViewName('');
-                    }
-                  }}
+            )}
+
+            {isViewMode && previewItems && (filtersActive || previewSearchQuery) && (
+              <ViewFilterPreview
+                filters={columnFilters}
+                previewItems={previewItems}
+                assetType={previewAssetType}
+                searchQuery={previewSearchQuery}
+                onPreview={onPreview ? handlePreview : undefined}
+                showPreviewButton={!!onPreview}
+              />
+            )}
+
+            {filterGroupsSection}
+
+            {apiKey && filtersActive && !isCreateMode && showSaveInput && (
+              <div className="rounded-xl border border-accent/25 bg-accent/5 p-4 dark:border-accent-dark/25 dark:bg-accent-dark/5">
+                <SaveOptionsPanel
+                  saveSort={saveSort}
+                  setSaveSort={setSaveSort}
+                  saveColumns={saveColumns}
+                  setSaveColumns={setSaveColumns}
+                  saveSearch={saveSearch}
+                  setSaveSearch={setSaveSearch}
+                  trimmedSearch={trimmedSearch}
+                  t={customViewsT}
                 />
-                <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
-                  <button
-                    type="submit"
-                    disabled={isSaving || !saveViewName.trim()}
-                    className="ui-btn-accent w-full !rounded-xl !py-2 !text-xs sm:w-auto"
-                  >
-                    {isSaving ? customViewsT('saving') : customViewsT('save')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSaveInput(false);
-                      setSaveViewName('');
+                <form
+                  className="mt-3 flex flex-col gap-2 sm:flex-row"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSaveAsView();
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={saveViewName}
+                    onChange={(e) => setSaveViewName(e.target.value)}
+                    placeholder={customViewsT('viewNamePlaceholder')}
+                    className="min-w-0 flex-1 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-dark dark:focus:ring-accent-dark/15"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setShowSaveInput(false);
+                        setSaveViewName('');
+                      }
                     }}
-                    className="ui-btn-ghost w-full !rounded-xl !py-2 !text-xs sm:w-auto"
-                  >
-                    {customViewsT('cancel')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
+                  />
+                  <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
+                    <button
+                      type="submit"
+                      disabled={isSaving || !saveViewName.trim()}
+                      className="ui-btn-accent w-full !py-2 !text-xs sm:w-auto"
+                    >
+                      {isSaving ? customViewsT('saving') : customViewsT('save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSaveInput(false);
+                        setSaveViewName('');
+                      }}
+                      className="ui-btn-ghost w-full !py-2 !text-xs sm:w-auto"
+                    >
+                      {customViewsT('cancel')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="shrink-0 border-t border-border/50 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/50">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {isCreateMode && (
+              <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row sm:items-center sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCreateView}
+                  disabled={isSaving || !saveViewName.trim() || !filtersActive}
+                  className="ui-btn-accent w-full justify-center !text-xs sm:w-auto sm:min-w-[8.5rem]"
+                >
+                  {isSaving ? (
+                    <span className="inline-block size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    customViewsT('createView')
+                  )}
+                </button>
+              </div>
+            )}
+
             {filtersActive && !isCreateMode && !isEditMode && (
               <div className="flex flex-col gap-2 sm:contents">
                 <button
                   type="button"
                   onClick={handleApply}
-                  className="ui-btn-accent w-full justify-center !rounded-xl !text-xs sm:w-auto"
+                  className="ui-btn-accent w-full justify-center !text-xs sm:w-auto"
                 >
                   {downloadsFiltersT('applyFilters')}
                 </button>
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs sm:w-auto"
+                  className="ui-btn-ghost w-full justify-center !text-xs sm:w-auto"
                 >
                   {downloadsFiltersT('clearAll')}
                 </button>
@@ -682,7 +750,7 @@ export default function FilterEditorModal({
                   <button
                     type="button"
                     onClick={() => setShowSaveInput(true)}
-                    className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
+                    className="ui-btn-ghost w-full justify-center !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
                   >
                     {customViewsT('saveAsNew')}
                   </button>
@@ -696,28 +764,19 @@ export default function FilterEditorModal({
                   type="button"
                   onClick={handleUpdateView}
                   disabled={isSaving}
-                  className="ui-btn-accent w-full justify-center !rounded-xl !text-xs sm:w-auto"
+                  className="ui-btn-accent w-full justify-center !text-xs sm:w-auto"
                 >
                   {isSaving ? customViewsT('updating') : customViewsT('updateView')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowSaveInput(true)}
-                  className="ui-btn-ghost w-full justify-center !rounded-xl !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
+                  className="ui-btn-ghost w-full justify-center !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
                 >
                   {customViewsT('saveAsNew')}
                 </button>
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={handleAddGroup}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border/60 px-3 py-2 text-xs font-medium text-primary-text transition-colors hover:bg-surface-alt dark:border-border-dark/60 dark:text-primary-text-dark dark:hover:bg-surface-alt-dark sm:ml-auto sm:w-auto"
-            >
-              <Plus className="size-3.5" aria-hidden />
-              {customViewsT('addGroup')}
-            </button>
           </div>
         </div>
       </div>

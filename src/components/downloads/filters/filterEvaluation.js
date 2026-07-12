@@ -119,23 +119,29 @@ function evaluateFilter(filter, item) {
     if (isNaN(itemTime)) return false;
 
     const now = Date.now();
-    const diffMs = now - itemTime;
-    const diffMinutes = diffMs / (1000 * 60);
+    const filterAmount =
+      typeof filterValue === 'number' ? filterValue : parseFloat(filterValue) || 0;
 
-    const filterDays = typeof filterValue === 'number' ? filterValue : parseFloat(filterValue) || 0;
-    const filterMinutes = filterDays * 24 * 60;
+    // expires_at uses hours-until-expiration; other timestamps use days since the date.
+    const compareValue =
+      filter.column === 'expires_at'
+        ? (itemTime - now) / (1000 * 60 * 60)
+        : (now - itemTime) / (1000 * 60 * 24 * 60);
 
     switch (operator) {
       case COMPARISON_OPERATORS.GT:
-        return diffMinutes > filterMinutes;
+        return compareValue > filterAmount;
       case COMPARISON_OPERATORS.LT:
-        return diffMinutes < filterMinutes;
+        return compareValue < filterAmount;
       case COMPARISON_OPERATORS.GTE:
-        return diffMinutes >= filterMinutes;
+        return compareValue >= filterAmount;
       case COMPARISON_OPERATORS.LTE:
-        return diffMinutes <= filterMinutes;
+        return compareValue <= filterAmount;
       case COMPARISON_OPERATORS.EQ:
-        return Math.abs(diffMinutes - filterMinutes) < 24 * 60;
+        if (filter.column === 'expires_at') {
+          return Math.abs(compareValue - filterAmount) < 1;
+        }
+        return Math.abs(compareValue - filterAmount) < 1;
       default:
         return true;
     }

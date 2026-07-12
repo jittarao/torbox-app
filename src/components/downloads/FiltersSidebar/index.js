@@ -480,7 +480,7 @@ export default function FiltersSidebar({
           onClick={onNewView || onNewFilter}
           className={
             isSheet
-              ? 'ui-btn-accent w-full justify-center !rounded-xl !text-xs'
+              ? 'ui-btn-accent w-full justify-center !text-xs'
               : 'w-full rounded-md border border-accent/40 px-2 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10 dark:border-accent-dark/40 dark:text-accent-dark dark:hover:bg-accent-dark/10'
           }
         >
