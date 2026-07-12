@@ -9,6 +9,7 @@ import SourceSidebarSection from './SourceSidebarSection';
 import TagSidebarSection from './TagSidebarSection';
 import ViewSidebarSection from './ViewSidebarSection';
 import FiltersSidebarSearch from './FiltersSidebarSearch';
+import SidebarSectionSkeleton from './SidebarSectionSkeleton';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 import useFiltersSidebarSectionsCollapsed from './useFiltersSidebarSectionsCollapsed';
 
@@ -245,6 +246,9 @@ export default function FiltersSidebar({
   className = '',
   collapsed = false,
   onToggleCollapsed,
+  viewsLoading = false,
+  tagsLoading = false,
+  countsLoading = false,
 }) {
   const t = useTranslations('DownloadsFilters');
   const deleteViewStore = useCustomViewsStore((s) => s.deleteView);
@@ -268,6 +272,7 @@ export default function FiltersSidebar({
   const hasSearchQuery = searchQuery.trim().length > 0;
   const canReorderViews = views.length >= 2 && Boolean(onReorderViews);
   const reorderDisabledBySearch = hasSearchQuery;
+  const sidebarBusy = viewsLoading || tagsLoading || countsLoading;
 
   useEffect(() => {
     if (hasSearchQuery && viewsSortMode) {
@@ -345,6 +350,7 @@ export default function FiltersSidebar({
       } ${className}`}
       style={isFixed ? { left: 'var(--sidebar-width, 0px)' } : undefined}
       aria-label={isSheet ? undefined : t('sidebarLabel')}
+      aria-busy={sidebarBusy || undefined}
     >
       {isFixed && onToggleCollapsed && (
         <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
@@ -386,21 +392,25 @@ export default function FiltersSidebar({
           toggleLabel={sectionToggleLabel(t('viewsSection'), sectionsExpanded.views)}
           activeCount={activeViewIds.length}
         >
-          <ViewSidebarSection
-            views={views}
-            viewCounts={viewCounts}
-            searchQuery={searchQuery}
-            activeViewIds={activeViewIds}
-            onApplyView={onApplyView}
-            onApplyViewRange={onApplyViewRange}
-            onClearViews={onClearViews}
-            onEditView={onEditView}
-            onRenameView={onRenameView}
-            onDeleteView={handleDeleteView}
-            sortMode={viewsSortMode}
-            onExitSortMode={handleExitViewsSortMode}
-            onReorderViews={onReorderViews}
-          />
+          {viewsLoading ? (
+            <SidebarSectionSkeleton rows={3} />
+          ) : (
+            <ViewSidebarSection
+              views={views}
+              viewCounts={viewCounts}
+              searchQuery={searchQuery}
+              activeViewIds={activeViewIds}
+              onApplyView={onApplyView}
+              onApplyViewRange={onApplyViewRange}
+              onClearViews={onClearViews}
+              onEditView={onEditView}
+              onRenameView={onRenameView}
+              onDeleteView={handleDeleteView}
+              sortMode={viewsSortMode}
+              onExitSortMode={handleExitViewsSortMode}
+              onReorderViews={onReorderViews}
+            />
+          )}
         </SidebarSection>
 
         <SidebarSection
@@ -413,18 +423,22 @@ export default function FiltersSidebar({
           toggleLabel={sectionToggleLabel(t('tagsSection'), sectionsExpanded.tags)}
           activeCount={activeTagIds?.length ?? 0}
         >
-          <TagSidebarSection
-            tags={tags}
-            tagCounts={tagCounts}
-            searchQuery={searchQuery}
-            activeTagIds={activeTagIds}
-            onApplyTag={onApplyTag}
-            onApplyTagRange={onApplyTagRange}
-            onClearTags={onClearTags}
-            onRenameTag={onRenameTag}
-            onDeleteTag={handleDeleteTagItem}
-            disabled={trackerFilterLocked}
-          />
+          {tagsLoading ? (
+            <SidebarSectionSkeleton rows={4} />
+          ) : (
+            <TagSidebarSection
+              tags={tags}
+              tagCounts={tagCounts}
+              searchQuery={searchQuery}
+              activeTagIds={activeTagIds}
+              onApplyTag={onApplyTag}
+              onApplyTagRange={onApplyTagRange}
+              onClearTags={onClearTags}
+              onRenameTag={onRenameTag}
+              onDeleteTag={handleDeleteTagItem}
+              disabled={trackerFilterLocked}
+            />
+          )}
         </SidebarSection>
 
         {showTrackerSection && (
@@ -436,15 +450,19 @@ export default function FiltersSidebar({
             toggleLabel={sectionToggleLabel(t('trackersSection'), sectionsExpanded.trackers)}
             activeCount={activeTrackers.length}
           >
-            <TrackerSidebarSection
-              entries={trackerEntries}
-              searchQuery={searchQuery}
-              activeTrackers={activeTrackers}
-              onApplyTracker={onApplyTracker}
-              onApplyTrackerRange={onApplyTrackerRange}
-              onClearTrackers={onClearTrackers}
-              disabled={trackerFilterLocked}
-            />
+            {countsLoading ? (
+              <SidebarSectionSkeleton rows={3} />
+            ) : (
+              <TrackerSidebarSection
+                entries={trackerEntries}
+                searchQuery={searchQuery}
+                activeTrackers={activeTrackers}
+                onApplyTracker={onApplyTracker}
+                onApplyTrackerRange={onApplyTrackerRange}
+                onClearTrackers={onClearTrackers}
+                disabled={trackerFilterLocked}
+              />
+            )}
           </SidebarSection>
         )}
 
@@ -457,15 +475,19 @@ export default function FiltersSidebar({
             toggleLabel={sectionToggleLabel(t('sourcesSection'), sectionsExpanded.sources)}
             activeCount={activeSources.length}
           >
-            <SourceSidebarSection
-              entries={sourceEntries}
-              searchQuery={searchQuery}
-              activeSources={activeSources}
-              onApplySource={onApplySource}
-              onApplySourceRange={onApplySourceRange}
-              onClearSources={onClearSources}
-              disabled={trackerFilterLocked}
-            />
+            {countsLoading ? (
+              <SidebarSectionSkeleton rows={3} />
+            ) : (
+              <SourceSidebarSection
+                entries={sourceEntries}
+                searchQuery={searchQuery}
+                activeSources={activeSources}
+                onApplySource={onApplySource}
+                onApplySourceRange={onApplySourceRange}
+                onClearSources={onClearSources}
+                disabled={trackerFilterLocked}
+              />
+            )}
           </SidebarSection>
         )}
       </div>
