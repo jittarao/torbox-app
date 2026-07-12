@@ -10,7 +10,16 @@ export const TARGET_LOCALES = ALL_LOCALES.filter((locale) => locale !== 'en');
 export const DEFAULT_LOCALE = settings.defaultLocale;
 
 export const ADMIN_PREFIX = 'Admin.';
+export const CUSTOM_VIEWS_PRESETS_PREFIX = 'CustomViews.presets.';
 
 export function isAdminKey(dotPath) {
   return dotPath === 'Admin' || dotPath.startsWith(ADMIN_PREFIX);
+}
+
+export function isCustomViewsPresetKey(dotPath) {
+  return dotPath === 'CustomViews.presets' || dotPath.startsWith(CUSTOM_VIEWS_PRESETS_PREFIX);
+}
+
+export function isExcludedTranslationKey(dotPath) {
+  return isAdminKey(dotPath) || isCustomViewsPresetKey(dotPath);
 }
