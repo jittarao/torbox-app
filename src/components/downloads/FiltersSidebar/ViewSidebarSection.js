@@ -27,14 +27,26 @@ function DragHandle({ listeners, attributes, label }) {
   return (
     <button
       type="button"
-      className="flex size-4 shrink-0 cursor-grab items-center justify-center rounded text-primary-text/45 hover:text-primary-text active:cursor-grabbing dark:text-primary-text-dark/45 dark:hover:text-primary-text-dark"
+      className="flex size-4 shrink-0 cursor-grab items-center justify-center rounded text-primary-text/60 hover:text-primary-text active:cursor-grabbing dark:text-primary-text-dark/60 dark:hover:text-primary-text-dark"
       aria-label={label}
       title={label}
       {...listeners}
       {...attributes}
     >
-      <svg className="size-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-        <path d="M9 5a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2zm6-12a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2zm0 6a1 1 0 110-2 1 1 0 010 2z" />
+      <svg
+        className="size-3.5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden
+      >
+        <circle cx="9" cy="5" r="1" />
+        <circle cx="9" cy="12" r="1" />
+        <circle cx="9" cy="19" r="1" />
+        <circle cx="15" cy="5" r="1" />
+        <circle cx="15" cy="12" r="1" />
+        <circle cx="15" cy="19" r="1" />
       </svg>
     </button>
   );
@@ -61,6 +73,7 @@ const SortableViewRow = memo(function SortableViewRow({ view, itemIndex, viewCou
         count={viewCounts[view.id]}
         isActive={false}
         disabled
+        hideCheckbox
         showMenu={false}
         leading={<DragHandle listeners={listeners} attributes={attributes} label={dragLabel} />}
       />
