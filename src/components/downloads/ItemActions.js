@@ -13,7 +13,6 @@ import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloadsSelectors';
 import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
-import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
 import { isQueuedItem } from '@/utils/utility';
 import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
 import { isItemProtected } from '@/utils/downloadProtectionUtils';
@@ -223,12 +222,6 @@ function ItemActions({
         type: 'success',
       });
       phEvent(nextAirlocked ? 'lock_download_item' : 'unlock_download_item');
-
-      await fetchDownloadType(apiKey, uiAssetType, activeType, {
-        bypassCache: true,
-        skipLoading: true,
-        forMutation: true,
-      });
     } catch (error) {
       console.error('Error updating airlock:', error);
       patchItem(uiAssetType, item.id, { airlocked: !nextAirlocked });

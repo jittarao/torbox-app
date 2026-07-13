@@ -123,7 +123,7 @@ export function useFetchData(apiKey, type = 'torrents') {
 
     const initialFetch = async () => {
       try {
-        await fetchDownloadsForView(apiKey, type, { bypassCache: true, skipLoading: hasCached });
+        await fetchDownloadsForView(apiKey, type, { skipLoading: hasCached });
       } finally {
         if (cancelled) return;
         endFetchInProgress(apiKey, type);
@@ -140,7 +140,7 @@ export function useFetchData(apiKey, type = 'torrents') {
   }, [type, apiKey]);
 
   const fetchItems = useMemo(() => {
-    return (bypassCache = true) => {
+    return () => {
       if (!getRateLimiter().canManualRefresh(type)) {
         markRateLimited();
         return Promise.resolve([]);
@@ -149,7 +149,6 @@ export function useFetchData(apiKey, type = 'torrents') {
       resetPollTimer();
 
       return fetchDownloadsForView(apiKey, type, {
-        bypassCache,
         skipLoading: true,
         manualRefresh: true,
       });
@@ -157,8 +156,8 @@ export function useFetchData(apiKey, type = 'torrents') {
   }, [type, apiKey, markRateLimited]);
 
   const handlePoll = useCallback(
-    (assetType, bypassCache = false) => {
-      fetchDownloadType(apiKey, assetType, type, { bypassCache, skipLoading: true });
+    (assetType) => {
+      fetchDownloadType(apiKey, assetType, type, { skipLoading: true });
     },
     [apiKey, type]
   );

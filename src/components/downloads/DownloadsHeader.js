@@ -48,7 +48,7 @@ export default function DownloadsHeader({
             pollSchedule={pollSchedule}
             isRefreshing={isRefreshing}
             refreshRateLimited={!canManualRefresh}
-            onRefreshNow={() => fetchItems(true)}
+            onRefreshNow={() => fetchItems()}
           />
         )}
       </div>
@@ -56,7 +56,7 @@ export default function DownloadsHeader({
       <FetchStatusBanner
         error={fetchError}
         onDismissError={dismissError}
-        onRetry={() => fetchItems(true)}
+        onRetry={() => fetchItems()}
         lastSuccessfulFetchAt={lastSuccessfulFetchAt}
         refreshBlockedReason={refreshBlockedReason}
         pollingPaused={pollingPaused}

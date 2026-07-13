@@ -37,7 +37,6 @@ import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext
 import { useDownloadsContext } from '@/components/downloads/DownloadsContext';
 import { isItemProtected } from '@/utils/downloadProtectionUtils';
 import { isQueuedItem } from '@/utils/utility';
-import { fetchDownloadType } from '@/store/torboxDownloadsFetch';
 import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
 
@@ -428,11 +427,9 @@ export default function ActionButtons({
     let successCount = 0;
     let failCount = 0;
     let limitReachedCount = 0;
-    const affectedUiAssetTypes = new Set();
 
     results.forEach((result, index) => {
       const { uiAssetType } = items[index];
-      affectedUiAssetTypes.add(uiAssetType);
       if (result.status === 'fulfilled') {
         successCount++;
       } else {
@@ -476,16 +473,6 @@ export default function ActionButtons({
         type: 'error',
       });
     }
-
-    await Promise.all(
-      Array.from(affectedUiAssetTypes).map((uiAssetType) =>
-        fetchDownloadType(apiKey, uiAssetType, activeType, {
-          bypassCache: true,
-          skipLoading: true,
-          forMutation: true,
-        })
-      )
-    );
 
     setBulkAirlockPendingAction(null);
   };

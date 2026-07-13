@@ -9,7 +9,7 @@ import { usePollTimer } from './usePollTimer';
  * @param {Object} options
  * @param {string} options.type - Active view type: torrents | usenet | webdl | all
  * @param {boolean} options.pollingPaused - True when any pause reason is active
- * @param {(assetType: string, bypassCache?: boolean) => void | Promise<void>} options.onPoll - Per-type fetch
+ * @param {(assetType: string) => void | Promise<void>} options.onPoll - Per-type fetch
  * @param {(assetType?: string) => boolean} options.isRateLimited
  * @param {() => void} [options.onPollSkipped] - Called when a tick is skipped due to rate limiting
  * @param {boolean} [options.workerBackedAutoStart] - SharedWorker owns background auto-start
