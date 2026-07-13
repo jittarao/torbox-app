@@ -65,14 +65,45 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 
 ### Environment Variables
 
-| Variable                 | Description                                                                                                   | Default                 | Required |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------- | -------- |
-| `BACKEND_URL`            | URL of the backend API server                                                                                 | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED`       | Disable backend usage (set to `true`/`false`)                                                                 | `false`                 | No       |
-| `SEARCH_PAGE_DISABLED`   | Hide the search page and top-nav link (`true`/`1`/`yes`)                                                      | `false`                 | No       |
-| `FFPROBE_PATH`           | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                | —                       | No       |
-| `FFPROBE_AUTO_DIR`       | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                | `<project>/.ffprobe`    | No       |
-| `BACKEND_SERVICE_SECRET` | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout)) | unset                   | No       |
+| Variable                              | Description                                                                                                   | Default                 | Required |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------- | -------- |
+| `BACKEND_URL`                         | URL of the backend API server                                                                                 | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED`                    | Disable backend usage (set to `true`/`false`)                                                                 | `false`                 | No       |
+| `SEARCH_PAGE_DISABLED`                | Hide the search page and top-nav link (`true`/`1`/`yes`)                                                      | `false`                 | No       |
+| `FFPROBE_PATH`                        | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                | —                       | No       |
+| `FFPROBE_AUTO_DIR`                    | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                | `<project>/.ffprobe`    | No       |
+| `DOWNLOAD_SYNC_CACHE_TTL_MS`          | In-memory download list cache eviction when a user/type has no requests for this long (ms).                   | `1800000` (30 min)      | No       |
+| `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` | Minimum interval between background full reconciles for multi-page catalogs (ms).                             | `300000` (5 min)        | No       |
+| `DOWNLOAD_SYNC_RECONCILE_JITTER_MS`   | Per-user/type jitter added to reconcile interval (ms).                                                        | `60000` (1 min)         | No       |
+| `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`  | Min interval between TorBox shallow refreshes per user/type (ms); stale reads block until refresh completes.  | `10000` (10 s)          | No       |
+| `BACKEND_SERVICE_SECRET`              | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout)) | unset                   | No       |
+
+### Download list sync
+
+The downloads page syncs torrent, Usenet, and WebDL lists through Next.js (`src/app/api/lib/downloadListSync.js`), not the optional backend.
+
+**Behavior:**
+
+| When                                                  | What happens                                                                                   |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| First visit (no cache)                                | Blocking full paginated TorBox fetch → gzip snapshot + `x-list-rev`                            |
+| Poll with current `rev` (cache fresh)                 | `304 Not Modified` (no body); no TorBox call                                                   |
+| Poll with current `rev` (cache stale ≥10s)            | Blocking shallow TorBox refresh, then `304` or delta in the same response                      |
+| Poll with stale `rev`                                 | Delta when rev history allows; otherwise cached full snapshot; stale cache blocks on shallow   |
+| Manual refresh (`bypass-cache: true`)                 | Blocking foreground shallow refresh (+ full reconcile if multi-page interval due)              |
+| Post-mutation reconcile (`x-force-list-sync: true`)   | Forces shallow refresh even if cache fresh; `304`/delta aware (not full body when rev matches) |
+| Active polling, &lt;1000 regular items                | Shallow replaces catalog from page 0 + queued; no periodic full reconcile                      |
+| Active polling, ≥1000 regular items                   | Shallow patch only; full reconcile ~every 5 min (on interval due or cache miss)                |
+| Successful DELETE via app                             | Known IDs removed from cache and rev bumped; multi-page types schedule reconcile ~30s later    |
+| Cache unused longer than `DOWNLOAD_SYNC_CACHE_TTL_MS` | Entry evicted; next request is a full reconcile                                                |
+
+**Idle vs active:** Stale reads block on a coalesced TorBox shallow refresh when `lastShallowPollAt` is older than `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`. Multiple tabs share one refresh per user/type per window. Re-engage after idle uses normal polling (not `bypass-cache`); the first stale poll may block briefly on shallow refresh.
+
+**Multi-instance:** The sync cache is in-process memory on the Next.js server. Single-container / single-replica Compose is the supported layout. Multiple frontend replicas without a shared cache are not supported.
+
+**Debugging:** Responses include `x-list-rev`, `x-sync-item-count`, and `x-sync-mode` (`full`, `shallow`, `stale-full`, `delta`, `unchanged`). Bodies are gzip JSON `{ success, data, rev }` (or `{ delta: true, ... }` for deltas). Server logs tag full reconciles with `[downloadListSync]`.
+
+**Tuning:** Optional `DOWNLOAD_SYNC_*` variables (table above). Restart the **frontend** container/process after changes. `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` applies only to types with **≥1000 regular** `mylist` rows. `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS` controls TorBox shallow poll deduplication across tabs.
 
 ### Backend
 
@@ -286,6 +317,12 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 # Optional: ffprobe for audiobook chapter extraction (frontend container)
 # FFPROBE_AUTO_DIR=/tmp/.ffprobe
 # FFPROBE_PATH=/usr/bin/ffprobe
+
+# Optional: download list sync tuning (frontend — see DEPLOYMENT.md#download-list-sync)
+# DOWNLOAD_SYNC_CACHE_TTL_MS=1800000
+# DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS=300000
+# DOWNLOAD_SYNC_RECONCILE_JITTER_MS=60000
+# DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS=10000
 
 # Optional: upload retention quotas (backend — LIMITED tier users)
 # UPLOAD_LIMIT_MAX_STORAGE_MB=100

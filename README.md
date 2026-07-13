@@ -9,6 +9,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 - **Batch Upload**: Upload multiple torrent or NZB files and supported hoster or magnet links with a single click
 - **Smart Downloads**: Cherry-pick specific files across multiple torrents
 - **Multi-Format Support**: Manage torrents, Usenet (NZB), and web downloads all in one interface
+- **Efficient list sync**: Hybrid server-side cache — full paginated sync when a type has ≥1000 regular downloads; smaller libraries use complete page-0 polls every 15s without periodic full rescans
 - **TorBox Airlock**: Lock or unlock downloads, filter by airlock state, and automate with rules
 - **File Selection**: Selectively download individual files from torrents
 - **Download History**: Track and manage your download links with expiration tracking
@@ -95,6 +96,19 @@ For production, expose **only the Next.js app** (port 3000) via your reverse pro
 
 See [DEPLOYMENT.md — Backend authentication & network layout](DEPLOYMENT.md#backend-authentication--network-layout) for details.
 
+### Download list sync
+
+Torrent, Usenet, and WebDL lists are synced through Next.js API routes (`/api/torrents`, `/api/usenet`, `/api/webdl`) with a **rev-tagged server-side cache** (`src/app/api/lib/downloadListSync.js`):
+
+- **First visit** — full paginated TorBox fetch; response is a gzip snapshot with monotonic `rev`.
+- **Polling (15s)** — client sends `?rev=N`; unchanged lists return `304`; stale cache blocks on shallow refresh (~10s freshness window, shared across tabs); stale rev may return delta or cached snapshot.
+- **Manual refresh** — `bypass-cache: true` forces a blocking foreground refresh from TorBox.
+- **Post-mutation** — `x-force-list-sync: true` forces shallow refresh while respecting `?rev=` (`304`/delta when possible).
+- **Multi-page catalogs (≥1000 regular items)** — shallow page-0 patches between periodic full reconciles (~5 min).
+- **DELETE** — trusted cache patch removes known IDs and bumps `rev`.
+
+The browser Zustand store merges full snapshots with structural sharing (`src/utils/downloadListMerge.js`). See [DEPLOYMENT.md — Download list sync](DEPLOYMENT.md#download-list-sync) for operator tuning (`DOWNLOAD_SYNC_*` env vars).
+
 ### API Key Setup
 
 1. Get your API key from [torbox.app/settings](https://torbox.app/settings)
@@ -140,6 +154,7 @@ torbox-app/
 │   ├── app/              # Next.js app router pages
 │   │   ├── [locale]/     # Internationalized routes
 │   │   └── api/          # API route handlers
+│   │       └── lib/      # Shared API helpers (downloadListSync, torboxFetch, …)
 │   ├── components/       # React components
 │   │   ├── downloads/      # Download management components
 │   ├── contexts/         # React contexts
