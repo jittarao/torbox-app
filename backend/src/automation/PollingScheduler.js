@@ -889,7 +889,7 @@ class PollingScheduler {
         ruleId,
         errorMessage: error.message,
       });
-      return false;
+      throw error;
     } finally {
       if (authId && this.userDatabaseManager) {
         this.userDatabaseManager.releaseConnection(authId);
@@ -1008,13 +1008,14 @@ class PollingScheduler {
     const userInfo = this.masterDb.getUserRegistryInfo(authId);
     if (!userInfo?.encrypted_key) {
       logger.warn('runActionBatch: no encrypted_key for user', { authId });
-      return;
+      throw new Error('runActionBatch: no encrypted_key for user');
     }
 
     const mutex = this.getActionBatchMutex(authId);
     await mutex.acquire();
+    let engine = null;
     try {
-      const engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
+      engine = await this.createEngineForPoll(authId, userInfo.encrypted_key);
       const actionBatchTimeoutMs = Math.max(
         1000,
         parseInt(process.env.ACTION_BATCH_TIMEOUT_MS || String(this.pollKickoutMs), 10)
@@ -1042,7 +1043,6 @@ class PollingScheduler {
           errorCount === 0 && protectedSkippedCount === 0,
           buildRuleExecutionMessage(batchResult)
         );
-        await engine.ruleRepository.updateLastEvaluatedAt(rule.id);
         cache.invalidateRecentRuleExecutions(authId);
         if (isTagActionType(rule.action?.type)) {
           notifyTagsChanged({ eventNotifier: this.eventNotifier }, authId);
@@ -1058,6 +1058,17 @@ class PollingScheduler {
       });
       throw error;
     } finally {
+      if (engine && rule.id != null) {
+        try {
+          await engine.ruleRepository.updateLastEvaluatedAt(rule.id);
+        } catch (updateError) {
+          logger.debug('Failed to update last_evaluated_at after action batch (non-critical)', {
+            authId,
+            ruleId: rule.id,
+            errorMessage: updateError.message,
+          });
+        }
+      }
       mutex.release();
       if (mutex.isEmpty()) {
         this.actionBatchMutexes.delete(authId);
