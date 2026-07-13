@@ -242,10 +242,23 @@ class GlobalActionQueue {
 
           const ruleId = merged.rule?.id ?? null;
           if (ruleId != null) {
-            const stillEnabled = await this.scheduler.isAutomationRuleEnabled(
-              merged.authId,
-              ruleId
-            );
+            let stillEnabled;
+            try {
+              stillEnabled = await this.scheduler.isAutomationRuleEnabled(merged.authId, ruleId);
+            } catch (err) {
+              const deferUntil = Date.now() + ACTION_RETRY_BACKOFF_BASE_MS;
+              logger.warn('Deferring pending action batch — could not verify rule enabled state', {
+                authId: merged.authId,
+                ruleId,
+                errorMessage: err.message,
+                nextRetryInMs: ACTION_RETRY_BACKOFF_BASE_MS,
+              });
+              for (const item of sameRule) {
+                item._deferDrainUntil = deferUntil;
+              }
+              this.pending.push(...sameRule);
+              continue;
+            }
             if (!stillEnabled) {
               logger.info('Skipping pending action batch — rule is disabled', {
                 authId: merged.authId,

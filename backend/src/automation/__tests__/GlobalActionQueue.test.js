@@ -146,6 +146,38 @@ describe('GlobalActionQueue', () => {
     expect(queue.pending).toHaveLength(1);
   });
 
+  it('defers pending action batch when enabled-state check throws', async () => {
+    const authId = 'f0'.repeat(32);
+    let batchRan = false;
+    let deleteCalled = false;
+
+    scheduler.isAutomationRuleEnabled = async () => {
+      throw new Error('db locked');
+    };
+    scheduler.masterDb.deletePendingAction = () => {
+      deleteCalled = true;
+    };
+    scheduler.runActionBatch = async () => {
+      batchRan = true;
+    };
+
+    queue.pending = [
+      {
+        authId,
+        rule: { id: 55, name: 'enabled-rule' },
+        torrentsToProcess: [{ id: 't55' }],
+        pendingId: 55,
+      },
+    ];
+
+    await queue.drain();
+
+    expect(batchRan).toBe(false);
+    expect(deleteCalled).toBe(false);
+    expect(queue.pending).toHaveLength(1);
+    expect(queue.pending[0]._deferDrainUntil).toBeGreaterThan(Date.now());
+  });
+
   it('skips pending action batch when rule is disabled', async () => {
     const authId = 'f'.repeat(64);
     let batchRan = false;
