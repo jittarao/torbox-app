@@ -24,7 +24,7 @@ describe('RuleFilter', () => {
   });
 
   describe('filterForAddTag', () => {
-    it('uses preloaded tags and skips torrents that already have all tags', async () => {
+    it('loads tags from DB and skips torrents that already have all tags', async () => {
       const torrents = [
         { id: '1', name: 'has tags' },
         { id: '2', name: 'missing tags' },
@@ -35,14 +35,35 @@ describe('RuleFilter', () => {
       ]);
       const action = { type: 'add_tag', tagIds: [1, 2] };
 
+      mockUserDb.prepare = mock((query) => ({
+        all: mock(() =>
+          [...tagsByDownloadId.entries()].flatMap(([downloadId, tagIds]) =>
+            tagIds.map((tagId) => ({ download_id: downloadId, tag_id: tagId }))
+          )
+        ),
+      }));
+
       const result = await ruleFilter.filterForAddTag(torrents, action, { tagsByDownloadId });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('2');
-      expect(getUserDb).not.toHaveBeenCalled();
+      expect(getUserDb).toHaveBeenCalled();
     });
 
-    it('falls back to DB when preloaded tag map is empty', async () => {
+    it('treats string and numeric tag ids as equivalent when skipping already-tagged torrents', async () => {
+      const torrents = [{ id: '1', name: 'has tags' }];
+      const action = { type: 'add_tag', tagIds: [1] };
+
+      mockUserDb.prepare = mock(() => ({
+        all: mock(() => [{ download_id: '1', tag_id: '1' }]),
+      }));
+
+      const result = await ruleFilter.filterForAddTag(torrents, action);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('queries DB when preloaded tag map is empty', async () => {
       const torrents = [{ id: '1', name: 'torrent' }];
       const action = { type: 'add_tag', tagIds: [1] };
 
@@ -53,7 +74,7 @@ describe('RuleFilter', () => {
   });
 
   describe('filterForRemoveTag', () => {
-    it('uses preloaded tags and skips torrents without any target tag', async () => {
+    it('loads tags from DB and keeps torrents that have a target tag', async () => {
       const torrents = [
         { id: '1', name: 'has tag' },
         { id: '2', name: 'no tag' },
@@ -64,14 +85,22 @@ describe('RuleFilter', () => {
       ]);
       const action = { type: 'remove_tag', tagIds: [1] };
 
+      mockUserDb.prepare = mock(() => ({
+        all: mock(() =>
+          [...tagsByDownloadId.entries()].flatMap(([downloadId, tagIds]) =>
+            tagIds.map((tagId) => ({ download_id: downloadId, tag_id: tagId }))
+          )
+        ),
+      }));
+
       const result = await ruleFilter.filterForRemoveTag(torrents, action, { tagsByDownloadId });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('1');
-      expect(getUserDb).not.toHaveBeenCalled();
+      expect(getUserDb).toHaveBeenCalled();
     });
 
-    it('falls back to DB when preloaded tag map is empty', async () => {
+    it('queries DB when preloaded tag map is empty', async () => {
       const torrents = [{ id: '1', name: 'torrent' }];
       const action = { type: 'remove_tag', tagIds: [1] };
 

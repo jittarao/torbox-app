@@ -26,6 +26,7 @@ describe('PollingScheduler.runActionBatch tag notifications', () => {
       },
     });
     scheduler._teardownEngineForAuth = () => {};
+    scheduler.isAutomationRuleEnabled = async () => true;
   });
 
   it('emits tags_changed after successful add_tag batch', async () => {
@@ -48,14 +49,17 @@ describe('PollingScheduler.runActionBatch tag notifications', () => {
     expect(notify).not.toHaveBeenCalled();
   });
 
-  it('does not emit tags_changed when all actions failed', async () => {
+  it('updates last_evaluated_at even when all actions failed', async () => {
+    let updatedRuleId = null;
     scheduler.createEngineForPoll = async () => ({
       ruleExecutor: {
         executeActions: async () => ({ successCount: 0, errorCount: 1 }),
       },
       ruleRepository: {
         recordExecution: async () => {},
-        updateLastEvaluatedAt: async () => {},
+        updateLastEvaluatedAt: async (ruleId) => {
+          updatedRuleId = ruleId;
+        },
       },
     });
 
@@ -65,6 +69,7 @@ describe('PollingScheduler.runActionBatch tag notifications', () => {
       torrentsToProcess: [{ id: '10' }],
     });
 
+    expect(updatedRuleId).toBe(3);
     expect(notify).not.toHaveBeenCalled();
   });
 });

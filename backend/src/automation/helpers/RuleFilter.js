@@ -53,16 +53,26 @@ class RuleFilter {
   }
 
   /**
-   * Resolve tags map: use preloaded tags from RuleEvaluator when available;
-   * fall back to a per-rule DB query when the evaluator did not load tags.
-   * @param {Array} matchingTorrents
-   * @param {Object} [options]
-   * @returns {Promise<Map<string, number[]>>}
+   * Normalize tag ids for stable Set membership (SQLite may return strings).
+   * @param {Array<number|string>} tagIds
+   * @returns {Set<number>}
    */
-  async _resolveTags(matchingTorrents, options = {}) {
-    return options.tagsByDownloadId && options.tagsByDownloadId.size > 0
-      ? options.tagsByDownloadId
-      : await this._buildTagsByDownloadId(matchingTorrents);
+  _normalizeTagIdSet(tagIds) {
+    return new Set((tagIds || []).map((id) => Number(id)));
+  }
+
+  /**
+   * @param {Set<number>} existingTagIds
+   * @param {Set<number>} targetTagIds
+   * @returns {boolean}
+   */
+  _hasAllTargetTags(existingTagIds, targetTagIds) {
+    for (const tagId of targetTagIds) {
+      if (!existingTagIds.has(tagId)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -77,8 +87,9 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    const tagsByDownloadId = await this._resolveTags(matchingTorrents, options);
-    const targetTagIds = new Set(action.tagIds);
+    // Always load tags for matching torrents — batch preloads can be stale or keyed differently.
+    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
+    const targetTagIds = this._normalizeTagIdSet(action.tagIds);
     const filtered = matchingTorrents.filter((torrent) => {
       const downloadId =
         torrent.id?.toString() ||
@@ -89,8 +100,8 @@ class RuleFilter {
         return true;
       }
 
-      const existingTagIds = new Set(tagsByDownloadId.get(downloadId) || []);
-      const hasAllTags = Array.from(targetTagIds).every((tagId) => existingTagIds.has(tagId));
+      const existingTagIds = this._normalizeTagIdSet(tagsByDownloadId.get(downloadId) || []);
+      const hasAllTags = this._hasAllTargetTags(existingTagIds, targetTagIds);
 
       if (hasAllTags) {
         logger.debug('Skipping torrent - already has all tags', {
@@ -124,8 +135,8 @@ class RuleFilter {
       return matchingTorrents;
     }
 
-    const tagsByDownloadId = await this._resolveTags(matchingTorrents, options);
-    const targetTagIds = new Set(action.tagIds);
+    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
+    const targetTagIds = this._normalizeTagIdSet(action.tagIds);
     const filtered = matchingTorrents.filter((torrent) => {
       const downloadId =
         torrent.id?.toString() ||
@@ -136,8 +147,8 @@ class RuleFilter {
         return true;
       }
 
-      const existingTagIds = new Set(tagsByDownloadId.get(downloadId) || []);
-      const hasAnyTag = Array.from(targetTagIds).some((tagId) => existingTagIds.has(tagId));
+      const existingTagIds = this._normalizeTagIdSet(tagsByDownloadId.get(downloadId) || []);
+      const hasAnyTag = [...targetTagIds].some((tagId) => existingTagIds.has(tagId));
 
       if (!hasAnyTag) {
         logger.debug('Skipping torrent - does not have any tags to remove', {

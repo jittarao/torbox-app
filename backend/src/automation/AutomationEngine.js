@@ -603,7 +603,9 @@ class AutomationEngine {
             sharedMaps,
             ruleEvaluator
           );
-          if (result.ruleId != null && !result.pendingAction) {
+          // Update last_evaluated_at for every rule that was evaluated (including queued actions)
+          // so interval gating stays per-rule and we do not re-queue identical batches every poll.
+          if (result.ruleId != null) {
             evaluatedRuleIdsNoAction.push(result.ruleId);
           }
           if (result.executed) {
@@ -624,7 +626,6 @@ class AutomationEngine {
     const workerCount = Math.min(concurrency, enabledRules.length);
     await Promise.all(Array.from({ length: workerCount }, worker));
 
-    // Rules that queued actions update last_evaluated_at after successful TorBox execution (runActionBatch).
     if (evaluatedRuleIdsNoAction.length > 0) {
       await this.ruleRepository.batchUpdateLastEvaluatedAt(evaluatedRuleIdsNoAction);
     }
