@@ -2,12 +2,19 @@
 
 import { NON_RETRYABLE_ERRORS } from '@/config/errors';
 import { retryFetch } from '@/utils/retryFetch';
+import { scheduleForceStartReconcile } from '@/store/downloadListReconcile';
 import {
   controlTorrent as controlTorrentAction,
   controlQueuedItem as controlQueuedItemAction,
   resolveAssetTypeForItem,
   uploadItem as uploadItemAction,
 } from '@/utils/uploadActions';
+
+function reconcileAssetTypeForUpload(assetType) {
+  if (assetType === 'usenet') return 'usenet';
+  if (assetType === 'webdl') return 'webdl';
+  return 'torrents';
+}
 
 export function useUploadActions(apiKey, queue) {
   const {
@@ -105,6 +112,7 @@ export function useUploadActions(apiKey, queue) {
     };
 
     const BATCH_THRESHOLD = 10;
+    let uploadedCount = 0;
 
     if (pendingItems.length >= BATCH_THRESHOLD) {
       pendingItems.forEach((item) => {
@@ -118,6 +126,7 @@ export function useUploadActions(apiKey, queue) {
       const errors = responseData?.errors || [];
 
       if (result.success && uploads.length > 0) {
+        uploadedCount = uploads.length;
         pendingItems.forEach((item, index) => {
           const idx = getItemIndex(item);
           if (uploads[index]) {
@@ -143,6 +152,7 @@ export function useUploadActions(apiKey, queue) {
             uploadMap.set(matchingItem, upload);
           }
         });
+        uploadedCount = uploadMap.size;
 
         pendingItems.forEach((item) => {
           const idx = getItemIndex(item);
@@ -181,6 +191,7 @@ export function useUploadActions(apiKey, queue) {
         if (r.status === 'fulfilled' && r.value.success) {
           updateItemStatus(idx, 'success');
           processedCount++;
+          uploadedCount += 1;
         } else {
           const errMsg =
             r.status === 'rejected'
@@ -196,6 +207,10 @@ export function useUploadActions(apiKey, queue) {
     }
 
     setIsUploading(false);
+
+    if (uploadedCount > 0) {
+      scheduleForceStartReconcile(reconcileAssetTypeForUpload(assetType));
+    }
   };
 
   const controlQueuedItem = async (queuedId, operation) =>

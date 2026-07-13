@@ -43,7 +43,6 @@ async function runReconcileFetch(assetTypes) {
 
   for (const assetType of assetTypes) {
     await fetchDownloadType(apiKey, assetType, viewType, {
-      bypassCache: true,
       skipLoading: true,
       forMutation: true,
     });
