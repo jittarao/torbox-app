@@ -1,12 +1,24 @@
-import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
 import { safeJsonParse } from '@/utils/safeJsonParse';
-import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
+import {
+  buildListSyncResponse,
+  handleListSyncRequest,
+  patchCacheRemoveIds,
+} from '@/app/api/lib/downloadListSync';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { queueTorrentUpload } from '@/app/api/lib/queueTorrentUpload';
 import { sanitizeError } from '@/utils/sanitizeError';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+
 const CACHE_TYPE = 'torrents';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+  Vary: 'Authorization, x-api-key',
+};
 
 // Get all torrents
 export async function GET(request) {
@@ -14,92 +26,24 @@ export async function GET(request) {
   if (auth.response) return auth.response;
   const apiKey = auth.apiKey;
   const { searchParams } = new URL(request.url);
-  const delta = searchParams.get('delta') === '1';
-  const cursor = searchParams.get('cursor');
+  const revRaw = searchParams.get('rev');
+  const rev = revRaw != null && revRaw !== '' ? Number(revRaw) : null;
+  const bypassCache = request.headers.get('bypass-cache') === 'true';
+  const forceListSync = request.headers.get('x-force-list-sync') === 'true';
 
   try {
-    // Add timestamp to force cache bypass
-    const timestamp = Date.now();
+    const result = await handleListSyncRequest({
+      apiKey,
+      type: CACHE_TYPE,
+      rev: Number.isInteger(rev) ? rev : null,
+      bypassCache,
+      forceListSync,
+    });
 
-    // Fetch both regular and queued torrents in parallel with timeout
-
-    const [torrentsResponse, queuedResponse] = await Promise.all([
-      torboxFetch(
-        `${API_BASE}/${API_VERSION}/api/torrents/mylist?bypass_cache=true&_t=${timestamp}`,
-        {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          },
-        }
-      ),
-      torboxFetch(
-        `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent&bypass_cache=true&_t=${timestamp}`,
-        {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          },
-        }
-      ),
-    ]);
-
-    const [torrentsData, queuedData] = await Promise.all([
-      torrentsResponse.json(),
-      queuedResponse.json(),
-    ]);
-
-    // Merge the data
-    const mergedData = {
-      success: torrentsData.success && queuedData.success,
-      data: [
-        ...(torrentsData.data || []),
-        ...(queuedData.data || []).map((item) => ({ ...item, status: 'queued' })),
-      ],
-    };
-
-    const cacheHeaders = {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache',
-      Expires: '0',
-      Vary: 'Authorization',
-    };
-
-    if (delta && cursor && apiKey) {
-      const cached = getCached(apiKey, CACHE_TYPE);
-      if (cached) {
-        const deltaResult = computeDelta(cached.data, mergedData.data);
-        const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
-        const payload = {
-          success: mergedData.success,
-          delta: true,
-          data: deltaResult.data,
-          cursor: newCursor,
-        };
-        if (deltaResult.removed.length > 0) {
-          payload.removed = deltaResult.removed;
-        }
-        return Response.json(payload, { headers: cacheHeaders });
-      }
-    }
-
-    if (apiKey) {
-      const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
-      return Response.json({ ...mergedData, cursor: newCursor }, { headers: cacheHeaders });
-    }
-    return Response.json(mergedData, { headers: cacheHeaders });
+    return buildListSyncResponse(result, CACHE_HEADERS);
   } catch (error) {
     console.error('Error fetching torrents:', error);
 
-    // Handle timeout specifically
     if (isTorboxFetchTimeout(error)) {
       return Response.json({ success: false, error: sanitizeError(error) }, { status: 408 });
     }
@@ -134,7 +78,6 @@ export async function DELETE(request) {
     const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
     if (blocked) return blocked;
 
-    // First, fetch the torrent data to determine if it's queued
     const [torrentsResponse, queuedResponse] = await Promise.all([
       torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?id=${id}`, {
         cache: 'no-store',
@@ -157,10 +100,8 @@ export async function DELETE(request) {
       safeJsonParse(queuedResponse),
     ]);
 
-    // Check if the torrent is in the queued list
     const isQueued = queuedData.data?.some((item) => item.id === id);
 
-    // Use appropriate endpoint based on whether torrent is queued
     const endpoint = isQueued
       ? `${API_BASE}/${API_VERSION}/api/queued/controlqueued`
       : `${API_BASE}/${API_VERSION}/api/torrents/controltorrent`;
@@ -207,6 +148,8 @@ export async function DELETE(request) {
         { status: response.status }
       );
     }
+
+    await patchCacheRemoveIds(apiKey, CACHE_TYPE, [id]);
 
     return Response.json(data);
   } catch (error) {

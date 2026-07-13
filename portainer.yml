@@ -15,6 +15,10 @@
 #   UPLOAD_LIMIT_MAX_STORAGE_MB — staged upload storage cap per LIMITED user (default 100)
 #   UPLOAD_LIMIT_MAX_FILES      — staged file count cap per LIMITED user (default 500)
 #   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
+#   DOWNLOAD_SYNC_CACHE_TTL_MS — download list cache eviction when idle (default 1800000)
+#   DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS — background full reconcile interval for multi-page catalogs (default 300000)
+#   DOWNLOAD_SYNC_RECONCILE_JITTER_MS — per-user reconcile jitter (default 60000)
+#   DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS — min interval between background shallow TorBox refreshes per user/type (default 10000)
 #
 # Before first deploy:
 #   1. Create external volume:  docker volume create torbox-backend-data
@@ -93,6 +97,10 @@ services:
       NEXT_PUBLIC_SENTRY_ENABLED: ${SENTRY_ENABLED:-true}
       NEXT_PUBLIC_SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      DOWNLOAD_SYNC_CACHE_TTL_MS: ${DOWNLOAD_SYNC_CACHE_TTL_MS:-}
+      DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS: ${DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS:-}
+      DOWNLOAD_SYNC_RECONCILE_JITTER_MS: ${DOWNLOAD_SYNC_RECONCILE_JITTER_MS:-}
+      DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS: ${DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS:-}
 
     depends_on:
       torbox-backend:

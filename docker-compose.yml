@@ -112,6 +112,11 @@ services:
       - SENTRY_DEBUG=${SENTRY_DEBUG:-}
       - RYBBIT_SITE_ID=${RYBBIT_SITE_ID:-}
       - RYBBIT_SCRIPT_SRC=${RYBBIT_SCRIPT_SRC:-}
+      # Optional: download list sync (see DEPLOYMENT.md#download-list-sync)
+      - DOWNLOAD_SYNC_CACHE_TTL_MS=${DOWNLOAD_SYNC_CACHE_TTL_MS:-}
+      - DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS=${DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS:-}
+      - DOWNLOAD_SYNC_RECONCILE_JITTER_MS=${DOWNLOAD_SYNC_RECONCILE_JITTER_MS:-}
+      - DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS=${DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS:-}
     # Service dependencies: wait for backend to be healthy before starting
     depends_on:
       torbox-backend:
