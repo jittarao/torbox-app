@@ -3,106 +3,48 @@ import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/cons
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 import { safeJsonParse } from '@/utils/safeJsonParse';
-import { getCached, setCached, computeDelta } from '@/app/api/lib/deltaListCache';
+import {
+  buildListSyncResponse,
+  handleListSyncRequest,
+  patchCacheRemoveIds,
+} from '@/app/api/lib/downloadListSync';
+import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { sanitizeError } from '@/utils/sanitizeError';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
+
 const CACHE_TYPE = 'usenet';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+  Vary: 'Authorization, x-api-key',
+};
 
 // Get all usenet downloads
 export async function GET(request) {
-  const headersList = await headers();
-  const apiKey = headersList.get('x-api-key');
+  const auth = await requireTorboxApiKey();
+  if (auth.response) return auth.response;
+  const apiKey = auth.apiKey;
   const { searchParams } = new URL(request.url);
-  const delta = searchParams.get('delta') === '1';
-  const cursor = searchParams.get('cursor');
-
-  if (!apiKey) {
-    return NextResponse.json({ error: 'API key is required' }, { status: 400 });
-  }
+  const revRaw = searchParams.get('rev');
+  const rev = revRaw != null && revRaw !== '' ? Number(revRaw) : null;
+  const bypassCache = request.headers.get('bypass-cache') === 'true';
+  const forceListSync = request.headers.get('x-force-list-sync') === 'true';
 
   try {
-    // Add timestamp to force cache bypass
-    const timestamp = Date.now();
+    const result = await handleListSyncRequest({
+      apiKey,
+      type: CACHE_TYPE,
+      rev: Number.isInteger(rev) ? rev : null,
+      bypassCache,
+      forceListSync,
+    });
 
-    // Fetch both regular and queued usenet downloads in parallel
-    const [downloadsResponse, queuedResponse] = await Promise.all([
-      torboxFetch(
-        `${API_BASE}/${API_VERSION}/api/usenet/mylist?bypass_cache=true&_t=${timestamp}`,
-        {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          },
-        }
-      ),
-      torboxFetch(
-        `${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet&bypass_cache=true&_t=${timestamp}`,
-        {
-          cache: 'no-store',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          },
-        }
-      ),
-    ]);
-
-    if (!downloadsResponse.ok || !queuedResponse.ok) {
-      throw new Error(`API responded with status: ${downloadsResponse.status}`);
-    }
-
-    const [downloadsData, queuedData] = await Promise.all([
-      downloadsResponse.json(),
-      queuedResponse.json(),
-    ]);
-
-    // Merge the data
-    const mergedData = {
-      success: downloadsData.success && queuedData.success,
-      data: [
-        ...(downloadsData.data || []),
-        ...(queuedData.data || []).map((item) => ({ ...item, status: 'queued' })),
-      ],
-    };
-
-    const cacheHeaders = {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache',
-      Expires: '0',
-      Vary: 'Authorization',
-    };
-
-    if (delta && cursor) {
-      const cached = getCached(apiKey, CACHE_TYPE);
-      if (cached) {
-        const deltaResult = computeDelta(cached.data, mergedData.data);
-        const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
-        const payload = {
-          success: mergedData.success,
-          delta: true,
-          data: deltaResult.data,
-          cursor: newCursor,
-        };
-        if (deltaResult.removed.length > 0) {
-          payload.removed = deltaResult.removed;
-        }
-        return NextResponse.json(payload, { headers: cacheHeaders });
-      }
-    }
-
-    const newCursor = setCached(apiKey, CACHE_TYPE, mergedData.data);
-    return NextResponse.json({ ...mergedData, cursor: newCursor }, { headers: cacheHeaders });
+    return buildListSyncResponse(result, CACHE_HEADERS);
   } catch (error) {
     console.error('Error fetching usenet data:', error);
 
-    // Provide more specific error messages based on the error type
     let errorMessage = 'Failed to fetch usenet data';
     let statusCode = 500;
 
@@ -341,6 +283,8 @@ export async function DELETE(request) {
         { status: response.status }
       );
     }
+
+    await patchCacheRemoveIds(apiKey, CACHE_TYPE, [id]);
 
     return Response.json(data);
   } catch (error) {

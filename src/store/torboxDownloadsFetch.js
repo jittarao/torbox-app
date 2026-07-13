@@ -9,7 +9,7 @@ import { getListKeyForAssetType } from '@/store/torboxDownloadsSelectors';
 import { resetPollTimer } from '@/store/pollTimerReset';
 import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
 import {
-  deltaCursorRef,
+  listRevRef,
   getRateLimiter,
   prevApiKeyRef,
   abortStaleFetch,
@@ -100,21 +100,25 @@ function handleFetchError(
 /**
  * Fetch one asset type from TorBox API and update the store.
  *
+ * List sync headers (mutually exclusive):
+ * - manualRefresh | forceBypassCache → bypass-cache (blocking foreground refresh; manual UI or cache invalidation retry)
+ * - forMutation → x-force-list-sync (post-mutation shallow refresh; 304/delta aware)
+ *
  * @param {string} apiKey
  * @param {'torrents' | 'usenet' | 'webdl'} activeType
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType — active UI tab (poll scope + errors)
- * @param {{ bypassCache?: boolean, retryCount?: number, skipLoading?: boolean, manualRefresh?: boolean, forMutation?: boolean, mutationRetried?: boolean }} [options]
+ * @param {{ retryCount?: number, skipLoading?: boolean, manualRefresh?: boolean, forMutation?: boolean, forceBypassCache?: boolean, mutationRetried?: boolean }} [options]
  */
 export async function fetchDownloadType(
   apiKey,
   activeType,
   viewType,
   {
-    bypassCache = false,
     retryCount = 0,
     skipLoading = false,
     manualRefresh = false,
     forMutation = false,
+    forceBypassCache = false,
     mutationRetried = false,
   } = {}
 ) {
@@ -145,11 +149,11 @@ export async function fetchDownloadType(
     if (forMutation && !mutationRetried) {
       await new Promise((resolve) => setTimeout(resolve, POLLING_CONFIG.minIntervalBetweenCallsMs));
       return fetchDownloadType(apiKey, activeType, viewType, {
-        bypassCache,
         retryCount,
         skipLoading,
         manualRefresh,
         forMutation,
+        forceBypassCache,
         mutationRetried: true,
       });
     }
@@ -183,9 +187,9 @@ export async function fetchDownloadType(
     default:
       endpoint = '/api/torrents';
   }
-  const cursor = deltaCursorRef.current[activeType];
-  if (cursor) {
-    endpoint += `?delta=1&cursor=${encodeURIComponent(cursor)}`;
+  const rev = listRevRef.current[activeType];
+  if (rev != null) {
+    endpoint += `?rev=${encodeURIComponent(rev)}`;
   }
 
   try {
@@ -197,14 +201,47 @@ export async function fetchDownloadType(
     const signal = abortStaleFetch(activeType);
 
     perfMonitor.startTimer(`fetch-${activeType}`);
+    const useBypassCache = manualRefresh || forceBypassCache;
     const response = await fetch(endpoint, {
       signal,
       headers: {
         'x-api-key': apiKey,
-        ...(bypassCache && { 'bypass-cache': 'true' }),
+        ...(useBypassCache && { 'bypass-cache': 'true' }),
+        ...(!useBypassCache && forMutation && { 'x-force-list-sync': 'true' }),
         'Cache-Control': 'no-cache',
       },
     });
+
+    if (response.status === 304) {
+      const revHeader = response.headers.get('x-list-rev');
+      if (revHeader != null && revHeader !== '') {
+        listRevRef.current[activeType] = Number(revHeader);
+      }
+
+      perfMonitor.endTimer(`fetch-${activeType}`);
+
+      if (!isLatestFetch() || signal.aborted) {
+        finishFetchFlags();
+        return [];
+      }
+
+      const assetType =
+        activeType === 'usenet' ? 'usenet' : activeType === 'webdl' ? 'webdl' : 'torrents';
+      const listKey = getListKeyForAssetType(assetType);
+      const torboxState = useTorboxDownloadsStore.getState();
+      const orderKeys = torboxState.order[listKey] || [];
+      const sortedItems = orderKeys.map((key) => torboxState.entities[key]).filter(Boolean);
+
+      if (affectsCurrentView(activeType, viewType)) {
+        store.setError(null);
+        store.markFetchSuccess();
+        syncCanManualRefresh(viewType);
+        resetPollTimer();
+      }
+
+      finishFetchFlags();
+      return sortedItems;
+    }
 
     if (!response.ok) {
       let errorData = {};
@@ -249,17 +286,22 @@ export async function fetchDownloadType(
 
     perfMonitor.endTimer(`fetch-${activeType}`);
 
-    if (data.success && data.data && Array.isArray(data.data)) {
-      if (!validateUserData(data.data, apiKey)) {
+    const isDeltaPayload = data.success && data.delta === true;
+    const isFullPayload = data.success && data.data && Array.isArray(data.data);
+
+    if (isDeltaPayload || isFullPayload) {
+      const payloadData = isDeltaPayload ? (Array.isArray(data.data) ? data.data : []) : data.data;
+
+      if (!validateUserData(payloadData, apiKey)) {
         console.warn(
           `Invalid user data detected (attempt ${retryCount + 1}/2), retrying with cache bypass`
         );
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return fetchDownloadType(apiKey, activeType, viewType, {
-          bypassCache: true,
           retryCount: retryCount + 1,
           skipLoading,
           manualRefresh,
+          forceBypassCache: true,
         });
       }
 
@@ -273,17 +315,23 @@ export async function fetchDownloadType(
         torboxState.entities,
         prevOrder,
         {
-          delta: data.delta === true,
-          data: data.data,
-          removed: data.removed,
+          delta: isDeltaPayload,
+          data: payloadData,
+          ...(isDeltaPayload && { removed: data.removed }),
         },
         assetType
       );
 
       const sortedItems = orderKeys.map((key) => entities[key]).filter(Boolean);
 
-      if (data.cursor) {
-        deltaCursorRef.current[activeType] = data.cursor;
+      const nextRev =
+        data.rev ??
+        (() => {
+          const revHeader = response.headers.get('x-list-rev');
+          return revHeader != null && revHeader !== '' ? Number(revHeader) : null;
+        })();
+      if (nextRev != null && Number.isInteger(nextRev)) {
+        listRevRef.current[activeType] = nextRev;
       }
 
       if (!isLatestFetch() || signal.aborted) {
@@ -350,12 +398,12 @@ export async function fetchDownloadType(
 /**
  * @param {string} apiKey
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} viewType
- * @param {{ bypassCache?: boolean, skipLoading?: boolean, manualRefresh?: boolean }} [options]
+ * @param {{ skipLoading?: boolean, manualRefresh?: boolean, retryCount?: number }} [options]
  */
 export async function fetchDownloadsForView(
   apiKey,
   viewType,
-  { bypassCache = false, skipLoading = false, retryCount = 0, manualRefresh = false } = {}
+  { skipLoading = false, retryCount = 0, manualRefresh = false } = {}
 ) {
   const store = useTorboxDownloadsStore.getState();
 
@@ -369,19 +417,19 @@ export async function fetchDownloadsForView(
     try {
       const results = await Promise.allSettled([
         fetchDownloadType(apiKey, 'torrents', viewType, {
-          bypassCache,
           retryCount,
           skipLoading: true,
+          manualRefresh,
         }),
         fetchDownloadType(apiKey, 'usenet', viewType, {
-          bypassCache,
           retryCount,
           skipLoading: true,
+          manualRefresh,
         }),
         fetchDownloadType(apiKey, 'webdl', viewType, {
-          bypassCache,
           retryCount,
           skipLoading: true,
+          manualRefresh,
         }),
       ]);
 
@@ -398,7 +446,6 @@ export async function fetchDownloadsForView(
 
   const activeType = viewType === 'usenet' ? 'usenet' : viewType === 'webdl' ? 'webdl' : 'torrents';
   return fetchDownloadType(apiKey, activeType, viewType, {
-    bypassCache,
     retryCount,
     skipLoading,
     manualRefresh,

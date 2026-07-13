@@ -4,13 +4,13 @@ import { createDownloadFetchRateLimiter } from '@/components/shared/hooks/downlo
  * Imperative refs for download-sync async flow.
  * These are intentionally module-level (not Zustand):
  *   1. AbortControllers are DOM APIs — not serializable, can't go in Zustand.
- *   2. Delta cursors & in-progress flags are read/written in deep async callbacks
+ *   2. List revs & in-progress flags are read/written in deep async callbacks
  *      across multiple render cycles — ref semantics (no re-render) are correct.
  *   3. Rate limiter is a singleton utility instance, not state.
  * Moving them to Zustand would require getState()/setState() in every async path
  * without gaining re-render value (no component subscribes to these directly).
  */
-export const deltaCursorRef = { current: { torrents: null, usenet: null, webdl: null } };
+export const listRevRef = { current: { torrents: null, usenet: null, webdl: null } };
 /** @type {{ current: Map<string|number, number> }} queued id → last start attempt timestamp */
 export const processedQueueIdsRef = { current: new Map() };
 /** Active initial-fetch keys: `${apiKey}:${viewType}` — supports concurrent fetches per view. */
@@ -59,7 +59,7 @@ export function abortStaleFetch(activeType) {
 
 export function resetDownloadSyncRefs(apiKey) {
   prevApiKeyRef.current = apiKey;
-  deltaCursorRef.current = { torrents: null, usenet: null, webdl: null };
+  listRevRef.current = { torrents: null, usenet: null, webdl: null };
   for (const type of Object.keys(fetchAbortControllers.current)) {
     const ctrl = fetchAbortControllers.current[type];
     if (ctrl) ctrl.abort();
