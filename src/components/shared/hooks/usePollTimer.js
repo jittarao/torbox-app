@@ -127,7 +127,7 @@ export function usePollTimer({
       );
     };
 
-    const pollAllAssetTypes = (bypassCache) => {
+    const pollAllAssetTypes = () => {
       let anySkipped = false;
       let completed = 0;
 
@@ -144,7 +144,7 @@ export function usePollTimer({
           if (isRateLimitedRef.current(assetType)) {
             anySkipped = true;
           } else {
-            onPollRef.current(assetType, bypassCache);
+            onPollRef.current(assetType);
           }
           finishIfDone();
         };
@@ -159,28 +159,28 @@ export function usePollTimer({
 
     const runImmediateRefresh = () => {
       if (type === 'all') {
-        pollAllAssetTypes(true);
+        pollAllAssetTypes();
         return;
       }
       if (isRateLimitedRef.current(type)) {
         onPollSkippedRef.current?.();
         return;
       }
-      onPollRef.current(type, true);
+      onPollRef.current(type);
     };
 
-    const runPollTick = (bypassCache = false) => {
+    const runPollTick = () => {
       if (type === 'all' && useTorrentOnlyPoll()) {
         if (isRateLimitedRef.current('torrents')) {
           onPollSkippedRef.current?.();
           return;
         }
-        onPollRef.current('torrents', bypassCache);
+        onPollRef.current('torrents');
         return;
       }
 
       if (type === 'all') {
-        pollAllAssetTypes(bypassCache);
+        pollAllAssetTypes();
         return;
       }
 
@@ -188,7 +188,7 @@ export function usePollTimer({
         onPollSkippedRef.current?.();
         return;
       }
-      onPollRef.current(type, bypassCache);
+      onPollRef.current(type);
     };
 
     // SharedWorker for accurate background timing (not clamped by Chrome in hidden tabs)
@@ -216,15 +216,21 @@ export function usePollTimer({
     };
     let tickCount = 0;
 
+    const clearSafetyTimeout = () => {
+      if (safetyTimeoutId) {
+        clearTimeout(safetyTimeoutId);
+        safetyTimeoutId = null;
+      }
+    };
+
     const handlePollTick = () => {
+      clearSafetyTimeout();
       tickCount += 1;
       const tickState = getPollState();
       if (tickState.shouldPoll) {
-        const now = Date.now();
-        const elapsed = now - lastTickTime;
-        const isOverdue = elapsed > tickState.intervalMs * 2;
-        lastTickTime = now;
-        runPollTick(isOverdue);
+        lastTickTime = Date.now();
+        // Poll ticks use rev-based sync; stale reads block on TorBox shallow refresh.
+        runPollTick();
       }
       if (tickState.shouldPoll) {
         scheduleNextPoll(tickState.intervalMs);
@@ -240,13 +246,6 @@ export function usePollTimer({
         }
       };
     }
-
-    const clearSafetyTimeout = () => {
-      if (safetyTimeoutId) {
-        clearTimeout(safetyTimeoutId);
-        safetyTimeoutId = null;
-      }
-    };
 
     const scheduleNextPoll = (delayMs) => {
       if (cancelled) return;

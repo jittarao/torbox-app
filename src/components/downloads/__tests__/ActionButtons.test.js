@@ -79,10 +79,6 @@ mock.module('@/utils/utility', () => ({
   isQueuedItem: (item) => item.download_state === 'is queued' || item.queued === true,
 }));
 
-mock.module('@/store/torboxDownloadsFetch', () => ({
-  fetchDownloadType: () => Promise.resolve([]),
-}));
-
 mock.module('@/utils/uploadActions', () => ({
   controlQueuedItem: () => Promise.resolve({ success: true }),
   controlTorrent: () => Promise.resolve({ success: true }),

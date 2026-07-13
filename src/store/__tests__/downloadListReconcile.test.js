@@ -62,7 +62,6 @@ describe('downloadListReconcile', () => {
 
     expect(fetchDownloadTypeMock).toHaveBeenCalledTimes(1);
     expect(fetchDownloadTypeMock).toHaveBeenCalledWith('test-key', 'torrents', 'torrents', {
-      bypassCache: true,
       skipLoading: true,
       forMutation: true,
     });
