@@ -96,18 +96,6 @@ export function useAutoStartWorker({ apiKey, viewType, pollingPaused }) {
     });
   }, [autoStartApplies]);
 
-  useEffect(() => {
-    if (!autoStartApplies) return;
-
-    const handleVisibility = () => {
-      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
-      scheduleForceStartReconcile('torrents');
-    };
-
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [autoStartApplies]);
-
   const hasWork =
     hasQueuedTorrents ||
     lastResultRef.current.queuedCount > 0 ||
