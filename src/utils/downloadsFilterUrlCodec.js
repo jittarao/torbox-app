@@ -14,12 +14,20 @@ import {
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
+  getTagCombineMode,
+  getTrackerCombineMode,
+  getSourceCombineMode,
   buildTagFilter,
   buildTrackerFilter,
   buildSourceFilter,
   isTrackerOnlyFilter,
   isSourceOnlyFilter,
 } from '@/components/downloads/filters/filterHelpers';
+import {
+  parseSectionCombineModeFromParams,
+  writeSectionCombineModeToParams,
+  clearSectionCombineModeParams,
+} from '@/components/downloads/filters/sidebarCombineMode';
 
 const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
 
@@ -57,6 +65,7 @@ function deleteFilterShortcutParams(params) {
   for (const key of FILTER_SHORTCUT_PARAM_KEYS) {
     params.delete(key);
   }
+  clearSectionCombineModeParams(params);
 }
 
 /**
@@ -123,14 +132,16 @@ export function parseTagIdsFromParams(searchParams) {
 /**
  * @param {URLSearchParams} params
  * @param {number[]} tagIds
+ * @param {'any'|'all'} [combineMode]
  */
-export function writeTagIdsToParams(params, tagIds) {
+export function writeTagIdsToParams(params, tagIds, combineMode) {
   deleteFilterShortcutParams(params);
 
   const ids = (tagIds || []).filter((id) => Number.isFinite(id));
   if (ids.length === 0) return;
   if (ids.length === 1) params.set('tag', String(ids[0]));
   else params.set('tags', ids.join(','));
+  writeSectionCombineModeToParams(params, 'tags', combineMode);
 }
 
 /**
@@ -170,14 +181,16 @@ export function parseViewIdsFromParams(searchParams) {
 /**
  * @param {URLSearchParams} params
  * @param {(number|string)[]} viewIds — order preserved (first view wins for presets)
+ * @param {'any'|'all'} [combineMode]
  */
-export function writeViewIdsToParams(params, viewIds) {
+export function writeViewIdsToParams(params, viewIds, combineMode) {
   deleteFilterShortcutParams(params);
 
   const ids = (viewIds || []).filter((id) => id != null && id !== '');
   if (ids.length === 0) return;
   if (ids.length === 1) params.set('view', String(ids[0]));
   else params.set('views', ids.map(String).join(','));
+  writeSectionCombineModeToParams(params, 'views', combineMode);
 }
 
 /**
@@ -223,14 +236,16 @@ export function parseTrackersFromParams(searchParams) {
 /**
  * @param {URLSearchParams} params
  * @param {string[]} trackerUrls
+ * @param {'any'|'all'} [combineMode]
  */
-export function writeTrackersToParams(params, trackerUrls) {
+export function writeTrackersToParams(params, trackerUrls, combineMode) {
   deleteFilterShortcutParams(params);
 
   const urls = (trackerUrls || []).filter((url) => url != null && String(url).trim() !== '');
   if (urls.length === 0) return;
   if (urls.length === 1) {
     params.set('tracker', urls[0]);
+    writeSectionCombineModeToParams(params, 'trackers', combineMode);
     return;
   }
 
@@ -238,6 +253,7 @@ export function writeTrackersToParams(params, trackerUrls) {
     'trackers',
     urls.map((url) => encodeURIComponent(String(url))).join(SHORTCUT_PARAM_DELIMITER)
   );
+  writeSectionCombineModeToParams(params, 'trackers', combineMode);
 }
 
 /**
@@ -270,14 +286,16 @@ export function parseSourcesFromParams(searchParams) {
 /**
  * @param {URLSearchParams} params
  * @param {string[]} sourceHosts
+ * @param {'any'|'all'} [combineMode]
  */
-export function writeSourcesToParams(params, sourceHosts) {
+export function writeSourcesToParams(params, sourceHosts, combineMode) {
   deleteFilterShortcutParams(params);
 
   const hosts = (sourceHosts || []).filter((host) => host != null && String(host).trim() !== '');
   if (hosts.length === 0) return;
   if (hosts.length === 1) {
     params.set('source', hosts[0]);
+    writeSectionCombineModeToParams(params, 'sources', combineMode);
     return;
   }
 
@@ -285,6 +303,7 @@ export function writeSourcesToParams(params, sourceHosts) {
     'sources',
     hosts.map((host) => encodeURIComponent(String(host))).join(SHORTCUT_PARAM_DELIMITER)
   );
+  writeSectionCombineModeToParams(params, 'sources', combineMode);
 }
 
 /** Clear tag/view/filters shortcut params. */
@@ -449,19 +468,22 @@ export function parseAppliedFiltersFromParams(searchParams, storage = {}) {
   const tagIds = parseTagIdsFromParams(searchParams);
   if (tagIds) {
     if (removeItem && overflowKey) removeItem(overflowKey);
-    return buildTagFilter(tagIds.length === 1 ? tagIds[0] : tagIds);
+    const combineMode = parseSectionCombineModeFromParams(searchParams, 'tags');
+    return buildTagFilter(tagIds.length === 1 ? tagIds[0] : tagIds, { combineMode });
   }
 
   const trackerUrls = parseTrackersFromParams(searchParams);
   if (trackerUrls) {
     if (removeItem && overflowKey) removeItem(overflowKey);
-    return buildTrackerFilter(trackerUrls);
+    const combineMode = parseSectionCombineModeFromParams(searchParams, 'trackers');
+    return buildTrackerFilter(trackerUrls, { combineMode });
   }
 
   const sourceHosts = parseSourcesFromParams(searchParams);
   if (sourceHosts) {
     if (removeItem && overflowKey) removeItem(overflowKey);
-    return buildSourceFilter(sourceHosts);
+    const combineMode = parseSectionCombineModeFromParams(searchParams, 'sources');
+    return buildSourceFilter(sourceHosts, { combineMode });
   }
 
   const filtersParam = searchParams.get('filters');
@@ -499,7 +521,7 @@ export function writeAppliedFiltersToParams(params, filters, storage) {
 
   const tagIds = getActiveTagIds(normalized);
   if (tagIds) {
-    writeTagIdsToParams(params, tagIds);
+    writeTagIdsToParams(params, tagIds, getTagCombineMode(normalized));
     removeItem(overflowKey);
     return true;
   }
@@ -507,7 +529,7 @@ export function writeAppliedFiltersToParams(params, filters, storage) {
   if (isTrackerOnlyFilter(normalized)) {
     const trackers = getActiveTrackers(normalized);
     if (trackers) {
-      writeTrackersToParams(params, trackers);
+      writeTrackersToParams(params, trackers, getTrackerCombineMode(normalized));
       removeItem(overflowKey);
       return true;
     }
@@ -516,7 +538,7 @@ export function writeAppliedFiltersToParams(params, filters, storage) {
   if (isSourceOnlyFilter(normalized)) {
     const sources = getActiveSources(normalized);
     if (sources) {
-      writeSourcesToParams(params, sources);
+      writeSourcesToParams(params, sources, getSourceCombineMode(normalized));
       removeItem(overflowKey);
       return true;
     }

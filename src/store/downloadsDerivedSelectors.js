@@ -9,7 +9,9 @@ import {
   mergeViewAssetTypeFilter,
   hasActiveFilters,
   itemMatchesAnyViewFilters,
+  itemMatchesAllViewFilters,
 } from '@/components/downloads/filters/filterHelpers';
+import { isAllCombineMode } from '@/components/downloads/filters/sidebarCombineMode';
 import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
 import { extractSourceHost } from '@/components/downloads/filters/sourceDisplay';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
@@ -18,7 +20,7 @@ import { isQueuedItem } from '@/utils/utility';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
 /** @typedef {{ entities?: Record<string, object>, order?: { torrents?: string[], usenet?: string[], webdl?: string[] } }} TorboxDownloadsState */
-/** @typedef {{ search?: string, statusFilter?: string, appliedFilters?: object, orViewFilters?: object[], sortField?: string, sortDirection?: 'asc'|'desc' }} FilterCriteria */
+/** @typedef {{ search?: string, statusFilter?: string, appliedFilters?: object, orViewFilters?: object[], viewCombineMode?: 'any'|'all', sortField?: string, sortDirection?: 'asc'|'desc' }} FilterCriteria */
 
 const STATUS_PRIORITY_MAP = {
   Completed: 6,
@@ -233,8 +235,11 @@ export function enrichRowForFilter(entity, tagMappings, downloadHistoryLookup, p
 }
 
 function rowMatchesColumnFilters(row, criteria) {
-  const { appliedFilters, orViewFilters } = criteria;
+  const { appliedFilters, orViewFilters, viewCombineMode } = criteria;
   if (orViewFilters?.length > 1) {
+    if (isAllCombineMode(viewCombineMode)) {
+      return itemMatchesAllViewFilters(row, orViewFilters);
+    }
     return itemMatchesAnyViewFilters(row, orViewFilters);
   }
   return itemMatchesFilters(row, appliedFilters);

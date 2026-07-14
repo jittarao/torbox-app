@@ -7,11 +7,15 @@ import {
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
+  getTagCombineMode,
+  getTrackerCombineMode,
+  getSourceCombineMode,
   hasActiveFilters,
   isTagOnlyFilter,
   isTrackerOnlyFilter,
   isSourceOnlyFilter,
 } from './filters/filterHelpers';
+import { isAllCombineMode } from './filters/sidebarCombineMode';
 import { formatTrackerLabel } from './filters/trackerDisplay';
 import { formatSourceLabel } from './filters/sourceDisplay';
 
@@ -19,19 +23,23 @@ export default function ActiveFiltersBar({
   appliedFilters,
   activeView,
   activeViewIds = [],
+  viewCombineMode,
   tags,
   onClear,
   onEdit,
 }) {
   const t = useTranslations('DownloadsFilters');
 
+  const combineSuffix = (mode) => (isAllCombineMode(mode) ? t('combineAll') : t('combineAny'));
+
   const summary = useMemo(() => {
     if (activeViewIds.length > 1) {
       const base = t('activeViews', { count: activeViewIds.length });
+      const withMode = `${base} · ${combineSuffix(viewCombineMode)}`;
       if (activeView?.search_query?.trim()) {
-        return `${base} · ${t('activeSearch', { query: activeView.search_query.trim() })}`;
+        return `${withMode} · ${t('activeSearch', { query: activeView.search_query.trim() })}`;
       }
-      return base;
+      return withMode;
     }
 
     if (activeView?.name) {
@@ -48,7 +56,7 @@ export default function ActiveFiltersBar({
       if (tag) return t('activeTag', { name: tag.name });
     }
     if (tagIds && tagIds.length > 1) {
-      return t('activeTags', { count: tagIds.length });
+      return `${t('activeTags', { count: tagIds.length })} · ${combineSuffix(getTagCombineMode(appliedFilters))}`;
     }
 
     const trackers = getActiveTrackers(appliedFilters);
@@ -56,7 +64,7 @@ export default function ActiveFiltersBar({
       return t('activeTracker', { name: formatTrackerLabel(trackers[0]) });
     }
     if (trackers && trackers.length > 1) {
-      return t('activeTrackers', { count: trackers.length });
+      return `${t('activeTrackers', { count: trackers.length })} · ${combineSuffix(getTrackerCombineMode(appliedFilters))}`;
     }
 
     const sources = getActiveSources(appliedFilters);
@@ -64,13 +72,13 @@ export default function ActiveFiltersBar({
       return t('activeSource', { name: formatSourceLabel(sources[0]) });
     }
     if (sources && sources.length > 1) {
-      return t('activeSources', { count: sources.length });
+      return `${t('activeSources', { count: sources.length })} · ${combineSuffix(getSourceCombineMode(appliedFilters))}`;
     }
 
     const count = countActiveConditions(appliedFilters);
     if (count > 0) return t('activeConditions', { count });
     return null;
-  }, [appliedFilters, activeView, activeViewIds.length, tags, t]);
+  }, [appliedFilters, activeView, activeViewIds.length, viewCombineMode, tags, t]);
 
   if (!hasActiveFilters(appliedFilters) && !activeView) return null;
   if (!summary) return null;

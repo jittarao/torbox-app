@@ -17,6 +17,9 @@ import {
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
+  getTagCombineMode,
+  getTrackerCombineMode,
+  getSourceCombineMode,
   isTagOnlyFilter,
   isTrackerOnlyFilter,
   isSourceOnlyFilter,
@@ -26,6 +29,7 @@ import {
   sameViewIdList,
   sidebarUrlMatchesPending,
 } from '@/components/downloads/filters/sidebarFilterSync';
+import { COMBINE_MODES } from '@/components/downloads/filters/sidebarCombineMode';
 import { computeRangeSelection } from '@/components/downloads/FiltersSidebar/sidebarRangeSelect';
 
 export function useDownloadsFilters({
@@ -53,6 +57,10 @@ export function useDownloadsFilters({
     setSort,
     viewIds: urlViewIds,
     viewId: urlViewId,
+    viewsOp: urlViewsOp,
+    tagsOp: urlTagsOp,
+    trackersOp: urlTrackersOp,
+    sourcesOp: urlSourcesOp,
   } = filterParams;
 
   const [searchInput, setSearchInput] = useState(urlSearch);
@@ -119,6 +127,12 @@ export function useDownloadsFilters({
   const activeTagIds = getActiveTagIds(appliedFilters) ?? [];
   const activeTrackers = getActiveTrackers(appliedFilters) ?? [];
   const activeSources = getActiveSources(appliedFilters) ?? [];
+
+  const viewCombineMode =
+    activeViewIds.length > 1 ? (urlViewsOp ?? COMBINE_MODES.ANY) : COMBINE_MODES.ANY;
+  const tagCombineMode = getTagCombineMode(appliedFilters);
+  const trackerCombineMode = getTrackerCombineMode(appliedFilters);
+  const sourceCombineMode = getSourceCombineMode(appliedFilters);
 
   const filterDepsRef = useRef({
     filterModalMode,
@@ -215,7 +229,10 @@ export function useDownloadsFilters({
   );
 
   const applyMultiViewFilters = useCallback(
-    (viewIds, { fromUrlSync = false, reapplyPreset = false } = {}) => {
+    (
+      viewIds,
+      { fromUrlSync = false, reapplyPreset = false, combineMode = COMBINE_MODES.ANY } = {}
+    ) => {
       const resolved = viewIds
         .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
         .filter(Boolean);
@@ -238,6 +255,9 @@ export function useDownloadsFilters({
         trackerUrls: null,
         sourceHosts: null,
       };
+      if (viewIds.length > 1) {
+        criteriaPatch.viewsOp = combineMode;
+      }
       if (reapplyPreset) {
         criteriaPatch.search = first.search_query || '';
         if (first.sort_field) {
@@ -296,11 +316,15 @@ export function useDownloadsFilters({
       return;
     }
 
-    applyMultiViewFiltersRef.current(urlViewIds, { fromUrlSync: true, reapplyPreset: true });
-  }, [urlViewIds, urlAppliedFilters, viewsHasLoaded]);
+    applyMultiViewFiltersRef.current(urlViewIds, {
+      fromUrlSync: true,
+      reapplyPreset: true,
+      combineMode: urlViewsOp ?? COMBINE_MODES.ANY,
+    });
+  }, [urlViewIds, urlAppliedFilters, viewsHasLoaded, urlViewsOp]);
 
   const commitViewIds = useCallback(
-    (next, previousIds) => {
+    (next, previousIds, combineMode = viewCombineMode) => {
       if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
@@ -314,9 +338,9 @@ export function useDownloadsFilters({
       }
 
       const firstChanged = !sameViewId(next[0], previousIds[0]);
-      applyMultiViewFilters(next, { reapplyPreset: firstChanged });
+      applyMultiViewFilters(next, { reapplyPreset: firstChanged, combineMode });
     },
-    [views, handleClearFilters, applyViewFilters, applyMultiViewFilters]
+    [views, handleClearFilters, applyViewFilters, applyMultiViewFilters, viewCombineMode]
   );
 
   const handleApplyView = useCallback(
@@ -347,7 +371,7 @@ export function useDownloadsFilters({
   }, [activeViewIds.length, handleClearFilters]);
 
   const commitTagIds = useCallback(
-    (next) => {
+    (next, combineMode = tagCombineMode) => {
       if (activeView) return;
 
       if (next.length === 0) {
@@ -361,19 +385,20 @@ export function useDownloadsFilters({
       lastSyncedUrlViewIdsRef.current = [];
 
       clearView();
-      const tagFilter = buildTagFilter(next);
+      const tagFilter = buildTagFilter(next, { combineMode });
       setColumnFilters(tagFilter);
       patchFilterCriteria({
         statusFilter: 'all',
         search: '',
         viewIds: null,
         tagIds: next,
+        tagsOp: next.length > 1 ? combineMode : COMBINE_MODES.ANY,
         trackerUrls: null,
         sourceHosts: null,
       });
       setMobileFiltersOpen(false);
     },
-    [activeView, handleClearFilters, clearView, patchFilterCriteria]
+    [activeView, handleClearFilters, clearView, patchFilterCriteria, tagCombineMode]
   );
 
   const handleApplyTag = useCallback(
@@ -407,7 +432,7 @@ export function useDownloadsFilters({
   }, [appliedFilters, activeTagIds.length, handleClearFilters]);
 
   const commitTrackerUrls = useCallback(
-    (next) => {
+    (next, combineMode = trackerCombineMode) => {
       if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
@@ -419,7 +444,7 @@ export function useDownloadsFilters({
       lastSyncedUrlViewIdsRef.current = [];
 
       clearView();
-      const trackerFilter = buildTrackerFilter(next);
+      const trackerFilter = buildTrackerFilter(next, { combineMode });
       setColumnFilters(trackerFilter);
       patchFilterCriteria({
         statusFilter: 'all',
@@ -427,11 +452,12 @@ export function useDownloadsFilters({
         viewIds: null,
         tagIds: null,
         trackerUrls: next,
+        trackersOp: next.length > 1 ? combineMode : COMBINE_MODES.ANY,
         sourceHosts: null,
       });
       setMobileFiltersOpen(false);
     },
-    [handleClearFilters, clearView, patchFilterCriteria]
+    [handleClearFilters, clearView, patchFilterCriteria, trackerCombineMode]
   );
 
   const handleApplyTracker = useCallback(
@@ -461,7 +487,7 @@ export function useDownloadsFilters({
   }, [appliedFilters, activeTrackers.length, handleClearFilters]);
 
   const commitSourceHosts = useCallback(
-    (next) => {
+    (next, combineMode = sourceCombineMode) => {
       if (next.length === 0) {
         handleClearFilters();
         setMobileFiltersOpen(false);
@@ -473,7 +499,7 @@ export function useDownloadsFilters({
       lastSyncedUrlViewIdsRef.current = [];
 
       clearView();
-      const sourceFilter = buildSourceFilter(next);
+      const sourceFilter = buildSourceFilter(next, { combineMode });
       setColumnFilters(sourceFilter);
       patchFilterCriteria({
         statusFilter: 'all',
@@ -482,10 +508,11 @@ export function useDownloadsFilters({
         tagIds: null,
         trackerUrls: null,
         sourceHosts: next,
+        sourcesOp: next.length > 1 ? combineMode : COMBINE_MODES.ANY,
       });
       setMobileFiltersOpen(false);
     },
-    [handleClearFilters, clearView, patchFilterCriteria]
+    [handleClearFilters, clearView, patchFilterCriteria, sourceCombineMode]
   );
 
   const handleApplySource = useCallback(
@@ -614,18 +641,56 @@ export function useDownloadsFilters({
       }
       pendingSidebarFilterRef.current = { kind: 'tag', tagIds: next };
       suppressUrlViewSyncRef.current = true;
-      const tagFilter = buildTagFilter(next);
+      const tagFilter = buildTagFilter(next, { combineMode: tagCombineMode });
       setColumnFilters(tagFilter);
       patchFilterCriteria({
         statusFilter: 'all',
         search: '',
         viewIds: null,
         tagIds: next,
+        tagsOp: next.length > 1 ? tagCombineMode : COMBINE_MODES.ANY,
         trackerUrls: null,
         sourceHosts: null,
       });
     }
   };
+
+  const handleSetViewCombineMode = useCallback(
+    (mode) => {
+      if (activeViewIds.length < 2) return;
+      pendingSidebarFilterRef.current = { kind: 'view', viewIds: activeViewIds };
+      suppressUrlViewSyncRef.current = true;
+      patchFilterCriteria({ viewsOp: mode });
+    },
+    [activeViewIds, patchFilterCriteria]
+  );
+
+  const handleSetTagCombineMode = useCallback(
+    (mode) => {
+      const current = getActiveTagIds(appliedFilters) ?? [];
+      if (current.length < 2 || activeView) return;
+      commitTagIds(current, mode);
+    },
+    [appliedFilters, activeView, commitTagIds]
+  );
+
+  const handleSetTrackerCombineMode = useCallback(
+    (mode) => {
+      const current = getActiveTrackers(appliedFilters) ?? [];
+      if (current.length < 2) return;
+      commitTrackerUrls(current, mode);
+    },
+    [appliedFilters, commitTrackerUrls]
+  );
+
+  const handleSetSourceCombineMode = useCallback(
+    (mode) => {
+      const current = getActiveSources(appliedFilters) ?? [];
+      if (current.length < 2) return;
+      commitSourceHosts(current, mode);
+    },
+    [appliedFilters, commitSourceHosts]
+  );
 
   const handleOpenNewFilter = () => {
     setEditingView(null);
@@ -744,6 +809,10 @@ export function useDownloadsFilters({
     activeViewIds,
     activeViews,
     orViewFilters,
+    viewCombineMode,
+    tagCombineMode,
+    trackerCombineMode,
+    sourceCombineMode,
     applyView,
     clearView,
     viewsLoading,
@@ -764,6 +833,10 @@ export function useDownloadsFilters({
     handleApplySource,
     handleApplySourceRange,
     handleClearSources,
+    handleSetViewCombineMode,
+    handleSetTagCombineMode,
+    handleSetTrackerCombineMode,
+    handleSetSourceCombineMode,
     handleCloseFilterModal,
     handleEditView,
     handleViewCreated,
