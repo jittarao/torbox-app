@@ -8,6 +8,7 @@ import TrackerSidebarSection from './TrackerSidebarSection';
 import SourceSidebarSection from './SourceSidebarSection';
 import TagSidebarSection from './TagSidebarSection';
 import ViewSidebarSection from './ViewSidebarSection';
+import SectionCombineToggle from './SectionCombineToggle';
 import FiltersSidebarSearch from './FiltersSidebarSearch';
 import SidebarSectionSkeleton from './SidebarSectionSkeleton';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
@@ -221,6 +222,14 @@ export default function FiltersSidebar({
   activeTagIds,
   activeTrackers = [],
   activeSources = [],
+  viewCombineMode,
+  tagCombineMode,
+  trackerCombineMode,
+  sourceCombineMode,
+  onSetViewCombineMode,
+  onSetTagCombineMode,
+  onSetTrackerCombineMode,
+  onSetSourceCombineMode,
   onApplyView,
   onApplyViewRange,
   onClearViews,
@@ -269,6 +278,10 @@ export default function FiltersSidebar({
   const showTrackerSection = activeAssetType === 'all' || activeAssetType === 'torrents';
   const showSourceSection = activeAssetType === 'all' || activeAssetType === 'webdl';
   const trackerFilterLocked = activeViewIds.length > 0;
+  const showViewCombineToggle = activeViewIds.length >= 2;
+  const showTagCombineToggle = (activeTagIds?.length ?? 0) >= 2;
+  const showTrackerCombineToggle = activeTrackers.length >= 2;
+  const showSourceCombineToggle = activeSources.length >= 2;
   const hasSearchQuery = searchQuery.trim().length > 0;
   const canReorderViews = views.length >= 2 && Boolean(onReorderViews);
   const reorderDisabledBySearch = hasSearchQuery;
@@ -362,29 +375,38 @@ export default function FiltersSidebar({
           onAdd={onNewView}
           addLabel={t('newView')}
           headerActions={
-            canReorderViews ? (
-              <button
-                type="button"
-                onClick={handleToggleViewsSortMode}
-                disabled={reorderDisabledBySearch}
-                className={`p-1 rounded transition-colors ${
-                  viewsSortMode
-                    ? 'bg-accent/15 text-accent dark:bg-accent-dark/20 dark:text-accent-dark'
-                    : 'text-primary-text/50 hover:text-accent dark:text-primary-text-dark/50 dark:hover:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
-                } disabled:cursor-not-allowed disabled:opacity-40`}
-                aria-label={viewsSortMode ? t('reorderViewsActive') : t('reorderViews')}
-                aria-pressed={viewsSortMode}
-                title={
-                  reorderDisabledBySearch
-                    ? t('reorderViewsDisabledSearch')
-                    : viewsSortMode
-                      ? t('reorderViewsActive')
-                      : t('reorderViews')
-                }
-              >
-                <ReorderViewsIcon />
-              </button>
-            ) : null
+            <>
+              {showViewCombineToggle ? (
+                <SectionCombineToggle
+                  value={viewCombineMode}
+                  onChange={onSetViewCombineMode}
+                  sectionLabel={t('viewsSection')}
+                />
+              ) : null}
+              {canReorderViews ? (
+                <button
+                  type="button"
+                  onClick={handleToggleViewsSortMode}
+                  disabled={reorderDisabledBySearch}
+                  className={`p-1 rounded transition-colors ${
+                    viewsSortMode
+                      ? 'bg-accent/15 text-accent dark:bg-accent-dark/20 dark:text-accent-dark'
+                      : 'text-primary-text/50 hover:text-accent dark:text-primary-text-dark/50 dark:hover:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
+                  } disabled:cursor-not-allowed disabled:opacity-40`}
+                  aria-label={viewsSortMode ? t('reorderViewsActive') : t('reorderViews')}
+                  aria-pressed={viewsSortMode}
+                  title={
+                    reorderDisabledBySearch
+                      ? t('reorderViewsDisabledSearch')
+                      : viewsSortMode
+                        ? t('reorderViewsActive')
+                        : t('reorderViews')
+                  }
+                >
+                  <ReorderViewsIcon />
+                </button>
+              ) : null}
+            </>
           }
           tall={sectionTall}
           expanded={sectionsExpanded.views}
@@ -417,6 +439,16 @@ export default function FiltersSidebar({
           title={t('tagsSection')}
           onAdd={onOpenTagManager}
           addLabel={t('manageTags')}
+          headerActions={
+            showTagCombineToggle ? (
+              <SectionCombineToggle
+                value={tagCombineMode}
+                onChange={onSetTagCombineMode}
+                disabled={trackerFilterLocked}
+                sectionLabel={t('tagsSection')}
+              />
+            ) : null
+          }
           tall={sectionTall}
           expanded={sectionsExpanded.tags}
           onToggle={() => toggleSection('tags')}
@@ -444,6 +476,16 @@ export default function FiltersSidebar({
         {showTrackerSection && (
           <SidebarSection
             title={t('trackersSection')}
+            headerActions={
+              showTrackerCombineToggle ? (
+                <SectionCombineToggle
+                  value={trackerCombineMode}
+                  onChange={onSetTrackerCombineMode}
+                  disabled={trackerFilterLocked}
+                  sectionLabel={t('trackersSection')}
+                />
+              ) : null
+            }
             tall={sectionTall}
             expanded={sectionsExpanded.trackers}
             onToggle={() => toggleSection('trackers')}
@@ -469,6 +511,16 @@ export default function FiltersSidebar({
         {showSourceSection && (
           <SidebarSection
             title={t('sourcesSection')}
+            headerActions={
+              showSourceCombineToggle ? (
+                <SectionCombineToggle
+                  value={sourceCombineMode}
+                  onChange={onSetSourceCombineMode}
+                  disabled={trackerFilterLocked}
+                  sectionLabel={t('sourcesSection')}
+                />
+              ) : null
+            }
             tall={sectionTall}
             expanded={sectionsExpanded.sources}
             onToggle={() => toggleSection('sources')}

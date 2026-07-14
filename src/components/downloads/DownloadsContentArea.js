@@ -12,6 +12,7 @@ export default function DownloadsContentArea() {
     appliedFilters,
     activeView,
     activeViewIds,
+    viewCombineMode,
     tags,
     handleClearFilters,
     handleEditActiveFilters,
@@ -25,6 +26,7 @@ export default function DownloadsContentArea() {
           appliedFilters={appliedFilters}
           activeView={activeView}
           activeViewIds={activeViewIds}
+          viewCombineMode={viewCombineMode}
           tags={tags}
           onClear={handleClearFilters}
           onEdit={handleEditActiveFilters}

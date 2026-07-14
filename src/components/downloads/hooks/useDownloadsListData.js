@@ -35,6 +35,7 @@ function buildFilterCacheKey(criteria) {
     sortDirection: criteria.sortDirection,
     appliedFilters: criteria.appliedFilters,
     orViewIds,
+    viewCombineMode: criteria.viewCombineMode,
   });
 }
 
@@ -98,8 +99,15 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     useShallow((s) => ({ entities: s.entities, order: s.order }))
   );
 
-  const { search, statusFilter, appliedFilters, orViewFilters, sortField, sortDirection } =
-    filterParams;
+  const {
+    search,
+    statusFilter,
+    appliedFilters,
+    orViewFilters,
+    viewCombineMode,
+    sortField,
+    sortDirection,
+  } = filterParams;
 
   const filterCriteria = useMemo(
     () => ({
@@ -107,10 +115,11 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
       statusFilter,
       appliedFilters,
       orViewFilters,
+      viewCombineMode,
       sortField,
       sortDirection,
     }),
-    [search, statusFilter, appliedFilters, orViewFilters, sortField, sortDirection]
+    [search, statusFilter, appliedFilters, orViewFilters, viewCombineMode, sortField, sortDirection]
   );
   const stableTagMappings = useStableShallow(tagMappings);
   const stableProtectedMap = useStableShallow(protectedMap);

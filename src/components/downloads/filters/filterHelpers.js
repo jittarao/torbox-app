@@ -2,7 +2,9 @@ import {
   LOGIC_OPERATORS,
   MULTI_SELECT_OPERATORS,
   STRING_OPERATORS,
+  TAG_OPERATORS,
 } from '../AutomationRules/constants';
+import { COMBINE_MODES, isAllCombineMode } from './sidebarCombineMode';
 import { isTagsColumn } from '../CustomViews/utils';
 import { LEGACY_COLUMN_MIGRATIONS } from './filterFieldRegistry';
 import { itemMatchesFilters } from './filterEvaluation';
@@ -122,10 +124,33 @@ export function normalizeFilters(raw) {
 }
 
 /**
- * Build a filter structure that matches downloads with any of the given tag IDs.
+ * @param {object|string|undefined} options — `{ combineMode }` or legacy operator string
+ * @returns {'any'|'all'}
  */
-export function buildTagFilter(tagIds, operator = MULTI_SELECT_OPERATORS.IS_ANY_OF) {
+function resolveCombineMode(options) {
+  if (options == null) return COMBINE_MODES.ANY;
+  if (typeof options === 'object' && options.combineMode) {
+    return isAllCombineMode(options.combineMode) ? COMBINE_MODES.ALL : COMBINE_MODES.ANY;
+  }
+  return COMBINE_MODES.ANY;
+}
+
+/**
+ * Build a filter structure that matches downloads with any or all of the given tag IDs.
+ * @param {number|number[]} tagIds
+ * @param {{ combineMode?: 'any'|'all' }|string} [options] — combineMode or legacy operator string
+ */
+export function buildTagFilter(tagIds, options) {
   const ids = Array.isArray(tagIds) ? tagIds : [tagIds];
+  let operator = MULTI_SELECT_OPERATORS.IS_ANY_OF;
+  if (typeof options === 'string') {
+    operator = options;
+  } else {
+    const combineMode = resolveCombineMode(options);
+    operator = isAllCombineMode(combineMode)
+      ? TAG_OPERATORS.IS_ALL_OF
+      : MULTI_SELECT_OPERATORS.IS_ANY_OF;
+  }
   return {
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
@@ -164,8 +189,14 @@ export function hasActiveFilters(filters) {
   return countActiveConditions(filters) > 0;
 }
 
+const TAG_SIDEBAR_OPERATORS = new Set([
+  MULTI_SELECT_OPERATORS.IS_ANY_OF,
+  TAG_OPERATORS.IS_ANY_OF,
+  TAG_OPERATORS.IS_ALL_OF,
+]);
+
 /**
- * True when filters are exclusively a single tag IS_ANY_OF rule.
+ * True when filters are exclusively a single sidebar tag rule (IS_ANY_OF or IS_ALL_OF).
  */
 export function isTagOnlyFilter(filters) {
   const count = countActiveConditions(filters);
@@ -176,11 +207,27 @@ export function isTagOnlyFilter(filters) {
     for (const f of group.filters || []) {
       if (!f.column) continue;
       if (!isTagsColumn(f.column)) return false;
-      if (f.operator !== MULTI_SELECT_OPERATORS.IS_ANY_OF) return false;
+      if (!TAG_SIDEBAR_OPERATORS.has(f.operator)) return false;
       if (!Array.isArray(f.value) || f.value.length === 0) return false;
     }
   }
   return true;
+}
+
+/**
+ * @param {object} filters
+ * @returns {'any'|'all'}
+ */
+export function getTagCombineMode(filters) {
+  if (!isTagOnlyFilter(filters)) return COMBINE_MODES.ANY;
+  for (const group of filters.groups || []) {
+    for (const f of group.filters || []) {
+      if (isTagsColumn(f.column) && f.operator === TAG_OPERATORS.IS_ALL_OF) {
+        return COMBINE_MODES.ALL;
+      }
+    }
+  }
+  return COMBINE_MODES.ANY;
 }
 
 /**
@@ -201,9 +248,11 @@ export function getActiveTagIds(filters) {
 }
 
 /**
- * Build a filter structure that matches downloads with any of the given tracker URLs.
+ * Build a filter structure that matches downloads with any or all of the given tracker URLs.
+ * @param {string|string[]} trackerUrls
+ * @param {{ combineMode?: 'any'|'all' }} [options]
  */
-export function buildTrackerFilter(trackerUrls) {
+export function buildTrackerFilter(trackerUrls, options) {
   const urls = (Array.isArray(trackerUrls) ? trackerUrls : [trackerUrls]).filter(
     (url) => url != null && String(url).trim() !== ''
   );
@@ -211,11 +260,14 @@ export function buildTrackerFilter(trackerUrls) {
     return JSON.parse(EMPTY_FILTERS_JSON);
   }
 
+  const combineMode = resolveCombineMode(options);
+  const groupLogic = isAllCombineMode(combineMode) ? LOGIC_OPERATORS.AND : LOGIC_OPERATORS.OR;
+
   return {
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
       {
-        logicOperator: LOGIC_OPERATORS.OR,
+        logicOperator: groupLogic,
         filters: urls.map((url) => ({
           column: 'tracker',
           operator: STRING_OPERATORS.EQUALS,
@@ -227,7 +279,7 @@ export function buildTrackerFilter(trackerUrls) {
 }
 
 /**
- * True when filters are exclusively tracker equals rules in a single OR group.
+ * True when filters are exclusively tracker equals rules in a single OR/AND group.
  */
 export function isTrackerOnlyFilter(filters) {
   const normalized = normalizeFilters(filters);
@@ -235,7 +287,9 @@ export function isTrackerOnlyFilter(filters) {
   if (groups.length !== 1) return false;
 
   const group = groups[0];
-  if (group.logicOperator !== LOGIC_OPERATORS.OR) return false;
+  if (group.logicOperator !== LOGIC_OPERATORS.OR && group.logicOperator !== LOGIC_OPERATORS.AND) {
+    return false;
+  }
 
   const activeFilters = (group.filters || []).filter((f) => f.column);
   if (activeFilters.length === 0) return false;
@@ -267,9 +321,21 @@ export function getActiveTrackers(filters) {
 }
 
 /**
- * Build a filter structure that matches downloads with any of the given source hosts.
+ * @param {object} filters
+ * @returns {'any'|'all'}
  */
-export function buildSourceFilter(sourceHosts) {
+export function getTrackerCombineMode(filters) {
+  if (!isTrackerOnlyFilter(filters)) return COMBINE_MODES.ANY;
+  const group = filters.groups?.[0];
+  return group?.logicOperator === LOGIC_OPERATORS.AND ? COMBINE_MODES.ALL : COMBINE_MODES.ANY;
+}
+
+/**
+ * Build a filter structure that matches downloads with any or all of the given source hosts.
+ * @param {string|string[]} sourceHosts
+ * @param {{ combineMode?: 'any'|'all' }} [options]
+ */
+export function buildSourceFilter(sourceHosts, options) {
   const hosts = (Array.isArray(sourceHosts) ? sourceHosts : [sourceHosts]).filter(
     (host) => host != null && String(host).trim() !== ''
   );
@@ -277,11 +343,14 @@ export function buildSourceFilter(sourceHosts) {
     return JSON.parse(EMPTY_FILTERS_JSON);
   }
 
+  const combineMode = resolveCombineMode(options);
+  const groupLogic = isAllCombineMode(combineMode) ? LOGIC_OPERATORS.AND : LOGIC_OPERATORS.OR;
+
   return {
     logicOperator: LOGIC_OPERATORS.AND,
     groups: [
       {
-        logicOperator: LOGIC_OPERATORS.OR,
+        logicOperator: groupLogic,
         filters: hosts.map((host) => ({
           column: 'original_url',
           operator: STRING_OPERATORS.EQUALS,
@@ -293,7 +362,7 @@ export function buildSourceFilter(sourceHosts) {
 }
 
 /**
- * True when filters are exclusively original_url equals rules in a single OR group.
+ * True when filters are exclusively original_url equals rules in a single OR/AND group.
  */
 export function isSourceOnlyFilter(filters) {
   const normalized = normalizeFilters(filters);
@@ -301,7 +370,9 @@ export function isSourceOnlyFilter(filters) {
   if (groups.length !== 1) return false;
 
   const group = groups[0];
-  if (group.logicOperator !== LOGIC_OPERATORS.OR) return false;
+  if (group.logicOperator !== LOGIC_OPERATORS.OR && group.logicOperator !== LOGIC_OPERATORS.AND) {
+    return false;
+  }
 
   const activeFilters = (group.filters || []).filter((f) => f.column);
   if (activeFilters.length === 0) return false;
@@ -330,6 +401,16 @@ export function getActiveSources(filters) {
     }
   }
   return sources.length > 0 ? sources : null;
+}
+
+/**
+ * @param {object} filters
+ * @returns {'any'|'all'}
+ */
+export function getSourceCombineMode(filters) {
+  if (!isSourceOnlyFilter(filters)) return COMBINE_MODES.ANY;
+  const group = filters.groups?.[0];
+  return group?.logicOperator === LOGIC_OPERATORS.AND ? COMBINE_MODES.ALL : COMBINE_MODES.ANY;
 }
 
 /**
@@ -465,11 +546,31 @@ export function mergeViewAssetTypeFilter(filters, assetType) {
  * @param {object} item
  * @param {object[]} views
  */
-export function itemMatchesAnyViewFilters(item, views) {
+function itemMatchesViewFiltersWithCombine(item, views, combine) {
   if (!views?.length) return true;
 
-  return views.some((view) => {
+  const matcher = (view) => {
     const filters = mergeViewAssetTypeFilter(view.filters, view.asset_type);
     return hasActiveFilters(filters) && itemMatchesFilters(item, filters);
-  });
+  };
+
+  return combine === 'every' ? views.every(matcher) : views.some(matcher);
+}
+
+/**
+ * True when an item matches any of the given saved views' filter criteria (OR union).
+ * @param {object} item
+ * @param {object[]} views
+ */
+export function itemMatchesAnyViewFilters(item, views) {
+  return itemMatchesViewFiltersWithCombine(item, views, 'some');
+}
+
+/**
+ * True when an item matches all of the given saved views' filter criteria (AND intersection).
+ * @param {object} item
+ * @param {object[]} views
+ */
+export function itemMatchesAllViewFilters(item, views) {
+  return itemMatchesViewFiltersWithCombine(item, views, 'every');
 }
