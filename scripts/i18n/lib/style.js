@@ -48,7 +48,7 @@ export const LOCALE_STYLES = {
 export const GLOBAL_RULES = [
   'Preserve ICU MessageFormat syntax ({count, plural, ...}) and simple {placeholders} exactly.',
   'Do not translate proper nouns (TorBox, GitHub, IINA, Infuse, Stremio) or platform names (macOS, iOS, Windows, Linux).',
-  'Skip keys where the target-language value is identical to English — they inherit from en.json.',
+  'Include every pending key in apply output. Identical-to-English values are recorded in inherited.json and omitted from locale deltas.',
   'Never translate Admin.* keys.',
 ];
 

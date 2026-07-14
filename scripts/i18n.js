@@ -54,7 +54,7 @@ async function main() {
         } else {
           for (const summary of result.summaries) {
             console.log(
-              `✓ ${summary.locale}: added=${summary.added} skipped_identical=${summary.skipped_identical} leaves=${summary.leaves}`
+              `✓ ${summary.locale}: added=${summary.added} inherited_identical=${summary.inherited_identical} leaves=${summary.leaves}`
             );
           }
           if (result.errors.length > 0) {
